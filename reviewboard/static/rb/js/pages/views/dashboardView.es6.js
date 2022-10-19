@@ -137,13 +137,19 @@ const DashboardActionsView = Backbone.View.extend({
      *     closeType (string):
      *         The close type to use.
      */
-    _closeReviewRequests(closeType) {
-        this._confirmClose(() => {
-            this.model.closeReviewRequests({
-                closeType: closeType,
-                onDone: this._showCloseResults.bind(this),
-            });
-        });
+    async _closeReviewRequests(closeType) {
+        try {
+            const confirmed = await this._confirmClose();
+
+            if (confirmed) {
+                const results = await this.model.closeReviewRequests({
+                    closeType: closeType,
+                });
+                this._showCloseResults(results.successes, results.failures);
+            }
+        } catch (err) {
+            alert(_`An error occurred when attempting to close review requests: ${err}`);
+        }
     },
 
     /**
@@ -154,39 +160,37 @@ const DashboardActionsView = Backbone.View.extend({
      * permissions or other errors).
      *
      * Args:
-     *     successes (Array):
-     *         Array of successfully closed review requests.
+     *     successes (int):
+     *         Number of successfully closed review requests.
      *
-     *     failures (Array):
-     *         Array of unsuccessfully closed review requests.
+     *     failures (int):
+     *         Number of unsuccessfully closed review requests.
      */
     _showCloseResults(successes, failures) {
-        const numSuccesses = successes.length;
-        const numFailures = failures.length;
         const $dlg = $('<div/>')
             .append($('<p/>')
                 .text(interpolate(
                     ngettext('%s review request has been closed.',
                              '%s review requests have been closed.',
-                             numSuccesses),
-                    [numSuccesses])));
+                             successes),
+                    [successes])));
 
-        if (numFailures > 0) {
+        if (failures > 0) {
             $dlg
                 .append($('<p/>').text(
                     interpolate(
                         ngettext('%s review request could not be closed.',
                                  '%s review requests could not be closed.',
-                                 numFailures),
-                        [numFailures])))
+                                 failures),
+                        [failures])))
                 .append($('<p/>').text(
-                    gettext('You may not have permission to close them.')));
+                    _`You may not have permission to close them.`));
         }
 
         $dlg.modalBox({
-            title: gettext('Close review requests'),
+            title: _`Close review requests`,
             buttons: [
-                $('<input type="button"/>').val(gettext('Thanks!')),
+                $('<input type="button"/>').val(_`Close`),
             ],
         });
     },
@@ -196,27 +200,31 @@ const DashboardActionsView = Backbone.View.extend({
      *
      * If the user confirms, the review requests will be closed.
      *
-     * Args:
-     *     onConfirmed (function):
-     *         Function to call after the user confirms.
+     * Returns:
+     *     Promise:
+     *     A promise which resolves to true if the close was confirmed, or
+     *     false if the close was cancelled.
      */
-    _confirmClose: function(onConfirmed) {
-        $('<div/>')
-            .append($('<p/>')
-                .text(gettext('If these review requests have unpublished drafts, they will be discarded.')))
-            .append($('<p/>')
-                .text(gettext('Are you sure you want to close these review requests?')))
-            .modalBox({
-                title: gettext('Close review requests'),
-                buttons: [
-                    $('<input type="button"/>')
-                        .val(gettext('Cancel')),
+    _confirmClose: function() {
+        return new Promise((resolve, reject) => {
+            $('<div/>')
+                .append($('<p/>')
+                    .text(_`If these review requests have unpublished drafts, they will be discarded.`))
+                .append($('<p/>')
+                    .text(_`Are you sure you want to close these review requests?`))
+                .modalBox({
+                    title: _`Close review requests`,
+                    buttons: [
+                        $('<input type="button"/>')
+                            .val(_`Cancel`)
+                            .click(() => resolve(false)),
 
-                    $('<input type="button"/>')
-                        .val(gettext('Close Review Requests'))
-                        .click(onConfirmed.bind(this)),
-                ],
-            });
+                        $('<input type="button"/>')
+                            .val(_`Close Review Requests`)
+                            .click(() => resolve(true)),
+                    ],
+                });
+        });
     },
 
     /**
