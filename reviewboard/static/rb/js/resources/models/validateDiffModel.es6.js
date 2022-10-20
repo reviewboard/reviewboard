@@ -32,7 +32,7 @@ RB.ValidateDiffModel = RB.Diff.extend({
      *     The URL to use for syncing.
      */
     url() {
-        return SITE_ROOT + this.get('localSitePrefix') +
+        return SITE_ROOT + (this.get('localSitePrefix') || '') +
                'api/validation/diffs/';
     },
 
