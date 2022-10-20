@@ -160,6 +160,9 @@ review_ship_it_revoked = Signal()
 #:         Whether the review e-mail should be sent only to the review request
 #:         submitter.
 #:
+#:     trivial (bool):
+#:         Whether to skip e-mail notifications entirely.
+#:
 #:     request (django.http.HttpRequest):
 #:         The request object if the review was published from an HTTP request.
 review_published = Signal()

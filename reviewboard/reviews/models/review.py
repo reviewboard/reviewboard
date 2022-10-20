@@ -420,6 +420,7 @@ class Review(models.Model):
             review_published.send(sender=self.__class__,
                                   user=user, review=self,
                                   to_owner_only=to_owner_only,
+                                  trivial=trivial,
                                   request=request)
 
     def delete(self):

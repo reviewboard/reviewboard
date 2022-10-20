@@ -93,7 +93,7 @@ def send_reply_published_mail(user, reply, trivial, **kwargs):
         _update_email_info(reply, message.message_id)
 
 
-def send_review_published_mail(user, review, request, to_owner_only,
+def send_review_published_mail(user, review, to_owner_only, trivial, request,
                                **kwargs):
     """Send e-mail when a review is published.
 
@@ -112,6 +112,9 @@ def send_review_published_mail(user, review, request, to_owner_only,
             Whether or not the mail should only be sent to the review request
             submitter.
 
+        trivial (bool):
+            Whether to skip e-mail notifications.
+
         request (django.http.HttpRequest):
             The HTTP request that triggered this e-mail.
 
@@ -120,7 +123,7 @@ def send_review_published_mail(user, review, request, to_owner_only,
     """
     siteconfig = SiteConfiguration.objects.get_current()
 
-    if not siteconfig.get('mail_send_review_mail'):
+    if trivial or not siteconfig.get('mail_send_review_mail'):
         return
 
     review_request = review.review_request
