@@ -186,7 +186,7 @@ RB.NewReviewRequestView = RB.PageView.extend({
      * placed in a container in this view, with its display managed by CSS.
      *
      * Args:
-     *     inMobileMode (bool):
+     *     inMobileMode (boolean):
      *         Whether the UI is now in mobile mode.
      */
     onMobileModeChanged(inMobileMode) {

@@ -21,7 +21,7 @@ const localSiteEmptyText = gettext('You have not registered any OAuth2 applicati
  *     editURL (string):
  *         The URL to edit this application.
  *
- *     isDisabledForSecurity (bool):
+ *     isDisabledForSecurity (boolean):
  *         When true, this attribute indicates that the application was
  *         re-assigned to the current user because the original user was
  *         removed from the Local Site associated with this.
