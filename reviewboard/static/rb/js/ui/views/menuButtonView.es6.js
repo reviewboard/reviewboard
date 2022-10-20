@@ -28,6 +28,7 @@ RB.MenuButtonView = Backbone.View.extend({
         'focusout': '_onFocusOut',
         'mouseleave': '_closeMenu',
         'keydown .rb-c-menu-button__toggle': '_onToggleButtonKeyDown',
+        'click .rb-c-menu-button__toggle': '_onToggleClick',
     },
 
     template: _.template(dedent`
@@ -309,5 +310,26 @@ RB.MenuButtonView = Backbone.View.extend({
                 });
                 return false;
         }
+    },
+
+    /**
+     * Handle a click event on the dropdown toggle.
+     *
+     * Clicking on the dropdown toggle is not supposed to do anything,
+     * since hovering it with the cursor is sufficient for opening the
+     * alternatives menu. We handle the click and stop the event from
+     * propagating so that the modal library doesn't interpret this as
+     * an attempt to close the dialog.
+     *
+     * Args:
+     *     evt (jQuery.Event):
+     *         The click event.
+     *
+     * Returns:
+     *     boolean:
+     *     ``False`` to stop the event from propagating.
+     */
+    _onToggleClick(evt) {
+        return false;
     },
 });
