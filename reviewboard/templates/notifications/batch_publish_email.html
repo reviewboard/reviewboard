@@ -1,0 +1,30 @@
+{% extends "notifications/email_base.html" %}
+{% load djblets_utils %}
+{% block content %}
+{%  if review_request_changed %}
+{%   include "notifications/review_request_email_content.html" %}
+{%  endif %}
+
+{%  for review in reviews %}
+{%   with review.comment_entries as comment_entries %}
+{%    include "notifications/review_email_content.html" %}
+{%   endwith %}
+{%  endfor %}
+
+{%  for reply in review_replies %}
+{%   with reply.base_reply_to as review %}
+{%    with reply.comment_entries as comment_entries %}
+{%     include "notifications/reply_email_content.html" %}
+{%    endwith %}
+{%   endwith %}
+{%  endfor %}
+{% endblock %}
+
+{% block footer %}
+{%  if not review_request_changed %}
+<br />
+<p>On {{review_request.time_emailed|date:"F jS, Y, P T"}}, {{review_request.submitter|user_displayname}} wrote:</p>
+
+{%  include "notifications/review_request_email_content.html" %}
+{%  endif %}
+{% endblock %}

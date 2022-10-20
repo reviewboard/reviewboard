@@ -2,6 +2,7 @@
 
 from reviewboard.reviews.views.attachments import (ReviewFileAttachmentView,
                                                    ReviewScreenshotView)
+from reviewboard.reviews.views.batch import BatchOperationView
 from reviewboard.reviews.views.bug_trackers import (BugInfoboxView,
                                                     BugURLRedirectView)
 from reviewboard.reviews.views.diff_fragments import (
@@ -9,7 +10,8 @@ from reviewboard.reviews.views.diff_fragments import (
     ReviewsDiffFragmentView,
     build_diff_comment_fragments)
 from reviewboard.reviews.views.diffviewer import ReviewsDiffViewerView
-from reviewboard.reviews.views.email import (PreviewReplyEmailView,
+from reviewboard.reviews.views.email import (PreviewBatchEmailView,
+                                             PreviewReplyEmailView,
                                              PreviewReviewEmailView,
                                              PreviewReviewRequestEmailView)
 from reviewboard.reviews.views.download_diff import (
@@ -28,12 +30,14 @@ from reviewboard.reviews.views.root import RootView
 
 
 __all__ = [
+    'BatchOperationView',
     'BugInfoboxView',
     'BugURLRedirectView',
     'CommentDiffFragmentsView',
     'DownloadDiffFileView',
     'DownloadRawDiffView',
     'NewReviewRequestView',
+    'PreviewBatchEmailView',
     'PreviewReplyEmailView',
     'PreviewReviewEmailView',
     'PreviewReviewRequestEmailView',

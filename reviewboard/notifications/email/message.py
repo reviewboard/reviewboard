@@ -1,7 +1,7 @@
 """The Review Board e-mail message class and methods for generating e-mails."""
 
 import logging
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -533,6 +533,137 @@ def prepare_review_request_mail(
     return prepare_base_review_request_mail(
         user, review_request, subject, reply_message_id, to_field,
         cc_field, 'notifications/review_request_email', extra_context)
+
+
+def prepare_batch_review_request_mail(
+    *,
+    user: Optional[User],
+    review_request: ReviewRequest,
+    review_request_changed: bool,
+    changedesc: Optional[ChangeDescription],
+    reviews: List[Review],
+    review_replies: List[Review],
+    request: HttpRequest,
+) -> Optional[EmailMessage]:
+    """Return an e-mail with batched review request and reviews.
+
+    Version Added:
+        6.0
+
+    Args:
+        user (django.contrib.auth.models.User):
+            The user who triggered the e-mail (i.e., they published the review
+            request and/or reviews).
+
+        review_request (reviewboard.reviews.models.review_request.
+                        ReviewRequest):
+            The review request. This is present whether or not the review
+            request was actually published in the batch.
+
+        review_request_changed (bool):
+            Whether the review request was published or updated.
+
+        changedesc (reviewboard.changedescs.models.ChangeDescription):
+            The change description showing what changed in the review request
+            (if an update to the review request was published).
+
+        reviews (list of reviewboard.reviews.models.review.Review):
+            A list of the reviews that were published in the batch.
+
+        review_replies (list of reviewboard.reviews.models.review.Review):
+            A list of the review replies that were published in the batch.
+
+        request (django.http.HttpRequest):
+            The current request from the client.
+
+    Returns:
+        EmailMessage:
+        The e-mail message including all of the batched updates.
+    """
+    from reviewboard.reviews.views import build_diff_comment_fragments
+
+    if not user:
+        user = review_request.submitter
+
+    assert user is not None
+
+    summary: str = force_str(review_request.summary)
+    subject: str = 'Review Request %d: %s' % (review_request.display_id,
+                                              summary)
+
+    reply_message_id: Optional[str] = review_request.email_message_id
+    extra_recipients: Optional[RecipientList] = None
+
+    if reply_message_id:
+        # Fancy quoted "replies".
+        subject = 'Re: %s' % subject
+        extra_recipients = review_request.review_participants
+
+    site_url: str = _get_server_base_url()
+
+    for review in reviews:
+        review.comment_entries = build_diff_comment_fragments(
+            comments=review.comments.order_by('filediff', 'first_line'),
+            context={
+                'user': review.user,
+                'review': review,
+                'has_issues': (review.ship_it and
+                               review.has_comments(only_issues=True)),
+                'request': request,
+                'site_url': site_url,
+            },
+            comment_template_name=(
+                'notifications/email_diff_comment_fragment.html'))[1]
+
+    for reply in review_replies:
+        reply.comment_entries = build_diff_comment_fragments(
+            comments=reply.comments.order_by('filediff', 'first_line'),
+            context={
+                'user': reply.user,
+                'review': reply.base_reply_to,
+                'reply': reply,
+                'site_url': site_url,
+            },
+            comment_template_name=(
+                'notifications/email_diff_comment_fragment.html'))[1]
+
+    extra_context: Dict[str, Any] = {
+        'review_request_changed': review_request_changed,
+        'reviews': reviews,
+        'review_replies': review_replies,
+        'request': request,
+    }
+
+    if changedesc:
+        extra_context.update({
+            'change_text': changedesc.text,
+            'change_rich_text': changedesc.rich_text,
+            'changes': changedesc.fields_changed,
+        })
+
+    to_field, cc_field = build_recipients(
+        user, review_request, extra_recipients,
+        limit_recipients_to=None)
+
+    if review_request_changed:
+        signal = review_request_published
+    else:
+        signal = review_published
+
+    to_field, cc_field = filter_email_recipients_from_hooks(
+        to_field, cc_field, signal,
+        review_request=review_request,
+        user=user)
+
+    return prepare_base_review_request_mail(
+        user=user,
+        review_request=review_request,
+        subject=subject,
+        in_reply_to=reply_message_id,
+        to_field=to_field,
+        cc_field=cc_field,
+        template_name_base='notifications/batch_publish_email',
+        context=extra_context)
 
 
 def prepare_user_registered_mail(

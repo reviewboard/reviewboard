@@ -118,6 +118,10 @@ review_request_urls = [
             views.PreviewReviewRequestEmailView.as_view(),
             name='preview-review-request-email'),
 
+    re_path(r'^batch-email/(?P<message_format>text|html)/',
+            views.PreviewBatchEmailView.as_view(),
+            name='preview-batch-email'),
+
     re_path(r'^reviews/(?P<review_id>\d+)/preview-email/'
             r'(?P<message_format>text|html)/$',
             views.PreviewReviewEmailView.as_view(),
@@ -139,6 +143,10 @@ urlpatterns = [
     path('new/',
          views.NewReviewRequestView.as_view(),
          name='new-review-request'),
+
+    path('_batch/',
+         views.BatchOperationView.as_view(),
+         name='batch-operation'),
 
     path('<int:review_request_id>/',
          include(review_request_urls)),

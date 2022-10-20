@@ -1,5 +1,4 @@
 import logging
-import warnings
 from datetime import datetime
 from typing import Optional
 
@@ -180,9 +179,9 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     _CREATED_WITH_HISTORY_EXTRA_DATA_KEY = '__created_with_history'
 
-    PENDING_REVIEW = "P"
-    SUBMITTED = "S"
-    DISCARDED = "D"
+    PENDING_REVIEW = 'P'
+    SUBMITTED = 'S'
+    DISCARDED = 'D'
 
     STATUSES = (
         (PENDING_REVIEW, _('Pending Review')),
@@ -972,64 +971,64 @@ class ReviewRequest(BaseReviewRequestDetails):
             .exists()
         )
 
-    def close(self, close_type=None, user=None, description=None,
-              rich_text=False, **kwargs):
-        """Closes the review request.
+    def close(
+        self,
+        close_type: str,
+        user: Optional[User] = None,
+        description: Optional[str] = None,
+        rich_text: bool = False,
+        **kwargs,
+    ) -> None:
+        """Close the review request.
+
+        Version Changed:
+            6.0:
+            The ``type`` argument has been completely removed.
+
+        Version Changed:
+            3.0:
+            The ``type`` argument is deprecated: ``close_type`` should be used
+            instead.
+
+            This method raises :py:exc:`ValueError` instead of
+            :py:exc:`AttributeError` when the ``close_type`` has an incorrect
+            value.
 
         Args:
-            close_type (unicode):
+            close_type (str):
                 How the close occurs. This should be one of
                 :py:attr:`SUBMITTED` or :py:attr:`DISCARDED`.
 
-            user (django.contrib.auth.models.User):
+            user (django.contrib.auth.models.User, optional):
                 The user who is closing the review request.
 
-            description (unicode):
+            description (str, optional):
                 An optional description that indicates why the review request
                 was closed.
 
-            rich_text (bool):
+            rich_text (bool, optional):
                 Indicates whether or not that the description is rich text.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments, for future expansion.
 
         Raises:
             ValueError:
                 The provided close type is not a valid value.
 
-            PermissionError:
+            reviewboard.reviews.errors.PermissionError:
                 The user does not have permission to close the review request.
 
-            TypeError:
-                Keyword arguments were supplied to the function.
-
-        .. versionchanged:: 3.0
-           The ``type`` argument is deprecated: ``close_type`` should be used
-           instead.
-
-           This method raises :py:exc:`ValueError` instead of
-           :py:exc:`AttributeError` when the ``close_type`` has an incorrect
-           value.
+            reviewboard.reviews.errors.PublishError:
+                An attempt was made to close an un-published review request as
+                submitted.
         """
-        if close_type is None:
-            try:
-                close_type = kwargs.pop('type')
-            except KeyError:
-                raise AttributeError('close_type must be provided')
-
-            warnings.warn(
-                'The "type" argument was deprecated in Review Board 3.0 and '
-                'will be removed in a future version. Use "close_type" '
-                'instead.'
-            )
-
-        if kwargs:
-            raise TypeError('close() does not accept keyword arguments.')
-
         if (user and not self.is_mutable_by(user) and
-            not user.has_perm("reviews.can_change_status", self.local_site)):
+            not user.has_perm('reviews.can_change_status', self.local_site)):
             raise PermissionError
 
         if close_type not in [self.SUBMITTED, self.DISCARDED]:
-            raise ValueError("%s is not a valid close type" % type)
+            raise ValueError('%s is not a valid close type' % close_type)
 
         review_request_closing.send(
             sender=type(self),
@@ -1049,7 +1048,7 @@ class ReviewRequest(BaseReviewRequestDetails):
 
             # TODO: Use the user's default for rich_text.
             changedesc = ChangeDescription(public=True,
-                                           text=description or "",
+                                           text=description or '',
                                            rich_text=rich_text or False,
                                            user=user or self.submitter)
 
@@ -1062,7 +1061,7 @@ class ReviewRequest(BaseReviewRequestDetails):
 
             if close_type == self.SUBMITTED:
                 if not self.public:
-                    raise PublishError("The draft must be public first.")
+                    raise PublishError('The draft must be public first.')
             else:
                 self.commit_id = None
 
@@ -1080,7 +1079,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             # Update submission description.
             changedesc = self.changedescs.filter(public=True).latest()
             changedesc.timestamp = timezone.now()
-            changedesc.text = description or ""
+            changedesc.text = description or ''
             changedesc.rich_text = rich_text
             changedesc.save()
 

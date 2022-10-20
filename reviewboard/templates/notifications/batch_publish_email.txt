@@ -1,0 +1,21 @@
+{% autoescape off %}{% load djblets_email djblets_utils %}
+-----------------------------------------------------------
+This is an automatically generated e-mail. To reply, visit:
+{{site_url}}{{review.get_absolute_url}}
+-----------------------------------------------------------
+{%  if review_request_changed %}
+{%   include "notifications/review_request_email_content.txt" %}
+{%  endif %}
+{%  for review in reviews %}{% with review.comment_entries as comment_entries %}
+{%   include "notifications/review_email_content.txt" %}
+{%  endwith %}{% endfor %}
+{%  for reply in review_replies %}{% with reply.base_reply_to as review %}{% with reply.comment_entries as comment_entries %}
+{%   include "notifications/reply_email_content.txt" %}
+{%  endwith %}{% endwith %}{% endfor %}
+
+- {{user|user_displayname}}
+{%  if not review_request_changed %}
+On {{review_request.time_emailed}}, {{review_request.submitter|user_displayname}} wrote:
+{%   quoted_email "notifications/review_request_email_content.txt" %}
+{%  endif %}
+{% endautoescape %}
