@@ -501,7 +501,7 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
     _onCustomPolicyClicked() {
         const view = new PolicyEditorView({
             model: this.model,
-            prevPolicyType: this.model.previous('policyType')
+            prevPolicyType: this.model.get('policyType')
         });
         view.render();
 
