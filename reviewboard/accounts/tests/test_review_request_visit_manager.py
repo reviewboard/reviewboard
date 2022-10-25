@@ -1,6 +1,7 @@
 """Unit tests for reviewboard.accounts.managers.ReviewRequestVisitManager."""
 
 from django.contrib.auth.models import User
+from django.db.models import Q
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.testing import TestCase
@@ -31,11 +32,24 @@ class ReviewRequestVisitTests(TestCase):
         review_request = self.create_review_request(publish=True)
         user = User.objects.get(username='admin')
 
-        ReviewRequestVisit.objects.create(
+        visit = ReviewRequestVisit.objects.create(
             review_request=review_request, user=user,
             visibility=ReviewRequestVisit.VISIBLE)
 
-        with self.assertNumQueries(1):
+        queries = [
+            {
+                'model': ReviewRequestVisit,
+                'select_for_update': True,
+                'where': Q(review_request=review_request, user=user),
+            },
+            {
+                'model': ReviewRequestVisit,
+                'type': 'UPDATE',
+                'where': Q(pk=visit.pk),
+            },
+        ]
+
+        with self.assertQueries(queries, num_statements=4):
             visit = ReviewRequestVisit.objects.update_visibility(
                 review_request, user, ReviewRequestVisit.VISIBLE)
 
