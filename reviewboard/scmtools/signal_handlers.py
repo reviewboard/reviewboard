@@ -61,9 +61,9 @@ def _migrate_scmtool_ids(instance, **kwargs):
                 try:
                     instance.save(update_fields=('scmtool_id',))
                 except Exception as e:
-                    logging.error('Unable to save migrated scmtool_id "%s" '
-                                  'for repository ID %s: %s',
-                                  scmtool_id, instance.pk, e)
+                    logger.error('Unable to save migrated scmtool_id "%s" '
+                                 'for repository ID %s: %s',
+                                 scmtool_id, instance.pk, e)
 
 
 def connect_signal_handlers():

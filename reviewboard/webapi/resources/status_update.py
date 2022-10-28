@@ -123,7 +123,7 @@ class StatusUpdateResource(WebAPIResource):
                 Additional keyword arguments (unused).
 
         Returns:
-            boolean:
+            bool:
             Whether the user making the request has read access for the status
             update.
         """

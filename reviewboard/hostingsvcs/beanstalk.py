@@ -24,6 +24,9 @@ from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
 
 
+logger = logging.getLogger(__name__)
+
+
 class BeanstalkAuthForm(HostingServiceAuthForm):
     """Authentication form for the Beanstalk hosting service.
 
@@ -114,11 +117,11 @@ class BeanstalkHookViews(object):
                     payload, server_url, local_site_name, repository_id,
                     hosting_service_id)
         except KeyError as e:
-            logging.error('There is no JSON payload in the POST request.: %s',
-                          e)
+            logger.error('There is no JSON payload in the POST request.: %s',
+                         e)
             return HttpResponse(status=415)
         except ValueError as e:
-            logging.error('The payload is not in JSON format: %s', e)
+            logger.error('The payload is not in JSON format: %s', e)
             return HttpResponse(status=415)
 
         return HttpResponse()

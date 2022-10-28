@@ -115,7 +115,7 @@ review_request_reopened = Signal()
 #:     review (reviewboard.reviews.models.Review):
 #:         The review that's being published.
 #:
-#:     to_owner_only (boolean):
+#:     to_owner_only (bool):
 #:         Whether the review e-mail should be sent only to the review request
 #:         submitter.
 review_publishing = Signal()
@@ -156,9 +156,12 @@ review_ship_it_revoked = Signal()
 #:     review (reviewboard.reviews.models.Review):
 #:         The review that was published.
 #:
-#:     to_owner_only (boolean):
+#:     to_owner_only (bool):
 #:         Whether the review e-mail should be sent only to the review request
 #:         submitter.
+#:
+#:     trivial (bool):
+#:         Whether to skip e-mail notifications entirely.
 #:
 #:     request (django.http.HttpRequest):
 #:         The request object if the review was published from an HTTP request.

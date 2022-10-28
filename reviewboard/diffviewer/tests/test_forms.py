@@ -413,7 +413,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
              b'index %s..%s 100644\n'
              b'--- a/bar\n'
              b'+++ b/bar\n'
-             b'@@ -1,2 +1,3 @@\n'
+             b'@@ -1,1 +1,2 @@\n'
              b' Foo\n'
              b'+Bar\n') % (revisions[0], revisions[1]),
             content_type='text/x-patch')
@@ -476,7 +476,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
              b'index %s..%s 100644\n'
              b'--- a/foo\n'
              b'+++ b/bar\n'
-             b'@@ -1,2 +1,3 @@\n'
+             b'@@ -1,1 +1,2 @@\n'
              b' Foo\n'
              b'+Bar\n') % (revisions[0], revisions[1]),
             content_type='text/x-patch')
@@ -487,7 +487,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
              b'index %s..%s 100644\n'
              b'--- a/bar\n'
              b'+++ b/bar\n'
-             b'@@ -1,3 +1,4 @@\n'
+             b'@@ -1,2 +1,3 @@\n'
              b' Foo\n'
              b' Bar\n'
              b'+Baz\n') % (revisions[1], revisions[2]),

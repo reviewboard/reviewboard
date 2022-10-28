@@ -17,6 +17,9 @@ from reviewboard.scmtools.crypto_utils import (decrypt_password,
 from reviewboard.scmtools.errors import FileNotFoundError
 
 
+logger = logging.getLogger(__name__)
+
+
 class CodebaseHQAuthForm(HostingServiceAuthForm):
     api_key = forms.CharField(
         label=_('API key'),
@@ -499,10 +502,10 @@ class CodebaseHQ(HostingService):
             info = self.client.api_get_repository(codebasehq_project_name,
                                                   codebasehq_repo_name)
         except HostingServiceAPIError as e:
-            logging.error('Error finding Codebase repository "%s" for '
-                          'project "%s": %s',
-                          codebasehq_repo_name, codebasehq_project_name,
-                          e)
+            logger.error('Error finding Codebase repository "%s" for '
+                         'project "%s": %s',
+                         codebasehq_repo_name, codebasehq_project_name,
+                         e)
 
             raise RepositoryError(
                 gettext('A repository with this name and project was '
@@ -511,9 +514,9 @@ class CodebaseHQ(HostingService):
         try:
             scm_type = info['repository']['scm']
         except KeyError:
-            logging.error('Missing "scm" field for Codebase HQ repository '
-                          'payload: %r',
-                          info)
+            logger.error('Missing "scm" field for Codebase HQ repository '
+                         'payload: %r',
+                         info)
 
             raise RepositoryError(
                 gettext('Unable to determine the type of repository '
@@ -522,9 +525,9 @@ class CodebaseHQ(HostingService):
         try:
             expected_tool_name = self.REPO_SCM_TOOL_MAP[scm_type]
         except KeyError:
-            logging.error('Unexpected "scm" value "%s" for Codebase HQ '
-                          'repository, using payload: %r',
-                          scm_type, info)
+            logger.error('Unexpected "scm" value "%s" for Codebase HQ '
+                         'repository, using payload: %r',
+                         scm_type, info)
 
             raise RepositoryError(
                 gettext('Unable to determine the type of repository '
@@ -571,9 +574,9 @@ class CodebaseHQ(HostingService):
             if e.http_code == 404:
                 raise FileNotFoundError(path, revision)
             else:
-                logging.warning('Failed to fetch file from Codebase HQ '
-                                'repository %s: %s',
-                                repository, e)
+                logger.warning('Failed to fetch file from Codebase HQ '
+                               'repository %s: %s',
+                               repository, e)
                 raise
 
     def get_file_exists(self, repository, path, revision, *args, **kwargs):

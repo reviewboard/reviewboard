@@ -16,6 +16,9 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 
 
+logger = logging.getLogger(__name__)
+
+
 class FileAttachmentHistory(models.Model):
     """Revision history for a single file attachment.
 
@@ -149,9 +152,9 @@ class FileAttachment(models.Model):
         try:
             return self.mimetype_handler.get_thumbnail()
         except Exception as e:
-            logging.error('Error when calling get_thumbnail for '
-                          'MimetypeHandler %r: %s',
-                          self.mimetype_handler, e, exc_info=True)
+            logger.error('Error when calling get_thumbnail for '
+                         'MimetypeHandler %r: %s',
+                         self.mimetype_handler, e, exc_info=True)
             return None
 
     def _set_thumbnail(self, data):
@@ -162,9 +165,9 @@ class FileAttachment(models.Model):
         try:
             self.mimetype_handler.set_thumbnail(data)
         except Exception as e:
-            logging.error('Error when calling get_thumbnail for '
-                          'MimetypeHandler %r: %s',
-                          self.mimetype_handler, e, exc_info=True)
+            logger.error('Error when calling get_thumbnail for '
+                         'MimetypeHandler %r: %s',
+                         self.mimetype_handler, e, exc_info=True)
             return None
 
     thumbnail = property(_get_thumbnail, _set_thumbnail)
@@ -199,9 +202,9 @@ class FileAttachment(models.Model):
         try:
             return self.mimetype_handler.get_icon_url()
         except Exception as e:
-            logging.error('Error when calling get_thumbnail for '
-                          'MimetypeHandler %r: %s',
-                          self.mimetype_handler, e, exc_info=True)
+            logger.error('Error when calling get_thumbnail for '
+                         'MimetypeHandler %r: %s',
+                         self.mimetype_handler, e, exc_info=True)
             return None
 
     @property

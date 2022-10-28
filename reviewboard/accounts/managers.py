@@ -184,18 +184,12 @@ class ReviewRequestVisitManager(ConcurrencyManager):
             reviewboard.accounts.models.ReviewRequestVisit:
             The review request visit.
         """
-        visit, is_new = self.get_or_create(
+        return self.update_or_create(
             user=user,
             review_request=review_request,
             defaults={
                 'visibility': new_visibility,
-            })
-
-        if not is_new and visit.visibility != new_visibility:
-            visit.visibility = new_visibility
-            visit.save(update_fields=['visibility'])
-
-        return visit
+            })[0]
 
 
 class TrophyManager(Manager):

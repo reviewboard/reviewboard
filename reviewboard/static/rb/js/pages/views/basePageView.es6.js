@@ -223,7 +223,7 @@ RB.PageView = Backbone.View.extend({
      * mode, allowing subclasses to adjust any UI elements as appropriate.
      *
      * Args:
-     *     inMobileMode (bool):
+     *     inMobileMode (boolean):
      *         Whether the UI is now in mobile mode. This will be the same
      *         value as :js:attr:`inMobileMode`, and is just provided for
      *         convenience.

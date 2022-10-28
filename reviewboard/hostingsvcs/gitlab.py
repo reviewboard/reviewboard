@@ -25,6 +25,9 @@ from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.scmtools.core import Branch, Commit
 
 
+logger = logging.getLogger(__name__)
+
+
 class GitLabAPIVersionError(HostingServiceError):
     """Raised if we cannot determine the API version."""
 
@@ -349,16 +352,16 @@ class GitLab(HostingService):
                     gettext('A GitLab server was not found at the '
                             'provided URL.'))
             else:
-                logging.exception('Unexpected HTTP error when linking GitLab '
-                                  'account for %s: %s',
-                                  username, e)
+                logger.exception('Unexpected HTTP error when linking GitLab '
+                                 'account for %s: %s',
+                                 username, e)
                 raise HostingServiceError(
                     gettext('Unexpected HTTP error %s.')
                     % e.code)
         except Exception as e:
-            logging.exception('Unexpected error when linking GitLab account '
-                              'for %s: %s',
-                              username, e)
+            logger.exception('Unexpected error when linking GitLab account '
+                             'for %s: %s',
+                             username, e)
             raise HostingServiceError(
                 gettext('Unexpected error "%s"') % e)
 

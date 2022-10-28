@@ -1358,10 +1358,10 @@ class ReviewRequest(BaseReviewRequestDetails):
         """
         from reviewboard.accounts.models import LocalSiteProfile
 
-        groups = self.target_groups.values_list('pk', flat=True)
-        people = self.target_people.values_list('pk', flat=True)
+        groups = list(self.target_groups.values_list('pk', flat=True))
+        people = list(self.target_people.values_list('pk', flat=True))
 
-        Group.incoming_request_count.increment(groups)
+        Group.incoming_request_count.increment(self.target_groups.all())
         LocalSiteProfile.direct_incoming_request_count.increment(
             LocalSiteProfile.objects.filter(user__in=people,
                                             local_site=self.local_site))
@@ -1383,10 +1383,10 @@ class ReviewRequest(BaseReviewRequestDetails):
         """
         from reviewboard.accounts.models import LocalSiteProfile
 
-        groups = self.target_groups.values_list('pk', flat=True)
-        people = self.target_people.values_list('pk', flat=True)
+        groups = list(self.target_groups.values_list('pk', flat=True))
+        people = list(self.target_people.values_list('pk', flat=True))
 
-        Group.incoming_request_count.decrement(groups)
+        Group.incoming_request_count.decrement(self.target_groups.all())
         LocalSiteProfile.direct_incoming_request_count.decrement(
             LocalSiteProfile.objects.filter(
                 user__in=people,
