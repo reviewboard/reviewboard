@@ -134,7 +134,7 @@ class LDAPBackend(BaseAuthBackend):
             logger.warning('Attempted to authenticate "%s" with an empty '
                            'password against LDAP.',
                            username,
-                           request=request)
+                           extra={'request': request})
             return None
 
         ldapo = self._connect()
@@ -150,7 +150,7 @@ class LDAPBackend(BaseAuthBackend):
             logger.debug('Attempting to authenticate user DN "%s" '
                          '(username %s) in LDAP',
                          userdn, username,
-                         request=request)
+                         extra={'request': request})
             ldapo.bind_s(userdn, password)
 
             return self.get_or_create_user(username=username,
@@ -161,15 +161,15 @@ class LDAPBackend(BaseAuthBackend):
             logger.warning('Error authenticating user "%s": The credentials '
                            'provided were invalid',
                            username,
-                           request=request)
+                           extra={'request': request})
         except ldap.LDAPError as e:
             logger.warning('Error authenticating user "%s": %s',
                            username, e,
-                           request=request)
+                           extra={'request': request})
         except Exception as e:
             logger.exception('Unexpected error authenticating user "%s": %s',
                              username, e,
-                             request=request)
+                             extra={'request': request})
 
         return None
 
@@ -215,7 +215,7 @@ class LDAPBackend(BaseAuthBackend):
                          'python-ldap package is not installed! Please '
                          '`pip install ReviewBoard[ldap]`.',
                          username,
-                         request=request)
+                         extra={'request': request})
             return None
 
         try:
@@ -278,11 +278,12 @@ class LDAPBackend(BaseAuthBackend):
                     logger.error('Could not find the e-mail address for '
                                  'user "%s" using attribute "%s"',
                                  username, settings.LDAP_EMAIL_ATTRIBUTE,
-                                 request=request)
+                                 extra={'request': request})
                     email = ''
             else:
                 logger.warning('E-mail address for user "%s" is not specified',
-                               username)
+                               username,
+                               extra={'request': request})
                 email = ''
 
             user = User(username=username,
@@ -302,13 +303,13 @@ class LDAPBackend(BaseAuthBackend):
                            settings.LDAP_BASE_DN,
                            e,
                            exc_info=True,
-                           request=request)
+                           extra={'request': request})
         except ldap.LDAPError as e:
             logger.warning('Unexpected LDAP error when locating user "%s": %s',
                            username,
                            e,
                            exc_info=True,
-                           request=request)
+                           extra={'request': request})
 
         return None
 
@@ -354,20 +355,20 @@ class LDAPBackend(BaseAuthBackend):
                 logger.warning('Error authenticating with LDAP: The '
                                'credentials provided for "%s" were invalid.',
                                settings.LDAP_ANON_BIND_UID,
-                               request=request)
+                               extra={'request': request})
             else:
                 logger.warning('Error authenticating with LDAP: Anonymous '
                                'access to this server is not permitted.',
-                               request=request)
+                               extra={'request': request})
         except ldap.LDAPError as e:
             logger.warning('Error authenticating with LDAP: %s',
                            e,
-                           request=request)
+                           extra={'request': request})
         except Exception as e:
             logger.exception('Unexpected error occurred while authenticating '
                              'with LDAP: %s',
                              e,
-                             request=request)
+                             extra={'request': request})
 
         return None
 
@@ -416,15 +417,15 @@ class LDAPBackend(BaseAuthBackend):
             logger.warning('LDAP error: The specified object does '
                            'not exist in the Directory: %s',
                            username,
-                           request=request)
+                           extra={'request': request})
         except ldap.LDAPError as e:
             logger.warning('Error authenticating user "%s" in LDAP: %s',
                            username, e,
-                           request=request)
+                           extra={'request': request})
         except Exception as e:
             logger.exception('Unexpected error authenticating user "%s" '
                              'in LDAP: %s',
                              username, e,
-                             request=request)
+                             extra={'request': request})
 
         return None

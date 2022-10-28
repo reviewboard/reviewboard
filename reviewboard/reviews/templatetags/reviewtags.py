@@ -477,7 +477,8 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
             except Exception as e:
                 logger.exception(
                     'Error instantiating ReviewRequestFieldset %r: %s',
-                    fieldset_cls, e)
+                    fieldset_cls, e,
+                    extra={'request': request})
             else:
                 if fieldset.should_render:
                     # Note that update() implies push().
@@ -500,7 +501,8 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
                     is_first = False
         except Exception as e:
             logger.error('Error running is_empty for ReviewRequestFieldset '
-                         '%r: %s', fieldset_cls, e, exc_info=True)
+                         '%r: %s', fieldset_cls, e, exc_info=True,
+                         extra={'request': request})
 
     return mark_safe(''.join(s))
 
@@ -536,7 +538,8 @@ def review_request_field(context, nodelist, review_request_details, field_id):
         field = field_cls(review_request_details, request=request)
     except Exception as e:
         logger.exception('Error instantiating field %r: %s',
-                         field_id, e)
+                         field_id, e,
+                         extra={'request': request})
         return ''
 
     context.push()

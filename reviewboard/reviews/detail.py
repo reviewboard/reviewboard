@@ -980,7 +980,8 @@ class BaseReviewRequestPageEntry(object):
         except Exception as e:
             logger.exception('Error generating template context for %s '
                              '(ID=%s): %s',
-                             self.__class__.__name__, self.entry_id, e)
+                             self.__class__.__name__, self.entry_id, e,
+                             extra={'request': request})
             return ''
 
         try:
@@ -989,7 +990,8 @@ class BaseReviewRequestPageEntry(object):
                                     request=request)
         except Exception as e:
             logger.exception('Error rendering template for %s (ID=%s): %s',
-                             self.__class__.__name__, self.entry_id, e)
+                             self.__class__.__name__, self.entry_id, e,
+                             extra={'request': request})
             return ''
 
     def finalize(self):

@@ -178,7 +178,8 @@ class BitbucketHookViews(object):
         try:
             payload = json.loads(request.body.decode('utf-8'))
         except ValueError as e:
-            logger.error('The payload is not in JSON format: %s', e)
+            logger.error('The payload is not in JSON format: %s', e,
+                         extra={'request': request})
             return HttpResponseBadRequest('Invalid payload format')
 
         server_url = get_server_url(request=request)

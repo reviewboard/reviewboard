@@ -89,12 +89,14 @@ class HTTPDigestBackend(BaseAuthBackend):
                     except ValueError as e:
                         logger.exception('Error parsing HTTP Digest password '
                                          'file "%s" at line %d: %s',
-                                         filename, line_no, e)
+                                         filename, line_no, e,
+                                         extra={'request': request})
                         break
         except IOError as e:
             logger.exception('Could not open the HTTP Digest password '
                              'file "%s": %s',
-                             filename, e)
+                             filename, e,
+                             extra={'request': request})
 
         return None
 

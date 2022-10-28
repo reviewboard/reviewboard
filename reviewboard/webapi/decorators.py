@@ -125,8 +125,7 @@ def webapi_check_local_site(view_func):
                 if request.user.is_authenticated:
                     logger.warning(
                         'User does not have access to local site.',
-                        request=request,
-                    )
+                        extra={'request': request})
                     return PERMISSION_DENIED
                 else:
                     return NOT_LOGGED_IN
@@ -135,24 +134,21 @@ def webapi_check_local_site(view_func):
                     'OAuth token using disabled application "%s" (%d).',
                     oauth_token.application.name,
                     oauth_token.application.pk,
-                    request=request,
-                )
+                    extra={'request': request})
                 return PERMISSION_DENIED
             elif oauth_token and not restrict_to_local_site:
                 # OAuth tokens for applications on the global site cannot be
                 # used on a local site.
                 logger.warning(
                     'OAuth token is for root, not local site.',
-                    request=request,
-                )
+                    extra={'request': request})
                 return PERMISSION_DENIED
             elif (restrict_to_local_site and
                   restrict_to_local_site != local_site.pk):
                 logger.warning(
                     '%s token does not have access to local site.',
                     token_type,
-                    request=request,
-                )
+                    extra={'request': request})
                 return PERMISSION_DENIED
 
             kwargs['local_site'] = local_site
@@ -161,8 +157,7 @@ def webapi_check_local_site(view_func):
                 '%s token is limited to a local site but the request was for '
                 'the root.',
                 token_type,
-                request=request,
-            )
+                extra={'request': request})
             return PERMISSION_DENIED
         else:
             kwargs['local_site'] = None

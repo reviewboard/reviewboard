@@ -139,8 +139,8 @@ class FileSSHStorage(SSHStorage):
 
             return lines
         except IOError as e:
-            logger.warning('Unable to read SSH authorized_keys file %s: %s'
-                           % (filename, e))
+            logger.warning('Unable to read SSH authorized_keys file %s: %s',
+                           filename, e)
             raise
 
     def read_host_keys(self):
@@ -156,8 +156,8 @@ class FileSSHStorage(SSHStorage):
                         if line and line[0] != '#':
                             lines.append(line)
             except IOError as e:
-                logger.error('Unable to read host keys file %s: %s'
-                             % (filename, e))
+                logger.error('Unable to read host keys file %s: %s',
+                             filename, e)
 
         return lines
 

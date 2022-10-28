@@ -87,7 +87,8 @@ class Group(models.Model):
                 logger.warning('Group pk=%d (%s) is not accessible by user '
                                '%s because its local_site is not accessible '
                                'by that user.',
-                               self.pk, self.name, user, request=request)
+                               self.pk, self.name, user,
+                               extra={'request': request})
             return False
 
         if not self.invite_only or user.is_superuser:
@@ -100,7 +101,8 @@ class Group(models.Model):
             logger.warning('Group pk=%d (%s) is not accessible by user %s '
                            'because it is invite only, and the user is not a '
                            'member.',
-                           self.pk, self.name, user, request=request)
+                           self.pk, self.name, user,
+                           extra={'request': request})
 
         return False
 

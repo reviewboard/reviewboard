@@ -851,15 +851,15 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             }
         except HostingServiceError as e:
             logger.exception('Got unexpected HostingServiceError when '
-                             'creating repository: %s'
-                             % e,
-                             request=request)
+                             'creating repository: %s',
+                             e,
+                             extra={'request': request})
             return REPO_INFO_ERROR.with_message(str(e))
         except SSHError as e:
             logger.exception('Got unexpected SSHError when creating '
                              'review request: %s',
                              e,
-                             request=request)
+                             extra={'request': request})
             return REPO_INFO_ERROR.with_message('SSH Error: %s' % e)
         except SCMError as e:
             return REPO_INFO_ERROR.with_message(str(e))

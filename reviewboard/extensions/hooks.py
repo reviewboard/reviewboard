@@ -1,5 +1,4 @@
 import logging
-import warnings
 
 from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
@@ -1021,9 +1020,8 @@ class BaseReviewRequestActionHook(AppliesToURLMixin, ActionHook,
                 'The class-based actions API is experimental and will '
                 'change in a future release. It must be enabled before '
                 'it can be used. The actions from %r will not be '
-                'registered.'
-                % self
-            )
+                'registered.',
+                self)
             actions = []
 
         self.actions = self._register_actions(actions)

@@ -124,7 +124,8 @@ def js_user_session_info(context):
             if avatar_service is None:
                 logger.error('Could not get a suitable avatar service for '
                              'user %s in js_session_info().',
-                             user)
+                             user,
+                             extra={'request': request})
             else:
                 # Fetch a 32x32 avatar URL (and any variants for different
                 # screen DPIs). We only fetch 32x32 for historical reasons,

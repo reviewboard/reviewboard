@@ -305,7 +305,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
             logger.error('Unexpected review request status %r for '
                          'review request %s',
                          status, review_request.display_id,
-                         request=self.request)
+                         extra={'request': request})
 
             return mark_safe('')
 

@@ -338,7 +338,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
                 logger.warning('Disallowing %s for API resource %r because '
                                'feature %s is not enabled',
                                method, self, feature.feature_id,
-                               request=request)
+                               extra={'request': request})
                 return PERMISSION_DENIED
 
         if (is_site_read_only_for(request.user) and

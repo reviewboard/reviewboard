@@ -118,10 +118,12 @@ class BeanstalkHookViews(object):
                     hosting_service_id)
         except KeyError as e:
             logger.error('There is no JSON payload in the POST request.: %s',
-                         e)
+                         e,
+                         extra={'request': request})
             return HttpResponse(status=415)
         except ValueError as e:
-            logger.error('The payload is not in JSON format: %s', e)
+            logger.error('The payload is not in JSON format: %s', e,
+                         extra={'request': request})
             return HttpResponse(status=415)
 
         return HttpResponse()

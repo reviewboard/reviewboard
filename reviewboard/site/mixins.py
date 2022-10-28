@@ -205,7 +205,7 @@ class LocalSiteAwareModelFormMixin(object):
                                  self.instance.local_site,
                                  self.__class__,
                                  local_site,
-                                 request=request)
+                                 extra={'request': request})
 
                     raise ValueError(
                         _('The provided instance is not associated with a '

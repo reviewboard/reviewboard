@@ -326,7 +326,7 @@ class DraftDiffCommitResource(DiffCommitResource):
             }
         except Exception as e:
             logger.exception('Error uploading new commit: %s', e,
-                             request=request)
+                             extra={'request': request})
 
             return INVALID_FORM_DATA, {
                 'fields': {

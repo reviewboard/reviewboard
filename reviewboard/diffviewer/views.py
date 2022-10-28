@@ -120,10 +120,12 @@ class DiffViewerView(TemplateView):
         if interdiffset:
             logger.debug('Generating diff viewer page for interdiffset '
                          'ids %s-%s',
-                         diffset.id, interdiffset.id, request=request)
+                         diffset.id, interdiffset.id,
+                         extra={'request': request})
         else:
             logger.debug('Generating diff viewer page for filediff id %s',
-                         diffset.id, request=request)
+                         diffset.id,
+                         extra={'request': request})
 
         try:
             response = super(DiffViewerView, self).get(
@@ -133,11 +135,13 @@ class DiffViewerView(TemplateView):
             if interdiffset:
                 logger.debug('Done generating diff viewer page for '
                              'interdiffset ids %s-%s',
-                             diffset.id, interdiffset.id, request=request)
+                             diffset.id, interdiffset.id,
+                             extra={'request': request})
             else:
                 logger.debug('Done generating diff viewer page for filediff '
                              'id %s',
-                             diffset.id, request=request)
+                             diffset.id,
+                             extra={'request': request})
 
             return response
         except Exception as e:
@@ -152,7 +156,7 @@ class DiffViewerView(TemplateView):
                              diffset.pk,
                              interdiffset_id,
                              e,
-                             request=request)
+                             extra={'request': request})
 
             return exception_traceback(request, e, self.template_name)
 
@@ -430,7 +434,7 @@ class DiffFragmentView(View):
                              interfilediff_id,
                              chunk_index,
                              e,
-                             request=request)
+                             extra={'request': request})
 
             return exception_traceback(self.request, e,
                                        self.error_template_name)
@@ -454,7 +458,7 @@ class DiffFragmentView(View):
                 interfilediff_id,
                 chunk_index,
                 e,
-                request=request)
+                extra={'request': request})
 
             try:
                 url_kwargs = {
@@ -508,7 +512,7 @@ class DiffFragmentView(View):
                              interfilediff_id,
                              chunk_index,
                              e,
-                             request=request)
+                             extra={'request': request})
 
             return exception_traceback(
                 self.request, e, self.error_template_name,
@@ -813,7 +817,7 @@ class DownloadPatchErrorBundleView(DiffFragmentView):
                 kwargs.get('interfilediff_id'),
                 kwargs.get('chunk_index'),
                 e,
-                request=request)
+                extra={'request': request})
             return HttpResponseServerError()
 
         kwargs.update(diff_info_or_response)
@@ -837,7 +841,7 @@ class DownloadPatchErrorBundleView(DiffFragmentView):
                 kwargs.get('interfilediff_id'),
                 kwargs.get('chunk_index'),
                 e,
-                request=request)
+                extra={'request': request})
             return HttpResponseServerError()
         else:
             return HttpResponseNotFound()

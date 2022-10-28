@@ -365,12 +365,12 @@ class Gerrit(HostingService):
                 logger.exception(
                     'Could not parse gerrit-reviewboard plugin version "%s" '
                     'from %s: %s',
-                    version, url, e)
+                    version_str, url, e)
                 raise RepositoryError(
                     gettext('Could not parse gerrit-reviewboard version: '
                             '"%(version)s" from URL %(url)s: %(error)s')
                     % {
-                        'version': version,
+                        'version': version_str,
                         'error': e,
                         'url': url,
                     })

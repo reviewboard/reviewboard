@@ -228,7 +228,7 @@ class ValidateDiffCommitResource(WebAPIResource):
                 repository.name,
                 repository.pk,
                 base_commit_id,
-                request=request)
+                extra={'request': request})
             return DIFF_PARSE_ERROR.with_message(
                 'Unexpected error while validating the diff: %s' % e)
 

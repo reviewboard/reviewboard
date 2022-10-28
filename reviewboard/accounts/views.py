@@ -161,7 +161,8 @@ class UserInfoboxView(CheckLoginRequiredViewMixin,
             except Exception as e:
                 logger.exception('Error when running UserInfoboxHook.'
                                  'get_etag_data method in extension "%s": %s',
-                                 hook.extension.id, e)
+                                 hook.extension.id, e,
+                                 extra={'request': request})
 
         return ':'.join(etag_data)
 
@@ -198,7 +199,8 @@ class UserInfoboxView(CheckLoginRequiredViewMixin,
             except Exception as e:
                 logger.exception('Error when running UserInfoboxHook.'
                                  'render method in extension "%s": %s',
-                                 hook.extension.id, e)
+                                 hook.extension.id, e,
+                                 extra={'request': self.request})
 
         review_requests_url = local_site_reverse('user', local_site=local_site,
                                                  args=[username])

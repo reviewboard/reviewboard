@@ -90,7 +90,8 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             except Exception as e:
                 logger.exception('Error when calling populate_users for auth '
                                  'backend %r: %s',
-                                 backend, e)
+                                 backend, e,
+                                 extra={'request': request})
 
         local_site = self._get_local_site(local_site_name)
         is_list = kwargs.get('is_list', False)
@@ -122,7 +123,8 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                     logger.exception(
                         'Error when calling build_search_users_query for '
                         'auth backend %r: %s',
-                        backend, e)
+                        backend, e,
+                        extra={'request': request})
 
                 if q:
                     break
@@ -215,7 +217,8 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                     except Exception as e:
                         logger.exception('Error rendering avatar at size %s '
                                          'for user %s: %s',
-                                         size, user, e)
+                                         size, user, e,
+                                         extra={'request': request})
 
         return renders or None
 
@@ -591,7 +594,8 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                     logger.exception(
                         'Error when calling update_name for auth backend '
                         '%r for user ID %s: %s',
-                        backend, user.pk, e)
+                        backend, user.pk, e,
+                        extra={'request': request})
 
             if 'email' in updated_fields:
                 try:
@@ -600,7 +604,8 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                     logger.exception(
                         'Error when calling update_email for auth backend '
                         '%r for user ID %s: %s',
-                        backend, user.pk, e)
+                        backend, user.pk, e,
+                        extra={'request': request})
 
             user.save(update_fields=updated_fields)
 

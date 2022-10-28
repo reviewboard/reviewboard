@@ -45,7 +45,7 @@ from reviewboard.admin.server import get_server_url
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class SAMLViewMixin(View):
@@ -249,20 +249,22 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
             auth.process_response(request_id=session.get('AuthNRequestID'))
         except OneLogin_Saml2_Error as e:
             logger.exception('SAML: Unable to process SSO request: %s', e,
-                             exc_info=True)
+                             exc_info=True, extra={'request': request})
             return HttpResponseBadRequest('Bad SSO response: %s' % str(e),
                                           content_type='text/plain')
 
         if (self.is_replay_attack(auth.get_last_message_id()) or
             self.is_replay_attack(auth.get_last_assertion_id())):
-            logger.error('SAML: Detected replay attack', request=request)
+            logger.error('SAML: Detected replay attack',
+                         extra={'request': request})
             return HttpResponseBadRequest(
                 'SAML message IDs have already been used')
 
         error = auth.get_last_error_reason()
 
         if error:
-            logger.error('SAML: Unable to process SSO request: %s', error)
+            logger.error('SAML: Unable to process SSO request: %s', error,
+                         extra={'request': request})
             return HttpResponseBadRequest('Bad SSO response: %s' % error,
                                           content_type='text/plain')
 
@@ -286,7 +288,8 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
                 first_name = self._get_user_attr_value(auth, 'User.FirstName')
                 last_name = self._get_user_attr_value(auth, 'User.LastName')
             except KeyError as e:
-                logger.error('SAML: Assertion is missing %s attribute', e)
+                logger.error('SAML: Assertion is missing %s attribute', e,
+                             extra={'request': request})
                 return HttpResponseBadRequest('Bad SSO response: assertion is '
                                               'missing %s attribute'
                                               % e,
@@ -536,7 +539,7 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
 
             logger.info('SAML: Provisioning user "%s" (%s <%s %s>)',
                         self._provision_username, self._sso_data_email,
-                        first_name, last_name)
+                        first_name, last_name, extra={'request': self.request})
 
             user = User.objects.create(
                 username=self._provision_username,
@@ -562,7 +565,7 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
         sso_id = self._sso_user_data.get('id')
 
         logger.info('SAML: Linking SSO user "%s" to Review Board user "%s"',
-                    sso_id, user.username)
+                    sso_id, user.username, extra={'request': self.request})
 
         user.linked_accounts.create(
             service_id='sso:saml',
@@ -631,7 +634,8 @@ class SAMLMetadataView(SAMLViewMixin, BaseSSOView):
 
         if errors:
             logger.error('SAML: Got errors from metadata validation: %s',
-                         ', '.join(errors))
+                         ', '.join(errors),
+                         extra={'request': request})
             return HttpResponseServerError(', '.join(errors),
                                            content_type='text/plain')
 
@@ -674,14 +678,16 @@ class SAMLSLSView(SAMLViewMixin, BaseSSOView):
 
         if (self.is_replay_attack(auth.get_last_message_id()) or
             self.is_replay_attack(auth.get_last_request_id())):
-            logger.error('SAML: Detected replay attack', request=request)
+            logger.error('SAML: Detected replay attack',
+                         extra={'request': request})
             return HttpResponseBadRequest(
                 'SAML message IDs have already been used')
 
         error = auth.get_last_error_reason()
 
         if error:
-            logger.error('SAML: Unable to process SLO request: %s', error)
+            logger.error('SAML: Unable to process SLO request: %s', error,
+                         extra={'request': request})
             return HttpResponseBadRequest('Bad SLO response: %s' % error,
                                           content_type='text/plain')
 

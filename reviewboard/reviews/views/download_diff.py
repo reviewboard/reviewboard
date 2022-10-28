@@ -75,7 +75,8 @@ class DownloadDiffFileView(ReviewRequestViewMixin, View):
             logger.exception(
                 'Could not retrieve file "%s" (revision %s) for filediff '
                 'ID %s',
-                filediff.dest_detail, revision, filediff_id)
+                filediff.dest_detail, revision, filediff_id,
+                extra={'request': request})
             raise Http404
 
         if self.file_type == self.TYPE_MODIFIED:

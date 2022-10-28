@@ -60,7 +60,7 @@ class BasePatchedFileResource(WebAPIResource):
                          '%s: %s',
                          self.__class__.__name__, filediff.pk, e,
                          exc_info=True,
-                         request=request)
+                         extra={'request': request})
             return FILE_RETRIEVAL_ERROR
 
         try:
@@ -72,7 +72,7 @@ class BasePatchedFileResource(WebAPIResource):
                          '%s: %s',
                          self.__class__.__name__, filediff.pk, e,
                          exc_info=True,
-                         request=request)
+                         extra={'request': request})
             return FILE_RETRIEVAL_ERROR
 
         resp = HttpResponse(patched_file, content_type='text/plain')

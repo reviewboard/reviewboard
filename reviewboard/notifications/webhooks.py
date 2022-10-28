@@ -332,7 +332,8 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                 logger.exception('WebHook payload passed to '
                                  'dispatch_webhook_event containing invalid '
                                  'data types: %s',
-                                 e)
+                                 e,
+                                 extra={'request': request})
 
                 raise ValueError(str(e))
 
@@ -343,7 +344,8 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                                              raw_norm_payload)
                 body = force_bytes(body)
             except Exception as e:
-                logger.exception('Could not render WebHook payload: %s', e)
+                logger.exception('Could not render WebHook payload: %s', e,
+                                 extra={'request': request})
                 continue
         else:
             if encoding not in bodies:
@@ -368,11 +370,13 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                     else:
                         logger.error('Unexpected WebHookTarget encoding "%s" '
                                      'for ID %s',
-                                     encoding, webhook_target.pk)
+                                     encoding, webhook_target.pk,
+                                     extra={'request': request})
                         continue
                 except Exception as e:
                     logger.exception('Could not encode WebHook payload: %s',
-                                     e)
+                                     e,
+                                     extra={'request': request})
                     continue
 
                 body = force_bytes(body)
@@ -393,7 +397,8 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
             headers['X-Hub-Signature'] = 'sha1=%s' % signer.hexdigest()
 
         logger.info('Dispatching webhook for event %s to %s',
-                    event, webhook_target.url)
+                    event, webhook_target.url,
+                    extra={'request': request})
 
         try:
             url = webhook_target.url
@@ -410,11 +415,13 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
             urlopen(Request(url, body, headers))
         except Exception as e:
             logger.exception('Could not dispatch WebHook to %s: %s',
-                             webhook_target.url, e)
+                             webhook_target.url, e,
+                             extra={'request': request})
 
             if isinstance(e, HTTPError):
                 logger.info('Error response from %s: %s %s\n%s',
-                            webhook_target.url, e.code, e.reason, e.read())
+                            webhook_target.url, e.code, e.reason, e.read(),
+                            extra={'request': request})
 
 
 def _serialize_review(review, request):
