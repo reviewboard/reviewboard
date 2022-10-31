@@ -25,6 +25,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_diff_comment'
     model_parent_key = 'review'
+    uri_template_name = None
 
     mimetype_list_resource_name = 'review-diff-comments'
     mimetype_item_resource_name = 'review-diff-comment'

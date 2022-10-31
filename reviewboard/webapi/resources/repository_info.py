@@ -22,6 +22,7 @@ class RepositoryInfoResource(WebAPIResource):
     singleton = True
     allowed_methods = ('GET',)
     mimetype_item_resource_name = 'repository-info'
+    uri_template_name = 'repository_info'
 
     @webapi_check_local_site
     @webapi_check_login_required

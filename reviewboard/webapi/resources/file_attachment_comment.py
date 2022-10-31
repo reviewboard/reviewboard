@@ -13,6 +13,7 @@ class FileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     comments will span all public reviews.
     """
     added_in = '1.6'
+    uri_template_name = 'all_reviews_file_attachment_comment'
 
     model_parent_key = 'file_attachment'
     uri_object_key = None

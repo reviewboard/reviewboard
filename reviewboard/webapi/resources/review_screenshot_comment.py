@@ -24,6 +24,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_screenshot_comment'
     model_parent_key = 'review'
+    uri_template_name_plural = None
 
     def get_queryset(self, request, review_id, *args, **kwargs):
         q = super(ReviewScreenshotCommentResource, self).get_queryset(

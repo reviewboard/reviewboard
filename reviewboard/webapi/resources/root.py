@@ -53,6 +53,34 @@ class RootResource(WebAPIResource, DjbletsRootResource):
         """Retrieves the list of top-level resources and templates."""
         pass
 
+    def get_uri_templates(self, request, *args, **kwargs):
+        """Return all URI templates in the resource tree.
+
+        Args:
+            request (django.http.HttpRequest):
+                The GET request for the Root resource.
+
+            *args (tuple, unused):
+                Additional unused arguments.
+
+            **kwargs (dict, unused):
+                Additional unused keyword arguments.
+
+        Returns:
+            dict:
+            A mapping of resources to their URI templates.
+        """
+        # Manually include this resource to maintain compatibility with
+        # our Python 2.7 API behavior. This is a bandaid for a larger
+        # issue that stems from resources that share the same name but
+        # have different URI templates.
+        base_href = request.build_absolute_uri()
+        self.register_uri_template(
+            name='search',
+            relative_path='%ssearch/{username}/' % base_href)
+
+        return super().get_uri_templates(request, *args, **kwargs)
+
     def serialize_root(self, request, *args, **kwargs):
         root = super(RootResource, self).serialize_root(request, *args,
                                                         **kwargs)

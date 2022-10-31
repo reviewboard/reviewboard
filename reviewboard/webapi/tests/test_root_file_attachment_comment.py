@@ -426,8 +426,8 @@ class ResourceListTests(BaseWebAPITestCase,
     @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_get_with_review_id(self):
-        """"Testing the GET <URL>/?review-id=<id> API returns only comments from
-        reviews that the requester has access to
+        """"Testing the GET <URL>/?review-id=<id> API returns only comments
+        from reviews that the requester has access to
         """
         # Publicly-accessible published review request.
         review_request = self.create_review_request(publish=True)
