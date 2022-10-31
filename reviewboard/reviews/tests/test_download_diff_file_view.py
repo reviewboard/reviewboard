@@ -29,7 +29,7 @@ class DownloadDiffFileViewTests(TestCase):
         super(DownloadDiffFileViewTests, self).setUp()
 
         self.account = HostingServiceAccount.objects.create(
-            service_name=TestService.name,
+            service_name=TestService.hosting_service_id,
             hosting_url='http://example.com/',
             username='foo')
 

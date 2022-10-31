@@ -1,5 +1,11 @@
+from typing import Optional
+
+from django.utils.translation import gettext_lazy as _
+
+
 class HostingServiceError(Exception):
     """Base class for errors related to a hosting service."""
+
     def __init__(self, message, http_code=None, help_link=None,
                  help_link_text=None):
         super(HostingServiceError, self).__init__(message)
@@ -57,6 +63,54 @@ class AuthorizationError(HostingServiceError):
     pass
 
 
+class MissingHostingServiceError(HostingServiceError):
+    """Indicates that the hosting service could not be loaded."""
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The ID of the hosting service associated with this error.
+    #:
+    #: Type:
+    #:     str
+    hosting_service_id: str
+
+    def __init__(
+        self,
+        hosting_service_id: str,
+        repository: Optional[str] = None,
+    ) -> None:
+        """Initialize the error.
+
+        Args:
+            hosting_service_id (str):
+                The ID of the hosting service that cannot be loaded.
+
+            repository (str, optional):
+                The name of the repository that is loading the hosting service.
+        """
+        if repository is not None:
+            message = _(
+                'The repository "%(repository)s" cannot load the hosting '
+                'service "%(hosting_service)s". An administrator should '
+                'ensure all necessary packages and extensions are installed.'
+            ) % {
+                'repository': repository,
+                'hosting_service': hosting_service_id,
+            }
+        else:
+            message = _(
+                'The hosting service "%s" could not be loaded. An '
+                'administrator should ensure all necessary packages and '
+                'extensions are installed.'
+            ) % hosting_service_id
+
+        super().__init__(message)
+
+        self.hosting_service_id = hosting_service_id
+
+
 class TwoFactorAuthCodeRequiredError(AuthorizationError):
     """Response from a service indicating a two-factor auth code is required.
 
@@ -70,6 +124,7 @@ class TwoFactorAuthCodeRequiredError(AuthorizationError):
 
 class InvalidPlanError(HostingServiceError):
     """Indicates an invalid plan name was used."""
+
     def __init__(self, plan):
         HostingServiceError.__init__(
             self,
