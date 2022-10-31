@@ -255,7 +255,7 @@ intersphinx_mapping = {
     'rb2.5': ('%s/docs/manual/2.5/' % rbwebsite_url, None),
     'rb3.0': ('%s/docs/manual/3.0/' % rbwebsite_url, None),
     'rb4.0': ('%s/docs/manual/4.0/' % rbwebsite_url, None),
-    'rb5.x': ('%s/docs/manual/dev/' % rbwebsite_url, None),
+    'rb5.x': ('%s/docs/manual/5.0/' % rbwebsite_url, None),
     'rb-dev': ('%s/docs/manual/dev/' % rbwebsite_url, None),
 }
 
