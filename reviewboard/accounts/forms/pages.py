@@ -221,6 +221,7 @@ class APITokensForm(AccountPageForm):
             'localSitePrefix': local_site_prefix,
             'tokens': [
                 {
+                    'deprecated': api_token.is_deprecated(),
                     'expired': api_token.is_expired(),
                     'expires': api_token.expires,
                     'id': api_token.pk,

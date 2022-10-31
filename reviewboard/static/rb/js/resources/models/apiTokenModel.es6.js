@@ -11,6 +11,7 @@ RB.APIToken = RB.BaseResource.extend({
      */
     defaults() {
         return _.defaults({
+            deprecated: false,
             expired: false,
             expires: null,
             invalidDate: null,
@@ -68,6 +69,7 @@ RB.APIToken = RB.BaseResource.extend({
      */
     parseResourceData(rsp) {
         return {
+            deprecated: rsp.deprecated,
             expired: rsp.expired,
             expires: rsp.expires,
             invalidDate: rsp.invalid_date,
