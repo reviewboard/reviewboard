@@ -1255,7 +1255,7 @@ class GitLab(HostingService):
         except HTTPError as e:
             if e.code == 401:
                 raise AuthorizationError(
-                    ugettext('The login or password is incorrect.'))
+                    gettext('The login or password is incorrect.'))
 
             raise
 
