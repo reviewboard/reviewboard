@@ -29,10 +29,10 @@ class RootReviewResource(BaseReviewResource):
         5.0
     """
 
-    uri_object_key = None
+    added_in = '5.0'
     allowed_methods = ('GET', )
     model = Review
-    added_in = '5.0'
+    uri_template_name = 'all_review'
 
     item_child_resources = [
         resources.review_diff_comment,

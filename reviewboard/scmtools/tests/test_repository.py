@@ -6,6 +6,9 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.hostingsvcs.errors import MissingHostingServiceError
+from reviewboard.hostingsvcs.github import GitHub
+from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.scmtools.git import GitTool
 from reviewboard.scmtools.models import Repository, Tool
@@ -458,6 +461,32 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
             base_commit_id=base_commit_id,
             request=request,
             context=context)
+
+    def test_hosting_service(self):
+        """Testing Repository.hosting_service with a valid hosting service"""
+        account = HostingServiceAccount.objects.create(
+            service_name=GitHub.hosting_service_id,
+            username='foo')
+        repository = self.create_repository(hosting_account=account)
+
+        with self.assertNumQueries(0):
+            self.assertIsInstance(repository.hosting_service, GitHub)
+
+    def test_hosting_service_cannot_load(self):
+        """Testing Repository.hosting_service with a hosting service
+        that cannot be loaded
+        """
+        account = HostingServiceAccount.objects.create(
+            service_name='blah',
+            username='foo')
+        repository = self.create_repository(hosting_account=account)
+        message = ('The repository "Test Repo" cannot load the hosting '
+                   'service "blah". An administrator should ensure all '
+                   'necessary packages and extensions are installed.')
+
+        with self.assertNumQueries(0):
+            with self.assertRaisesMessage(MissingHostingServiceError, message):
+                repository.hosting_service
 
     def test_repository_name_with_255_characters(self):
         """Testing Repository.name with 255 characters"""

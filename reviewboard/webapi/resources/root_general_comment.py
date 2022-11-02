@@ -28,11 +28,10 @@ class RootGeneralCommentResource(BaseReviewGeneralCommentResource):
         5.0
     """
 
-    allowed_methods = ('GET',)
-    name = 'general_comment'
-    model_parent_key = None
-    model = GeneralComment
     added_in = '5.0'
+    allowed_methods = ('GET',)
+    model = GeneralComment
+    uri_template_name = 'all_general_comment'
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
         """Return a queryset for GeneralComment models.

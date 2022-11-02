@@ -13,6 +13,7 @@ from djblets.webapi.fields import (BooleanFieldType,
 
 from reviewboard.accounts.models import User
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.reviews.models import FileAttachmentComment
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources.base_file_attachment_comment import \
     BaseFileAttachmentCommentResource
@@ -28,10 +29,10 @@ class RootFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         5.0
     """
 
-    allowed_methods = ('GET',)
-    name = 'file_attachment_comment'
-    model_parent_key = None
     added_in = '5.0'
+    allowed_methods = ('GET',)
+    model = FileAttachmentComment
+    uri_template_name = 'all_file_attachment_comment'
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
         """Return a queryset for FileAttachmentComment models.

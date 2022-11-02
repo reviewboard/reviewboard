@@ -30,10 +30,10 @@ class RootDiffCommentResource(BaseDiffCommentResource):
         5.0
     """
 
-    allowed_methods = ('GET', )
-    name = 'review_diff_comment'
-    model = Comment
     added_in = '5.0'
+    allowed_methods = ('GET', )
+    model = Comment
+    name = 'review_diff_comment'
 
     @webapi_check_local_site
     def get_queryset(self, request, is_list=False, *args, **kwargs):

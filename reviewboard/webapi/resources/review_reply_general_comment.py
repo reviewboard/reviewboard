@@ -25,6 +25,8 @@ class ReviewReplyGeneralCommentResource(BaseReviewGeneralCommentResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_reply_general_comment'
     model_parent_key = 'review'
+    uri_template_name = 'review_reply_general_comment'
+
     fields = dict({
         'reply_to': {
             'type': ResourceFieldType,

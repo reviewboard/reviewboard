@@ -2,23 +2,41 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
 
+from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.managers import HostingServiceAccountManager
 from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.site.models import LocalSite
 
 
 class HostingServiceAccount(models.Model):
-    service_name = models.CharField(max_length=128)
-    hosting_url = models.CharField(max_length=255, blank=True, null=True)
-    username = models.CharField(max_length=128)
-    data = JSONField()
-    visible = models.BooleanField(default=True)
-    local_site = models.ForeignKey(LocalSite,
-                                   on_delete=models.CASCADE,
-                                   related_name='hosting_service_accounts',
-                                   verbose_name=_('Local site'),
-                                   blank=True,
-                                   null=True)
+
+    service_name = models.CharField(
+        max_length=128,
+        help_text=_('The ID of the hosting service that is associated '
+                    'with this account.'))
+    hosting_url = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text=_('The hosting URL.'))
+    username = models.CharField(
+        max_length=128,
+        help_text=_('The username of the account on the hosting service.'))
+    data = JSONField(
+        help_text=_('Account data specific to the hosting service. This '
+                    'should generally not be changed.'))
+    visible = models.BooleanField(
+        default=True,
+        help_text=_('Whether this account shows up as an option when '
+                    'configuring a repository.'))
+    local_site = models.ForeignKey(
+        LocalSite,
+        on_delete=models.CASCADE,
+        related_name='hosting_service_accounts',
+        verbose_name=_('Local site'),
+        blank=True,
+        null=True,
+        help_text=_('The LocalSite to associate with this account.'))
 
     objects = HostingServiceAccountManager()
 
@@ -33,13 +51,22 @@ class HostingServiceAccount(models.Model):
 
     @property
     def service(self):
+        """The hosting service associated with this account.
+
+        Type:
+            reviewboard.hostingsvcs.service.HostingService
+
+        Raises:
+            reviewboard.hostingsvcs.errors.MissingHostingServiceError:
+                The hosting service could not be loaded from the registry.
+        """
         if not hasattr(self, '_service'):
             cls = get_hosting_service(self.service_name)
 
             if cls:
                 self._service = cls(self)
             else:
-                self._service = None
+                raise MissingHostingServiceError(self.service_name)
 
         return self._service
 

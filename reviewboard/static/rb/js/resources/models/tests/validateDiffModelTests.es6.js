@@ -15,6 +15,11 @@ suite('rb/resources/models/ValidateDiffModel', function() {
                 model.set('localSitePrefix', 's/test-site/');
                 expect(_.result(model, 'url')).toBe('/s/test-site/api/validation/diffs/');
             });
+
+            it('With a null local site', function() {
+                model.set('localSitePrefix', null);
+                expect(_.result(model, 'url')).toBe('/api/validation/diffs/');
+            });
         });
     });
 

@@ -18,6 +18,7 @@ from djblets.log import log_timed
 from djblets.util.decorators import cached_property
 
 from reviewboard.deprecation import RemovedInReviewBoard60Warning
+from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.scmtools import scmtools_registry
@@ -427,9 +428,17 @@ class Repository(models.Model):
 
         Type:
             reviewboard.hostingsvcs.service.HostingService
+
+        Raises:
+            reviewboard.hostingsvcs.errors.MissingHostingServiceError:
+                The hosting service for this repository could not be loaded.
         """
         if self.hosting_account:
-            return self.hosting_account.service
+            try:
+                return self.hosting_account.service
+            except MissingHostingServiceError as e:
+                raise MissingHostingServiceError(e.hosting_service_id,
+                                                 self.name)
 
         return None
 
@@ -442,6 +451,10 @@ class Repository(models.Model):
 
         Type:
             reviewboard.hostingsvcs.service.HostingService
+
+        Raises:
+            reviewboard.hostingsvcs.errors.MissingHostingServiceError:
+                The hosting service for this repository could not be loaded.
         """
         if self.extra_data.get('bug_tracker_use_hosting'):
             return self.hosting_service
@@ -470,6 +483,10 @@ class Repository(models.Model):
 
         Type:
             bool
+
+        Raises:
+            reviewboard.hostingsvcs.errors.MissingHostingServiceError:
+                The hosting service for this repository could not be loaded.
         """
         hosting_service = self.hosting_service
 
@@ -975,6 +992,10 @@ class Repository(models.Model):
         Returns:
             bytes:
             The resulting diff/patch file.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.MissingHostingServiceError:
+                The hosting service for this repository could not be loaded.
         """
         hosting_service = self.hosting_service
 
@@ -1202,6 +1223,9 @@ class Repository(models.Model):
             bytes:
             The resulting file contents.
 
+        Raises:
+            reviewboard.hostingsvcs.errors.MissingHostingServiceError:
+                The hosting service for this repository could not be loaded.
         """
         request = context.request
         base_commit_id = context.base_commit_id
@@ -1288,6 +1312,10 @@ class Repository(models.Model):
         Returns:
             bool:
             ``True`` if the file exists. ``False`` if it does not.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.MissingHostingServiceError:
+                The hosting service for this repository could not be loaded.
         """
         request = context.request
         base_commit_id = context.base_commit_id
