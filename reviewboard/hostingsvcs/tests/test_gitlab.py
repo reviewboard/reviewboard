@@ -2,7 +2,8 @@
 
 from django.utils.safestring import SafeText
 
-from reviewboard.hostingsvcs.errors import RepositoryError
+from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            RepositoryError)
 from reviewboard.hostingsvcs.gitlab import (GitLabAPIVersionError,
                                             GitLabHostingURLWidget)
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
@@ -1227,6 +1228,18 @@ class GitLabTests(GitLabTestCase):
             self.assertEqual(
                 ctx.service._get_api_version('https://gitlab.example.com'),
                 '4')
+
+    def test_api_head_with_auth_error(self):
+        """Testing GitLab._api_head with AuthorizationError"""
+        message = 'The login or password is incorrect.'
+
+        with self.setup_http_test(status_code=401) as ctx:
+            self._set_api_version(ctx.service, '4')
+
+            with self.assertRaisesMessage(AuthorizationError, message):
+                ctx.service._api_head(
+                    hosting_url='https://gitlab.example.com',
+                    path='foo')
 
     def _test_check_authorize(self, *args, **kwargs):
         """Test authorizing a new account.

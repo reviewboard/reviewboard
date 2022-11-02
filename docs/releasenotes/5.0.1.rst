@@ -1,0 +1,137 @@
+.. default-intersphinx:: djblets3.x rb5.x
+
+
+================================
+Review Board 5.0.1 Release Notes
+================================
+
+**Release date**: November 2, 2022
+
+
+Installation/Upgrade
+====================
+
+To upgrade to this release, run the following using a compatible version of
+Python:
+
+.. code-block:: shell
+
+    $ sudo pip3 install ReviewBoard==5.0.1
+
+And then perform an upgrade of your site. See :ref:`upgrading-reviewboard` for
+details.
+
+
+Known Issues
+============
+
+* Single Sign-On is currently broken out of the box on Python 3.11, due to
+  issues with a couple of third-party dependencies.
+
+  Users should be able to work around this by running:
+
+  .. code-block:: console
+
+     $ sudo pip3 install 'ReviewBoard[saml]'
+     $ sudo pip3 install --force-reinstall --no-binary lxml lxml
+
+  A discussion of this issue can be found here:
+  https://github.com/onelogin/python3-saml/pull/323
+
+
+Packaging
+=========
+
+* :pypi:`typing_extensions` 4.4.x or higher is required.
+
+* :pypi:`Djblets` 3.1.x is required.
+
+
+New Features
+============
+
+* Added deprecation notices for old-style API tokens.
+
+  API tokens constructed before Review Board 5 will now show as deprecated in
+  the :guilabel:`My Account page -> Authentication` page. This helps identify
+  tokens that should be replaced for security reasons.
+
+
+Web API
+=======
+
+* Added a ``deprecated`` field to :ref:`webapi2.0-api-token-resource`
+  showing whether a token has been deprecated.
+
+* API requests made with deprecated API tokens now contain a
+  :mailheader:`X-API-Token-Deprecated` HTTP header containing a message to
+  display.
+
+* Fixed a Python version-specific inconsistency in the URI templates in
+  :ref:`webapi2.0-root-resource`.
+
+  Depending on the version of Python being run, URI template names would
+  sometimes map to different locations. This was a problem in Review Board 4
+  and 5.
+
+  We've taken a hard look at this, and have fixed this to use the mappings
+  consistent with Python 2.7, as those have been in use the longest. This
+  may affect some clients of the API.
+
+  Steps were taken to ensure these inconsistencies can't happen again.
+
+
+Bug Fixes
+=========
+
+Authentication
+--------------
+
+* Fixed a generation problem with API tokens created in Review Board 5.0.
+
+  These tokens use a Base62-encoding, but the character set used was wrong.
+  This led to tokens that weren't exactly Base62.
+
+  This is fixed in this release, and only affects consumers looking to
+  validate tokens through custom code. Review Board still considers these
+  tokens valid.
+
+* Fixed a small inconsistency with the Single Sign-On "Log in" button.
+
+  This button now says :guilabel:`Log in` instead of :guilabel:`Login`,
+  matching the other buttons.
+
+
+Review Requests
+---------------
+
+* Fixed a breakage when uploading diffs in the New Review Request page after
+  filtering the list of repositories. (:bug:`4981`, :bug:`4982`)
+
+* Fixed a bug where the dropdown besides the "Publish Review" button could
+  close the Review Dialog. (:bug:`4944`)
+
+  Patch by Mike Conley.
+
+
+Repositories
+------------
+
+* Hosting services that fail to load (for example, due to missing extensions)
+  now result in proper error messages and not crashes or bad behavior.
+
+  This was most noticeable with Git hosting services. If the service failed to
+  load from an extension, Review Board would attempt to access the repository
+  directly, but this most often would not work, and would lead to confusing
+  errors.
+
+* Fixed a crash in GitLab when localizing some authentication errors.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin
+* Mike Conley

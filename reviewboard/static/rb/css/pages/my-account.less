@@ -31,6 +31,7 @@
    *       <span class="fa fa-clipboard js-copy-token" title="Copy to clipboard"></span>
    *      </div>
    *      <div class="rb-c-config-api-tokens__info">
+   *       <p class="rb-c-config-api-tokens__deprecation-notice">...</p>
    *       <p class="rb-c-config-api-tokens__token-state">...</p>
    *       <p class="rb-c-config-api-tokens__usage">...</p>
    *      </div>
@@ -41,6 +42,24 @@
   .rb-c-config-api-tokens {
     &__actions {
       white-space: nowrap;
+    }
+
+    /**
+     * Displays a deprecation notice for token.
+     *
+     * If the token is deprecated, this will display a deprecation notice. If
+     * it is not deprecated this will display nothing.
+     *
+     * Structure:
+     *     <p class="rb-c-config-api-tokens__deprecation-notice">...</p>
+     */
+    &__deprecation-notice {
+      &:before {
+        content: @fa-var-warning;
+
+        // This must be set in order for the FA icon to display properly.
+        font-family: 'FontAwesome';
+      }
     }
 
     &__info {

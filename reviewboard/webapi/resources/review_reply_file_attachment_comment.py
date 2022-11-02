@@ -26,6 +26,8 @@ class ReviewReplyFileAttachmentCommentResource(
     """
     added_in = '1.6'
 
+    uri_template_name = 'review_reply_file_attachment_comment'
+
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_reply_file_attachment_comment'
     model_parent_key = 'review'

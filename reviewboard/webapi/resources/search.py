@@ -24,6 +24,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
 
     name = 'search'
     singleton = True
+    uri_template_name = None
 
     MIN_SUMMARY_LEN = 4
 

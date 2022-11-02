@@ -7,8 +7,8 @@ from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
-from reviewboard.webapi.tests.mimetypes import (review_list_mimetype)
-from reviewboard.webapi.tests.urls import (get_root_review_list_url)
+from reviewboard.webapi.tests.mimetypes import review_list_mimetype
+from reviewboard.webapi.tests.urls import get_root_review_list_url
 
 
 class ResourceListTests(BaseWebAPITestCase):
@@ -16,14 +16,14 @@ class ResourceListTests(BaseWebAPITestCase):
 
     fixtures = ['test_users']
     sample_api_url = 'reviews/'
-    resource = resources.review
+    resource = resources.root_review
 
     def compare_item(self, item_rsp, review):
         """Compare a review item to a review returned from the API.
 
         Args:
             item_rsp (dict):
-                The serialied review returned from the API.
+                The serialized review returned from the API.
 
             review (reviewboard.reviews.models.Review):
                 The review instance to compare to.

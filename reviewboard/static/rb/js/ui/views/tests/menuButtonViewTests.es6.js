@@ -66,7 +66,9 @@ suite('rb/ui/views/MenuButtonView', function() {
         let view;
 
         function sendDropDownButtonEvent(name, options) {
-            view._$dropDownButton.trigger($.Event(name, options));
+            const evt = $.Event(name, options);
+            view._$dropDownButton.trigger(evt);
+            return evt;
         }
 
         function sendKeyDown(keyCode) {
@@ -146,6 +148,11 @@ suite('rb/ui/views/MenuButtonView', function() {
             });
 
             expect(view.menu.isOpen).toBeFalse();
+        });
+
+        it('clicking the toggle stops event propagation', function() {
+            const evt = sendDropDownButtonEvent('click');
+            expect(evt.isPropagationStopped()).toBeTrue();
         });
     });
 });

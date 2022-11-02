@@ -44,6 +44,7 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
     form_class = RepositoryForm
 
     name_plural = 'repositories'
+
     fields = {
         'id': {
             'type': IntFieldType,

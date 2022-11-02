@@ -25,8 +25,19 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
         showRemove: true,
     }, RB.Config.ResourceListItem.prototype.defaults),
 
-    syncAttrs: ['expired', 'expires', 'id', 'invalidReason', 'invalidDate',
-                'lastUsed', 'note', 'policy', 'tokenValue', 'valid'],
+    syncAttrs: [
+        'deprecated',
+        'expired',
+        'expires',
+        'id',
+        'invalidReason',
+        'invalidDate',
+        'lastUsed',
+        'note',
+        'policy',
+        'tokenValue',
+        'valid',
+    ],
 
     /**
      * Initialize the item.
@@ -442,6 +453,12 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
          <span class="fa fa-clipboard js-copy-token" title="Copy to clipboard"></span>
         </div>
         <div class="rb-c-config-api-tokens__info">
+         <% if (deprecated) { %>
+          <p class="rb-c-config-api-tokens__deprecation-notice">
+           This token uses a deprecated format. You should remove it and
+           generate a new one.
+          </p>
+         <% } %>
          <% if (expired) { %>
           <p class="rb-c-config-api-tokens__token-state -is-expired">
            Expired <time class="timesince" datetime="<%= expires %>"></time>.

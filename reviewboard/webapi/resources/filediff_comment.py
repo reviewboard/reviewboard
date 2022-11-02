@@ -15,6 +15,7 @@ class FileDiffCommentResource(BaseDiffCommentResource):
     policy_id = 'diff_comment'
     model_parent_key = 'filediff'
     uri_object_key = None
+    uri_template_name = 'file_diff_comment'
 
     mimetype_list_resource_name = 'file-diff-comments'
     mimetype_item_resource_name = 'file-diff-comment'
