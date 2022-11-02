@@ -14,9 +14,9 @@ nose
 p4python; python_version <= '3.9' or platform_system == 'Linux' or (platform_system == 'Darwin' and platform_machine == "arm64")
 
 # Install pytest and all the plugin dependencies we use.
-pytest~=7.1.2
+pytest~=7.2.0
 pytest-django~=4.5.2
-pytest-env~=0.6.2
+pytest-env~=0.8.1
 
 setuptools>=18.2
 subvertpy>=0.11.0
