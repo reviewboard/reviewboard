@@ -1,0 +1,137 @@
+{% load djblets_email djblets_utils markdown_email reviewtags %}
+{% definevar "cssmargin" %}margin-top: 1.5em;{% enddefinevar %}
+{% definevar "csscolor" %}color: #575012;{% enddefinevar %}
+{% definevar "cssfont" %}font-size: 10pt;{% enddefinevar %}
+
+{%  if changes and changes.status and review_request.status in "SD" %}
+<table bgcolor="#e0e0e0" width="100%" cellpadding="12" style="border: 1px gray solid; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px;">
+ <tr>
+  <td>
+   <h1 style="margin: 0; padding: 0; {{cssfont}}">{% if review_request.status == 'S' %}This change has been marked as submitted.{% elif review_request.status == 'D' %}This change has been discarded.{% endif %}</h1>
+  </td>
+ </tr>
+</table>
+<br />
+{%  endif %}
+
+<table bgcolor="#fefadf" width="100%" cellspacing="0" cellpadding="12" style="border: 1px #888a85 solid; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px;">
+ <tr>
+  <td>
+
+<div>Review request for {% reviewer_list review_request %}.</div>
+<div>By {{review_request.submitter|realname}}.</div>
+
+{%  if review_request.email_message_id %}
+<p style="color: grey;"><em>Updated {{review_request.time_emailed}}</em></p>
+{%  endif %}
+
+{%  if change_text %}
+<h1 style="{{csscolor}} {{cssfont}} {{cssmargin}}">Changes</h1>
+<table width="100%" bgcolor="#ffffff" cellspacing="0" cellpadding="10" style="border: 1px solid #b8b5a0">
+ <tr>
+  <td>
+   <pre style="margin: 0; padding: 0; {{precss}}">{{change_text|markdown_email_html:change_rich_text}}</pre>
+  </td>
+ </tr>
+</table>
+{%  endif %}
+
+{%  if changes %}{% if changes.summary %}
+<h1 style="{{csscolor}} {{cssfont}} {{cssmargin}}">Summary (updated)</h1>
+<table width="100%" bgcolor="#ffffff" cellspacing="0" cellpadding="10" style="border: 1px solid #b8b5a0">
+ <tr>
+  <td>
+   <pre style="margin: 0; padding: 0; {{precss}}">{{review_request.summary}}</pre>
+  </td>
+ </tr>
+</table>
+{%  endif %}{% endif %}
+
+<h1 style="{{csscolor}} {{cssfont}} {{cssmargin}}">Description {% if changes %}{% if changes.description %} (updated){% endif %}{% endif %}</h1>
+ <table width="100%" bgcolor="#ffffff" cellspacing="0" cellpadding="10" style="border: 1px solid #b8b5a0">
+ <tr>
+  <td>
+   <pre style="margin: 0; padding: 0; {{precss}}">{{review_request.description|markdown_email_html:review_request.description_rich_text}}</pre>
+  </td>
+ </tr>
+</table>
+
+{%  if review_request.testing_done != "" %}
+<h1 style="{{csscolor}} {{cssfont}} {{cssmargin}}">Testing {% if changes and changes.testing_done %}(updated){% endif %}</h1>
+<table width="100%" bgcolor="#ffffff" cellspacing="0" cellpadding="10" style="border: 1px solid #b8b5a0">
+ <tr>
+  <td>
+   <pre style="margin: 0; padding: 0; {{precss}}">{{review_request.testing_done|markdown_email_html:review_request.testing_done_rich_text}}</pre>
+  </td>
+ </tr>
+</table>
+{%  endif %}
+
+{%  with review_request.get_latest_diffset as latest_diffset %}
+{%   if latest_diffset %}
+<h1 style="{{csscolor}} {{cssfont}} {{cssmargin}}">Diffs {% if changes and changes.diff %}(updated){% endif %}</h1>
+<ul style="margin-left: 3em; padding-left: 0;">
+{%    for filediff in latest_diffset.files.all %}
+ <li>{{filediff.source_file_display}} <span style="color: grey">({{filediff.source_revision}})</span></li>
+{%    endfor %}
+</ul>
+
+{%    with latest_diffset.revision as rev %}
+<p><a href="{{site_url}}{% url 'view-diff-revision' review_request.display_id rev %}" style="margin-left: 3em;">View Diff</a></p>
+{%     if rev > 1 and changes and changes.diff %}
+<p><a href="{{site_url}}{% url 'view-interdiff' review_request.display_id rev|add:"-1" rev %}" style="margin-left: 3em;">Show Changes</a></p>
+{%     endif %}
+{%    endwith %}
+{%   endif %}
+{%  endwith %}
+
+
+{%  if review_request.file_attachments_count > 0 %}
+<h1 style="{{csscolor}} {{cssfont}} {{cssmargin}}">File Attachments {% if changes and changes.files %}(updated){% endif %}</h1>
+
+{%   for file in review_request.file_attachments.all %}
+ <li><a href="{{file.get_absolute_url}}">{{file.caption|default:file.filename}}</a></li>
+{%   endfor %}
+</ul>
+{%  endif %}
+
+{%  if review_request.screenshots_count > 0 %}
+<h1 style="{{csscolor}} {{cssfont}} {{cssmargin}}">Screenshots {% if changes and changes.screenshots %}(updated){% endif %}</h1>
+
+<div>
+{%   for screenshot in review_request.screenshots.all %}
+ <a href="{{site_url}}{{screenshot.get_absolute_url}}"><img src="{{site_url}}{{screenshot.get_thumbnail_url}}" style="border: 1px black solid;" alt="{{screenshot.caption}}" /></a>
+{%   endfor %}
+</div>
+{%  endif %}
+
+{%  if review_request.bugs_closed %}
+<div style="{{cssmargin}}">
+ <strong style="{{csscolor}} {{cssfont}} {{cssmargin}}">Bugs: </strong>
+{%   if review_request.repository and review_request.repository.bug_tracker %}
+{%    for bug in review_request.get_bug_list %}
+ <a href="{{bug|bug_url:review_request}}">{{bug}}</a>{% if not forloop.last %}, {% endif %}
+{%    endfor %}
+{%   else %}
+{{review_request.get_bug_list|join:", "}}
+{%   endif %}
+</div>
+{%  endif %}
+
+{%  if review_request.branch or review_request.repository %}
+<div style="{{cssmargin}}">
+{%   if review_request.repository %}
+<strong style="{{csscolor}} {{cssfont}}">Repository: </strong>
+{{review_request.repository.name}}
+{%   endif %}
+{%   if review_request.branch %}
+<br>
+<strong style="{{csscolor}} {{cssfont}}">Branch: </strong>
+{{review_request.branch}}
+{%   endif %}
+</div>
+{%  endif %}
+
+  </td>
+ </tr>
+</table>

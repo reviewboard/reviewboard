@@ -1,0 +1,60 @@
+{% load djblets_email djblets_extensions djblets_utils markdown_email rb_extensions reviewtags %}
+{% autoescape off %}
+{% if review.ship_it %}
+{%  if has_issues %}
+{{review.FIX_IT_THEN_SHIP_IT_TEXT}}
+{%  else %}
+{{review.SHIP_IT_TEXT}}
+{%  endif %}
+{% endif %}
+{% template_hook_point "review-email-text-summary" %}
+{% if review.body_top %}
+{{review.body_top|markdown_email_text:review.body_top_rich_text}}
+{% endif %}{% for comment in review.file_attachment_comments.all %}
+
+File Attachment: {% if comment.file_attachment.caption %}{{comment.file_attachment.caption}} - {% endif %}{{comment.get_link_text}}
+<{{site_url}}{{comment.get_review_url}}>
+
+{% filter indent %}{% condense 2 %}
+{%  comment_detail_display_hook comment "text-email" %}
+
+{{comment.text|markdown_email_text:comment.rich_text}}
+{% endcondense %}{% endfilter %}
+
+{% endfor %}{% for comment in review.general_comments.all %}
+
+{% filter indent %}{% condense 2 %}
+{%  comment_detail_display_hook comment "text-email" %}
+
+{{comment.text|markdown_email_text:comment.rich_text}}
+{% endcondense %}{% endfilter %}
+
+{% endfor %}{% for comment in review.screenshot_comments.all %}
+
+Screenshot: {{ comment.screenshot.caption }}
+<{{site_url}}{{comment.get_review_url}}>
+
+{% filter indent %}{% condense 2 %}
+{%  comment_detail_display_hook comment "text-email" %}
+
+{{comment.text|markdown_email_text:comment.rich_text}}
+{% endcondense %}{% endfilter %}
+
+{% endfor %}{% for entry in comment_entries %}
+
+{% condense 1 %}
+{{entry.comment.filediff.source_file_display}}
+{% diff_comment_line_numbers entry.chunks entry.comment %}
+<{{site_url}}{{entry.comment.get_review_url}}>
+{% endcondense %}
+
+{% filter indent %}{% condense 2 %}
+{%  comment_detail_display_hook entry.comment "text-email" %}
+
+{{entry.comment.text|markdown_email_text:entry.comment.rich_text}}
+{% endcondense %}{% endfilter %}
+
+{% endfor %}{% if review.body_bottom %}
+{{review.body_bottom|markdown_email_text:review.body_bottom_rich_text}}
+{% endif %}
+{% endautoescape %}

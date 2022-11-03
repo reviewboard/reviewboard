@@ -1,0 +1,96 @@
+{% load djblets_email djblets_utils markdown_email reviewtags %}
+{% condense %}
+{%  if review_request.email_message_id %}
+(Updated {{review_request.time_emailed}})
+
+{%  endif %}
+{%  if changes and changes.status and review_request.status in "SD" %}Status
+------
+{%   if review_request.status == 'S' %}
+This change has been marked as submitted.
+{%   elif review_request.status == 'D' %}
+This change has been discarded.
+{%   endif %}
+{%  endif %}
+
+Review request for {% reviewer_list review_request %}.
+
+{%  if change_text %}
+Changes
+-------
+
+{{change_text|markdown_email_text:change_rich_text}}
+{%  endif %}
+
+{%  if changes %}
+{%   if changes.summary %}Summary (updated)
+-----------------
+
+{{review_request.summary}}
+{%   endif %}
+{%  endif %}
+
+Description{% if changes %}{% if changes.description %} (updated){% endif %}{% endif %}
+-------
+
+{{review_request.description|markdown_email_text:review_request.description_rich_text}}
+
+
+{%  with review_request.get_latest_diffset as latest_diffset %}
+{%   if latest_diffset %}
+Diffs{% if changes and changes.diff %} (updated){% endif %}
+-----
+{%    for filediff in latest_diffset.files.all %}
+  {{ filediff.source_file_display }} {{ filediff.source_revision }} {% endfor %}
+
+{%    with latest_diffset.revision as rev %}
+Diff: {{site_url}}{% url 'view-diff-revision' review_request.display_id rev %}
+{%     if rev > 1 and changes and changes.diff %}
+Changes: {{site_url}}{% url 'view-interdiff' review_request.display_id rev|add:"-1" rev %}
+{%     endif %}
+{%    endwith %}
+{%   endif %}
+{%  endwith %}
+
+
+Testing{% if changes and changes.testing_done %} (updated){% endif %}
+-------
+
+{{review_request.testing_done|markdown_email_text:review_request.testing_done_rich_text}}
+{%  if review_request.file_attachments.count %}
+
+File Attachments{% if changes and changes.files %} (updated){% endif %}
+----------------
+{%  for file in review_request.file_attachments.all %}
+{{file.caption}}
+  {{file.get_absolute_url}}{% endfor %}
+
+{%  endif %}
+{%  if review_request.screenshots.count %}
+
+Screenshots{% if changes and changes.screenshots %} (updated){% endif %}
+-----------
+{%   for screenshot in review_request.screenshots.all %}
+{{ screenshot.caption }}
+  {{site_url}}{{ screenshot.get_absolute_url }}{% endfor %}
+
+{%  endif %}
+{%  if review_request.bugs_closed %}
+
+Bugs: {{review_request.get_bug_list|humanize_list}}{% if review_request.repository and review_request.repository.bug_tracker %}{% for bug in review_request.get_bug_list %}
+    {{bug|bug_url:review_request}}{% endfor %}
+{%    endif %}
+{%   endif %}
+
+{%  condense 0%}
+{%   if review_request.repository %}
+Repository: {{review_request.repository.name}}
+{%   endif %}
+{%  endcondense %}
+{%  condense 0%}
+{%   if review_request.branch %}
+  Branch: {{review_request.branch}}
+{%   endif %}
+{%  endcondense %}
+
+{% endcondense %}

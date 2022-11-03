@@ -1,0 +1,85 @@
+{% autoescape off %}{% load djblets_email djblets_utils markdown_email reviewtags %}
+
+{% condense %}
+{% if reply.body_top != "" %}
+> On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
+{{review.body_top|markdown_email_text:review.body_top_rich_text|quote_text:2}}{% for reply_review in review.public_replies %}{% if reply_review.body_top != "" and reply_review != reply %}
+> 
+> {{reply_review.user|user_displayname}} wrote:
+{{reply_review.body_top|markdown_email_text:reply_review.body_top_rich_text|indent|quote_text}}{% endif %}{% endfor %}
+
+{{reply.body_top|markdown_email_text:reply.body_top_rich_text}}
+{% endif %}
+
+
+{% for comment in reply.file_attachment_comments.all %}
+> On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
+> > File Attachment: {% if comment.file_attachment.caption %}{{comment.file_attachment.caption}} - {% endif %}{{comment.get_link_text}}
+> > <{{site_url}}{{comment.get_review_url}}>
+> >
+{{comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  if comment != reply_comment %}
+> 
+> {{reply_comment.review.get.user|user_displayname}} wrote:
+{{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endif %}{% endfor %}
+
+{{comment.text|markdown_email_text:comment.rich_text}}
+
+
+{% endfor %}
+{% for comment in reply.general_comments.all %}
+> On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
+> > <{{site_url}}{{comment.get_review_url}}>
+> >
+{{ comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  if comment != reply_comment %}
+>
+> {{reply_comment.review.get.user|user_displayname}} wrote:
+{{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endif %}{% endfor %}
+
+{{comment.text|markdown_email_text:comment.rich_text}}
+
+
+{% endfor %}
+{% for comment in reply.screenshot_comments.all %}
+> On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
+> > Screenshot: {{ comment.screenshot.caption }}
+> > <{{site_url}}{{comment.get_review_url}}>
+> >
+{{ comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  if comment != reply_comment %}
+> 
+> {{reply_comment.review.get.user|user_displayname}} wrote:
+{{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endif %}{% endfor %}
+
+{{comment.text|markdown_email_text:comment.rich_text}}
+
+
+{% endfor %}
+{% for entry in comment_entries %}
+> On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
+{%  condense 1 %}
+{%   definevar "lines_info" %}{% diff_comment_line_numbers entry.chunks entry.comment %}{% enddefinevar %}
+> > {{entry.comment.filediff.source_file_display}}
+{% if lines_info %}{{lines_info|quote_text:2}}{% endif %}
+> > <{{site_url}}{{entry.comment.get_absolute_url}}>
+{%  endcondense %}
+> >
+{{entry.comment.reply_to.text|markdown_email_text:entry.comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in entry.comment.reply_to.public_replies %}{%  if entry.comment != reply_comment %}
+> 
+> {{reply_comment.review.get.user|user_displayname}} wrote:
+{{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endif %}{% endfor %}
+
+{{entry.comment.text|markdown_email_text:entry.comment.rich_text}}
+
+
+{% endfor %}
+
+{% if reply.body_bottom != "" %}
+On {{review.time_emailed}}, {{review_request.submitter|user_displayname}} wrote:
+{{review.body_bottom|markdown_email_text:review.body_bottom_rich_text|quote_text:2}}{% for reply_review in review.public_replies %}{% if reply_review.body_bottom != "" and reply_review != reply %}
+> 
+> {{reply_review.user|user_displayname}} wrote:
+{{reply_review.body_bottom|markdown_email_text:reply_review.body_bottom_rich_text|indent|quote_text}}{% endif %}{% endfor %}
+
+{{reply.body_bottom|markdown_email_text:reply.body_bottom_rich_text}}
+{% endif %}
+{% endcondense %}
+{% endautoescape %}
