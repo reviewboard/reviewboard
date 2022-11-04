@@ -1,17 +1,29 @@
 """Extension hooks for augmenting e-mail messages."""
 
-from collections import defaultdict
+from __future__ import annotations
 
+from collections import defaultdict
+from typing import Tuple, TYPE_CHECKING
+
+from django.dispatch import Signal
+
+from reviewboard.notifications.email.utils import RecipientList
 from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
                                          review_request_closed)
+
+if TYPE_CHECKING:
+    from reviewboard.extensions.hooks import EmailHook
 
 
 # A mapping of signals to EmailHooks.
 _hooks = defaultdict(set)
 
 
-def register_email_hook(signal, handler):
+def register_email_hook(
+    signal: Signal,
+    handler: EmailHook,
+) -> None:
     """Register an e-mail hook.
 
     Args:
@@ -33,7 +45,10 @@ def register_email_hook(signal, handler):
     _hooks[signal].add(handler)
 
 
-def unregister_email_hook(signal, handler):
+def unregister_email_hook(
+    signal: Signal,
+    handler: EmailHook,
+) -> None:
     """Unregister an e-mail hook.
 
     Args:
@@ -55,7 +70,12 @@ def unregister_email_hook(signal, handler):
     _hooks[signal].discard(handler)
 
 
-def filter_email_recipients_from_hooks(to_field, cc_field, signal, **kwargs):
+def filter_email_recipients_from_hooks(
+    to_field: RecipientList,
+    cc_field: RecipientList,
+    signal: Signal,
+    **kwargs,
+) -> Tuple[RecipientList, RecipientList]:
     """Filter the e-mail recipients through configured e-mail hooks.
 
     Args:

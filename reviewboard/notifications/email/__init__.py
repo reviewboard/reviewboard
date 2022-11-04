@@ -25,7 +25,7 @@ from djblets.webapi.signals import (webapi_token_created,
                                     webapi_token_updated)
 
 
-def connect_signals():
+def connect_signals() -> None:
     """Connect e-mail callbacks to signals."""
     signal_table = [
         (reply_published, send_reply_published_mail, Review),
