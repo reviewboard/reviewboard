@@ -1133,11 +1133,40 @@ class ReviewRequest(BaseReviewRequestDetails):
                                      old_status=old_status,
                                      old_public=old_public)
 
-    def publish(self, user, trivial=False, validate_fields=True):
-        """Publishes the current draft attached to this review request.
+    def publish(
+        self,
+        user: User,
+        trivial: bool = False,
+        validate_fields: bool = True,
+    ) -> Optional[ChangeDescription]:
+        """Publish the current draft attached to this review request.
 
         The review request will be mark as public, and signals will be
         emitted for any listeners.
+
+        Version Changed:
+            6.0:
+            Added the change description as a return type.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user performing the publish operation.
+
+            trivial (bool, optional):
+                Whether to skip any e-mail notifications.
+
+            validate_fields (bool, optional):
+                Whether to validate fields before publishing.
+
+        Returns:
+            reviewboard.changedescs.models.ChangeDescription:
+            The change description, if this was an update to an already-public
+            review request. If this is an initial publish, this will return
+            ``None``.
+
+        Raises:
+            reviewboard.reviews.errors.PublishError:
+                An error occurred while publishing.
         """
         if not self.is_mutable_by(user):
             raise PermissionError
@@ -1235,6 +1264,8 @@ class ReviewRequest(BaseReviewRequestDetails):
         review_request_published.send(sender=self.__class__, user=user,
                                       review_request=self, trivial=trivial,
                                       changedesc=changes)
+
+        return changes
 
     def determine_user_for_changedesc(self, changedesc):
         """Determine the user associated with the change description.
