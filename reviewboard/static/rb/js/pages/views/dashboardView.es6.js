@@ -238,8 +238,7 @@ const DashboardActionsView = Backbone.View.extend({
         ev.stopPropagation();
         ev.preventDefault();
 
-        const collection = RB.UserSession.instance.archivedReviewRequests;
-        this._updateVisibility(collection.addImmediately.bind(collection));
+        this.model.updateVisibility('archive');
     },
 
     /**
@@ -253,8 +252,7 @@ const DashboardActionsView = Backbone.View.extend({
         ev.stopPropagation();
         ev.preventDefault();
 
-        const collection = RB.UserSession.instance.archivedReviewRequests;
-        this._updateVisibility(collection.removeImmediately.bind(collection));
+        this.model.updateVisibility('unarchive');
     },
 
     /**
@@ -276,17 +274,16 @@ const DashboardActionsView = Backbone.View.extend({
 
         $('<div/>')
             .append($('<p/>')
-                .text(gettext('Are you sure you want to mute these review requests?')))
+                .text(_`Are you sure you want to mute these review requests?`))
             .modalBox({
-                title: gettext('Mute review requests'),
+                title: _`Mute review requests`,
                 buttons: [
                     $('<input type="button"/>')
-                        .val(gettext('Cancel')),
+                        .val(_`Cancel`),
 
                     $('<input type="button"/>')
-                        .val(gettext('Mute Review Requests'))
-                        .click(this._updateVisibility.bind(
-                            this, visibilityFunc)),
+                        .val(_`Mute Review Requests`)
+                        .click(() => this.model.updateVisibility('mute')),
                 ],
             });
     },
@@ -302,21 +299,7 @@ const DashboardActionsView = Backbone.View.extend({
         ev.stopPropagation();
         ev.preventDefault();
 
-        const collection = RB.UserSession.instance.mutedReviewRequests;
-
-        this._updateVisibility(collection.removeImmediately.bind(collection));
-    },
-
-    /**
-     * Common code for archiving/muting review requests.
-     *
-     * Args:
-     *     visibilityFunc (function):
-     *         Function to call to update the visibility of an individual
-     *         review request.
-     */
-    _updateVisibility(visibilityFunc) {
-        this.model.updateVisibility(visibilityFunc);
+        this.model.updateVisibility('unarchive');
     },
 });
 
