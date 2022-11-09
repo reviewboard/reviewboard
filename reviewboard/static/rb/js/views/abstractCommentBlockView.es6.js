@@ -208,7 +208,9 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
                 this.notify(gettext('Comment Saved'));
             }
 
-            RB.DraftReviewBannerView.instance.show();
+            if (!RB.EnabledFeatures.unifiedBanner) {
+                RB.DraftReviewBannerView.instance.show();
+            }
         });
 
         this.$el.addClass('draft');

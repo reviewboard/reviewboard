@@ -68,11 +68,15 @@ class ActionsRegistry(OrderedRegistry):
                                                  CloseMenuAction,
                                                  CloseCompletedAction,
                                                  CloseDiscardedAction,
+                                                 CreateReviewAction,
                                                  DeleteAction,
                                                  DownloadDiffAction,
+                                                 EditReviewAction,
                                                  LegacyEditReviewAction,
                                                  LegacyShipItAction,
                                                  MuteAction,
+                                                 ReviewMenuAction,
+                                                 ShipItAction,
                                                  StarAction,
                                                  UpdateMenuAction,
                                                  UploadDiffAction,
@@ -115,6 +119,12 @@ class ActionsRegistry(OrderedRegistry):
             LegacyEditReviewAction(),
             LegacyShipItAction(),
             AddGeneralCommentAction(),
+
+            # Unified banner actions
+            ReviewMenuAction(),
+            CreateReviewAction(),
+            EditReviewAction(),
+            ShipItAction(),
         ]
 
         for action in builtin_actions:

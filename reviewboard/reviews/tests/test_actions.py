@@ -128,13 +128,14 @@ class ReadOnlyActionTestsMixin(MixinParent):
             'site_read_only': True,
         }
 
-        with self.siteconfig_settings(settings):
-            if getattr(self, 'read_only_always_show', False):
-                self.assertTrue(
-                    self.action.should_render(context=request_context))
-            else:
-                self.assertFalse(
-                    self.action.should_render(context=request_context))
+        with override_feature_check(unified_banner_feature.feature_id, False):
+            with self.siteconfig_settings(settings):
+                if getattr(self, 'read_only_always_show', False):
+                    self.assertTrue(
+                        self.action.should_render(context=request_context))
+                else:
+                    self.assertFalse(
+                        self.action.should_render(context=request_context))
 
     def test_should_render_with_superuser_in_read_only(self) -> None:
         """Testing <ACTION>.should_render with superuser in read-only mode"""
@@ -148,9 +149,10 @@ class ReadOnlyActionTestsMixin(MixinParent):
             'site_read_only': True,
         }
 
-        with self.siteconfig_settings(settings):
-            self.assertTrue(
-                self.action.should_render(context=request_context))
+        with override_feature_check(unified_banner_feature.feature_id, False):
+            with self.siteconfig_settings(settings):
+                self.assertTrue(
+                    self.action.should_render(context=request_context))
 
 
 class ActionRegistrationTests(ActionsTestCase):

@@ -174,7 +174,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         RB.ReviewablePageView.prototype.remove.call(this);
 
         this._$window.off(`resize.${this.cid}`);
-        this._diffFileIndexView.remove();
+
+        if (this._diffFileIndexView) {
+            this._diffFileIndexView.remove();
+        }
 
         if (this._commitListView) {
             this._commitListView.remove();
@@ -653,7 +656,14 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
             let scrollAmount = this.DIFF_SCROLLDOWN_AMOUNT;
 
-            if (RB.DraftReviewBannerView.instance) {
+            if (RB.EnabledFeatures.unifiedBanner) {
+                const banner = RB.UnifiedBannerView.getInstance();
+
+                // This may be null if we're running in tests.
+                if (banner) {
+                    scrollAmount += banner.getHeight();
+                }
+            } else if (RB.DraftReviewBannerView.instance) {
                 scrollAmount += RB.DraftReviewBannerView.instance.getHeight();
             }
 

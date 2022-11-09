@@ -1261,7 +1261,10 @@ RB.ReviewDialogView = Backbone.View.extend({
             .click(async () => {
                 this.close();
                 await this.model.destroy();
-                RB.DraftReviewBannerView.instance.hideAndReload();
+
+                if (!RB.EnabledFeatures.unifiedBanner) {
+                    RB.DraftReviewBannerView.instance.hideAndReload();
+                }
             });
 
         $('<p/>')
@@ -1352,17 +1355,19 @@ RB.ReviewDialogView = Backbone.View.extend({
         });
 
         $.funcQueue('reviewForm').add(() => {
-            const reviewBanner = RB.DraftReviewBannerView.instance;
-
             this.close();
 
-            if (reviewBanner) {
-                if (publish) {
-                    reviewBanner.hideAndReload();
-                } else if (this.model.isNew() && !madeChanges) {
-                    reviewBanner.hide();
-                } else {
-                    reviewBanner.show();
+            if (!RB.EnabledFeatures.unifiedBanner) {
+                const reviewBanner = RB.DraftReviewBannerView.instance;
+
+                if (reviewBanner) {
+                    if (publish) {
+                        reviewBanner.hideAndReload();
+                    } else if (this.model.isNew() && !madeChanges) {
+                        reviewBanner.hide();
+                    } else {
+                        reviewBanner.show();
+                    }
                 }
             }
 

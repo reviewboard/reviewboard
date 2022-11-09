@@ -56,6 +56,17 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
         this._replyDraftsCount = 0;
 
         this.on('hasDraftChanged', hasDraft => {
+            if (RB.EnabledFeatures.unifiedBanner) {
+                const banner = RB.UnifiedBannerView.getInstance(false);
+
+                /*
+                 * We make this conditional to make unit tests easier to write.
+                 */
+                if (banner) {
+                    banner.model.updateReplyDraftState(this._reviewReply, hasDraft);
+                }
+            }
+
             if (hasDraft) {
                 this._showReplyDraftBanner();
             } else {
@@ -145,9 +156,7 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
             }
         });
 
-        if (this._replyDraftsCount > 0) {
-            this.trigger('hasDraftChanged', true);
-        }
+        this.trigger('hasDraftChanged', this._replyDraftsCount > 0);
 
         /*
          * Load any diff fragments for comments made on this review. Each
@@ -341,15 +350,22 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
      */
     _showReplyDraftBanner() {
         if (!this._draftBannerShown) {
-            this._bannerView =
-                new RB.ReviewRequestPage.ReviewReplyDraftBannerView({
-                    model: this._reviewReply,
-                    $floatContainer: this.options.$bannerFloatContainer,
-                    noFloatContainerClass:
-                        this.options.bannerNoFloatContainerClass,
-                    reviewRequestEditor: this.entryModel.get(
-                        'reviewRequestEditor'),
-                });
+            if (RB.EnabledFeatures.unifiedBanner) {
+                this._bannerView =
+                    new RB.ReviewRequestPage.ReviewReplyDraftStaticBannerView({
+                        model: this._reviewReply,
+                    });
+            } else {
+                this._bannerView =
+                    new RB.ReviewRequestPage.ReviewReplyDraftBannerView({
+                        model: this._reviewReply,
+                        $floatContainer: this.options.$bannerFloatContainer,
+                        noFloatContainerClass:
+                            this.options.bannerNoFloatContainerClass,
+                        reviewRequestEditor: this.entryModel.get(
+                            'reviewRequestEditor'),
+                    });
+            }
 
             this._bannerView.render();
             this._bannerView.$el.appendTo(this.options.$bannerParent);

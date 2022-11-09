@@ -1,6 +1,10 @@
 suite('rb/views/ReviewRequestEditorView', function() {
     const template = dedent`
         <div>
+         <div class="rb-c-unified-banner" id="unified-banner">
+          <pre id="field_change_description" class="field field-text-area"
+               data-field-id="field_change_description"></pre>
+         </div>
          <div id="review-request-banners"></div>
          <div id="review-request-warning"></div>
          <div class="actions">
@@ -200,6 +204,25 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 model: editor,
             }));
 
+        spyOn(reviewRequest.draft, 'ready').and.resolveTo();
+
+        if (RB.EnabledFeatures.unifiedBanner) {
+            const pendingReview = reviewRequest.createReview();
+            spyOn(pendingReview, 'ready').and.resolveTo();
+            spyOn(reviewRequest, 'ready').and.resolveTo();
+
+            const banner = new RB.UnifiedBannerView({
+                el: $el.find('#unified-banner'),
+                model: new RB.UnifiedBanner({
+                    pendingReview: pendingReview,
+                    reviewRequest: reviewRequest,
+                    reviewRequestEditor: editor,
+                }),
+                reviewRequestEditorView: view,
+            });
+            banner.render();
+        }
+
         $filesContainer = $testsScratch.find('#file-list');
         $screenshotsContainer = $testsScratch.find('#screenshot-thumbnails');
 
@@ -208,42 +231,40 @@ suite('rb/views/ReviewRequestEditorView', function() {
          *     function will go away.
          */
         spyOn(view, '_refreshPage');
-
-        spyOn(reviewRequest.draft, 'ready').and.resolveTo();
     });
 
     afterEach(function() {
         RB.DnDUploader.instance = null;
+
+        if (RB.EnabledFeatures.unifiedBanner) {
+            RB.UnifiedBannerView.resetInstance();
+        }
     });
 
     describe('Actions bar', function() {
         it('ReviewRequestActionHooks', function() {
-            var MyExtension,
-                extension,
-                $action;
-
-            MyExtension = RB.Extension.extend({
+            const MyExtension = RB.Extension.extend({
                 initialize: function() {
                     RB.Extension.prototype.initialize.call(this);
 
                     new RB.ReviewRequestActionHook({
-                        extension: this,
                         callbacks: {
                             '#my-action': _.bind(function() {
                                 this.actionClicked = true;
-                            }, this)
-                        }
+                            }, this),
+                        },
+                        extension: this,
                     });
-                }
+                },
             });
 
-            extension = new MyExtension();
+            const extension = new MyExtension();
 
             /*
              * Actions are rendered server-side, not client-side, so we won't
              * get the action added through the hook above.
              */
-            $action = $('<a href="#" id="my-action" />')
+            const $action = $('<a href="#" id="my-action" />')
                 .appendTo(view.$('.actions'));
 
             view.render();
@@ -261,12 +282,22 @@ suite('rb/views/ReviewRequestEditorView', function() {
         describe('Draft banner', function() {
             describe('Visibility', function() {
                 it('Hidden when saving', function() {
+                    if (RB.EnabledFeatures.unifiedBanner) {
+                        pending();
+                        return;
+                    }
+
                     expect(view.banner).toBe(null);
                     editor.trigger('saving');
                     expect(view.banner).toBe(null);
                 });
 
                 it('Show when saved', function(done) {
+                    if (RB.EnabledFeatures.unifiedBanner) {
+                        pending();
+                        return;
+                    }
+
                     const summaryField = view.getFieldView('summary');
                     const summaryEditor = summaryField.inlineEditorView;
 
@@ -299,6 +330,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     });
                 });
                 it('Discard Draft', function() {
+                    if (RB.EnabledFeatures.unifiedBanner) {
+                        pending();
+                        return;
+                    }
+
                     view.model.set('hasDraft', true);
                     view.showBanner();
 
@@ -310,6 +346,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 it('Discard Review Request', function() {
+                    if (RB.EnabledFeatures.unifiedBanner) {
+                        pending();
+                        return;
+                    }
+
                     reviewRequest.set('public', false);
                     view.model.set('hasDraft', true);
                     view.showBanner();
@@ -350,6 +391,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     });
 
                     it('Basic publishing', function(done) {
+                        if (RB.EnabledFeatures.unifiedBanner) {
+                            pending();
+                            return;
+                        }
+
                         view.showBanner();
 
                         reviewRequest.draft.publish.and.callFake(() => {
@@ -364,6 +410,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     });
 
                     it('With submitter changed', function(done) {
+                        if (RB.EnabledFeatures.unifiedBanner) {
+                            pending();
+                            return;
+                        }
+
                         reviewRequest.draft.set({
                             links: {
                                 submitter: {
@@ -388,6 +439,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     });
 
                     it('With Send E-Mail turned on', function(done) {
+                        if (RB.EnabledFeatures.unifiedBanner) {
+                            pending();
+                            return;
+                        }
+
                         view.model.set('showSendEmail', true);
                         view.showBanner();
 
@@ -405,6 +461,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     });
 
                     it('With Send E-Mail turned off', function(done) {
+                        if (RB.EnabledFeatures.unifiedBanner) {
+                            pending();
+                            return;
+                        }
+
                         view.model.set('showSendEmail', true);
                         view.showBanner();
 
@@ -435,16 +496,31 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 it('Enabled by default', function() {
+                    if (RB.EnabledFeatures.unifiedBanner) {
+                        pending();
+                        return;
+                    }
+
                     expect($buttons.prop('disabled')).toBe(false);
                 });
 
                 it('Disabled when saving', function() {
+                    if (RB.EnabledFeatures.unifiedBanner) {
+                        pending();
+                        return;
+                    }
+
                     expect($buttons.prop('disabled')).toBe(false);
                     editor.trigger('saving');
                     expect($buttons.prop('disabled')).toBe(true);
                 });
 
                 it('Enabled when saved', function() {
+                    if (RB.EnabledFeatures.unifiedBanner) {
+                        pending();
+                        return;
+                    }
+
                     expect($buttons.prop('disabled')).toBe(false);
                     editor.trigger('saving');
                     expect($buttons.prop('disabled')).toBe(true);
@@ -1000,15 +1076,22 @@ suite('rb/views/ReviewRequestEditorView', function() {
             describe('Draft review requests', function() {
                 beforeEach(function() {
                     view.model.set('hasDraft', true);
-                    view.showBanner();
+
+                    if (!RB.EnabledFeatures.unifiedBanner) {
+                        view.showBanner();
+                    }
                 });
+
+                const selector = RB.EnabledFeatures.unifiedBanner
+                    ? '#unified-banner #field_change_description'
+                    : '#draft-banner #field_change_description';
 
                 setupFieldTests({
                     supportsRichText: true,
                     fieldID: 'change_description',
                     fieldName: 'changeDescription',
                     jsonFieldName: 'changedescription',
-                    selector: '#draft-banner #field_change_description',
+                    selector: selector,
                 });
 
                 hasEditorTest();

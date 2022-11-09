@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n pipeline reviewtags %}
+{% load actions i18n features pipeline reviewtags %}
 
 {% block extrahead %}
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
@@ -50,11 +50,42 @@
 }{% endblock js-page-model-attrs %}
 {% block js-page-model-options %}{parse: true}{% endblock %}
 
+{%  block unified_banner %}
+{%   if_feature_enabled 'reviews.unified_banner' %}
+<div id="unified-banner" class="rb-c-unified-banner">
+ <div class="rb-c-unified-banner__review">
+  <div class="rb-c-unified-banner__controls">
+   <div class="rb-c-unified-banner__mode-selector"></div>
+   <div class="rb-c-unified-banner__draft-actions">
+    <input type="button" id="btn-review-request-discard"
+           value="{% trans "Discard" %}">
+   </div>
+   <menu class="rb-c-unified-banner__review-actions rb-c-actions" role="menu">
+{%    actions_html "unified-banner" %}
+   </menu>
+  </div>
+  <div class="rb-c-unified-banner__changedesc">
+   <p>
+    <label for="field_change_description">
+     {% trans "Describe your changes (optional):" %}
+    </label>
+   </p>
+   <pre id="field_change_description" class="field field-text-area"
+        data-field-id="field_change_description"></pre>
+  </div>
+ </div>
+ <div class="rb-c-unified-banner__dock"></div>
+</div>
+{%  endif_feature_enabled %}
+{{block.super}}
+{%  endblock %}
+
 
 {% block bodytag %}
 {{block.super}}
 
-{%  block review_banner %}
+{%  if_feature_disabled "reviews.unified_banner" %}
+{%   block review_banner %}
 <div id="review-banner"{% if not review %} hidden class="hidden"{% endif %}>
  <div class="banner">
   <h1>{% trans "You have a pending review." %}</h1>
@@ -77,5 +108,6 @@
   <input id="review-banner-discard" type="button" value="{% trans "Discard" %}" />
  </div>
 </div>
-{%  endblock %}
+{%   endblock %}
+{%  endif_feature_disabled %}
 {% endblock %}

@@ -103,7 +103,7 @@ export class FloatingBannerView<
 
                 this.$el.width(
                     Math.ceil(rect.width) -
-                    this.$el.getExtents('bpm', 'lr'));
+                    Math.max(this.$el.getExtents('bpm', 'lr'), 0));
             } else {
                 this.$el.width('auto');
             }
@@ -134,7 +134,6 @@ export class FloatingBannerView<
         const windowTop = $(window).scrollTop();
         const topOffset = this.#$floatSpacer.offset().top - windowTop;
         const outerHeight = this.$el.outerHeight(true);
-
         const wasFloating = this.$el.hasClass('floating');
 
         if (!this.#$floatContainer.hasClass(this.#noFloatContainerClass) &&
@@ -164,7 +163,10 @@ export class FloatingBannerView<
 
                 this.$el
                     .addClass('floating')
-                    .css('position', 'fixed');
+                    .css({
+                        'margin-top': 0,
+                        'position': 'fixed',
+                    });
             }
 
             this.$el.css('top',
@@ -182,8 +184,9 @@ export class FloatingBannerView<
             this.$el
                 .removeClass('floating')
                 .css({
-                    position: '',
-                    top: '',
+                    'margin-top': '',
+                    'position': '',
+                    'top': '',
                 });
             this.#$floatSpacer
                 .height('auto')

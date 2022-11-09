@@ -310,3 +310,168 @@ export class MuteActionView extends BaseVisibilityActionView {
                : _`Mute`;
     }
 }
+
+
+/**
+ * Action view to create a blank review.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+export class CreateReviewActionView extends Actions.ActionView {
+    events = {
+        'click': this.#onClick,
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    #pendingReview;
+
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options to pass through to the parent class.
+     */
+    initialize(options: object) {
+        super.initialize(options);
+
+        const page = RB.PageManager.getPage();
+        this.#pendingReview = page.pendingReview;
+    }
+
+    /**
+     * Render the action.
+     *
+     * Returns:
+     *     CreateReviewActionView:
+     *     This object, for chaining.
+     */
+    onInitialRender() {
+        this.listenTo(this.#pendingReview, 'saved destroy sync', this.#update);
+        this.#update();
+    }
+
+    /**
+     * Update the visibility state of the action.
+     *
+     * This will show the action only when there's no existing pending review.
+     */
+    #update() {
+        this.$el.parent().setVisible(this.#pendingReview.isNew());
+    }
+
+    /**
+     * Handle a click on the action.
+     *
+     * Args:
+     *     e (MouseEvent):
+     *         The event.
+     */
+    #onClick(e: MouseEvent) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        this.#pendingReview.save();
+    }
+}
+
+
+/**
+ * Action view to pop up the edit review dialog.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+export class EditReviewActionView extends Actions.ActionView {
+    events = {
+        'click': this.#onClick,
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    #pendingReview;
+    #reviewRequestEditor;
+
+    /**
+     * Create the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options to pass through to the parent class.
+     */
+    initialize(options: object) {
+        super.initialize(options);
+
+        const page = RB.PageManager.getPage();
+        this.#pendingReview = page.pendingReview;
+        this.#reviewRequestEditor = page.reviewRequestEditorView.model;
+    }
+
+    /**
+     * Render the action.
+     */
+    onInitialRender() {
+        this.listenTo(this.#pendingReview, 'saved destroy sync', this.#update);
+        this.#update();
+    }
+
+    /**
+     * Update the visibility state of the action.
+     */
+    #update() {
+        this.$el.parent().setVisible(!this.#pendingReview.isNew());
+    }
+
+    /**
+     * Handle a click on the action.
+     *
+     * Args:
+     *     e (MouseEvent):
+     *         The event.
+     */
+    #onClick(e: MouseEvent) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        RB.ReviewDialogView.create({
+            review: this.#pendingReview,
+            reviewRequestEditor: this.#reviewRequestEditor,
+        });
+    }
+}
+
+
+/**
+ * Action view to mark a review request as "Ship It".
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+export class ShipItActionView extends RB.Actions.ActionView {
+    events = {
+        'click': this.#onClick,
+    };
+
+    /**
+     * Handle a click on the action.
+     *
+     * Args:
+     *     e (MouseEvent):
+     *         The event.
+     */
+    #onClick(e: MouseEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        RB.PageManager.getPage().shipIt();
+    }
+}

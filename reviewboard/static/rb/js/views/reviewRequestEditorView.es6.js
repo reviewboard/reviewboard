@@ -460,6 +460,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 .html(err.errorText)
                 .show();
         });
+
         this.listenTo(view, 'fieldSaved', this.showBanner);
 
         if (this.rendered) {
@@ -579,6 +580,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this.model.on('saved', this.showBanner, this);
         this.model.on('published', this._refreshPage, this);
         reviewRequest.on('closed reopened', this._refreshPage, this);
+
         draft.on('destroyed', this._refreshPage, this);
 
         window.onbeforeunload = this._onBeforeUnload.bind(this);
@@ -635,7 +637,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         } else if (state === RB.ReviewRequest.CLOSE_DISCARDED) {
             BannerClass = DiscardedBannerView;
         } else if (state === RB.ReviewRequest.PENDING &&
-                   this.model.get('hasDraft')) {
+                   this.model.get('hasDraft') &&
+                   !RB.EnabledFeatures.unifiedBanner) {
             BannerClass = DraftBannerView;
         } else {
             return;
@@ -805,7 +808,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         view.on('beginEdit', () => this.model.incr('editCount'));
         view.on('endEdit', () => this.model.decr('editCount'));
-        view.on('commentSaved', () => RB.DraftReviewBannerView.instance.show());
+
+        if (!RB.EnabledFeatures.unifiedBanner) {
+            view.on('commentSaved', () => RB.DraftReviewBannerView.instance.show());
+        }
     },
 
     /**

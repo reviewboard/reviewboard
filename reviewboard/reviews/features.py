@@ -83,7 +83,7 @@ class UnifiedBannerFeature(Feature):
 
     feature_id = 'reviews.unified_banner'
     name = _('Unified Banner')
-    level = FeatureLevel.EXPERIMENTAL
+    level = FeatureLevel.STABLE
     summary = _('A unified banner that offers the functionality for drafts '
                 'and reviews in a centralized place.')
 

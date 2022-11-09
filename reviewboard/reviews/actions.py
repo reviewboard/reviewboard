@@ -303,6 +303,111 @@ class DownloadDiffAction(BaseAction):
                 review_request.has_diffsets)
 
 
+class ReviewMenuAction(BaseMenuAction):
+    """The "Review" menu on the unified banner.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'review-menu'
+    apply_to = all_review_request_url_names
+    attachment = AttachmentPoint.UNIFIED_BANNER
+    label = _('Review')
+    icon_class = 'rb-icon rb-icon-compose-review'
+
+    def should_render(
+        self,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This menu only renders when the user is logged in and the unified
+        banner feature is enabled.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        user = request.user
+
+        return (super().should_render(context=context) and
+                user.is_authenticated and
+                not is_site_read_only_for(user) and
+                unified_banner_feature.is_enabled(request=request))
+
+
+class CreateReviewAction(BaseAction):
+    """Action to create a new, blank review.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'create-review'
+    parent_id = 'review-menu'
+    apply_to = all_review_request_url_names
+    attachment = AttachmentPoint.UNIFIED_BANNER
+    label = _('Create a new review')
+    description = [
+        _('Your review will start off blank, but you can add text and '
+          'general comments to it.'),
+        _('Adding comments to code or file attachments will automatically '
+          'create a new review for you.'),
+    ]
+    icon_class = 'rb-icon rb-icon-create-review'
+    js_view_class = 'RB.CreateReviewActionView'
+    template_name = 'actions/detailed_menuitem_action.html'
+
+
+class EditReviewAction(BaseAction):
+    """Action to edit an existing review.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'edit-review'
+    parent_id = 'review-menu'
+    apply_to = all_review_request_url_names
+    attachment = AttachmentPoint.UNIFIED_BANNER
+    label = _('Edit your review')
+    description = [
+        _('Edit your comments and publish your review.'),
+    ]
+    icon_class = 'rb-icon rb-icon-compose-review'
+    js_view_class = 'RB.EditReviewActionView'
+    template_name = 'actions/detailed_menuitem_action.html'
+
+
+class ShipItAction(BaseAction):
+    """Action to mark a review request as "Ship It".
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'ship-it'
+    parent_id = 'review-menu'
+    apply_to = all_review_request_url_names
+    attachment = AttachmentPoint.UNIFIED_BANNER
+    label = _('Ship it!')
+    description = [
+        _("You're happy with what you're seeing, and would like to "
+          'approve it.'),
+        _('If you want to leave a comment with this, choose "Create '
+          'a new review" above.'),
+    ]
+    icon_class = 'rb-icon rb-icon-shipit'
+    js_view_name = 'RB.ShipItActionView'
+    template_name = 'actions/detailed_menuitem_action.html'
+
+
 class LegacyEditReviewAction(BaseAction):
     """The old-style "Edit Review" action.
 
@@ -313,7 +418,7 @@ class LegacyEditReviewAction(BaseAction):
         6.0
     """
 
-    action_id = 'edit-review'
+    action_id = 'legacy-edit-review'
     label = _('Review')
     apply_to = all_review_request_url_names
 
@@ -355,7 +460,7 @@ class LegacyShipItAction(BaseAction):
         6.0
     """
 
-    action_id = 'ship-it'
+    action_id = 'legacy-ship-it'
     label = _('Ship It!')
     apply_to = all_review_request_url_names
 
@@ -698,7 +803,7 @@ class BaseReviewRequestAction(BaseAction):
         removed in 7.0.
     """
 
-    apply_to = reviewable_url_names + review_request_url_names
+    apply_to = all_review_request_url_names
 
     def __init__(self) -> None:
         """Initialize this action.
@@ -832,7 +937,7 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
         removed in 7.0.
     """
 
-    apply_to = reviewable_url_names + review_request_url_names
+    apply_to = all_review_request_url_names
 
     def __init__(
         self,
