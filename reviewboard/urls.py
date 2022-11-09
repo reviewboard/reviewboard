@@ -82,6 +82,9 @@ if settings.DEBUG and not settings.PRODUCTION:
         path('js-tests/extensions/',
              TemplateView.as_view(template_name='js/extension_tests.html'),
              name='js-extensions-tests'),
+        path('debug/icons/',
+             TemplateView.as_view(template_name='icons.html'),
+             name='debug-icons'),
     ]
 
 
