@@ -38,18 +38,13 @@ more information.
 Installing Subversion Support
 =============================
 
-Before you add the repository, you will need to install either PySVN_ or
-Subvertpy_. These are Python modules that support communicating with
-Subversion repositories. If both are installed, PySVN will take precedence.
+Before you add the repository, you will need to install PySVN_.  This is a
+Python module that supports communicating with Subversion repositories.
 
-PySVN may be harder to install on some systems, but provides better
-compatibility than Subvertpy. We recommend using PySVN if possible.
-
-See the :ref:`installation guide <installing-svn>` for PySVN and Subvertpy.
+See the :ref:`installation guide <installing-svn>` for PySVN.
 
 
-.. _PySVN: http://pysvn.tigris.org/
-.. _Subvertpy: https://pypi.python.org/pypi/subvertpy
+.. _PySVN: https://pysvn.sourceforge.io/
 
 
 Adding the Repository

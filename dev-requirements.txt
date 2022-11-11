@@ -14,14 +14,6 @@ nose
 p4python; python_version <= '3.9' or platform_system == 'Linux' or (platform_system == 'Darwin' and platform_machine == "arm64")
 
 setuptools>=18.2
-
-# As of subvertpy 0.10.1, Python 3.8 support is busted, resulting in a
-# SystemError during usage (though installation works fine). 0.10.1 was
-# released on July 19, 2017, and there has not been an official release
-# since (even though the upstream source does fix this). For now, we can't
-# safely install this on Python 3.8.
-subvertpy; python_version <= '3.7'
-
 wheel
 
 # Load in some extra dependencies defined in Review Board's setup.py.

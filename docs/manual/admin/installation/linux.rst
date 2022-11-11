@@ -258,19 +258,23 @@ You'll then need to install the Python bindings by typing the following::
 Subversion
 ----------
 
-To use Review Board with Subversion_, you'll need both subversion and
-PySVN_ installed. In the event that PySVN cannot be installed, subvertpy_
-may be used as an alternative, but we recommend PySVN for the best
-compatibility.
+To use Review Board with Subversion_, you'll need both Subversion and
+PySVN_ installed.
 
 
-.. _Subversion: http://subversion.tigris.org/
-.. _PySVN: http://pysvn.tigris.org/
-.. _subvertpy: https://www.samba.org/~jelmer/subvertpy/
+.. note::
+
+   Review Board previously supported an alternative to PySVN called
+   Subvertpy. We've decided to drop Subvertpy support after many reports
+   of compatibility issues.
+
+   Subvertpy will continue to work through Review Board 5. However, we
+   recommend uninstalling and upgrading to PySVN instead.
 
 
-PySVN
-~~~~~
+.. _Subversion: https://subversion.apache.org/
+.. _PySVN: docs/manual/admin/installation/linux.rst
+
 
 To install on Debian_ or Ubuntu_, type::
 
@@ -295,35 +299,6 @@ to get set up. Simply follow the instructions there.
 
 
 .. _PySVN installer: https://github.com/reviewboard/pysvn-installer
-
-
-subvertpy
-~~~~~~~~~
-
-.. note::
-
-   subvertpy is only needed if you cannot install PySVN. We strongly
-   recommend using PySVN for the best Subversion compatibility.
-
-To install on Debian_ or Ubuntu_, type::
-
-    $ apt-get install python-subvertpy
-
-To install on Fedora_, type::
-
-    $ yum install python-subvertpy
-
-On `RedHat Enterprise`_ and CentOS_, you may have to install subvertpy from
-scratch if you do not wish to add the EPEL repository. To install PySVN from
-EPEL, add its repository, then type::
-
-    $ yum --enablerepo=epel install python-subvertpy
-
-If your distribution doesn't provide subvertpy, you can install it by
-installing the development packages for Python and subversion, and then
-the package itself via pip, by typing::
-
-    $ pip install -U 'ReviewBoard[subvertpy]'
 
 
 .. _linux-installing-amazon-s3-support:
