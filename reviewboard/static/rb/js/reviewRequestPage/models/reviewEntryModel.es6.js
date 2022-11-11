@@ -41,6 +41,7 @@ RB.ReviewRequestPage.ReviewEntry = RB.ReviewRequestPage.Entry.extend({
             {
                 diffCommentsData: attrs.diffCommentsData,
                 review: reviewRequest.createReview(reviewData.id, {
+                    authorName: reviewData.authorName,
                     bodyBottom: reviewData.bodyBottom,
                     bodyTop: reviewData.bodyTop,
                     'public': reviewData.public,

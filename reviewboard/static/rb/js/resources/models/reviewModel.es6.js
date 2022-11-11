@@ -58,6 +58,7 @@
 RB.Review = RB.BaseResource.extend({
     defaults() {
         return _.defaults({
+            authorName: null,
             forceTextType: null,
             shipIt: false,
             'public': false,
@@ -70,7 +71,7 @@ RB.Review = RB.BaseResource.extend({
             includeTextTypes: null,
             markdownTextFields: {},
             rawTextFields: {},
-            timestamp: null
+            timestamp: null,
         }, RB.BaseResource.prototype.defaults());
     },
 
