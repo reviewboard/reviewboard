@@ -22,6 +22,8 @@
 {% block js-page-model-attrs %}{
 {%  if not error %}
     {{diff_context|json_dumps_items}},
+    allChunksCollapsed: {{collapseall|yesno:'true,false'}},
+    canToggleExtraWhitespace: {{siteconfig_settings.diffviewer_show_trailing_whitespace|yesno:'true,false'}},
     checkUpdatesType: 'diff',
     {% reviewable_page_model_data %}
 {%  endif %}
@@ -76,19 +78,7 @@
  </div>
 </div>
 
-<ul id="view_controls">
-{%    if collapseall %}
- <li><a href=".?expand=1" rel="nofollow"><span class="fa fa-plus"></span> {% trans "Expand changes" %}</a></li>
-{%    else %}
- <li><a href=".?collapse=1" rel="nofollow"><span class="fa fa-minus"></span> {% trans "Collapse changes" %}</a></li>
-{%    endif %}
-{%    if siteconfig_settings.diffviewer_show_trailing_whitespace %}
- <li class="ew" style="display:none;"><a href="#" class="toggle-show-whitespace"><span class="fa fa-minus"></span> {% trans "Hide extra whitespace" %}</a></li>
- <li class="ew"><a href="#" class="toggle-show-whitespace"><span class="fa fa-plus"></span> {% trans "Show extra whitespace" %}</a></li>
-{%    endif %}
- <li class="ws"><a href="#" class="toggle-whitespace-only-chunks"><span class="fa fa-minus"></span> {% trans "Hide whitespace changes" %}</a></li>
- <li  class="ws" style="display:none;"><a href="#" class="toggle-whitespace-only-chunks"><span class="fa fa-plus"></span> {% trans "Show whitespace changes" %}</a></li>
-</ul>
+<ul id="view_controls"></ul>
 
 <div id="diffs"></div>
 <div id="pagination2"></div>

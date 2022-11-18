@@ -3,6 +3,9 @@ suite('rb/pages/models/DiffViewerPage', function() {
         it('{}', function() {
             const page = new RB.DiffViewerPage({}, {parse: true});
 
+            expect(page.get('allChunksCollapsed')).toBeFalse();
+            expect(page.get('canDownloadDiff')).toBeFalse();
+            expect(page.get('canToggleExtraWhitespace')).toBeFalse();
             expect(page.get('reviewRequest')).toBeTruthy();
             expect(page.get('pendingReview')).toBeTruthy();
             expect(page.get('lastActivityTimestamp')).toBe(null);
@@ -18,6 +21,18 @@ suite('rb/pages/models/DiffViewerPage', function() {
             /* These shouldn't be attributes. */
             expect(page.get('editorData')).toBe(undefined);
             expect(page.get('reviewRequestData')).toBe(undefined);
+        });
+
+        it('Diff view options', function() {
+            const page = new RB.DiffViewerPage({
+                allChunksCollapsed: true,
+                canToggleExtraWhitespace: true,
+            }, {
+                parse: true,
+            });
+
+            expect(page.get('allChunksCollapsed')).toBeTrue();
+            expect(page.get('canToggleExtraWhitespace')).toBeTrue();
         });
 
         it('reviewRequestData', function() {

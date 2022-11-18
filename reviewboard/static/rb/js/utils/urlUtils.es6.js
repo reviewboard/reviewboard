@@ -33,3 +33,17 @@ RB.getLocationHash = function(url) {
 
     return decodedHash;
 };
+
+
+/**
+ * Navigate to a new URL.
+ *
+ * This is preferable over setting ``window.location``, as the operation can
+ * be spied upon in unit tests.
+ *
+ * Version Added:
+ *     4.0.12, 5.0.2
+ */
+RB.navigateTo = function(url) {
+    window.location = url;
+};
