@@ -8,6 +8,7 @@ from pygments import highlight
 from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
 
+from reviewboard.attachments.mimetypes import TextMimetype
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.chunk_generator import (NoWrapperHtmlFormatter,
                                                     RawDiffChunkGenerator)
@@ -24,12 +25,10 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
     This renders the text file, applying syntax highlighting, and allows users
     to comment on one or more lines.
     """
+
     name = 'Text'
     object_key = 'text'
-    supported_mimetypes = [
-        'text/*',
-        'application/x-javascript',
-    ]
+    supported_mimetypes = TextMimetype.supported_mimetypes
     template_name = 'reviews/ui/text.html'
     comment_thumbnail_template_name = 'reviews/ui/text_comment_thumbnail.html'
     can_render_text = False

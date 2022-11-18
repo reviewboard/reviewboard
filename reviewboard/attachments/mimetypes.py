@@ -438,7 +438,11 @@ class TextMimetype(MimetypeHandler):
 
     supported_mimetypes = [
         'text/*',
+        'application/javascript',
+        'application/json',
         'application/x-javascript',
+        'application/x-json',
+        'application/x-yaml',
     ]
 
     # Read up to 'FILE_CROP_CHAR_LIMIT' number of characters from
