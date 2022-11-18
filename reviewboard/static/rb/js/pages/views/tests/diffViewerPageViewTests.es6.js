@@ -66,6 +66,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
           <div class="commit-list-container">
           </div>
          </div>
+         <div id="view_controls"></div>
          <div id="diffs"></div>
         </div>
     `;
@@ -74,23 +75,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
     let pageView;
     let $diffs;
 
-    beforeEach(function() {
-        /*
-         * Disable the router so that the page doesn't change the URL on the
-         * page while tests run.
-         */
-        spyOn(window.history, 'pushState');
-        spyOn(window.history, 'replaceState');
-    });
-
-    afterEach(function() {
-        RB.DnDUploader.instance = null;
-        Backbone.history.stop();
-    });
-
-    describe('Without commits', function() {
-        beforeEach(function() {
-            page = new RB.DiffViewerPage({
+    function setupPageView(modelAttrs) {
+        page = new RB.DiffViewerPage(
+            _.extend({
                 checkForUpdates: false,
                 pagination: {
                     current_page: 1,
@@ -109,13 +96,305 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     mutableByUser: true,
                     statusMutableByUser: true,
                 },
-            }, {
+            }, modelAttrs),
+            {
                 parse: true,
             });
 
-            pageView = new RB.DiffViewerPageView({
-                el: $(pageTemplate).appendTo($testsScratch),
-                model: page,
+        pageView = new RB.DiffViewerPageView({
+            el: $(pageTemplate).appendTo($testsScratch),
+            model: page,
+        });
+        pageView.render();
+    }
+
+    beforeEach(function() {
+        /*
+         * Disable the router so that the page doesn't change the URL on the
+         * page while tests run.
+         */
+        spyOn(window.history, 'pushState');
+        spyOn(window.history, 'replaceState');
+
+        spyOn(RB, 'navigateTo');
+
+        /* Ensure that tests don't alter cookies. Set defaults. */
+        spyOn($, 'cookie');
+        RB.UserSession.instance.set('canToggleExtraWhitespace', false);
+        RB.UserSession.instance.set('diffsShowExtraWhitespace', true);
+    });
+
+    afterEach(function() {
+        RB.DnDUploader.instance = null;
+        Backbone.history.stop();
+    });
+
+    describe('Diff view buttons', function() {
+        describe('Initial state', function() {
+            it('Defaults', function() {
+                setupPageView();
+
+                expect(page.get('allChunksCollapsed')).toBeFalse();
+                expect(page.get('canToggleExtraWhitespace')).toBeFalse();
+
+                const $buttons = pageView.$('#view_controls button');
+                expect($buttons.length).toBe(2);
+
+                let $button = $buttons.eq(0);
+                expect($button.attr('id'))
+                    .toBe('action-diff-toggle-collapse-changes');
+                expect($button.text().trim()).toBe('Collapse changes');
+                expect($button.attr('title')).toBe(
+                    'All lines of the files are being shown. Toggle to ' +
+                    'collapse down to only modified sections instead.');
+
+                $button = $buttons.eq(1);
+                expect($button.attr('id'))
+                    .toBe('action-diff-toggle-whitespace-only');
+                expect($button.text().trim())
+                    .toBe('Hide whitespace-only changes');
+                expect($button.attr('title')).toBe(
+                    'Sections of the diff containing only whitespace ' +
+                    'changes are being shown. Toggle to hide those instead.');
+            });
+
+            it('With allChunksCollapsed=true', function() {
+                setupPageView({
+                    allChunksCollapsed: true,
+                });
+
+                expect(page.get('allChunksCollapsed')).toBeTrue();
+                expect(page.get('canToggleExtraWhitespace')).toBeFalse();
+
+                const $buttons = pageView.$('#view_controls button');
+                expect($buttons.length).toBe(2);
+
+                let $button = $buttons.eq(0);
+                expect($button.attr('id'))
+                    .toBe('action-diff-toggle-collapse-changes');
+                expect($button.text().trim()).toBe('Expand changes');
+                expect($button.attr('title')).toBe(
+                    'Only modified sections of the files are being shown. ' +
+                    'Toggle to show all lines instead.');
+
+                $button = $buttons.eq(1);
+                expect($button.attr('id'))
+                    .toBe('action-diff-toggle-whitespace-only');
+                expect($button.text().trim())
+                    .toBe('Hide whitespace-only changes');
+                expect($button.attr('title')).toBe(
+                    'Sections of the diff containing only whitespace ' +
+                    'changes are being shown. Toggle to hide those instead.');
+            });
+
+            it('With canToggleExtraWhitespace=true', function() {
+                setupPageView({
+                    canToggleExtraWhitespace: true,
+                });
+
+                expect(page.get('allChunksCollapsed')).toBeFalse();
+                expect(page.get('canToggleExtraWhitespace')).toBeTrue();
+
+                const $buttons = pageView.$('#view_controls button');
+                expect($buttons.length).toBe(3);
+
+                let $button = $buttons.eq(0);
+                expect($button.attr('id'))
+                    .toBe('action-diff-toggle-collapse-changes');
+                expect($button.text().trim()).toBe('Collapse changes');
+                expect($button.attr('title')).toBe(
+                    'All lines of the files are being shown. Toggle to ' +
+                    'collapse down to only modified sections instead.');
+
+                $button = $buttons.eq(1);
+                expect($button.attr('id'))
+                    .toBe('action-diff-toggle-extra-whitespace');
+                expect($button.text().trim()).toBe('Hide extra whitespace');
+                expect($button.attr('title')).toBe(
+                    'Mismatched indentation and trailing whitespace are ' +
+                    'being shown. Toggle to hide instead.');
+
+                $button = $buttons.eq(2);
+                expect($button.attr('id'))
+                    .toBe('action-diff-toggle-whitespace-only');
+                expect($button.text().trim())
+                    .toBe('Hide whitespace-only changes');
+                expect($button.attr('title')).toBe(
+                    'Sections of the diff containing only whitespace ' +
+                    'changes are being shown. Toggle to hide those instead.');
+            });
+
+            it('With canToggleExtraWhitespace=true and ' +
+               'diffsShowExtraWhitespace=true',
+               function() {
+                RB.UserSession.instance.set('diffsShowExtraWhitespace', true);
+                setupPageView({
+                    canToggleExtraWhitespace: true,
+                });
+
+                expect(page.get('allChunksCollapsed')).toBeFalse();
+                expect(page.get('canToggleExtraWhitespace')).toBeTrue();
+
+                const $buttons = pageView.$('#view_controls button');
+                expect($buttons.length).toBe(3);
+
+                let $button = $buttons.eq(0);
+                expect($button.attr('id'))
+                    .toBe('action-diff-toggle-collapse-changes');
+                expect($button.text().trim()).toBe('Collapse changes');
+                expect($button.attr('title')).toBe(
+                    'All lines of the files are being shown. Toggle to ' +
+                    'collapse down to only modified sections instead.');
+
+                $button = $buttons.eq(1);
+                expect($button.attr('id'))
+                    .toBe('action-diff-toggle-extra-whitespace');
+                expect($button.text().trim()).toBe('Hide extra whitespace');
+                expect($button.attr('title')).toBe(
+                    'Mismatched indentation and trailing whitespace are ' +
+                    'being shown. Toggle to hide instead.');
+
+                $button = $buttons.eq(2);
+                expect($button.attr('id'))
+                    .toBe('action-diff-toggle-whitespace-only');
+                expect($button.text().trim())
+                       .toBe('Hide whitespace-only changes');
+                expect($button.attr('title')).toBe(
+                    'Sections of the diff containing only whitespace ' +
+                    'changes are being shown. Toggle to hide those instead.');
+            });
+        });
+
+        describe('Actions', function() {
+            it('Collapse changes', function() {
+                setupPageView({
+                    allChunksCollapsed: false,
+                });
+
+                const $button =
+                    pageView.$('#action-diff-toggle-collapse-changes');
+                expect($button.length).toBe(1);
+                expect($button.text().trim()).toBe('Collapse changes');
+
+                $button.click();
+
+                expect(RB.navigateTo).toHaveBeenCalledWith('.?collapse=1');
+                expect($button.text().trim()).toBe('Expand changes');
+            });
+
+            it('Expand changes', function() {
+                setupPageView({
+                    allChunksCollapsed: true,
+                });
+
+                const $button =
+                    pageView.$('#action-diff-toggle-collapse-changes');
+                expect($button.length).toBe(1);
+                expect($button.text().trim()).toBe('Expand changes');
+
+                $button.click();
+
+                expect(RB.navigateTo).toHaveBeenCalledWith('.?expand=1');
+                expect($button.text().trim()).toBe('Collapse changes');
+            });
+
+            it('Show extra whitespace', function() {
+                RB.UserSession.instance.set('diffsShowExtraWhitespace', false);
+                setupPageView({
+                    canToggleExtraWhitespace: true
+                });
+
+                const $button =
+                    pageView.$('#action-diff-toggle-extra-whitespace');
+                expect($button.length).toBe(1);
+                expect($button.text().trim()).toBe('Show extra whitespace');
+
+                $button.click();
+
+                expect(RB.UserSession.instance.get('diffsShowExtraWhitespace'))
+                    .toBeTrue();
+                expect($button.text().trim()).toBe('Hide extra whitespace');
+            });
+
+            it('Hide extra whitespace', function() {
+                RB.UserSession.instance.set('diffsShowExtraWhitespace', true);
+                setupPageView({
+                    canToggleExtraWhitespace: true
+                });
+
+                const $button =
+                    pageView.$('#action-diff-toggle-extra-whitespace');
+                expect($button.length).toBe(1);
+                expect($button.text().trim()).toBe('Hide extra whitespace');
+
+                $button.click();
+
+                expect(RB.UserSession.instance.get('diffsShowExtraWhitespace'))
+                    .toBeFalse();
+                expect($button.text().trim()).toBe('Show extra whitespace');
+            });
+
+            it('Show whitespace-only changes', function() {
+                setupPageView();
+
+                const diffReviewableView = new RB.DiffReviewableView();
+                spyOn(diffReviewableView, 'toggleWhitespaceOnlyChunks');
+                pageView._diffReviewableViews = [diffReviewableView];
+
+                const $button =
+                    pageView.$('#action-diff-toggle-whitespace-only');
+                expect($button.length).toBe(1);
+                expect($button.text().trim())
+                    .toBe('Hide whitespace-only changes');
+
+                /*
+                 * We have to do this twice, since we hard-code a default
+                 * active state to true.
+                 */
+                $button.click();
+
+                expect(diffReviewableView.toggleWhitespaceOnlyChunks)
+                    .toHaveBeenCalled();
+                expect($button.text().trim())
+                    .toBe('Show whitespace-only changes');
+
+                /* Do it again. */
+                $button.click();
+
+                expect(diffReviewableView.toggleWhitespaceOnlyChunks)
+                    .toHaveBeenCalled();
+                expect($button.text().trim())
+                    .toBe('Hide whitespace-only changes');
+            });
+
+            it('Hide whitespace-only changes', function() {
+                setupPageView();
+
+                const diffReviewableView = new RB.DiffReviewableView();
+                spyOn(diffReviewableView, 'toggleWhitespaceOnlyChunks');
+                pageView._diffReviewableViews = [diffReviewableView];
+
+                const $button =
+                    pageView.$('#action-diff-toggle-whitespace-only');
+                expect($button.length).toBe(1);
+                expect($button.text().trim())
+                    .toBe('Hide whitespace-only changes');
+
+                $button.click();
+
+                expect(diffReviewableView.toggleWhitespaceOnlyChunks)
+                    .toHaveBeenCalled();
+                expect($button.text().trim())
+                    .toBe('Show whitespace-only changes');
+            });
+
+        });
+    });
+
+    describe('Without commits', function() {
+        beforeEach(function() {
+            setupPageView({
+                canToggleExtraWhitespace: true,
             });
 
             $diffs = pageView.$el.children('#diffs');
