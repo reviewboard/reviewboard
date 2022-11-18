@@ -6,12 +6,20 @@ Version Added:
 
 import re
 import smtplib
+from typing import Optional, Tuple, Type, Union, TYPE_CHECKING
 
 from django.core.mail.backends import smtp
+from django.core.mail.message import EmailMessage
 from django.utils.functional import cached_property
 
 
-class SMTPConnectionMixin(object):
+if TYPE_CHECKING:
+    ConnectionParent = smtplib.SMTP
+else:
+    ConnectionParent = object
+
+
+class SMTPConnectionMixin(ConnectionParent):
     """Mixin for tracking last replies when sending e-mail over SMTP.
 
     Version Added:
@@ -23,7 +31,9 @@ class SMTPConnectionMixin(object):
             details string.
     """
 
-    def __init__(self, *args, **kwargs):
+    rb_last_reply: Optional[Tuple[int, bytes]]
+
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize the mixin.
 
         Args:
@@ -35,9 +45,9 @@ class SMTPConnectionMixin(object):
         """
         self.rb_last_reply = None
 
-        super(SMTPConnectionMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
-    def data(self, *args, **kwargs):
+    def data(self, *args, **kwargs) -> Tuple[int, bytes]:
         """Send message data over SMTP.
 
         This will use the backend to send the data, and then store the
@@ -54,7 +64,7 @@ class SMTPConnectionMixin(object):
             tuple:
             The reply object. See :py:attr:`rb_last_reply`.
         """
-        reply = super(SMTPConnectionMixin, self).data(*args, **kwargs)
+        reply: Tuple[int, bytes] = super().data(*args, **kwargs)
 
         self.rb_last_reply = reply
 
@@ -98,7 +108,7 @@ class EmailBackend(smtp.EmailBackend):
 
     SES_HOST_RE = re.compile(r'email-smtp(?:-fips)?\.([^.]+)\.amazonaws\.com')
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize the e-mail backend.
 
         Args:
@@ -108,12 +118,13 @@ class EmailBackend(smtp.EmailBackend):
             **kwargs (dict):
                 Keyword arguments for the backend class.
         """
-        super(EmailBackend, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self._ses_region = None
 
     @property
-    def connection_class(self):
+    def connection_class(self) -> Union[Type[SMTPSSLConnection],
+                                        Type[SMTPConnection]]:
         """The SMTP connection class to use for communication.
 
         This will be a version with last-response tracking enabled.
@@ -127,7 +138,7 @@ class EmailBackend(smtp.EmailBackend):
             return SMTPConnection
 
     @cached_property
-    def is_ses(self):
+    def is_ses(self) -> bool:
         """Whether e-mail is being sent via Amazon SES.
 
         Type:
@@ -143,13 +154,13 @@ class EmailBackend(smtp.EmailBackend):
         return False
 
     @cached_property
-    def ses_message_id_domain(self):
+    def ses_message_id_domain(self) -> str:
         """The Amazon SES domain to use for a Message ID.
 
         This cannot be called if :py:attr:`is_ses` is not ``True``.
 
         Type:
-            unicode
+            str
         """
         assert self.is_ses
 
@@ -161,7 +172,12 @@ class EmailBackend(smtp.EmailBackend):
         else:
             return '%s.amazonses.com' % self._ses_region
 
-    def _send(self, email_message, *args, **kwargs):
+    def _send(
+        self,
+        email_message: EmailMessage,
+        *args,
+        **kwargs,
+    ) -> bool:
         """Send an e-mail message.
 
         This wraps Django's main e-mail sending logic, processing the
@@ -179,15 +195,14 @@ class EmailBackend(smtp.EmailBackend):
                 Additional keyword arguments to pass to the parent method.
 
         Returns:
-            object:
+            bool:
             The result of the parent method.
 
         Raises:
             Exception:
                 An error raised by the parent method.
         """
-        result = super(EmailBackend, self)._send(email_message, *args,
-                                                 **kwargs)
+        result = super()._send(email_message, *args, **kwargs)
 
         last_reply = self.connection.rb_last_reply
 

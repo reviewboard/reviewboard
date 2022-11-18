@@ -3,7 +3,7 @@
 from functools import wraps
 
 from django.conf import settings
-from django.http.response import Http404, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse
 
 
 def preview_email(email_builder):
@@ -38,7 +38,11 @@ def preview_email(email_builder):
     """
     def decorator(f):
         @wraps(f)
-        def decorated(request, message_format, **kwargs):
+        def decorated(
+            request: HttpRequest,
+            message_format: str,
+            **kwargs,
+        ) -> HttpResponse:
             if not settings.DEBUG:
                 raise Http404
 

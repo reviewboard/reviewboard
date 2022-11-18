@@ -1,22 +1,44 @@
 """Utilities for sending e-mail messages."""
 
+from __future__ import annotations
+
 import logging
+from typing import (Callable,
+                    Collection,
+                    List,
+                    Optional,
+                    Set,
+                    Tuple,
+                    Union,
+                    TYPE_CHECKING)
 
 from django.contrib.auth.models import User
 from django.db.models import Q
 from djblets.mail.utils import (build_email_address,
                                 build_email_address_for_user)
+from typing_extensions import TypeAlias
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.reviews.models import Group
+from reviewboard.reviews.models import Group, ReviewRequest
+
+if TYPE_CHECKING:
+    from reviewboard.notifications.email.message import EmailMessage
 
 
 logger = logging.getLogger(__name__)
 
 
-def build_recipients(user, review_request, extra_recipients=None,
-                     limit_recipients_to=None):
+Recipient: TypeAlias = Union[User, Group]
+RecipientList: TypeAlias = Collection[Recipient]
+
+
+def build_recipients(
+    user: User,
+    review_request: ReviewRequest,
+    extra_recipients: Optional[RecipientList] = None,
+    limit_recipients_to: Optional[RecipientList] = None,
+) -> Tuple[RecipientList, RecipientList]:
     """Build the recipient sets for an e-mail.
 
     By default, the user sending the e-mail, the review request submitter (if
@@ -53,8 +75,8 @@ def build_recipients(user, review_request, extra_recipients=None,
         :py:class:`Users <django.contrib.auth.models.User>` and
         :py:class:`Groups <reviewboard.reviews.models.Group>`.
     """
-    recipients = set()
-    to_field = set()
+    recipients: Set[Recipient] = set()
+    to_field: Set[Recipient] = set()
 
     local_site = review_request.local_site_id
     submitter = review_request.submitter
@@ -118,7 +140,9 @@ def build_recipients(user, review_request, extra_recipients=None,
 
     recipients.update(starred_users)
 
-    def _filter_recipients(to_filter):
+    def _filter_recipients(
+        to_filter: RecipientList,
+    ) -> None:
         """Filter the given recipients.
 
         All groups will be added to the resulting recipients. Only users with a
@@ -157,6 +181,7 @@ def build_recipients(user, review_request, extra_recipients=None,
     if limit_recipients_to is not None:
         _filter_recipients(limit_recipients_to)
     else:
+        assert extra_recipients is not None
         _filter_recipients(extra_recipients)
 
         to_field.update(
@@ -182,7 +207,10 @@ def build_recipients(user, review_request, extra_recipients=None,
     return to_field, cc_field
 
 
-def get_email_addresses_for_group(group, review_request_id=None):
+def get_email_addresses_for_group(
+    group: Group,
+    review_request_id: Optional[int] = None,
+) -> List[str]:
     """Build a list of e-mail addresses for the group.
 
     Args:
@@ -190,14 +218,15 @@ def get_email_addresses_for_group(group, review_request_id=None):
             The review group to build the e-mail addresses for.
 
         review_request_id (int, optional):
-
+            The ID of the review request being used for the notification. This
+            is used to filter out users who have muted the review request.
 
     Returns:
-        list of unicode:
+        list of str:
         A list of properly formatted e-mail addresses for all users in the
         review group.
     """
-    addresses = []
+    addresses: List[str] = []
 
     if group.mailing_list:
         if ',' not in group.mailing_list:
@@ -245,7 +274,10 @@ def get_email_addresses_for_group(group, review_request_id=None):
     return addresses
 
 
-def recipients_to_addresses(recipients, review_request_id=None):
+def recipients_to_addresses(
+    recipients: RecipientList,
+    review_request_id: Optional[int] = None,
+) -> Set[str]:
     """Return the set of e-mail addresses for the recipients.
 
     Args:
@@ -253,8 +285,13 @@ def recipients_to_addresses(recipients, review_request_id=None):
             A list of :py:class:`Users <django.contrib.auth.models.User>` and
             :py:class:`Groups <reviewboard.reviews.models.Group>`.
 
+        review_request_id (int, optional):
+            The ID of the review request being used for the notification. This
+            is used to filter out users who have muted the review request.
+
     Returns:
-        set: The e-mail addresses for all recipients.
+        set:
+        The e-mail addresses for all recipients.
     """
     addresses = set()
 
@@ -270,7 +307,10 @@ def recipients_to_addresses(recipients, review_request_id=None):
     return addresses
 
 
-def send_email(email_builder, **kwargs):
+def send_email(
+    email_builder: Callable,
+    **kwargs,
+) -> Tuple[Optional[EmailMessage], bool]:
     """Attempt to send an e-mail, logging any exceptions that occur.
 
     Args:

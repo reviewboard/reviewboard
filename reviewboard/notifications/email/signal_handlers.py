@@ -1,8 +1,13 @@
 """E-mail notification callbacks."""
 
+from typing import Union
+
+from django.contrib.auth.models import User
+from django.http import HttpRequest
 from django.utils import timezone
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.notifications.email.message import (
     prepare_password_changed_mail,
     prepare_reply_published_mail,
@@ -11,10 +16,14 @@ from reviewboard.notifications.email.message import (
     prepare_user_registered_mail,
     prepare_webapi_token_mail)
 from reviewboard.notifications.email.utils import send_email
-from reviewboard.reviews.models import ReviewRequest
+from reviewboard.reviews.models import Review, ReviewRequest
+from reviewboard.webapi.models import WebAPIToken
 
 
-def _update_email_info(obj, message_id):
+def _update_email_info(
+    obj: Union[Review, ReviewRequest],
+    message_id: str,
+) -> None:
     """Update the e-mail message information on the object.
 
     The ``email_message_id`` and ``time_emailed`` fields of the model will be
@@ -25,7 +34,7 @@ def _update_email_info(obj, message_id):
              reviewboard.reviews.models.review_request.ReviewRequest):
             The object for which e-mail information will be updated.
 
-        message_id (unicode):
+        message_id (str):
             The new e-mail message ID.
     """
     obj.email_message_id = message_id
@@ -33,7 +42,7 @@ def _update_email_info(obj, message_id):
     obj.save(update_fields=('email_message_id', 'time_emailed'))
 
 
-def send_password_changed_mail(user):
+def send_password_changed_mail(user: User) -> None:
     """Send an e-mail when a user's password changes.
 
     The e-mail will only be sent when the ``mail_send_password_changed_mail``
@@ -50,7 +59,12 @@ def send_password_changed_mail(user):
         send_email(prepare_password_changed_mail, user=user)
 
 
-def send_reply_published_mail(user, reply, trivial, **kwargs):
+def send_reply_published_mail(
+    user: User,
+    reply: Review,
+    trivial: bool,
+    **kwargs,
+) -> None:
     """Send e-mail when a review reply is published.
 
     Listens to the :py:data:`~reviewboard.reviews.signals.reply_published`
@@ -90,11 +104,18 @@ def send_reply_published_mail(user, reply, trivial, **kwargs):
                                review_request=review_request)
 
     if sent:
+        assert message is not None
         _update_email_info(reply, message.message_id)
 
 
-def send_review_published_mail(user, review, to_owner_only, trivial, request,
-                               **kwargs):
+def send_review_published_mail(
+    user: User,
+    review: Review,
+    to_owner_only: bool,
+    trivial: bool,
+    request: HttpRequest,
+    **kwargs,
+) -> None:
     """Send e-mail when a review is published.
 
     Listens to the :py:data:`~reviewboard.reviews.signals.review_published`
@@ -139,11 +160,16 @@ def send_review_published_mail(user, review, to_owner_only, trivial, request,
                                to_owner_only=to_owner_only)
 
     if sent:
+        assert message is not None
         _update_email_info(review, message.message_id)
 
 
-def send_review_request_closed_mail(user, review_request, close_type,
-                                    **kwargs):
+def send_review_request_closed_mail(
+    user: User,
+    review_request: ReviewRequest,
+    close_type: str,
+    **kwargs,
+) -> None:
     """Send e-mail when a review request is closed.
 
     Listens to the
@@ -155,10 +181,11 @@ def send_review_request_closed_mail(user, review_request, close_type,
         user (django.contrib.auth.models.User):
             The user who closed the review request.
 
-        review_request (reviewboard.reviews.models.review_request.ReviewRequest):
+        review_request (reviewboard.reviews.models.review_request.
+                        ReviewRequest):
             The review request that was closed.
 
-        close_type (unicode):
+        close_type (str):
             How the review request was closed.
 
         **kwargs (dict):
@@ -176,11 +203,17 @@ def send_review_request_closed_mail(user, review_request, close_type,
                                close_type=close_type)
 
     if sent:
+        assert message is not None
         _update_email_info(review_request, message.message_id)
 
 
-def send_review_request_published_mail(user, review_request, trivial,
-                                       changedesc, **kwargs):
+def send_review_request_published_mail(
+    user: User,
+    review_request: ReviewRequest,
+    trivial: bool,
+    changedesc: ChangeDescription,
+    **kwargs,
+) -> None:
     """Send e-mail when a review request is published.
 
     Listens to the
@@ -195,13 +228,15 @@ def send_review_request_published_mail(user, review_request, trivial,
         user (django.contrib.auth.models.User):
             The user who published the review request.
 
-        review_request (reviewboard.reviews.models.review_request.ReviewRequest):
+        review_request (reviewboard.reviews.models.review_request.
+                        ReviewRequest):
             The review request that was published.
 
         trivial (bool):
             Whether or not the publish was marked as trivial.
 
-        changedesc (reviewboard.changedescs.models.ChangeDescription, optional):
+        changedesc (reviewboard.changedescs.models.ChangeDescription,
+                    optional):
             The change description associated with the publish, if any.
 
         **kwargs (dict):
@@ -222,10 +257,14 @@ def send_review_request_published_mail(user, review_request, trivial,
                                changedesc=changedesc)
 
     if sent:
+        assert message is not None
         _update_email_info(review_request, message.message_id)
 
 
-def send_user_registered_mail(user, **kwargs):
+def send_user_registered_mail(
+    user: User,
+    **kwargs,
+) -> None:
     """Send e-mail when a user is registered.
 
     Listens for new user registrations and sends a new user registration
@@ -248,7 +287,11 @@ def send_user_registered_mail(user, **kwargs):
                user=user)
 
 
-def send_webapi_token_created_mail(instance, auto_generated=False, **kwargs):
+def send_webapi_token_created_mail(
+    instance: WebAPIToken,
+    auto_generated: bool = False,
+    **kwargs,
+) -> None:
     """Send e-mail when an API token is created.
 
     Args:
@@ -268,7 +311,10 @@ def send_webapi_token_created_mail(instance, auto_generated=False, **kwargs):
                    op='created')
 
 
-def send_webapi_token_deleted_mail(instance, **kwargs):
+def send_webapi_token_deleted_mail(
+    instance: WebAPIToken,
+    **kwargs,
+) -> None:
     """Send e-mail when an API token is deleted.
 
     Args:
@@ -283,7 +329,10 @@ def send_webapi_token_deleted_mail(instance, **kwargs):
                op='deleted')
 
 
-def send_webapi_token_expired_mail(instance, **kwargs):
+def send_webapi_token_expired_mail(
+    instance: WebAPIToken,
+    **kwargs,
+) -> None:
     """Send e-mail upon the first use of an API token that is expired.
 
     Version Added:
@@ -306,7 +355,10 @@ def send_webapi_token_expired_mail(instance, **kwargs):
             instance.save_base(update_fields=('extra_data',))
 
 
-def send_webapi_token_updated_mail(instance, **kwargs):
+def send_webapi_token_updated_mail(
+    instance: WebAPIToken,
+    **kwargs,
+) -> None:
     """Send e-mail when an API token is updated.
 
     Args:
