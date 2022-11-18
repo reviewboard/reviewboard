@@ -31,7 +31,7 @@ class DiffACLsFeature(Feature):
 
     feature_id = 'reviews.diff_acls'
     name = _('Diff ACLs')
-    level = FeatureLevel.EXPERIMENTAL
+    level = FeatureLevel.STABLE
     summary = _('Allow extensions to determine per-user access to diffs with '
                 'FileDiffACLHook.')
 
