@@ -5,9 +5,17 @@
  * display and update the diff viewer.
  *
  * Model Attributes:
+ *     allChunksCollapsed (boolean):
+ *         Whether to collapse all chunks down to only show modified ones,
+ *         instead of showing all lines in the file.
+ *
  *     canDownloadDiff (boolean):
  *         Whether a diff file can be downloaded, given the current revision
  *         state.
+ *
+ *     canToggleExtraWhitespace (boolean):
+ *         Whether the user can toggle the display of extra whitespace
+ *         (mismatched indentation and trailing whitespace).
  *
  *     filenamePatterns (Array):
  *         A list of filenames or patterns used to filter the diff viewer.
@@ -18,7 +26,9 @@
  */
 RB.DiffViewerPage = RB.ReviewablePage.extend({
     defaults: _.defaults({
+        allChunksCollapsed: false,
         canDownloadDiff: false,
+        canToggleExtraWhitespace: false,
         filenamePatterns: null,
         numDiffs: 1,
     }, RB.ReviewablePage.prototype.defaults),
@@ -72,8 +82,19 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      *     The returned attributes.
      */
     parse(rsp) {
-        return _.extend(this._parseDiffContext(rsp),
-                        RB.ReviewablePage.prototype.parse.call(this, rsp));
+        const attrs = _.extend(
+            this._parseDiffContext(rsp),
+            RB.ReviewablePage.prototype.parse.call(this, rsp));
+
+        if (rsp.allChunksCollapsed !== undefined) {
+            attrs.allChunksCollapsed = rsp.allChunksCollapsed;
+        }
+
+        if (rsp.canToggleExtraWhitespace !== undefined) {
+            attrs.canToggleExtraWhitespace = rsp.canToggleExtraWhitespace;
+        }
+
+        return attrs;
     },
 
     /**
