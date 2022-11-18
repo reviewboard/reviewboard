@@ -25,11 +25,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         'rR': '_createComment',
     },
 
-    events: _.extend({
-        'click .toggle-whitespace-only-chunks': '_toggleWhitespaceOnlyChunks',
-        'click .toggle-show-whitespace': '_toggleShowExtraWhitespace',
-    }, RB.ReviewablePageView.prototype.events),
-
     _fileEntryTemplate: _.template(dedent`
         <div class="diff-container">
          <div class="diff-box">
@@ -46,6 +41,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
           </table>
          </div>
         </div>
+    `),
+
+    _viewToggleButtonContentTemplate: _.template(dedent`
+        <span class="fa <%- iconClass %>"></span> <%- text %>
     `),
 
     /* Template for code line link anchor */
@@ -190,20 +189,85 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     This instance, for chaining.
      */
     render() {
+        const model = this.model;
+        const session = RB.UserSession.instance;
+
         RB.ReviewablePageView.prototype.render.call(this);
 
         this._$controls = $('#view_controls');
+        console.assert(this._$controls.length === 1);
 
-        if (!this.model.commits.isEmpty()) {
+        /* Set up the view buttons. */
+        this.addViewToggleButton({
+            id: 'action-diff-toggle-collapse-changes',
+            activeText: _`Collapse changes`,
+            inactiveText: _`Expand changes`,
+            activeDescription: _`
+                All lines of the files are being shown. Toggle to
+                collapse down to only modified sections instead.
+            `,
+            inactiveDescription: _`
+                Only modified sections of the files are being shown. Toggle
+                to show all lines instead.
+            `,
+            isActive: !this.model.get('allChunksCollapsed'),
+            onToggled: isActive => {
+                RB.navigateTo(  isActive
+                              ? '.?expand=1'
+                              : '.?collapse=1');
+            },
+        });
+
+        if (model.get('canToggleExtraWhitespace')) {
+            this.addViewToggleButton({
+                id: 'action-diff-toggle-extra-whitespace',
+                activeText: _`Hide extra whitespace`,
+                inactiveText: _`Show extra whitespace`,
+                activeDescription: _`
+                    Mismatched indentation and trailing whitespace are
+                    being shown. Toggle to hide instead.
+                `,
+                inactiveDescription: _`
+                    Mismatched indentation and trailing whitespace are
+                    being hidden. Toggle to show instead.
+                `,
+                isActive: session.get('diffsShowExtraWhitespace'),
+                onToggled: isActive => {
+                    session.set('diffsShowExtraWhitespace', isActive);
+                },
+            });
+        }
+
+        this.addViewToggleButton({
+            id: 'action-diff-toggle-whitespace-only',
+            activeText: _`Hide whitespace-only changes`,
+            inactiveText: _`Show whitespace-only changes`,
+            activeDescription: _`
+                Sections of the diff containing only whitespace changes are
+                being shown. Toggle to hide those instead.
+            `,
+            inactiveDescription: _`
+                Sections of the diff containing only whitespace changes are
+                being hidden. Toggle to show those instead.
+            `,
+            isActive: true,
+            onToggled: isActive => {
+                this._diffReviewableViews.forEach(
+                    view => view.toggleWhitespaceOnlyChunks());
+            },
+        });
+
+        /* Listen for changes on the commit selector. */
+        if (!model.commits.isEmpty()) {
             const commitListModel = new RB.DiffCommitList({
-                commits: this.model.commits,
-                historyDiff: this.model.commitHistoryDiff,
-                baseCommitID: this.model.revision.get('baseCommitID'),
-                tipCommitID: this.model.revision.get('tipCommitID'),
+                commits: model.commits,
+                historyDiff: model.commitHistoryDiff,
+                baseCommitID: model.revision.get('baseCommitID'),
+                tipCommitID: model.revision.get('tipCommitID'),
             });
 
             this.listenTo(
-                this.model.revision,
+                model.revision,
                 'change:baseCommitID change:tipCommitID',
                 model => commitListModel.set({
                     baseCommitID: model.get('baseCommitID'),
@@ -225,7 +289,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._diffFileIndexView = new RB.DiffFileIndexView({
             el: $('#diff_index').find('.diff-index-container'),
-            collection: this.model.files,
+            collection: model.files,
         });
 
         this._diffFileIndexView.render();
@@ -235,7 +299,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._diffRevisionLabelView = new RB.DiffRevisionLabelView({
             el: $('#diff_revision_label'),
-            model: this.model.revision,
+            model: model.revision,
         });
         this._diffRevisionLabelView.render();
 
@@ -246,12 +310,12 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
          * Determine whether we need to show the revision selector. If there's
          * only one revision, we don't need to add it.
          */
-        const numDiffs = this.model.get('numDiffs');
+        const numDiffs = model.get('numDiffs');
 
         if (numDiffs > 1) {
             this._diffRevisionSelectorView = new RB.DiffRevisionSelectorView({
                 el: $('#diff_revision_selector'),
-                model: this.model.revision,
+                model: model.revision,
                 numDiffs: numDiffs,
             });
             this._diffRevisionSelectorView.render();
@@ -262,7 +326,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._commentsHintView = new RB.DiffCommentsHintView({
             el: $('#diff_comments_hint'),
-            model: this.model.commentsHint,
+            model: model.commentsHint,
         });
         this._commentsHintView.render();
         this.listenTo(this._commentsHintView, 'revisionSelected',
@@ -270,7 +334,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._paginationView1 = new RB.PaginationView({
             el: $('#pagination1'),
-            model: this.model.pagination,
+            model: model.pagination,
         });
         this._paginationView1.render();
         this.listenTo(this._paginationView1, 'pageSelected',
@@ -278,7 +342,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._paginationView2 = new RB.PaginationView({
             el: $('#pagination2'),
-            model: this.model.pagination,
+            model: model.pagination,
         });
         this._paginationView2.render();
         this.listenTo(this._paginationView2, 'pageSelected',
@@ -292,7 +356,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._chunkHighlighter.render().$el.prependTo(this._$diffs);
 
         $('#diff-details').removeClass('loading');
-        $('#download-diff-action').bindVisibility(this.model,
+        $('#download-diff-action').bindVisibility(model,
                                                   'canDownloadDiff');
 
         this._$window.on(`resize.${this.cid}`,
@@ -302,13 +366,88 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
          * Begin creating any DiffReviewableViews needed for the page, and
          * start loading their contents.
          */
-        if (this.model.diffReviewables.length > 0) {
-            this.model.diffReviewables.each(
+        if (model.diffReviewables.length > 0) {
+            model.diffReviewables.each(
                 diffReviewable => this._onDiffReviewableAdded(diffReviewable));
             $.funcQueue('diff_files').start();
         }
 
         return this;
+    },
+
+    /**
+     * Add a toggle button for changing the view of the diff.
+     *
+     * Args:
+     *     options (object):
+     *         The options for the button.
+     *
+     * Option Args:
+     *     activeDescription (string):
+     *         The description of the active state and what clicking will do.
+     *
+     *     activeText (string):
+     *         The label text for the active state.
+     *
+     *     inactiveDescription (string):
+     *         The description of the inactive state and what clicking will do.
+     *
+     *     inactiveText (string):
+     *         The label text for the inactive state.
+     *
+     *     isActive (boolean):
+     *         The default active state.
+     *
+     *     onToggled (function):
+     *         The callback handler for when the active state is explicitly
+     *         toggled.
+     */
+    addViewToggleButton(options) {
+        console.assert(options);
+
+        const $button = $('<button>');
+        const updateButton = isActive => {
+            let icon;
+            let text;
+            let description;
+
+            if (isActive) {
+                icon = 'fa-minus';
+                text = options.activeText;
+                description = options.activeDescription;
+            } else {
+                icon = 'fa-plus';
+                text = options.inactiveText;
+                description = options.inactiveDescription;
+            }
+
+            console.assert(text);
+            console.assert(description);
+
+            $button
+                .data('is-active', isActive)
+                .attr('title', description)
+                .html(this._viewToggleButtonContentTemplate({
+                    iconClass: icon,
+                    text: text,
+                }));
+        };
+
+        updateButton(options.isActive);
+
+        $button
+            .attr('id', options.id)
+            .on('click', e => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                let isActive = !$button.data('is-active');
+
+                updateButton(isActive);
+                options.onToggled(isActive);
+            });
+
+        this._$controls.append($('<li>').append($button));
     },
 
     /**
@@ -715,39 +854,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 }
             });
         }
-    },
-
-    /**
-     * Toggle the display of diff chunks that only contain whitespace changes.
-     *
-     * Returns:
-     *     boolean:
-     *     ``false``, to prevent events from bubbling up.
-     */
-    _toggleWhitespaceOnlyChunks() {
-        this._diffReviewableViews.forEach(
-            view => view.toggleWhitespaceOnlyChunks());
-
-        this._$controls.find('.ws').toggle();
-
-        return false;
-    },
-
-    /**
-     * Toggle the display of extra whitespace highlights on diffs.
-     *
-     * A cookie will be set to the new whitespace display setting, so that
-     * the new option will be the default when viewing diffs.
-     *
-     * Returns:
-     *     boolean:
-     *     ``false``, to prevent events from bubbling up.
-     */
-    _toggleShowExtraWhitespace() {
-        this._$controls.find('.ew').toggle();
-        RB.UserSession.instance.toggleAttr('diffsShowExtraWhitespace');
-
-        return false;
     },
 
     /**
