@@ -77,7 +77,8 @@ def hook_close_submitted(request, local_site_name=None,
     try:
         payload = json.loads(request.body.decode('utf-8'))
     except ValueError as e:
-        logger.error('The payload is not in JSON format: %s', e)
+        logger.error('The payload is not in JSON format: %s', e,
+                     extra={'request': request})
         return HttpResponseBadRequest('Invalid payload format.')
 
     if 'commits' not in payload:

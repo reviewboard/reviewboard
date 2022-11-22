@@ -90,7 +90,8 @@ class ReviewFileAttachmentView(ReviewRequestViewMixin,
         except Exception as e:
             logger.error('Error when calling is_enabled_for for '
                          'FileAttachmentReviewUI %r: %s',
-                         review_ui, e, exc_info=True)
+                         review_ui, e, exc_info=True,
+                         extra={'request': request})
             is_enabled_for = False
 
         if review_ui and is_enabled_for:

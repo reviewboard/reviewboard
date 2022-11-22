@@ -66,7 +66,7 @@ def load_settings_middleware(get_response):
             siteconfig = SiteConfiguration.objects.get_current()
         except Exception as e:
             logger.critical('Unable to load SiteConfiguration: %s',
-                            e, exc_info=True)
+                            e, exc_info=True, extra={'request': request})
             return
 
         # This will be unset if the SiteConfiguration expired, since we'll

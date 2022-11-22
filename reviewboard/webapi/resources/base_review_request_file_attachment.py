@@ -235,7 +235,8 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
             except Exception as e:
                 logger.error(
                     'Failed to store thumbnail for attachment %d: %s',
-                    file.pk, e, request=request)
+                    file.pk, e,
+                    extra={'request': request})
                 return INVALID_FORM_DATA, {
                     'fields': {
                         'thumbnail': [str(e)],

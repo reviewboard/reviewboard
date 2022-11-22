@@ -78,7 +78,7 @@ def admin_dashboard_view(request):
             widget_html = widget.render(request)
         except Exception as e:
             logger.exception('Error setting up administration widget %r: %s',
-                             widget_cls, e)
+                             widget_cls, e, extra={'request': request})
             continue
 
         widgets_info.append(widget_info)
@@ -158,14 +158,16 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
                     form.delete()
                     return HttpResponseRedirect('.')
                 except Exception as e:
-                    logger.error('Deleting SSH key failed: %s' % e)
+                    logger.error('Deleting SSH key failed: %s', e,
+                                 extra={'request': request})
             else:
                 try:
                     form.create(request.FILES)
                     return HttpResponseRedirect('.')
                 except Exception as e:
                     # Fall through. It will be reported inline and in the log.
-                    logger.error('Uploading SSH key failed: %s' % e)
+                    logger.error('Uploading SSH key failed: %s', e,
+                                 extra={'request': request})
     else:
         form = SSHSettingsForm()
 

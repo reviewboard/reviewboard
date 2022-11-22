@@ -353,7 +353,7 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
             OutgoingSection,
             IncomingSection,
         ],
-        default_view_id='incoming')
+        default_view_id='overview')
 
     js_model_class = 'RB.Dashboard'
     js_view_class = 'RB.DashboardView'
@@ -366,7 +366,7 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
         self.listview_template = 'datagrids/hideable_listview.html'
         self.profile_sort_field = 'sort_dashboard_columns'
         self.profile_columns_field = 'dashboard_columns'
-        self.default_view = 'incoming'
+        self.default_view = 'overview'
         self.show_closed = False
         self.show_archived = False
         self.default_sort = ['-last_updated']

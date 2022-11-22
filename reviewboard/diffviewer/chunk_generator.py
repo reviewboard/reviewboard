@@ -1027,9 +1027,9 @@ class RawDiffChunkGenerator(object):
         else:
             try:
                 lexer = guess_lexer_for_filename(filename,
-                                                data,
-                                                stripnl=False,
-                                                encoding='utf-8')
+                                                 data,
+                                                 stripnl=False,
+                                                 encoding='utf-8')
             except pygments.util.ClassNotFound:
                 return None
 

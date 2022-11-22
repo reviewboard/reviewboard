@@ -285,7 +285,8 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
             except Exception as e:
                 logger.error('Error rendering review request page entry '
                              '%r: %s',
-                             entry, e, request=request)
+                             entry, e,
+                             extra={'request': request})
 
             if entry.needs_reviews:
                 needs_issue_summary_table = True

@@ -207,7 +207,8 @@ class ReviewUI(object):
                 context=context,
                 request=request)
         except Exception as e:
-            logger.exception('Error when rendering %r: %s', self, e)
+            logger.exception('Error when rendering %r: %s', self, e,
+                             extra={'request': request})
             raise
 
     def build_render_context(self, request, inline=False, **kwargs):
@@ -276,7 +277,8 @@ class ReviewUI(object):
         except Exception as e:
             logger.exception('Error when calling get_extra_context for '
                              '%r: %s',
-                             self, e)
+                             self, e,
+                             extra={'request': request})
             raise
 
         return context
@@ -428,7 +430,8 @@ class ReviewUI(object):
         except Exception as e:
             logger.exception('Error When calling serialize_comments for '
                              '%r: %s',
-                             self, e)
+                             self, e,
+                             extra={'request': self.request})
             raise
 
     def serialize_comments(self, comments):
@@ -457,7 +460,8 @@ class ReviewUI(object):
             try:
                 review = comment.get_review()
             except Review.DoesNotExist:
-                logger.error('Missing Review for comment %r' % comment)
+                logger.error('Missing Review for comment %r' % comment,
+                             extra={'request': self.request},)
                 continue
 
             try:
@@ -466,7 +470,8 @@ class ReviewUI(object):
             except Exception as e:
                 logger.exception('Error when calling serialize_comment for '
                                  '%r: %s',
-                                 self, e)
+                                 self, e,
+                                 extra={'request': self.request})
                 raise
 
         return result
@@ -914,6 +919,6 @@ def unregister_ui(review_ui):
     try:
         _file_attachment_review_uis.remove(review_ui)
     except ValueError:
-        logger.error('Failed to unregister missing review UI %r' %
+        logger.error('Failed to unregister missing review UI %r',
                      review_ui)
         raise ValueError('This review UI was not previously registered')

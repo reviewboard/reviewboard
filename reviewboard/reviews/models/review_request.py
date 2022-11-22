@@ -580,7 +580,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                                'accessible by user %s because it has not yet '
                                'been published.',
                                self.pk, self.display_id, user,
-                               request=request)
+                               extra={'request': request})
 
             return False
 
@@ -590,7 +590,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                                'accessible by user %s because its repository '
                                'is not accessible by that user.',
                                self.pk, self.display_id, user,
-                               request=request)
+                               extra={'request': request})
 
             return False
 
@@ -600,7 +600,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                                'accessible by user %s because its local_site '
                                'is not accessible by that user.',
                                self.pk, self.display_id, user,
-                               request=request)
+                               extra={'request': request})
 
             return False
 
@@ -610,7 +610,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                                'accessible by user %s because the diff access '
                                'was rejected by ACLs.',
                                self.pk, self.display_id, user,
-                               request=request)
+                               extra={'request': request})
 
             return False
 
@@ -639,7 +639,8 @@ class ReviewRequest(BaseReviewRequestDetails):
                            'accessible by user %s because they are not '
                            'directly listed as a reviewer, and none of '
                            'the target groups are accessible by that user.',
-                           self.pk, self.display_id, user, request=request)
+                           self.pk, self.display_id, user,
+                           extra={'request': request})
 
         return False
 

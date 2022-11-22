@@ -401,7 +401,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
             logger.error('Attempted to authenticate user "%s" in LDAP, but '
                          'the python-ldap package is not installed!',
                          username,
-                         request=request)
+                         extra={'request': request})
             return None
 
         user_subdomain = ''
@@ -440,7 +440,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
                         logger.error('Unable to retrieve groups for user '
                                      '"%s" from controller "%s": %s',
                                      username, uri, e,
-                                     request=request,
+                                     extra={'request': request},
                                      exc_info=True)
                         return None
 
@@ -448,7 +448,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
                         logger.warning('User %s is not in required group "%s" '
                                        'on controller "%s"',
                                        username, required_group, uri,
-                                       request=request)
+                                       extra={'request': request})
                         return None
 
                 return self.get_or_create_user(username=username,
@@ -459,32 +459,32 @@ class ActiveDirectoryBackend(BaseAuthBackend):
                                'controller "%s". It is down. Error details: '
                                '%r',
                                uri, e,
-                               request=request)
+                               extra={'request': request})
                 continue
             except ldap.INVALID_CREDENTIALS:
                 logger.warning('Unable to authenticate user "%s" on '
                                'domain controller "%s". The user credentials '
                                'are invalid.',
                                username, uri,
-                               request=request)
+                               extra={'request': request})
                 return None
             except ldap.LDAPError as e:
                 logger.warning('Error talking to domain controller "%s". '
                                'Error details: %s, %r',
                                uri, type(e), e,
-                               request=request)
+                               extra={'request': request})
                 continue
             except Exception as e:
                 logger.exception('Unexpected error occurred while '
                                  'authenticating with Active Directory: %s',
                                  e,
-                                 request=request)
+                                 extra={'request': request})
                 continue
 
         logger.error('Could not contact any domain controller servers when '
                      'authenticating for user "%s".',
                      username,
-                     request=request)
+                     extra={'request': request})
 
         return None
 

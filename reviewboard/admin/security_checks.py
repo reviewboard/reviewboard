@@ -463,6 +463,6 @@ def unregister_security_check(name):
     try:
         del _security_checks[name]
     except KeyError:
-        logger.error('Failed to unregister unknown security check "%s"' %
+        logger.error('Failed to unregister unknown security check "%s"',
                      name)
         raise KeyError('"%s" is not a registered security check' % name)

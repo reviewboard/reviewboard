@@ -51,6 +51,9 @@ def _log_and_raise(request, msg, **fmt_dict):
         4.0
 
     Args:
+        request (HostingServiceHTTPRequest):
+            The HTTP request.
+
         msg (unicode):
             The error message as a format string.
 
