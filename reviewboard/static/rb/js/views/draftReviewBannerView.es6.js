@@ -174,7 +174,7 @@ RB.DraftReviewBannerView = Backbone.View.extend({
          * of the event loop to let any teardown occur.
          */
         _.defer(() => {
-            window.location = this.model.get('parentObject').get('reviewURL');
+            RB.navigateTo(this.model.get('parentObject').get('reviewURL'));
         });
     },
 

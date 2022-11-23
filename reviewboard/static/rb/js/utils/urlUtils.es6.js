@@ -43,7 +43,22 @@ RB.getLocationHash = function(url) {
  *
  * Version Added:
  *     4.0.12, 5.0.2
+ *
+ * Args:
+ *     url (string):
+ *         The URL to navigate to.
+ *
+ *     options (object, optional):
+ *         Options for the operation.
+ *
+ * Option Args:
+ *     replace (boolean):
+ *         Whether to replace the current history entry.
  */
-RB.navigateTo = function(url) {
-    window.location = url;
+RB.navigateTo = function(url, options={}) {
+    if (options && options.replace) {
+        window.location.replace(url);
+    } else {
+        window.location = url;
+    }
 };

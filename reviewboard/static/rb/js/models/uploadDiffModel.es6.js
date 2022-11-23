@@ -308,7 +308,7 @@ RB.UploadDiffModel = Backbone.Model.extend({
 
         try {
             await diff.save();
-            window.location = reviewRequest.get('reviewURL');
+            RB.navigateTo(reviewRequest.get('reviewURL'));
         } catch (err) {
             this._onValidateError(err.modelOrCollection, err.xhr);
         }

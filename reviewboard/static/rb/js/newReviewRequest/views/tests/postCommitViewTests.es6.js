@@ -103,7 +103,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
         let commit;
 
         spyOn(RB.ReviewRequest.prototype, 'save').and.resolveTo();
-        spyOn(RB.PostCommitView.prototype, '_navigateTo').and.callFake(() => {
+        spyOn(RB, 'navigateTo').and.callFake(() => {
             expect(RB.PostCommitView.prototype._onCreateReviewRequest)
                 .toHaveBeenCalled();
             expect(RB.ReviewRequest.prototype.save).toHaveBeenCalled();

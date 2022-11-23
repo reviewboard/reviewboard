@@ -1089,21 +1089,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                                 .destroy({
                                     buttons: $('input', $dlg.modalBox('buttons')),
                                 })
-                                .then(() => this._navigateTo(SITE_ROOT));
+                                .then(() => RB.navigateTo(SITE_ROOT));
                         }),
                 ]
             });
 
         return false;
-    },
-
-    /**
-     * Navigate to the given URL.
-     *
-     * This method exists so it can be overridden during unit tests.
-     */
-    _navigateTo(url) {
-        window.location = url;
     },
 
     /**
@@ -1277,7 +1268,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * Refresh the page.
      */
     _refreshPage() {
-        window.location = this.model.get('reviewRequest').get('reviewURL');
+        RB.navigateTo(this.model.get('reviewRequest').get('reviewURL'));
     },
 });
 
