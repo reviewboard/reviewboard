@@ -63,6 +63,7 @@ class ReviewRequestUpdatesViewTests(TestCase):
                 'etag': '',
                 'modelData': {
                     'reviewData': {
+                        'authorName': 'dopey',
                         'id': self.review1.pk,
                         'public': True,
                         'bodyTop': self.review1.body_top,
@@ -87,6 +88,7 @@ class ReviewRequestUpdatesViewTests(TestCase):
                 'etag': '',
                 'modelData': {
                     'reviewData': {
+                        'authorName': 'dopey',
                         'id': self.review2.pk,
                         'public': True,
                         'bodyTop': self.review2.body_top,
@@ -153,6 +155,7 @@ class ReviewRequestUpdatesViewTests(TestCase):
                 'etag': '',
                 'modelData': {
                     'reviewData': {
+                        'authorName': 'dopey',
                         'id': self.review1.pk,
                         'public': True,
                         'bodyTop': self.review1.body_top,
@@ -178,6 +181,7 @@ class ReviewRequestUpdatesViewTests(TestCase):
                 'etag': '',
                 'modelData': {
                     'reviewData': {
+                        'authorName': 'dopey',
                         'id': self.review2.pk,
                         'public': True,
                         'bodyTop': self.review2.body_top,
@@ -238,6 +242,7 @@ class ReviewRequestUpdatesViewTests(TestCase):
                 'etag': '',
                 'modelData': {
                     'reviewData': {
+                        'authorName': 'dopey',
                         'id': self.review2.pk,
                         'public': True,
                         'bodyTop': self.review2.body_top,
@@ -299,6 +304,7 @@ class ReviewRequestUpdatesViewTests(TestCase):
                 'etag': '',
                 'modelData': {
                     'reviewData': {
+                        'authorName': 'dopey',
                         'id': self.review2.pk,
                         'public': True,
                         'bodyTop': self.review2.body_top,
@@ -349,6 +355,7 @@ class ReviewRequestUpdatesViewTests(TestCase):
                 'etag': '',
                 'modelData': {
                     'reviewData': {
+                        'authorName': 'dopey',
                         'id': self.review2.pk,
                         'public': True,
                         'bodyTop': self.review2.body_top,

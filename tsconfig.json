@@ -1,0 +1,10 @@
+{
+    "include": [
+        "reviewboard/static/lib/js/**/*",
+        "reviewboard/static/rb/js/**/*"
+    ],
+    "compilerOptions": {
+        "allowJs": true,
+        "target": "ESNext"
+    }
+}

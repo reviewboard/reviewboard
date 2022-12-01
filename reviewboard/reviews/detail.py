@@ -1063,6 +1063,8 @@ class ReviewEntryMixin(object):
             The serialized data for the JavaScript model.
         """
         return {
+            'authorName': review.user.get_profile().get_display_name(
+                viewing_user=self.data.request.user),
             'id': review.pk,
             'shipIt': review.ship_it,
             'public': True,

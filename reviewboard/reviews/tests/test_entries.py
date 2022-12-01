@@ -1304,6 +1304,7 @@ class ReviewEntryTests(TestCase):
 
         self.assertEqual(entry.get_js_model_data(), {
             'reviewData': {
+                'authorName': 'dopey',
                 'id': self.review.pk,
                 'bodyTop': 'Test Body Top',
                 'bodyBottom': 'Test Body Bottom',
@@ -1338,6 +1339,7 @@ class ReviewEntryTests(TestCase):
 
         self.assertEqual(entry.get_js_model_data(), {
             'reviewData': {
+                'authorName': 'dopey',
                 'id': self.review.pk,
                 'bodyTop': 'Test Body Top',
                 'bodyBottom': 'Test Body Bottom',
@@ -1788,6 +1790,7 @@ class ChangeEntryTests(TestCase):
         self.assertEqual(entry.get_js_model_data(), {
             'reviewsData': [
                 {
+                    'authorName': 'dopey',
                     'id': review.pk,
                     'bodyTop': 'Body top',
                     'bodyBottom': 'Body bottom',
