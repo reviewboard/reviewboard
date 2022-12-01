@@ -1,13 +1,16 @@
 {% load reviewtags %}
 
 <div class="review-request-header">
- <ul class="review-request-actions review-request-tabs">
+ <menu class="rb-c-review-request-tabs" role="menu">
 {%   for tab in tabs %}
-  <li class="review-request-action{% if tab.active or tab.url == request.path %} active{% endif %}">
-   <a href="{{tab.url}}">{{tab.text}}</a>
+  <li class="rb-c-review-request-tabs__tab{% if tab.active or tab.url == request.path %} -is-active{% endif %}"
+      role="presentation">
+   <a role="menuitem" href="{{tab.url}}"
+      {% if tab.active or tab.url == request.path %}aria-current="page"{% endif %}
+      >{{tab.text}}</a>
   </li>
 {%   endfor %}
- </ul>
+ </menu>
 
  <div class="review-request-actions-container">
   <ul class="review-request-actions review-request-actions-left">

@@ -497,30 +497,58 @@ a.mobile-actions-menu-label {
  * Review request tabs
  ****************************************************************************/
 
-.review-request-tabs {
+/**
+ * Review request tabs.
+ *
+ * Structure:
+ *     <menu class="rb-c-review-request-tabs" role="menu">
+ *      ...
+ *     </menu>
+ */
+.rb-c-review-request-tabs {
   background-color: @review-request-action-bg;
   border-color: @review-request-border-color;
   border-radius: @box-border-radius @box-border-radius 0 0;
   border-style: solid;
   border-width: 1px 1px 0 1px;
   float: right;
-  margin-left: 1.5rem;
+  list-style: none;
+  margin: 0 0 0 1.5rem;
   overflow: hidden;
+  padding: 0;
 
-  .review-ui-box & .active {
-    /*
-     * The active tab in review UIs has a slightly different color to match the
-     * review UI header color.
-     */
-     background-color: @review-ui-header-bg;
-  }
-
-  li {
+  /* TODO: dedupe with .review-request-action */
+  /**
+   * A review request tab.
+   *
+   * Modifiers:
+   *     -is-active:
+   *         Designates the active tab element.
+   *
+   * Structure:
+   *     <li class="rb-c-review-request-tabs__tab -is-active"
+   *         role="presentation">
+   *      <a href="..." role="menuitem" aria-current="page">...</a>
+   *     </li>
+   *     <li class="rb-c-review-request-tabs__tab" role="presentation">
+   *      <a href="..." role="menuitem">...</a>
+   *     </li>
+   */
+  &__tab {
     border-bottom: 1px @review-request-action-border-color solid;
+    float: left;
     min-width: 4rem;
     text-align: center;
 
-    &.active {
+    &:active {
+      background-color: @review-request-action-active-bg;
+    }
+
+    &:hover {
+      background-color: @review-request-action-hover-bg;
+    }
+
+    &.-is-active {
       background: @review-request-bg-gradient-start;
       border-color: @review-request-border-color;
       border-bottom-color: transparent;
@@ -534,6 +562,31 @@ a.mobile-actions-menu-label {
       &:last-child {
         border-right: 0;
       }
+    }
+
+    .review-ui-box &.-is-active {
+      /*
+       * The active tab in review UIs has a slightly different color to match the
+       * review UI header color.
+       */
+       background-color: @review-ui-header-bg;
+    }
+
+    a {
+      color: black;
+      cursor: pointer;
+      display: block;
+      margin: 0;
+      line-height: @review-request-action-line-height;
+      text-decoration: none;
+      padding: @review-request-action-padding-vert
+               @review-request-action-padding-horiz-text;
+
+      .on-mobile-medium-screen-720({
+        /* Give some extra room for tapping. */
+        padding: @review-request-action-mobile-padding
+                 @review-request-action-padding-horiz-text;
+      });
     }
   }
 }
