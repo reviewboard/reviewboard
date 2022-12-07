@@ -2164,9 +2164,14 @@ class BugURLRedirectView(ReviewRequestViewMixin, View):
         """
         # Need to create a custom HttpResponse because a non-HTTP url scheme
         # will cause HttpResponseRedirect to fail with a "Disallowed Redirect".
+        repository = self.review_request.repository
+
+        if not repository:
+            return HttpResponseNotFound(
+                _('Review Request does not have an associated repository'))
+
         response = HttpResponse(status=302)
-        response['Location'] = \
-            self.review_request.repository.bug_tracker % bug_id
+        response['Location'] = repository.bug_tracker % bug_id
 
         return response
 
@@ -2214,6 +2219,10 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
         request = self.request
         review_request = self.review_request
         repository = review_request.repository
+
+        if not repository:
+            return HttpResponseNotFound(
+                _('Review Request does not have an associated repository'))
 
         bug_tracker = repository.bug_tracker_service
 
