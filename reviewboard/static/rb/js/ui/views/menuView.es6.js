@@ -137,11 +137,23 @@ RB.MenuView = Backbone.View.extend({
      * In either case, this can assign a DOM element ID to the menu item,
      * assign a click event handler, and will set ARIA roles.
      *
+     * Version Changed:
+     *     6.0:
+     *     Added the $child option argument.
+     *
      * Args:
      *     options (object, optional):
      *         Options for the menu item.
      *
      * Option Args:
+     *     $child (jQuery, optional):
+     *         An element to use for the child. This will be reparented into
+     *         the menu. If specified, this takes priority over
+     *         ``options.text``.
+     *
+     *         Version Added:
+     *             6.0
+     *
      *     id (string, optional):
      *         A DOM element ID to assign to the menu item.
      *
@@ -169,7 +181,9 @@ RB.MenuView = Backbone.View.extend({
             console.assert(false, 'RB.MenuView type is not a supported type.');
         }
 
-        if (options.text !== undefined) {
+        if (options.$child !== undefined) {
+            options.$child.appendTo($el);
+        } else if (options.text !== undefined) {
             $el.text(options.text);
         }
 

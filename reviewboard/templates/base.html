@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-{% load accounts djblets_extensions djblets_js djblets_utils %}
+{% load accounts actions djblets_extensions djblets_js djblets_utils %}
 {% load features i18n pipeline rbproduct static %}
 
 <html>
@@ -144,6 +144,10 @@
           }{% endblock %}
         {% endspaceless %},
         modelOptions: {% spaceless %}{% block js-page-model-options %}{}{% endblock %}{% endspaceless %}
+    });
+
+    RB.PageManager.beforeRender(function(page) {
+{%  actions_js %}
     });
   </script>
 {% endblock setup-page %}
