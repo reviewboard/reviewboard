@@ -4,19 +4,6 @@ from django.utils.translation import gettext_lazy as _
 from djblets.features import Feature, FeatureLevel
 
 
-class ClassBasedActionsFeature(Feature):
-    """A feature for class-based actions.
-
-    With this enabled, extensions may use the new class-based action classes
-    instead of the old-style dict actions.
-    """
-
-    feature_id = 'reviews.class_based_actions'
-    name = _('Class-Based Actions')
-    level = FeatureLevel.UNAVAILABLE
-    summary = _('Allow using class-based actions with extension hooks.')
-
-
 class DiffACLsFeature(Feature):
     """A feature for FileDiff ACL checks.
 
@@ -101,7 +88,6 @@ class UnifiedBannerFeature(Feature):
                 'and reviews in a centralized place.')
 
 
-class_based_actions_feature = ClassBasedActionsFeature()
 diff_acls_feature = DiffACLsFeature()
 general_comments_feature = GeneralCommentsFeature()
 issue_verification_feature = IssueVerificationFeature()
