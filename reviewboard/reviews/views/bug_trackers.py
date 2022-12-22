@@ -66,6 +66,10 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
         review_request = self.review_request
         repository = review_request.repository
 
+        if not repository:
+            return HttpResponseNotFound(
+                _('Review Request does not have an associated repository'))
+
         bug_tracker = repository.bug_tracker_service
 
         if not bug_tracker:
@@ -204,10 +208,15 @@ class BugURLRedirectView(ReviewRequestViewMixin, View):
             django.http.HttpResponse:
             The HTTP response redirecting the client.
         """
+        repository = self.review_request.repository
+
+        if not repository:
+            return HttpResponseNotFound(
+                _('Review Request does not have an associated repository'))
+
         # Need to create a custom HttpResponse because a non-HTTP url scheme
         # will cause HttpResponseRedirect to fail with a "Disallowed Redirect".
         response = HttpResponse(status=302)
-        response['Location'] = \
-            self.review_request.repository.bug_tracker % bug_id
+        response['Location'] = repository.bug_tracker % bug_id
 
         return response
