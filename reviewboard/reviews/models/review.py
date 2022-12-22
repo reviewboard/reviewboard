@@ -1,8 +1,10 @@
 import logging
+from typing import Optional
 
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
+from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -354,12 +356,31 @@ class Review(models.Model):
 
         super(Review, self).save(**kwargs)
 
-    def publish(self, user=None, trivial=False, to_owner_only=False,
-                request=None):
-        """Publishes this review.
+    def publish(
+        self,
+        user: Optional[User] = None,
+        trivial: bool = False,
+        to_owner_only: bool = False,
+        request: Optional[HttpRequest] = None,
+    ) -> None:
+        """Publish this review.
 
         This will make the review public and update the timestamps of all
         contained comments.
+
+        Args:
+            user (django.contrib.auth.models.User, optional):
+                The user publishing the review.
+
+            trivial (bool, optional):
+                Whether to skip any e-mail notifications.
+
+            to_owner_only (bool, optional):
+                Whether to address notifications only to the owner of the
+                review request.
+
+            request (djang.http.HttpRequest, optional):
+                The HTTP request.
         """
         if not user:
             user = self.user

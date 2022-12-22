@@ -68,18 +68,7 @@ const FilesOnlyPreCommitView = Backbone.View.extend({
 
         // TODO: handle errors
         await reviewRequest.save();
-        this._navigateTo(reviewRequest.get('reviewURL'));
-    },
-
-    /**
-     * Navigate to the given URL.
-     *
-     * Args:
-     *     url (string):
-     *         The URL to open.
-     */
-    _navigateTo(url) {
-        window.location = url;
+        RB.navigateTo(reviewRequest.get('reviewURL'));
     },
 });
 

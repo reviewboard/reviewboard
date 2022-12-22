@@ -244,7 +244,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 expect($.fn.modalBox).toHaveBeenCalled();
 
                 /* This gets called at the end of the operation. */
-                spyOn(view, '_navigateTo').and.callFake(() => {
+                spyOn(RB, 'navigateTo').and.callFake(() => {
                     expect(reviewRequest.destroy).toHaveBeenCalled();
                     done();
                 });

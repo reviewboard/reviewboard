@@ -600,8 +600,10 @@ class SAMLLoginView(SAMLViewMixin, BaseSSOView):
         """
         auth = self.get_saml_auth(request)
 
-        return HttpResponseRedirect(
-            auth.login(settings.LOGIN_REDIRECT_URL))
+        redirect = self.request.GET.get(REDIRECT_FIELD_NAME,
+                                        settings.LOGIN_REDIRECT_URL)
+
+        return HttpResponseRedirect(auth.login(redirect))
 
 
 class SAMLMetadataView(SAMLViewMixin, BaseSSOView):

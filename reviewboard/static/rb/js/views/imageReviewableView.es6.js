@@ -1108,7 +1108,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             redirectURL = `../${revisionBase}-${revisionTip}/`;
         }
 
-        window.location.replace(redirectURL);
+        RB.navigateTo(redirectURL, {replace: true});
     },
 
     /**

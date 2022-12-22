@@ -20,7 +20,7 @@ PIPELINE_JAVASCRIPT = dict({
             'lib/js/flot/jquery.flot.selection.min.js',
             'lib/js/flot/jquery.flot.time.min.js',
             'lib/js/underscore-1.8.3.min.js',
-            'lib/js/backbone-1.3.3.min.js',
+            'lib/js/backbone-1.4.1.js',
             'lib/js/jquery.cookie-1.4.1.js',
             'lib/js/jquery.form-4.2.2.min.js',
             'lib/js/jquery.timesince.js',

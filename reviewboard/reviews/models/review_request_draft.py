@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Optional
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import F
@@ -240,8 +243,15 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         return draft
 
-    def publish(self, review_request=None, user=None, trivial=False,
-                send_notification=True, validate_fields=True, timestamp=None):
+    def publish(
+        self,
+        review_request: Optional[ReviewRequest] = None,
+        user: Optional[User] = None,
+        trivial: bool = False,
+        send_notification: bool = True,
+        validate_fields: bool = True,
+        timestamp: Optional[datetime] = None,
+    ) -> ChangeDescription:
         """Publish this draft.
 
         This is an internal method. Programmatic publishes should use
@@ -330,6 +340,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         if not review_request:
             review_request = self.review_request
+
+        assert review_request is not None
 
         if not self.changedesc and review_request.public:
             self.changedesc = ChangeDescription()

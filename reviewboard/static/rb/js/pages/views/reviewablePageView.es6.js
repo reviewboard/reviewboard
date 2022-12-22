@@ -282,7 +282,7 @@ RB.ReviewablePageView = RB.PageView.extend({
                       () => this._updateFavIcon(this._favIconURL));
 
         this.listenTo(this._updatesBubble, 'updatePage', () => {
-            window.location = reviewRequest.get('reviewURL');
+            RB.navigateTo(reviewRequest.get('reviewURL'));
         });
 
         this._updatesBubble.render().$el.appendTo(this.$el);
@@ -311,7 +311,7 @@ RB.ReviewablePageView = RB.PageView.extend({
             ]),
             iconURL: this._logoNotificationsURL,
             onClick: () => {
-                window.location = reviewRequest.get('reviewURL');
+                RB.navigateTo(reviewRequest.get('reviewURL'));
             },
         });
     },

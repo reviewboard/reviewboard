@@ -1,6 +1,9 @@
 """Managers for reviewboard.reviews.models."""
 
+from __future__ import annotations
+
 import logging
+from typing import Optional, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import ObjectDoesNotExist
@@ -14,6 +17,9 @@ from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.scmtools.errors import ChangeNumberInUseError
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
+
+if TYPE_CHECKING:
+    from reviewboard.reviews.models import Review
 
 
 logger = logging.getLogger(__name__)
@@ -1218,6 +1224,27 @@ class ReviewRequestManager(ConcurrencyManager):
                                           Q(local_site=local_site))
 
 
+class _ReviewANY:
+    """A sentinel indicating that reviews can be replying to any (or none).
+
+    Usually we want to only query for top-level reviews, or we want all replies
+    to a specific review. However, on some cases we want to allow queries to
+    fetch all reviews, whether they're top-level or replies.
+
+    Version Added:
+        6.0
+    """
+
+    def __repr__(self) -> str:
+        """Return a string representation of the sentinel.
+
+        Returns:
+            str:
+            The string representation.
+        """
+        return '<ReviewManager.ANY>'
+
+
 class ReviewManager(ConcurrencyManager):
     """A manager for Review models.
 
@@ -1228,8 +1255,17 @@ class ReviewManager(ConcurrencyManager):
     load. This prevents errors and lost data.
     """
 
-    def accessible(self, user, extra_query=None, local_site=None,
-                   public=None, distinct=False):
+    ANY = _ReviewANY()
+
+    def accessible(
+        self,
+        user: User,
+        extra_query: Optional[Q] = None,
+        local_site: Optional[LocalSite] = None,
+        public: Optional[bool] = None,
+        base_reply_to: Optional[Union[Review, _ReviewANY]] = None,
+        distinct: Optional[bool] = False,
+    ) -> QuerySet:
         """Return a queryset for reviews accessible by the given user.
 
         For superusers, all public (published) and unpublished reviews will
@@ -1242,6 +1278,10 @@ class ReviewManager(ConcurrencyManager):
         For anonymous users, only public reviews that are on public
         repositories and whose review requests are not targeted by invite-only
         review groups will be returned.
+
+        Version Changed:
+            6.0:
+            Added the ``base_reply_to`` argument.
 
         Version Added:
             5.0
@@ -1269,6 +1309,10 @@ class ReviewManager(ConcurrencyManager):
                 ``None``, both published and unpublished reviews will be
                 included.
 
+            base_reply_to (reviewboard.reviews.models.review.Review, optional):
+                If provided, limit results to reviews that are part of the
+                thread of replies to this review.
+
             distinct (bool, optional):
                 Whether to return distinct results.
 
@@ -1286,6 +1330,7 @@ class ReviewManager(ConcurrencyManager):
                            local_site=local_site,
                            status=None,
                            filter_private=True,
+                           base_reply_to=base_reply_to,
                            distinct=distinct)
 
     def get_pending_review(self, review_request, user):
@@ -1436,9 +1481,16 @@ class ReviewManager(ConcurrencyManager):
 
         return self._query(extra_query=extra_query, *args, **kwargs)
 
-    def _query(self, user=None, public=None, status='P', extra_query=None,
-               local_site=None, filter_private=False, base_reply_to=None,
-               distinct=False):
+    def _query(
+        self,
+        user: Optional[User] = None,
+        public: Optional[bool] = None,
+        status: Optional[str] = 'P',
+        extra_query: Optional[Q] = None,
+        local_site: Optional[LocalSite] = None,
+        filter_private: Optional[bool] = False,
+        base_reply_to: Union[Review, _ReviewANY, None] = None,
+        distinct: Optional[bool] = False):
         """Do a query for reviews.
 
         Version Changed:
@@ -1497,7 +1549,10 @@ class ReviewManager(ConcurrencyManager):
         """
         from reviewboard.reviews.models import Group
 
-        q = Q(base_reply_to=base_reply_to)
+        q = Q()
+
+        if base_reply_to is not ReviewManager.ANY:
+            q &= Q(base_reply_to=base_reply_to)
 
         if status:
             q &= Q(review_request__status=status)

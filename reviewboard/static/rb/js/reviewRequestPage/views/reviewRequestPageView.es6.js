@@ -371,7 +371,7 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
             }
         });
 
-        window.location = params.commentURL;
+        RB.navigateTo(params.commentURL);
     },
 });
 

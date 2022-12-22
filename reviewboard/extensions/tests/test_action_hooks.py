@@ -1,7 +1,6 @@
 """Unit tests for reviewboard.extensions.hooks.ActionHook and subclasses."""
 
 from django.template import Context, Template
-from djblets.features.testing import override_feature_check
 from mock import Mock
 
 from reviewboard.extensions.hooks import (BaseReviewRequestActionHook,
@@ -14,7 +13,6 @@ from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
 from reviewboard.reviews.actions import (BaseReviewRequestAction,
                                          BaseReviewRequestMenuAction,
                                          clear_all_actions)
-from reviewboard.reviews.features import ClassBasedActionsFeature
 from reviewboard.reviews.models import ReviewRequest
 
 
@@ -38,40 +36,34 @@ class ActionHookTests(BaseExtensionHookTestCase):
         """Testing ReviewRequestActionHook renders on a review request page but
         not on a file attachment or a diff viewer page
         """
-        with override_feature_check(ClassBasedActionsFeature.feature_id,
-                                    enabled=True):
-            self._test_base_review_request_action_hook(
-                'review-request-detail', ReviewRequestActionHook, True)
-            self._test_base_review_request_action_hook(
-                'file-attachment', ReviewRequestActionHook, False)
-            self._test_base_review_request_action_hook(
-                'view-diff', ReviewRequestActionHook, False)
+        self._test_base_review_request_action_hook(
+            'review-request-detail', ReviewRequestActionHook, True)
+        self._test_base_review_request_action_hook(
+            'file-attachment', ReviewRequestActionHook, False)
+        self._test_base_review_request_action_hook(
+            'view-diff', ReviewRequestActionHook, False)
 
     def test_diffviewer_action_hook(self):
         """Testing DiffViewerActionHook renders on a diff viewer page but not
         on a review request page or a file attachment page
         """
-        with override_feature_check(ClassBasedActionsFeature.feature_id,
-                                    enabled=True):
-            self._test_base_review_request_action_hook(
-                'review-request-detail', DiffViewerActionHook, False)
-            self._test_base_review_request_action_hook(
-                'file-attachment', DiffViewerActionHook, False)
-            self._test_base_review_request_action_hook(
-                'view-diff', DiffViewerActionHook, True)
+        self._test_base_review_request_action_hook(
+            'review-request-detail', DiffViewerActionHook, False)
+        self._test_base_review_request_action_hook(
+            'file-attachment', DiffViewerActionHook, False)
+        self._test_base_review_request_action_hook(
+            'view-diff', DiffViewerActionHook, True)
 
     def test_review_request_dropdown_action_hook(self):
         """Testing ReviewRequestDropdownActionHook renders on a review request
         page but not on a file attachment or a diff viewer page
         """
-        with override_feature_check(ClassBasedActionsFeature.feature_id,
-                                    enabled=True):
-            self._test_review_request_dropdown_action_hook(
-                'review-request-detail', ReviewRequestDropdownActionHook, True)
-            self._test_review_request_dropdown_action_hook(
-                'file-attachment', ReviewRequestDropdownActionHook, False)
-            self._test_review_request_dropdown_action_hook(
-                'view-diff', ReviewRequestDropdownActionHook, False)
+        self._test_review_request_dropdown_action_hook(
+            'review-request-detail', ReviewRequestDropdownActionHook, True)
+        self._test_review_request_dropdown_action_hook(
+            'file-attachment', ReviewRequestDropdownActionHook, False)
+        self._test_review_request_dropdown_action_hook(
+            'view-diff', ReviewRequestDropdownActionHook, False)
 
     def test_action_hook_init_raises_key_error(self):
         """Testing ActionHook.__init__ with raised KeyError"""
@@ -110,13 +102,11 @@ class ActionHookTests(BaseExtensionHookTestCase):
             ReviewRequestDropdownActionHook,
         ]
 
-        with override_feature_check(ClassBasedActionsFeature.feature_id,
-                                    enabled=True):
-            for hook_cls in action_hook_classes:
-                with self.assertRaisesMessage(ValueError, error_message):
-                    hook_cls(extension=self.extension, actions=[
-                        unsupported_type_action,
-                    ])
+        for hook_cls in action_hook_classes:
+            with self.assertRaisesMessage(ValueError, error_message):
+                hook_cls(extension=self.extension, actions=[
+                    unsupported_type_action,
+                ])
 
     def test_dropdown_action_hook_init_raises_key_error(self):
         """Testing ReviewRequestDropdownActionHook.__init__ with raiseed

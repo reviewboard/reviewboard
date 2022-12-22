@@ -30,7 +30,6 @@ from reviewboard.notifications.email import (register_email_hook,
                                              unregister_email_hook)
 from reviewboard.reviews.actions import (BaseReviewRequestAction,
                                          BaseReviewRequestMenuAction)
-from reviewboard.reviews.features import class_based_actions_feature
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
@@ -1012,16 +1011,6 @@ class BaseReviewRequestActionHook(AppliesToURLMixin, ActionHook,
             *args, **kwargs)
 
         if actions is None:
-            actions = []
-
-        if (not class_based_actions_feature.is_enabled() and
-            any(not isinstance(action, dict) for action in actions)):
-            logger.error(
-                'The class-based actions API is experimental and will '
-                'change in a future release. It must be enabled before '
-                'it can be used. The actions from %r will not be '
-                'registered.',
-                self)
             actions = []
 
         self.actions = self._register_actions(actions)

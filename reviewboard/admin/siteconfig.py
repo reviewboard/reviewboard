@@ -161,6 +161,7 @@ defaults.update({
     'send_support_usage_stats': True,
     'site_domain_method': 'http',
     'site_read_only': False,
+    'sso_auto_login_backend': '',
 
     'privacy_enable_user_consent': False,
     'privacy_info_html': None,

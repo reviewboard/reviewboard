@@ -144,7 +144,7 @@ RB.CommitView = Backbone.View.extend({
             const url = this.model.get('reviewRequestURL');
 
             if (url) {
-                window.location = url;
+                RB.navigateTo(url);
             } else {
                 this.model.trigger('create', this.model);
             }
