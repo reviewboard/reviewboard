@@ -193,6 +193,10 @@ class DiffResource(WebAPIResource):
         if diffset.name == 'diff':
             filename = 'bug%s.patch' % \
                        review_request.bugs_closed.replace(',', '_')
+
+            # It's possible that some data in the bugs field can contain
+            # newline characters if people copied/pasted.
+            filename = filename.replace('\n', '').replace('\r', '')
         else:
             filename = diffset.name
 

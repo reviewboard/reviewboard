@@ -566,7 +566,9 @@ class BugsField(BuiltinFieldMixin, BaseCommaEditableField):
             value (object):
                 The new value for the field.
         """
-        setattr(self.review_request_details, self.field_id, ', '.join(value))
+        serialized_value = ', '.join(value)
+        serialized_value = serialized_value.replace('\n', '').replace('\r', '')
+        setattr(self.review_request_details, self.field_id, serialized_value)
 
     def render_item(self, bug_id):
         """Render an item from the list.
