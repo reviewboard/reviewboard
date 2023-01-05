@@ -1,14 +1,14 @@
-{% load djblets_utils gravatars i18n rb_extensions %}
+{% load actions djblets_utils gravatars i18n rb_extensions %}
 
 <div id="headerbar">
 {% include "base/branding.html" %}
  <div id="nav_toggle" role="button" aria-label="{% trans 'Toggle navigation' %}"><span class="fa fa-navicon"></span></div>
- <nav aria-label="{% trans 'Account and product' %}">
-  <ul id="accountnav" role="menubar">
-{% include "base/_nav_support_menu.html" %}
+ <nav class="rb-c-actions" aria-label="{% trans 'Account and product' %}" role="presentation">
+  <menu class="rb-c-actions__content" id="accountnav" role="menu">
+{% actions_html "header" %}
 {% header_action_hooks %}
 {% header_dropdown_action_hooks %}
-  </ul>
+  </menu>
  </nav>
 
  <div id="search">

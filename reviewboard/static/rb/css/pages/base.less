@@ -295,43 +295,63 @@ textarea {
 
 
 /*
- * The account and support menu drop-down region of the header bar.
+ * Top-bar actions.
  */
-#accountnav {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  z-index: @z-index-base;
+#topbar .rb-c-actions {
+  menu {
+    box-sizing: border-box;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+  }
+
+  &__action {
+    display: inline-block;
+  }
+
+  .rb-c-menu {
+    margin: 0;
+  }
+
+  .rb-c-menu__item {
+    margin: 0;
+    padding: 0;
+
+    &:last-child {
+      border-radius: 0 0 @box-border-radius @box-border-radius;
+    }
+  }
+}
+
+
+/**
+ * Header actions.
+ *
+ * Structure:
+ *     <div class="rb-c-actions" role="presentation">
+ *      <menu class="rb-c-actions__content" role="menu">
+ *       ...
+ *      </menu>
+ *     </div>
+ */
+#headerbar .rb-c-actions {
   float: right;
 
-  #rb-ns-pages.base.on-shell-mobile-mode({
-    display: none;
-  });
-
-  li {
+  /**
+   * A header action.
+   *
+   * Structure:
+   *     <li class="rb-c-actions__action" role="presentation">
+   *      <a href="#" role="menuitem">...</a>
+   *     </li>
+   */
+  &__action {
     border: 1px transparent solid;
     border-top: 0;
-    display: block;
-    float: right;
-    margin: -@headerbar-padding 0;
-    padding: 0;
+    box-sizing: border-box;
+    display: inline-block;
     position: relative;
-    white-space: nowrap;
-
-    &:hover {
-      border-color: #888;
-
-      ul {
-        border: 1px #888 solid;
-        display: block;
-        margin-right: -1px;
-        z-index: @z-index-menu;
-
-        li {
-          border: 0;
-        }
-      }
-    }
 
     a {
       color: inherit;
@@ -343,49 +363,32 @@ textarea {
       height: 32px;
       vertical-align: middle;
       line-height: 32px;
-
-      &.user-nav-item {
-        padding-left: 0.2em;
-      }
-    }
-
-    img {
-      display: inline;
-      vertical-align: top;
-      margin: 0;
-      padding: 0;
-    }
-
-    ul {
-      display: none;
-      margin: 0;
-      min-width: @headerbar-menu-min-width;
-      padding: 0;
-      position: absolute;
-      right: 0;
-      border-radius: 0 0 @box-border-radius @box-border-radius;
-
-      li {
-        float: none;
-        margin: 0;
-        padding: 0;
-
-        &:last-child {
-          border-radius: 0 0 @box-border-radius @box-border-radius;
-        }
-
-        a {
-          margin: 0;
-        }
-      }
-    }
-
-    .fa {
-      margin-right: 0.2em;
-      min-width: 14px;
-      text-align: center;
     }
   }
+
+  &__content {
+    box-sizing: border-box;
+    list-style: none;
+    margin: -@headerbar-padding 0;
+    padding: 0;
+    white-space: nowrap;
+    z-index: @z-index-base;
+
+    img {
+      vertical-align: middle;
+    }
+  }
+
+  .rb-c-menu {
+    border: 1px #888 solid;
+    border-radius: 0 0 @box-border-radius @box-border-radius;
+    margin-right: -1px;
+    right: 0;
+  }
+
+  #rb-ns-pages.base.on-shell-mobile-mode({
+    display: none;
+  });
 }
 
 

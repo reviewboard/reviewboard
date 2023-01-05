@@ -48,6 +48,20 @@ class ActionsRegistry(OrderedRegistry):
             reviewboard.actions.base.BaseAction:
             The built-in actions.
         """
+        from reviewboard.accounts.actions import (AccountMenuAction,
+                                                  AdminAction,
+                                                  DocumentationAction,
+                                                  FollowFacebookAction,
+                                                  FollowMenuAction,
+                                                  FollowRedditAction,
+                                                  FollowNewsAction,
+                                                  FollowTwitterAction,
+                                                  FollowYouTubeAction,
+                                                  LoginAction,
+                                                  LogoutAction,
+                                                  MyAccountAction,
+                                                  SupportAction,
+                                                  SupportMenuAction)
         from reviewboard.reviews.actions import (AddGeneralCommentAction,
                                                  ArchiveAction,
                                                  ArchiveMenuAction,
@@ -67,6 +81,22 @@ class ActionsRegistry(OrderedRegistry):
         # The order here is important, and will reflect the order that items
         # appear in the UI.
         builtin_actions: List[BaseAction] = [
+            # Header bar
+            AccountMenuAction(),
+            LoginAction(),
+            MyAccountAction(),
+            AdminAction(),
+            LogoutAction(),
+            SupportMenuAction(),
+            DocumentationAction(),
+            SupportAction(),
+            FollowMenuAction(),
+            FollowNewsAction(),
+            FollowTwitterAction(),
+            FollowFacebookAction(),
+            FollowRedditAction(),
+            FollowYouTubeAction(),
+
             # Review request actions (left side)
             StarAction(),
             ArchiveMenuAction(),

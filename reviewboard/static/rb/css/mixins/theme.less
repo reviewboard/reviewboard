@@ -21,6 +21,22 @@
              @topbar-menu-bg: @topbar-bg,
              @topbar-menu-selected-bg: lighten(@topbar-bg, 10%)) {
   #accountnav {
+    .rb-c-actions__action:hover {
+      border-color: @topbar-border-color;
+    }
+
+    .rb-c-menu {
+      border-color: @topbar-border-color;
+    }
+
+    .rb-c-menu__item {
+      background: @topbar-menu-bg;
+
+      &:hover, &:focus {
+        background: @topbar-menu-selected-bg;
+      }
+    }
+
     li {
       &:hover {
         background: @topbar-menu-selected-bg;

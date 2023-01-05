@@ -13,6 +13,8 @@ from django.template import Context
 from django.template.loader import render_to_string
 from django.utils.safestring import SafeText, mark_safe
 
+from reviewboard.site.urlresolvers import local_site_reverse
+
 if TYPE_CHECKING:
     # This is available only in django-stubs.
     from django.utils.functional import _StrOrPromise
@@ -125,6 +127,14 @@ class BaseAction:
     #: Type:
     #:     str
     url: str = '#'
+
+    #: A URL name to resolve.
+    #:
+    #: If this is not None, it will take precedence over :py:attr:`url`.
+    #:
+    #: Type:
+    #:     str
+    url_name: Optional[str] = None
 
     #: Whether this action is visible.
     #:
@@ -260,8 +270,13 @@ class BaseAction:
             str:
             The URL to use for the action.
         """
-        assert self.url is not None
-        return self.url
+        assert self.url_name or self.url
+
+        if self.url_name:
+            return local_site_reverse(self.url_name,
+                                      request=context.get('request'))
+        else:
+            return self.url
 
     def get_visible(
         self,
