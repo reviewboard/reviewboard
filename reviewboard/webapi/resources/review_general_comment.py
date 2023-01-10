@@ -22,6 +22,7 @@ class ReviewGeneralCommentResource(BaseReviewGeneralCommentResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_general_comment'
     model_parent_key = 'review'
+    uri_template_name = 'review_general_comment'
 
     def get_queryset(self, request, review_id, *args, **kwargs):
         q = super(ReviewGeneralCommentResource, self).get_queryset(

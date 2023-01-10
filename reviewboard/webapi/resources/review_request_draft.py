@@ -65,6 +65,8 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     singleton = True
     model_parent_key = 'review_request'
     mimetype_item_resource_name = 'review-request-draft'
+    uri_template_name = 'review_request_draft'
+
     fields = {
         'id': {
             'type': IntFieldType,

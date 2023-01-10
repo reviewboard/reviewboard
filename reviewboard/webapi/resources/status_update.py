@@ -106,6 +106,8 @@ class StatusUpdateResource(WebAPIResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     added_in = '3.0'
 
+    uri_template_name = 'review_request_status_update'
+
     def has_access_permissions(self, request, status_update, *args, **kwargs):
         """Return whether the user has permissions to access the status update.
 

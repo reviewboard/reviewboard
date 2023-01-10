@@ -24,6 +24,7 @@ class RepositoryBranchesResource(WebAPIResource):
     policy_id = 'repository_branches'
     singleton = True
     allowed_methods = ('GET',)
+    uri_template_name = 'repository_branches'
     mimetype_item_resource_name = 'repository-branches'
 
     # For this resource, the fields dictionary is not used for any

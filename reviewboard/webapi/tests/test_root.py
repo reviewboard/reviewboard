@@ -110,18 +110,6 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         matches our expectations
         """
         expected_uri_templates = {
-            'all_file_attachment_comment':
-                'http://testserver/api/file-attachment-comments/{comment_id}/',
-            'all_file_attachment_comments':
-                'http://testserver/api/file-attachment-comments/',
-            'all_general_comment':
-                'http://testserver/api/general-comments/{comment_id}/',
-            'all_general_comments': 'http://testserver/api/general-comments/',
-            'all_reviews': 'http://testserver/api/reviews/',
-            'all_reviews_file_attachment_comments':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'file-attachments/{file_attachment_id}/'
-                'file-attachment-comments/',
             'api_token':
                 'http://testserver/api/users/{username}/api-tokens/'
                 '{api_token_id}/',
@@ -132,20 +120,7 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             'archived_review_requests':
                 'http://testserver/api/users/{username}/'
                 'archived-review-requests/',
-            'branches':
-                'http://testserver/api/repositories/{repository_id}/branches/',
-            'change':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'changes/{change_id}/',
-            'changes':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'changes/',
-            'commit':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'diffs/{diff_revision}/commits/{commit_id}/',
             'commit_validation': 'http://testserver/api/validation/commits/',
-            'commits':
-                'http://testserver/api/repositories/{repository_id}/commits/',
             'default_reviewer':
                 'http://testserver/api/default-reviewers/'
                 '{default_reviewer_id}/',
@@ -153,16 +128,6 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             'diff':
                 'http://testserver/api/review-requests/{review_request_id}/'
                 'diffs/{diff_revision}/',
-            'diff_commits':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'diffs/{diff_revision}/commits/',
-            'diff_comment':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/replies/{reply_id}/diff-comments/'
-                '{comment_id}/',
-            'diff_comments':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/replies/{reply_id}/diff-comments/',
             'diff_context':
                 'http://testserver/api/review-requests/{review_request_id}/'
                 'diff-context/',
@@ -176,38 +141,8 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             'diffs':
                 'http://testserver/api/review-requests/{review_request_id}/'
                 'diffs/',
-            'draft':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'draft/',
             'extension': 'http://testserver/api/extensions/{extension_name}/',
             'extensions': 'http://testserver/api/extensions/',
-            'file':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'diffs/{diff_revision}/files/{filediff_id}/',
-            'file_attachment':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'file-attachments/{file_attachment_id}/',
-            'file_attachment_comment':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/file-attachment-comments/{comment_id}/',
-            'file_attachment_comments':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/file-attachment-comments/',
-            'file_attachments':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'file-attachments/',
-            'file_diff_comments':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'diffs/{diff_revision}/files/{filediff_id}/diff-comments/',
-            'files':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'diffs/{diff_revision}/files/',
-            'general_comment':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/general-comments/{comment_id}/',
-            'general_comments':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/general-comments/',
             'group': 'http://testserver/api/groups/{group_name}/',
             'groups': 'http://testserver/api/groups/',
             'hosting_service':
@@ -218,9 +153,6 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                 'http://testserver/api/hosting-service-accounts/',
             'hosting_services': 'http://testserver/api/hosting-services/',
             'info': 'http://testserver/api/info/',
-            'last_update':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'last-update/',
             'muted_review_request':
                 'http://testserver/api/users/{username}/muted-review-requests/'
                 '{review_request_id}/',
@@ -232,49 +164,18 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             'oauth_token':
                 'http://testserver/api/oauth-tokens/{oauth_token_id}/',
             'oauth_tokens': 'http://testserver/api/oauth-tokens/',
-            'original_file':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'diffs/{diff_revision}/files/{filediff_id}/original-file/',
-            'patched_file':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'diffs/{diff_revision}/files/{filediff_id}/patched-file/',
             'remote_repositories':
                 'http://testserver/api/hosting-service-accounts/{account_id}/'
                 'remote-repositories/',
             'remote_repository':
                 'http://testserver/api/hosting-service-accounts/{account_id}/'
                 'remote-repositories/{repository_id}/',
-            'replies':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/replies/',
-            'reply':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/replies/{reply_id}/',
-            'reply_draft':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/replies/draft/',
             'repositories': 'http://testserver/api/repositories/',
             'repository':
                 'http://testserver/api/repositories/{repository_id}/',
-            'repository_info':
-                'http://testserver/api/repositories/{repository_id}/info/',
-            'repository_group':
-                'http://testserver/api/repositories/{repository_id}/groups/'
-                '{group_name}/',
-            'repository_groups':
-                'http://testserver/api/repositories/{repository_id}/groups/',
-            'repository_user':
-                'http://testserver/api/repositories/{repository_id}/users/'
-                '{username}/',
-            'repository_users':
-                'http://testserver/api/repositories/{repository_id}/users/',
             'review':
                 'http://testserver/api/review-requests/{review_request_id}/'
                 'reviews/{review_id}/',
-            'review_diff_comment':
-                'http://testserver/api/review-diff-comments/{comment_id}/',
-            'review_diff_comments':
-                'http://testserver/api/review-diff-comments/',
             'review_draft':
                 'http://testserver/api/review-requests/{review_request_id}/'
                 'reviews/draft/',
@@ -282,28 +183,6 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                 'http://testserver/api/groups/{group_name}/users/{username}/',
             'review_group_users':
                 'http://testserver/api/groups/{group_name}/users/',
-            'review_reply_file_attachment_comment':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/replies/{reply_id}/'
-                'file-attachment-comments/{comment_id}/',
-            'review_reply_file_attachment_comments':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/replies/{reply_id}/'
-                'file-attachment-comments/',
-            'review_reply_general_comment':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/replies/{reply_id}/general-comments/'
-                '{comment_id}/',
-            'review_reply_general_comments':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/replies/{reply_id}/general-comments/',
-            'review_reply_screenshot_comment':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/replies/{reply_id}/screenshot-comments/'
-                '{comment_id}/',
-            'review_reply_screenshot_comments':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'reviews/{review_id}/replies/{reply_id}/screenshot-comments/',
             'review_request':
                 'http://testserver/api/review-requests/{review_request_id}/',
             'review_requests': 'http://testserver/api/review-requests/',
@@ -325,12 +204,6 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                 'screenshots/',
             'search': 'http://testserver/api/search/{username}/',
             'session': 'http://testserver/api/session/',
-            'status_update':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'status-updates/{status_update_id}/',
-            'status_updates':
-                'http://testserver/api/review-requests/{review_request_id}/'
-                'status-updates/',
             'user': 'http://testserver/api/users/{username}/',
             'user_file_attachment':
                 'http://testserver/api/users/{username}/user-file-attachments/'
@@ -354,15 +227,218 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                 'http://testserver/api/users/{username}/watched/'
                 'review-requests/',
             'webhook': 'http://testserver/api/webhooks/{webhook_id}/',
-            'webhooks': 'http://testserver/api/webhooks/'
+            'webhooks': 'http://testserver/api/webhooks/',
+
+            # Added in 5.0.1.
+            'all_general_comments': 'http://testserver/api/general-comments/',
+            'all_reviews': 'http://testserver/api/reviews/',
+            'file_diff_comments':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'diffs/{diff_revision}/files/{filediff_id}/diff-comments/',
+            'review_reply_screenshot_comment':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/{reply_id}/screenshot-comments/'
+                '{comment_id}/',
+            'review_reply_screenshot_comments':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/{reply_id}/screenshot-comments/',
+
+            # Added in 5.0.2.
+            'all_diff_comments': 'http://testserver/api/diff-comments/',
+            'all_file_attachment_comments':
+                'http://testserver/api/file-attachment-comments/',
+            'diff_commit':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'diffs/{diff_revision}/commits/{commit_id}/',
+            'diff_commits':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'diffs/{diff_revision}/commits/',
+            'file_diff':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'diffs/{diff_revision}/files/{filediff_id}/',
+            'file_diffs':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'diffs/{diff_revision}/files/',
+            'file_diff_original_file':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'diffs/{diff_revision}/files/{filediff_id}/original-file/',
+            'file_diff_patched_file':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'diffs/{diff_revision}/files/{filediff_id}/patched-file/',
+            'repository_branches':
+                'http://testserver/api/repositories/{repository_id}/branches/',
+            'repository_commits':
+                'http://testserver/api/repositories/{repository_id}/commits/',
+            'repository_group':
+                'http://testserver/api/repositories/{repository_id}/groups/'
+                '{group_name}/',
+            'repository_groups':
+                'http://testserver/api/repositories/{repository_id}/groups/',
+            'repository_info':
+                'http://testserver/api/repositories/{repository_id}/info/',
+            'repository_user':
+                'http://testserver/api/repositories/{repository_id}/users/'
+                '{username}/',
+            'repository_users':
+                'http://testserver/api/repositories/{repository_id}/users/',
+            'review_diff_comment':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/diff-comments/{comment_id}/',
+            'review_diff_comments':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/diff-comments/',
+            'review_general_comment':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/general-comments/{comment_id}/',
+            'review_general_comments':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/general-comments/',
+            'review_replies':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/',
+            'review_reply':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/{reply_id}/',
+            'review_reply_draft':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/draft/',
+            'review_reply_diff_comment':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/{reply_id}/diff-comments/'
+                '{comment_id}/',
+            'review_reply_diff_comments':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/{reply_id}/diff-comments/',
+            'review_reply_file_attachment_comment':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/{reply_id}/'
+                'file-attachment-comments/{comment_id}/',
+            'review_reply_file_attachment_comments':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/{reply_id}/'
+                'file-attachment-comments/',
+            'review_reply_general_comment':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/{reply_id}/general-comments/'
+                '{comment_id}/',
+            'review_reply_general_comments':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/{reply_id}/general-comments/',
+            'review_request_change':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'changes/{change_id}/',
+            'review_request_changes':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'changes/',
+            'review_request_draft':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'draft/',
+            'review_request_file_attachment':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'file-attachments/{file_attachment_id}/',
+            'review_request_file_attachments':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'file-attachments/',
+            'review_request_file_attachment_comments':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'file-attachments/{file_attachment_id}/'
+                'file-attachment-comments/',
+            'review_request_last_update':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'last-update/',
+            'review_request_status_update':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'status-updates/{status_update_id}/',
+            'review_request_status_updates':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'status-updates/',
+
+            # Deprecated in 5.0.2.
+            'branches':
+                'http://testserver/api/repositories/{repository_id}/branches/',
+            'change':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'changes/{change_id}/',
+            'changes':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'changes/',
+            'commit':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'diffs/{diff_revision}/commits/{commit_id}/',
+            'commits':
+                'http://testserver/api/repositories/{repository_id}/commits/',
+            'diff_comment':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/{reply_id}/diff-comments/'
+                '{comment_id}/',
+            'diff_comments':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/{reply_id}/diff-comments/',
+            'diff_file_attachment':
+                'http://testserver/api/repositories/{repository_id}/'
+                'diff-file-attachments/{file_attachment_id}/',
+            'diff_file_attachments':
+                'http://testserver/api/repositories/{repository_id}/'
+                'diff-file-attachments/',
+            'draft':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'draft/',
+            'file':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'diffs/{diff_revision}/files/{filediff_id}/',
+            'files':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'diffs/{diff_revision}/files/',
+            'file_attachment':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'file-attachments/{file_attachment_id}/',
+            'file_attachments':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'file-attachments/',
+            'file_attachment_comment':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/file-attachment-comments/{comment_id}/',
+            'file_attachment_comments':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/file-attachment-comments/',
+            'general_comment':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/general-comments/{comment_id}/',
+            'general_comments':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/general-comments/',
+            'last_update':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'last-update/',
+            'original_file':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'diffs/{diff_revision}/files/{filediff_id}/original-file/',
+            'patched_file':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'diffs/{diff_revision}/files/{filediff_id}/patched-file/',
+            'replies':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/',
+            'reply':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/{reply_id}/',
+            'reply_draft':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'reviews/{review_id}/replies/draft/',
+            'status_update':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'status-updates/{status_update_id}/',
+            'status_updates':
+                'http://testserver/api/review-requests/{review_request_id}/'
+                'status-updates/',
         }
 
         rsp = self.api_get(get_root_url(),
                            expected_mimetype=root_item_mimetype)
         current_uri_templates = rsp['uri_templates']
 
-        self.assertDictEqual(expected_uri_templates,
-                             current_uri_templates)
+        self.assertDictEqual(current_uri_templates,
+                             expected_uri_templates)
 
     def _check_common_root_fields(self, item_rsp):
         self.assertIn('product', item_rsp)

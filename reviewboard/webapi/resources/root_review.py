@@ -30,17 +30,10 @@ class RootReviewResource(BaseReviewResource):
     """
 
     added_in = '5.0'
-    allowed_methods = ('GET', )
+    allowed_methods = ('GET',)
     model = Review
     uri_template_name = 'all_review'
-
-    item_child_resources = [
-        resources.review_diff_comment,
-        resources.review_file_attachment_comment,
-        resources.review_general_comment,
-        resources.review_reply,
-        resources.review_screenshot_comment,
-    ]
+    uri_object_key = None
 
     @webapi_check_local_site
     def get_queryset(self, request, is_list=False, *args, **kwargs):
