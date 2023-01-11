@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import annotations
+
 # This has come before anything else
 import djblets.util.compat.python.collections
 
@@ -9,6 +11,7 @@ import subprocess
 import sys
 from datetime import datetime
 from os.path import abspath, dirname
+from typing import Optional, TYPE_CHECKING
 from wsgiref import simple_server
 
 import django
@@ -18,6 +21,9 @@ from reviewboard import finalize_setup
 from reviewboard.dependencies import (PYTHON_MIN_VERSION,
                                       PYTHON_MIN_VERSION_STR)
 
+if TYPE_CHECKING:
+    from reviewboard.cmdline.utils.console import Console
+
 
 #: The console instance to use for all output.
 #:
@@ -26,7 +32,7 @@ from reviewboard.dependencies import (PYTHON_MIN_VERSION,
 #:
 #: Type:
 #:     reviewboard.cmdline.utils.console.Console
-console = None
+console: Optional[Console] = None
 
 
 def check_dependencies(settings):
@@ -125,17 +131,22 @@ def check_dependencies(settings):
     fail_if_missing_dependencies()
 
 
-def evolve_database(is_upgrade):
+def evolve_database(
+    is_upgrade: bool,
+) -> None:
     """Evolve the database.
 
     Args:
         is_upgrade (bool):
             Whether this is an upgrade, rather than a new install.
     """
-    from reviewboard.upgrade import (run_post_upgrade_tasks,
+    assert console is not None
+
+    from reviewboard.upgrade import (UpgradeState,
+                                     run_post_upgrade_tasks,
                                      run_pre_upgrade_tasks)
 
-    upgrade_state = {}
+    upgrade_state: UpgradeState = {}
     run_pre_upgrade_tasks(upgrade_state, console=console)
 
     execute_from_command_line([sys.argv[0]] +

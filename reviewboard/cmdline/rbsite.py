@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import annotations
+
 import argparse
 import imp
 import json
@@ -18,6 +20,7 @@ from collections import OrderedDict
 from datetime import datetime
 from importlib import import_module
 from random import choice as random_choice
+from typing import Optional
 from urllib.request import urlopen
 
 from django.db.utils import OperationalError
@@ -26,13 +29,16 @@ from django.utils.encoding import force_str
 
 from reviewboard import finalize_setup, get_manual_url, get_version_string
 from reviewboard.admin.import_utils import has_module
-from reviewboard.cmdline.utils.console import get_console, init_console
+from reviewboard.cmdline.utils.console import (Console,
+                                               get_console,
+                                               init_console)
 from reviewboard.cmdline.utils.argparsing import (HelpFormatter,
                                                   RBProgVersionAction)
 from reviewboard.rb_platform import (SITELIST_FILE_UNIX,
                                      DEFAULT_FS_CACHE_PATH,
                                      INSTALLED_SITE_PATH)
-from reviewboard.upgrade import (run_post_upgrade_tasks,
+from reviewboard.upgrade import (UpgradeState,
+                                 run_post_upgrade_tasks,
                                  run_pre_upgrade_tasks)
 
 
@@ -57,7 +63,7 @@ is_windows = (platform.system() == 'Windows')
 #:
 #: Type:
 #:     reviewboard.cmdline.utils.console.Console
-console = None
+console: Optional[Console] = None
 
 
 SUPPORT_URL = 'https://www.reviewboard.org/support/'
@@ -521,7 +527,11 @@ class Site(object):
 
         self.setup_settings()
 
-    def update_database(self, allow_input=False, report_progress=False):
+    def update_database(
+        self,
+        allow_input: bool = False,
+        report_progress: bool = False,
+    ) -> None:
         """Update the database.
 
         This will create the database if needed, or update the schema
@@ -536,6 +546,8 @@ class Site(object):
             report_progress (bool, optional):
                 Whether to report progress on the operation.
         """
+        assert console is not None
+
         # Note that we're importing here so that we can ensure any new
         # settings have already been applied prior to import by the caller.
         from django.db import connection
@@ -571,7 +583,7 @@ class Site(object):
                     sys.exit(1)
 
         # Run any tasks that need to be done before an upgrade can begin.
-        upgrade_state = {}
+        upgrade_state: UpgradeState = {}
 
         try:
             run_pre_upgrade_tasks(upgrade_state, console=console)
@@ -646,18 +658,21 @@ class Site(object):
         @receiver(applying_evolution, sender=evolver)
         def _on_applying_evolution(task, **kwargs):
             if report_progress:
+                assert console is not None
                 console.print('Applying database evolution for %s...'
                               % task.app_label)
 
         @receiver(applying_migration, sender=evolver)
         def _on_applying_migration(migration, **kwargs):
             if report_progress:
+                assert console is not None
                 console.print('Applying database migration %s for %s...'
                               % (migration.name, migration.app_label))
 
         @receiver(creating_models, sender=evolver)
         def _on_creating_models(app_label, model_names, **kwargs):
             if report_progress:
+                assert console is not None
                 console.print('Creating new database models for %s...'
                               % app_label)
 

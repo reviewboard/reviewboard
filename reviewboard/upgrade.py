@@ -11,12 +11,72 @@ Version Added:
 #       be done within the upgrade function. Importing at the module level
 #       can cause problems with apps being loaded in the wrong order.
 
-import sys
+from __future__ import annotations
+
+from typing import Dict, List, Set, TYPE_CHECKING, Tuple, TypedDict
 
 from django.db import DatabaseError
 
+if TYPE_CHECKING:
+    from reviewboard.cmdline.utils.console import Console
 
-def pre_upgrade_reset_oauth2_provider(upgrade_state, console):
+
+class UpgradeStateError(Exception):
+    """An error indicating a problem with computed upgrade state.
+
+    Version Added:
+        5.0.2
+    """
+
+
+class UpgradeState(TypedDict, total=False):
+    """State required for performing an upgrade.
+
+    These are computed during the pre-upgrade steps, and used in the
+    post-upgrade steps to determine what changes need to be made to the
+    database or configurations.
+
+    Version Added:
+        5.0.2
+    """
+
+    #: Whether SCMTool IDs need to be migrated.
+    #:
+    #: This is set when upgrading from pre-5.0 to 5.0 or higher.
+    #:
+    #: Type:
+    #:     bool
+    needs_scmtool_id_migration: bool
+
+    #: A mapping of modern SCMTool IDs to repositories using the tool.
+    #:
+    #: This can only be set if :py:attr:`needs_scmtool_id_migration` is set.
+    #:
+    #: Type:
+    #:     dict
+    scmtool_id_data: Dict[str, List[int]]
+
+    #: A mapping of legacy Tool PKs to modern SCMTool IDs.
+    #:
+    #: This can only be set if :py:attr:`needs_scmtool_id_migration` is set.
+    #:
+    #: Type:
+    #:     dict
+    tool_pk_to_scmtool_id: Dict[int, str]
+
+    #: A set of IntegrationConfig PKs with conditions to update for SCMTools.
+    #:
+    #: This can only be set if :py:attr:`needs_scmtool_id_migration` is set.
+    #:
+    #: Type:
+    #:     set
+    conditions_for_scmtool_migration: Set[int]
+
+
+def pre_upgrade_reset_oauth2_provider(
+    upgrade_state: UpgradeState,
+    console: Console,
+) -> None:
     """Reset the OAuth2 migration/evolution state pre-upgrade.
 
     This will remove any migration information regarding the
@@ -71,7 +131,10 @@ def pre_upgrade_reset_oauth2_provider(upgrade_state, console):
     evolutions.delete()
 
 
-def post_upgrade_reset_oauth2_provider(upgrade_state, console):
+def post_upgrade_reset_oauth2_provider(
+    upgrade_state: UpgradeState,
+    console: Console,
+) -> None:
     """Mark oauth2_provider migrations as applied.
 
     Post-upgrade, this will mark all oauth2_provider migrations as applied,
@@ -118,7 +181,10 @@ def post_upgrade_reset_oauth2_provider(upgrade_state, console):
             ]))
 
 
-def pre_upgrade_store_scmtool_data(upgrade_state, console):
+def pre_upgrade_store_scmtool_data(
+    upgrade_state: UpgradeState,
+    console: Console,
+) -> None:
     """Store the data for adding scmtool_id to the Repository object.
 
     Version Added:
@@ -191,8 +257,8 @@ def pre_upgrade_store_scmtool_data(upgrade_state, console):
 
         upgrade_state['needs_scmtool_id_migration'] = True
 
-        scmtool_id_data = {}
-        missing_tools = []
+        scmtool_id_data: Dict[str, List[int]] = {}
+        missing_tools: List[Tuple[str, Exception]] = []
 
         for tool in tools:
             try:
@@ -256,7 +322,10 @@ def pre_upgrade_store_scmtool_data(upgrade_state, console):
         upgrade_state['needs_scmtool_id_migration'] = False
 
 
-def post_upgrade_apply_scmtool_data(upgrade_state, console):
+def post_upgrade_apply_scmtool_data(
+    upgrade_state: UpgradeState,
+    console: Console,
+) -> None:
     """Apply the scmtool_id migration data.
 
     Version Added:
@@ -268,18 +337,29 @@ def post_upgrade_apply_scmtool_data(upgrade_state, console):
 
         console (reviewboard.cmdline.utils.console.Console, unused):
             The console output wrapper.
+
+    Raises:
+        UpgradeStateError:
+            The upgrade state had missing or bad data.
     """
     if upgrade_state.get('needs_scmtool_id_migration'):
         from reviewboard.scmtools.models import Repository
 
-        scmtool_id_data = upgrade_state['scmtool_id_data']
+        try:
+            scmtool_id_data = upgrade_state['scmtool_id_data']
+        except KeyError:
+            raise UpgradeStateError(
+                '`scmtool_id_data` is missing in the pre-upgrade state!')
 
         for scmtool_id, repository_ids in scmtool_id_data.items():
             repositories = Repository.objects.filter(pk__in=repository_ids)
             repositories.update(scmtool_id=scmtool_id)
 
 
-def pre_upgrade_store_condition_tool_info(upgrade_state, console):
+def pre_upgrade_store_condition_tool_info(
+    upgrade_state: UpgradeState,
+    console: Console,
+) -> None:
     """Store the data for converting RepositoryTypeChoice data.
 
     The :py:class:`reviewboard.scmtools.conditions.RepositoryTypeChoice`
@@ -302,8 +382,8 @@ def pre_upgrade_store_condition_tool_info(upgrade_state, console):
         from reviewboard.integrations.models import IntegrationConfig
         from reviewboard.scmtools.models import Tool
 
-        tool_pks = set()
-        affected_configs = set()
+        tool_pks: Set[int] = set()
+        affected_configs: Set[int] = set()
 
         configs = IntegrationConfig.objects.only('pk', 'settings')
 
@@ -331,7 +411,10 @@ def pre_upgrade_store_condition_tool_info(upgrade_state, console):
         upgrade_state['conditions_for_scmtool_migration'] = affected_configs
 
 
-def post_upgrade_apply_condition_tool_info(upgrade_state, console):
+def post_upgrade_apply_condition_tool_info(
+    upgrade_state: UpgradeState,
+    console: Console,
+) -> None:
     """Convert RepositoryTypeChoice conditions to use SCMTool ID.
 
     The :py:class:`reviewboard.scmtools.conditions.RepositoryTypeChoice`
@@ -347,12 +430,21 @@ def post_upgrade_apply_condition_tool_info(upgrade_state, console):
 
         console (reviewboard.cmdline.utils.console.Console, unused):
             The console output wrapper.
+
+    Raises:
+        UpgradeStateError:
+            The upgrade state had missing or bad data.
     """
     if upgrade_state.get('needs_scmtool_id_migration'):
         from reviewboard.integrations.models import IntegrationConfig
 
-        tool_pk_to_scmtool_id = upgrade_state['tool_pk_to_scmtool_id']
-        config_pks = upgrade_state['conditions_for_scmtool_migration']
+        try:
+            tool_pk_to_scmtool_id = upgrade_state['tool_pk_to_scmtool_id']
+            config_pks = upgrade_state['conditions_for_scmtool_migration']
+        except KeyError as e:
+            raise UpgradeStateError(
+                '`%s` is missing in the pre-upgrade state!'
+                % e)
 
         configs = (
             IntegrationConfig.objects
@@ -381,7 +473,10 @@ def post_upgrade_apply_condition_tool_info(upgrade_state, console):
                 config.save(update_fields=('settings',))
 
 
-def run_pre_upgrade_tasks(upgrade_state, console):
+def run_pre_upgrade_tasks(
+    upgrade_state: UpgradeState,
+    console: Console,
+) -> None:
     """Run any database pre-upgrade tasks.
 
     Version Added:
@@ -401,7 +496,10 @@ def run_pre_upgrade_tasks(upgrade_state, console):
     pre_upgrade_store_condition_tool_info(upgrade_state, console)
 
 
-def run_post_upgrade_tasks(upgrade_state, console):
+def run_post_upgrade_tasks(
+    upgrade_state: UpgradeState,
+    console: Console,
+) -> None:
     """Run any database post-upgrade tasks.
 
     Version Added:
@@ -413,6 +511,10 @@ def run_post_upgrade_tasks(upgrade_state, console):
 
         console (reviewboard.cmdline.utils.console.Console):
             The console output wrapper.
+
+    Raises:
+        UpgradeStateError:
+            The upgrade state had missing or bad data.
     """
     post_upgrade_reset_oauth2_provider(upgrade_state, console)
     post_upgrade_apply_scmtool_data(upgrade_state, console)
