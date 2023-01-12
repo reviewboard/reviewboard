@@ -699,16 +699,16 @@ class Site(object):
 
             console.print()
             console.error(
-                'There was an error updating the database:\n'
+                'There was an error updating the database:'
                 '\n'
-                '    %(error)s\n'
+                '    %(error)s'
                 '\n'
                 'This could be caused by bad permissions or configuration, '
                 'manual changes to your database schema, corruption, an '
                 'incomplete upgrade, or missing database upgrade history.'
                 '\n'
                 'If this was due to bad permissions or configuration, please '
-                'fix that and try again.\n'
+                'fix that and try again.'
                 '\n'
                 'If this is unexpected, and you do not have a backup, you '
                 'may need to contact Beanbag support for a manual repair. '
@@ -1360,9 +1360,8 @@ class Site(object):
                         evolution.app_label, [])
                     labels.append(evolution.label)
 
-                for (app_label,
-                     labels) in sorted(six.iteritems(evolutions_by_app),
-                                       key=lambda pair: pair[0]):
+                for app_label, labels in sorted(evolutions_by_app.items(),
+                                                key=lambda pair: pair[0]):
                     fp.write('\n')
                     fp.write('%s:\n' % app_label)
 
@@ -1384,9 +1383,8 @@ class Site(object):
                         app_label, [])
                     names.append(name)
 
-                for (app_label,
-                     names) in sorted(six.iteritems(migrations_by_app_label),
-                                      key=lambda pair: pair[0]):
+                for app_label, names in sorted(migrations_by_app_label.items(),
+                                               key=lambda pair: pair[0]):
                     fp.write('\n')
                     fp.write('%s:\n' % app_label)
 
@@ -1493,10 +1491,10 @@ class Site(object):
                                                                     table_name)
                         fp.write('  Constraints:\n')
 
-                        for constraint, info in six.iteritems(constraints):
+                        for constraint, info in constraints.items():
                             fp.write('    %s:\n' % constraint)
 
-                            for key, value in six.iteritems(info):
+                            for key, value in info.items():
                                 fp.write('      %s: %r\n' % (key, value))
 
                             fp.write('\n')
