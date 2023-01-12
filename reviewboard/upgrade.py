@@ -13,9 +13,10 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Dict, List, Set, TYPE_CHECKING, Tuple, TypedDict
+from typing import Dict, List, Set, TYPE_CHECKING, Tuple
 
 from django.db import DatabaseError
+from typing_extensions import TypedDict
 
 if TYPE_CHECKING:
     from reviewboard.cmdline.utils.console import Console
