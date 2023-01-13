@@ -1,6 +1,3 @@
-window.RB = {};
-
-
 $(document).ready(function() {
     $('.user').user_infobox();
     $('.bug').bug_infobox();

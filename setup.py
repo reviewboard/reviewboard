@@ -187,6 +187,16 @@ class DevelopCommand(develop):
 
             self.run_command('install_node_deps')
 
+        # Set up a .djblets symlink to point to the Djblets package directory.
+        #
+        # This will be used for path resolution in JavaScript tools used for
+        # static media building.
+        if os.path.exists('.djblets'):
+            os.unlink('.djblets')
+
+        import djblets
+        os.symlink(os.path.dirname(djblets.__file__), '.djblets')
+
     def _run_pip(self, args):
         """Run pip.
 
@@ -317,10 +327,14 @@ class ListNodeDependenciesCommand(Command):
 
         f.write(json.dumps(
             {
+                '__note__': (
+                    'DO NOT EDIT OR COMMIT THIS FILE! All dependencies must '
+                    'be recorded in reviewboard/dependencies.py instead.'
+                ),
                 'name': 'reviewboard',
                 'private': 'true',
-                'devDependencies': {},
-                'dependencies': npm_dependencies,
+                'devDependencies': npm_dependencies,
+                'dependencies': {},
             },
             indent=2))
         f.write('\n')
@@ -381,8 +395,6 @@ class InstallNodeDependenciesCommand(Command):
 
         print('Installing node.js modules...')
         result = os.system('%s install' % npm_command)
-
-        os.unlink('package.json')
 
         if result != 0:
             raise RuntimeError(

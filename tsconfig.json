@@ -1,10 +1,22 @@
 {
-    "include": [
-        "reviewboard/static/lib/js/**/*",
-        "reviewboard/static/rb/js/**/*"
-    ],
     "compilerOptions": {
         "allowJs": true,
+        "baseUrl": ".",
+        "declaration": true,
+        "moduleResolution": "node",
+        "moduleSuffixes": [
+            ".es6",
+            ""
+        ],
+        "paths": {
+            "djblets/*": [".djblets/static/djblets/js/*"],
+            "reviewboard/*": ["reviewboard/static/rb/js/*"]
+        },
         "target": "ESNext"
-    }
+    },
+    "include": [
+        "reviewboard/static/lib/js/**/*",
+        "reviewboard/static/rb/js/**/*",
+        ".djblets/static/djblets/js/**/*"
+    ]
 }

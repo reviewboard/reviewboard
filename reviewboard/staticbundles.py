@@ -156,6 +156,9 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'common': {
         'source_filenames': (
+            'rb/js/common/index.ts',
+
+            # Legacy JavaScript
             'rb/js/utils/consoleUtils.es6.js',
             'rb/js/utils/underscoreUtils.es6.js',
             'rb/js/common.es6.js',
@@ -239,6 +242,9 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'account-page': {
         'source_filenames': (
+            'rb/js/accountPrefsPage/index.ts',
+
+            # Legacy JavaScript
             'rb/js/accountPrefsPage/views/apiTokensView.es6.js',
             'rb/js/accountPrefsPage/views/joinedGroupsView.es6.js',
             'rb/js/accountPrefsPage/views/oauthApplicationsView.es6.js',
@@ -248,13 +254,18 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'config-forms': {
         'source_filenames': (
-            'rb/js/configForms/base.es6.js',
+            'rb/js/configForms/index.ts',
+
+            # Legacy JavaScript
             'rb/js/configForms/models/resourceListItemModel.es6.js',
         ),
         'output_filename': 'rb/js/config-forms.min.js',
     },
     'datagrid-pages': {
         'source_filenames': (
+            'rb/js/datagrids/index.ts',
+
+            # Legacy JavaScript
             'rb/js/pages/models/datagridPageModel.es6.js',
             'rb/js/pages/models/dashboardModel.es6.js',
             'rb/js/pages/views/datagridPageView.es6.js',
@@ -264,6 +275,10 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'reviews': {
         'source_filenames': (
+            'rb/js/reviews/index.ts',
+
+            # Legacy JavaScript
+            #
             # Note: These are roughly in dependency order.
             'rb/js/models/abstractCommentBlockModel.es6.js',
             'rb/js/models/abstractReviewableModel.es6.js',
@@ -341,7 +356,9 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'review-request-page': {
         'source_filenames': (
-            'rb/js/reviewRequestPage/base.es6.js',
+            'rb/js/reviewRequestPage/index.ts',
+
+            # Legacy JavaScript
             'rb/js/reviewRequestPage/models/entryModel.es6.js',
             'rb/js/reviewRequestPage/models/reviewEntryModel.es6.js',
             'rb/js/reviewRequestPage/models/reviewReplyEditorModel.es6.js',
@@ -363,6 +380,10 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'newReviewRequest': {
         'source_filenames': (
+            'rb/js/newReviewRequest/index.ts',
+
+            # Legacy JavaScript
+            #
             # Note: These are roughly in dependency order.
             'rb/js/models/uploadDiffModel.es6.js',
             'rb/js/newReviewRequest/models/postCommitModel.es6.js',
@@ -383,14 +404,17 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'oauth-edit': {
         'source_filenames': (
+            # Legacy JavaScript
             'rb/js/accountPrefsPage/views/oauthClientSecretView.es6.js',
         ),
         'output_filename': 'rb/js/oauth.min.js',
     },
     'admin': {
         'source_filenames': (
+            'rb/js/admin/index.ts',
+
+            # Legacy JavaScript
             'lib/js/masonry-4.2.2.js',
-            'rb/js/admin/base.es6.js',
             'rb/js/admin/models/changeListPageModel.es6.js',
             'rb/js/admin/models/dashboardPageModel.es6.js',
             'rb/js/admin/models/inlineFormGroupModel.es6.js',
@@ -414,18 +438,21 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'repositoryform': {
         'source_filenames': (
+            # Legacy JavaScript
             'rb/js/admin/repositoryform.es6.js',
         ),
         'output_filename': 'rb/js/repositoryform.min.js',
     },
     'webhooks-form': {
         'source_filenames': (
+            # Legacy JavaScript
             'rb/js/admin/views/webhookFormView.es6.js',
         ),
         'output_filename': 'rb/js/webhooks-form.min.js',
     },
     'widgets': {
         'source_filenames': (
+            # Legacy JavaScript
             'rb/js/admin/views/relatedUserSelectorView.es6.js',
             'rb/js/admin/views/relatedRepoSelectorView.es6.js',
             'rb/js/admin/views/relatedGroupSelectorView.es6.js',

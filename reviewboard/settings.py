@@ -561,6 +561,7 @@ PIPELINE = build_pipeline_settings(
     validate_paths=not PRODUCTION,
     javascript_bundles=PIPELINE_JAVASCRIPT,
     stylesheet_bundles=PIPELINE_STYLESHEETS,
+    use_rollup=True,
     less_extra_args=[
         # This is just here for backwards-compatibility with any stylesheets
         # that still have this. It's no longer necessary because compilation
