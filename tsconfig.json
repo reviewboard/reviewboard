@@ -1,13 +1,17 @@
 {
     "compilerOptions": {
         "allowJs": true,
-        "baseUrl": ".",
-        "declaration": true,
+        "baseUrl": "./",
+        "declaration": false,
+        "esModuleInterop": true,
+        "experimentalDecorators": true,
+        "isolatedModules": true,
         "moduleResolution": "node",
         "moduleSuffixes": [
             ".es6",
             ""
         ],
+        "noEmit": true,
         "paths": {
             "djblets/*": [".djblets/static/djblets/js/*"],
             "reviewboard/*": ["reviewboard/static/rb/js/*"]

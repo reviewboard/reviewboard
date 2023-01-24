@@ -10,6 +10,17 @@ const extensions = [
 ];
 
 
+const globalsMap = {
+    '@beanbag/spina': 'Spina',
+    Backbone: 'Backbone',
+    Djblets: 'Djblets',
+    RB: 'RB',
+    django: 'django',
+    jquery: '$',
+    underscore: '_',
+};
+
+
 export default {
     output: {
         /*
@@ -29,14 +40,7 @@ export default {
          * Each of these globals will be assumed to exist when the module is
          * loaded. They won't have to be imported.
          */
-        globals: {
-            Backbone: 'Backbone',
-            Djblets: 'Djblets',
-            RB: 'RB',
-            django: 'django',
-            jquery: '$',
-            underscore: '_',
-        },
+        globals: globalsMap,
     },
     plugins: [
         /* Configure rollup to use Babel to compile files. */
@@ -57,6 +61,8 @@ export default {
             if (id.startsWith('reviewboard/')) {
                 return 'RB';
             }
+
+            return globalsMap[id];
         }),
 
         /* Specify where modules should be looked up from. */
@@ -66,6 +72,7 @@ export default {
                 'reviewboard/static/lib/js',
                 'reviewboard/static/rb/js',
                 '.djblets/static/djblets/js',
+                'node_modules',
             ],
         }),
     ],
