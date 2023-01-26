@@ -8,9 +8,12 @@
         }
     },
     "plugins": [
+        "@babel/plugin-external-helpers",
         ["@babel/plugin-proposal-decorators", {
             "version": "legacy"
-        }]
+        }],
+        "babel-plugin-dedent",
+        "babel-plugin-django-gettext"
     ],
     "sourceMaps": true
 }

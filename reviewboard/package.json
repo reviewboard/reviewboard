@@ -5,6 +5,9 @@
   "scripts": {
     "dependencies": "./contrib/internal/build-npm-deps.py"
   },
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "dependencies": {
     "@beanbag/djblets": "file:.djblets"
   }
