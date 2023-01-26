@@ -229,6 +229,12 @@ PIPELINE_JAVASCRIPT = dict({
         ),
         'output_filename': 'rb/js/base.min.js',
     },
+    'ui': {
+        'source_filenames': (
+            'rb/js/ui/index.ts',
+        ),
+        'output_filename': 'rb/js/ui.min.js',
+    },
     'account-page': {
         'source_filenames': (
             'rb/js/accountPrefsPage/index.ts',
