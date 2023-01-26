@@ -285,61 +285,6 @@ class BuildI18nCommand(Command):
             raise RuntimeError('Failed to build i18n files')
 
 
-class ListNodeDependenciesCommand(Command):
-    """"Write all node.js dependencies to standard output."""
-
-    description = 'Generate a package.json that lists node.js dependencies'
-
-    user_options = [
-        (str('to-stdout'), None,
-         'Write to standard output instead of a package.json file.')
-    ]
-
-    boolean_options = [str('to-stdout')]
-
-    def initialize_options(self):
-        """Set the command's option defaults."""
-        self.to_stdout = False
-
-    def finalize_options(self):
-        """Post-process command options.
-
-        This method intentionally left blank.
-        """
-        pass
-
-    def run(self):
-        """Run the command."""
-        if self.to_stdout:
-            self._write_deps(sys.stdout)
-        else:
-            with open('package.json', 'w') as f:
-                self._write_deps(f)
-
-    def _write_deps(self, f):
-        """Write the packaage.json to the given file handle.
-
-        Args:
-            f (file):
-                The file handle to write to.
-        """
-        from djblets.dependencies import npm_dependencies
-
-        f.write(json.dumps(
-            {
-                '__note__': (
-                    'DO NOT EDIT OR COMMIT THIS FILE! All dependencies must '
-                    'be recorded in reviewboard/dependencies.py instead.'
-                ),
-                'name': 'reviewboard',
-                'private': 'true',
-                'devDependencies': npm_dependencies,
-                'dependencies': {},
-            },
-            indent=2))
-        f.write('\n')
-
-
 class InstallNodeDependenciesCommand(Command):
     """Install all node.js dependencies from npm.
 
@@ -387,11 +332,6 @@ class InstallNodeDependenciesCommand(Command):
                 'Unable to locate %s in the path, which is needed to '
                 'install dependencies required to build this package.'
                 % npm_command)
-
-        # By this point, dependencies should be installed for us. We're also
-        # using the same exact dependencies as Djblets, so no need to
-        # duplicate that list.
-        self.run_command('list_node_deps')
 
         print('Installing node.js modules...')
         result = os.system('%s install' % npm_command)
@@ -491,7 +431,6 @@ setup(
         'build_media': BuildMediaCommand,
         'build_i18n': BuildI18nCommand,
         'install_node_deps': InstallNodeDependenciesCommand,
-        'list_node_deps': ListNodeDependenciesCommand,
     },
     python_requires='>=3.7',
     classifiers=[

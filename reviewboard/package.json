@@ -1,0 +1,11 @@
+{
+  "name": "@beanbag/reviewboard",
+  "private": "true",
+  "files": [],
+  "scripts": {
+    "dependencies": "./contrib/internal/build-npm-deps.py"
+  },
+  "dependencies": {
+    "@beanbag/djblets": "file:.djblets"
+  }
+}

@@ -19,8 +19,6 @@
 # Files
 .coverage
 .noseids
-package.json
-package-lock.json
 reviewboard/settings_local.py
 reviewboard.log
 settings_local.py
