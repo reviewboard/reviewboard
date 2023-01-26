@@ -459,11 +459,7 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
            generate a new one.
           </p>
          <% } %>
-         <% if (expired) { %>
-          <p class="rb-c-config-api-tokens__token-state -is-expired">
-           Expired <time class="timesince" datetime="<%= expires %>"></time>.
-          </p>
-         <% } else if (valid) { %>
+         <% if (valid) { %>
           <% if (lastUsed) { %>
            <p class="rb-c-config-api-tokens__usage -has-last-used">
             Last used
@@ -472,7 +468,11 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
           <% } else { %>
            <p class="rb-c-config-api-tokens__usage">Never used.</p>
           <% } %>
-          <% if (expires) { %>
+          <% if (expired) { %>
+           <p class="rb-c-config-api-tokens__token-state -is-expired">
+            <span>Expired <%= expiresTimeHTML %>.</span>
+           </p>
+          <% } else if (expires) { %>
            <p class="rb-c-config-api-tokens__token-state -has-expires">
             <span>Expires <%= expiresTimeHTML %>.</span>
            </p>
@@ -528,7 +528,7 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
 
         this._$tokenState = this.$('.rb-c-config-api-tokens__token-state');
         this._$expires = this._$tokenState
-            .not('.is-expired, .is-invalid')
+            .not('.is-invalid')
             .find('span');
 
         this._$note = this.$('.rb-c-config-api-tokens__note')
@@ -541,38 +541,48 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
                 complete: (e, value) => this.model.saveNote(value)
             });
 
-        /**
-         * Use tomorrow as the minimum date that the expiration date
-         * can be set to.
-         */
-        const tomorrow = moment().local().add(1, 'days');
-        const expires = moment(this.model.get('expires')).local();
+        const expires = moment(this.model.get('expires'))
+            .local()
+            .format('YYYY-MM-DDTHH:mm');
 
-        const expiresView = new RB.DateInlineEditorView({
+        const expiresView = new RB.DateTimeInlineEditorView({
             el: this._$expires[0],
             descriptorText: 'Expires ',
             formatResult: value => {
                 if (value) {
-                    value = moment(value).local().startOf('day').format();
+                    value = moment(value).local().format();
+                    const today = moment().local();
+                    const expired = today.isAfter(value);
+                    const prefix = expired ? 'Expired' : 'Expires';
+
+                    if (expired) {
+                        this._$tokenState.addClass('-is-expired');
+                    }
 
                     return (dedent`
-                        Expires
+                        ${prefix}
                         <time class="timesince" datetime="${value}"></time>.
                     `);
                 } else {
+                    this._$tokenState.removeClass('-is-expired');
+
                     return 'Never expires.';
                 }
             },
-            minDate: tomorrow.format('YYYY-MM-DD'),
-            rawValue: expires.format('YYYY-MM-DD'),
+            rawValue: expires,
+        })
+        .on({
+            beginEdit: () => this._$tokenState.removeClass('-is-expired'),
+            cancel: () => {
+                if (this.model.get('expired')) {
+                    this._$tokenState.addClass('-is-expired');
+                }
+            }
         });
         expiresView.render();
 
         this.listenTo(expiresView, 'complete', (value) => {
-            // Set the expiration time to midnight local time.
-            value = value ? moment(value).local().startOf('day').format() :
-                    '';
-
+            value = value ? moment(value).local().format() : '';
             this.model.saveExpires(value);
         });
 

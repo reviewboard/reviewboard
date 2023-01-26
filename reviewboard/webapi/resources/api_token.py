@@ -533,6 +533,7 @@ class APITokenResource(WebAPIResource):
 
         if 'expires' in kwargs:
             token.expires = kwargs['expires']
+            token.extra_data['expired_notification_sent'] = False
 
         if 'note' in kwargs:
             token.note = kwargs['note']

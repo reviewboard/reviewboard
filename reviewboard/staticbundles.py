@@ -124,6 +124,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/reviewRequestPage/views/tests/reviewRequestPageViewTests.es6.js',
             'rb/js/reviewRequestPage/views/tests/reviewViewTests.es6.js',
             'rb/js/ui/views/tests/dateInlineEditorViewTests.es6.js',
+            'rb/js/ui/views/tests/dateTimeInlineEditorViewTests.es6.js',
             'rb/js/ui/views/tests/dialogViewTests.es6.js',
             'rb/js/ui/views/tests/drawerViewTests.es6.js',
             'rb/js/ui/views/tests/formViewTests.es6.js',
