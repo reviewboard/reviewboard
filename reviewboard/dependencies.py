@@ -9,7 +9,14 @@ you're going to make use of data from this file, code defensively.
 
 import sys
 import textwrap
+from typing import Dict
 
+from djblets.dependencies import npm_dependencies as djblets_npm_dependencies
+
+
+###########################################################################
+# Python and Django compatibility
+###########################################################################
 
 #: The minimum supported version of Python.
 PYTHON_MIN_VERSION = (3, 7)
@@ -35,6 +42,11 @@ django_version = '~=3.2.16'
 
 #: The version range required for Djblets.
 djblets_version = '~=4.0a0.dev0'
+
+
+###########################################################################
+# Python dependencies
+###########################################################################
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
@@ -83,6 +95,49 @@ package_only_dependencies = {
 }
 
 
+###########################################################################
+# JavaScript dependencies
+#
+# These are auto-generated when running `npm install --save ...` (if the
+# package is not already in node_modules).
+#
+# To re-generate manually, run: `./contrib/internal/build-npm-deps.py`.
+###########################################################################
+
+# Auto-generated Node.js dependencies {
+
+
+#: Dependencies required for runtime or static media building.
+runtime_npm_dependencies: Dict[str, str] = {
+    '@babel/plugin-external-helpers': '^7.18.6',
+    '@prantlf/jsonlint': '^11.7.0',
+    '@rollup/plugin-commonjs': '^24.0.1',
+    'babel-polyfill': '^6.26.0',
+    'codemirror': '^5.65.11',
+    'jasmine': '~3.5.0',
+    'jquery': '^3.3.1',
+    'jquery-flot': '^0.8.3',
+    'jquery-form': '^4.2.2',
+    'jquery-ui': '~1.12.1',
+    'jquery.cookie': '^1.4.1',
+    'moment': '^2.29.4',
+    'moment-timezone': '^0.5.40',
+    'sourcemapped-stacktrace': '^1.1.11',
+}
+
+
+# } Auto-generated Node.js dependencies
+
+
+#: Node dependencies required to package/develop/test Djblets.
+npm_dependencies: Dict[str, str] = {}
+npm_dependencies.update(djblets_npm_dependencies)
+npm_dependencies.update(runtime_npm_dependencies)
+
+
+###########################################################################
+# Packaging utilities
+###########################################################################
 _dependency_error_count = 0
 _dependency_warning_count = 0
 

@@ -1,0 +1,19 @@
+{
+    "env": {
+        "development": {
+            "presets": [
+                "@babel/preset-env",
+                "@babel/preset-typescript"
+            ]
+        }
+    },
+    "plugins": [
+        "@babel/plugin-external-helpers",
+        ["@babel/plugin-proposal-decorators", {
+            "version": "legacy"
+        }],
+        "babel-plugin-dedent",
+        "babel-plugin-django-gettext"
+    ],
+    "sourceMaps": true
+}
