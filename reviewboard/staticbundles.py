@@ -7,46 +7,34 @@ from djblets.staticbundles import (
 PIPELINE_JAVASCRIPT = dict({
     '3rdparty-base': {
         'source_filenames': (
-            'lib/js/babel-polyfill-6.5.0.js',
-            'lib/js/jquery-3.3.1.min.js',
+            'lib/js/3rdparty-base/index.ts',
         ),
         'output_filename': 'lib/js/3rdparty-base.min.js',
     },
     '3rdparty': {
         'source_filenames': (
-            'lib/js/jquery-ui-1.12.1.min.js',
-            'lib/js/flot/jquery.flot.min.js',
-            'lib/js/flot/jquery.flot.pie.min.js',
-            'lib/js/flot/jquery.flot.selection.min.js',
-            'lib/js/flot/jquery.flot.time.min.js',
-            'lib/js/underscore-1.8.3.min.js',
-            'lib/js/backbone-1.4.1.js',
-            'lib/js/jquery.cookie-1.4.1.js',
-            'lib/js/jquery.form-4.2.2.min.js',
-            'lib/js/jquery.timesince.js',
-            'lib/js/moment-2.12.0.js',
-            'lib/js/moment-timezone-0.5.2.js',
-            'lib/js/ui.autocomplete.js',
-            'lib/js/codemirror-5.62.0.js',
+            # The order here matters.
+            'lib/js/3rdparty/jquery-ui-1.12.1.min.js',
+            'lib/js/3rdparty/index.ts',
         ),
         'output_filename': 'lib/js/3rdparty.min.js',
     },
     '3rdparty-jsonlint': {
         'source_filenames': (
-            'lib/js/jsonlint.js',
+            'lib/js/jsonlint/index.ts',
         ),
         'output_filename': 'lib/js/3rdparty-jsonlint.min.js',
     },
     'js-test-libs': {
         'source_filenames': (
             # The order matters for the Jasmine modules.
-            'lib/js/jasmine-3.5.0.js',
-            'lib/js/jasmine-html-3.5.0.js',
-            'lib/js/jasmine-boot-3.5.0.js',
-            'lib/js/jasmine.suites-1.0.js',
-            'lib/js/jasmine.hide-filtered-1.0.js',
-            'lib/js/jasmine.sourcemaps-1.0.js',
-            'lib/js/sourcemapped-stacktrace.js',
+            'lib/js/js-test-libs/jasmine-3.5.0.js',
+            'lib/js/js-test-libs/jasmine-html-3.5.0.js',
+            'lib/js/js-test-libs/jasmine-boot-3.5.0.js',
+            'lib/js/js-test-libs/jasmine.suites-1.0.js',
+            'lib/js/js-test-libs/jasmine.hide-filtered-1.0.js',
+            'lib/js/js-test-libs/jasmine.sourcemaps-1.0.js',
+            'lib/js/js-test-libs/sourcemapped-stacktrace.js',
         ),
         'output_filename': 'rb/js/js-test-libs.min.js',
     },
