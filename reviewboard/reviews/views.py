@@ -49,6 +49,7 @@ from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_original_file,
                                               get_patched_file)
 from reviewboard.diffviewer.models import DiffSet
+from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.diffviewer.views import (DiffFragmentView,
                                           DiffViewerView,
                                           DownloadPatchErrorBundleView,
@@ -356,31 +357,39 @@ def build_diff_comment_fragments(
     comment_entries = []
     had_error = False
     siteconfig = SiteConfiguration.objects.get_current()
+    diff_settings = DiffSettings.create(request=request)
 
     if lines_of_context is None:
         lines_of_context = [0, 0]
 
     for comment in comments:
         try:
-            max_line = get_last_line_number_in_diff(context, comment.filediff,
-                                                    comment.interfilediff)
+            max_line = get_last_line_number_in_diff(
+                context=context,
+                filediff=comment.filediff,
+                interfilediff=comment.interfilediff,
+                diff_settings=diff_settings)
 
             first_line = max(1, comment.first_line - lines_of_context[0])
             last_line = min(comment.last_line + lines_of_context[1], max_line)
             num_lines = last_line - first_line + 1
 
-            chunks = list(get_file_chunks_in_range(context,
-                                                   comment.filediff,
-                                                   comment.interfilediff,
-                                                   first_line,
-                                                   num_lines))
+            chunks = list(get_file_chunks_in_range(
+                context=context,
+                filediff=comment.filediff,
+                interfilediff=comment.interfilediff,
+                first_line=first_line,
+                num_lines=num_lines,
+                diff_settings=diff_settings))
 
             comment_context = {
                 'comment': comment,
-                'header': get_last_header_before_line(context,
-                                                      comment.filediff,
-                                                      comment.interfilediff,
-                                                      first_line),
+                'header': get_last_header_before_line(
+                    context=context,
+                    filediff=comment.filediff,
+                    interfilediff=comment.interfilediff,
+                    target_line=first_line,
+                    diff_settings=diff_settings),
                 'chunks': chunks,
                 'domain': Site.objects.get_current().domain,
                 'domain_method': siteconfig.get('site_domain_method'),

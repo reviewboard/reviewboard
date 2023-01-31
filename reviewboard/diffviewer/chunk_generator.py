@@ -3,6 +3,7 @@ import hashlib
 import logging
 import re
 from itertools import zip_longest
+from typing import List
 
 import pygments.util
 from django.utils.encoding import force_str
@@ -17,6 +18,7 @@ from pygments.lexers import (find_lexer_class,
                              guess_lexer_for_filename)
 
 from reviewboard.codesafety import code_safety_checker_registry
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
 from reviewboard.diffviewer.diffutils import (get_filediff_encodings,
                                               get_line_changed_regions,
@@ -26,6 +28,7 @@ from reviewboard.diffviewer.diffutils import (get_filediff_encodings,
                                               split_line_endings)
 from reviewboard.diffviewer.opcode_generator import (DiffOpcodeGenerator,
                                                      get_diff_opcode_generator)
+from reviewboard.diffviewer.settings import DiffSettings
 
 
 logger = logging.getLogger(__name__)
@@ -103,10 +106,31 @@ class RawDiffChunkGenerator(object):
     # Default tab size used in browsers.
     TAB_SIZE = DiffOpcodeGenerator.TAB_SIZE
 
+    ######################
+    # Instance variables #
+    ######################
+
+    #: Settings used for the generation of the diff.
+    #:
+    #: Version Added:
+    #:     5.0.2
+    #:
+    #: Type:
+    #:     reviewboard.diffviewer.settings.DiffSettings
+    diff_settings: DiffSettings
+
     def __init__(self, old, new, orig_filename, modified_filename,
-                 enable_syntax_highlighting=True, encoding_list=None,
-                 diff_compat=DiffCompatVersion.DEFAULT):
+                 enable_syntax_highlighting=None, encoding_list=None,
+                 diff_compat=DiffCompatVersion.DEFAULT,
+                 *, diff_settings=None):
         """Initialize the chunk generator.
+
+        Version Changed:
+            5.0.2:
+            * Added ``diff_settings``, which will be required starting in
+              Review Board 6.
+            * Deprecated ``enable_syntax_highlighting`` in favor of
+              ``diff_settings``.
 
         Args:
             old (bytes or list of bytes):
@@ -122,7 +146,12 @@ class RawDiffChunkGenerator(object):
                 The filename corresponding to the new data.
 
             enable_syntax_highlighting (bool, optional):
-                Whether to syntax-highlight the lines.
+                Whether to default to enabling syntax highlighting if
+                ``diff_settings`` is not provided.
+
+                Deprecated:
+                    5.0.2:
+                    This has been replaced with ``diff_settings``.
 
             encoding_list (list of unicode, optional):
                 A list of encodings to try for the ``old`` and ``new`` data,
@@ -132,6 +161,12 @@ class RawDiffChunkGenerator(object):
             diff_compat (int, optional):
                 A specific diff compatibility version to use for any diffing
                 logic.
+
+            diff_settings (reviewboard.diffviewer.settings.DiffSettings):
+                The settings used to control the display of diffs.
+
+                Version Added:
+                    5.0.2
         """
         # Check that the data coming in is in the formats we accept.
         for param, param_name in ((old, 'old'), (new, 'new')):
@@ -159,11 +194,28 @@ class RawDiffChunkGenerator(object):
                 _('%s expects a Unicode value for "modified_filename"')
                 % type(self).__name__)
 
+        if enable_syntax_highlighting is not None:
+            RemovedInReviewBoard60Warning.warn(
+                'The `enable_syntax_highlighting` argument to %r is '
+                'deprecated and will be removed in Review Board 6.0. '
+                'Please provide `diff_settings` instead.'
+                % type(self))
+
+        if diff_settings is None:
+            diff_settings = DiffSettings.create()
+
+            # Satisfy the type checker, due to the parameter being optional.
+            assert diff_settings is not None
+
+            if enable_syntax_highlighting is not None:
+                diff_settings.syntax_highlighting = enable_syntax_highlighting
+
         self.old = old
         self.new = new
         self.orig_filename = orig_filename
         self.modified_filename = modified_filename
-        self.enable_syntax_highlighting = enable_syntax_highlighting
+        self.diff_settings = diff_settings
+        self.enable_syntax_highlighting = diff_settings.syntax_highlighting
         self.encoding_list = encoding_list or ['iso-8859-15']
         self.diff_compat = diff_compat
         self.differ = None
@@ -582,8 +634,7 @@ class RawDiffChunkGenerator(object):
         if not self.enable_syntax_highlighting:
             return False
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        threshold = siteconfig.get('diffviewer_syntax_highlighting_threshold')
+        threshold = self.diff_settings.syntax_highlighting_threshold
 
         if threshold and (len(a) > threshold or len(b) > threshold):
             return False
@@ -1006,9 +1057,7 @@ class RawDiffChunkGenerator(object):
         if filename.endswith(self.STYLED_EXT_BLACKLIST):
             return None
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        custom_pygments_lexers = \
-            siteconfig.get('diffviewer_custom_pygments_lexers')
+        custom_pygments_lexers = self.diff_settings.custom_pygments_lexers
         lexer = None
 
         for ext, lexer_name in custom_pygments_lexers.items():
@@ -1079,8 +1128,9 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
     """
 
     def __init__(self, request, filediff, interfilediff=None,
-                 force_interdiff=False, enable_syntax_highlighting=True,
-                 base_filediff=None):
+                 force_interdiff=False, enable_syntax_highlighting=None,
+                 base_filediff=None,
+                 *, diff_settings=None):
         """Initialize the DiffChunkGenerator.
 
         Args:
@@ -1130,31 +1180,38 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             new=None,
             orig_filename=orig_filename,
             modified_filename=filediff.dest_file,
-            enable_syntax_highlighting=enable_syntax_highlighting,
             encoding_list=self.repository.get_encoding_list(),
-            diff_compat=filediff.diffset.diffcompat)
+            diff_compat=filediff.diffset.diffcompat,
+            diff_settings=diff_settings)
 
-    def make_cache_key(self):
-        """Create a cache key for any generated chunks."""
-        key = 'diff-sidebyside-'
+    def make_cache_key(self) -> str:
+        """Return a new cache key for any generated chunks.
 
-        if self.enable_syntax_highlighting:
-            key += 'hl-'
+        Returns:
+            str:
+            The new cache key.
+        """
+        key: List[str] = []
+
+        key.append('diff-sidebyside')
 
         if self.base_filediff is not None:
-            key += 'base-%s-' % self.base_filediff.pk
+            key.append('base-%s' % self.base_filediff.pk)
 
         if not self.force_interdiff:
-            key += str(self.filediff.pk)
+            key.append(str(self.filediff.pk))
         elif self.interfilediff:
-            key += 'interdiff-%s-%s' % (self.filediff.pk,
-                                        self.interfilediff.pk)
+            key.append('interdiff-%s-%s' % (self.filediff.pk,
+                                            self.interfilediff.pk))
         else:
-            key += 'interdiff-%s-none' % self.filediff.pk
+            key.append('interdiff-%s-none' % self.filediff.pk)
 
-        key += '-%s' % get_language()
+        key += [
+            self.diff_settings.state_hash,
+            get_language(),
+        ]
 
-        return key
+        return '-'.join(key)
 
     def get_opcode_generator(self):
         """Return the DiffOpcodeGenerator used to generate diff opcodes."""
