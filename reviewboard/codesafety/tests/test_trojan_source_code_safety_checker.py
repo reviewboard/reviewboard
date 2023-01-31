@@ -110,7 +110,8 @@ class TrojanSourceCodeSafetyCheckerTests(TestCase):
         bi-directional characters
         """
         html = self.checker.update_line_html(
-            '<span>/*</span> <span>\u202D admin</span><span>*/</span>:')
+            '<span>/*</span> <span>\u202D admin</span><span>*/</span>:',
+            result_ids=[])
 
         self.assertIsInstance(html, SafeString)
         self.assertEqual(
@@ -167,7 +168,8 @@ class TrojanSourceCodeSafetyCheckerTests(TestCase):
                 '<span>def</span> <span>is_%sadmin</span><span>()</span>:'
                 % dataset['char']
             )
-            html = self.checker.update_line_html(line)
+            html = self.checker.update_line_html(line,
+                                                 result_ids=[])
 
             self.assertIsInstance(html, SafeString)
 
@@ -203,7 +205,8 @@ class TrojanSourceCodeSafetyCheckerTests(TestCase):
         for dataset in datasets:
             html = self.checker.update_line_html(
                 '<span>def</span> <span>is_%sadmin</span><span>()</span>:'
-                % dataset['char'])
+                % dataset['char'],
+                result_ids=[])
 
             self.assertIsInstance(html, SafeString)
             self.assertEqual(

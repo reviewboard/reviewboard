@@ -6,11 +6,20 @@ Version Added:
 
 import unicodedata
 from itertools import chain
+from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
 
-from django.utils.html import format_html, mark_safe
+from django.utils.html import format_html
+from django.utils.safestring import SafeString, mark_safe
 from django.utils.translation import gettext_lazy as _
+from typing_extensions import TypeAlias
 
-from reviewboard.codesafety.checkers.base import BaseCodeSafetyChecker
+from reviewboard.codesafety.checkers.base import (BaseCodeSafetyChecker,
+                                                  CodeSafetyCheckResults,
+                                                  CodeSafetyContentItem)
+
+
+_UnicodeRange: TypeAlias = Tuple[int, int]
+_UnicodeRanges: TypeAlias = Tuple[_UnicodeRange, ...]
 
 
 #: Zero-width Unicode characters.
@@ -25,7 +34,7 @@ from reviewboard.codesafety.checkers.base import BaseCodeSafetyChecker
 #:
 #: Version Added:
 #:     5.0
-ZERO_WIDTH_UNICODE_CHAR_RANGES = (
+ZERO_WIDTH_UNICODE_CHAR_RANGES: _UnicodeRanges = (
     (0x200B, 0x200C),
 )
 
@@ -50,7 +59,7 @@ ZERO_WIDTH_UNICODE_CHAR_RANGES = (
 #:
 #: Version Added:
 #:     5.0
-BIDI_UNICODE_RANGES = (
+BIDI_UNICODE_RANGES: _UnicodeRanges = (
     (0x202A, 0x202E),
     (0x2066, 0x2069),
 )
@@ -87,14 +96,18 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
         'zws': _('Zero-width space characters (CVE-2021-42574)'),
     }
 
-    _unsafe_unicode_check_map = None
+    _unsafe_unicode_check_map: Optional[Dict[_UnicodeRange, str]] = None
 
     _check_unicode_ranges = {
         'bidi': BIDI_UNICODE_RANGES,
         'zws': ZERO_WIDTH_UNICODE_CHAR_RANGES,
     }
 
-    def check_content(self, content_items, **kwargs):
+    def check_content(
+        self,
+        content_items: List[CodeSafetyContentItem],
+        **kwargs,
+    ) -> CodeSafetyCheckResults:
         """Check content for possible Trojan Source code.
 
         This will scan the characters of each line, looking for any
@@ -149,7 +162,12 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
             'warnings': warnings,
         }
 
-    def update_line_html(self, line_html, **kwargs):
+    def update_line_html(
+        self,
+        line_html: str,
+        result_ids: Sequence[str],
+        **kwargs,
+    ) -> SafeString:
         """Update the rendered diff HTML for a line.
 
         This will highlight any Unicode characters that would have triggered
@@ -193,7 +211,10 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
 
         return mark_safe(''.join(result))
 
-    def _iter_unsafe_chars(self, chars):
+    def _iter_unsafe_chars(
+        self,
+        chars: Iterable[str],
+    ) -> Iterator[Tuple[int, str, int, str]]:
         """Iterate through a string, yielding unsafe characters.
 
         Args:
@@ -204,10 +225,18 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
             tuple:
             Information on an unsafe character. This contains:
 
-            1. The 0-based index of the character in the provided string.
-            2. The Unicode character.
-            3. The Unicode codepoint.
-            4. The result ID.
+            Tuple:
+                0 (int):
+                    The 0-based index of the character in the provided string.
+
+                1 (str):
+                    The Unicode character.
+
+                2 (int):
+                    The Unicode codepoint.
+
+                3 (str):
+                    The result ID.
         """
         # We're importing this here, rather than at the module level, since
         # we want to avoid taking the hit until we need it the first time.
@@ -228,7 +257,7 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
                         break
 
     @classmethod
-    def _get_unsafe_unicode_check_map(cls):
+    def _get_unsafe_unicode_check_map(cls) -> Dict[_UnicodeRange, str]:
         """Return a range check map for matching unsafe Unicode characters.
 
         This is cached for all future instances.
@@ -237,7 +266,7 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
             dict:
             The resulting range check map.
         """
-        checks_map = getattr(cls, '_unsafe_unicode_check_map', None)
+        checks_map = cls._unsafe_unicode_check_map
 
         if checks_map is None:
             checks_map = {
