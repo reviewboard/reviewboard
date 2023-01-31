@@ -67,28 +67,31 @@ suite('rb/ui/views/MenuButtonView', function() {
 
         function sendDropDownButtonEvent(name, options) {
             const evt = $.Event(name, options);
-            view._$dropDownButton.trigger(evt);
+            view.$('.rb-c-menu-button__toggle').trigger(evt);
+
             return evt;
         }
 
         function sendKeyDown(keyCode) {
             sendDropDownButtonEvent('keydown', {
-                which: keyCode,
+                key: keyCode,
             });
         }
 
         beforeEach(function() {
-            view = new RB.MenuButtonView();
+            view = new RB.MenuButtonView({
+                text: 'Text',
+            });
             view.render();
 
             /* Don't let this override any state we set. */
-            spyOn(view, '_updateMenuPosition');
+            spyOn(view, 'updateMenuPosition');
         });
 
         describe('keydown', function() {
             function openMenuTests(keyCode) {
                 it('With openDirection=up', function() {
-                    view._openDirection = 'up';
+                    view.openDirection = 'up';
                     spyOn(view.menu, 'focusLastItem');
 
                     sendKeyDown(keyCode);
@@ -98,7 +101,7 @@ suite('rb/ui/views/MenuButtonView', function() {
                 });
 
                 it('With openDirection=down', function() {
-                    view._openDirection = 'down';
+                    view.openDirection = 'down';
                     spyOn(view.menu, 'focusFirstItem');
 
                     sendKeyDown(keyCode);
@@ -109,19 +112,19 @@ suite('rb/ui/views/MenuButtonView', function() {
             }
 
             describe('Return key opens menu', function() {
-                openMenuTests($.ui.keyCode.RETURN);
+                openMenuTests('Enter');
             });
 
             describe('Space key opens menu', function() {
-                openMenuTests($.ui.keyCode.SPACE);
+                openMenuTests(' ');
             });
 
             describe('Down key opens menu', function() {
-                openMenuTests($.ui.keyCode.DOWN);
+                openMenuTests('ArrowDown');
             });
 
             describe('Up key opens menu', function() {
-                openMenuTests($.ui.keyCode.UP);
+                openMenuTests('ArrowUp');
             });
 
             it('Escape key closes menu', function() {
@@ -130,7 +133,7 @@ suite('rb/ui/views/MenuButtonView', function() {
                 });
                 expect(view.menu.isOpen).toBeTrue();
 
-                sendKeyDown($.ui.keyCode.ESCAPE);
+                sendKeyDown('Escape');
 
                 expect(view.menu.isOpen).toBeFalse();
             });

@@ -8,8 +8,8 @@
  */
 RB.DraftReviewBannerView = Backbone.View.extend({
     events: {
-        'click #review-banner-edit': '_onEditReviewClicked',
         'click #review-banner-discard': '_onDiscardClicked',
+        'click #review-banner-edit': '_onEditReviewClicked',
     },
 
     /**
@@ -45,54 +45,28 @@ RB.DraftReviewBannerView = Backbone.View.extend({
                       () => this._$buttons.prop('disabled', false));
         this.listenTo(model, 'publishError', errorText => alert(errorText));
 
-        /*
-         * Just a note about how we're instantiating the button below, which
-         * is important for future work on this banner.
-         *
-         * When a reviewable page is served up, it always contains the HTML
-         * for this banner (possibly hidden), so that the page doesn't jump
-         * during rendering. This will contain (amongst other things) a
-         * bare-minimum implementation of the Publish button (just enough to,
-         * again, not cause a jump).
-         *
-         * When we instantiate the RB.SplitButtonView, its parent
-         * RB.MenuButtonView will will replace the Publish button's HTML with
-         * a more fully-defined version.
-         *
-         * The trouble comes from passing in an explicit element while running
-         * unit tests, which do not contain the HTML for this banner anywhere.
-         * If we attempt to fetch the button using jQuery, and pass the
-         * jQuery-wrapped element to the view below, then we'll end up with
-         * an empty jQuery element. All HTML building and lookups will fail,
-         * resulting in asserts in RB.MenuButtonView.
-         *
-         * So we have to make sure we're passing either a valid DOM element
-         * or a falsy valuy (in which case the button will just make its own
-         * DOM element).
-         */
-        this._publishButton = new RB.SplitButtonView({
-            el: document.getElementById('review-banner-publish-container'),
-            text: gettext('Publish Review'),
+        this._publishButton = new RB.MenuButtonView({
             ariaMenuLabel: gettext('More publishing options'),
-            click: this._onPublishClicked.bind(this),
+            el: this.$('#review-banner-publish-container'),
             id: 'review-banner-publish',
-            alternatives: [
+            menuItems: [
                 {
-                    text: gettext('... and only e-mail the owner'),
-                    click: () => this._onPublishClicked({
+                    id: 'review-banner-publish-submitter-only',
+                    onClick: () => this._onPublishClicked({
                         publishToOwnerOnly: true,
                     }),
-                    id: 'review-banner-publish-submitter-only',
+                    text: _`... and only e-mail the owner`,
                 },
                 {
-                    text: gettext('... and archive the review request'),
-                    click: () => this._onPublishClicked({
+                    id: 'review-banner-publish-and-archive',
+                    onClick: () => this._onPublishClicked({
                         publishAndArchive: true,
                     }),
-                    id: 'review-banner-publish-and-archive',
+                    text: _`... and archive the review request`,
                 },
             ],
-
+            onPrimaryButtonClick: () => this._onPublishClicked(),
+            text: gettext('Publish Review'),
         });
 
         this._publishButton.render();
@@ -120,8 +94,8 @@ RB.DraftReviewBannerView = Backbone.View.extend({
             .prop('hidden', false)
             .removeClass('hidden')
             .css({
-                maxHeight: height,
                 height: height,
+                maxHeight: height,
             });
         RB.scrollManager.scrollYOffset += height;
         RB.scrollManager.markUpdated(this.$el);
@@ -229,10 +203,12 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      *
      * Option Args:
      *     publishToOwnerOnly (boolean):
-     *         Whether or not we should only notify the submitter of the review.
+     *         Whether or not we should only notify the submitter of the
+     *         review.
      *
      *     publishAndArchive (boolean):
-     *         Whether or not we should archive the review after it is published.
+     *         Whether or not we should archive the review after it is
+     *         published.
      *
      * Returns:
      *     boolean:
@@ -266,16 +242,16 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      */
     _onDiscardClicked() {
         $('<p/>')
-            .text(gettext('If you discard this review, all related comments will be permanently deleted.'))
+            .text(_`If you discard this review, all related comments will be permanently deleted.`)
             .modalBox({
-                title: gettext('Are you sure you want to discard this review?'),
                 buttons: [
                     $('<input type="button">')
-                        .val(gettext('Cancel')),
+                        .val(_`Cancel`),
                     $('<input type="button">')
-                        .val(gettext('Discard'))
+                        .val(_`Discard`)
                         .click(() => this.model.destroy()),
                 ],
+                title: _`'Are you sure you want to discard this review?`,
             });
 
         return false;

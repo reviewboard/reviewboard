@@ -139,7 +139,8 @@ RB.MenuView = Backbone.View.extend({
      *
      * Version Changed:
      *     6.0:
-     *     Added the $child option argument.
+     *     * Added the $child option argument.
+     *     * Added the ``id`` option arg.
      *
      * Args:
      *     options (object, optional):
@@ -157,8 +158,14 @@ RB.MenuView = Backbone.View.extend({
      *     id (string, optional):
      *         A DOM element ID to assign to the menu item.
      *
+     *         Version Added:
+     *             6.0
+     *
      *     onClick (function, optional):
      *         A function to call when the menu item is clicked.
+     *
+     *     id (string, optional):
+     *         An ID to assign to the element.
      *
      *     text (string, optional):
      *         Explicit text to use for the menu item.
@@ -189,6 +196,10 @@ RB.MenuView = Backbone.View.extend({
 
         if (options.onClick !== undefined) {
             $el.on('click', options.onClick);
+        }
+
+        if (options.id !== undefined) {
+            $el.attr('id', options.id);
         }
 
         $el
