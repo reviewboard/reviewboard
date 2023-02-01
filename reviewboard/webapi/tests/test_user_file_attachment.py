@@ -8,11 +8,15 @@ from reviewboard.webapi.tests.mimetypes import (
     user_file_attachment_item_mimetype,
     user_file_attachment_list_mimetype)
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
+from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
+                                                        ExtraDataListMixin)
 from reviewboard.webapi.tests.urls import (get_user_file_attachment_item_url,
                                            get_user_file_attachment_list_url)
 
 
-class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
+class ResourceListTests(BaseWebAPITestCase,
+                        ExtraDataListMixin,
+                        metaclass=BasicTestsMetaclass):
     """Testing the UserFileAttachmentResource list APIs."""
 
     fixtures = ['test_users', 'test_site']
@@ -22,6 +26,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['filename'], attachment.filename)
+        self.assertEqual(item_rsp['extra_data'], attachment.extra_data)
 
     #
     # HTTP GET tests
@@ -103,7 +108,9 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.check_post_result(None, rsp, caption)
 
 
-class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
+class ResourceItemTests(BaseWebAPITestCase,
+                        ExtraDataItemMixin,
+                        metaclass=BasicTestsMetaclass):
     """Testing the UserFileAttachmentResource item APIs."""
 
     fixtures = ['test_users']
@@ -113,6 +120,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['filename'], attachment.filename)
+        self.assertEqual(item_rsp['extra_data'], attachment.extra_data)
 
     #
     # HTTP DELETE tests

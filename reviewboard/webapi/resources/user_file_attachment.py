@@ -1,16 +1,25 @@
+from __future__ import annotations
+
+from typing import Any, Dict, Optional, Union
+
 from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpRequest
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
                                        webapi_response_errors)
-from djblets.webapi.errors import (DOES_NOT_EXIST, DUPLICATE_ITEM,
-                                   INVALID_FORM_DATA, NOT_LOGGED_IN,
-                                   PERMISSION_DENIED)
+from djblets.webapi.errors import (DOES_NOT_EXIST,
+                                   DUPLICATE_ITEM,
+                                   INVALID_FORM_DATA,
+                                   NOT_LOGGED_IN,
+                                   PERMISSION_DENIED,
+                                   WebAPIError)
 from djblets.webapi.fields import FileFieldType, StringFieldType
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.forms import UploadUserFileForm
 from reviewboard.site.urlresolvers import local_site_reverse
+from reviewboard.webapi.base import ImportExtraDataError
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_file_attachment import \
@@ -112,8 +121,16 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
                 'description': 'The file to upload.',
             },
         },
+        allow_unknown=True
     )
-    def create(self, request, local_site_name=None, *args, **kwargs):
+    def create(
+        self,
+        request: HttpRequest,
+        local_site_name: Optional[str] = None,
+        extra_fields: Dict[str, Any] = {},
+        *args,
+        **kwargs,
+    ) -> Union[tuple, WebAPIError]:
         """Creates a new file attachment that is owned by the user.
 
         This accepts any file type and associates it with the user. Optionally,
@@ -130,6 +147,9 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
 
             <Content here>
             -- SoMe BoUnDaRy --
+
+        Extra data can be stored for later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             user = resources.user.get_object(
@@ -151,6 +171,16 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
             }
 
         file_attachment = form.create(request.user, local_site)
+
+        if extra_fields:
+            try:
+                self.import_extra_data(file_attachment,
+                                       file_attachment.extra_data,
+                                       extra_fields)
+            except ImportExtraDataError as e:
+                return e.error_payload
+
+            file_attachment.save(update_fields=('extra_data',))
 
         return 201, {
             self.item_result_key: self.serialize_object(
@@ -174,8 +204,16 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
                 'description': 'The file to upload.',
             },
         },
+        allow_unknown=True,
     )
-    def update(self, request, local_site_name=None, *args, **kwargs):
+    def update(
+        self,
+        request: HttpRequest,
+        local_site_name: Optional[str] = None,
+        extra_fields: Dict[str, Any] = {},
+        *args,
+        **kwargs,
+    ) -> Union[tuple, WebAPIError]:
         """Updates the file attachment's data.
 
         This allows updating information on the file attachment. It also allows
@@ -221,6 +259,15 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
             }
 
         file_attachment = form.update(file_attachment)
+
+        try:
+            self.import_extra_data(file_attachment,
+                                   file_attachment.extra_data,
+                                   extra_fields)
+        except ImportExtraDataError as e:
+            return e.error_payload
+
+        file_attachment.save(update_fields=('extra_data',))
 
         return 200, {
             self.item_result_key: file_attachment

@@ -6,7 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Max
 from django.utils.translation import gettext_lazy as _
-from djblets.db.fields import RelationCounterField
+from djblets.db.fields import JSONField, RelationCounterField
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.managers import FileAttachmentManager
@@ -92,6 +92,8 @@ class FileAttachment(models.Model):
                             upload_to=os.path.join('uploaded', 'files',
                                                    '%Y', '%m', '%d'))
     mimetype = models.CharField(_('mimetype'), max_length=256, blank=True)
+
+    extra_data = JSONField(null=True)
 
     # repo_path, repo_revision, and repository are used to identify
     # FileAttachments associated with committed binary files in a source tree.

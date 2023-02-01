@@ -1,4 +1,4 @@
-from djblets.webapi.fields import IntFieldType, StringFieldType
+from djblets.webapi.fields import IntFieldType, DictFieldType, StringFieldType
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.webapi.base import WebAPIResource
@@ -11,23 +11,25 @@ class BaseFileAttachmentResource(WebAPIResource):
     model = FileAttachment
     name = 'file_attachment'
     fields = {
-        'id': {
-            'type': IntFieldType,
-            'description': 'The numeric ID of the file.',
+        'absolute_url': {
+            'type': StringFieldType,
+            'description': 'The absolute URL of the file, for downloading '
+                           'purposes.',
+            'added_in': '2.0',
         },
         'caption': {
             'type': StringFieldType,
             'description': "The file's descriptive caption.",
         },
+        'extra_data': {
+            'type': DictFieldType,
+            'description': 'Extra data as part of the file attachment. '
+                           'This can be set by the API or extensions.',
+            'added_in': '6.0',
+        },
         'filename': {
             'type': StringFieldType,
             'description': "The name of the file.",
-        },
-        'absolute_url': {
-            'type': StringFieldType,
-            'description': "The absolute URL of the file, for downloading "
-                           "purposes.",
-            'added_in': '2.0',
         },
         'icon_url': {
             'type': StringFieldType,
@@ -35,6 +37,10 @@ class BaseFileAttachmentResource(WebAPIResource):
                            'The use of these icons is deprecated and this '
                            'property will be removed in a future version.',
             'deprecated_in': '2.5',
+        },
+        'id': {
+            'type': IntFieldType,
+            'description': 'The numeric ID of the file.',
         },
         'mimetype': {
             'type': StringFieldType,

@@ -7,4 +7,5 @@ SEQUENCE = [
     'file_attachment_revision',
     'file_attachment_ownership',
     'file_attachment_uuid',
+    'file_attachment_extra_data',
 ]

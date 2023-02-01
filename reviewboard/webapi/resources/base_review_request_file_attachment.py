@@ -1,17 +1,25 @@
+from __future__ import annotations
+
 import logging
+from typing import Any, Dict, Optional, Union
 
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
+from django.http import HttpRequest
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
-from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
-                                   NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.errors import (DOES_NOT_EXIST,
+                                   INVALID_FORM_DATA,
+                                   NOT_LOGGED_IN,
+                                   PERMISSION_DENIED,
+                                   WebAPIError)
 from djblets.webapi.fields import FileFieldType, IntFieldType, StringFieldType
 
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.site.urlresolvers import local_site_reverse
+from reviewboard.webapi.base import ImportExtraDataError
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_file_attachment import \
@@ -133,8 +141,15 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                 'added_in': '2.5',
             },
         },
+        allow_unknown=True
     )
-    def create(self, request, *args, **kwargs):
+    def create(
+        self,
+        request: HttpRequest,
+        extra_fields: Dict[str, Any] = {},
+        *args,
+        **kwargs,
+    ) -> Union[tuple, WebAPIError]:
         """Creates a new file from a file attachment.
 
         This accepts any file type and associates it with a draft of a
@@ -150,6 +165,9 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
 
             <Content here>
             -- SoMe BoUnDaRy --
+
+        Extra data can be stored for later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             review_request = \
@@ -177,6 +195,14 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                 },
             }
 
+        if extra_fields:
+            try:
+                self.import_extra_data(file, file.extra_data, extra_fields)
+            except ImportExtraDataError as e:
+                return e.error_payload
+
+            file.save(update_fields=('extra_data',))
+
         return 201, {
             self.item_result_key: self.serialize_object(
                 file, request=request, *args, **kwargs),
@@ -196,13 +222,23 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                 'description': 'The thumbnail data for the file.',
                 'added_in': '1.7.7',
             },
-        }
+        },
+        allow_unknown=True
     )
-    def update(self, request, caption=None, thumbnail=None, *args, **kwargs):
+    def update(
+        self,
+        request: HttpRequest,
+        caption: Optional[str] = None,
+        thumbnail: Optional[bytes] = None,
+        extra_fields: Dict[str, Any] = {},
+        *args,
+        **kwargs,
+    ) -> Union[tuple, WebAPIError]:
         """Updates the file's data.
 
-        This allows updating the file in a draft. Currently, only the caption
-        and the thumbnail can be updated.
+        This allows updating the file in a draft. Currently, only the caption,
+        thumbnail and extra_data can be updated. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             review_request = \
@@ -219,15 +255,22 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        if caption is not None:
-            try:
-                resources.review_request_draft.prepare_draft(request,
-                                                             review_request)
-            except PermissionDenied:
-                return self.get_no_access_error(request)
+        try:
+            resources.review_request_draft.prepare_draft(
+                request,
+                review_request)
+        except PermissionDenied:
+            return self.get_no_access_error(request)
 
+        if caption is not None:
             file.draft_caption = caption
-            file.save()
+
+        try:
+            self.import_extra_data(file, file.extra_data, extra_fields)
+        except ImportExtraDataError as e:
+            return e.error_payload
+
+        file.save()
 
         if thumbnail is not None:
             try:

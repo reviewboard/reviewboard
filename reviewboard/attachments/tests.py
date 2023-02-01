@@ -1,5 +1,7 @@
+import json
 import mimeparse
 import os
+from datetime import datetime
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
@@ -82,9 +84,12 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
         self.assertTrue(form.is_valid())
 
         file_attachment = form.create()
+        file_attachment.refresh_from_db()
+
         self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
             '__logo.png'))
         self.assertEqual(file_attachment.mimetype, 'image/png')
+        self.assertEqual(file_attachment.extra_data, {})
 
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_upload_file_with_history(self):
@@ -185,6 +190,164 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
         self.assertEqual(file_attachment.attachment_history.display_position,
                          1)
 
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_upload_file_with_extra_data(self):
+        """Testing uploading a file attachment with extra data"""
+        class TestObject():
+            def to_json(self):
+                return {
+                    'foo': 'bar'
+                }
+
+        review_request = self.create_review_request(publish=True)
+
+        file = self.make_uploaded_file()
+        form = UploadFileForm(
+            review_request,
+            data={
+                'extra_data': {
+                    'test_bool': True,
+                    'test_date': datetime(2023, 1, 26, 5, 30, 3, 123456),
+                    'test_int': 1,
+                    'test_list': [1, 2, 3],
+                    'test_nested_dict': {
+                        'foo': 2,
+                        'bar': 'baz',
+                    },
+                    'test_none': None,
+                    'test_obj': TestObject(),
+                    'test_str': 'test',
+                }
+            },
+            files={'path': file})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create()
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(file_attachment.extra_data, {
+            'test_bool': True,
+            'test_date': '2023-01-26T05:30:03.123',
+            'test_int': 1,
+            'test_list': [1, 2, 3],
+            'test_nested_dict': {
+                'foo': 2,
+                'bar': 'baz',
+            },
+            'test_none': None,
+            'test_obj': {
+                'foo': 'bar',
+            },
+            'test_str': 'test',
+        })
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_upload_file_with_extra_data_string(self):
+        """Testing uploading a file attachment with extra data passed as a
+        JSON string
+        """
+        review_request = self.create_review_request(publish=True)
+
+        file = self.make_uploaded_file()
+        form = UploadFileForm(
+            review_request,
+            data={
+                'extra_data': json.dumps({
+                    'test_bool': True,
+                    'test_int': 1,
+                    'test_list': [1, 2, 3],
+                    'test_nested_dict': {
+                        'foo': 2,
+                        'bar': 'baz',
+                    },
+                    'test_none': None,
+                    'test_str': 'test',
+                })
+            },
+            files={'path': file})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create()
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(file_attachment.extra_data, {
+            'test_bool': True,
+            'test_int': 1,
+            'test_list': [1, 2, 3],
+            'test_nested_dict': {
+                'foo': 2,
+                'bar': 'baz',
+            },
+            'test_none': None,
+            'test_str': 'test',
+        })
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_upload_file_with_extra_data_empties(self):
+        """Testing uploading a file attachment with extra data that contains
+        empty values
+        """
+        review_request = self.create_review_request(publish=True)
+        file = self.make_uploaded_file()
+
+        form = UploadFileForm(
+            review_request,
+            data={
+                'extra_data': {}
+            },
+            files={'path': file})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create()
+        file_attachment.refresh_from_db()
+        self.assertEqual(file_attachment.extra_data, {})
+
+        form = UploadFileForm(
+            review_request,
+            data={
+                'extra_data': json.dumps(None)
+            },
+            files={'path': file})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create()
+        file_attachment.refresh_from_db()
+        self.assertEqual(file_attachment.extra_data, {})
+
+        form = UploadFileForm(
+            review_request,
+            data={
+                'extra_data': None
+            },
+            files={'path': file})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create()
+        file_attachment.refresh_from_db()
+        self.assertEqual(file_attachment.extra_data, {})
+
+        form = UploadFileForm(
+            review_request,
+            data={
+                'extra_data': {
+                    'test_list': [],
+                    'test_nested_dict': {},
+                    'test_none': None,
+                    'test_str': '',
+                }
+            },
+            files={'path': file})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create()
+        file_attachment.refresh_from_db()
+        self.assertEqual(file_attachment.extra_data, {
+            'test_list': [],
+            'test_nested_dict': {},
+            'test_none': None,
+            'test_str': '',
+        })
+
     def test_is_from_diff_with_no_association(self):
         """Testing FileAttachment.is_from_diff with standard attachment"""
         file_attachment = FileAttachment()
@@ -260,8 +423,11 @@ class UserFileAttachmentTests(BaseFileAttachmentTestCase):
         self.assertTrue(form.is_valid())
 
         file_attachment = form.create(user)
+        file_attachment.refresh_from_db()
+
         self.assertFalse(file_attachment.file)
         self.assertEqual(file_attachment.user, user)
+        self.assertEqual(file_attachment.extra_data, {})
 
         uploaded_file = self.make_uploaded_file()
         form = UploadUserFileForm(files={
@@ -270,6 +436,7 @@ class UserFileAttachmentTests(BaseFileAttachmentTestCase):
         self.assertTrue(form.is_valid())
 
         file_attachment = form.update(file_attachment)
+        file_attachment.refresh_from_db()
 
         self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
             '__logo.png'))
@@ -291,6 +458,164 @@ class UserFileAttachmentTests(BaseFileAttachmentTestCase):
         self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
             '__logo.png'))
         self.assertEqual(file_attachment.mimetype, 'image/png')
+        self.assertEqual(file_attachment.extra_data, {})
+
+    def test_user_file_with_extra_data(self):
+        """Testing user FileAttachment create with extra data"""
+        class TestObject():
+            def to_json(self):
+                return {
+                    'foo': 'bar'
+                }
+
+        user = User.objects.get(username='doc')
+        uploaded_file = self.make_uploaded_file()
+
+        form = UploadUserFileForm(
+            data={
+                'extra_data': {
+                    'test_bool': True,
+                    'test_date': datetime(2023, 1, 26, 5, 30, 3, 123456),
+                    'test_int': 1,
+                    'test_list': [1, 2, 3],
+                    'test_nested_dict': {
+                        'foo': 2,
+                        'bar': 'baz',
+                    },
+                    'test_none': None,
+                    'test_obj': TestObject(),
+                    'test_str': 'test',
+                }
+            },
+            files={'path': uploaded_file})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create(user)
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(file_attachment.user, user)
+        self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
+            '__logo.png'))
+        self.assertEqual(file_attachment.mimetype, 'image/png')
+        self.assertEqual(file_attachment.extra_data, {
+            'test_bool': True,
+            'test_date': '2023-01-26T05:30:03.123',
+            'test_int': 1,
+            'test_list': [1, 2, 3],
+            'test_nested_dict': {
+                'foo': 2,
+                'bar': 'baz',
+            },
+            'test_none': None,
+            'test_obj': {
+                'foo': 'bar',
+            },
+            'test_str': 'test',
+        })
+
+    def test_user_file_with_extra_data_string(self):
+        """Testing user FileAttachment create with extra data passed as a
+        JSON string
+        """
+        user = User.objects.get(username='doc')
+        uploaded_file = self.make_uploaded_file()
+
+        form = UploadUserFileForm(
+            data={
+                'extra_data': json.dumps({
+                    'test_bool': True,
+                    'test_int': 1,
+                    'test_list': [1, 2, 3],
+                    'test_nested_dict': {
+                        'foo': 2,
+                        'bar': 'baz',
+                    },
+                    'test_none': None,
+                    'test_str': 'test',
+                })
+            },
+            files={'path': uploaded_file})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create(user)
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(file_attachment.extra_data, {
+            'test_bool': True,
+            'test_int': 1,
+            'test_list': [1, 2, 3],
+            'test_nested_dict': {
+                'foo': 2,
+                'bar': 'baz',
+            },
+            'test_none': None,
+            'test_str': 'test',
+        })
+
+    def test_user_file_with_extra_data_empties(self):
+        """Testing user FileAttachment create with extra data that contains
+        empty values
+        """
+        user = User.objects.get(username='doc')
+        uploaded_file = self.make_uploaded_file()
+
+        form = UploadUserFileForm(
+            data={
+                'extra_data': {}
+            },
+            files={'path': uploaded_file})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create(user)
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(file_attachment.extra_data, {})
+
+        form = UploadUserFileForm(
+            data={
+                'extra_data': json.dumps(None)
+            },
+            files={'path': uploaded_file})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create(user)
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(file_attachment.extra_data, {})
+
+        form = UploadUserFileForm(
+            data={
+                'extra_data': None
+            },
+            files={'path': uploaded_file})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create(user)
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(file_attachment.extra_data, {})
+
+        form = UploadUserFileForm(
+            data={
+                'extra_data': {
+                    'test_list': [],
+                    'test_nested_dict': {},
+                    'test_none': None,
+                    'test_str': '',
+                }
+            },
+            files={'path': uploaded_file})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create(user)
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(file_attachment.extra_data, {
+            'test_list': [],
+            'test_nested_dict': {},
+            'test_none': None,
+            'test_str': '',
+        })
 
     @add_fixtures(['test_site'])
     def test_user_file_local_sites(self):
@@ -305,6 +630,63 @@ class UserFileAttachmentTests(BaseFileAttachmentTestCase):
 
         self.assertEqual(file_attachment.user, user)
         self.assertEqual(file_attachment.local_site, local_site)
+
+    def test_user_file_update_with_extra_data(self):
+        """Testing user FileAttachment update with extra data"""
+        class TestObject():
+            def to_json(self):
+                return {
+                    'foo': 'bar'
+                }
+
+        user = User.objects.get(username='doc')
+        uploaded_file = self.make_uploaded_file()
+
+        form = UploadUserFileForm(files={'path': uploaded_file})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create(user)
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(file_attachment.extra_data, {})
+
+        form = UploadUserFileForm(
+            data={
+                'extra_data': {
+                    'test_bool': True,
+                    'test_date': datetime(2023, 1, 26, 5, 30, 3, 123456),
+                    'test_int': 1,
+                    'test_list': [1, 2, 3],
+                    'test_nested_dict': {
+                        'foo': 2,
+                        'bar': 'baz',
+                    },
+                    'test_none': None,
+                    'test_obj': TestObject(),
+                    'test_str': 'test',
+                }
+            }
+        )
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.update(file_attachment)
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(file_attachment.extra_data, {
+            'test_bool': True,
+            'test_date': '2023-01-26T05:30:03.123',
+            'test_int': 1,
+            'test_list': [1, 2, 3],
+            'test_nested_dict': {
+                'foo': 2,
+                'bar': 'baz',
+            },
+            'test_none': None,
+            'test_obj': {
+                'foo': 'bar',
+            },
+            'test_str': 'test',
+        })
 
     @add_fixtures(['test_site'])
     def test_user_file_is_accessible_by(self):
