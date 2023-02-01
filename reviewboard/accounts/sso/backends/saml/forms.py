@@ -16,7 +16,8 @@ from djblets.siteconfig.forms import SiteSettingsForm
 from reviewboard.accounts.sso.backends.saml.settings import (
     SAMLBinding,
     SAMLDigestAlgorithm,
-    SAMLSignatureAlgorithm)
+    SAMLSignatureAlgorithm,
+    NameIDFormat)
 
 
 class SAMLLinkUserForm(AuthenticationForm):
@@ -129,6 +130,11 @@ class SAMLSettingsForm(SiteSettingsForm):
         choices=SAMLBinding.CHOICES,
         initial=SAMLBinding.HTTP_REDIRECT)
 
+    saml_nameid_format = forms.ChoiceField(
+        label=_('NameID format'),
+        choices=NameIDFormat.CHOICES,
+        initial=NameIDFormat.PERSISTENT)
+
     saml_require_login_to_link = forms.BooleanField(
         label=_('Require login to link'),
         help_text=_('When a matching user is found, ask them to log in with '
@@ -152,6 +158,7 @@ class SAMLSettingsForm(SiteSettingsForm):
                            'saml_sso_binding_type',
                            'saml_slo_url',
                            'saml_slo_binding_type',
+                           'saml_nameid_format',
                            'saml_require_login_to_link'),
             }),
         )

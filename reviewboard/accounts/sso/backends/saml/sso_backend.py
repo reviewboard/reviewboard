@@ -16,7 +16,8 @@ from reviewboard.accounts.sso.backends.saml.forms import SAMLSettingsForm
 from reviewboard.accounts.sso.backends.saml.settings import (
     SAMLBinding,
     SAMLDigestAlgorithm,
-    SAMLSignatureAlgorithm)
+    SAMLSignatureAlgorithm,
+    NameIDFormat)
 from reviewboard.accounts.sso.backends.saml.views import (
     SAMLACSView,
     SAMLLinkUserView,
@@ -47,6 +48,7 @@ class SAMLSSOBackend(BaseSSOBackend):
         'saml_sso_binding_type': SAMLBinding.HTTP_POST,
         'saml_sso_url': '',
         'saml_verfication_cert': '',
+        'saml_nameid_format': NameIDFormat.PERSISTENT,
     }
     login_view_cls = SAMLLoginView
 

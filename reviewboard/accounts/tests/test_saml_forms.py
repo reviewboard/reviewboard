@@ -8,7 +8,8 @@ from reviewboard.accounts.sso.backends.saml.forms import (SAMLLinkUserForm,
 from reviewboard.accounts.sso.backends.saml.settings import (
     SAMLBinding,
     SAMLDigestAlgorithm,
-    SAMLSignatureAlgorithm)
+    SAMLSignatureAlgorithm,
+    NameIDFormat)
 from reviewboard.testing import TestCase
 
 
@@ -101,6 +102,7 @@ class SAMLSettingsFormTests(TestCase):
                 'saml_sso_binding_type': SAMLBinding.HTTP_POST,
                 'saml_slo_url': 'https://example.com/saml/slo',
                 'saml_slo_binding_type': SAMLBinding.HTTP_REDIRECT,
+                'saml_nameid_format': NameIDFormat.PERSISTENT,
                 'saml_require_login_to_link': False,
             })
 
@@ -126,4 +128,6 @@ class SAMLSettingsFormTests(TestCase):
                          'https://example.com/saml/slo')
         self.assertEqual(siteconfig.get('saml_slo_binding_type'),
                          SAMLBinding.HTTP_REDIRECT)
+        self.assertEqual(siteconfig.get('saml_nameid_format'),
+                         NameIDFormat.PERSISTENT)
         self.assertFalse(siteconfig.get('saml_require_login_to_link'))

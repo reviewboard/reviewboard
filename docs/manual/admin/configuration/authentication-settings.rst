@@ -255,6 +255,7 @@ Review Board configuration:
    each.
 2. A copy of the X.509 certificate.
 3. Possibly, specific digest and signature algorithm types.
+4. NameID attribute format compatible with your IdP.
 
 The :guilabel:`Require login to link` setting allows you to control the
 behavior when first authenticating a user via SSO who already has an account on

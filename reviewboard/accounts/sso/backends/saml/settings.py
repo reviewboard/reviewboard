@@ -125,6 +125,47 @@ class SAMLBinding(object):
         FROM_SAML2_SETTING_MAP = {}
 
 
+class NameIDFormat(object):
+    """Definitions for the NameIDFormat.
+
+    Version Added:
+        5.0
+    """
+
+    EMAIL = 'email'
+    ENTITY = 'entity'
+    TRANSIENT = 'transient'
+    PERSISTENT = 'persistent'
+    UNSPECIFIED = 'unspecified'
+
+    CHOICES = (
+        (EMAIL, _('emailAddress')),
+        (ENTITY, _('entity')),
+        (TRANSIENT, _('transient')),
+        (PERSISTENT, _('persistent')),
+        (UNSPECIFIED, _('unspecified')),
+    )
+
+    if constants:
+        TO_SAML2_SETTING_MAP = {
+            EMAIL: constants.NAMEID_EMAIL_ADDRESS,
+            ENTITY: constants.NAMEID_ENTITY,
+            TRANSIENT: constants.NAMEID_TRANSIENT,
+            PERSISTENT: constants.NAMEID_PERSISTENT,
+            UNSPECIFIED: constants.NAMEID_UNSPECIFIED,
+        }
+
+        FROM_SAML2_SETTING_MAP = {
+            constants.NAMEID_EMAIL_ADDRESS: EMAIL,
+            constants.NAMEID_ENTITY: ENTITY,
+            constants.NAMEID_TRANSIENT: TRANSIENT,
+            constants.NAMEID_PERSISTENT: PERSISTENT,
+            constants.NAMEID_UNSPECIFIED: UNSPECIFIED,
+        }
+    else:
+        TO_SAML2_SETTING_MAP = {}
+        FROM_SAML2_SETTING_MAP = {}
+
 def get_saml2_settings():
     """Return the SAML2.0 settings.
 
@@ -168,7 +209,8 @@ def get_saml2_settings():
                     reverse('sso:saml:sls', kwargs={'backend_id': 'saml'})),
                 'binding': constants.BINDING_HTTP_REDIRECT,
             },
-            'NameIDFormat': constants.NAMEID_PERSISTENT,
+            'NameIDFormat': NameIDFormat.TO_SAML2_SETTING_MAP[
+                siteconfig.get('saml_nameid_format')],
             'x509cert': '',
             'privateKey': '',
         },
