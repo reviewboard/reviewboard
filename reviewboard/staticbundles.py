@@ -213,7 +213,6 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/ui/views/bugInfoboxView.es6.js',
             'rb/js/ui/views/drawerView.es6.js',
             'rb/js/ui/views/inlineEditorView.es6.js',
-            'rb/js/ui/views/menuView.es6.js',
             'rb/js/ui/views/notificationManager.es6.js',
             'rb/js/ui/views/reviewRequestInfoboxView.es6.js',
             'rb/js/ui/views/scrollManagerView.es6.js',

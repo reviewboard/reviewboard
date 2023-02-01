@@ -1,3 +1,114 @@
+import { BaseView, spina } from '@beanbag/spina';
+
+
+/**
+ * Definitions for the type of menus.
+ *
+ * Version Added:
+ *     6.0
+ */
+export enum MenuType {
+    Standard = 1,
+    Button = 2,
+}
+
+
+/**
+ * Options for the MenuView.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface MenuViewOptions {
+    /**
+     * An explicit descriptive ARIA label to set on the menu.
+     *
+     * This is used to aid screen readers in case the text of the element is
+     * insufficient.
+     */
+    ariaLabel?: string;
+
+    /**
+     * The ID of an element that contains an existing descriptive ARIA label.
+     *
+     * This will be used to set the labeled-by element to use for the menu,
+     * to aid screen readers. If provided, this takes precedence over
+     * ``ariaLabel``.
+     */
+    ariaLabelledBy?: string;
+
+    /** The element that's responsible for opening and closing this menu. */
+    $controller?: JQuery;
+
+    /**
+     * The type of menu.
+     *
+     * If not provided, the menu will be a standard menu. */
+    type?: MenuType;
+}
+
+
+/**
+ * Options for menu transitions.
+ *
+ * Version Added:
+ *     6.0
+ */
+export interface MenuTransitionOptions {
+    /**
+     * Whether to animate the menu.
+     *
+     * If unspecified, defaults to ``true``.
+     */
+    animate?: boolean;
+
+    /**
+     * Whether to trigger events from a state change.
+     *
+     * If unspecified, defaults to ``true``.
+     */
+    triggerEvents?: boolean;
+}
+
+
+/**
+ * Info about a menu item.
+ *
+ * Version Added:
+ *     6.0
+ */
+export interface MenuItemOptions {
+    /**
+     * An element to use for the child.
+     *
+     * If specified, this takes priority over ``text``. This element will
+     * be reparented into the menu.
+     *
+     * Version Added:
+     *     6.0
+     */
+    $child?: JQuery;
+
+    /**
+     * A DOM element ID to assign to the menu item.
+     *
+     * Version Added:
+     *     6.0
+     */
+    id?: string;
+
+    /**
+     * Explicit text to use for the menu item.
+     */
+    text?: string;
+
+    /**
+     * A function to call when the menu item is clicked.
+     */
+    onClick?: { (eventObject: MouseEvent): void };
+}
+
+
 /**
  * A standard implementation of drop-down menus.
  *
@@ -26,51 +137,68 @@
  *         :js:attr:`RB.MenuView.TYPE_BUTTON_MENU` or
  *         :js:attr:`RB.MenuView.TYPE_STANDARD_MENU`.
  */
-RB.MenuView = Backbone.View.extend({
-    className: 'rb-c-menu',
+@spina
+export class MenuView extends BaseView<
+    Backbone.Model,
+    HTMLDivElement,
+    MenuViewOptions
+> {
+    /*
+     * These are here for legacy use and will be removed in Review Board 7.0.
+     * Callers should use the MenuType enum.
+     */
+    static TYPE_STANDARD_MENU = MenuType.Standard;
+    static TYPE_BUTTON_MENU = MenuType.Button;
 
-    events: {
-        'keydown': '_onKeyDown',
-    },
+    className = 'rb-c-menu';
+    events = {
+        'keydown': this.#onKeyDown,
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /**
+     * The jQuery-wrapped element that controls the display of this menu.
+     */
+    $controller: JQuery = null;
+
+    /**
+     * Whether the menu is currently open.
+     */
+    isOpen = false;
+
+    /**
+     * The configured type of menu.
+     */
+    type: MenuType;
+
+    #ariaLabelledBy: string;
+    #ariaLabel: string;
+    #activeItemIndex: number = null;
+    #activeItemEl: HTMLElement = null;
 
     /**
      * Initialize the view.
      *
      * Args:
-     *     options (object, optional):
+     *     options (MenuViewOptions, optional):
      *         Options for the view.
-     *
-     * Option Args:
-     *     $controller (jQuery, optional):
-     *         The jQuery-wrapped element that's responsible for opening and
-     *         closing this menu.
-     *
-     *     ariaLabel (string, optional):
-     *         An explicit descriptive ARIA label to set on the menu, to aid
-     *         screen readers.
-     *
-     *     ariaLabelledBy (string, optional):
-     *         The ID of an element that contains an existing descriptive
-     *         ARIA label to use for the menu, to aid screen readers. If
-     *         provided, this takes precedence over ``ariaLabel``.
-     *
-     *     type (number, optional):
-     *         The type of menu. If provided, this must be one of
-     *         :js:attr:`RB.MenuView.TYPE_BUTTON_MENU` or
-     *         :js:attr:`RB.MenuView.TYPE_STANDARD_MENU`. If not provided,
-     *         this will be a standard menu.
      */
-    initialize(options={}) {
+    initialize(options: MenuViewOptions = {}) {
+        super.initialize(options);
+
         if (options.type === undefined ||
-            options.type === RB.MenuView.TYPE_STANDARD_MENU) {
-            this.type = RB.MenuView.TYPE_STANDARD_MENU;
-        } else if (options.type === RB.MenuView.TYPE_BUTTON_MENU) {
-            this.type = RB.MenuView.TYPE_BUTTON_MENU;
+            options.type === MenuType.Standard) {
+            this.type = MenuType.Standard;
+        } else if (options.type === MenuType.Button) {
+            this.type = MenuType.Button;
         } else {
             console.error('The provided RB.MenuView type (%s) is not ' +
                           'supported. Defaulting to a standard menu.',
                           options.type);
-            this.type = RB.MenuView.TYPE_STANDARD_MENU;
+            this.type = MenuType.Standard;
         }
 
         if (!this.id) {
@@ -78,42 +206,35 @@ RB.MenuView = Backbone.View.extend({
         }
 
         this.$controller = options.$controller;
-        this.isOpen = false;
 
-        this._ariaLabelledBy = options.ariaLabelledBy;
-        this._ariaLabel = options.ariaLabel;
-        this._activeItemIndex = null;
-        this._activeItemEl = null;
-    },
+        this.#ariaLabelledBy = options.ariaLabelledBy;
+        this.#ariaLabel = options.ariaLabel;
+    }
 
     /**
      * Render the menu.
      *
      * This will set up the elements for the menu and associate it with the
      * controller.
-     *
-     * Returns:
-     *     RB.MenuView:
-     *     This menu, for chaining.
      */
-    render() {
+    onInitialRender() {
         this.$el
             .attr({
                 id: this.id,
                 tabindex: '-1',
             });
 
-        if (this.type === RB.MenuView.TYPE_BUTTON_MENU) {
+        if (this.type === MenuType.Button) {
             this.$el.addClass('rb-c-button-group -is-vertical');
         }
 
         /* Set ARIA attributes on these and on the controller. */
         this.$el.attr('role', 'menu');
 
-        if (this._ariaLabelledBy) {
-            this.$el.attr('aria-labelledby', this._ariaLabelledBy);
-        } else if (this._ariaLabel) {
-            this.$el.attr('aria-label', this._ariaLabel);
+        if (this.#ariaLabelledBy) {
+            this.$el.attr('aria-labelledby', this.#ariaLabelledBy);
+        } else if (this.#ariaLabel) {
+            this.$el.attr('aria-label', this.#ariaLabel);
         }
 
         if (this.$controller) {
@@ -123,9 +244,7 @@ RB.MenuView = Backbone.View.extend({
                 'aria-haspopup': 'true',
             });
         }
-
-        return this;
-    },
+    }
 
     /**
      * Add an item to the menu.
@@ -143,45 +262,23 @@ RB.MenuView = Backbone.View.extend({
      *     * Added the ``id`` option arg.
      *
      * Args:
-     *     options (object, optional):
+     *     options (MenuItemOptions, optional):
      *         Options for the menu item.
-     *
-     * Option Args:
-     *     $child (jQuery, optional):
-     *         An element to use for the child. This will be reparented into
-     *         the menu. If specified, this takes priority over
-     *         ``options.text``.
-     *
-     *         Version Added:
-     *             6.0
-     *
-     *     id (string, optional):
-     *         A DOM element ID to assign to the menu item.
-     *
-     *         Version Added:
-     *             6.0
-     *
-     *     onClick (function, optional):
-     *         A function to call when the menu item is clicked.
-     *
-     *     id (string, optional):
-     *         An ID to assign to the element.
-     *
-     *     text (string, optional):
-     *         Explicit text to use for the menu item.
      *
      * Returns:
      *     jQuery:
      *     The jQuery-wrapped element for the menu item.
      */
-    addItem(options={}) {
+    addItem(
+        options: MenuItemOptions = {},
+    ): JQuery {
         let $el;
 
-        if (this.type === RB.MenuView.TYPE_BUTTON_MENU) {
+        if (this.type === MenuType.Button) {
             $el = $(
                 '<button class="rb-c-menu__item rb-c-button" type="button">'
             );
-        } else if (this.type === RB.MenuView.TYPE_STANDARD_MENU) {
+        } else if (this.type === MenuType.Standard) {
             $el = $('<div class="rb-c-menu__item">');
         } else {
             /* This shouldn't be able to be reached. */
@@ -207,11 +304,11 @@ RB.MenuView = Backbone.View.extend({
                 role: 'menuitem',
                 tabindex: '-1',
             })
-            .on('mousemove', this._onMenuItemMouseMove.bind(this))
+            .on('mousemove', e => this.#onMenuItemMouseMove(e))
             .appendTo(this.el);
 
         return $el;
-    },
+    }
 
     /**
      * Open the menu.
@@ -221,16 +318,12 @@ RB.MenuView = Backbone.View.extend({
      * the ``opened`` event will be emitted.
      *
      * Args:
-     *     options (object, optional):
+     *     options (MenuTransitionOptions, optional):
      *         Options to use when opening the menu.
-     *
-     * Option Args:
-     *     animate (boolean, optional):
-     *         Whether to animate the menu. This defaults to ``true``.
      */
-    open(options) {
-        this._setOpened(true, options);
-    },
+    open(options: MenuTransitionOptions = {}) {
+        this.#setOpened(true, options);
+    }
 
     /**
      * Close the menu.
@@ -240,16 +333,12 @@ RB.MenuView = Backbone.View.extend({
      * ``closed`` event will be emitted.
      *
      * Args:
-     *     options (object, optional):
+     *     options (MenuTransitionOptions, optional):
      *         Options to use when closing the menu.
-     *
-     * Option Args:
-     *     animate (boolean, optional):
-     *         Whether to animate the menu. This defaults to ``true``.
      */
-    close(options) {
-        this._setOpened(false, options);
-    },
+    close(options: MenuTransitionOptions = {}) {
+        this.#setOpened(false, options);
+    }
 
     /**
      * Focus the first item in the menu.
@@ -262,9 +351,9 @@ RB.MenuView = Backbone.View.extend({
      */
     focusFirstItem() {
         if (this.el.children.length > 0) {
-            this._focusItem(0);
+            this.focusItem(0);
         }
-    },
+    }
 
     /**
      * Focus the last item in the menu.
@@ -279,9 +368,9 @@ RB.MenuView = Backbone.View.extend({
         const numChildren = this.el.children.length;
 
         if (numChildren > 0) {
-            this._focusItem(numChildren - 1);
+            this.focusItem(numChildren - 1);
         }
-    },
+    }
 
     /**
      * Set the menu's open/closed state.
@@ -294,21 +383,19 @@ RB.MenuView = Backbone.View.extend({
      *     opened (boolean):
      *         Whether the menu is set to opened.
      *
-     *     options (object, optional):
+     *     options (MenuTransitionOptions, optional):
      *         The options to use when setting state.
-     *
-     * Option Args:
-     *     triggerEvents (boolean, optional):
-     *         Whether to trigger events from a state change. This defaults
-     *         to ``true``.
      */
-    _setOpened(opened, options={}) {
+    #setOpened(
+        opened: boolean,
+        options: MenuTransitionOptions = {},
+    ) {
         if (this.isOpen === opened) {
             return;
         }
 
-        this._activeItemIndex = null;
-        this._activeItemEl = null;
+        this.#activeItemIndex = null;
+        this.#activeItemEl = null;
 
         if (options.animate === false) {
             this.$el.addClass('js-no-animation');
@@ -330,13 +417,15 @@ RB.MenuView = Backbone.View.extend({
         }
 
         if (this.$controller) {
-            this.$controller.attr('aria-expanded', opened);
+            this.$controller
+                .toggleClass('-is-open', opened)
+                .attr('aria-expanded', opened ? 'true' : 'false');
         }
 
         if (triggerEvents) {
             this.trigger(opened ? 'opened' : 'closed');
         }
-    },
+    }
 
     /**
      * Focus an item at the specified index.
@@ -346,11 +435,11 @@ RB.MenuView = Backbone.View.extend({
      *         The index of the menu item to focus. This is expected to be
      *         a valid index in the list of items.
      */
-    _focusItem(index) {
-        this._activeItemIndex = index;
-        this._activeItemEl = this.el.children[index];
-        this._activeItemEl.focus();
-    },
+    focusItem(index) {
+        this.#activeItemIndex = index;
+        this.#activeItemEl = this.el.children[index] as HTMLElement;
+        this.#activeItemEl.focus();
+    }
 
     /**
      * Focus the previous item in the menu.
@@ -358,19 +447,19 @@ RB.MenuView = Backbone.View.extend({
      * This takes care of wrapping the focus around to the end of the menu,
      * if focus was already on the first item.
      */
-    _focusPreviousItem() {
-        if (this._activeItemIndex === null) {
+    #focusPreviousItem() {
+        if (this.#activeItemIndex === null) {
             this.focusFirstItem();
         } else {
-            let index = this._activeItemIndex - 1;
+            let index = this.#activeItemIndex - 1;
 
             if (index < 0) {
                 index = this.el.children.length - 1;
             }
 
-            this._focusItem(index);
+            this.focusItem(index);
         }
-    },
+    }
 
     /**
      * Focus the next item in the menu.
@@ -378,19 +467,19 @@ RB.MenuView = Backbone.View.extend({
      * This takes care of wrapping the focus around to the beginning of
      * the menu, if focus was already on the last item.
      */
-    _focusNextItem() {
-        if (this._activeItemIndex === null) {
+    #focusNextItem() {
+        if (this.#activeItemIndex === null) {
             this.focusFirstItem();
         } else {
-            let index = this._activeItemIndex + 1;
+            let index = this.#activeItemIndex + 1;
 
             if (index >= this.el.children.length) {
                 index = 0;
             }
 
-            this._focusItem(index);
+            this.focusItem(index);
         }
-    },
+    }
 
     /**
      * Handle a keydown event.
@@ -400,56 +489,49 @@ RB.MenuView = Backbone.View.extend({
      * or the focused menu item to be changed or activated.
      *
      * Args:
-     *     evt (jQuery.Event):
+     *     evt (KeyboardEvent):
      *         The keydown event.
-     *
-     * Returns:
-     *     boolean:
-     *     ``True`` if the event was handled explicitly by the menu.
-     *     ``False`` if it should bubble up or invoke default behavior.
      */
-    _onKeyDown(evt) {
-        switch (evt.which) {
-            case $.ui.keyCode.ENTER:
-                /* Activate any selected item. */
-                $(this._activeItemEl).triggerHandler('click');
-                return false;
+    #onKeyDown(evt: KeyboardEvent) {
+        let preventDefault = true;
 
-            case $.ui.keyCode.ESCAPE:
-            case $.ui.keyCode.TAB:
-                /* Close the menu and bring focus back to the controller. */
-                if (this.$controller) {
-                    this.$controller.focus();
-                }
+        if (evt.key === 'Enter') {
+            /* Activate any selected item. */
+            $(this.#activeItemEl).triggerHandler('click');
+        } else if (evt.key === 'Escape' ||
+                   evt.key === 'Tab') {
+            /* Close the menu and bring focus back to the controller. */
+            if (this.$controller) {
+                this.$controller.focus();
+            }
 
-                this.close({
-                    animate: false,
-                });
-                return false;
-
-            case $.ui.keyCode.UP:
-                /* Move up an item. */
-                this._focusPreviousItem();
-                return false;
-
-            case $.ui.keyCode.DOWN:
-                /* Move down an item. */
-                this._focusNextItem();
-                return false;
-
-            case $.ui.keyCode.HOME:
-            case $.ui.keyCode.PAGE_UP:
-                /* Move to the first item. */
-                this.focusFirstItem();
-                return false;
-
-            case $.ui.keyCode.END:
-            case $.ui.keyCode.PAGE_DOWN:
-                /* Move to the last item. */
-                this.focusLastItem();
-                return false;
+            this.close({
+                animate: false,
+            });
+        } else if (evt.key === 'ArrowUp') {
+            /* Move up an item. */
+            this.#focusPreviousItem();
+        } else if (evt.key === 'ArrowDown') {
+            /* Move down an item. */
+            this.#focusNextItem();
+        } else if (evt.key === 'Home' ||
+                   evt.key === 'PageUp') {
+            /* Move to the first item. */
+            this.focusFirstItem();
+        } else if (evt.key === 'End' ||
+                   evt.key === 'PageDown') {
+            /* Move to the last item. */
+            this.focusLastItem();
+        } else {
+            /* Let the default event handlers run. */
+            preventDefault = false;
         }
-    },
+
+        if (preventDefault) {
+            evt.stopPropagation();
+            evt.preventDefault();
+        }
+    }
 
     /**
      * Handle mousemove events on a menu item.
@@ -457,30 +539,35 @@ RB.MenuView = Backbone.View.extend({
      * This will move the focus to the menu item.
      *
      * Args:
-     *     evt (jQuery.Event):
+     *     evt (MouseEvent):
      *         The mousemove event.
      */
-    _onMenuItemMouseMove(evt) {
+    #onMenuItemMouseMove(evt: MouseEvent) {
         const targetEl = evt.currentTarget;
 
-        if (targetEl === this._activeItemEl) {
+        if (targetEl === this.#activeItemEl) {
             /* The mouse has moved but the item hasn't changed. */
             return;
         }
 
         const menuItems = this.el.children;
+        const itemIndex = _.indexOf(menuItems, targetEl as Element);
 
-        for (let i = 0; i < menuItems.length; i++) {
-            if (menuItems[i] === targetEl) {
-                this._focusItem(i);
-                break;
-            }
+        if (itemIndex !== -1) {
+            this.focusItem(itemIndex);
         }
-    },
-}, {
-    /** Standard drop-down menus. */
-    TYPE_STANDARD_MENU: 1,
+    }
 
-    /** Button-based menus. */
-    TYPE_BUTTON_MENU: 2,
-});
+    /**
+     * Return the active item index.
+     *
+     * This is for use with unit tests.
+     *
+     * Returns:
+     *     number:
+     *     The active item index.
+     */
+    get _activeItemIndex(): number {
+        return this.#activeItemIndex;
+    }
+}

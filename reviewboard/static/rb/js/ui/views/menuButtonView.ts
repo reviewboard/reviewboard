@@ -1,5 +1,12 @@
 import { BaseView, spina } from '@beanbag/spina';
 
+import {
+    MenuItemOptions,
+    MenuTransitionOptions,
+    MenuType,
+    MenuView,
+} from './menuView';
+
 
 /**
  * Options for the MenuButtonView.
@@ -35,17 +42,16 @@ export interface MenuButtonViewOptions {
      * Each will be passed to :js:meth:RB.MenuView.addItem` If not provided,
      * explicit items should be added to the menu.
      */
-    menuItems?: object[]; // TODO: replace with interface
+    menuItems?: MenuItemOptions[];
 
     /**
      * The type of menu to use.
      *
-     * If provided, this must be one of
-     * :js:attr:`RB.MenuView.TYPE_STANDARD_MENU` or
-     * :js:attr:`RB.MenuView.TYPE_BUTTON_MENU`. If not provided, this will
-     * default to being a standard menu.
+     * If provided, this must be one of :js:attr:`MenuType.Standard` or
+     * :js:attr:`MenuType.Button`. If not provided, this will default to being
+     * a standard menu.
      */
-    menuType?: number;
+    menuType?: MenuType;
 
     /**
      * The handler for click events on the primary button.
@@ -103,7 +109,7 @@ export class MenuButtonView<
     $primaryButton: JQuery = null;
 
     /** The menu associated with the button. */
-    menu: RB.MenuView = null;
+    menu: MenuView = null;
 
     /**
      * The direction that the menu will open.
@@ -118,8 +124,8 @@ export class MenuButtonView<
     #buttonText: string;
     #hasPrimaryButton: boolean;
     #menuIconClass: string;
-    #menuItems: object[]; // TODO: replace with interface
-    #menuType: number;
+    #menuItems: MenuItemOptions[];
+    #menuType: MenuType;
     #onPrimaryButtonClick: { (eventObject: MouseEvent): void };
     #template = _.template(dedent`
         <% if (hasPrimaryButton) { %>
@@ -153,7 +159,7 @@ export class MenuButtonView<
     initialize(options: MenuButtonViewOptions) {
         this.#ariaMenuLabel = options.ariaMenuLabel || gettext('More options');
         this.#menuItems = options.menuItems || [];
-        this.#menuType = options.menuType || RB.MenuView.TYPE_STANDARD_MENU;
+        this.#menuType = options.menuType || MenuType.Standard;
         this.#menuIconClass = (options.menuIconClass ||
                                'rb-icon rb-icon-dropdown-arrow');
         this.#buttonText = options.text;
@@ -203,7 +209,7 @@ export class MenuButtonView<
         console.assert(this.#$dropDownButton.length === 1);
 
         /* Create and populate the drop-down menu. */
-        const menu = new RB.MenuView({
+        const menu = new MenuView({
             $controller: this.#$dropDownButton,
             ariaLabelledBy: labelID,
             type: this.#menuType,
@@ -287,10 +293,10 @@ export class MenuButtonView<
      * Show the menu.
      *
      * Args:
-     *     options (object):
-     *         Options to pass to :js:meth:`RB.MenuView.prototype.open`.
+     *     options (MenuTransitionOptions):
+     *         Options to pass to :js:meth:`RB.MenuView.open`.
      */
-    #openMenu(options) {
+    #openMenu(options: MenuTransitionOptions) {
         this.menu.open(options);
     }
 
@@ -298,10 +304,10 @@ export class MenuButtonView<
      * Close the menu.
      *
      * Args:
-     *     options (object):
-     *         Options to pass to :js:meth:`RB.MenuView.prototype.close`.
+     *     options (MenuTransitionOptions):
+     *         Options to pass to :js:meth:`RB.MenuView.close`.
      */
-    #closeMenu(options) {
+    #closeMenu(options: MenuTransitionOptions) {
         this.menu.close(options);
     }
 

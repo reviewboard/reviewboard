@@ -1,5 +1,7 @@
 import { spina } from '@beanbag/spina';
 
+import { MenuView } from 'reviewboard/ui/views/menuView';
+
 import { ActionView } from './actionView';
 
 
@@ -23,13 +25,13 @@ export class MenuActionView extends ActionView {
      **********************/
 
     /** The menu view. */
-    menu: RB.MenuView;
+    menu: MenuView;
 
     /**
      * Render the view.
      */
     onInitialRender() {
-        this.menu = new RB.MenuView({
+        this.menu = new MenuView({
             $controller: this.$el,
         });
 
