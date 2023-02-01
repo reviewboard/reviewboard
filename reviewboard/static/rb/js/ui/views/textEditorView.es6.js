@@ -369,7 +369,7 @@ const TextAreaWrapper = Backbone.View.extend({
      * Focus the editor.
      */
     focus() {
-        this.$el.focus();
+        this.el.focus();
     }
 });
 
