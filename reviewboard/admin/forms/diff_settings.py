@@ -1,6 +1,9 @@
 """Administration form for diff viewer settings."""
 
+from __future__ import annotations
+
 import re
+from typing import Any, Dict, List, cast
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
@@ -9,6 +12,8 @@ from djblets.forms.widgets import ListEditWidget
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.admin.form_widgets import LexersMappingWidget
+from reviewboard.codesafety.checkers.trojan_source import \
+    TrojanSourceCodeSafetyChecker
 
 
 class DiffSettingsForm(SiteSettingsForm):
@@ -94,6 +99,39 @@ class DiffSettingsForm(SiteSettingsForm):
         ),
         widget=forms.TextInput(attrs={'size': '15'}))
 
+    trojan_source_check_confusables = forms.BooleanField(
+        label=_(
+            'Check for potentially misleading Unicode characters '
+            '("confusables")'
+        ),
+        help_text=_(
+            'This will check for Unicode characters in various languages '
+            'that look similar to characters commonly used in source code '
+            '(such as Latin characters). These are also known as Unicode '
+            '"confusables", and can be used to sneak malicious code into '
+            'software, either intentionally or accidentally through '
+            'copy/paste.'
+        ),
+        initial=True,
+        required=False)
+
+    trojan_source_confusable_aliases_allowed = forms.MultipleChoiceField(
+        label=_('Safe character sets'),
+        help_text=_(
+            'Characters from these sets are considered safe, and will not be '
+            'checked for confusables. This is useful if your team is working '
+            'in certain languages that often show up as unsafe. '
+            '<em>Attacks using these characters will not be caught.</em>'
+        ),
+        choices=[
+            (_lang, _lang)
+            for _lang in (
+                TrojanSourceCodeSafetyChecker.get_main_confusable_aliases()
+            )
+        ],
+        required=False,
+        widget=forms.widgets.CheckboxSelectMultiple())
+
     def load(self):
         """Load settings from the form.
 
@@ -101,15 +139,53 @@ class DiffSettingsForm(SiteSettingsForm):
         """
         super(DiffSettingsForm, self).load()
 
-        self.fields['include_space_patterns'].initial = \
-            ', '.join(self.siteconfig.get('diffviewer_include_space_patterns'))
+        siteconfig = self.siteconfig
+
+        # Load the settings from the Trojan Code checker.
+        #
+        # In the future, we may want to expand this to dynamically support
+        # any and all registered code safety checkers, but that will require
+        # additional support in the checkers.
+        code_safety_config = cast(
+            Dict[str, Dict],
+            siteconfig.get('code_safety_checkers'))
+        trojan_source_config = cast(
+            Dict[str, Any],
+            code_safety_config.get(TrojanSourceCodeSafetyChecker.checker_id,
+                                   {}))
+
+        if trojan_source_config:
+            for key in ('check_confusables',
+                        'confusable_aliases_allowed'):
+                if key in trojan_source_config:
+                    self.fields[f'trojan_source_{key}'].initial = \
+                        trojan_source_config[key]
+
+        # Load the "Show all whitespace for" setting.
+        self.fields['include_space_patterns'].initial = ', '.join(
+            cast(List[str],
+                 siteconfig.get('diffviewer_include_space_patterns')))
 
     def save(self):
         """Save the form.
 
         This will write the new configuration to the database.
         """
-        self.siteconfig.set(
+        siteconfig = self.siteconfig
+
+        # Store the settings for the Trojan Code checker.
+        code_safety_config = cast(
+            Dict[str, Any],
+            siteconfig.get('code_safety_checkers'))
+        code_safety_config[TrojanSourceCodeSafetyChecker.checker_id] = {
+            key: self.cleaned_data[f'trojan_source_{key}']
+            for key in ('check_confusables',
+                        'confusable_aliases_allowed')
+        }
+        siteconfig.set('code_safety_checkers', code_safety_config)
+
+        # Save the "Show all whitespace for" setting.
+        siteconfig.set(
             'diffviewer_include_space_patterns',
             re.split(r',\s*', self.cleaned_data['include_space_patterns']))
 
@@ -117,7 +193,13 @@ class DiffSettingsForm(SiteSettingsForm):
 
     class Meta:
         title = _('Diff Viewer Settings')
-        save_blacklist = ('include_space_patterns',)
+
+        save_blacklist = (
+            'trojan_source_check_confusables',
+            'trojan_source_confusable_aliases_allowed',
+            'include_space_patterns',
+        )
+
         fieldsets = (
             {
                 'title': _('Appearance'),
@@ -138,6 +220,22 @@ class DiffSettingsForm(SiteSettingsForm):
                 'fields': (
                     'diffviewer_max_diff_size',
                     'diffviewer_syntax_highlighting_threshold',
+                ),
+            },
+            {
+                'title': _('Code Safety'),
+                'description': _(
+                    'Review Board by default checks code for suspicious '
+                    'Unicode characters used in '
+                    '<a href="https://trojansource.codes/">Trojan Source</a> '
+                    'attacks. These checks can be fine-tunes to avoid '
+                    'matching characters in some languages, at the expense '
+                    'of decreased code safety.'
+                ),
+                'classes': ('wide',),
+                'fields': (
+                    'trojan_source_check_confusables',
+                    'trojan_source_confusable_aliases_allowed',
                 ),
             },
             {

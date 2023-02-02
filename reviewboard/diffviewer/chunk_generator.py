@@ -474,10 +474,15 @@ class RawDiffChunkGenerator(object):
             }, **extra_state))
 
         if to_check:
+            code_safety_configs = self.diff_settings.code_safety_configs
+
             # We have code to check. Let's go through each code checker
             # and see if we have any warnings or errors to display.
             for checker in code_safety_checker_registry:
-                checker_results = checker.check_content(content_items=to_check)
+                checker_config = code_safety_configs.get(checker.checker_id,
+                                                         {})
+                checker_results = checker.check_content(content_items=to_check,
+                                                        **checker_config)
 
                 if checker_results:
                     # Normalize the code checker results. We're going to

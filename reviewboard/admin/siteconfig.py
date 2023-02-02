@@ -141,6 +141,7 @@ defaults.update({
     'auth_x509_username_field': 'SSL_CLIENT_S_DN_CN',
     'auth_x509_username_regex': '',
     'auth_x509_autocreate_users': False,
+    'code_safety_checkers': {},
     'company': '',
     'default_use_rich_text': True,
     'diffviewer_context_num_lines': 5,
