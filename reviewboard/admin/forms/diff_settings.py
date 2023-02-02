@@ -19,19 +19,27 @@ class DiffSettingsForm(SiteSettingsForm):
 
     diffviewer_syntax_highlighting = forms.BooleanField(
         label=_('Show syntax highlighting'),
+        help_text=_(
+            'Show the content of files with colors and formatting to help '
+            'reviewers read and follow the code.'
+        ),
         required=False)
 
     diffviewer_syntax_highlighting_threshold = forms.IntegerField(
-        label=_('Syntax highlighting threshold'),
-        help_text=_('Files with lines greater than this number will not have '
-                    'syntax highlighting. Enter 0 for no limit.'),
+        label=_('Max lines for syntax highlighting'),
+        help_text=_(
+            'Files with lines greater than this number will not have '
+            'syntax highlighting. Enter 0 to disable limits.'
+        ),
         required=False,
         widget=forms.TextInput(attrs={'size': '5'}))
 
     diffviewer_custom_pygments_lexers = ListEditDictionaryField(
-        label=_('Mapping of file extensions to syntax highlighters'),
-        help_text=_('A list of file extensions and their corresponding '
-                    'Pygments lexer to use for syntax highlighting.'),
+        label=_('Custom file highlighting'),
+        help_text=_(
+            'Set this to override how particular file extensions (in the '
+            'form of <code>.ext</code>) are styled.'
+        ),
         required=False,
         widget=ListEditWidget(value_widget=LexersMappingWidget))
 
@@ -45,13 +53,17 @@ class DiffSettingsForm(SiteSettingsForm):
     include_space_patterns = forms.CharField(
         label=_('Show all whitespace for'),
         required=False,
-        help_text=_('A comma-separated list of file patterns for which all '
-                    'whitespace changes should be shown. '
-                    '(e.g., "*.py, *.txt")'),
-        widget=forms.TextInput(attrs={'size': '60'}))
+        help_text=_(
+            'A comma-separated list of file patterns for which all '
+            'whitespace changes should be shown (e.g., "*.py, *.txt"). '
+            'This is <strong>no longer recommended</strong>, as it turns off '
+            'smart indentation highlighting and can make some changes '
+            'harder to review.'
+        ),
+        widget=forms.TextInput(attrs={'size': '50'}))
 
     diffviewer_context_num_lines = forms.IntegerField(
-        label=_('Lines of Context'),
+        label=_('Lines of context'),
         help_text=_('The number of unchanged lines shown above and below '
                     'changed lines.'),
         initial=5,
@@ -72,9 +84,14 @@ class DiffSettingsForm(SiteSettingsForm):
         widget=forms.TextInput(attrs={'size': '5'}))
 
     diffviewer_max_diff_size = forms.IntegerField(
-        label=_('Max diff size (bytes)'),
-        help_text=_('The maximum size (in bytes) for any given diff. Enter 0 '
-                    'to disable size restrictions.'),
+        label=_('Max diff size in bytes'),
+        help_text=_(
+            'The maximum size (in bytes) for any given diff. Enter 0 to '
+            'disable size restrictions. <strong>2097152 (2MB) '
+            'is recommended</strong>, as larger diffs usually cannot be '
+            'reviewed by humans and may cause performance problems and '
+            'browser timeouts.'
+        ),
         widget=forms.TextInput(attrs={'size': '15'}))
 
     def load(self):
@@ -103,12 +120,25 @@ class DiffSettingsForm(SiteSettingsForm):
         save_blacklist = ('include_space_patterns',)
         fieldsets = (
             {
+                'title': _('Appearance'),
                 'classes': ('wide',),
-                'fields': ('diffviewer_syntax_highlighting',
-                           'diffviewer_syntax_highlighting_threshold',
-                           'diffviewer_custom_pygments_lexers',
-                           'diffviewer_show_trailing_whitespace',
-                           'include_space_patterns'),
+                'fields': (
+                    'diffviewer_show_trailing_whitespace',
+                    'diffviewer_syntax_highlighting',
+                    'diffviewer_custom_pygments_lexers',
+                ),
+            },
+            {
+                'title': _('Limits'),
+                'classes': ('wide',),
+                'description': _(
+                    'Limits can be placed to keep large diffs or large files '
+                    'from impacting performance.'
+                ),
+                'fields': (
+                    'diffviewer_max_diff_size',
+                    'diffviewer_syntax_highlighting_threshold',
+                ),
             },
             {
                 'title': _('Advanced'),
@@ -118,9 +148,11 @@ class DiffSettingsForm(SiteSettingsForm):
                     'settings do not need to be changed.'
                 ),
                 'classes': ('wide',),
-                'fields': ('diffviewer_max_diff_size',
-                           'diffviewer_context_num_lines',
-                           'diffviewer_paginate_by',
-                           'diffviewer_paginate_orphans')
+                'fields': (
+                    'include_space_patterns',
+                    'diffviewer_context_num_lines',
+                    'diffviewer_paginate_by',
+                    'diffviewer_paginate_orphans',
+                )
             }
         )
