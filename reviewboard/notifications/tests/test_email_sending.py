@@ -1736,7 +1736,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
                                    email=self.sender)
 
 
-class ReviewRequestSiteRootURLTests(SiteRootURLTestsMixin,
+class ReviewRequestSiteRootURLTests(SiteRootURLTestsMixin, DmarcDnsTestsMixin,
                                     ReviewRequestEmailTestsMixin, TestCase):
     """Tests for Bug 4612 related to review request and review e-mails."""
 
