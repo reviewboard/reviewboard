@@ -294,37 +294,6 @@ textarea {
 }
 
 
-/*
- * Top-bar actions.
- */
-#topbar .rb-c-actions {
-  menu {
-    box-sizing: border-box;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    white-space: nowrap;
-  }
-
-  &__action {
-    display: inline-block;
-  }
-
-  .rb-c-menu {
-    margin: 0;
-  }
-
-  .rb-c-menu__item {
-    margin: 0;
-    padding: 0;
-
-    &:last-child {
-      border-radius: 0 0 @box-border-radius @box-border-radius;
-    }
-  }
-}
-
-
 /**
  * Header actions.
  *
@@ -364,6 +333,10 @@ textarea {
       vertical-align: middle;
       line-height: 32px;
     }
+
+		img {
+      vertical-align: middle;
+		}
   }
 
   &__content {
@@ -382,8 +355,18 @@ textarea {
   .rb-c-menu {
     border: 1px #888 solid;
     border-radius: 0 0 @box-border-radius @box-border-radius;
+    margin: 0;
     margin-right: -1px;
     right: 0;
+  }
+
+  .rb-c-menu__item {
+    margin: 0;
+    padding: 0;
+
+    &:last-child {
+      border-radius: 0 0 @box-border-radius @box-border-radius;
+    }
   }
 
   #rb-ns-pages.base.on-shell-mobile-mode({

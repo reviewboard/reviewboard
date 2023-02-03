@@ -52,6 +52,18 @@ User Accounts
    reviewboard.accounts.forms.registration
 
 
+Actions
+=======
+
+.. autosummary::
+   :toctree: python
+
+   reviewboard.actions
+   reviewboard.actions.base
+   reviewboard.actions.errors
+   reviewboard.actions.registry
+
+
 Administration and Server
 =========================
 

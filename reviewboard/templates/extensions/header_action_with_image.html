@@ -1,0 +1,20 @@
+{% spaceless %}
+{%  if not has_parent %}<li class="rb-c-actions__action" role="presentation">{% endif %}
+ <a id="{{action.get_dom_element_id}}"
+    href="{{url}}"
+    role="menuitem"
+    {% if not visible or has_parent %} style="display: none;"{% endif %}>
+{%  if action.icon_class %}
+  <span class="{{action.icon_class}}"></span>
+{%  endif %}
+{%  if action.image %}
+ <img src="{{action.image}}"
+      width="{{action.image_width}}"
+      height="{{action.image_height}}"
+      border="0"
+      alt="">
+{%  endif %}
+  {{label}}
+ </a>
+{%  if not has_parent %}</li>{% endif %}
+{% endspaceless %}

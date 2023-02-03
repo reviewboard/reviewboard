@@ -699,6 +699,8 @@ class BaseReviewRequestAction(BaseAction):
         removed in 7.0.
     """
 
+    apply_to = reviewable_url_names + review_request_url_names
+
     def __init__(self) -> None:
         """Initialize this action.
 
@@ -830,6 +832,8 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
         :py:class:`reviewboard.actions.base.BaseMenuAction`. This class will be
         removed in 7.0.
     """
+
+    apply_to = reviewable_url_names + review_request_url_names
 
     def __init__(
         self,

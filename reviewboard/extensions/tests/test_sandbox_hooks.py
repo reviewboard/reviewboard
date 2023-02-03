@@ -5,6 +5,7 @@ from django.template import Context, Template
 from django.test.client import RequestFactory
 from djblets.extensions.models import RegisteredExtension
 
+from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
                                           DiffViewerActionHook,
@@ -224,50 +225,51 @@ class SandboxTests(BaseExtensionHookTestCase):
 
     def test_action_hooks_diff_viewer_hook(self):
         """Testing DiffViewerActionHook.get_actions with raised exception"""
-        SandboxDiffViewerActionTestHook(extension=self.extension)
+        deprecationMessage = (
+            'DiffViewerActionHook is deprecated and will be removed in '
+            'Review Board 7.0. Your extension '
+            '"reviewboard.extensions.tests.test_sandbox_hooks.'
+            'SandboxExtension" will need to be updated to derive actions '
+            'from reviewboard.actions.BaseAction and use ActionHook.'
+        )
 
-        context = Context({'comment': 'this is a comment'})
+        with self.assertWarns(RemovedInReviewBoard70Warning,
+                              deprecationMessage):
+            SandboxDiffViewerActionTestHook(extension=self.extension)
+
+        context = Context({
+            'comment': 'this is a comment',
+            'request': self.factory.get('/test/'),
+        })
 
         template = Template(
-            '{% load reviewtags %}'
-            '{% review_request_actions %}')
+            '{% load actions %}'
+            '{% actions_html "review-request" %}')
 
         template.render(context)
 
-    def test_action_hooks_header_hook(self):
-        """Testing HeaderActionHook.get_actions with raised exception"""
-        SandboxHeaderActionTestHook(extension=self.extension)
-
-        context = Context({'comment': 'this is a comment'})
-
-        t = Template(
-            "{% load rb_extensions %}"
-            "{% header_action_hooks %}")
-
-        t.render(context).strip()
-
-    def test_action_hooks_header_dropdown_hook(self):
-        """Testing HeaderDropdownActionHook.get_actions with raised exception
-        """
-        SandboxHeaderDropdownActionTestHook(extension=self.extension)
-
-        context = Context({'comment': 'this is a comment'})
-
-        t = Template(
-            "{% load rb_extensions %}"
-            "{% header_dropdown_action_hooks %}")
-
-        t.render(context).strip()
-
     def test_action_hooks_review_request_hook(self):
         """Testing ReviewRequestActionHook.get_actions with raised exception"""
-        SandboxReviewRequestActionTestHook(extension=self.extension)
+        deprecationMessage = (
+            'ReviewRequestActionHook is deprecated and will be removed in '
+            'Review Board 7.0. Your extension '
+            '"reviewboard.extensions.tests.test_sandbox_hooks.'
+            'SandboxExtension" will need to be updated to derive actions '
+            'from reviewboard.actions.BaseAction and use ActionHook.'
+        )
 
-        context = Context({'comment': 'this is a comment'})
+        with self.assertWarns(RemovedInReviewBoard70Warning,
+                              deprecationMessage):
+            SandboxReviewRequestActionTestHook(extension=self.extension)
+
+        context = Context({
+            'comment': 'this is a comment',
+            'request': self.factory.get('/test/'),
+        })
 
         template = Template(
-            '{% load reviewtags %}'
-            '{% review_request_actions %}')
+            '{% load actions %}'
+            '{% actions_html "review-request" %}')
 
         template.render(context)
 
@@ -275,13 +277,27 @@ class SandboxTests(BaseExtensionHookTestCase):
         """Testing ReviewRequestDropdownActionHook.get_actions with raised
         exception
         """
-        SandboxReviewRequestDropdownActionTestHook(extension=self.extension)
+        deprecationMessage = (
+            'ReviewRequestDropdownActionHook is deprecated and will be '
+            'removed in Review Board 7.0. Your extension '
+            '"reviewboard.extensions.tests.test_sandbox_hooks.'
+            'SandboxExtension" will need to be updated to derive actions '
+            'from reviewboard.actions.BaseAction and use ActionHook.'
+        )
 
-        context = Context({'comment': 'this is a comment'})
+        with self.assertWarns(RemovedInReviewBoard70Warning,
+                              deprecationMessage):
+            SandboxReviewRequestDropdownActionTestHook(
+                extension=self.extension)
+
+        context = Context({
+            'comment': 'this is a comment',
+            'request': self.factory.get('/test/'),
+        })
 
         template = Template(
-            '{% load reviewtags %}'
-            '{% review_request_actions %}')
+            '{% load actions %}'
+            '{% actions_html "review-request" %}')
 
         template.render(context)
 
