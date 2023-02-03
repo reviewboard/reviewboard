@@ -1,8 +1,8 @@
 suite('rb/pages/views/ReviewablePageView', function() {
     const pageTemplate = dedent`
         <div id="review-banner"></div>
-        <a href="#" id="review-action">Edit Review</a>
-        <a href="#" id="ship-it-action">Ship It</a>
+        <a href="#" id="action-edit-review">Edit Review</a>
+        <a href="#" id="action-ship-it">Ship It</a>
     `;
 
     let $editReview;
@@ -17,8 +17,8 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
         RB.DnDUploader.instance = null;
 
-        $editReview = $container.find('#review-action');
-        $shipIt = $container.find('#ship-it-action');
+        $editReview = $container.find('#action-edit-review');
+        $shipIt = $container.find('#action-ship-it');
 
         page = new RB.ReviewablePage({
             checkForUpdates: false,

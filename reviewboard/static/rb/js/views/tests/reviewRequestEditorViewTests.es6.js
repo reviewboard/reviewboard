@@ -217,66 +217,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
     });
 
     describe('Actions bar', function() {
-        describe('Close', function() {
-            beforeEach(function() {
-                view.render();
-            });
-
-            it('Delete Permanently', function(done) {
-                let $buttons = $();
-
-                spyOn(reviewRequest, 'destroy').and.resolveTo();
-                spyOn($.fn, 'modalBox').and.callFake(options => {
-                    options.buttons.forEach($btn => {
-                        $buttons = $buttons.add($btn);
-                    });
-
-                    /* Simulate the modalBox API for what we need. */
-                    return {
-                        modalBox: cmd => {
-                            expect(cmd).toBe('buttons');
-                            return $buttons;
-                        }
-                    };
-                });
-
-                $('#delete-review-request-action').click();
-                expect($.fn.modalBox).toHaveBeenCalled();
-
-                /* This gets called at the end of the operation. */
-                spyOn(RB, 'navigateTo').and.callFake(() => {
-                    expect(reviewRequest.destroy).toHaveBeenCalled();
-                    done();
-                });
-
-                $buttons.filter('input[value="Delete"]').click();
-            });
-
-            it('Discarded', function() {
-                spyOn(reviewRequest, 'close').and.callFake(options => {
-                    expect(options.type).toBe(RB.ReviewRequest.CLOSE_DISCARDED);
-                    return Promise.resolve();
-                });
-
-                spyOn(window, 'confirm').and.returnValue(true);
-
-                $('#discard-review-request-action').click();
-
-                expect(reviewRequest.close).toHaveBeenCalled();
-            });
-
-            it('Submitted', function() {
-                spyOn(reviewRequest, 'close').and.callFake(options => {
-                    expect(options.type).toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
-                    return Promise.resolve();
-                });
-
-                $('#submit-review-request-action').click();
-
-                expect(reviewRequest.close).toHaveBeenCalled();
-            });
-        });
-
         it('ReviewRequestActionHooks', function() {
             var MyExtension,
                 extension,

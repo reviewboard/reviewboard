@@ -1,0 +1,11 @@
+{% load actions %}
+<li class="rb-c-actions__action -is-icon"
+    id="{{action.get_dom_element_id}}"
+    {% if hidden %}style="display: none;"{% endif %}
+    role="menuitem">
+ <a class="menu-title"
+    href="#"
+    aria-label="{{label}}"
+    ><span class="rb-icon rb-icon-archive-off"></span></a>
+{% child_actions_html %}
+</li>

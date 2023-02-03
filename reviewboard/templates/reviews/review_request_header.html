@@ -1,36 +1,33 @@
-{% load reviewtags %}
+{% load actions %}
 
 <div class="review-request-header">
  <menu class="rb-c-review-request-tabs" role="menu">
-{%   for tab in tabs %}
+{% for tab in tabs %}
   <li class="rb-c-review-request-tabs__tab{% if tab.active or tab.url == request.path %} -is-active{% endif %}"
       role="presentation">
    <a role="menuitem" href="{{tab.url}}"
       {% if tab.active or tab.url == request.path %}aria-current="page"{% endif %}
       >{{tab.text}}</a>
   </li>
-{%   endfor %}
+{% endfor %}
  </menu>
 
- <div class="review-request-actions-container">
-  <ul class="review-request-actions review-request-actions-left">
-{%   if request.user.is_authenticated and review_request.status == 'P' %}
-   <li class="review-request-action review-request-action-icon review-request-action-star">
-    <a href="#">{% star review_request %}</a>
+ <div class="rb-c-actions" role="presentation">
+  <menu class="rb-c-actions__content -is-left" role="menu">
+{% actions_html "review-request-left" %}
+  </menu>
+  <menu class="rb-c-actions__content -is-right -has-mobile-menu"
+        role="menu">
+   <li class="rb-c-actions__action rb-o-mobile-menu-label" role="presentation">
+    <a href="#"
+       aria-controls="review-request-mobile-actions-menu-content"
+       aria-expanded="false"
+       aria-haspopup="true"
+       ><span class="fa fa-navicon fa-lg" aria-hidden="true"></span></a>
    </li>
-   <li class="review-request-action review-request-action-icon review-request-action-archive has-menu">
-    <a class="menu-title" id="hide-review-request-link" href="#"><span class="rb-icon rb-icon-archive-off"></span></a>
-    <ul class="menu" id="hide-review-request-menu"></ul>
-   </li>
-{%   endif %}
-  </ul>
-  <ul class="review-request-actions review-request-actions-right-container">
-   <li class="review-request-action has-menu">
-    <a href="#" class="mobile-actions-menu-label"><span class="fa fa-ellipsis-h fa-lg"></span></a>
-    <ul class="review-request-actions review-request-actions-right">
-{%   review_request_actions %}
-    </ul>
-   </li>
-  </ul>
+   <div class="rb-o-mobile-menu" id="review-request-mobile-actions-menu-content">
+{% actions_html "review-request" %}
+   </div>
+  </menu>
  </div>
 </div>

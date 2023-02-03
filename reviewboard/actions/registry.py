@@ -48,9 +48,43 @@ class ActionsRegistry(OrderedRegistry):
             reviewboard.actions.base.BaseAction:
             The built-in actions.
         """
+        from reviewboard.reviews.actions import (AddGeneralCommentAction,
+                                                 ArchiveAction,
+                                                 ArchiveMenuAction,
+                                                 CloseMenuAction,
+                                                 CloseCompletedAction,
+                                                 CloseDiscardedAction,
+                                                 DeleteAction,
+                                                 DownloadDiffAction,
+                                                 LegacyEditReviewAction,
+                                                 LegacyShipItAction,
+                                                 MuteAction,
+                                                 StarAction,
+                                                 UpdateMenuAction,
+                                                 UploadDiffAction,
+                                                 UploadFileAction)
+
         # The order here is important, and will reflect the order that items
         # appear in the UI.
         builtin_actions: List[BaseAction] = [
+            # Review request actions (left side)
+            StarAction(),
+            ArchiveMenuAction(),
+            ArchiveAction(),
+            MuteAction(),
+
+            # Review request actions (right side)
+            CloseMenuAction(),
+            CloseCompletedAction(),
+            CloseDiscardedAction(),
+            DeleteAction(),
+            UpdateMenuAction(),
+            UploadDiffAction(),
+            UploadFileAction(),
+            DownloadDiffAction(),
+            LegacyEditReviewAction(),
+            LegacyShipItAction(),
+            AddGeneralCommentAction(),
         ]
 
         for action in builtin_actions:
