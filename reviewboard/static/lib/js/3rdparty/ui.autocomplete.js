@@ -223,7 +223,7 @@ $.widget("ui.rbautocomplete", {
             var currentValue = lastWord($input.val());
             var matched = false;
 
-            for (i = 0; i < toMatch.length && !matched; i++) {
+            for (let i = 0; i < toMatch.length && !matched; i++) {
                 var match = toMatch[i];
 
                 if (!options.matchCase) {
