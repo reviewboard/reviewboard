@@ -1,4 +1,6 @@
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.diffviewer.chunk_generator import RawDiffChunkGenerator
+from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.testing import TestCase
 
 
@@ -141,18 +143,126 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'numlines': 1,
             })
 
-    def test_get_chunks_with_enable_syntax_highlighting_true(self):
+    def test_get_chunks_with_settings_syntax_highlighting_true(self):
         """Testing RawDiffChunkGenerator.get_chunks with
-        enable_syntax_highlighting=True and syntax highlighting
+        DiffSettings.syntax_highlighting=True and syntax highlighting
         available for file
         """
         old = b'This is **bold**'
         new = b'This is *italic*'
 
+        diff_settings = DiffSettings.create(syntax_highlighting=True)
+
         generator = RawDiffChunkGenerator(old=old,
                                           new=new,
                                           orig_filename='file1.md',
-                                          modified_filename='file2.md')
+                                          modified_filename='file2.md',
+                                          diff_settings=diff_settings)
+        self.assertTrue(generator.enable_syntax_highlighting)
+
+        chunks = list(generator.get_chunks())
+
+        self.assertEqual(len(chunks), 1)
+        self.assertEqual(
+            chunks[0],
+            {
+                'change': 'replace',
+                'collapsable': False,
+                'index': 0,
+                'lines': [
+                    [
+                        1,
+                        1,
+                        'This is <span class="gs">**bold**</span>',
+                        [(9, 16)],
+                        1,
+                        'This is <span class="ge">*italic*</span>',
+                        [(9, 16)],
+                        False,
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            }
+        )
+
+    def test_get_chunks_with_settings_syntax_highlighting_false(self):
+        """Testing RawDiffChunkGenerator.get_chunks with
+        legacy enable_syntax_highlighting=False
+        """
+        old = b'This is **bold**'
+        new = b'This is *italic*'
+
+        diff_settings = DiffSettings.create(syntax_highlighting=False)
+
+        generator = RawDiffChunkGenerator(old=old,
+                                          new=new,
+                                          orig_filename='file1.md',
+                                          modified_filename='file2.md',
+                                          diff_settings=diff_settings)
+        self.assertFalse(generator.enable_syntax_highlighting)
+
+        chunks = list(generator.get_chunks())
+
+        self.assertEqual(len(chunks), 1)
+        self.assertEqual(
+            chunks[0],
+            {
+                'change': 'replace',
+                'collapsable': False,
+                'index': 0,
+                'lines': [
+                    [
+                        1,
+                        1,
+                        'This is **bold**',
+                        [(9, 16)],
+                        1,
+                        'This is *italic*',
+                        [(9, 16)],
+                        False,
+                    ],
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            }
+        )
+
+    def test_get_chunks_with_enable_syntax_highlighting_true(self):
+        """Testing RawDiffChunkGenerator.get_chunks with
+        legacy enable_syntax_highlighting=True and syntax highlighting
+        available for file
+        """
+        old = b'This is **bold**'
+        new = b'This is *italic*'
+
+        message = (
+            "The `enable_syntax_highlighting` argument to <class "
+            "'reviewboard.diffviewer.chunk_generator.RawDiffChunkGenerator'> "
+            "is deprecated and will be removed in Review Board 6.0. Please "
+            "provide `diff_settings` instead."
+        )
+
+        with self.assertWarns(cls=RemovedInReviewBoard60Warning,
+                              message=message):
+            generator = RawDiffChunkGenerator(old=old,
+                                              new=new,
+                                              orig_filename='file1.md',
+                                              modified_filename='file2.md',
+                                              enable_syntax_highlighting=True)
+
+        self.assertTrue(generator.enable_syntax_highlighting)
+
         chunks = list(generator.get_chunks())
 
         self.assertEqual(len(chunks), 1)
@@ -186,16 +296,28 @@ class RawDiffChunkGeneratorTests(TestCase):
 
     def test_get_chunks_with_enable_syntax_highlighting_false(self):
         """Testing RawDiffChunkGenerator.get_chunks with
-        enable_syntax_highlighting=False
+        legacy enable_syntax_highlighting=False
         """
         old = b'This is **bold**'
         new = b'This is *italic*'
 
-        generator = RawDiffChunkGenerator(old=old,
-                                          new=new,
-                                          orig_filename='file1.md',
-                                          modified_filename='file2.md',
-                                          enable_syntax_highlighting=False)
+        message = (
+            "The `enable_syntax_highlighting` argument to <class "
+            "'reviewboard.diffviewer.chunk_generator.RawDiffChunkGenerator'> "
+            "is deprecated and will be removed in Review Board 6.0. Please "
+            "provide `diff_settings` instead."
+        )
+
+        with self.assertWarns(cls=RemovedInReviewBoard60Warning,
+                              message=message):
+            generator = RawDiffChunkGenerator(old=old,
+                                              new=new,
+                                              orig_filename='file1.md',
+                                              modified_filename='file2.md',
+                                              enable_syntax_highlighting=False)
+
+        self.assertFalse(generator.enable_syntax_highlighting)
+
         chunks = list(generator.get_chunks())
 
         self.assertEqual(len(chunks), 1)
@@ -239,10 +361,13 @@ class RawDiffChunkGeneratorTests(TestCase):
         old = b'This is **bold**'
         new = b'This is *italic*'
 
+        diff_settings = DiffSettings.create(syntax_highlighting=True)
+
         generator = MyRawDiffChunkGenerator(old=old,
                                             new=new,
                                             orig_filename='file1.md',
-                                            modified_filename='file2.md')
+                                            modified_filename='file2.md',
+                                            diff_settings=diff_settings)
         chunks = list(generator.get_chunks())
 
         self.assertEqual(len(chunks), 1)

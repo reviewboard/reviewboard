@@ -77,8 +77,9 @@
     @help-text-color: @_color-vars[@grey-30];
     @help-text-font-size: 10px;
     @help-text-padding-vert: 8px;
-    @help-icon: @fa-var-question-circle-o;
-    @help-icon-size: 12px;
+    @help-icon: @fa-var-question-circle;
+    @help-icon-color: @_color-vars[@blue-30];
+    @help-icon-size: 14px;
     @help-icon-margin: 4px;
 
     @input-border-size: @config-forms-text-field-border-size;
@@ -124,7 +125,7 @@
 
   .form-row() {
     @padding-horiz: 0;
-    @padding-vert: #rb-ns-ui.form[@standard-padding];
+    @padding-vert: #rb-ns-ui.form[@large-spacing];
   }
 }
 
@@ -342,9 +343,9 @@ textarea {
      * on both sides.
      */
     #rb-ns-pages.base.on-shell-desktop-mode({
-      padding: 0 0 @_action-spacing @_action-spacing;
+      padding: @_action-spacing 0 @_action-spacing @_action-spacing;
     }, @else: {
-      padding: 0 @_action-spacing @_action-spacing @_action-spacing;
+      padding: @_action-spacing;
     });
   }
 
@@ -526,6 +527,7 @@ textarea {
     &:before {
       .fa-icon();
       content: @_form-field-vars[@help-icon];
+      color: @_form-field-vars[@help-icon-color];
       font-size: @_icon-size;
       position: absolute;
       left: 0;
@@ -685,7 +687,7 @@ textarea {
 
   border: 0;
   border-top: 1px @_form-fieldset-vars[@separator-border-color] solid;
-  margin: @_form-fieldset-vars[@spacing] 0 0 0;
+  margin: 0;
   padding: 0 @_form-fieldset-vars[@padding];
 
   &:first-of-type {
@@ -694,6 +696,12 @@ textarea {
 
     > .rb-c-form-fieldset__name {
       padding-top: 0;
+    }
+  }
+
+  &.-can-collapse {
+    .rb-c-form-fieldset__name {
+      margin: @_form-fieldset-vars[@name-spacing] 0;
     }
   }
 
@@ -768,6 +776,9 @@ textarea {
    *     </div>
    */
   &__fields {
+    @_form-row-vars: #rb-ns-ui.form-row();
+
+    padding: @_form-row-vars[@padding-vert] 0;
   }
 
   /**
@@ -794,7 +805,7 @@ textarea {
     float: left;
     .clearfix();
 
-    margin: @_name-spacing 0;
+    margin: @_name-spacing 0 0 0;
     padding: 0;
     width: 100%;
   }
@@ -829,6 +840,14 @@ textarea {
 
     margin: @_form-row-vars[@padding-vert] @_form-row-vars[@padding-horiz];
     padding: 0;
+
+    &:first-child {
+      margin-top: 0;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
 }
 

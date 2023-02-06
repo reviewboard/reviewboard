@@ -111,6 +111,9 @@ class ReviewReplyResource(BaseReviewResource):
     uri_object_key = 'reply_id'
     model_parent_key = 'base_reply_to'
 
+    uri_template_name = 'review_reply'
+    uri_template_name_plural = 'review_replies'
+
     mimetype_list_resource_name = 'review-replies'
     mimetype_item_resource_name = 'review-reply'
 

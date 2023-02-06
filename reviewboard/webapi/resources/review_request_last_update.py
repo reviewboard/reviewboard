@@ -26,6 +26,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
     policy_id = 'review_request_last_update'
     singleton = True
     allowed_methods = ('GET',)
+    uri_template_name = 'review_request_last_update'
 
     fields = {
         'summary': {

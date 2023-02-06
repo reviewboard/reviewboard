@@ -33,6 +33,8 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
         },
     }, **BaseDiffCommentResource.fields)
 
+    uri_template_name = 'review_reply_diff_comment'
+
     mimetype_list_resource_name = 'review-reply-diff-comments'
     mimetype_item_resource_name = 'review-reply-diff-comment'
 

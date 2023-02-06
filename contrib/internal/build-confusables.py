@@ -6,14 +6,34 @@ from unicode.org and generate a mapping of confusables that we want to scan
 for when displaying diffs. The result will be a new
 :file:`reviewboard/codesafety/_unicode_confusables.py` file.
 
+Version Changed:
+    5.0.2:
+    Updated to generate mappings of languages (aliases) to code ranges, and
+    lists of found Unicode aliases for customization.
+
 Version Added:
     5.0
 """
 
+from __future__ import annotations
+
 import os
 import re
 import sys
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 from urllib.request import urlopen
+
+if sys.version_info[:2] >= (3, 9):
+    # Python >= 3.9 keeps Pattern[...] in re.
+    from re import Pattern
+else:
+    # Python <= 3.8 keeps Pattern[...] in typing.
+    from typing import Pattern
+
+from typing_extensions import TypeAlias
+
+
+ConfusableEntry: TypeAlias = Tuple[int, str, str]
 
 
 CATEGORIES_URL = 'ftp://ftp.unicode.org/Public/UNIDATA/Scripts.txt'
@@ -21,15 +41,40 @@ CONFUSABLES_URL = \
     'ftp://ftp.unicode.org/Public/security/latest/confusables.txt'
 
 
+#: A list of Unicode aliases we'll display for customization.
+#:
+#: Each of these can be enabled or disabled for Unicode Confusable checks by
+#: administrators.
+#:
+#: Version Added:
+#:     5.0.2
+DISPLAY_ALIASES = {
+    'ARABIC',
+    'ARMENIAN',
+    'BENGALI',
+    'CYRILLIC',
+    'DEVANAGARI',
+    'GREEK',
+    'GUJARATI',
+    'GURMUKHI',
+    'KANNADA',
+    'KATAKANA',
+    'ORIYA',
+    'TELUGU',
+}
+
 scripts_dir = os.path.abspath(os.path.dirname(__file__))
 dest_filename = os.path.abspath(os.path.join(
     scripts_dir, '..', '..', 'reviewboard', 'codesafety', '_confusables.py'))
 
 
-categories_data = {}
+categories_data: Dict[str, Any] = {}
+aliases: Dict[str, List[str]] = {}
 
 
-def _make_codepoints_key_path(codepoint):
+def _make_codepoints_key_path(
+    codepoint: int,
+) -> Tuple[int, int, int, int]:
     """Return a key path used for a Unicode codepoint.
 
     Args:
@@ -48,16 +93,31 @@ def _make_codepoints_key_path(codepoint):
     )
 
 
-def get_alias(codepoint):
+def get_alias(
+    codepoint: int,
+) -> Tuple[Optional[str], Optional[str]]:
     """Return the category alias for a codepoint.
+
+    Version Changed:
+        5.0.2:
+        Updated to return a tuple of results.
 
     Args:
         codepoint (int):
             The codepoint.
 
     Returns:
-        unicode:
-        The category alias. If one is not found, this will be ``None``.
+        tuple:
+        A 2-tuple of:
+
+        Tuple:
+            0 (str):
+                The normalized alias ID.
+
+            1 (str):
+                The human-readable alias name.
+
+        These will both be ``None`` if an alias was not found.
     """
     key = _make_codepoints_key_path(codepoint)
 
@@ -65,16 +125,19 @@ def get_alias(codepoint):
         codepoint_ranges = \
             categories_data['codepoints'][key[0]][key[1]][key[2]][key[3]]
     except KeyError:
-        return None
+        return None, None
 
     for codepoint_range in codepoint_ranges:
         if codepoint_range[0] <= codepoint <= codepoint_range[1]:
             return categories_data['aliases'][codepoint_range[2]]
 
-    return None
+    return None, None
 
 
-def _load_data(url, line_re):
+def _load_data(
+    url: str,
+    line_re: Pattern[str],
+) -> Iterator[Dict]:
     """Download and iterate through a Unicode dataset.
 
     Args:
@@ -101,7 +164,7 @@ def _load_data(url, line_re):
         yield m.groupdict()
 
 
-def build_categories():
+def build_categories() -> None:
     """Download and build data on Unicode categories.
 
     This will download the Unicode categories dataset and parse it. It will
@@ -122,23 +185,21 @@ def build_categories():
         r'\s*; (?P<alias>\w+) # (?P<category>[\w]+)',
         re.UNICODE)
 
-    aliases = []
-    alias_id_map = {}
+    aliases: List[Tuple[str, str]] = []
+    alias_id_map: Dict[str, int] = {}
 
-    categories = []
-    category_id_map = {}
+    categories: List[str] = []
+    category_id_map: Dict[str, int] = {}
 
-    codepoint_ranges = {}
+    codepoint_ranges: Dict[int, Dict] = {}
 
     for info in _load_data(CATEGORIES_URL, LINE_RE):
-        alias = info['alias'].upper()
+        alias: str = info['alias']
+        alias_id = alias.upper()
 
-        if alias not in ('COMMON', 'LATIN'):
-            continue
-
-        if alias not in alias_id_map:
-            alias_id_map[alias] = len(aliases)
-            aliases.append(alias)
+        if alias_id not in alias_id_map:
+            alias_id_map[alias_id] = len(aliases)
+            aliases.append((alias_id, alias.replace('_', ' ')))
 
         category = info['category']
 
@@ -153,8 +214,8 @@ def build_categories():
         codepoint_through = int(codepoint_through_s, 16)
 
         # Split into subtables. Key off from some prefix.
-        prev_key = None
-        cur_range = None
+        prev_key: Optional[Tuple[int, int, int, int]] = None
+        cur_range: Optional[Tuple[int, int, int, int]] = None
 
         # We need a quick way to look up Unicode codepoints, but it's too
         # expensive to maintain a mapping of every codepoint. So, instead
@@ -194,6 +255,8 @@ def build_categories():
 
             if key != prev_key:
                 if cur_range:
+                    assert prev_key is not None
+
                     codepoints = (
                         codepoint_ranges
                         .setdefault(prev_key[0], {})
@@ -206,10 +269,12 @@ def build_categories():
                 cur_range = (
                     codepoint,
                     codepoint,
-                    alias_id_map[alias],
+                    alias_id_map[alias_id],
                     category_id_map[category],
                 )
             else:
+                assert cur_range is not None
+
                 cur_range = (
                     cur_range[0],
                     codepoint,
@@ -236,7 +301,7 @@ def build_categories():
     })
 
 
-def update_confusables():
+def update_confusables() -> List[ConfusableEntry]:
     """Download and build data on Unicode confusables/homoglyphs.
 
     This will download the Unicode confusables dataset and parse it. It will
@@ -247,15 +312,24 @@ def update_confusables():
 
     Returns:
         list:
-        A list of confusables. Each entry is a tuple in the form of
-        ``(confusable, confused_with)``.
+        A list of confusables. Each entry is a tuple in the form of:
+
+        Tuple:
+            0 (int):
+                The codepoint of the confusable character.
+
+            1 (str):
+                The confusable character.
+
+            2 (str):
+                The character confused with.
     """
     LINE_RE = re.compile(
         r'^(?P<confusable_cp>[0-9A-F ]+) ;\t'
         r'(?P<confused_with_cp>[0-9A-F ]+) ;.*',
         re.UNICODE)
 
-    confusables = []
+    confusables: List[ConfusableEntry] = []
 
     for info in _load_data(CONFUSABLES_URL, LINE_RE):
         # Parse and check the character that another may be confused with.
@@ -274,7 +348,7 @@ def update_confusables():
         if confused_with_cp >= 128:
             continue
 
-        confused_with_alias = get_alias(confused_with_cp)
+        confused_with_alias = get_alias(confused_with_cp)[0]
 
         # Skip anything that's not confused with a common or latin character.
         if confused_with_alias not in ('COMMON', 'LATIN'):
@@ -303,7 +377,7 @@ def update_confusables():
     return confusables
 
 
-def build_confusables_file():
+def build_confusables_file() -> None:
     """Build the confusables file.
 
     This will generate :file:`reviewboard/codesafety/_unicode_confusables.py`.
@@ -317,6 +391,8 @@ def build_confusables_file():
     build_categories()
     confusables = update_confusables()
 
+    found_aliases_map: Dict[str, int] = {}
+
     filename = os.path.abspath(os.path.join(
         __file__, '..', '..', '..', 'reviewboard', 'codesafety',
         '_unicode_confusables.py'))
@@ -329,11 +405,49 @@ def build_confusables_file():
         fp.write('# To update this file, run '
                  './contrib/internal/build-confusables.py\n')
         fp.write('\n')
-        fp.write('COMMON_CONFUSABLES_MAP = {\n')
+        fp.write('from typing import Dict, Optional, Tuple\n')
+        fp.write('\n')
+        fp.write('from typing_extensions import TypeAlias\n')
+        fp.write('\n')
+        fp.write('\n')
+        fp.write('ConfusablesMapValue: TypeAlias ='
+                 ' Tuple[str, Optional[int]]\n')
+        fp.write('ConfusablesMap: TypeAlias ='
+                 ' Dict[str, ConfusablesMapValue]\n')
+        fp.write('\n')
+        fp.write('\n')
+        fp.write('COMMON_CONFUSABLES_MAP: ConfusablesMap = {\n')
+
+        alias_index: Optional[int]
 
         for codepoint, confusable_char, confused_with_char in confusables:
-            fp.write('    %r: %r,  # %X\n' %
-                     (confusable_char, confused_with_char, codepoint))
+            alias_id, alias_name = get_alias(codepoint)
+
+            if alias_id in DISPLAY_ALIASES:
+                assert alias_name
+
+                alias_index = found_aliases_map.setdefault(
+                    alias_name, len(found_aliases_map))
+            else:
+                alias_index = None
+
+            fp.write('    %r: (%r, %r),  # %X; %s\n' %
+                     (confusable_char, confused_with_char, alias_index,
+                      codepoint, alias_id))
+
+        fp.write('}\n')
+        fp.write('\n')
+        fp.write('CONFUSABLES_ID_TO_ALIAS_MAP: Tuple[str, ...] = (\n')
+
+        for alias_name in found_aliases_map.keys():
+            fp.write('    %r,\n' % alias_name)
+
+        fp.write(')\n')
+        fp.write('\n')
+        fp.write('CONFUSABLES_ALIAS_TO_ID_MAP: Dict[str, int] = {\n')
+
+        for alias_name, alias_index in found_aliases_map.items():
+            fp.write('    %r: %r,\n' % (alias_name, alias_index))
 
         fp.write('}\n')
 

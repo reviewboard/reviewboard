@@ -26,12 +26,12 @@ from pygments.lexers import get_lexer_by_name
 
 from reviewboard.diffviewer.commit_utils import (diff_histories,
                                                  get_base_and_tip_commits)
-from reviewboard.diffviewer.diffutils import (get_diff_files,
-                                              get_enable_highlighting)
+from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.errors import PatchError, UserVisibleError
 from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
 from reviewboard.diffviewer.renderers import (get_diff_renderer,
                                               get_diff_renderer_class)
+from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -555,20 +555,14 @@ class DiffFragmentView(View):
             unicode:
             The encoded ETag identifying this render.
         """
-        etag = '%s:%s:%s:%s:%s:%s' % (
-            get_diff_renderer_class(),
-            renderer_settings['collapse_all'],
-            renderer_settings['highlighting'],
-            filediff_id,
-            interfilediff_id,
-            settings.TEMPLATE_SERIAL)
-
-        show_deleted = renderer_settings.get('show_deleted')
-
-        if show_deleted:
-            etag += ':%s' % show_deleted
-
-        return encode_etag(etag)
+        return encode_etag(
+            '%s:%s:%s:%s:%s:%s'
+            % (get_diff_renderer_class(),
+               renderer_settings['diff_settings'].state_hash,
+               renderer_settings['collapse_all'],
+               filediff_id,
+               interfilediff_id,
+               settings.TEMPLATE_SERIAL))
 
     def process_diffset_info(self, diffset_or_id, filediff_id,
                              interfilediff_id=None, interdiffset_or_id=None,
@@ -696,8 +690,6 @@ class DiffFragmentView(View):
         parameters. It does not calculate the state of any DiffSets or
         FileDiffs.
         """
-        highlighting = get_enable_highlighting(self.request.user)
-
         try:
             lines_of_context = self.request.GET.get('lines-of-context', '')
             lines_of_context = [int(i) for i in lines_of_context.split(',', 1)]
@@ -727,7 +719,7 @@ class DiffFragmentView(View):
         return {
             'chunk_index': chunk_index,
             'collapse_all': collapse_all,
-            'highlighting': highlighting,
+            'diff_settings': DiffSettings.create(request=self.request),
             'lines_of_context': lines_of_context,
             'show_deleted': show_deleted,
         }

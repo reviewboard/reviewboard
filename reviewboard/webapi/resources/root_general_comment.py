@@ -32,6 +32,7 @@ class RootGeneralCommentResource(BaseReviewGeneralCommentResource):
     allowed_methods = ('GET',)
     model = GeneralComment
     uri_template_name = 'all_general_comment'
+    uri_object_key = None
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
         """Return a queryset for GeneralComment models.

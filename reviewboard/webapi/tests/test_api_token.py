@@ -486,4 +486,31 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
                            expected_mimetype=api_token_item_mimetype,
                            expected_status=200)
 
+        token.refresh_from_db()
+
+        self.assertIsNone(token.expires)
+        self.check_put_result(self.user, rsp['api_token'], token)
+
+    @webapi_test_template
+    def test_put_with_expires_resets_notification_flag(self):
+        """Testing the PUT <URL> API with setting an expiration resets
+        the expired notification sent flag on the token
+        """
+        token = self.create_webapi_token(
+            self.user,
+            expires=datetime(2022, 9, 20, 13, 42, 0, tzinfo=timezone.utc),
+            extra_data={'expired_notification_sent': True})
+
+        token_data = self.token_data.copy()
+        token_data['expires'] = ''
+
+        rsp = self.api_put(get_api_token_item_url(token),
+                           token_data,
+                           expected_mimetype=api_token_item_mimetype,
+                           expected_status=200)
+
+        token.refresh_from_db()
+
+        self.assertIsNone(token.expires)
+        self.assertFalse(token.extra_data['expired_notification_sent'])
         self.check_put_result(self.user, rsp['api_token'], token)

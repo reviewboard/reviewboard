@@ -26,6 +26,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_file_attachment_comment'
     model_parent_key = 'review'
+    uri_template_name = 'file_attachment_comment'
 
     def get_queryset(self, request, review_id, *args, **kwargs):
         q = super(ReviewFileAttachmentCommentResource, self).get_queryset(

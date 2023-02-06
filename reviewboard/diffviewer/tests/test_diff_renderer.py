@@ -3,9 +3,11 @@ from django.test import RequestFactory
 from djblets.cache.backend import cache_memoize
 from kgb import SpyAgency
 
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.diffviewer.renderers import DiffRenderer
+from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.testing import TestCase
 
 
@@ -45,6 +47,80 @@ class DiffRendererTests(SpyAgency, TestCase):
         renderer.render_to_string_uncached(None)
         self.assertEqual(renderer.num_chunks, 1)
         self.assertEqual(renderer.chunk_index, 0)
+
+    def test_construction_with_setting_syntax_highlighting_true(self):
+        """Testing DiffRenderer construction with
+        DiffSettings.syntax_highlighting=True
+        """
+        diff_file = {
+            'chunks': [{}],
+            'chunks_loaded': True,
+        }
+
+        diff_settings = DiffSettings.create(syntax_highlighting=True)
+
+        renderer = DiffRenderer(diff_file,
+                                chunk_index=0,
+                                diff_settings=diff_settings)
+        self.assertTrue(renderer.highlighting)
+
+    def test_construction_with_setting_syntax_highlighting_false(self):
+        """Testing DiffRenderer construction with
+        DiffSettings.syntax_highlighting=False
+        """
+        diff_file = {
+            'chunks': [{}],
+            'chunks_loaded': True,
+        }
+
+        diff_settings = DiffSettings.create(syntax_highlighting=False)
+
+        renderer = DiffRenderer(diff_file,
+                                chunk_index=0,
+                                diff_settings=diff_settings)
+        self.assertFalse(renderer.highlighting)
+
+    def test_construction_with_highlighting_true(self):
+        """Testing DiffRenderer construction with legacy highlighting=True"""
+        diff_file = {
+            'chunks': [{}],
+            'chunks_loaded': True,
+        }
+
+        message = (
+            "The `highlighting` argument to <class "
+            "'reviewboard.diffviewer.renderers.DiffRenderer'> is deprecated "
+            "and will be removed in Review Board 6.0. Provide `diff_settings` "
+            "instead."
+        )
+
+        with self.assertWarns(RemovedInReviewBoard60Warning, message):
+            renderer = DiffRenderer(diff_file,
+                                    chunk_index=0,
+                                    highlighting=True)
+
+        self.assertTrue(renderer.highlighting)
+
+    def test_construction_with_highlighting_false(self):
+        """Testing DiffRenderer construction with legacy highlighting=False"""
+        diff_file = {
+            'chunks': [{}],
+            'chunks_loaded': True,
+        }
+
+        message = (
+            "The `highlighting` argument to <class "
+            "'reviewboard.diffviewer.renderers.DiffRenderer'> is deprecated "
+            "and will be removed in Review Board 6.0. Provide `diff_settings` "
+            "instead."
+        )
+
+        with self.assertWarns(RemovedInReviewBoard60Warning, message):
+            renderer = DiffRenderer(diff_file,
+                                    chunk_index=0,
+                                    highlighting=False)
+
+        self.assertFalse(renderer.highlighting)
 
     def test_render_to_response(self):
         """Testing DiffRenderer.render_to_response"""

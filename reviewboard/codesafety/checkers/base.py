@@ -4,7 +4,78 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, Sequence, Set, TYPE_CHECKING
+
 from django.template.loader import render_to_string
+from django.utils.safestring import SafeString, mark_safe
+from typing_extensions import NotRequired, TypedDict
+
+from reviewboard.scmtools.models import Repository
+
+if TYPE_CHECKING:
+    # This is available only in django-stubs.
+    from django.utils.functional import _StrOrPromise
+
+
+class CodeSafetyContentItem(TypedDict):
+    """An item of content in a file to check.
+
+    Version Added:
+        5.0.2
+    """
+
+    #: The path to the file in a diff to check.
+    #:
+    #: This can be used by checkers to perform checks on only certain kinds
+    #: of files, or to change checking behavior based on the file type.
+    #:
+    #: This can just be a filename, rather than a full path, if that's all
+    #: that's available.
+    #:
+    #: Type:
+    #:     str
+    path: str
+
+    #: A list of one or more lines within the file to check.
+    #:
+    #: The checker cannot assume anything about the range of lines within the
+    #: file.
+    #:
+    #: Type:
+    #:     list of str
+    lines: List[str]
+
+    #: The repository the file is on, if any.
+    #:
+    #: Type:
+    #:     rbtools.scmtools.models.Repository
+    repository: NotRequired[Repository]
+
+
+class CodeSafetyCheckResults(TypedDict):
+    """The results of a code safety check.
+
+    Version Added:
+        5.0.2
+    """
+
+    #: A set of error IDs found by a code safety checker.
+    #:
+    #: The IDs are local to the code safety checker.
+    #:
+    #: Type:
+    #:     list of str
+    errors: NotRequired[Set[str]]
+
+    #: A set of warning IDs found by a code safety checker.
+    #:
+    #: The IDs are local to the code safety checker.
+    #:
+    #: Type:
+    #:     list of str
+    warnings: NotRequired[Set[str]]
 
 
 class BaseCodeSafetyChecker(object):
@@ -30,13 +101,13 @@ class BaseCodeSafetyChecker(object):
     #:
     #: Type:
     #:     str
-    checker_id = None
+    checker_id: Optional[str] = None
 
     #: The summary shown by the code safety checker for results.
     #:
     #: Type:
     #:    str
-    summary = None
+    summary: Optional[_StrOrPromise] = None
 
     #: The HTML template name for the alert at the top of a file.
     #:
@@ -45,7 +116,7 @@ class BaseCodeSafetyChecker(object):
     #:
     #: Type:
     #:     str
-    file_alert_html_template_name = None
+    file_alert_html_template_name: Optional[str] = None
 
     #: A mapping of warning IDs to human-readable labels.
     #:
@@ -56,9 +127,13 @@ class BaseCodeSafetyChecker(object):
     #:
     #: Type:
     #:     dict
-    result_labels = {}
+    result_labels: Dict[str, _StrOrPromise] = {}
 
-    def check_content(self, content_items, **kwargs):
+    def check_content(
+        self,
+        content_items: List[CodeSafetyContentItem],
+        **kwargs,
+    ) -> CodeSafetyCheckResults:
         """Check content for safety issues.
 
         One or more files may be checked at once, and one or more lines
@@ -69,45 +144,37 @@ class BaseCodeSafetyChecker(object):
         multiple file's contents, or specific ranges from multiple files are
         checked, and to handle the results appropriately.
 
+        Subclasses can extend this with custom arguments. These should all
+        be specified as keyword-only arguments. Review Board may set these
+        based on stored configuration, depending on the code safety checker.
+
+        Version Changed:
+            5.0.2:
+            Added explicit support for subclass-defined custom arguments.
+
         Args:
             content_items (list of dict):
                 A list of dictionaries containing files and lines to check.
-                Each dictionary contains:
 
-                Keys:
-                    path (str):
-                        The path to the file (or just a filename, if that's all
-                        that's available).
-
-                        This can be used to perform checks on only certain
-                        types of files.
-
-                    lines (list of str):
-                        A list of one or more lines within the file to check.
-                        The checker cannot assume anything about the range of
-                        lines within the file.
-
-                    repository (reviewboard.scmtools.models.Repository,
-                                optional):
-                        The repository the file is on, if any.
+                See :py:class:`CodeSafetyContentItem` for the contents of
+                each item.
 
             **kwargs (dict, unused):
                 Additional keyword arguments, for future expansion.
 
         Returns:
             dict:
-            Results from the checks, which may contain:
-
-            Keys:
-                errors (list of str):
-                    A list of error IDs, local to this safety checker.
-
-                warnings (list of str):
-                    A list of warning IDs, local to this safety checker.
+            Results from the checks. See :py:class:`CodeSafetyCheckResults`
+            for details.
         """
         return {}
 
-    def update_line_html(self, line_html, result_ids, **kwargs):
+    def update_line_html(
+        self,
+        line_html: str,
+        result_ids: Sequence[str] = [],
+        **kwargs,
+    ) -> SafeString:
         """Update the rendered diff HTML for a line.
 
         This can update the HTML for a line to highlight any content that
@@ -116,6 +183,14 @@ class BaseCodeSafetyChecker(object):
 
         Callers should take care to ensure that the updates don't themselves
         cause any unsafe HTML to be generated.
+
+        Subclasses can extend this with custom arguments. These should all
+        be specified as keyword-only arguments. Review Board may set these
+        based on stored configuration, depending on the code safety checker.
+
+        Version Changed:
+            5.0.2:
+            Added explicit support for subclass-defined custom arguments.
 
         Args:
             line_html (str):
@@ -131,9 +206,13 @@ class BaseCodeSafetyChecker(object):
             django.utils.safestring.SafeString:
             The updated HTML.
         """
-        return line_html
+        return mark_safe(line_html)
 
-    def get_result_labels(self, result_ids, **kwargs):
+    def get_result_labels(
+        self,
+        result_ids: Sequence[str],
+        **kwargs,
+    ) -> List[str]:
         """Return a list of result labels for the given IDs for display.
 
         By default, this will generate a list based off
@@ -161,7 +240,12 @@ class BaseCodeSafetyChecker(object):
             for _result_id in result_ids
         ]
 
-    def render_file_alert_html(self, error_ids, warning_ids, **kwargs):
+    def render_file_alert_html(
+        self,
+        error_ids: Sequence[str],
+        warning_ids: Sequence[str],
+        **kwargs,
+    ) -> Optional[SafeString]:
         """Render an alert for the top of a file.
 
         This is responsible for rendering an alert that explains the warnings
@@ -200,7 +284,12 @@ class BaseCodeSafetyChecker(object):
         return render_to_string(self.file_alert_html_template_name,
                                 context=context_data)
 
-    def get_file_alert_context_data(self, error_ids, warning_ids, **kwargs):
+    def get_file_alert_context_data(
+        self,
+        error_ids: Sequence[str],
+        warning_ids: Sequence[str],
+        **kwargs,
+    ) -> Dict[str, Any]:
         """Return context variables for the file alert template.
 
         By default, this returns:
