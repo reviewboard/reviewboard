@@ -202,10 +202,10 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
             extra_data.update({
                 FileDiff._IS_PARENT_EMPTY_KEY: parent_is_empty,
                 'parent_source_filename':
-                    convert_to_unicode(parent_source_filename,
+                    convert_to_unicode(force_str(parent_source_filename),
                                        encoding_list)[1],
                 'parent_source_revision':
-                    convert_to_unicode(parent_source_revision,
+                    convert_to_unicode(force_str(parent_source_revision),
                                        encoding_list)[1],
             })
 

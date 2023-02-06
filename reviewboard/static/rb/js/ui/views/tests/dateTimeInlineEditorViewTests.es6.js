@@ -1,5 +1,5 @@
-suite('rb/ui/views/DateInlineEditorView', function() {
-    const initialDate = '2022-09-16';
+suite('rb/ui/views/DateTimeInlineEditorView', function() {
+    const initialDateTime = '2022-09-16T03:45';
     let view;
     let $container;
 
@@ -9,15 +9,10 @@ suite('rb/ui/views/DateInlineEditorView', function() {
 
     describe('Construction', function() {
         it('Default', function() {
-            view = new RB.DateInlineEditorView({
+            view = new RB.DateTimeInlineEditorView({
                 el: $container,
             });
             view.render();
-
-            expect(view.options.descriptorText).toBe(null);
-            expect(view.options.minDate).toBe(null);
-            expect(view.options.maxDate).toBe(null);
-            expect(view.options.rawValue).toBe(null);
 
             expect(view.$buttons.length).toBe(1);
             expect(view.$field.length).toBe(1);
@@ -25,32 +20,31 @@ suite('rb/ui/views/DateInlineEditorView', function() {
             const field = view.$field[0];
             expect(field.children.length).toBe(1);
             expect(field.firstElementChild.outerHTML)
-                .toBe('<input type="date">');
+                .toBe('<input type="datetime-local">');
 
         });
 
         it('With options provided', function() {
-            view = new RB.DateInlineEditorView({
+            view = new RB.DateTimeInlineEditorView({
                 el: $container,
-                rawValue: initialDate,
-                descriptorText: 'Test',
-                minDate: '2020-10-10',
-                maxDate: '2030-10-10',
+                rawValue: initialDateTime,
+                minDate: '2020-10-10T15:20',
+                maxDate: '2030-11-12T:06:30',
             });
             view.render();
 
-            expect(view.options.descriptorText).toBe('Test');
-            expect(view.options.minDate).toBe('2020-10-10');
-            expect(view.options.maxDate).toBe('2030-10-10');
-            expect(view.options.rawValue).toBe(initialDate);
+            expect(view.options.minDate).toBe('2020-10-10T15:20');
+            expect(view.options.maxDate).toBe('2030-11-12T:06:30');
+            expect(view.options.rawValue).toBe(initialDateTime);
 
             expect(view.$buttons.length).toBe(1);
             expect(view.$field.length).toBe(1);
 
             const field = view.$field[0];
-            expect(field.firstChild.textContent).toBe('Test');
-            expect(field.firstElementChild.outerHTML).toBe(
-                '<input type="date" max="2030-10-10" min="2020-10-10">');
+            expect(field.firstElementChild.outerHTML).toBe(dedent`
+                <input type="datetime-local" max="2030-11-12T:06:30" \
+                min="2020-10-10T15:20">
+            `);
 
         });
     });
@@ -62,9 +56,9 @@ suite('rb/ui/views/DateInlineEditorView', function() {
 
         describe('startEdit', function() {
             it('With an initial date', function() {
-                view = new RB.DateInlineEditorView({
+                view = new RB.DateTimeInlineEditorView({
                     el: $container,
-                    rawValue: initialDate,
+                    rawValue: initialDateTime,
                 });
                 view.render();
                 view.startEdit();
@@ -72,11 +66,11 @@ suite('rb/ui/views/DateInlineEditorView', function() {
                 const field = view.$field[0];
                 expect(field.firstChild.tagName).toBe('INPUT');
                 expect(field.firstElementChild.tagName).toBe('INPUT');
-                expect(field.firstElementChild.value).toBe(initialDate);
+                expect(field.firstElementChild.value).toBe(initialDateTime);
             });
 
             it('With no initial date', function() {
-                view = new RB.DateInlineEditorView({
+                view = new RB.DateTimeInlineEditorView({
                     el: $container,
                 });
                 view.render();
@@ -89,7 +83,7 @@ suite('rb/ui/views/DateInlineEditorView', function() {
             });
 
             it('With a descriptor text', function() {
-                view = new RB.DateInlineEditorView({
+                view = new RB.DateTimeInlineEditorView({
                     el: $container,
                     descriptorText: 'Test',
                 });
@@ -103,11 +97,11 @@ suite('rb/ui/views/DateInlineEditorView', function() {
                 expect(field.firstElementChild.value).toBe('');
             });
 
-            it('With a descriptor text and initial date', function() {
-                view = new RB.DateInlineEditorView({
+            it('With a descriptor text and initial datetime', function() {
+                view = new RB.DateTimeInlineEditorView({
                     el: $container,
                     descriptorText: 'Test',
-                    rawValue: initialDate,
+                    rawValue: initialDateTime,
                 });
                 view.render();
                 view.startEdit();
@@ -116,29 +110,29 @@ suite('rb/ui/views/DateInlineEditorView', function() {
                 expect(field.firstChild.tagName).toBe(undefined);
                 expect(field.firstChild.textContent).toBe('Test');
                 expect(field.firstElementChild.tagName).toBe('INPUT');
-                expect(field.firstElementChild.value).toBe(initialDate);
+                expect(field.firstElementChild.value).toBe(initialDateTime);
             });
         });
 
         describe('save', function() {
             it('With a new date', function() {
-                view = new RB.DateInlineEditorView({
+                view = new RB.DateTimeInlineEditorView({
                     el: $container,
                 });
                 view.render();
                 view.startEdit();
 
-                view.setValue(initialDate);
+                view.setValue(initialDateTime);
                 view.save();
 
-                expect(view.options.rawValue).toBe(initialDate);
-                expect(view.$el[0].innerHTML).toBe(initialDate);
+                expect(view.options.rawValue).toBe(initialDateTime);
+                expect(view.$el[0].innerHTML).toBe(initialDateTime);
             });
 
             it('With an empty value', function() {
-                view = new RB.DateInlineEditorView({
+                view = new RB.DateTimeInlineEditorView({
                     el: $container,
-                    rawValue: initialDate,
+                    rawValue: initialDateTime,
                 });
                 view.render();
                 view.startEdit();
@@ -151,16 +145,16 @@ suite('rb/ui/views/DateInlineEditorView', function() {
             });
 
             it('Without any changes made', function() {
-                view = new RB.DateInlineEditorView({
+                view = new RB.DateTimeInlineEditorView({
                     el: $container,
-                    rawValue: initialDate,
+                    rawValue: initialDateTime,
                 });
                 view.render();
                 view.startEdit();
 
                 view.save();
 
-                expect(view.options.rawValue).toBe(initialDate);
+                expect(view.options.rawValue).toBe(initialDateTime);
                 expect(view.$el[0].innerHTML).toBe('');
             });
         });
@@ -168,7 +162,7 @@ suite('rb/ui/views/DateInlineEditorView', function() {
 
     describe('Events', function() {
         it('On change', function() {
-            view = new RB.DateInlineEditorView({
+            view = new RB.DateTimeInlineEditorView({
                 el: $container,
             });
 

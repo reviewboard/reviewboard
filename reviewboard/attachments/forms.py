@@ -1,7 +1,9 @@
-from uuid import uuid4
+
 import os
+from uuid import uuid4
 
 from django import forms
+from djblets.db.fields.json_field import JSONFormField
 
 from reviewboard.attachments.mimetypes import get_uploaded_file_mimetype
 from reviewboard.attachments.models import (FileAttachment,
@@ -25,6 +27,9 @@ class UploadFileForm(forms.Form):
     attachment_history = forms.ModelChoiceField(
         queryset=FileAttachmentHistory.objects.all(),
         required=False)
+
+    #: Extra data as part of the file attachment.
+    extra_data = JSONFormField(required=False)
 
     def __init__(self, review_request, *args, **kwargs):
         """Initialize the form.
@@ -76,6 +81,7 @@ class UploadFileForm(forms.Form):
         """
         file_obj = self.files['path']
         caption = self.cleaned_data['caption'] or file_obj.name
+        extra_data = self.cleaned_data['extra_data']
 
         mimetype = get_uploaded_file_mimetype(file_obj)
         filename = get_unique_filename(file_obj.name)
@@ -116,6 +122,7 @@ class UploadFileForm(forms.Form):
             'attachment_revision': attachment_revision,
             'caption': '',
             'draft_caption': caption,
+            'extra_data': extra_data,
             'orig_filename': os.path.basename(file_obj.name),
             'mimetype': mimetype,
         }
@@ -146,6 +153,9 @@ class UploadUserFileForm(forms.Form):
     #: The file itself.
     path = forms.FileField(required=False)
 
+    #: Extra data as part of the file attachment.
+    extra_data = JSONFormField(required=False)
+
     def create(self, user, local_site=None):
         """Create a FileAttachment based on this form.
 
@@ -171,11 +181,13 @@ class UploadUserFileForm(forms.Form):
         if file_obj:
             mimetype = get_uploaded_file_mimetype(file_obj)
             filename = get_unique_filename(file_obj.name)
+            extra_data = self.cleaned_data['extra_data']
 
             attachment_kwargs.update({
                 'caption': self.cleaned_data['caption'] or file_obj.name,
                 'orig_filename': os.path.basename(file_obj.name),
                 'mimetype': mimetype,
+                'extra_data': extra_data,
             })
 
             file_attachment = FileAttachment(**attachment_kwargs)
@@ -201,6 +213,7 @@ class UploadUserFileForm(forms.Form):
         """
         caption = self.cleaned_data['caption']
         file_obj = self.files.get('path')
+        extra_data = self.cleaned_data['extra_data']
 
         if caption:
             file_attachment.caption = caption
@@ -210,6 +223,9 @@ class UploadUserFileForm(forms.Form):
             file_attachment.orig_filename = os.path.basename(file_obj.name)
             file_attachment.file.save(get_unique_filename(file_obj.name),
                                       file_obj, save=True)
+
+        if extra_data:
+            file_attachment.extra_data = extra_data
 
         file_attachment.save()
 

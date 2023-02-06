@@ -31,6 +31,7 @@ class RepositoryCommitsResource(WebAPIResource):
     policy_id = 'repository_commits'
     singleton = True
     allowed_methods = ('GET',)
+    uri_template_name = 'repository_commits'
     mimetype_item_resource_name = 'repository-commits'
 
     # For this resource, the fields dictionary is not used for any

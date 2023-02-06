@@ -4,9 +4,11 @@ from django.template.loader import render_to_string
 from django.utils.translation import gettext as _, get_language
 from djblets.cache.backend import cache_memoize
 
+from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header
 from reviewboard.diffviewer.diffutils import populate_diff_chunks
 from reviewboard.diffviewer.errors import UserVisibleError
+from reviewboard.diffviewer.settings import DiffSettings
 
 
 class DiffRenderer(object):
@@ -27,15 +29,102 @@ class DiffRenderer(object):
     DiffRenderer. It will alter the state of the renderer, possibly
     disrupting future render calls.
     """
+
     default_template_name = 'diffviewer/diff_file_fragment.html'
 
-    def __init__(self, diff_file, chunk_index=None, highlighting=False,
+    ######################
+    # Instance variables #
+    ######################
+
+    #: Settings used for the generation of the diff.
+    #:
+    #: Version Added:
+    #:     5.0.2
+    #:
+    #: Type:
+    #:     reviewboard.diffviewer.settings.DiffSettings
+    diff_settings: DiffSettings
+
+    def __init__(self, diff_file, chunk_index=None, highlighting=None,
                  collapse_all=True, lines_of_context=None, extra_context=None,
                  allow_caching=True, template_name=default_template_name,
-                 show_deleted=False):
+                 show_deleted=False,
+                 *, diff_settings=None):
+        """Initialize the renderer.
+
+        Version Changed:
+            5.0.2:
+            * Added ``diff_settings``, which will be required starting in
+              Review Board 6.
+            * Deprecated ``highlighting`` in favor of ``diff_settings``.
+
+        Args:
+            diff_file (dict):
+                The diff file information to render.
+
+            chunk_index (int, optional):
+                The index of a specific chunk to render.
+
+            highlighting (bool, optional):
+                Whether to default to enabling syntax highlighting if
+                ``diff_settings`` is not provided.
+
+                Deprecated:
+                    5.0.2:
+                    This has been replaced with ``diff_settings``.
+
+            collapse_all (bool, optional):
+                Whether to collapse all chunks.
+
+            lines_of_context (list of int, optional):
+                The lines of context to include for the render.
+
+                This can be a 1-item or 2-item list.
+
+                If 1-item, the contents will represent the lines of context
+                both before and after modified lines.
+
+                If 2-item, the first item will be the lines of context before,
+                and the second will be after.
+
+            extra_context (dict, optional):
+                Extra context data for the template.
+
+            allow_caching (bool, optional):
+                Whether to allow caching of the rendered content.
+
+            template_name (str, optional):
+                The name of the template used to render.
+
+            show_deleted (bool, optional):
+                Whether to show deleted file content.
+
+            diff_settings (reviewboard.diffviewer.settings.DiffSettings):
+                The settings used to control the display of diffs.
+
+                Version Added:
+                    5.0.2
+        """
+        if highlighting is not None:
+            RemovedInReviewBoard60Warning.warn(
+                'The `highlighting` argument to %r is deprecated and will '
+                'be removed in Review Board 6.0. Provide `diff_settings` '
+                'instead.'
+                % type(self))
+
+        if diff_settings is None:
+            diff_settings = DiffSettings.create()
+
+            # Satisfy the type checker, due to the parameter being optional.
+            assert diff_settings is not None
+
+            if highlighting is not None:
+                diff_settings.syntax_highlighting = highlighting
+
         self.diff_file = diff_file
+        self.diff_settings = diff_settings
         self.chunk_index = chunk_index
-        self.highlighting = highlighting
+        self.highlighting = diff_settings.syntax_highlighting
         self.collapse_all = collapse_all
         self.lines_of_context = lines_of_context
         self.extra_context = extra_context or {}
@@ -81,8 +170,9 @@ class DiffRenderer(object):
         not already in the cache.
         """
         if not self.diff_file.get('chunks_loaded', False):
-            populate_diff_chunks([self.diff_file], self.highlighting,
-                                 request=request)
+            populate_diff_chunks(files=[self.diff_file],
+                                 request=request,
+                                 diff_settings=self.diff_settings)
 
         if self.chunk_index is not None:
             assert not self.lines_of_context or self.collapse_all
@@ -133,13 +223,12 @@ class DiffRenderer(object):
         if self.collapse_all:
             key += '-collapsed'
 
-        if self.highlighting:
-            key += '-highlighting'
-
         if self.show_deleted:
             key += '-show_deleted'
 
-        key += '-%s-%s' % (get_language(), settings.TEMPLATE_SERIAL)
+        key += '-%s-%s-%s' % (self.diff_settings.state_hash,
+                              get_language(),
+                              settings.TEMPLATE_SERIAL)
 
         return key
 

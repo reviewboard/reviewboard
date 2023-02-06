@@ -31,9 +31,13 @@ class RootDiffCommentResource(BaseDiffCommentResource):
     """
 
     added_in = '5.0'
-    allowed_methods = ('GET', )
+    allowed_methods = ('GET',)
     model = Comment
-    name = 'review_diff_comment'
+    uri_object_key = None
+
+    uri_template_name = 'all_diff_comment'
+
+    mimetype_list_resource_name = 'review-diff-comments'
 
     @webapi_check_local_site
     def get_queryset(self, request, is_list=False, *args, **kwargs):

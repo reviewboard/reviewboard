@@ -820,13 +820,13 @@ RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
 /**
  * A view for inline editors that edit dates.
  *
- * This view expects a date to be passed to the ``rawValue`` option
- * and will render a date picker for editing the date.
+ * This view expects a local date in YYYY-MM-DD format to be passed to the
+ * ``rawValue`` option and will render a date picker for editing the date.
  *
  * Version Added:
  *     5.0
  */
- RB.DateInlineEditorView = RB.InlineEditorView.extend({
+RB.DateInlineEditorView = RB.InlineEditorView.extend({
     /**
      * Defaults for the view options.
      */
@@ -847,7 +847,7 @@ RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
         /**
          * The optional minimum date that can be chosen in the date picker.
          *
-         * This must be a local time in YYYY-MM-DD format.
+         * This must be a local date in YYYY-MM-DD format.
          *
          * Type:
          *     string
@@ -857,7 +857,7 @@ RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
         /**
          * The optional maximum date that can be chosen in the date picker.
          *
-         * This must be a local time in YYYY-MM-DD format.
+         * This must be a local date in YYYY-MM-DD format.
          *
          * Type:
          *     string
@@ -877,17 +877,16 @@ RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
      *     The newly created date input element.
      */
     createField() {
-        this._$datePicker = $(dedent`
-            <span class="rb-c-date-inline-editor__picker">
-             <input type="date"/>
-            </span>
-        `).prepend(this.options.descriptorText);
-
-        this._$datePickerInput = this._$datePicker.find('input')
+        this._$datePickerInput = $('<input type="date"/>')
             .attr({
                 'max': this.options.maxDate,
                 'min': this.options.minDate,
             });
+
+        this._$datePicker = $(
+            '<span class="rb-c-date-inline-editor__picker">'
+        )
+        .append(this.options.descriptorText, this._$datePickerInput);
 
         return this._$datePicker;
      },
@@ -905,4 +904,63 @@ RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
             this._scheduleUpdateDirtyState();
         });
     },
- });
+});
+
+/**
+ * A view for inline editors that edit datetimes.
+ *
+ * This view expects a local datetime in YYYY-MM-DDThh:mm format to be
+ * passed to the ``rawValue`` option and will render a datetime picker
+ * for editing it.
+ *
+ * Version Added:
+ *     5.0.2
+ */
+RB.DateTimeInlineEditorView = RB.DateInlineEditorView.extend({
+    /**
+     * Defaults for the view options.
+     */
+    defaultOptions: _.defaults({
+        /**
+         * The optional minimum datetime that can be chosen in the picker.
+         *
+         * This must be a local datetime in YYYY-MM-DDThh:mm format.
+         *
+         * Type:
+         *     string
+         */
+        minDate: null,
+
+        /**
+         * The optional maximum datetime that can be chosen in the picker.
+         *
+         * This must be a local datetime in YYYY-MM-DDThh:mm format.
+         *
+         * Type:
+         *     string
+         */
+        maxDate: null,
+    }, RB.DateInlineEditorView.prototype.defaultOptions),
+
+    /**
+     * Create and return the datetime input element.
+     *
+     * Returns:
+     *     jQuery:
+     *     The newly created datetime input element.
+     */
+    createField() {
+        this._$datePickerInput = $('<input type="datetime-local"/>')
+            .attr({
+                'max': this.options.maxDate,
+                'min': this.options.minDate,
+            });
+
+        this._$datePicker = $(
+            '<span class="rb-c-date-time-inline-editor__picker">'
+        )
+        .append(this.options.descriptorText, this._$datePickerInput);
+
+        return this._$datePicker;
+     },
+});

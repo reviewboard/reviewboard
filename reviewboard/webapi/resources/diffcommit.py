@@ -34,7 +34,7 @@ class DiffCommitResource(WebAPIResource):
     added_in = '4.0'
     model = DiffCommit
     name = 'commit'
-    uri_template_name_plural = 'diff_commits'
+    uri_template_name = 'diff_commit'
 
     model_parent_key = 'diffset'
     model_object_key = 'commit_id'

@@ -9,11 +9,15 @@ from reviewboard.webapi.tests.mimetypes import (file_attachment_item_mimetype,
 from reviewboard.webapi.tests.mixins import (BasicTestsMetaclass,
                                              ReviewRequestChildItemMixin,
                                              ReviewRequestChildListMixin)
+from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
+                                                        ExtraDataListMixin)
 from reviewboard.webapi.tests.urls import (get_file_attachment_item_url,
                                            get_file_attachment_list_url)
 
 
-class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
+class ResourceListTests(ReviewRequestChildListMixin,
+                        BaseWebAPITestCase,
+                        ExtraDataListMixin,
                         metaclass=BasicTestsMetaclass):
     """Testing the FileAttachmentResource list APIs."""
     fixtures = ['test_users']
@@ -27,6 +31,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
 
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
+        self.assertEqual(item_rsp['extra_data'], attachment.extra_data)
         self.assertEqual(item_rsp['filename'], attachment.filename)
         self.assertEqual(item_rsp['revision'], attachment.attachment_revision)
 
@@ -200,7 +205,9 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
             self.assertEqual(history.latest_revision, 0)
 
 
-class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase,
+class ResourceItemTests(ReviewRequestChildItemMixin,
+                        BaseWebAPITestCase,
+                        ExtraDataItemMixin,
                         metaclass=BasicTestsMetaclass):
     """Testing the FileAttachmentResource item APIs."""
     fixtures = ['test_users']
@@ -215,6 +222,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase,
 
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
+        self.assertEqual(item_rsp['extra_data'], attachment.extra_data)
         self.assertEqual(item_rsp['filename'], attachment.filename)
         self.assertEqual(item_rsp['revision'], attachment.attachment_revision)
         self.assertEqual(item_rsp['absolute_url'],

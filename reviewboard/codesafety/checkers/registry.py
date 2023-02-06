@@ -4,12 +4,17 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
+from typing import Iterable, Optional
+
+from reviewboard.codesafety.checkers.base import BaseCodeSafetyChecker
 from reviewboard.codesafety.checkers.trojan_source import \
     TrojanSourceCodeSafetyChecker
 from reviewboard.registries.registry import OrderedRegistry
 
 
-class CodeSafetyCheckerRegistry(OrderedRegistry):
+class CodeSafetyCheckerRegistry(OrderedRegistry[BaseCodeSafetyChecker]):
     """Registry for managing code safety checkers.
 
     Version Added:
@@ -18,7 +23,10 @@ class CodeSafetyCheckerRegistry(OrderedRegistry):
 
     lookup_attrs = ['checker_id']
 
-    def get_checker(self, checker_id):
+    def get_checker(
+        self,
+        checker_id: str,
+    ) -> Optional[BaseCodeSafetyChecker]:
         """Return a code checker with the specified ID.
 
         Args:
@@ -30,7 +38,7 @@ class CodeSafetyCheckerRegistry(OrderedRegistry):
         """
         return self.get('checker_id', checker_id)
 
-    def get_defaults(self):
+    def get_defaults(self) -> Iterable[BaseCodeSafetyChecker]:
         """Return the default code safety checkers.
 
         Returns:

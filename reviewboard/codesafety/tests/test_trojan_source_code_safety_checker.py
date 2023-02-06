@@ -2,7 +2,9 @@
 
 from django.utils.safestring import SafeString
 
-from reviewboard.codesafety._unicode_confusables import COMMON_CONFUSABLES_MAP
+from reviewboard.codesafety._unicode_confusables import (
+    COMMON_CONFUSABLES_MAP,
+    CONFUSABLES_ALIAS_TO_ID_MAP)
 from reviewboard.codesafety.checkers.trojan_source import \
     TrojanSourceCodeSafetyChecker
 from reviewboard.testing import TestCase
@@ -70,6 +72,80 @@ class TrojanSourceCodeSafetyCheckerTests(TestCase):
                     'warnings': {'confusable'},
                 })
 
+    def test_check_content_with_confusables_off(self):
+        """Testing TrojanSourceCodeSafetyChecker.check_content with
+        confusable characters and check_confusables=False
+        """
+        # Test a few select basic characters.
+        for c in (b'\xef\xbc\xa8',
+                  b'\xe1\x97\xb0'):
+            self.assertEqual(
+                self.checker.check_content(
+                    content_items=[{
+                        'path': 'test.c',
+                        'lines': ['def foo%s' % c.decode('utf-8')],
+                    }],
+                    check_confusables=False),
+                {
+                    'warnings': set(),
+                })
+
+        # Test a few select surrogate pairs.
+        for c in (b'\xf0\x9d\x97\x95',
+                  b'\xf0\x90\x8a\x96'):
+            self.assertEqual(
+                self.checker.check_content(
+                    content_items=[{
+                        'path': 'test.c',
+                        'lines': ['def foo%s' % c.decode('utf-8')],
+                    }],
+                    check_confusables=False),
+                {
+                    'warnings': set(),
+                })
+
+        # For good measure, run through the entire map.
+        for c in COMMON_CONFUSABLES_MAP.keys():
+            self.assertEqual(
+                self.checker.check_content(
+                    content_items=[{
+                        'path': 'test.c',
+                        'lines': ['def foo%s' % c],
+                    }],
+                    check_confusables=False),
+                {
+                    'warnings': set(),
+                })
+
+    def test_check_content_with_confusables_alias_allowed(self):
+        """Testing TrojanSourceCodeSafetyChecker.check_content with
+        confusable characters and confusable_aliases_allowed
+        """
+        # Run through the entire map.
+        bengali_code = CONFUSABLES_ALIAS_TO_ID_MAP['Bengali']
+        greek_code = CONFUSABLES_ALIAS_TO_ID_MAP['Greek']
+
+        for c, info in COMMON_CONFUSABLES_MAP.items():
+            result = self.checker.check_content(
+                content_items=[{
+                    'path': 'test.c',
+                    'lines': ['def foo%s' % c],
+                }],
+                confusable_aliases_allowed=['Bengali', 'Greek'])
+
+            if info[1] in (bengali_code, greek_code):
+                self.assertEqual(
+                    result,
+                    {
+                        'warnings': set(),
+                    })
+            else:
+                self.assertEqual(
+                    result,
+                    {
+                        'warnings': {'confusable'},
+                    })
+
     def test_check_content_with_zero_width(self):
         """Testing TrojanSourceCodeSafetyChecker.check_content with
         zero-width spaces
@@ -110,7 +186,8 @@ class TrojanSourceCodeSafetyCheckerTests(TestCase):
         bi-directional characters
         """
         html = self.checker.update_line_html(
-            '<span>/*</span> <span>\u202D admin</span><span>*/</span>:')
+            '<span>/*</span> <span>\u202D admin</span><span>*/</span>:',
+            result_ids=[])
 
         self.assertIsInstance(html, SafeString)
         self.assertEqual(
@@ -167,7 +244,8 @@ class TrojanSourceCodeSafetyCheckerTests(TestCase):
                 '<span>def</span> <span>is_%sadmin</span><span>()</span>:'
                 % dataset['char']
             )
-            html = self.checker.update_line_html(line)
+            html = self.checker.update_line_html(line,
+                                                 result_ids=[])
 
             self.assertIsInstance(html, SafeString)
 
@@ -203,7 +281,8 @@ class TrojanSourceCodeSafetyCheckerTests(TestCase):
         for dataset in datasets:
             html = self.checker.update_line_html(
                 '<span>def</span> <span>is_%sadmin</span><span>()</span>:'
-                % dataset['char'])
+                % dataset['char'],
+                result_ids=[])
 
             self.assertIsInstance(html, SafeString)
             self.assertEqual(

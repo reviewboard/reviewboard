@@ -8,9 +8,11 @@ from reviewboard.webapi.resources.base_original_file import \
 
 class OriginalFileResource(BaseOriginalFileResource):
     """Provides the unpatched file corresponding to a file diff."""
+
     added_in = '2.0'
 
     name = 'original_file'
+    uri_template_name = 'file_diff_original_file'
 
     def get_filediff(self, request, *args, **kwargs):
         """Returns the FileDiff, or an error, for the given parameters."""

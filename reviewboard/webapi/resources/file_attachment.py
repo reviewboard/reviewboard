@@ -20,6 +20,8 @@ class FileAttachmentResource(BaseReviewRequestFileAttachmentResource):
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
+    uri_template_name = 'review_request_file_attachment'
+
     mimetype_list_resource_name = 'file-attachments'
     mimetype_item_resource_name = 'file-attachment'
 

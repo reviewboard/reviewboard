@@ -17,6 +17,7 @@ class ReviewReplyDraftResource(WebAPIResource):
     policy_id = 'review_reply_draft'
     singleton = True
     uri_name = 'draft'
+    uri_template_name = 'review_reply_draft'
 
     @webapi_check_local_site
     @webapi_login_required

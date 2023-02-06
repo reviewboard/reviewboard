@@ -109,6 +109,8 @@ class FileDiffResource(WebAPIResource):
     uri_object_key = 'filediff_id'
     model_parent_key = 'diffset'
 
+    uri_template_name = 'file_diff'
+
     DIFF_DATA_MIMETYPE_BASE = CUSTOM_MIMETYPE_BASE + '.diff.data'
     DIFF_DATA_MIMETYPE_JSON = DIFF_DATA_MIMETYPE_BASE + '+json'
     DIFF_DATA_MIMETYPE_XML = DIFF_DATA_MIMETYPE_BASE + '+xml'

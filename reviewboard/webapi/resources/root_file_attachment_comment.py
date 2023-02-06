@@ -33,6 +33,7 @@ class RootFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     allowed_methods = ('GET',)
     model = FileAttachmentComment
     uri_template_name = 'all_file_attachment_comment'
+    uri_object_key = None
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
         """Return a queryset for FileAttachmentComment models.
