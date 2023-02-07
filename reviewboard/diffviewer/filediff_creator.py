@@ -192,6 +192,11 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
 
                     parent_source_revision = parent_commit_id
 
+            # If this is a Revision, we'll need to ensure we specifically
+            # cast it to a bytes before we convert it.
+            if isinstance(parent_source_revision, Revision):
+                parent_source_revision = bytes(parent_source_revision)
+
             # Store the information on the parent's filename and revision.
             # It's important we force these to text, since they may be
             # byte strings and the revision may be a Revision instance.
@@ -202,10 +207,10 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
             extra_data.update({
                 FileDiff._IS_PARENT_EMPTY_KEY: parent_is_empty,
                 'parent_source_filename':
-                    convert_to_unicode(force_str(parent_source_filename),
+                    convert_to_unicode(parent_source_filename,
                                        encoding_list)[1],
                 'parent_source_revision':
-                    convert_to_unicode(force_str(parent_source_revision),
+                    convert_to_unicode(parent_source_revision,
                                        encoding_list)[1],
             })
 
