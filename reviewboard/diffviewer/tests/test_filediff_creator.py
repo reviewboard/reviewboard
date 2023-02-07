@@ -2,14 +2,17 @@
 
 from __future__ import unicode_literals
 
+import kgb
 from django.utils.timezone import now
 
 from reviewboard.diffviewer.filediff_creator import create_filediffs
 from reviewboard.diffviewer.models import DiffCommit, DiffSet
+from reviewboard.scmtools.core import Revision
+from reviewboard.scmtools.git import GitTool
 from reviewboard.testing import TestCase
 
 
-class FileDiffCreatorTests(TestCase):
+class FileDiffCreatorTests(kgb.SpyAgency, TestCase):
     """Tests for reviewboard.diffviewer.filediff_creator."""
 
     fixtures = ['test_scmtools']
@@ -216,3 +219,57 @@ class FileDiffCreatorTests(TestCase):
 
         self.assertEqual(filediff.old_unix_mode, '0100644')
         self.assertEqual(filediff.new_unix_mode, '0100755')
+
+    def test_create_filediffs_with_parent_and_revision_instance(self):
+        """Testing create_filediffs() with parent diff and revisions as
+        Revision
+        """
+        repository = self.create_repository(tool_name='Git')
+        diffset = self.create_diffset(repository=repository)
+
+        self.assertEqual(diffset.files.count(), 0)
+
+        # Make sure we run this test with a Revision as a result.
+        self.spy_on(GitTool.parse_diff_revision,
+                    owner=GitTool,
+                    op=kgb.SpyOpReturn((b'readme', Revision('1234567'))))
+
+        # We'll use the same diff for both tests. It doesn't really matter.
+        # We're just looking for the end result of the parsed filenames and
+        # revisions here.
+        create_filediffs(
+            diff_file_contents=(
+                b'diff --git a/readme b/readme\n'
+                b'index 1234567..7654321\n'
+                b'--- a/readme\n'
+                b'+++ b/readme\n'
+                b'@@ -1 +1 @@\n'
+                b'Test 1\n'
+                b'Test 2\n'
+            ),
+            parent_diff_file_contents=(
+                b'diff --git /dev/null b/readme\n'
+                b'index 1234567..7654321\n'
+                b'--- a/readme\n'
+                b'+++ b/readme\n'
+                b'@@ -1 +1 @@\n'
+                b'Test 1\n'
+                b'Test 2\n'
+            ),
+            repository=repository,
+            basedir='/',
+            base_commit_id='0' * 40,
+            diffset=diffset,
+            check_existence=False)
+
+        diffset = DiffSet.objects.get(pk=diffset.pk)
+
+        self.assertEqual(diffset.files.count(), 1)
+        filediff = diffset.files.get()
+
+        self.assertEqual(filediff.source_revision, '1234567')
+        self.assertEqual(filediff.dest_detail, '7654321')
+        self.assertEqual(filediff.extra_data.get('parent_source_filename'),
+                         '/readme')
+        self.assertEqual(filediff.extra_data.get('parent_source_revision'),
+                         '1234567')
