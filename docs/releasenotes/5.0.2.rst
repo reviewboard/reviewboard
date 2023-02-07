@@ -17,7 +17,7 @@ your system for Review Board or to upgrade your existing install.
 
 To install this release, run:
 
-.. code-block:: shell
+.. code-block:: console
 
     $ pip3 install ReviewBoard==5.0.2
 
