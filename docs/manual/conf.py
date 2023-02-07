@@ -302,16 +302,16 @@ intersphinx_mapping = {
 
 
 extlinks = {
-    'djangodoc': ('%s%%s.html' % django_doc_base_url, None),
-    'backbonejs': ('http://backbonejs.org/#%s', 'Backbone.'),
-    'pypi': ('https://pypi.org/project/%s/', ''),
-    'rbintegration': ('https://www.reviewboard.org/integrations/%s', ''),
+    'djangodoc': ('%s%%s.html' % django_doc_base_url, '%s'),
+    'backbonejs': ('http://backbonejs.org/#%s', 'Backbone.%s'),
+    'pypi': ('https://pypi.org/project/%s/', '%s'),
+    'rbintegration': ('https://www.reviewboard.org/integrations/%s', '%s'),
     'rbsource': ('https://github.com/reviewboard/reviewboard/blob/%s/%%s'
                  % git_branch,
-                 ''),
+                 '%s'),
     'rbtree': ('https://github.com/reviewboard/reviewboard/tree/%s/%%s'
                % git_branch,
-               ''),
+               '%s'),
 }
 
 todo_include_todos = True
