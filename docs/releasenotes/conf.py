@@ -260,14 +260,14 @@ intersphinx_mapping = {
 }
 
 extlinks = {
-    'djangodoc': ('%s%%s.html' % django_doc_base_url, None),
-    'backbonejs': ('http://backbonejs.org/#%s', 'Backbone.'),
-    'pypi': ('https://pypi.org/project/%s/', ''),
-    'rbintegration': ('%s/integrations/%%s' % rbwebsite_url, ''),
+    'djangodoc': ('%s%%s.html' % django_doc_base_url, '%s'),
+    'backbonejs': ('http://backbonejs.org/#%s', 'Backbone.%s'),
+    'pypi': ('https://pypi.org/project/%s/', '%s'),
+    'rbintegration': ('%s/integrations/%%s' % rbwebsite_url, '%s'),
     'rbintegrations-relnotes': (
         '%s/docs/releasenotes/rbintegrations/%%s/' % rbwebsite_url,
-        'rbintegrations '),
-    'rbsrc-4.0.x': ('%srelease-4.0.x/%%s' % github_rb_src_base_url, ''),
+        'rbintegrations %s'),
+    'rbsrc-4.0.x': ('%srelease-4.0.x/%%s' % github_rb_src_base_url, '%s'),
     'djbletssrc-2.0.x': ('%srelease-2.0.x/%%s' % github_djblets_src_base_url,
-                         ''),
+                         '%s'),
 }
