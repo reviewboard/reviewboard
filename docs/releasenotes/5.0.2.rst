@@ -4,18 +4,30 @@
 Review Board 5.0.2 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: February 7, 2023
 
 
 Installation/Upgrade
 ====================
 
-To upgrade to this release, run the following using a compatible version of
-Python:
+Review Board 5.0.2 is compatible with Python 3.7-3.11.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To install this release, run:
 
 .. code-block:: shell
 
-    $ sudo pip3 install ReviewBoard==5.0.2
+    $ pip3 install ReviewBoard==5.0.2
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+* `Support <https://www.reviewboard.org/support/>`_
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
 
 
 Packaging
