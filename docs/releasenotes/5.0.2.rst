@@ -1,0 +1,166 @@
+.. default-intersphinx:: djblets3.x rb5.x
+
+================================
+Review Board 5.0.2 Release Notes
+================================
+
+**Release date**: February 7, 2023
+
+
+Installation/Upgrade
+====================
+
+Review Board 5.0.2 is compatible with Python 3.7-3.11.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: shell
+
+    $ pip3 install ReviewBoard==5.0.2
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+* `Support <https://www.reviewboard.org/support/>`_
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+
+
+Packaging
+=========
+
+* :pypi:`Djblets` 3.2.x is required.
+
+
+New Features
+============
+
+* Improved expiration controls for API tokens.
+
+  In addition to expiring on specific dates, tokens can now be set to expire
+  at specific times. This is useful when creating short-lived tokens or ones
+  that need to expire at, say, midnight on a given date.
+
+  The expiration dates/times for existing tokens can also be changed after
+  token creation, and can be set in the past to force a token to be expired.
+
+* Enabled support for extension-managed ACL controls for diffs.
+
+  Since :doc:`Review Board 4.0.5 <4.0.5>`, extensions have been able to
+  control access to specific files shown in diffs, making use of in-house
+  access control policies. This required opting into a custom setting.
+
+  This setting is now enabled for all installs.
+
+  See the :ref:`FileDiffACLHook documentation <filediff-acl-hook>` for
+  usage and an example using :command:`p4 protect`.
+
+* Added options for customizing Trojan Source detection.
+
+  Review Board 5 brought the ability to scan uploaded diffs for possible
+  `Trojan Source attacks`_. Since these are based on Unicode characters from
+  a variety of languages, they can result in false-positives when working with
+  character sets such as Cyrillic.
+
+  Now, Trojan Source detection can be toggled off in Admin UI -> Diff Viewer
+  Settings. Specific languages/character sets can also be excluded from the
+  checks.
+
+* Added default values for maximum diff sizes and max lines for syntax
+  highlighting on new installs.
+
+  The Diff Viewer settings allow you to control the maximum file size of any
+  diffs that are uploaded, and the maximum number of lines allowed for syntax
+  highlighting. These can be important for performance, and making sure diffs
+  remain reviewable by humans (who can't easily review changes that are
+  megabytes in size).
+
+  These defaults apply only to new installs, but can be set manually:
+
+  * :guilabel:`Max diff size in bytes`: 2097152 (2MB)
+  * :guilabel:`Max lines for syntax highlighting`: 20000
+
+
+.. _Trojan Source attacks: https://trojansource.codes/
+
+
+Web API
+=======
+
+* Improved our built-in list of URI templates.
+
+  URI templates provide quick and easy access to various API resources,
+  allowing a client to determine the appropriate URL simply by accessing the
+  root resource and looking up the desired template name.
+
+  In Review Board 5, we had some new resources that conflicted with other
+  ones. We've now fixed this to use the original names.
+
+  These conflicting URI template names have been deprecated, and we've
+  introduced a whole new set of future-proofed URI template names.
+
+  See :ref:`webapi2.0-root-resource` for the full list of new, existing, and
+  deprecated URI templates.
+
+
+Usability
+=========
+
+* Improved the display of the help icons in various forms.
+
+  The icons are now a bit larger and show up as blue, helping to differentiate
+  them from other text on the page.
+
+
+Bug Fixes
+=========
+
+Reviews
+-------
+
+* Fixed a crash uploading diffs on some SCMs when parent diffs introduce
+  new files. (:bug:`4988`)
+
+  Based on a fix by Ben Jackson.
+
+* Fixed the default state of the "Show Extra Whitespace" button for diffs.
+
+  The button to show trailing whitespace was sometimes being initialized
+  incorrectly. It will now always show the proper state.
+
+* Fixed potential crashes when redirecting to bugs or viewing information on
+  bugs.
+
+  These URLs could crash if accessed on review requests without an associated
+  repository, causing unwanted error e-mails.
+
+* Added additional mimetypes for text-based file attachments.
+
+  Some alternative JSON and YAML file attachments were not being recognized
+  correctly, preventing them from being reviewed as text files. Review Board
+  now recognizes all alternative mimetypes for these files.
+
+
+Upgrades
+--------
+
+* Fixed a crash that could occur when trying to upgrade from Review Board 2.5
+  or older.
+
+  If you've encountered this problem, please upgrade Review Board and try the
+  database upgrade again.
+
+* Fixed a crash when showing error logs from failed upgrades.
+
+
+Contributors
+============
+
+* Ben Jackson
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin
