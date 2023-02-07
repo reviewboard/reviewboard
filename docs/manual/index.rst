@@ -1,5 +1,7 @@
 :orphan:
 
+.. _reviewboard-docs:
+
 ===================
 Review Board Manual
 ===================

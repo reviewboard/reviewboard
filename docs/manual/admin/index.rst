@@ -4,6 +4,9 @@
 Administration Guide
 ====================
 
+
+.. _installing-reviewboard-toc:
+
 Installing Review Board
 =======================
 
@@ -21,6 +24,8 @@ Installation will happen in two steps:
 
 * :doc:`Step 2: Create your site directory <installation/creating-sites>`
 
+
+.. _upgrading-reviewboard-toc:
 
 Upgrading Review Board
 ======================
