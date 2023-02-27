@@ -314,7 +314,7 @@ extlinks = {
                '%s'),
 }
 
-todo_include_todos = True
+todo_include_todos = False
 
 autodoc_member_order = 'bysource'
 autoclass_content = 'class'
