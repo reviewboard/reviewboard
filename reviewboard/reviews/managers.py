@@ -1,12 +1,16 @@
 """Managers for reviewboard.reviews.models."""
 
+from __future__ import annotations
+
 import logging
+from typing import Dict, Optional, TYPE_CHECKING
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections, router, transaction, IntegrityError
 from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
+from django.utils.text import slugify
 from djblets.db.managers import ConcurrencyManager
 
 from reviewboard.deprecation import RemovedInReviewBoard60Warning
@@ -14,6 +18,12 @@ from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.scmtools.errors import ChangeNumberInUseError
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
+
+if TYPE_CHECKING:
+    from reviewboard.changedescs.models import ChangeDescription
+    from reviewboard.integrations.base import Integration
+    from reviewboard.integrations.models import IntegrationConfig
+    from reviewboard.reviews.models import ReviewRequest, StatusUpdate
 
 
 logger = logging.getLogger(__name__)
@@ -1564,3 +1574,148 @@ class ReviewManager(ConcurrencyManager):
             queryset = queryset.distinct()
 
         return queryset
+
+
+class StatusUpdateManager(Manager):
+    """A manager for StatusUpdate models.
+
+    This offers conveniences around creating
+    :py:class:`~reviewboard.reviews.models.status_update.StatusUpdate` models
+    for custom integrations.
+
+    Version Added:
+        5.0.3
+    """
+
+    def create_for_integration(
+        self,
+        integration: Integration,
+        *,
+        config: IntegrationConfig,
+        user: User,
+        review_request: ReviewRequest,
+        change_description: Optional[ChangeDescription] = None,
+        service_id: Optional[str] = None,
+        summary: Optional[str] = None,
+        description: Optional[str] = None,
+        state: Optional[str] = None,
+        can_retry: bool = False,
+        extra_data: Dict = {},
+        starting_description: str = 'starting...',
+        waiting_description: str = 'waiting to run.',
+        **kwargs,
+    ) -> StatusUpdate:
+        """Return a new status update for a given integration.
+
+        This helps with generating defaults for a status update, and putting
+        it in the correct initial state when running manually.
+
+        The integration configuration will be associated with the status
+        update, which is important for manually running integrations when
+        multiple integrations are present on a review request.
+
+        Args:
+            integration (reviewboard.integrations.base.Integration):
+                The integration that this status update will be associated
+                with.
+
+            config (reviewboard.integrations.models.IntegrationConfig):
+                The configuration for the integration, used to provide
+                defaults and used for later manual runs.
+
+            user (django.contrib.auth.models.User):
+                The user that the status update will be associated with.
+
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request that the status update will be associated
+                with.
+
+            change_description (reviewboard.changedescs.models.
+                                ChangeDescription, optional):
+                The optional change description that the status update will
+                be associated with.
+
+            service_id (str, optional):
+                An explicit service ID for the status update.
+
+                If not provided (or if ``None``), a slugified version of
+                the integration's name will be used.
+
+            summary (str, optional):
+                An explicit summary for the status update.
+
+                If not provided (or if ``None``), the integration name will
+                be used.
+
+            description (str, optional):
+                An explicit description for the status update.
+
+                If not provided (or if ``None``), a standardized description
+                will be used depending on whether the status update will be
+                created in manual run mode.
+
+                See ``starting_description`` and ``waiting_description`` to
+                customize these strings.
+
+            state (str, optional):
+                An explicit state for the status update.
+
+                If not provided (or if ``None``), the state will be in Not
+                Yet Run if creating in manual run mode, or Pending otherwise.
+
+            can_retry (bool, optional):
+                Whether the status update can be retried after being run.
+
+            extra_data (dict, optional):
+                Extra data to store in the status update.
+
+            starting_description (str, optional):
+                The description to use if creating a status update that is
+                immediately starting.
+
+            waiting_description (str, optional):
+                The description to use if creating a status update that is
+                in manual run mode.
+
+            **kwargs (dict, optional):
+                Additional keyword arguments for the model.
+
+        Returns:
+            reviewboard.reviews.status_update.StatusUpdate:
+            The new status update.
+        """
+        run_manually = config.get('run_manually')
+
+        if description is None:
+            if run_manually:
+                description = waiting_description
+            else:
+                description = starting_description
+
+        if state is None:
+            if run_manually:
+                state = self.model.NOT_YET_RUN
+            else:
+                state = self.model.PENDING
+
+        if not service_id:
+            assert integration.name
+            service_id = slugify(integration.name)
+
+        status_update: StatusUpdate = self.model(
+            user=user,
+            review_request=review_request,
+            change_description=change_description,
+            service_id=service_id,
+            summary=summary or integration.name,
+            description=description,
+            state=state,
+            extra_data=dict(extra_data, **{
+                'can_retry': can_retry,
+            }),
+            **kwargs)
+        status_update.integration_config = config
+        status_update.save()
+
+        return status_update

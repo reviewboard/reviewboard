@@ -1,18 +1,25 @@
 """Definitions for the StatusUpdate model."""
 
+from __future__ import annotations
+
 import datetime
+from typing import Optional
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 from djblets.db.fields import JSONField
 
 from reviewboard.changedescs.models import ChangeDescription
+from reviewboard.integrations.models import IntegrationConfig
+from reviewboard.reviews.managers import StatusUpdateManager
 from reviewboard.reviews.models.base_comment import BaseComment
 from reviewboard.reviews.models.review import Review
 from reviewboard.reviews.models.review_request import ReviewRequest
 from reviewboard.reviews.signals import status_update_request_run
+from reviewboard.site.models import LocalSite
 
 
 class StatusUpdate(models.Model):
@@ -52,6 +59,8 @@ class StatusUpdate(models.Model):
         (TIMEOUT, _('Timed Out')),
         (NOT_YET_RUN, _('Not Yet Run'))
     )
+
+    _INTEGRATION_CONFIG_KEY = '__integration_config_id'
 
     #: An identifier for the service posting this status update.
     #:
@@ -140,6 +149,14 @@ class StatusUpdate(models.Model):
     #: ``TIMEOUT``.
     timeout = models.IntegerField(null=True, blank=True)
 
+    objects = StatusUpdateManager()
+
+    ######################
+    # Instance variables #
+    ######################
+
+    _integration_config: Optional[IntegrationConfig]
+
     @staticmethod
     def state_to_string(state):
         """Return a string representation of a status update state.
@@ -195,6 +212,85 @@ class StatusUpdate(models.Model):
             return StatusUpdate.NOT_YET_RUN
         else:
             raise ValueError('Invalid state string "%s"' % state)
+
+    @property
+    def integration_config(self) -> Optional[IntegrationConfig]:
+        """The integration config that manages this status update, if any.
+
+        If the stored configuration no longer exists, or is no longer
+        applicable to any associated :term:`Local Site`, then this will be
+        ``None``.
+
+        The configuration is cached for repeated lookups.
+
+        Version Added:
+            5.0.3
+
+        Type:
+            reviewboard.integrations.models.IntegrationConfig
+        """
+        config: Optional[IntegrationConfig]
+
+        if hasattr(self, '_integration_config'):
+            config = self._integration_config
+        else:
+            config = None
+            config_id = self.extra_data.get(self._INTEGRATION_CONFIG_KEY)
+
+            if config_id:
+                try:
+                    config = (
+                        IntegrationConfig.objects
+                        .get(Q(pk=config_id) &
+                             LocalSite.objects.build_q(
+                                 self.review_request.local_site_id,
+                                 allow_all=False))
+                    )
+                except IntegrationConfig.DoesNotExist:
+                    # Either the configuration was removed, or it's on the
+                    # wrong Local Site. Fall back to None.
+                    pass
+
+            self._integration_config = config
+
+        return config
+
+    @integration_config.setter
+    def integration_config(
+        self,
+        config: IntegrationConfig,
+    ) -> None:
+        """Set the integration configuration for this status update.
+
+        This allows integrations to properly use the correct configuration
+        when manually running for the status update.
+
+        Version Added:
+            5.0.3
+
+        Args:
+            config (reviewboard.integrations.models.IntegrationConfig):
+                The configuration to store.
+
+                The configuration's :term:`Local Site` must match that of
+                the status update.
+
+        Raises:
+            ValueError:
+                The provided configuration value is not supported by this
+                status update.
+        """
+        if config:
+            if config.local_site_id != self.review_request.local_site_id:
+                raise ValueError(
+                    'The integration configuration and Status Update must '
+                    'have the same Local Site.')
+
+            self.extra_data[self._INTEGRATION_CONFIG_KEY] = config.pk
+        else:
+            self.extra_data.pop(self._INTEGRATION_CONFIG_KEY, None)
+
+        self._integration_config = config
 
     def is_mutable_by(self, user):
         """Return whether the user can modify this status update.
@@ -273,10 +369,22 @@ class StatusUpdate(models.Model):
             return gettext('Run')
 
     def run(self):
-        """Run the tool associated with this StatusUpdate."""
+        """Run the tool associated with this status update.
+
+        This will emit the :py:data:`~reviewboard.reviews.signals.
+        status_update_request_run` signal, which extensions/integrations
+        providing manual run support should listen to. They're responsible
+        for handling any filtering and configuration matching, as required.
+
+        Version Changed:
+            5.0.3:
+            An associated integration config (if stored along with the status
+            update) will be provided to the signal.
+        """
         assert self.can_run
         status_update_request_run.send(sender=self.__class__,
-                                       status_update=self)
+                                       status_update=self,
+                                       config=self.integration_config)
 
     class Meta:
         app_label = 'reviews'
