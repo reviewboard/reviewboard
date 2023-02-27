@@ -17,12 +17,15 @@ Installation will happen in two steps:
 
 * **Step 1: Install the Review Board packages for:**
 
-  * :doc:`Linux <installation/linux>`
+  * :doc:`Linux <installation/linux>` (recommended)
   * :doc:`macOS <installation/osx>`
   * :doc:`Windows <installation/windows>`
   * Or use our official :doc:`Docker images <installation/docker>`
 
 * :doc:`Step 2: Create your site directory <installation/creating-sites>`
+
+  Learn how to create your database and Review Board site directory, configure
+  SELinux, and set up a web server.
 
 
 .. _upgrading-reviewboard-toc:
@@ -66,6 +69,8 @@ The Administration UI is composed of four main areas:
 * :doc:`Extensions <extensions/index>`
 * :doc:`Integrations <integrations/index>`
 
+
+.. _configuration-topics:
 
 Configuring Review Board
 ========================
