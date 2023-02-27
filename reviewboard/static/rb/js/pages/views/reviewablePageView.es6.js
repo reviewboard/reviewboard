@@ -121,10 +121,10 @@ const UpdatesBubbleView = Backbone.View.extend({
  */
 RB.ReviewablePageView = RB.PageView.extend({
     events: _.defaults({
-        'click #review-action': '_onEditReviewClicked',
-        'click #ship-it-action': '_onShipItClicked',
-        'click #general-comment-action': '_onAddCommentClicked',
-        'click .has-menu .has-menu': '_onMenuClicked',
+        'click #action-add-general-comment': '_onAddCommentClicked',
+        'click #action-edit-review': '_onEditReviewClicked',
+        'click #action-ship-it': '_onShipItClicked',
+        'click .rb-o-mobile-menu-label': '_onMenuClicked',
     }, RB.PageView.prototype.events),
 
     /**
@@ -237,6 +237,28 @@ RB.ReviewablePageView = RB.PageView.extend({
     remove() {
         this.draftReviewBanner.remove();
         _super(this).remove.call(this);
+    },
+
+    /**
+     * Return the review request editor view.
+     *
+     * Returns:
+     *     RB.ReviewRequestEditorView:
+     *     The review request editor view.
+     */
+    getReviewRequestEditorView() {
+        return this.reviewRequestEditorView;
+    },
+
+    /**
+     * Return the review request editor model.
+     *
+     * Returns:
+     *     RB.ReviewRequestEditor:
+     *     The review request editor model.
+     */
+    getReviewRequestEditorModel() {
+        return this.model.reviewRequestEditor;
     },
 
     /**
@@ -412,6 +434,20 @@ RB.ReviewablePageView = RB.PageView.extend({
     _onMenuClicked(e) {
         e.preventDefault();
         e.stopPropagation();
+
+        const $menuButton = $(e.currentTarget).find('a');
+
+        const expanded = $menuButton.attr('aria-expanded');
+        const target = $menuButton.attr('aria-controls');
+        const $target = this.$(`#${target}`);
+
+        if (expanded === 'false') {
+            $menuButton.attr('aria-expanded', 'true');
+            $target.addClass('-is-visible');
+        } else {
+            $menuButton.attr('aria-expanded', 'false');
+            $target.removeClass('-is-visible');
+        }
     },
 });
 

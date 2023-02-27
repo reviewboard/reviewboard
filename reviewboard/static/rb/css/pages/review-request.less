@@ -310,37 +310,32 @@
  * Review request actions
  ****************************************************************************/
 
-.action-menu() {
-  background: @review-request-action-menu-bg;
-  border: 1px @review-request-action-menu-border-color solid;
-  border-radius: 0 0 @box-border-radius @box-border-radius;
-  box-shadow: @box-shadow;
-  list-style: none;
-  margin: 0;
-
-  li {
-    background: @review-request-action-bg;
-    border: 0;
-    float: none;
-    margin: 0;
-    padding: 0;
-
-    .on-mobile-medium-screen-720({
-      /* Give some extra room for tapping. */
-      padding: @review-request-action-mobile-padding;
-    });
-
-    &:last-child {
-      border-radius: 0 0 @box-border-radius @box-border-radius;
-    }
-
-    &:hover {
-      background-color: @review-request-action-menu-item-hover-bg;
-    }
-  }
-}
-
-.review-request-actions-container {
+/**
+ * Review request actions.
+ *
+ * Actions are grouped into two sections, which are left- and right-aligned.
+ * The left-aligned group includes the star and archive actions, and is always
+ * visible. The right-aligned group contains all of the editing actions, and
+ * will be hidden behind a disclosure when on mobile devices.
+ *
+ * Structure:
+ *     <div class="rb-c-actions" role="presentation">
+ *      <menu class="rb-c-actions__content -is-left" role="menu">...</menu>
+ *      <menu class="rb-c-actions__content -is-right" role="menu">
+ *       <li class="rb-c-actions__action rb-o-mobile-menu-label"
+ *           role="presentation">
+ *        <a href="#" aria-controls="mobile-actions-menu-content"
+ *           aria-expanded="false" aria-haspopup="true">
+ *         <span class="fa fa-bars fa-lg" aria-hidden="true"></span>
+ *        </a>
+ *       </li>
+ *       <div id="mobile-actions-menu-content" class="rb-o-mobile-menu">
+ *        ...
+ *       </div>
+ *      </menu>
+ *     </div>
+ */
+#review-request .rb-c-actions {
   background: @review-request-action-bg;
   border-color: @review-request-action-border-color;
   border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
@@ -358,136 +353,146 @@
   .review-ui-box.has-review-ui-box-content & {
     border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
   }
-}
 
-.review-request-actions-left {
-  float: left;
-}
-
-.review-request-actions-right-container,
-.review-request-actions-right {
-  float: right;
-}
-
-.review-request-actions {
-  box-sizing: border-box;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  white-space: nowrap;
-}
-
-.review-request-action {
-  float: left;
-
-  &:hover {
-    background-color: @review-request-action-hover-bg;
-  }
-
-  &:active {
-    background-color: @review-request-action-active-bg;
-  }
-
-  a {
-    color: black;
-    cursor: pointer;
-    display: block;
+  /**
+   * A group of review request actions.
+   *
+   * Modifiers:
+   *     -is-left:
+   *         The menu should be floated to the left.
+   *
+   *     -is-right:
+   *         The menu should be floated to the right.
+   */
+  &__content {
+    box-sizing: border-box;
+    list-style: none;
     margin: 0;
-    line-height: @review-request-action-line-height;
-    text-decoration: none;
-    padding: @review-request-action-padding-vert
-             @review-request-action-padding-horiz-text;
+    padding: 0;
+    white-space: nowrap;
 
-    .on-mobile-medium-screen-720({
-      /* Give some extra room for tapping. */
-      padding: @review-request-action-mobile-padding
-               @review-request-action-padding-horiz-text;
-    });
+    &.-is-left {
+      float: left;
+    }
+
+    &.-is-right {
+      float: right;
+    }
   }
 
-  .menu {
-    .action-menu();
-    float: none;
-  }
-}
+  /**
+   * A review request action.
+   *
+   * Modifiers:
+   *     -is-icon:
+   *         The action only uses an icon without any additional text.
+   *
+   * Structure:
+   *     <li class="rb-c-actions__action" role="presentation">
+   *      <a href="#" role="menuitem">...</a>
+   *     </li>
+   */
+  &__action {
+    display: inline-block;
 
-/*
- * Disable some confusing cursors and interaction when the site is in
- * read-only mode.
- */
-body.read-only {
-  .review-request-action-archive,
-  .review-request-action-star {
-    &:active,
     &:hover {
-      background-color: inherit;
+      background: @review-request-action-hover-bg;
     }
 
-    & > a {
-      cursor: default;
+    &:active {
+      background: @review-request-action-active-bg;
+    }
+
+    a {
+      color: black;
+      cursor: pointer;
+      display: block;
+      margin: 0;
+      line-height: @review-request-action-line-height;
+      text-decoration: none;
+      padding: @review-request-action-padding-vert
+               @review-request-action-padding-horiz-text;
+    }
+
+    &.-is-icon > a {
+      line-height: 0;
+      padding: @review-request-action-padding-vert
+               @review-request-action-padding-horiz-icon;
+    }
+
+    &.rb-o-mobile-menu-label {
+      display: none;
     }
   }
-}
 
-.review-request-action-icon {
-  display: inline-block;
-
-  > a:first-child {
-    line-height: 0;
-    padding: @review-request-action-padding-vert
-             @review-request-action-padding-horiz-icon;
-
-    .on-mobile-medium-screen-720({
-      padding: @review-request-action-mobile-padding;
-    });
+  .rb-c-menu {
+    background: @review-request-action-bg;
+    border: 1px @review-request-action-menu-border-color solid;
+    border-radius: 0 0 @box-border-radius @box-border-radius;
+    box-shadow: @box-shadow;
+    margin: 0;
   }
-}
 
-/*
- * The main text-based actions turn into a drop-down menu on mobile.
- *
- * The following rules do several things:
- * - On desktop, we don't want to have any kind of hover/active highlighting
- *   on the review-request-actions-right-container (which is itself an "action"
- *   due to it's menu-ness).
- * - Hide the mobile actions menu "..." icon on desktop, show on mobile.
- * - Turn .review-request-actions-right into a drop-down menu, but a special
- *   one that lists its items horizontalli (with wrapping), rather than a
- *   vertical layout.
- */
-.review-request-actions-right-container > .review-request-action:hover {
-  background-color: inherit;
-}
+  .rb-c-menu__item {
+    background: @review-request-action-bg;
+    border: 0;
+    float: none;
+    margin: 0;
+    padding: 0;
 
-a.mobile-actions-menu-label {
-  display: none;
+    &:hover {
+      background-color: @review-request-action-menu-item-hover-bg;
+    }
+
+    &:last-child {
+      border-radius: 0 0 @box-border-radius @box-border-radius;
+    }
+  }
 }
 
 .on-mobile-medium-screen-720({
-  a.mobile-actions-menu-label {
-    display: inline-block;
-  }
+  #review-request .rb-c-actions {
+    &__action {
+      &.rb-o-mobile-menu-label {
+        display: inline-block;
+        float: none;
+      }
 
-  .review-request-actions-right-container > .review-request-action:hover {
-    background-color: @review-request-action-menu-item-hover-bg;
-  }
-
-  .review-request-actions-right {
-    .popup-menu();
-    .action-menu();
-
-    background: @review-request-action-bg;
-    left: 0;
-    white-space: normal;
-    width: 100%;
-
-    > li {
-      display: inline-block;
+      a, &.-is-icon a {
+        /* Give some extra room for tapping. */
+        padding: @review-request-action-mobile-padding;
+      }
     }
 
-    .has-menu:hover & {
-      opacity: 1;
-      visibility: visible;
+    .rb-o-mobile-menu {
+      .rb-c-menu();
+
+      background: @review-request-action-bg;
+      border-color: @review-request-action-border-color;
+      box-sizing: border-box;
+      left: 0;
+      width: 100%;
+
+      &.-is-visible {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .rb-c-actions__action {
+        display: block;
+        text-align: left;
+
+        /* This is for submenus. Just display them inline. */
+        .rb-c-menu {
+          border: 0;
+          border-radius: 0;
+          box-shadow: none;
+          opacity: 1;
+          padding-left: 1em;
+          position: inherit;
+          visibility: visible;
+        }
+      }
     }
   }
 });
@@ -497,30 +502,58 @@ a.mobile-actions-menu-label {
  * Review request tabs
  ****************************************************************************/
 
-.review-request-tabs {
+/**
+ * Review request tabs.
+ *
+ * Structure:
+ *     <menu class="rb-c-review-request-tabs" role="menu">
+ *      ...
+ *     </menu>
+ */
+.rb-c-review-request-tabs {
   background-color: @review-request-action-bg;
   border-color: @review-request-border-color;
   border-radius: @box-border-radius @box-border-radius 0 0;
   border-style: solid;
   border-width: 1px 1px 0 1px;
   float: right;
-  margin-left: 1.5rem;
+  list-style: none;
+  margin: 0 0 0 1.5rem;
   overflow: hidden;
+  padding: 0;
 
-  .review-ui-box & .active {
-    /*
-     * The active tab in review UIs has a slightly different color to match the
-     * review UI header color.
-     */
-     background-color: @review-ui-header-bg;
-  }
-
-  li {
+  /* TODO: dedupe with .review-request-action */
+  /**
+   * A review request tab.
+   *
+   * Modifiers:
+   *     -is-active:
+   *         Designates the active tab element.
+   *
+   * Structure:
+   *     <li class="rb-c-review-request-tabs__tab -is-active"
+   *         role="presentation">
+   *      <a href="..." role="menuitem" aria-current="page">...</a>
+   *     </li>
+   *     <li class="rb-c-review-request-tabs__tab" role="presentation">
+   *      <a href="..." role="menuitem">...</a>
+   *     </li>
+   */
+  &__tab {
     border-bottom: 1px @review-request-action-border-color solid;
+    float: left;
     min-width: 4rem;
     text-align: center;
 
-    &.active {
+    &:active {
+      background-color: @review-request-action-active-bg;
+    }
+
+    &:hover {
+      background-color: @review-request-action-hover-bg;
+    }
+
+    &.-is-active {
       background: @review-request-bg-gradient-start;
       border-color: @review-request-border-color;
       border-bottom-color: transparent;
@@ -534,6 +567,31 @@ a.mobile-actions-menu-label {
       &:last-child {
         border-right: 0;
       }
+    }
+
+    .review-ui-box &.-is-active {
+      /*
+       * The active tab in review UIs has a slightly different color to match the
+       * review UI header color.
+       */
+       background-color: @review-ui-header-bg;
+    }
+
+    a {
+      color: black;
+      cursor: pointer;
+      display: block;
+      margin: 0;
+      line-height: @review-request-action-line-height;
+      text-decoration: none;
+      padding: @review-request-action-padding-vert
+               @review-request-action-padding-horiz-text;
+
+      .on-mobile-medium-screen-720({
+        /* Give some extra room for tapping. */
+        padding: @review-request-action-mobile-padding
+                 @review-request-action-padding-horiz-text;
+      });
     }
   }
 }

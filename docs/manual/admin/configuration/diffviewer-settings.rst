@@ -1,3 +1,5 @@
+.. _diffviewer-settings:
+
 ====================
 Diff Viewer Settings
 ====================

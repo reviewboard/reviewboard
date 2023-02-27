@@ -165,6 +165,7 @@ RB_BUILTIN_APPS = [
     'pipeline',  # Must be after djblets.pipeline
     'reviewboard',
     'reviewboard.accounts',
+    'reviewboard.actions',
     'reviewboard.admin',
     'reviewboard.attachments',
     'reviewboard.avatars',

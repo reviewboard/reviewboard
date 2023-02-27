@@ -2,20 +2,21 @@
 Installing on Windows
 =====================
 
-Windows is a difficult environment for Python-based projects like ours. We do
-not provide our own packages for Windows. Instead, we partner with Bitnami_,
-who provides builds containing Review Board with `Power Pack`_. These are
-available as standalone installers and virtual machines.
+Review Board can be installed within a WSL2 environment on Windows.
 
-See the `Review Board + Power Pack`_ Bitnami page to get started.
+To install Review Board:
 
-For production servers, we recommend using Linux (which you can run in a VM on
-Windows).
+1. `Install Linux on Windows with WSL
+   <https://learn.microsoft.com/en-us/windows/wsl/install>`_
 
-Alternatively, we can host your Review Board server at RBCommons_.
+   We recommend Ubuntu LTS.
 
-.. _Bitnami: https://bitnami.com/
-.. _Power Pack: https://www.reviewboard.org/powerpack/
-.. _Review Board + Power Pack:
-   https://bitnami.com/stack/reviewboard-plus-powerpack
+2. Follow the :ref:`Linux installation guide <installation-linux>`.
+
+If you're looking for a different solution, you may consider:
+
+* :ref:`Deploying using Docker <installation-docker>`
+* `Hosting with us on RBCommons <RBCommons_>`_
+
+
 .. _RBCommons: https://www.rbcommons.com/

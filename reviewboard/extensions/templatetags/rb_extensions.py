@@ -5,46 +5,12 @@ from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 
 from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
-                                          HeaderActionHook,
-                                          HeaderDropdownActionHook,
                                           NavigationBarHook)
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
 logger = logging.getLogger(__name__)
 register = template.Library()
-
-
-def action_hooks(context, hook_cls, action_key="action",
-                 template_name="extensions/action.html"):
-    """Displays all registered action hooks from the specified ActionHook."""
-    html = []
-
-    for hook in hook_cls.hooks:
-        try:
-            for actions in hook.get_actions(context):
-                if actions:
-                    context.push()
-                    context[action_key] = actions
-
-                    try:
-                        html.append(render_to_string(
-                            template_name=template_name,
-                            context=context.flatten()))
-                    except Exception as e:
-                        logger.error(
-                            'Error when rendering template for action "%s" '
-                            'for hook %r in extension "%s": %s',
-                            action_key, hook, hook.extension.id, e,
-                            exc_info=True)
-
-                    context.pop()
-        except Exception as e:
-            logger.error('Error when running get_actions() on hook %r '
-                         'in extension "%s": %s',
-                         hook, hook.extension.id, e, exc_info=True)
-
-    return mark_safe(''.join(html))
 
 
 @register.simple_tag(takes_context=True)
@@ -75,21 +41,6 @@ def navigation_bar_hooks(context):
                          extension.id, e, exc_info=True)
 
     return mark_safe(''.join(html))
-
-
-@register.simple_tag(takes_context=True)
-def header_action_hooks(context):
-    """Displays all single-entry action hooks for the header bar."""
-    return action_hooks(context, HeaderActionHook)
-
-
-@register.simple_tag(takes_context=True)
-def header_dropdown_action_hooks(context):
-    """Displays all multi-entry action hooks for the header bar."""
-    return action_hooks(context,
-                        HeaderDropdownActionHook,
-                        "actions",
-                        "extensions/header_action_dropdown.html")
 
 
 @register.simple_tag(takes_context=True)

@@ -1,9 +1,0 @@
-{% load reviewtags %}
-<li class="review-request-action has-menu">
- <a class="menu-title" id="{{menu_action.action_id}}"
-    href="{{menu_action.url}}">{{menu_action.label}}
-  <span class="rb-icon rb-icon-dropdown-arrow"></span></a>
- <ul class="menu">
-{% child_actions %}
- </ul>
-</li>

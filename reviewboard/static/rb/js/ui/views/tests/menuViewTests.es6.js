@@ -38,9 +38,9 @@ suite('rb/ui/views/MenuView', function() {
 
         it('With ariaLabelledBy', function() {
             const view = new RB.MenuView({
-                type: RB.MenuView.TYPE_BUTTON_MENU,
-                ariaLabelledBy: 'abc123',
                 ariaLabel: 'unused label',
+                ariaLabelledBy: 'abc123',
+                type: RB.MenuView.TYPE_BUTTON_MENU,
             });
             view.render().$el.appendTo($testsScratch);
 
@@ -50,8 +50,8 @@ suite('rb/ui/views/MenuView', function() {
 
         it('With ariaLabel', function() {
             const view = new RB.MenuView({
-                type: RB.MenuView.TYPE_BUTTON_MENU,
                 ariaLabel: 'ARIA label',
+                type: RB.MenuView.TYPE_BUTTON_MENU,
             });
             view.render();
 
@@ -63,8 +63,8 @@ suite('rb/ui/views/MenuView', function() {
             const $controller = $('<div>');
 
             const view = new RB.MenuView({
-                type: RB.MenuView.TYPE_BUTTON_MENU,
                 $controller: $controller,
+                type: RB.MenuView.TYPE_BUTTON_MENU,
             });
             view.render();
 
@@ -308,7 +308,7 @@ suite('rb/ui/views/MenuView', function() {
 
         function sendKeyDown(keyCode) {
             view.$el.trigger($.Event('keydown', {
-                which: keyCode,
+                key: keyCode,
             }));
         }
 
@@ -328,7 +328,7 @@ suite('rb/ui/views/MenuView', function() {
             view.open({
                 animate: false,
             });
-            view._focusItem(1);
+            view.focusItem(1);
 
             spyOn(view, 'trigger').and.callThrough();
         });
@@ -338,7 +338,7 @@ suite('rb/ui/views/MenuView', function() {
 
             $item2.on('click', spy);
 
-            sendKeyDown($.ui.keyCode.ENTER);
+            sendKeyDown('Enter');
 
             expect(spy).toHaveBeenCalled();
         });
@@ -346,7 +346,7 @@ suite('rb/ui/views/MenuView', function() {
         it('Escape key closes menu', function() {
             spyOn($controller[0], 'focus');
 
-            sendKeyDown($.ui.keyCode.ESCAPE);
+            sendKeyDown('Escape');
 
             expect(view.el).not.toHaveClass('-is-open');
             expect($controller[0].focus).toHaveBeenCalled();
@@ -355,60 +355,60 @@ suite('rb/ui/views/MenuView', function() {
         it('Tab key closes menu', function() {
             spyOn($controller[0], 'focus');
 
-            sendKeyDown($.ui.keyCode.TAB);
+            sendKeyDown('Tab');
 
             expect(view.el).not.toHaveClass('-is-open');
             expect($controller[0].focus).toHaveBeenCalled();
         });
 
         it('Up key moves focus up', function() {
-            spyOn(view, '_focusItem').and.callThrough();
+            spyOn(view, 'focusItem').and.callThrough();
 
-            sendKeyDown($.ui.keyCode.UP);
-            expect(view._focusItem).toHaveBeenCalledWith(0);
+            sendKeyDown('ArrowUp');
+            expect(view.focusItem).toHaveBeenCalledWith(0);
 
             /* It should now wrap. */
-            sendKeyDown($.ui.keyCode.UP);
-            expect(view._focusItem).toHaveBeenCalledWith(2);
+            sendKeyDown('ArrowUp');
+            expect(view.focusItem).toHaveBeenCalledWith(2);
         });
 
         it('Down key moves focus up', function() {
-            spyOn(view, '_focusItem').and.callThrough();
+            spyOn(view, 'focusItem').and.callThrough();
 
-            sendKeyDown($.ui.keyCode.DOWN);
-            expect(view._focusItem).toHaveBeenCalledWith(2);
+            sendKeyDown('ArrowDown');
+            expect(view.focusItem).toHaveBeenCalledWith(2);
 
             /* It should now wrap. */
-            sendKeyDown($.ui.keyCode.DOWN);
-            expect(view._focusItem).toHaveBeenCalledWith(0);
+            sendKeyDown('ArrowDown');
+            expect(view.focusItem).toHaveBeenCalledWith(0);
         });
 
         it('Home key moves focus to top', function() {
-            spyOn(view, '_focusItem').and.callThrough();
+            spyOn(view, 'focusItem').and.callThrough();
 
-            sendKeyDown($.ui.keyCode.HOME);
-            expect(view._focusItem).toHaveBeenCalledWith(0);
+            sendKeyDown('Home');
+            expect(view.focusItem).toHaveBeenCalledWith(0);
         });
 
         it('Page Up key moves focus to top', function() {
-            spyOn(view, '_focusItem').and.callThrough();
+            spyOn(view, 'focusItem').and.callThrough();
 
-            sendKeyDown($.ui.keyCode.PAGE_UP);
-            expect(view._focusItem).toHaveBeenCalledWith(0);
+            sendKeyDown('PageUp');
+            expect(view.focusItem).toHaveBeenCalledWith(0);
         });
 
         it('End key moves focus to bottom', function() {
-            spyOn(view, '_focusItem').and.callThrough();
+            spyOn(view, 'focusItem').and.callThrough();
 
-            sendKeyDown($.ui.keyCode.END);
-            expect(view._focusItem).toHaveBeenCalledWith(2);
+            sendKeyDown('End');
+            expect(view.focusItem).toHaveBeenCalledWith(2);
         });
 
         it('Page Down key moves focus to bottom', function() {
-            spyOn(view, '_focusItem').and.callThrough();
+            spyOn(view, 'focusItem').and.callThrough();
 
-            sendKeyDown($.ui.keyCode.PAGE_DOWN);
-            expect(view._focusItem).toHaveBeenCalledWith(2);
+            sendKeyDown('PageDown');
+            expect(view.focusItem).toHaveBeenCalledWith(2);
         });
     });
 });

@@ -92,3 +92,6 @@ export const Product: ProductInfo = {
     version: '',
     versionInfo: [0, 0, 0, 0, '', 0],
 };
+
+
+export * from './actions';

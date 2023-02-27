@@ -4,37 +4,48 @@ Reviews and Comments
 
 A review is a collection of comments and your indication of :ref:`approval
 <approving-changes>` for a review request. All comments that you make
-are grouped under a single draft review, which only you can see. When you've
-finished your review, this draft can be :ref:`published <publishing-reviews>`,
-allowing the owner of a review request and any other reviewers to see it and
-discuss it.
+are grouped under a single draft review, which only you can see.
 
-Reviews consist of a header, a list of comments, and a footer. These are all
-optional, and depend on the feedback you're giving. Most of your feedback will
-be in the form of comments, which allow for :ref:`tracking issues
-<issue-tracking>` that need to be fixed.
+When you've finished your review, this draft can be :ref:`published
+<publishing-reviews>`, allowing the owner of a review request and any other
+reviewers to see it and discuss it.
+
+Reviews consist of:
+
+1. **A Ship It!** indicator, if approving a review request.
+2. **A header**, providing a summary of the review.
+3. **A list of comments** made on diffs, file attachments, or the review
+   request as a whole.
+4. **A footer**, providing a conclusion to the review.
+
+These are all *optional*, and depend on the feedback you're giving. Most of
+your feedback will be in the form of comments, which allow for :ref:`tracking
+issues <issue-tracking>` that need to be fixed.
 
 Reviews are created automatically when filing comments, or when clicking
-:guilabel:`Review` in the review request action bar. You can manage them in the
-:ref:`review draft banner <review-draft-banner>` or in the :ref:`review dialog
-<review-dialog>`.
+:guilabel:`Review` in the review request action bar. They're private and can
+be edited until published using the :ref:`review draft banner
+<review-draft-banner>` or the :ref:`review dialog <review-dialog>`.
+
+Let's take a look at the parts of a review:
 
 
-Ship It!
-========
+1. Ship It!
+===========
 
-Reviews approving a change are represented with a "Ship It!" label. This means
-that the person reviewing the change is happy with how things look and are
-indicating their approval.
+Reviews approving a change are represented with a :guilabel:`Ship It!` label.
+This means that the person reviewing the change is happy with how things look
+and are indicating their approval.
 
-Changes can also be in a "Fix it, then Ship it!" state, which means that
-they're happy once a couple of specific things are fixed.
+Changes can also be in a :guilabel:`Fix it, then Ship it!` state, which means
+that they're happy once a couple of specific things are fixed. This is set
+automatically when a review both opens issues and has a :guilabel:`Ship It!`
 
-See :ref:`approving-changes` for more information.
+:ref:`Learn more about approving changes <approving-changes>`.
 
 
-Review Headers
-==============
+2. Review Headers
+=================
 
 A header is a block of free-form text displayed before any comments. It's
 often used to provide a summary of your review, or to leave encouraging
@@ -46,18 +57,19 @@ The header should not be used to review content. Instead, you'll want to file
 comments instead.
 
 
-Review Footers
-==============
+3. Comments
+===========
 
-A footer is another block of free-form text, which is displayed after the
-comments. It can be used to provide a conclusion of your review, which you
-want people to read after they've gone through all your comments.
+Most of your review will be comments on code, file attachments, or "general
+comments" on the review request as a whole.
+
+We'll break down each type of comment:
 
 
 .. _general-comments:
 
 General Comments
-================
+----------------
 
 .. versionadded:: 3.0
 
@@ -83,7 +95,7 @@ review.
 .. _file-attachment-comments:
 
 File Attachment Comments
-========================
+------------------------
 
 Reviewers can :ref:`leave comments on file attachments
 <reviewing-file-attachments>`.  Depending on the type of file attachment, this
@@ -100,11 +112,10 @@ fixed.
 .. _diff-comments:
 
 Diff Comments
-=============
+-------------
 
-Reviewers can also :ref:`leave comments on diffs <reviewing-diffs>` through
-the Diff Viewer. These may be on a single line of code, or may span several
-lines.
+Reviewers can :ref:`leave comments on diffs <reviewing-diffs>` through the
+Diff Viewer. These may be on a single line of code, or may span several lines.
 
 Reviews will show the lines of code that were commented on, along with the
 nearest function or class preceding those lines. Hovering over this area will
@@ -114,3 +125,11 @@ context to what you're seeing.
 Diff comments are shown below any general comments and file attachments, and
 of course support :ref:`tracking issues <issue-tracking>` that need to be
 fixed.
+
+
+4. Review Footers
+=================
+
+A footer is another block of free-form text, which is displayed after the
+comments. It can be used to provide a conclusion of your review, which you
+want people to read after they've gone through all your comments.

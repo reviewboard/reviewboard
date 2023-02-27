@@ -213,12 +213,9 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/ui/views/bugInfoboxView.es6.js',
             'rb/js/ui/views/drawerView.es6.js',
             'rb/js/ui/views/inlineEditorView.es6.js',
-            'rb/js/ui/views/menuButtonView.es6.js',
-            'rb/js/ui/views/menuView.es6.js',
             'rb/js/ui/views/notificationManager.es6.js',
             'rb/js/ui/views/reviewRequestInfoboxView.es6.js',
             'rb/js/ui/views/scrollManagerView.es6.js',
-            'rb/js/ui/views/splitButtonView.es6.js',
             'rb/js/ui/views/textEditorView.es6.js',
             'rb/js/ui/views/userInfoboxView.es6.js',
             'rb/js/models/starManagerModel.es6.js',
@@ -228,6 +225,12 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/views/starManagerView.es6.js',
         ),
         'output_filename': 'rb/js/base.min.js',
+    },
+    'ui': {
+        'source_filenames': (
+            'rb/js/ui/index.ts',
+        ),
+        'output_filename': 'rb/js/ui.min.js',
     },
     'account-page': {
         'source_filenames': (
@@ -303,7 +306,6 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/views/fileAttachmentRevisionLabelView.es6.js',
             'rb/js/views/fileAttachmentRevisionSelectorView.es6.js',
             'rb/js/views/fileAttachmentThumbnailView.es6.js',
-            'rb/js/views/floatingBannerView.es6.js',
             'rb/js/views/regionCommentBlockView.es6.js',
             'rb/js/views/reviewDialogView.es6.js',
             'rb/js/views/reviewRequestFieldViews.es6.js',
@@ -360,7 +362,6 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/reviewRequestPage/views/initialStatusUpdatesEntryView.es6.js',
             'rb/js/reviewRequestPage/views/issueSummaryTableView.es6.js',
             'rb/js/reviewRequestPage/views/reviewEntryView.es6.js',
-            'rb/js/reviewRequestPage/views/reviewReplyDraftBannerView.es6.js',
             'rb/js/reviewRequestPage/views/reviewReplyEditorView.es6.js',
             'rb/js/reviewRequestPage/views/reviewRequestPageView.es6.js',
             'rb/js/reviewRequestPage/views/reviewView.es6.js',

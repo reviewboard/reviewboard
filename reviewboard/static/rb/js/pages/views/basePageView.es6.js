@@ -61,6 +61,8 @@ RB.PageView = Backbone.View.extend({
 
         this.drawer = null;
         this.headerView = null;
+
+        this._actionViews = [];
     },
 
     /**
@@ -133,6 +135,8 @@ RB.PageView = Backbone.View.extend({
         this.listenTo(this.headerView, 'mobileModeChanged',
                       this._onMobileModeChanged);
         this._onMobileModeChanged(this.inMobileMode);
+
+        this._actionViews.forEach(actionView => actionView.render());
 
         this.isPageRendered = true;
 
@@ -229,6 +233,42 @@ RB.PageView = Backbone.View.extend({
      *         convenience.
      */
     onMobileModeChanged(inMobileMode) {
+    },
+
+    /**
+     * Add an action to the page.
+     *
+     * Args:
+     *     actionView (RB.ActionView):
+     *         The action instance.
+     */
+    addActionView(actionView) {
+        this._actionViews.push(actionView);
+
+        if (this.isPageRendered) {
+            actionView.render();
+        }
+    },
+
+    /**
+     * Return the action view for the given action ID.
+     *
+     * Args:
+     *     actionId (string):
+     *         The ID of the action.
+     *
+     * Returns:
+     *     RB.ActionView:
+     *     The view for the given action.
+     */
+    getActionView(actionId) {
+        for (const view of this._actionViews) {
+            if (view.model.get('actionId') === actionId) {
+                return view;
+            }
+        }
+
+        return null;
     },
 
     /**

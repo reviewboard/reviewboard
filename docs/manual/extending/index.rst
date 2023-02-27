@@ -92,20 +92,26 @@ extension hooks available to you.
 
     .. To do: Add dedicated doc pages for these.
 
+    :py:class:`~reviewboard.extensions.hooks.ActionHook`:
+        Generic hook for adding new-style actions.
+
     :py:class:`~reviewboard.extensions.hooks.DiffViewerActionHook`:
-        Adds actions to the diff viewer's review request actions bar.
+        Deprecated hook for adding actions to the diff viewer's review request
+        actions bar.
 
     :py:class:`~reviewboard.extensions.hooks.HeaderActionHook`:
-        Adds actions to the top-right of the page.
+        Deprecated hook for adding actions to the top-right of the page.
 
     :py:class:`~reviewboard.extensions.hooks.HeaderDropdownActionHook`:
-        Adds drop-down actions to the top-right of the page.
+        Deprecated hook for adding drop-down actions to the top-right of the
+        page.
 
     :py:class:`~reviewboard.extensions.hooks.ReviewRequestActionHook`:
-        Adds actions to the review request actions bar.
+        Deprecated hook for adding actions to the review request actions bar.
 
     :py:class:`~reviewboard.extensions.hooks.ReviewRequestDropdownActionHook`:
-        Adds drop-down actions to the review request actions bar.
+        Deprecated hook for adding drop-down actions to the review request
+        actions bar.
 
 **API Hooks:**
     :ref:`webapi-capabilities-hook`:

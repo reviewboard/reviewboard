@@ -17,6 +17,9 @@ from reviewboard.scmtools.git import GitDiffParser, strip_git_symlink_mode
 logger = logging.getLogger(__name__)
 
 
+INITIAL_COMMIT_ID = '0' * 40
+
+
 class HgTool(SCMTool):
     scmtool_id = 'mercurial'
     name = "Mercurial"
@@ -571,8 +574,11 @@ class HgWebClient(SCMClient):
 
         try:
             parent = rsp['parents'][0]
+
+            if parent == INITIAL_COMMIT_ID:
+                parent = ''
         except IndexError:
-            parent = None
+            parent = ''
 
         return Commit(id=rsp['node'],
                       message=rsp['desc'],
@@ -618,8 +624,11 @@ class HgWebClient(SCMClient):
             for data in rsp['entries']:
                 try:
                     parent = data['parents'][0]
+
+                    if parent == INITIAL_COMMIT_ID:
+                        parent = ''
                 except IndexError:
-                    parent = None
+                    parent = ''
 
                 iso8601 = HgTool.date_tuple_to_iso8601(data['date'])
                 changeset = Commit(id=data['node'],
@@ -771,12 +780,12 @@ class HgClient(SCMClient):
 
         for data in json.loads(force_str(p.stdout.read())):
             try:
-                parent = data['parents'][0]
+                parent = force_str(data['parents'][0])
+
+                if parent == INITIAL_COMMIT_ID:
+                    parent = ''
             except IndexError:
                 parent = None
-
-            if parent is not None:
-                parent = force_str(parent)
 
             results.append(Commit(
                 id=data['node'],

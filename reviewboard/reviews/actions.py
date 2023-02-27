@@ -1,24 +1,668 @@
-from collections import deque
+"""Actions for the reviews app."""
 
-from django.template.loader import render_to_string
+from __future__ import annotations
 
-from reviewboard.reviews.errors import DepthLimitExceededError
+from typing import Iterable, List, Optional, TYPE_CHECKING, Union
+
+from django.http import HttpRequest
+from django.template import Context
+from django.utils.translation import gettext_lazy as _
+
+from reviewboard.actions import (AttachmentPoint,
+                                 BaseAction,
+                                 BaseMenuAction,
+                                 actions_registry)
+from reviewboard.admin.read_only import is_site_read_only_for
+from reviewboard.deprecation import RemovedInReviewBoard70Warning
+from reviewboard.reviews.features import (general_comments_feature,
+                                          unified_banner_feature)
+from reviewboard.reviews.models import ReviewRequest
+from reviewboard.site.urlresolvers import local_site_reverse
+from reviewboard.urls import reviewable_url_names, review_request_url_names
+
+if TYPE_CHECKING:
+    # This is available only in django-stubs.
+    from django.utils.functional import _StrOrPromise
 
 
-#: The maximum depth limit of any action instance.
-MAX_DEPTH_LIMIT = 2
-
-#: The mapping of all action IDs to their corresponding action instances.
-_all_actions = {}
-
-#: All top-level action IDs (in their left-to-right order of appearance).
-_top_level_ids = deque()
-
-#: Determines if the default action instances have been populated yet.
-_populated = False
+all_review_request_url_names = reviewable_url_names + review_request_url_names
 
 
-class BaseReviewRequestAction(object):
+class AddGeneralCommentAction(BaseAction):
+    """The action for adding a general comment.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'add-general-comment'
+    label = _('Add General Comment')
+    apply_to = all_review_request_url_names
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This differs from :py:attr:`hidden` in that hidden actions still render
+        but are hidden by CSS, whereas if this returns ``False`` the action
+        will not be included in the DOM at all.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        user = request.user
+
+        return (super().should_render(context=context) and
+                user.is_authenticated and
+                not is_site_read_only_for(user) and
+                general_comments_feature.is_enabled(request=request))
+
+
+class CloseMenuAction(BaseMenuAction):
+    """A menu for closing the review request.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'close-menu'
+    label = _('Close')
+    apply_to = all_review_request_url_names
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This differs from :py:attr:`hidden` in that hidden actions still render
+        but are hidden by CSS, whereas if this returns ``False`` the action
+        will not be included in the DOM at all.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        review_request = context.get('review_request')
+        perms = context.get('perms')
+        user = request.user
+
+        return (super().should_render(context=context) and
+                review_request is not None and
+                review_request.status == ReviewRequest.PENDING_REVIEW and
+                not is_site_read_only_for(user) and
+                (request.user.pk == review_request.submitter_id or
+                (bool(perms) and
+                 perms['reviews']['can_change_status'] and
+                 review_request.public)))
+
+
+class CloseCompletedAction(BaseAction):
+    """The action to close a review request as completed.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'close-completed'
+    parent_id = CloseMenuAction.action_id
+    label = _('Completed')
+    apply_to = all_review_request_url_names
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This differs from :py:attr:`hidden` in that hidden actions still render
+        but are hidden by CSS, whereas if this returns ``False`` the action
+        will not be included in the DOM at all.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        review_request = context.get('review_request')
+
+        return (super().should_render(context=context) and
+                review_request is not None and
+                review_request.public and
+                not is_site_read_only_for(context['request'].user))
+
+
+class CloseDiscardedAction(BaseAction):
+    """The action to close a review request as discarded.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'close-discarded'
+    parent_id = CloseMenuAction.action_id
+    label = _('Discarded')
+    apply_to = all_review_request_url_names
+
+
+class DeleteAction(BaseAction):
+    """The action to permanently delete a review request.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'delete-review-request'
+    parent_id = CloseMenuAction.action_id
+    label = _('Delete Permanently')
+    apply_to = all_review_request_url_names
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This differs from :py:attr:`hidden` in that hidden actions still render
+        but are hidden by CSS, whereas if this returns ``False`` the action
+        will not be included in the DOM at all.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        perms = context.get('perms')
+
+        return (super().should_render(context=context) and
+                bool(perms) and
+                perms['reviews']['delete_reviewrequest'] and
+                not is_site_read_only_for(context['request'].user))
+
+
+class DownloadDiffAction(BaseAction):
+    """The action to download a diff.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'download-diff'
+    label = _('Download Diff')
+    apply_to = all_review_request_url_names
+
+    def get_url(
+        self,
+        *,
+        context: Context,
+    ) -> str:
+        """Return this action's URL.
+
+        Args:
+            context (django.template.Context):
+                The collection of key-value pairs from the template.
+
+        Returns:
+            str:
+            The URL to invoke if this action is clicked.
+        """
+        request = context['request']
+
+        # We want to use a relative URL in the diff viewer as we will not be
+        # re-rendering the page when switching between revisions.
+        from reviewboard.urls import diffviewer_url_names
+        match = request.resolver_match
+
+        if match.url_name in diffviewer_url_names:
+            return 'raw/'
+
+        return local_site_reverse(
+            'raw-diff',
+            request,
+            kwargs={
+                'review_request_id': context['review_request'].display_id,
+            })
+
+    def get_visible(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether the action should start visible or not.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should start visible. ``False``, otherwise.
+        """
+        from reviewboard.urls import diffviewer_url_names
+        match = context['request'].resolver_match
+
+        if match.url_name in diffviewer_url_names:
+            return match.url_name != 'view-interdiff'
+
+        return super().get_visible(context=context)
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This differs from :py:attr:`hidden` in that hidden actions still render
+        but are hidden by CSS, whereas if this returns ``False`` the action
+        will not be included in the DOM at all.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        from reviewboard.urls import diffviewer_url_names
+        match = context['request'].resolver_match
+
+        # If we're on a diff viewer page, then this should be initially
+        # rendered, but might be hidden.
+        if match.url_name in diffviewer_url_names:
+            return True
+
+        review_request = context.get('review_request')
+
+        return (super().should_render(context=context) and
+                review_request is not None and
+                review_request.repository_id is not None and
+                review_request.diffset_history.diffsets.exists())
+
+
+class LegacyEditReviewAction(BaseAction):
+    """The old-style "Edit Review" action.
+
+    This exists within the review request actions area, and will be supplanted
+    by the new action in the Review menu in the unified banner.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'edit-review'
+    label = _('Review')
+    apply_to = all_review_request_url_names
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This differs from :py:attr:`hidden` in that hidden actions still render
+        but are hidden by CSS, whereas if this returns ``False`` the action
+        will not be included in the DOM at all.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        user = request.user
+
+        return (super().should_render(context=context) and
+                user.is_authenticated and
+                not is_site_read_only_for(user) and
+                not unified_banner_feature.is_enabled(request=request))
+
+
+class LegacyShipItAction(BaseAction):
+    """The old-style "Ship It" action.
+
+    This exists within the review request actions area, and will be supplanted
+    by the new action in the Review menu in the unified banner.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'ship-it'
+    label = _('Ship It!')
+    apply_to = all_review_request_url_names
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This differs from :py:attr:`hidden` in that hidden actions still render
+        but are hidden by CSS, whereas if this returns ``False`` the action
+        will not be included in the DOM at all.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        user = request.user
+
+        return (super().should_render(context=context) and
+                user.is_authenticated and
+                not is_site_read_only_for(user) and
+                not unified_banner_feature.is_enabled(request=request))
+
+
+class UpdateMenuAction(BaseMenuAction):
+    """A menu for updating the review request.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'update-menu'
+    label = _('Update')
+    apply_to = all_review_request_url_names
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This differs from :py:attr:`hidden` in that hidden actions still render
+        but are hidden by CSS, whereas if this returns ``False`` the action
+        will not be included in the DOM at all.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        review_request = context.get('review_request')
+        perms = context.get('perms')
+        user = request.user
+
+        return (super().should_render(context=context) and
+                review_request is not None and
+                review_request.status == ReviewRequest.PENDING_REVIEW and
+                not is_site_read_only_for(user) and
+                (user.pk == review_request.submitter_id or
+                (bool(perms) and perms['reviews']['can_edit_reviewrequest'])))
+
+
+class UploadDiffAction(BaseAction):
+    """The action to update or upload a diff.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'upload-diff'
+    parent_id = UpdateMenuAction.action_id
+    apply_to = all_review_request_url_names
+
+    def get_label(
+        self,
+        *,
+        context: Context,
+    ) -> _StrOrPromise:
+        """Return the label for the action.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            str:
+            The label to use for the action.
+        """
+        review_request = context['review_request']
+        draft = review_request.get_draft(context['request'].user)
+
+        if (draft and draft.diffset) or review_request.get_diffsets():
+            return _('Update Diff')
+        else:
+            return _('Upload Diff')
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This differs from :py:attr:`hidden` in that hidden actions still render
+        but are hidden by CSS, whereas if this returns ``False`` the action
+        will not be included in the DOM at all.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        review_request = context.get('review_request')
+        perms = context.get('perms')
+        user = request.user
+
+        return (super().should_render(context=context) and
+                review_request is not None and
+                review_request.repository_id is not None and
+                not is_site_read_only_for(user) and
+                (user.pk == review_request.submitter_id or
+                 (bool(perms) and
+                  perms['reviews']['can_edit_reviewrequest'])))
+
+
+class UploadFileAction(BaseAction):
+    """The action to upload a new file attachment.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'upload-file'
+    parent_id = UpdateMenuAction.action_id
+    label = _('Add File')
+    apply_to = all_review_request_url_names
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This differs from :py:attr:`hidden` in that hidden actions still render
+        but are hidden by CSS, whereas if this returns ``False`` the action
+        will not be included in the DOM at all.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        review_request = context.get('review_request')
+        perms = context.get('perms')
+        user = request.user
+
+        return (super().should_render(context=context) and
+                review_request is not None and
+                review_request.status == ReviewRequest.PENDING_REVIEW and
+                not is_site_read_only_for(user) and
+                (user.pk == review_request.submitter_id or
+                 (bool(perms) and
+                  perms['reviews']['can_edit_reviewrequest'])))
+
+
+class StarAction(BaseAction):
+    """The action to star a review request.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'star-review-request'
+    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
+    label = ''
+    template_name = 'reviews/star_action.html'
+    apply_to = all_review_request_url_names
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This differs from :py:attr:`hidden` in that hidden actions still render
+        but are hidden by CSS, whereas if this returns ``False`` the action
+        will not be included in the DOM at all.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        review_request = context.get('review_request')
+        user = request.user
+
+        return (user.is_authenticated and
+                review_request is not None and
+                review_request.public and
+                not is_site_read_only_for(user) and
+                super().should_render(context=context))
+
+
+class ArchiveMenuAction(BaseMenuAction):
+    """A menu for managing the visibility state of the review request.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'archive-menu'
+    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
+    label = ''
+    template_name = 'reviews/archive_menu_action.html'
+    js_view_class = 'RB.ArchiveMenuActionView'
+    apply_to = all_review_request_url_names
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This differs from :py:attr:`hidden` in that hidden actions still render
+        but are hidden by CSS, whereas if this returns ``False`` the action
+        will not be included in the DOM at all.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        review_request = context.get('review_request')
+        user = request.user
+
+        return (user.is_authenticated and
+                review_request is not None and
+                review_request.public and
+                not is_site_read_only_for(user) and
+                super().should_render(context=context))
+
+
+class ArchiveAction(BaseAction):
+    """An action for archiving the review request.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'archive'
+    parent_id = ArchiveMenuAction.action_id
+    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
+    apply_to = all_review_request_url_names
+    label = ''
+    template_name = 'reviews/archive_action.html'
+    js_view_class = 'RB.ArchiveActionView'
+
+
+class MuteAction(BaseAction):
+    """An action for muting the review request.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'mute'
+    parent_id = ArchiveMenuAction.action_id
+    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
+    apply_to = all_review_request_url_names
+    label = ''
+    template_name = 'reviews/archive_action.html'
+    js_view_class = 'RB.MuteActionView'
+
+
+class BaseReviewRequestAction(BaseAction):
     """A base class for an action that can be applied to a review request.
 
     Creating an action requires subclassing :py:class:`BaseReviewRequestAction`
@@ -35,7 +679,7 @@ class BaseReviewRequestAction(object):
 
            class UsedMultipleAction(BaseReviewRequestAction):
                def __init__(self, action_id, label):
-                   super(UsedMultipleAction, self).__init__()
+                   super().__init__()
 
                    self.action_id = 'repeat-' + action_id
                    self.label = 'This is used multiple times,'
@@ -47,99 +691,31 @@ class BaseReviewRequestAction(object):
         runtime, then we can override one of the getter methods (such as
         :py:meth:`get_label`), which by default will simply return the original
         attribute from initialization.
+
+    Deprecated:
+        6.0:
+        New code should be written using
+        :py:class:`reviewboard.actions.base.BaseAction`. This class will be
+        removed in 7.0.
     """
 
-    #: The ID of this action. Must be unique across all types of actions and
-    #: menu actions, at any depth.
-    action_id = None
+    apply_to = reviewable_url_names + review_request_url_names
 
-    #: The label that displays this action to the user.
-    label = None
-
-    #: The URL to invoke if this action is clicked.
-    url = '#'
-
-    #: Determines if this action should be initially hidden to the user.
-    hidden = False
-
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize this action.
 
         By default, actions are top-level and have no children.
         """
+        RemovedInReviewBoard70Warning.warn(
+            'BaseReviewRequestAction is deprecated and will be removed in '
+            'Review Board 7.0. Please update your code to use '
+            'reviewboard.actions.base.BaseAction')
+
+        super().__init__()
         self._parent = None
-        self._max_depth = 0
-
-    def copy_to_dict(self, context):
-        """Copy this action instance to a dictionary.
-
-        Args:
-            context (django.template.Context):
-                The collection of key-value pairs from the template.
-
-        Returns:
-            dict: The corresponding dictionary.
-        """
-        return {
-            'action_id': self.action_id,
-            'label': self.get_label(context),
-            'url': self.get_url(context),
-            'hidden': self.get_hidden(context),
-        }
-
-    def get_label(self, context):
-        """Return this action's label.
-
-        Args:
-            context (django.template.Context):
-                The collection of key-value pairs from the template.
-
-        Returns:
-            unicode: The label that displays this action to the user.
-        """
-        return self.label
-
-    def get_url(self, context):
-        """Return this action's URL.
-
-        Args:
-            context (django.template.Context):
-                The collection of key-value pairs from the template.
-
-        Returns:
-            unicode: The URL to invoke if this action is clicked.
-        """
-        return self.url
-
-    def get_hidden(self, context):
-        """Return whether this action should be initially hidden to the user.
-
-        Args:
-            context (django.template.Context):
-                The collection of key-value pairs from the template.
-
-        Returns:
-            bool: Whether this action should be initially hidden to the user.
-        """
-        return self.hidden
-
-    def should_render(self, context):
-        """Return whether or not this action should render.
-
-        The default implementation is to always render the action everywhere.
-
-        Args:
-            context (django.template.Context):
-                The collection of key-value pairs available in the template
-                just before this action is to be rendered.
-
-        Returns:
-            bool: Determines if this action should render.
-        """
-        return True
 
     @property
-    def max_depth(self):
+    def max_depth(self) -> int:
         """Lazily compute the max depth of any action contained by this action.
 
         Top-level actions have a depth of zero, and child actions have a depth
@@ -151,49 +727,62 @@ class BaseReviewRequestAction(object):
         of a UI element.
 
         Returns:
-            int: The max depth of any action contained by this action.
+            int:
+            The max depth of any action contained by this action.
         """
-        return self._max_depth
+        return 0
 
-    def reset_max_depth(self):
+    def reset_max_depth(self) -> None:
         """Reset the max_depth of this action and all its ancestors to zero."""
-        self._max_depth = 0
+        # The max depth is now calculated on the fly, so this is a no-op.
+        pass
 
-        if self._parent:
-            self._parent.reset_max_depth()
-
-    def render(self, context, action_key='action',
-               template_name='reviews/action.html'):
-        """Render this action instance and return the content as HTML.
+    def get_extra_context(
+        self,
+        *,
+        request: HttpRequest,
+        context: Context,
+    ) -> dict:
+        """Return extra template context for the action.
 
         Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
             context (django.template.Context):
-                The collection of key-value pairs that is passed to the
-                template in order to render this action.
-
-            action_key (unicode, optional):
-                The key to be used for this action in the context map.
-
-            template_name (unicode, optional):
-                The name of the template to be used for rendering this action.
+                The current rendering context.
 
         Returns:
-            unicode: The action rendered in HTML.
+            dict:
+            Extra context to use when rendering the action's template.
         """
-        content = ''
+        data = super().get_extra_context(request=request, context=context)
 
-        if self.should_render(context):
-            context.push()
+        if self.template_name != 'actions/action.html':
+            data['action'] = self.copy_to_dict(context)
 
-            try:
-                context[action_key] = self.copy_to_dict(context)
-                content = render_to_string(template_name, context.flatten())
-            finally:
-                context.pop()
+        return data
 
-        return content
+    def copy_to_dict(
+        self,
+        context: Context,
+    ) -> dict:
+        """Copy this action instance to a dictionary.
 
-    def register(self, parent=None):
+        This is a legacy implementation left to maintain compatibility with
+        custom templates.
+        """
+        return {
+            'action_id': self.action_id,
+            'hidden': not self.get_visible(context=context),
+            'label': self.get_label(context=context),
+            'url': self.get_url(context=context),
+        }
+
+    def register(
+        self,
+        parent: Optional[BaseReviewRequestMenuAction] = None,
+    ) -> None:
         """Register this review request action instance.
 
         Note:
@@ -214,24 +803,12 @@ class BaseReviewRequestAction(object):
             DepthLimitExceededError:
                 The maximum depth limit is exceeded.
         """
-        _populate_defaults()
-
-        if self.action_id in _all_actions:
-            raise KeyError('%s already corresponds to a registered review '
-                           'request action' % self.action_id)
-
-        if self.max_depth > MAX_DEPTH_LIMIT:
-            raise DepthLimitExceededError(self.action_id, MAX_DEPTH_LIMIT)
-
         if parent:
-            parent.child_actions.append(self)
-            self._parent = parent
-        else:
-            _top_level_ids.appendleft(self.action_id)
+            self.parent_id = parent.action_id
 
-        _all_actions[self.action_id] = self
+        actions_registry.register(self)
 
-    def unregister(self):
+    def unregister(self) -> None:
         """Unregister this review request action instance.
 
         Note:
@@ -240,32 +817,28 @@ class BaseReviewRequestAction(object):
            consider first making a clone of the list of children.
 
         Raises:
-            KeyError: An unregistration is attempted before it's registered.
+            KeyError:
+                An unregistration is attempted before it's registered.
         """
-        _populate_defaults()
-
-        try:
-            del _all_actions[self.action_id]
-        except KeyError:
-            raise KeyError('%s does not correspond to a registered review '
-                           'request action' % self.action_id)
-
-        if self._parent:
-            self._parent.child_actions.remove(self)
-        else:
-            _top_level_ids.remove(self.action_id)
-
-        self.reset_max_depth()
+        actions_registry.unregister(self)
 
 
-class BaseReviewRequestMenuAction(BaseReviewRequestAction):
+class BaseReviewRequestMenuAction(BaseMenuAction):
     """A base class for an action with a dropdown menu.
 
-    Note:
-        A menu action's child actions must always be pre-registered.
+    Deprecated:
+        6.0:
+        New code should be written using
+        :py:class:`reviewboard.actions.base.BaseMenuAction`. This class will be
+        removed in 7.0.
     """
 
-    def __init__(self, child_actions=None):
+    apply_to = reviewable_url_names + review_request_url_names
+
+    def __init__(
+        self,
+        child_actions: Optional[List[BaseReviewRequestAction]] = None,
+    ) -> None:
         """Initialize this menu action.
 
         Args:
@@ -280,68 +853,108 @@ class BaseReviewRequestMenuAction(BaseReviewRequestAction):
             DepthLimitExceededError:
                 The maximum depth limit is exceeded.
         """
-        super(BaseReviewRequestMenuAction, self).__init__()
+        super().__init__()
 
-        self.child_actions = []
-        child_actions = child_actions or []
+        self._children = child_actions or []
 
-        for child_action in child_actions:
-            child_action.register(self)
-
-    def copy_to_dict(self, context):
+    def copy_to_dict(
+        self,
+        context: Context,
+    ) -> dict:
         """Copy this menu action instance to a dictionary.
+
+        This is a legacy implementation left to maintain compatibility with
+        custom templates.
 
         Args:
             context (django.template.Context):
                 The collection of key-value pairs from the template.
 
         Returns:
-            dict: The corresponding dictionary.
+            dict:
+            The corresponding dictionary.
         """
-        dict_copy = {
+        return {
+            'action_id': self.action_id,
             'child_actions': self.child_actions,
+            'hidden': not self.get_visible(context=context),
+            'label': self.get_label(context=context),
+            'url': self.get_url(context=context),
         }
-        dict_copy.update(super(BaseReviewRequestMenuAction, self).copy_to_dict(
-            context))
 
-        return dict_copy
+    def get_extra_context(
+        self,
+        *,
+        request: HttpRequest,
+        context: Context,
+    ) -> dict:
+        """Return extra template context for the action.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            dict:
+            Extra context to use when rendering the action's template.
+        """
+        data = super().get_extra_context(request=request, context=context)
+
+        if self.template_name != 'actions/menu_action.html':
+            data['menu_action'] = self.copy_to_dict(context)
+
+        return data
 
     @property
-    def max_depth(self):
+    def max_depth(self) -> int:
         """Lazily compute the max depth of any action contained by this action.
 
         Returns:
             int: The max depth of any action contained by this action.
         """
-        if self.child_actions and self._max_depth == 0:
-            self._max_depth = 1 + max(child_action.max_depth
-                                      for child_action in self.child_actions)
+        if self.child_actions:
+            return max(child_action.max_depth
+                       for child_action in self.child_actions)
+        else:
+            return self.depth
 
-        return self._max_depth
+    def register(
+        self,
+        parent: Optional[BaseReviewRequestMenuAction] = None,
+    ) -> None:
+        """Register this review request action instance.
 
-    def render(self, context, action_key='menu_action',
-               template_name='reviews/menu_action.html'):
-        """Render this menu action instance and return the content as HTML.
+        Note:
+           Newly registered top-level actions are appended to the left of the
+           other previously registered top-level actions. So if we intend to
+           register a collection of top-level actions in a certain order, then
+           we likely want to iterate through the actions in reverse.
 
         Args:
-            context (django.template.Context):
-                The collection of key-value pairs that is passed to the
-                template in order to render this menu action.
+            parent (BaseReviewRequestMenuAction, optional):
+                The parent action instance of this action instance.
 
-            action_key (unicode, optional):
-                The key to be used for this menu action in the context map.
+        Raises:
+            KeyError:
+                A second registration is attempted (action IDs must be unique
+                across all types of actions and menu actions, at any depth).
 
-            template_name (unicode, optional):
-                The name of the template to be used for rendering this menu
-                action.
-
-        Returns:
-            unicode: The action rendered in HTML.
+            DepthLimitExceededError:
+                The maximum depth limit is exceeded.
         """
-        return super(BaseReviewRequestMenuAction, self).render(
-            context, action_key, template_name)
+        if parent:
+            self.parent_id = parent.action_id
 
-    def unregister(self):
+        actions_registry.register(self)
+
+        for child in self._children:
+            child.parent_id = self.action_id
+            child.register()
+
+    def unregister(self) -> None:
         """Unregister this review request action instance.
 
         This menu action recursively unregisters its child action instances.
@@ -349,43 +962,25 @@ class BaseReviewRequestMenuAction(BaseReviewRequestAction):
         Raises:
             KeyError: An unregistration is attempted before it's registered.
         """
-        super(BaseReviewRequestMenuAction, self).unregister()
+        for child in self._children:
+            child.unregister()
 
-        # Unregistration will mutate self.child_actions, so we make a copy.
-        for child_action in list(self.child_actions):
-            child_action.unregister()
-
-
-# TODO: Convert all this to use djblets.registries.
-def _populate_defaults():
-    """Populate the default action instances."""
-    global _populated
-
-    if not _populated:
-        _populated = True
-
-        from reviewboard.reviews.default_actions import get_default_actions
-
-        for default_action in reversed(get_default_actions()):
-            default_action.register()
+        actions_registry.unregister(self)
 
 
-def get_top_level_actions():
-    """Return a generator of all top-level registered action instances.
-
-    Yields:
-        BaseReviewRequestAction:
-        All top-level registered review request action instances.
-    """
-    _populate_defaults()
-
-    return (_all_actions[action_id] for action_id in _top_level_ids)
-
-
-def register_actions(actions, parent_id=None):
+def register_actions(
+    actions: List[Union[BaseReviewRequestAction, BaseReviewRequestMenuAction]],
+    parent_id: Optional[str] = None,
+) -> None:
     """Register the given actions as children of the corresponding parent.
 
     If no parent_id is given, then the actions are assumed to be top-level.
+
+    Deprecated:
+        6.0:
+        Users should switch to
+        :py:const:`reviewboard.actions.actions_registry`. This method will be
+        removed in Review Board 7.
 
     Args:
         actions (iterable of BaseReviewRequestAction):
@@ -404,26 +999,30 @@ def register_actions(actions, parent_id=None):
         DepthLimitExceededError:
             The maximum depth limit is exceeded.
     """
-    _populate_defaults()
+    RemovedInReviewBoard70Warning.warn(
+        'register_actions has been deprecated and will be removed in '
+        'Review Board 7.0. Please update your code to use '
+        'reviewboard.actions.actions_registry.')
 
-    if parent_id is None:
-        parent = None
+    if parent_id:
+        parent = actions_registry.get('action_id', parent_id)
     else:
-        try:
-            parent = _all_actions[parent_id]
-        except KeyError:
-            raise KeyError('%s does not correspond to a registered review '
-                           'request action' % parent_id)
+        parent = None
 
-    for action in reversed(actions):
+    for action in actions:
         action.register(parent)
 
-    if parent:
-        parent.reset_max_depth()
 
-
-def unregister_actions(action_ids):
+def unregister_actions(
+    action_ids: Iterable[str],
+) -> None:
     """Unregister each of the actions corresponding to the given IDs.
+
+    Deprecated:
+        6.0:
+        Users should switch to
+        :py:const:`reviewboard.actions.actions_registry`. This method will be
+        removed in Review Board 7.
 
     Args:
         action_ids (iterable of unicode):
@@ -431,32 +1030,37 @@ def unregister_actions(action_ids):
             removed.
 
     Raises:
-        KeyError: An unregistration is attempted before it's registered.
+        KeyError:
+            An unregistration is attempted before it's registered.
     """
-    _populate_defaults()
+    RemovedInReviewBoard70Warning.warn(
+        'unregister_actions has been deprecated and will be removed in '
+        'Review Board 7.0. Please update your code to use '
+        'reviewboard.actions.actions_registry.')
 
     for action_id in action_ids:
-        try:
-            action = _all_actions[action_id]
-        except KeyError:
-            raise KeyError('%s does not correspond to a registered review '
-                           'request action' % action_id)
-
+        action = actions_registry.get('action_id', action_id)
         action.unregister()
 
 
-def clear_all_actions():
+def clear_all_actions() -> None:
     """Clear all registered actions.
 
     This method is really only intended to be used by unit tests. We might be
     able to remove this hack once we convert to djblets.registries.
 
+    Deprecated:
+        6.0:
+        Users should switch to
+        :py:const:`reviewboard.actions.actions_registry`. This method will be
+        removed in Review Board 7.
+
     Warning:
         This will clear **all** actions, even if they were registered in
         separate extensions.
     """
-    global _populated
-
-    _all_actions.clear()
-    _top_level_ids.clear()
-    _populated = False
+    RemovedInReviewBoard70Warning.warn(
+        'clear_all_actions has been deprecated and will be removed in '
+        'Review Board 7.0. Please update your code to use '
+        'reviewboard.actions.actions_registry.')
+    actions_registry.reset()

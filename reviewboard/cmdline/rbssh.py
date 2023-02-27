@@ -35,6 +35,7 @@ import logging
 import os
 import select
 import sys
+import time
 import warnings
 from optparse import OptionParser
 
@@ -42,7 +43,7 @@ from optparse import OptionParser
 # We don't want any warnings to end up impacting output.
 warnings.simplefilter('ignore')
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('rbssh')
 
 
 if str('RBSITE_PYTHONPATH') in os.environ:
@@ -70,12 +71,14 @@ SSH_PORT = 22
 # available data.
 BUFFER_SIZE = 16384
 
+IO_SLEEP = paramiko.io_sleep
+
 
 options = None
 
 
 if DEBUG:
-    debug = logging.debug
+    debug = logger.debug
 else:
     debug = lambda *args, **kwargs: None
 
@@ -125,10 +128,13 @@ class PlatformHandler(object):
         written = 0
 
         while written < len(data):
+            to_write = data[written:]
+
             try:
-                written += channel.send(data[written:])
+                debug('Writing stdin data=%r', to_write)
+                written += channel.send(to_write)
             except OSError:
-                pass
+                debug('... blocked. Trying again.')
 
     def write_output(self, fd, data):
         """Write output to a file descriptor.
@@ -149,10 +155,14 @@ class PlatformHandler(object):
         written = 0
 
         while written < len(data):
+            to_write = data[written:]
+
+            debug('Writing fd=%r, output=%r', fd, to_write)
+
             try:
-                written += os.write(fd, data[written:])
+                written += os.write(fd, to_write)
             except OSError:
-                pass
+                debug('... blocked. Trying again.')
 
     def process_channel(self, channel):
         """Process the given channel.
@@ -172,7 +182,7 @@ class PlatformHandler(object):
             ``True`` if the channel should continue to be processed.
             ``False`` if processing has completed.
         """
-        debug('!! process_channel\n')
+        debug('== process_channel ==')
 
         has_data = False
 
@@ -180,7 +190,7 @@ class PlatformHandler(object):
             data = channel.recv(BUFFER_SIZE)
 
             if data:
-                debug('!! got stdout=%r\n' % data)
+                debug('got stdout=%r' % data)
                 has_data = True
 
                 self.write_output(self.stdout_fd, data)
@@ -189,7 +199,7 @@ class PlatformHandler(object):
             data = channel.recv_stderr(BUFFER_SIZE)
 
             if data:
-                debug('!! got stderr=%r\n' % data)
+                debug('got stderr=%r' % data)
                 has_data = True
 
                 self.write_output(self.stderr_fd, data)
@@ -200,7 +210,7 @@ class PlatformHandler(object):
             not channel.recv_stderr_ready()):
             # There should truly be nothing left to process. Everything has
             # indicated that the communication is done.
-            debug('!!! no data to read; exit ready; channel closed.\n')
+            debug('no data to read; exit ready; channel closed.')
             return False
 
         return True
@@ -217,7 +227,7 @@ class PlatformHandler(object):
             ``True`` if the channel should continue to be processed.
             ``False`` if processing has completed.
         """
-        debug('!! process_stdin\n')
+        debug('== process_stdin ==')
 
         try:
             buf = os.read(self.stdin_fd, BUFFER_SIZE)
@@ -225,7 +235,7 @@ class PlatformHandler(object):
             buf = None
 
         if not buf:
-            debug('!! stdin empty\n')
+            debug('stdin empty')
             return False
 
         self.write_input(buf)
@@ -241,11 +251,12 @@ class PosixHandler(PlatformHandler):
         import termios
         import tty
 
+        stdin_fd = self.stdin_fd
         oldtty = termios.tcgetattr(sys.stdin)
 
         try:
-            tty.setraw(sys.stdin.fileno())
-            tty.setcbreak(sys.stdin.fileno())
+            tty.setraw(stdin_fd)
+            tty.setcbreak(stdin_fd)
 
             self.handle_communications()
         finally:
@@ -253,33 +264,35 @@ class PosixHandler(PlatformHandler):
 
     def transfer(self):
         """Transfer data over the channel."""
-        import fcntl
-
         # Set all streams to be non-blocking. We'll manage the reading/writing
         # accordingly, handling any blocking I/O errors. This will ensure
         # that we don't buffer too long and risk any communication issues.
         for stream in (sys.stdin, sys.stdout, sys.stderr):
-            fd = stream.fileno()
-            fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-            fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+            os.set_blocking(stream.fileno(), False)
 
         self.handle_communications()
 
     def handle_communications(self):
         """Handle any pending data over the channel or stdin."""
         channel = self.channel
+        stdin = sys.stdin
+        to_read = [channel, stdin]
 
-        while True:
-            rl, wl, el = select.select([channel, sys.stdin], [], [])
+        while to_read:
+            rl, wl, el = select.select(to_read, [], [])
 
             if channel in rl:
                 if not self.process_channel(channel):
+                    # Output streams are closed, and the handler told us
+                    # that the channel is ready to exit. Break the loop.
                     break
 
-            if sys.stdin in rl:
+            if stdin in rl:
                 if not self.process_stdin():
                     channel.shutdown_write()
-                    break
+                    to_read.remove(stdin)
+
+            time.sleep(IO_SLEEP)
 
 
 class WindowsHandler(PlatformHandler):
@@ -297,7 +310,7 @@ class WindowsHandler(PlatformHandler):
         """Handle any pending data over the channel or stdin."""
         import threading
 
-        debug('!! begin_windows_transfer\n')
+        debug('begin_windows_transfer')
 
         self.channel.setblocking(0)
 
@@ -305,7 +318,7 @@ class WindowsHandler(PlatformHandler):
             while self.process_channel(channel):
                 pass
 
-            debug('!! Shutting down reading\n')
+            debug('Shutting down reading')
             channel.shutdown_read()
 
         writer = threading.Thread(target=writeall, args=(self.channel,))
@@ -317,7 +330,7 @@ class WindowsHandler(PlatformHandler):
         except EOFError:
             pass
 
-        debug('!! Shutting down writing\n')
+        debug('Shutting down writing')
         self.channel.shutdown_write()
 
 
@@ -399,6 +412,12 @@ def parse_options(args):
 
 def main():
     """Run the application."""
+    # Perform the bare minimum to initialize the Django/Review Board
+    # environment. We're not calling Review Board's initialize() because
+    # we want to completely minimize what we import and set up.
+    if hasattr(django, 'setup'):
+        django.setup()
+
     if DEBUG:
         pid = os.getpid()
         log_filename = 'rbssh-%s.log' % pid
@@ -415,14 +434,12 @@ def main():
                             filename=log_path,
                             filemode='w')
 
-        debug('%s', sys.argv)
+        debug('rbssh %s', get_version_string())
+        debug('Installed to %s',
+              os.path.dirname(reviewboard.__file__))
+        debug('Python %s' % sys.version.splitlines()[0])
         debug('PID %s', pid)
-
-    # Perform the bare minimum to initialize the Django/Review Board
-    # environment. We're not calling Review Board's initialize() because
-    # we want to completely minimize what we import and set up.
-    if hasattr(django, 'setup'):
-        django.setup()
+        debug('Command: %s', sys.argv)
 
     from reviewboard.scmtools.core import SCMTool
     from reviewboard.ssh.client import SSHClient
@@ -452,8 +469,8 @@ def main():
     else:
         purpose = 'interactive shell'
 
-    debug('!!! SSH backend = %s', type(client.storage))
-    debug('!!! Preparing to connect to %s@%s for %s',
+    debug('SSH backend = %s', type(client.storage))
+    debug('Preparing to connect to %s@%s for %s',
           username, hostname, purpose)
 
     attempts = 0
@@ -471,6 +488,8 @@ def main():
             if attempts == 3 or not sys.stdin.isatty():
                 logger.error('Too many authentication failures for %s',
                              username)
+                sys.stderr.write('Too many authentication failures for %s\n'
+                                 % username)
                 sys.exit(1)
 
             attempts += 1
@@ -478,45 +497,54 @@ def main():
                                        (username, hostname))
         except paramiko.SSHException as e:
             logger.error('Error connecting to server: %s', e)
+            sys.stderr.write('Error connecting to server: %s\n' % e)
             sys.exit(1)
         except Exception as e:
-            logger.error('Unknown exception during connect: %s (%s)',
-                         e, type(e))
+            logger.exception('Unknown exception during connect: %s (%s)',
+                             e, type(e))
+            sys.stderr.write('Unknown exception during connect: %s (%s)\n'
+                             % (e, type(e)))
             sys.exit(1)
 
     transport = client.get_transport()
     channel = transport.open_session()
 
     if sys.platform in ('cygwin', 'win32'):
-        debug('!!! Using WindowsHandler')
+        debug('Using WindowsHandler')
         handler = WindowsHandler(channel)
     else:
-        debug('!!! Using PosixHandler')
+        debug('Using PosixHandler')
         handler = PosixHandler(channel)
 
     if options.subsystem == 'sftp':
-        debug('!!! Invoking sftp subsystem')
+        debug('Invoking sftp subsystem')
         channel.invoke_subsystem('sftp')
         handler.transfer()
     elif command:
-        debug('!!! Sending command %s', command)
+        debug('Sending command %s', command)
         channel.exec_command(' '.join(command))
         handler.transfer()
     else:
-        debug('!!! Opening shell')
+        debug('Opening shell')
         channel.get_pty()
         channel.invoke_shell()
         handler.shell()
 
-    debug('!!! Done')
+    debug('Execution has finished')
     status = channel.recv_exit_status()
     client.close()
+
+    debug('Exit code = %s', status)
+    debug('Shutting down')
+
+    # Flush everything.
+    try:
+        logging.shutdown()
+    except Exception:
+        pass
 
     return status
 
 
 if __name__ == '__main__':
-    main()
-
-
-# ... with blackjack, and hookers.
+    sys.exit(main())

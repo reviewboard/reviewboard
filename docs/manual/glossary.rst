@@ -108,10 +108,14 @@ Glossary
        A form of code review where code is reviewed after it is submitted
        to a repository, usually in a development branch.
 
+       See :ref:`using-pre-commit-review`.
+
    Pre-commit Review
        A form of code review where code is reviewed before it even goes
        into a repository. This is generally a more strict way to handle
        code review, which can lead to fewer problems in the codebase.
+
+       See :ref:`using-post-commit-review`.
 
    Private Review Requests
        A review request that can only be accessed by users meeting certain
@@ -140,13 +144,20 @@ Glossary
    Review Group
    Review Groups
        A group of users, often a team or set of owners on a component, that
-       can be assigned as a targetted reviewer for a review request.
+       can be assigned as a targeted reviewer for a review request.
 
    Review Request
    Review Requests
        A review request is a collection of assets (such as source code,
        documents, and test data) and information (such as a summary,
        description, testing, and branch information) put up for review.
+
+   Site Directory
+   Site Directories
+       A file path on the server representing a Review Board install.
+
+       This contains Review Board configuration, data files, logs, uploaded
+       file attachments, and static media files (CSS, JavaScript, images).
 
    Unified Diff
        A type of :term:`diff file` designed to be easy to parse and easy

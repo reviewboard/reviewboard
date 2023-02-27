@@ -421,26 +421,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         },
     ],
 
-    events: {
-        'click #archive-review-request-link': '_onArchiveClicked',
-        'click #unarchive-review-request-link': '_onUnarchiveClicked',
-        'click #mute-review-request-link': '_onMuteClicked',
-        'click #unmute-review-request-link': '_onUnmuteClicked',
-        'click #toggle-unarchived': '_onUnarchiveClicked',
-        'click #toggle-archived': '_onArchiveClicked',
-    },
-
-    _archiveActionsTemplate: _.template(dedent`
-        <% if (visibility === RB.ReviewRequest.VISIBILITY_VISIBLE) { %>
-         <li><a id="archive-review-request-link" href="#"><%- archiveText %></a></li>
-         <li><a id="mute-review-request-link" href="#"><%- muteText %></a></li>
-        <% } else if (visibility === RB.ReviewRequest.VISIBILITY_ARCHIVED) { %>
-         <li><a id="unarchive-review-request-link" href="#"><%- unarchiveText %></a></li>
-        <% } else if (visibility === RB.ReviewRequest.VISIBILITY_MUTED) { %>
-         <li><a id="unmute-review-request-link" href="#"><%- unmuteText %></a></li>
-        <% } %>
-        `),
-
     /**
      * Initialize the view.
      */
@@ -448,8 +428,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         _.bindAll(this, '_checkResizeLayout', '_scheduleResizeLayout',
                   '_onCloseDiscardedClicked', '_onCloseSubmittedClicked',
                   '_onDeleteReviewRequestClicked', '_onUpdateDiffClicked',
-                  '_onArchiveClicked', '_onUnarchiveClicked',
-                  '_onMuteClicked', '_onUnmuteClicked', '_onUploadFileClicked');
+                  '_onUploadFileClicked');
 
         this._fieldViews = {};
         this._fileAttachmentThumbnailViews = [];
@@ -526,10 +505,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this._$bannersContainer = $('#review-request-banners');
         this._$main = $('#review-request-main');
         this._$extra = $('#review-request-extra');
-
-        this.listenTo(reviewRequest, 'change:visibility',
-                      this._updateArchiveVisibility);
-        this._updateArchiveVisibility();
 
         /*
          * We need to show any banners before we render the fields, since the
@@ -739,11 +714,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * Set up all review request actions and listens for events.
      */
     _setupActions() {
-        const $closeDiscarded = this.$('#discard-review-request-action');
-        const $closeSubmitted = this.$('#submit-review-request-action');
-        const $deletePermanently = this.$('#delete-review-request-action');
-        const $updateDiff = this.$('#upload-diff-action');
-        const $uploadFile = this.$('#upload-file-action');
+        const $closeDiscarded = this.$('#action-close-discarded');
+        const $closeSubmitted = this.$('#action-close-completed');
+        const $deletePermanently = this.$('#action-delete-review-request');
+        const $updateDiff = this.$('#action-upload-diff');
+        const $uploadFile = this.$('#action-upload-file');
 
         /*
          * We don't want the click event filtering from these down to the
@@ -1136,132 +1111,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             reviewRequestEditor: this.model,
         });
         uploadDialog.show();
-    },
-
-    /**
-     * Handle a click on "Archive -> Archive".
-     *
-     * Returns:
-     *     boolean:
-     *     False, always.
-     */
-    _onArchiveClicked() {
-        return this._updateArchiveState(
-            RB.UserSession.instance.archivedReviewRequests,
-            true,
-            RB.ReviewRequest.VISIBILITY_ARCHIVED);
-    },
-
-    /**
-     * Handle a click on "Archive -> Unarchive".
-     *
-     * Returns:
-     *     boolean:
-     *     False, always.
-     */
-    _onUnarchiveClicked() {
-        return this._updateArchiveState(
-            RB.UserSession.instance.archivedReviewRequests,
-            false,
-            RB.ReviewRequest.VISIBILITY_VISIBLE);
-    },
-
-    /**
-     * Handle a click on "Archive -> Mute".
-     *
-     * Returns:
-     *     boolean:
-     *     False, always.
-     */
-    _onMuteClicked() {
-        return this._updateArchiveState(
-            RB.UserSession.instance.mutedReviewRequests,
-            true,
-            RB.ReviewRequest.VISIBILITY_MUTED);
-    },
-
-    /**
-     * Handle a click on "Archive -> Unmute".
-     *
-     * Returns:
-     *     boolean:
-     *     False, always.
-     */
-    _onUnmuteClicked() {
-        return this._updateArchiveState(
-            RB.UserSession.instance.mutedReviewRequests,
-            false,
-            RB.ReviewRequest.VISIBILITY_VISIBLE);
-    },
-
-    /**
-     * Update archive/mute state.
-     *
-     * Args:
-     *     collection (Backbone.Collection):
-     *         The collection representing the user's archived or muted review
-     *         requests.
-     *
-     *     add (boolean):
-     *         True if the review request should be added to the collection
-     *         (archived or muted), false if it shold be removed (unarchived or
-     *         unmuted).
-     *
-     *     newState (number):
-     *         The new state for the review request's ``visibility`` attribute.
-     *
-     * Returns:
-     *     boolean:
-     *     False, always.
-     */
-    async _updateArchiveState(collection, add, newState) {
-        const reviewRequest = this.model.get('reviewRequest');
-
-        if (add) {
-            await collection.addImmediately(reviewRequest);
-        } else {
-            await collection.removeImmediately(reviewRequest);
-        }
-
-        reviewRequest.set('visibility', newState);
-
-        return false;
-    },
-
-    /**
-     * Update the visibility of the archive/mute menu items.
-     */
-    _updateArchiveVisibility() {
-        const visibility = this.model.get('reviewRequest').get('visibility');
-
-        this.$('#hide-review-request-menu').html(this._archiveActionsTemplate({
-            visibility: visibility,
-            archiveText: gettext('Archive'),
-            muteText: gettext('Mute'),
-            unarchiveText: gettext('Unarchive'),
-            unmuteText: gettext('Unmute'),
-        }));
-
-        const visible = (visibility === RB.ReviewRequest.VISIBILITY_VISIBLE);
-
-        const iconClass = (visible
-                           ? 'rb-icon-archive-off'
-                           : 'rb-icon-archive-on');
-
-        const iconTitle = (visible
-                           ? gettext('Archive review request')
-                           : gettext('Unarchive review request'));
-
-        const iconId = (visible
-                        ? 'toggle-archived'
-                        : 'toggle-unarchived');
-
-        this.$('#hide-review-request-link')
-            .html(`<span class="rb-icon ${iconClass}" id="${iconId}" title="${iconTitle}"></span>`);
-
-        if (RB.UserSession.instance.get('readOnly')) {
-            this.$('#hide-review-request-menu').hide();
-        }
     },
 
     /**

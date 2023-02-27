@@ -1182,19 +1182,19 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         /* Must be done after the dialog is rendered. */
 
-        this._publishButton = new RB.SplitButtonView({
+        this._publishButton = new RB.MenuButtonView({
             el: $('#review-form-publish-split-btn-container'),
             text: gettext('Publish Review'),
             ariaMenuLabel: gettext('More publishing options'),
-            click: () => {
+            onPrimaryButtonClick: () => {
                 this._saveReview(true);
                 return false;
             },
             direction: 'up',
-            alternatives: [
+            menuItems: [
                 {
                     text: gettext('... and only e-mail the owner'),
-                    click: () => {
+                    onClick: () => {
                         this._saveReview(true, {
                             publishToOwnerOnly: true
                         });
@@ -1204,7 +1204,7 @@ RB.ReviewDialogView = Backbone.View.extend({
                 },
                 {
                     text: gettext('... and archive the review request'),
-                    click: () => {
+                    onClick: () => {
                         this._saveReview(true, {
                             publishAndArchive: true,
                         });

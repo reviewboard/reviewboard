@@ -1,0 +1,13 @@
+[uwsgi]
+module = reviewboard.wsgi:application
+env=REVIEWBOARD_SITEDIR=@sitedir@
+
+master = true
+processes = 6
+threads = 30
+
+socket = @sitedir@/data/uwsgi.sock
+cmod-socket = 664
+vacuum = true
+
+die-on-term = true

@@ -28,10 +28,11 @@
 {%  if has_add_permission %}
 {%   block object-tools-items %}
 {%    url cl.opts|admin_urlname:'add' as add_url %}
- <a class="rb-c-content-header__action"
+ <a class="rb-c-content-header__action rb-c-button -is-primary"
+    role="button"
     href="{% add_preserved_filters add_url is_popup %}">
-{%    blocktrans with cl.opts.verbose_name as name %}
-  Add {{name}}
+{%    blocktrans with cl.opts.verbose_name|title as name %}
+  Add New {{name}}
 {%    endblocktrans %}
  </a>
 {%   endblock object-tools-items %}

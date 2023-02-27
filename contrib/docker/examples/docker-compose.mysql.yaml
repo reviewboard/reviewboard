@@ -1,48 +1,191 @@
+# Example docker-compose configuration for Review Board on MySQL.
+#
+# Please note, this file is meant to be used as an example! You will need
+# to change some settings first. See the instructions.
+#
+#
+# Instructions
+# ============
+#
+# 1. Copy the following to a new directory:
+#
+#    * docker-compose.yaml (based on this file)
+#    * nginx_templates
+#
+# 2. Change the hostname below to a fully-qualified domain name you'll be
+#    able to use for the server. Search for "localhost" for the default.
+#
+#    See DOMAIN and NGINX_HOST below.
+#
+#    To temporarily test a hostname, you can modify /etc/hosts on Linux
+#    or macOS and alias it to your IP address.
+#
+#    NOTE: If you change this later, you will need to edit the sitedir
+#          volume's conf/settings_local.py to include the new hostname in
+#          ALLOWED_HOSTS, and change the hostname in Review Board's
+#          Admin UI -> General Settings page.
+#
+# 3. Change the database passwords below to something secure.
+#
+#    See MYSQL_ROOT_PASSWORD, MYSQL_PASSWORD, and DATABASE_PASSWORD.
+#
+# 4. Change the company name for your server.
+#
+#    See COMPANY below.
+#
+# 5. Go through this file and search for "CHANGEME" for other settings you
+#    may want to change.
+#
+# 6. Run: docker-compose up
+#
+# 7. Access http://<hostname>/
+#
+#
+# Data Storage
+# ============
+#
+# This example configuration will create two directories for storage:
+#
+# db_data/
+#     The MySQL database contents.
+#
+#     This CANNOT be shared across multiple MySQL database servers.
+#
+# sitedir/
+#     Review Board site directory content (static media files, data, and
+#     configuration).
+#
+#     This CAN be shared across multiple Review Board server instances, and
+#     Nginx instances.
+#
+#
+# Production Use
+# ==============
+#
+# As this is only a sample configuration, you'll likely want to make other
+# changes for production use, such as:
+#
+# 1. Setting up a load balancer with SSL enabled.
+#
+# 2. Separating out the database and memcached server for other Review Board
+#    instances to use.
+#
+# 3. Making sure only port 80 is accessible on the network.
+#
+# These are all beyond the scope of this example configuration.
+#
+# You should also go through this file, read the comments, and change any
+# configuration needed for your install.
+
 version: '3.7'
 
 
 services:
+  # The backend MySQL database server.
+  #
+  # This is accessed directly by Review Board.
+  #
+  # In production, this should be shared across all Review Board instances.
   db:
     image: mysql:8
     environment:
-      - MYSQL_ROOT_PASSWORD=admin123
+      # The name of the MySQL database storing Review Board content.
       - MYSQL_DATABASE=reviewboard
+
+      # The MySQL username for Review Board.
       - MYSQL_USER=reviewboard
+
+      # The MySQL password for Review Board.
+      #
+      # CHANGEME: Use a strong password!
       - MYSQL_PASSWORD=reviewboard123
+
+      # The root MySQL password.
+      #
+      # CHANGEME: Use a strong password!
+      - MYSQL_ROOT_PASSWORD=admin123
+
     volumes:
       - db_data:/var/lib/mysql
+
     restart: 'on-failure'
 
+
+  # The backend memory caching server.
+  #
+  # This is accessed directly by Review Board.
+  #
+  # In production, this should be shared across all Review Board instances,
+  # and should be configured with at least 2GB of RAM.
   memcached:
     image: memcached:alpine
     restart: 'on-failure'
 
+    entrypoint:
+      - memcached
+
+      # The amount of RAM available for memcached.
+      #
+      # CHANGEME: Set this to a suitable amount for your server. We recommend
+      #           at least 2GB in production (2048).
+      - -m 128
+
+
+  # The backend Review Board server.
+  #
+  # This should not be accessed directly. Instead, please access the frontend
+  # nginx server.
   reviewboard:
     image: beanbag/reviewboard:5.0
     depends_on:
       - db
       - memcached
+
     environment:
-      - COMPANY=TestCorp
       - DATABASE_TYPE=mysql
+
+      # The name of your company.
+      #
+      # CHANGEME: You should use your actual name here. It's used for
+      #           internal state and your in-app support page.
+      - COMPANY=Docker Compose Test
+
+      # CHANGEME: Set this to the database username above.
       - DATABASE_USERNAME=reviewboard
+
+      # CHANGEME: Set this to the database password above.
       - DATABASE_PASSWORD=reviewboard123
-      - DOMAIN=reviews.example.com
-    ports:
-      - 8080:8080
+
+      # CHANGEME: Set this to your accessible domain name.
+      - DOMAIN=localhost
+
     volumes:
       - sitedir:/site
 
+  # The frontend nginx web server.
+  #
+  # This serves up static media (CSS, JavaScript, and images), and forwards
+  # all other requests to the Review Board backend server.
+  #
+  # This is the server you will access for Review Board.
   nginx:
     image: nginx:alpine
     restart: always
     depends_on:
       - reviewboard
+
     environment:
-      - NGINX_HOST=reviews.example.com
+      # CHANGEME: Set this to your accessible domain name above.
+      - NGINX_HOST=localhost
+
+      # The public port used to access this instance.
+      #
+      # If changed, you will need to change 'ports' below to match.
       - NGINX_PORT=80
+
     ports:
       - 80:80
+
     volumes:
       - sitedir:/var/www/reviewboard
       - ./nginx_templates:/etc/nginx/templates

@@ -3,6 +3,7 @@ import re
 import warnings
 from contextlib import contextmanager
 from datetime import timedelta
+from typing import Callable, Optional
 from uuid import uuid4
 
 from django.contrib.auth.models import AnonymousUser, Permission, User
@@ -12,7 +13,7 @@ from django.core.cache import cache
 from django.core.files import File
 from django.core.files.base import ContentFile
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from django.test.client import RequestFactory
 from django.urls import ResolverMatch
 from django.utils import timezone
@@ -265,18 +266,30 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return local_site
 
-    def create_http_request(self, path='/', user=None, method='get',
-                            with_local_site=False, local_site=None,
-                            resolver_match=None,
-                            view=None, **kwargs):
+    def create_http_request(
+        self,
+        path: str = '/',
+        user: Optional[User] = None,
+        method: str = 'get',
+        with_local_site: bool = False,
+        local_site: Optional[LocalSite] = None,
+        resolver_match: Optional[ResolverMatch] = None,
+        view: Callable = lambda: None,
+        url_name: Optional[str] = None,
+        **kwargs,
+    ) -> HttpRequest:
         """Create an HttpRequest for testing.
 
         This wraps :py:class:`~django.test.client.RequestFactory`,
         automatically handing some common fields normally set by middleware,
         including the user, resolver match, and Local Site.
 
+        Version Changed:
+            6.0:
+            Added the ``url_name`` parameter.
+
         Args:
-            path (unicode, optional):
+            path (str, optional):
                 The path for the HTTP request, relative to the server root.
 
             user (django.contrib.auth.models.User, optional):
@@ -284,7 +297,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 :py:class:`~django.contrib.auth.models.AnonymousUser` will
                 be used.
 
-            method (unicode, optional):
+            method (str, optional):
                 The method on :py:class:`~django.test.client.RequestFactory`
                 used to create the request.
 
@@ -304,6 +317,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             view (callable, optional):
                 The view used for a default
                 :py:class:`~django.urls.ResolverMatch`.
+
+            url_name (str, optional):
+                The URL name to set in the resolver match, when creating one.
+                If ``resolver_match`` is passed in, this will not be used.
+
+                Version Added:
+                    6.0
 
             **kwargs (dict):
                 Additional keyword arguments to pass to the request factory
@@ -326,17 +346,23 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         if local_site is None:
             if with_local_site:
-                local_site = self.get_local_site(name=self.local_site_name)
+                local_site_name = self.local_site_name
+                local_site = self.get_local_site(name=local_site_name)
             else:
+                local_site_name = None
                 local_site = None
+        else:
+            local_site_name = local_site.name
 
         if resolver_match is None:
             resolver_match = ResolverMatch(func=view,
-                                           args=[],
-                                           kwargs={})
+                                           args=tuple(),
+                                           kwargs={},
+                                           url_name=url_name)
 
         request = factory_method(path, **kwargs)
         request.local_site = local_site
+        request._local_site_name = local_site_name
         request.resolver_match = resolver_match
         request.user = user or AnonymousUser()
 

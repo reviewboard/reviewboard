@@ -91,15 +91,8 @@ search index whenever a relevant change is made. Because of performance
 concerns, we recommend only using this with the Elasticsearch backend.
 
 If you want to use scheduled indexes, you will need to set up a scheduled
-command to run periodically to update the search index. On Linux or other
-Unix-based systems with :command:`cron`, you can install the provided
-``crontab`` file. This is available at :file:`conf/cron.conf` under your site
-directory. For example, to install the crontab for the current user, type::
-
-    $ crontab /path/to/site/conf/cron.conf
-
-We recommend doing this as the web server user, to ensure that permissions are
-correct to write to the index directory.
+command to run periodically to update the search index. See
+:ref:`configuring-cron` for details.
 
 The default crontab will perform an index update every 10 minutes.
 

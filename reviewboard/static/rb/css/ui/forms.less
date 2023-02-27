@@ -343,9 +343,9 @@ textarea {
      * on both sides.
      */
     #rb-ns-pages.base.on-shell-desktop-mode({
-      padding: @_action-spacing 0 @_action-spacing @_action-spacing;
+      margin: @_action-spacing 0 @_action-spacing @_action-spacing;
     }, @else: {
-      padding: @_action-spacing;
+      margin: @_action-spacing;
     });
   }
 
@@ -520,7 +520,8 @@ textarea {
     color: @_form-field-vars[@help-text-color];
     font-size: @_form-field-vars[@help-text-font-size];
     margin: 0;
-    padding: @_form-field-vars[@help-text-padding-vert] 0 0
+    padding: @_form-field-vars[@help-text-padding-vert] 0
+             @_form-field-vars[@help-text-padding-vert]
              (@_icon-size + @_form-field-vars[@help-icon-margin]);
     position: relative;
 
@@ -662,6 +663,8 @@ textarea {
  *         prevent its contents from being sent to the server, and should
  *         provide the appropriate ``data-`` attributes.
  *
+ *         Subforms must have a <fieldset> within it.
+ *
  * Structure:
  *     <fieldset class="rb-c-form-fieldset [modifiers]">
  *      <legend class="rb-c-form-fieldset__name">...</legend>
@@ -728,6 +731,14 @@ textarea {
   }
 
   &.-is-subform {
+    > .rb-c-form-fieldset__content > .rb-c-form-fieldset__fields {
+      /*
+       * Subform fieldsets themselves have nested fields, and those have
+       * their own margins. We want to collapse down the outer-most fields.
+       */
+      margin: 0;
+    }
+
     .rb-c-form-fieldset {
       padding-left: 0;
       padding-right: 0;
@@ -778,7 +789,7 @@ textarea {
   &__fields {
     @_form-row-vars: #rb-ns-ui.form-row();
 
-    padding: @_form-row-vars[@padding-vert] 0;
+    margin: @_form-row-vars[@padding-vert] 0;
   }
 
   /**
@@ -838,16 +849,9 @@ textarea {
   .config-forms-page-content &.fields-row {
     @_form-row-vars: #rb-ns-ui.form-row();
 
-    margin: @_form-row-vars[@padding-vert] @_form-row-vars[@padding-horiz];
+    margin: @_form-row-vars[@padding-vert] @_form-row-vars[@padding-horiz]
+            0 @_form-row-vars[@padding-horiz];
     padding: 0;
-
-    &:first-child {
-      margin-top: 0;
-    }
-
-    &:last-child {
-      margin-bottom: 0;
-    }
   }
 }
 

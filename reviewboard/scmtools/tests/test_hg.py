@@ -337,8 +337,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         self.assertEqual(value[1].author_name,
                          'Michael Rowe <mike.rowe@nab.com.au>')
         self.assertEqual(value[1].date, '2007-08-07T17:11:57')
-        self.assertEqual(value[1].parent,
-                         '0000000000000000000000000000000000000000')
+        self.assertEqual(value[1].parent, '')
 
         self.assertRaisesRegex(SCMError, 'Cannot load commits: ',
                                lambda: self.tool.get_commits(branch='x'))
@@ -378,8 +377,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         self.assertEqual(value[1].author_name,
                          'Michael Rowe <mike.rowe@nab.com.au>')
         self.assertEqual(value[1].date, '2007-08-07T17:11:57')
-        self.assertEqual(value[1].parent,
-                         '0000000000000000000000000000000000000000')
+        self.assertEqual(value[1].parent, '')
 
         self.assertRaisesRegex(SCMError, 'Cannot load commits: ',
                                lambda: self.tool.get_commits(branch='x'))

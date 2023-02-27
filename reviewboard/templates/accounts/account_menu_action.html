@@ -1,0 +1,13 @@
+{% load actions avatars %}
+<li class="rb-c-actions__action" id="{{action.get_dom_element_id}}"
+    {% if not visible %} style="display: none;"{% endif %}
+    role="menuitem">
+ <a href="#" role="presentation" aria-label="{{label}}">
+{% if siteconfig_settings.avatars_enabled %}
+{%  avatar user 32 %}
+{% endif %}
+  {{request.user.username}}
+  <span class="rb-icon rb-icon-dropdown-arrow"></span>
+ </a>
+{% child_actions_html %}
+</li>

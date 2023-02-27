@@ -5,8 +5,7 @@ suite('rb/views/DraftReviewBannerView', function() {
           <h1>You have a pending review.</h1>
           <input id="review-banner-edit" type="button"
                  value="Edit Review" />
-          <input id="review-banner-publish-container" type="button"
-                 value="Publish" />
+          <div id="review-banner-publish-container"></div>
           <input id="review-banner-discard" type="button"
                  value="Discard" />
          </div>
@@ -16,9 +15,11 @@ suite('rb/views/DraftReviewBannerView', function() {
     let view;
 
     beforeEach(function() {
+        const $banner = $(template).appendTo($testsScratch);
+
         model = new RB.DraftReview();
         view = new RB.DraftReviewBannerView({
-            el: $(template).appendTo($testsScratch),
+            el: $banner,
             model: model,
         });
 
@@ -81,7 +82,7 @@ suite('rb/views/DraftReviewBannerView', function() {
         it('Publish', function() {
             spyOn(model, 'publish');
 
-            view.$('#review-banner-publish').click();
+            view.$('.rb-c-menu-button__primary').click();
 
             expect(model.publish).toHaveBeenCalled();
         });

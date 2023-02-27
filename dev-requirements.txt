@@ -1,5 +1,4 @@
 kgb~=7.0
-mock
 nose
 
 # Required for Django type hints.
