@@ -108,10 +108,14 @@ Glossary
        A form of code review where code is reviewed after it is submitted
        to a repository, usually in a development branch.
 
+       See :ref:`using-pre-commit-review`.
+
    Pre-commit Review
        A form of code review where code is reviewed before it even goes
        into a repository. This is generally a more strict way to handle
        code review, which can lead to fewer problems in the codebase.
+
+       See :ref:`using-post-commit-review`.
 
    Private Review Requests
        A review request that can only be accessed by users meeting certain

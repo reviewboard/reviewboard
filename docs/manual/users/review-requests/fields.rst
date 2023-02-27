@@ -106,6 +106,8 @@ the change addresses. If the repository is configured with a bug tracker,
 the bug IDs will link to the reports on the bug tracker.
 
 
+.. _review-request-depends-on:
+
 Depends On
 ----------
 

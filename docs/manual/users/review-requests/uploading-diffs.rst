@@ -1,3 +1,5 @@
+.. _uploading-diffs:
+
 ===============
 Uploading Diffs
 ===============
