@@ -51,7 +51,7 @@
 {% with form.certerror as certerror %}
 {% with form.certerror.certificate as certificate %}
 {%  if hostkeyerror or certerror %}
-<div class="rb-c-alert -is-warning">
+<div class="confirmation rb-c-alert -is-warning">
  <div class="rb-c-alert__content">
 {%   with error_parts=hostkeyerror|default:certerror|split_error_title_text %}
   <h3 class="rb-c-alert__heading">{{error_parts.0}}</h3>

@@ -1,0 +1,56 @@
+# This is a sample configuration file for a Nginx -> uWSGI deployment for
+# Review Board.
+#
+# Please go through this file and make sure it's suitable for your setup
+# before using it.
+
+server {
+    # NOTE: If you change the server_name, you must change ALLOWED_HOSTS to
+    #       match. This can be found in:
+    #
+    #       @sitedir@/conf/settings_local.py
+    server_name @sitedomain@;
+
+    # If enabling SSL on Nginx, remove the "listen 80" lines below and use
+    # configure these settings instead:
+    #
+    # listen [::]:443 ssl http2;
+    # listen 443 ssl http2;
+    # ssl_certificate @sitedir@/conf/ssl/fullchain.pem;
+    # ssl_certificate_key @sitedir@/conf/ssl/privkey.pem;
+    listen [::]:80;
+    listen 80;
+
+    # Log configuration
+    #
+    # NOTE: We recommend adding these to your logrotate configuration.
+    access_log @sitedir@/logs/nginx_access_log;
+    error_log @sitedir@/logs/nginx_error_log;
+
+    location / {
+        include uwsgi_params;
+        uwsgi_pass unix:@sitedir@/data/uwsgi.sock;
+    }
+
+    location @siteroot@media/ {
+        alias @sitedir@/htdocs/media/;
+        expires max;
+        add_header Cache-Control public;
+    }
+
+    location @siteroot@static/ {
+        alias @sitedir@/htdocs/static/;
+        expires max;
+        add_header Cache-Control public;
+    }
+
+    location @siteroot@errordocs/ {
+        alias @sitedir@/htdocs/errordocs/;
+        expires 5d;
+    }
+
+    location @siteroot@robots.txt {
+        alias @sitedir@/htdocs/robots.txt;
+        expires 5d;
+    }
+}

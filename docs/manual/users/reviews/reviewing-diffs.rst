@@ -1,8 +1,8 @@
 .. _reviewing-diffs:
 
-===============
-Reviewing Diffs
-===============
+======================
+Reviewing Code (Diffs)
+======================
 
 Any review request that introduces changes to code will have a
 :guilabel:`Diff` tab at the top-right of the review request page that provides

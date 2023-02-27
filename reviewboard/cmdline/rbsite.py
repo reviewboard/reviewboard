@@ -260,10 +260,12 @@ class Site(object):
         errordocs_dir = os.path.join(htdocs_dir, 'errordocs')
         media_dir = os.path.join(htdocs_dir, "media")
         static_dir = os.path.join(htdocs_dir, "static")
+        conf_dir = os.path.join(self.install_dir, 'conf')
 
         self.mkdir(self.install_dir)
+        self.mkdir(conf_dir)
         self.mkdir(os.path.join(self.install_dir, "logs"))
-        self.mkdir(os.path.join(self.install_dir, "conf"))
+        self.mkdir(os.path.join(conf_dir, 'webconfs'))
 
         self.mkdir(os.path.join(self.install_dir, "tmp"))
         os.chmod(os.path.join(self.install_dir, "tmp"), 0o777)
@@ -398,24 +400,6 @@ class Site(object):
         import django
         django.setup()
 
-    def get_apache_version(self):
-        """Return the version of the installed apache."""
-        try:
-            apache_version = subprocess.check_output(['httpd', '-v'])
-            # Extract the major and minor version from the string
-            m = re.search(r'Apache\/(\d+).(\d+)', apache_version)
-            if m:
-                return m.group(1, 2)
-            else:
-                # Raise a generic regex error so we go to the
-                # exception handler to pick a default
-                raise re.error
-        except Exception:
-            # Version check returned an error or the regular
-            # expression did not match. Guess 2.2 for historic
-            # compatibility
-            return (2, 2)
-
     def generate_cron_files(self):
         """Generate sample crontab for this site."""
         self.process_template("cmdline/conf/cron.conf.in",
@@ -424,45 +408,27 @@ class Site(object):
 
     def generate_config_files(self):
         """Generate the configuration files for this site."""
-        web_conf_filename = ""
-        enable_fastcgi = False
-        enable_wsgi = False
+        conf_dir = os.path.join(self.install_dir, 'conf')
+        htdocs_dir = os.path.join(self.install_dir, 'htdocs')
+        webconfs_dir = os.path.join(conf_dir, 'webconfs')
 
-        if self.web_server_type == 'apache':
-            web_conf_filename = 'apache-wsgi.conf'
-            enable_wsgi = True
+        for web_conf_filename in ('apache-wsgi.conf',
+                                  'nginx-to-gunicorn.conf',
+                                  'nginx-to-uwsgi.conf',
+                                  'run-gunicorn.sh',
+                                  'uwsgi.ini'):
+            self.process_template(
+                f'cmdline/conf/{web_conf_filename}.in',
+                os.path.join(webconfs_dir, web_conf_filename))
 
-            # Get the Apache version so we know which authorization directive
-            # to use.
-            apache_version = self.get_apache_version()
+        os.chmod(os.path.join(webconfs_dir, 'run-gunicorn.sh'), 0o755)
 
-            if apache_version >= (2, 4):
-                self.apache_auth = 'Require all granted'
-            else:
-                self.apache_auth = 'Allow from all'
-        elif self.web_server_type == "lighttpd":
-            web_conf_filename = "lighttpd.conf"
-            enable_fastcgi = True
-        else:
-            # Should never be reached.
-            assert False
-
-        conf_dir = os.path.join(self.install_dir, "conf")
-        htdocs_dir = os.path.join(self.install_dir, "htdocs")
-
-        self.process_template("cmdline/conf/%s.in" % web_conf_filename,
-                              os.path.join(conf_dir, web_conf_filename))
         self.generate_cron_files()
-        if enable_fastcgi:
-            fcgi_filename = os.path.join(htdocs_dir, "reviewboard.fcgi")
-            self.process_template("cmdline/conf/reviewboard.fcgi.in",
-                                  fcgi_filename)
-            os.chmod(fcgi_filename, 0o755)
-        elif enable_wsgi:
-            wsgi_filename = os.path.join(htdocs_dir, "reviewboard.wsgi")
-            self.process_template("cmdline/conf/reviewboard.wsgi.in",
-                                  wsgi_filename)
-            os.chmod(wsgi_filename, 0o755)
+
+        wsgi_filename = os.path.join(htdocs_dir, 'reviewboard.wsgi')
+        self.process_template('cmdline/conf/reviewboard.wsgi.in',
+                              wsgi_filename)
+        os.chmod(wsgi_filename, 0o755)
 
         self.generate_settings_local()
 
@@ -1231,6 +1197,7 @@ class Site(object):
         """
         domain_name = self.domain_name or ''
         domain_name_escaped = domain_name.replace('.', '\\.')
+        domain_name_id = domain_name.replace('.', '_')
 
         if template_is_local:
             with open(template_path, 'r') as fp:
@@ -1264,13 +1231,11 @@ class Site(object):
             'sitedir': sitedir,
             'sitedomain': domain_name,
             'sitedomain_escaped': domain_name_escaped,
+            'sitedomain_id': domain_name_id,
             'siteid': self.site_id,
             'siteroot': site_root,
             'siteroot_noslash': site_root_noslash,
         }
-
-        if hasattr(self, 'apache_auth'):
-            extra_context['apache_auth'] = self.apache_auth
 
         context.update(extra_context)
 
@@ -1583,10 +1548,7 @@ class SiteList(object):
             try:
                 os.makedirs(os.path.dirname(self.path), 0o755)
             except:
-                # We shouldn't consider this an abort-worthy error
-                # We'll warn the user and just complete setup
-                print("WARNING: Could not save site to sitelist %s" %
-                      self.path)
+                # We can't store the site list file. We'll just skip it.
                 return
 
         with open(self.path, 'w') as f:
@@ -1779,7 +1741,7 @@ class InstallCommand(Command):
         parser.add_argument(
             '--web-server-type',
             default='apache',
-            help='web server (apache or lighttpd)')
+            help='Deprecated.')
         parser.add_argument(
             '--web-server-port',
             help='port that the web server should listen on',
@@ -1892,10 +1854,6 @@ class InstallCommand(Command):
                 self.ask_cache_type()
 
             self.ask_cache_info()
-
-            if options.advanced:
-                self.ask_web_server_type()
-
             self.ask_admin_user()
             self.ask_support_data()
 
@@ -2410,7 +2368,10 @@ class InstallCommand(Command):
         ])
 
         console.print()
-        console.print('For more information, visit:')
+        console.print('If SELinux is enabled, you will also need to enable '
+                      'some additional policies.')
+        console.print()
+        console.print('For more information on these steps, visit:')
         console.print()
         console.print('%sadmin/installation/creating-sites/'
                       % get_manual_url(),

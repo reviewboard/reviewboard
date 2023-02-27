@@ -4,19 +4,19 @@
 Upgrading Review Board
 ======================
 
-
-Upgrading Review Board is pretty simple. It's essentially a three-step
-process.
+Upgrading Review Board is simple. It's essentially a three-step process.
 
 1. Upgrade Review Board by running:
 
-   .. code-block:: shell
+   .. code-block:: console
 
-      $ pip install -U ReviewBoard
+      $ pip3 install -U ReviewBoard
 
-2. Upgrade each installed site. See :ref:`upgrading-sites`.
+   This may need to be done as ``root``, or using :command:`sudo`, depending
+   on your setup.
+
+2. :ref:`Upgrade your site directory <upgrading-sites>`.
 3. Restart your web server.
-4. Restart memcached.
 
 If you're on Linux and behind a proxy server, see the installation
 instructions for :ref:`linux-http-proxy`.

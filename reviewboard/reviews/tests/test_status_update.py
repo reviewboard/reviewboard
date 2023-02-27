@@ -1,10 +1,13 @@
 """Unit tests for reviewboard.reviews.models.status_update.StatusUpdate."""
 
 from django.contrib.auth.models import AnonymousUser, Permission, User
+from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.integrations.models import IntegrationConfig
 from reviewboard.reviews.models.base_comment import BaseComment
 from reviewboard.reviews.models.review_request import fetch_issue_counts
+from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 
@@ -156,3 +159,190 @@ class StatusUpdateTests(TestCase):
         self.assertEqual(issues[BaseComment.OPEN], 0)
         self.assertEqual(issues[BaseComment.DROPPED], 1)
         self.assertEqual(issues[BaseComment.RESOLVED], 0)
+
+    def test_get_integration_config(self) -> None:
+        """Testing StatusUpdate.integration_config getter"""
+        # Pre-fetch the LocalSite cache.
+        LocalSite.objects.has_local_sites()
+
+        review_request = self.create_review_request()
+        config = IntegrationConfig.objects.create(name='my-config')
+        status_update = self.create_status_update(
+            review_request,
+            extra_data={
+                '__integration_config_id': config.pk,
+            })
+
+        queries = [
+            {
+                'model': IntegrationConfig,
+                'where': Q(pk=config.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            config2 = status_update.integration_config
+
+        self.assertEqual(config, config2)
+
+        # Check that the configuration is cached.
+        with self.assertNumQueries(0):
+            status_update.integration_config
+
+    @add_fixtures(['test_site'])
+    def test_get_integration_config_with_local_site(self) -> None:
+        """Testing StatusUpdate.integration_config getter with Local Site"""
+        # Pre-fetch the LocalSite cache.
+        LocalSite.objects.has_local_sites()
+
+        local_site = self.get_local_site(self.local_site_name)
+        review_request = self.create_review_request(local_site=local_site)
+        config = IntegrationConfig.objects.create(name='my-config',
+                                                  local_site=local_site)
+        status_update = self.create_status_update(
+            review_request,
+            extra_data={
+                '__integration_config_id': config.pk,
+            })
+
+        queries = [
+            {
+                'model': IntegrationConfig,
+                'where': Q(pk=config.pk) & Q(local_site=local_site.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            config2 = status_update.integration_config
+
+        self.assertEqual(config, config2)
+
+        # Check that the configuration is cached.
+        with self.assertNumQueries(0):
+            status_update.integration_config
+
+    @add_fixtures(['test_site'])
+    def test_get_integration_config_with_bad_local_site(self) -> None:
+        """Testing StatusUpdate.integration_config getter with Local Site
+        mismatch
+        """
+        # Pre-fetch the LocalSite cache.
+        LocalSite.objects.has_local_sites()
+
+        local_site = self.get_local_site(self.local_site_name)
+        review_request = self.create_review_request(local_site=local_site)
+        config = IntegrationConfig.objects.create(name='my-config')
+        status_update = self.create_status_update(
+            review_request,
+            extra_data={
+                '__integration_config_id': config.pk,
+            })
+
+        queries = [
+            {
+                'model': IntegrationConfig,
+                'where': Q(pk=config.pk) & Q(local_site=local_site.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            config2 = status_update.integration_config
+
+        self.assertIsNone(config2)
+
+        # Check that the result is cached.
+        with self.assertNumQueries(0):
+            status_update.integration_config
+
+    def test_get_integration_config_with_missing(self) -> None:
+        """Testing StatusUpdate.integration_config getter with missing
+        IntegrationConfig
+        """
+        # Pre-fetch the LocalSite cache.
+        LocalSite.objects.has_local_sites()
+
+        review_request = self.create_review_request()
+        status_update = self.create_status_update(
+            review_request,
+            extra_data={
+                '__integration_config_id': 123,
+            })
+
+        queries = [
+            {
+                'model': IntegrationConfig,
+                'where': Q(pk=123),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            config2 = status_update.integration_config
+
+        self.assertIsNone(config2)
+
+        # Check that the result is cached.
+        with self.assertNumQueries(0):
+            status_update.integration_config
+
+    def test_set_integration_config(self) -> None:
+        """Testing StatusUpdate.integration_config setter"""
+        review_request = self.create_review_request()
+        status_update = self.create_status_update(review_request)
+
+        self.assertEqual(status_update.extra_data, {})
+
+        # Set the configuration.
+        config = IntegrationConfig.objects.create(name='my-config')
+        status_update.integration_config = config
+
+        self.assertEqual(status_update.extra_data, {
+            '__integration_config_id': config.pk,
+        })
+        self.assertEqual(status_update.integration_config, config)
+
+    def test_set_integration_config_with_none(self) -> None:
+        """Testing StatusUpdate.integration_config setter with None"""
+        review_request = self.create_review_request()
+        status_update = self.create_status_update(review_request)
+
+        self.assertEqual(status_update.extra_data, {})
+
+        # Set the initial configuration.
+        config = IntegrationConfig.objects.create(name='my-config')
+        status_update.integration_config = config
+
+        self.assertEqual(status_update.extra_data, {
+            '__integration_config_id': config.pk,
+        })
+        self.assertEqual(status_update.integration_config, config)
+
+        # Set it back to None.
+        status_update.integration_config = None
+
+        self.assertEqual(status_update.extra_data, {})
+        self.assertIsNone(status_update.integration_config)
+
+    def test_set_integration_config_with_bad_local_site(self) -> None:
+        """Testing StatusUpdate.integration_config setter with LocalSite
+        mismatch
+        """
+        review_request = self.create_review_request()
+        status_update = self.create_status_update(review_request)
+
+        self.assertEqual(status_update.extra_data, {})
+
+        # Set the initial configuration.
+        local_site = self.create_local_site(name='test-site-1')
+        config = IntegrationConfig.objects.create(name='my-config',
+                                                  local_site=local_site)
+
+        message = (
+            'The integration configuration and Status Update must have the '
+            'same Local Site.'
+        )
+
+        with self.assertRaisesMessage(ValueError, message):
+            status_update.integration_config = config
+
+        self.assertEqual(status_update.extra_data, {})
+        self.assertIsNone(status_update.integration_config)

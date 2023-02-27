@@ -1,0 +1,12 @@
+#!/bin/sh
+
+
+gunicorn \
+    --bind=0.0.0.0:8000 \
+    --log-level=info \
+    --timeout=120 \
+    --workers=6 \
+    --threads=30 \
+    --log-file=@sitedir@/logs/gunicorn.log \
+    --env REVIEWBOARD_SITEDIR=@sitedir@ \
+    reviewboard.wsgi

@@ -9,11 +9,12 @@ others. The reviewer may just have a question or suggest something optional,
 but they may also have a critical issue that must be resolved before the
 change can be submitted.
 
-Issue tracking enables reviewers to specify that their comment refers to
-a defect in the code or file that must be resolved. The owner of the review
-request will be able to see that issues were filed, and can resolve or discard
-them one-by-one. This is a faster alternative to replying to each comment
-with "Fixed."
+Issue tracking allows reviewers to specify that their comment refers to
+a defect in the code or file that must be resolved.
+
+The owner of the review request will be able to see that issues were filed,
+and can resolve or discard them one-by-one. This is a faster alternative to
+replying to each comment with "Fixed."
 
 
 Opening Issues
@@ -42,35 +43,48 @@ buttons allow for quickly marking issues as either resolved or discarded.
 
 .. image:: open-issue.png
 
-Clicking :guilabel:`Fixed` will mark that particular issue as fixed,
-letting other reviewers see that you've taken care of the issue.
+* :guilabel:`Fixed` will mark that particular issue as fixed.
 
-Clicking :guilabel:`Drop` will drop that issue. This signals to the
-reviewers that either their comment didn't make sense for one reason or
-another, or that there's a disagreement about the issue. Generally, this
-should be followed up with a comment.
+  This lets other reviewers see that you've taken care of the issue.
+
+* :guilabel:`Drop` will drop that issue.
+
+  This tells reviewers that either their comment didn't make sense
+  for one reason or another, or that there's a disagreement about the issue.
+  Generally, this should be followed up with a comment.
 
 .. image:: resolved-issue.png
 
 .. image:: dropped-issue.png
 
-Issues that are unintentionally closed one way or another can be re-opened
-by clicking :guilabel:`Re-open`.
+* :guilabel:`Re-open` will re-open an issue that was previously closed.
 
 
-Summary Table
-=============
+Issues can be closed or re-opened by either the owner of the review request or
+the reviewer who filed the issue.
+
+
+.. _issue-summary-table:
+
+Issue Summary Table
+===================
 
 On the reviews page below the description is a table which lists all of the
 issues found in reviews.
 
 .. image:: issue-summary.png
 
-Clicking the :guilabel:`Status` drop-down will allow you to choose between
-:guilabel:`Open`, :guilabel:`Dropped`, :guilabel:`Resolved`, or
-:guilabel:`All issues`. Clicking the :guilabel:`From` drop-down will allow
-you to filter the list by individual reviewers. Clicking on a row will jump
-to the comment.
+Clicking the :guilabel:`Status` drop-down will allow you to choose between:
+
+* :guilabel:`Open`
+* :guilabel:`Dropped`
+* :guilabel:`Resolved`
+* :guilabel:`All issues`
+
+Clicking the :guilabel:`From` drop-down will allow you to filter the list by
+individual reviewers.
+
+Clicking on a row will jump to the comment.
 
 
 .. _issue-verification:
@@ -78,14 +92,18 @@ to the comment.
 Issue Verification
 ==================
 
-If an issue is particularly important, you can select :guilabel:`Require
-Verification` when creating the comment. This will make it so the owner of the
-review request cannot directly mark the issue as fixed or dropped. Instead, the
-issue will be set to an intermediate state, waiting for verification. The
-reviewer (or an administrator) can then verify whether the issue should be
-closed or reopen it.
+If an issue is particularly important, you can enable Issue Verification.
+
+This will prevent owners of a review request from closing an issue until the
+reviewer (or an administrator) has approved the resolution. Instead, the issue
+will state it's waiting for verification.
+
+Issue verification can be enabled by enabling :guilabel:`Require Verification`
+when creating a comment.
+
+.. todo:: Screenshot
 
 Because this adds an extra step to the process, we recommend only requiring
-verification for extremely important issues that should truly block the change.
-Unless you have specific high requirements for your industry, using it on every
-issue is likely to slow down the code review process too much.
+verification for extremely important issues that should truly block the
+change. Unless you have specific high requirements for your industry, using it
+on every issue is likely to slow down the code review process too much.

@@ -17,12 +17,15 @@ Installation will happen in two steps:
 
 * **Step 1: Install the Review Board packages for:**
 
-  * :doc:`Linux <installation/linux>`
+  * :doc:`Linux <installation/linux>` (recommended)
   * :doc:`macOS <installation/osx>`
   * :doc:`Windows <installation/windows>`
   * Or use our official :doc:`Docker images <installation/docker>`
 
 * :doc:`Step 2: Create your site directory <installation/creating-sites>`
+
+  Learn how to create your database and Review Board site directory, configure
+  SELinux, and set up a web server.
 
 
 .. _upgrading-reviewboard-toc:
@@ -38,15 +41,18 @@ these steps:
 * :doc:`Step 2: Upgrade your site directory <upgrading/upgrading-sites>`
 
 
-Optimizing Your Server
-======================
+Optimizing/Scaling Your Server
+==============================
 
 Once you have things running, you'll want to make sure things are working
 at peak performance by following our guides.
 
-* :doc:`General optimization tips <optimization/general>`
-* :doc:`Optimizing Memcached <optimization/memcached>`
-* :doc:`Optimizing MySQL <optimization/mysql>`
+* :doc:`Introduction to optimizing and scaling Review Board <optimization/general>`
+* :ref:`Recommended hardware <recommended-hardware>`
+* :ref:`Optimizing memcached <optimizing-memcached>`
+* :ref:`Setting diff limits <setting-diff-limits>`
+* :ref:`Scaling your deployment <scaling-deployment>`
+* :ref:`Troubleshooting performance problems <troubleshooting-performance>`
 
 
 The Administration UI
@@ -66,6 +72,8 @@ The Administration UI is composed of four main areas:
 * :doc:`Extensions <extensions/index>`
 * :doc:`Integrations <integrations/index>`
 
+
+.. _configuration-topics:
 
 Configuring Review Board
 ========================

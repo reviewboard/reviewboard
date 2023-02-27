@@ -195,7 +195,20 @@ reply_published = Signal()
 
 #: Emitted when a StatusUpdate should run or re-run.
 #:
+#: Version Changed:
+#:     5.0.3:
+#:     Added the ``config`` argument.
+#:
 #: Args:
 #:     status_update (reviewboard.reviews.models.StatusUpdate):
 #:         The StatusUpdate associated with the tool that should be run.
+#:
+#:     config (reviewboard.integrations.models.IntegrationConfig):
+#:         The associated integration configuration being run.
+#:
+#:         If provided and set, this should be used instead of scanning for
+#:         a matching configuration.
+#:
+#:         Version Added:
+#:             5.0.3
 status_update_request_run = Signal()
