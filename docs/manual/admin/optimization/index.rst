@@ -6,5 +6,3 @@ Optimization
    :maxdepth: 2
 
    general
-   memcached
-   mysql

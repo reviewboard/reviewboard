@@ -41,15 +41,18 @@ these steps:
 * :doc:`Step 2: Upgrade your site directory <upgrading/upgrading-sites>`
 
 
-Optimizing Your Server
-======================
+Optimizing/Scaling Your Server
+==============================
 
 Once you have things running, you'll want to make sure things are working
 at peak performance by following our guides.
 
-* :doc:`General optimization tips <optimization/general>`
-* :doc:`Optimizing Memcached <optimization/memcached>`
-* :doc:`Optimizing MySQL <optimization/mysql>`
+* :doc:`Introduction to optimizing and scaling Review Board <optimization/general>`
+* :ref:`Recommended hardware <recommended-hardware>`
+* :ref:`Optimizing memcached <optimizing-memcached>`
+* :ref:`Setting diff limits <setting-diff-limits>`
+* :ref:`Scaling your deployment <scaling-deployment>`
+* :ref:`Troubleshooting performance problems <troubleshooting-performance>`
 
 
 The Administration UI
