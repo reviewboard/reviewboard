@@ -4,11 +4,32 @@
 Users Guide
 ===========
 
-Review Board is an open source tool used to help with the peer review process
-for source code, documentation, images, and more. It's web-based, extensible,
-and built to work with a wide variety of environments and source code
-management systems using :term:`pre-commit review` and :term:`post-commit
-review` methods.
+Review Board is an extensible, feature-rich, open source code review product
+commonly used used to help with the peer code review and document review
+processes. It's ideal for source code, documentation, images, and more.
+
+It's built to work with a wide variety of environments, `team collaboration
+and CI services`_, and source code management systems, such as:
+
+* :rbintegration:`Git <git>`
+* :rbintegration:`Mercurial <mercurial>`
+* :rbintegration:`Perforce <perforce>`
+* :rbintegration:`Cliosoft SOS <cliosoft-sos>`
+* :rbintegration:`IBM ClearCase <clearcase>`
+* :rbintegration:`HCL VersionVault <versionvault>`
+* :rbintegration:`Microsoft Azure DevOps / TFS / Team Foundation Services
+  <tfs>`
+
+Plus `many more <https://www.reviewboard.org/integrations/>`_.
+
+Review Board can be :ref:`extended in-house <extensions-overview>`, allowing
+companies to build new first-class features, tweak policies, and better
+integrate with their existing systems. This provides opportunities not
+available with other code review products.
+
+
+.. _team collaboration and CI services:
+   https://www.reviewboard.org/integrations/
 
 
 Getting Started with Code Review
@@ -17,8 +38,8 @@ Getting Started with Code Review
 New to code review? Start here to learn some of the basics before you get going
 with Review Board.
 
-* :doc:`getting-started/what-is-code-review`
-* :doc:`getting-started/workflow`
+* :doc:`What is code review? <getting-started/what-is-code-review>`
+* :doc:`Review Board workflows <getting-started/workflow>`
 
 
 The Dashboard: Your Code Review Inbox
@@ -95,7 +116,7 @@ Basic concepts
 Reviewing content
 -----------------
 
-* :doc:`Reviewing diffs <reviews/reviewing-diffs>`
+* :doc:`Reviewing code (diffs) <reviews/reviewing-diffs>`
 * :doc:`Reviewing file attachments (overview) <reviews/reviewing-files>`
 * :doc:`Reviewing image file attachments <reviews/reviewing-images>`
 * :doc:`Reviewing Markdown file attachments <reviews/reviewing-markdown>`
@@ -131,7 +152,7 @@ For your convenience, here's some sections you might be interested in.
 * :ref:`Basic syntax for Markdown <markdown-basic-syntax>`
 * :ref:`Providing code samples <markdown-code-syntax>`
 * :ref:`Using Emoji <emoji>`
-* :ref:`Uploading Images <markdown-upload-images>`
+* :ref:`Uploading images <markdown-upload-images>`
 
 
 Searching for Review Requests and Users
