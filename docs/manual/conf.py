@@ -35,7 +35,8 @@ sys.path = os.getenv('PYTHONPATH_PREPEND', '').split(':') + sys.path
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 
 import reviewboard
-from reviewboard.dependencies import (django_doc_major_version,
+from reviewboard.dependencies import (PYTHON_MIN_VERSION,
+                                      django_doc_major_version,
                                       djblets_doc_major_version)
 
 from beanbag_docutils.sphinx.ext.github import github_linkcode_resolve
@@ -246,6 +247,13 @@ latex_documents = [
 
 latex_show_urls = 'inline'
 latex_show_pagerefs = True
+
+
+rst_prolog = """
+.. |python_min_version| replace:: %(python_min_version)s
+""" % {
+    'python_min_version': '%s.%s' % PYTHON_MIN_VERSION,
+}
 
 
 # Determine the branch or tag used for code references.

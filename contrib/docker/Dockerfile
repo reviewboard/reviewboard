@@ -3,7 +3,7 @@
 # Copyright (C) 2020 Beanbag, Inc.
 #
 # Documentation on this Docker image is available at
-# http://localhost:8081/docs/manual/latest/admin/installation/docker/
+# https://www.reviewboard.org/docs/manual/latest/admin/installation/docker/
 
 
 ##############################################################################
