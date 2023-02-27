@@ -1,52 +1,70 @@
 .. _upgrading-sites:
 
-===============
-Upgrading Sites
-===============
+============================
+Upgrading Review Board Sites
+============================
 
-Any time Review Board has been upgraded, each site must also be upgraded.
-Upgrading serves several key tasks:
+After upgrading Review Board, you will need to upgrade each :term:`site
+directory`. This performs the following actions:
 
-* Performs database updates and migrations
-* Rebuilds missing parts of the directory structure
-* Updates the local copies or links to the Review Board media files
+* Applies new changes to your database
+* Adds new media files to your site directory
+* Migrates data for the new version
 
-If you don't perform an upgrade, your site may appear broken.
+Minor version upgrades are generally very quick, completing in seconds.
 
-Before upgrading, we highly recommend backing up your database, in case
-something goes wrong. You can also enable read-only mode from the
-:ref:`general-settings` page to alert your users.
+Major version upgrades may take longer, depending on your database.
 
-To begin a site upgrade, run::
-
-    $ rb-site upgrade /path/to/sitedir
-
-This will display some output in the console. When it's finished, restart
-your web server and your site should be ready.
+We **strongly recommend** backing up your database and testing the upgrade on
+a staging server, in case anything goes wrong!
 
 
-Re-Applying SELinux Permissions
-===============================
+.. tip::
 
-If you're :ref:`using SELinux <configuring-selinux>`, you may need to re-apply
-your permissions to your site directory.
+   Enable read-only mode from the :ref:`general-settings` page to alert your
+   users before performing an upgrade.
 
-To do this, run:
+   This will prevent users from posting changes or working on reviews during
+   upgrade.
 
-.. code-block:: console
-
-   $ restorecon -Rv /path/to/sitedir
-
-For example:
-
-.. code-block:: console
-
-   $ restorecon -Rv /var/www/reviews.example.com
+   Don't forget to disable read-only mode once the upgrade is finished!
 
 
-Troubleshooting Upgrades
-------------------------
+To upgrade a Review Board site:
 
-It's possible after a site upgrade that cached data may be out of date,
-either in memcached or in the users' browsers. If you do notice problems,
-try restarting memcached, and tell the users to clear their browser cache.
+1. Run:
+
+   .. code-block:: console
+
+       $ rb-site upgrade /path/to/sitedir
+
+   For example:
+
+   .. code-block:: console
+
+       $ rb-site upgrade /var/www/reviews.example.com
+
+   This will report the progress of the upgrade. If it fails to report a
+   successful upgrade, stop and `reach out to support <support_>`_ for help.
+
+2. If you're :ref:`using SELinux <configuring-selinux>`, re-apply your site
+   permissions:
+
+   .. code-block:: console
+
+      $ restorecon -Rv /path/to/sitedir
+
+   For example:
+
+   .. code-block:: console
+
+      $ restorecon -Rv /var/www/reviews.example.com
+
+   This requires that you followed the SELinux steps linked above.
+
+2. Restart your web server.
+
+Your site should be ready!
+
+
+.. _support: https://www.reviewboard.org/support/
