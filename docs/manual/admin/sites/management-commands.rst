@@ -119,3 +119,94 @@ To invalidate the tokens of all users, run::
 
 You can also supply a reason for invalidating the tokens by passing the
 ``--reason <reason>`` argument.
+
+
+.. _management-command-find-large-diffs:
+
+Find Large Diffs
+----------------
+
+.. program:: find-large-diffs
+
+.. versionadded:: 5.0.3
+
+When :ref:`troubleshooting performance problems
+<troubleshooting-performance>`, it can be helpful to scan for large diffs
+that may have been uploaded to the database.
+
+This command will output in CSV format, for processing and analysis.
+
+Results from this command will often be requested when `contacting support`_
+about performance problems.
+
+To check for large diffs from the past N days, run:
+
+.. code-block:: console
+
+   $ rb-site manage /path/to/sitedir find-large-diffs \
+         --num-days=<N>
+
+To check for a range of review request IDs:
+
+.. code-block:: console
+
+   $ rb-site manage /path/to/sitedir find-large-diffs \
+         --start-id=<ID> --end-id=<ID>
+
+For example:
+
+.. code-block:: console
+
+   $ rb-site manage /path/to/sitedir find-large-diffs --num-days=100
+   This will scan 35 review requests. Continue? [Y/n] y
+   Review Request ID,Last Updated,User ID,Max Files,Max Diff Size,Max Parent Diff Size,Diffset ID for Max Files,Diffset ID for Max Diff Size,Diffset ID for Max Parent Diff Size
+   325,2023-03-22 02:54:45.411235+00:00,1,122,101288,0,514,514,0
+   328,2023-03-09 12:21:57.841850+00:00,1,14,63378,160718,517,517,517
+   334,2023-04-23 01:36:54.422582+00:00,1,6,70384,108192,535,535,535
+   337,2023-09-14 22:54:14.637025+00:00,1,5,107403,0,543,544,0
+
+
+The following options are available to customize your scan:
+
+.. option:: --min-size <MIN_SIZE_BYTES>
+
+   Minimum diff or parent diff size to include in a result.
+
+   A review request is included if a diff meets :option:`--min-size` or
+   :option:`--min-files`.
+
+   Defaults to ``100000`` (100KB).
+
+.. option:: --min-files <MIN_FILES>
+
+   Minimum number of files to include in a result.
+
+   A review request is included if a diff meets :option:`--min-size` or
+   :option:`--min-files`.
+
+   Defaults to ``50``.
+
+.. option:: --start-id <ID>
+
+   Starting review request ID for the scan.
+
+   Either :option:`--start-id` or :option:`--num-days` must be specified.
+
+.. option:: --end-id <ID>
+
+   Last review request ID for the scan.
+
+   Defaults to the last ID in the database.
+
+.. option:: --num-days <DAYS>
+
+   Number of days back to scan for diffs.
+
+   Either :option:`--start-id` or :option:`--num-days` must be specified.
+
+.. option:: --noinput, --no-input
+
+   Disable prompting for confirmation before performing the scan.
+
+
+.. _contacting support: https://www.reviewboard.org/support/

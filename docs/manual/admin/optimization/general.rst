@@ -348,19 +348,16 @@ are usually symptoms of one of the following issues.
 
   *This is very often the root cause of the issue.*
 
-  To diagnose this, you can run the following on the server (if using
-  Review Board 5.0.3 or higher):
+  To diagnose this, you can use the :ref:`find-large-diffs
+  <management-command-find-large-diffs>` management command (available on
+  Review Board 5.0.3 and higher):
 
   .. code-block:: console
 
-     $ rb-site manage /path/to/sitedir find-large-diffs \
-           --min-size <SIZE_IN_BYTES> \
-           --start-id <START_REVIEW_REQUEST_ID> \
-           --end-id <END_REVIEW_REQUEST_ID>
+     $ rb-site manage /path/to/sitedir find-large-diffs --num-days <DAYS>
 
-  You will need to determine proper IDs for the range. The script will look
-  for any review requests with large diffs, showing you a breakdown of files
-  and sizes.
+  The script will look for any review requests with large diffs, outputting
+  a CSV file of results.
 
   If you find any unusually-large diffs, these are likely the cause. These
   diffs should be deleted, and diff limits should be set.
