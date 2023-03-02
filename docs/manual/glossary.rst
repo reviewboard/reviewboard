@@ -159,6 +159,13 @@ Glossary
        This contains Review Board configuration, data files, logs, uploaded
        file attachments, and static media files (CSS, JavaScript, images).
 
+   Status Update
+   Status Updates
+       Status updates track the progess or results of an :ref:`automated
+       code review task <automated-code-review>`, such as whether it's
+       pending, running, or finished, along with metadata or links to related
+       output.
+
    Unified Diff
        A type of :term:`diff file` designed to be easy to parse and easy
        to read by humans. This is the format supported by Review Board.

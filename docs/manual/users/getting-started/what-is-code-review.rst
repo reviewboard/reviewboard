@@ -57,7 +57,7 @@ combination of these approaches to achieve the highest-quality code:
   <circleci>` or :rbintegration:`Travis-CI <travis-ci>` can help manage your
   automated reviews.
 
-  See :ref:`automated-code-review`.
+  See :ref:`using-automated-code-review`.
 
 * **Pre-commit review**: Code is reviewed *before* being pushed to a central
   codebase.
