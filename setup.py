@@ -178,15 +178,6 @@ class DevelopCommand(develop):
         if self.with_doc_deps:
             self._run_pip(['install', '-r', 'doc-requirements.txt'])
 
-        if not self.no_npm:
-            # Install node.js dependencies, needed for packaging.
-            if self.use_npm_cache:
-                self.distribution.command_options['install_node_deps'] = {
-                    'use_npm_cache': ('install_node_deps', 1),
-                }
-
-            self.run_command('install_node_deps')
-
         # Set up a .djblets symlink to point to the Djblets package directory.
         #
         # This will be used for path resolution in JavaScript tools used for
@@ -196,6 +187,15 @@ class DevelopCommand(develop):
 
         import djblets
         os.symlink(os.path.dirname(djblets.__file__), '.djblets')
+
+        if not self.no_npm:
+            # Install node.js dependencies, needed for packaging.
+            if self.use_npm_cache:
+                self.distribution.command_options['install_node_deps'] = {
+                    'use_npm_cache': ('install_node_deps', 1),
+                }
+
+            self.run_command('install_node_deps')
 
     def _run_pip(self, args):
         """Run pip.
