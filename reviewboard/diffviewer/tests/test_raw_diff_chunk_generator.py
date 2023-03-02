@@ -562,8 +562,7 @@ class RawDiffChunkGeneratorTests(TestCase):
                          '<span class="w"> </span>'
                          '<span class="mi">0</span>'
                          '<span class="w"> </span>'
-                         '<span class="p">;</span>'
-                         '<span class="w"></span>'),
+                         '<span class="p">;</span>'),
                         None,
                         1,
                         ('<span class="k">def</span> '
@@ -654,7 +653,7 @@ class RawDiffChunkGeneratorTests(TestCase):
                 '<span class="nt">This</span><span class="w"> </span>'
                 '<span class="nt">is</span><span class="w"> </span>'
                 '<span class="o">**</span><span class="nt">bold</span>'
-                '<span class="o">**</span><span class="w"></span>'
+                '<span class="o">**</span>'
             )
             self.assertEqual(
                 chunk_generator._apply_pygments(data=data,

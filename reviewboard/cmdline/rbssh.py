@@ -30,6 +30,7 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+import errno
 import getpass
 import logging
 import os
@@ -70,8 +71,6 @@ SSH_PORT = 22
 # data available than this, it won't block, it'll just return the
 # available data.
 BUFFER_SIZE = 16384
-
-IO_SLEEP = paramiko.io_sleep
 
 
 options = None
@@ -130,11 +129,17 @@ class PlatformHandler(object):
         while written < len(data):
             to_write = data[written:]
 
+            debug('Writing stdin data=%r', to_write)
+
             try:
-                debug('Writing stdin data=%r', to_write)
                 written += channel.send(to_write)
-            except OSError:
-                debug('... blocked. Trying again.')
+            except OSError as e:
+                if e.errno == errno.EPIPE:
+                    # The pipe is closed. We're done.
+                    debug('... pipe closed. Giving up')
+                    break
+                else:
+                    debug('... blocked (errno=%s). Trying again.', e)
 
     def write_output(self, fd, data):
         """Write output to a file descriptor.
@@ -161,8 +166,13 @@ class PlatformHandler(object):
 
             try:
                 written += os.write(fd, to_write)
-            except OSError:
-                debug('... blocked. Trying again.')
+            except OSError as e:
+                if e.errno == errno.EPIPE:
+                    # The pipe is closed. We're done.
+                    debug('... pipe closed. Giving up')
+                    break
+                else:
+                    debug('... blocked (errno=%s). Trying again.', e)
 
     def process_channel(self, channel):
         """Process the given channel.
@@ -291,8 +301,6 @@ class PosixHandler(PlatformHandler):
                 if not self.process_stdin():
                     channel.shutdown_write()
                     to_read.remove(stdin)
-
-            time.sleep(IO_SLEEP)
 
 
 class WindowsHandler(PlatformHandler):
