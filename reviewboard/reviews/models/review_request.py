@@ -872,6 +872,27 @@ class ReviewRequest(BaseReviewRequestDetails):
         except DiffSet.DoesNotExist:
             return None
 
+    @property
+    def has_diffsets(self) -> bool:
+        """Whether this review request has any diffsets.
+
+        Type:
+            bool
+        """
+        if not self.repository_id:
+            return False
+
+        # Try first in the cache created by get_diffsets().
+        if hasattr(self, '_diffsets'):
+            return bool(self._diffsets)
+
+        # If the diffset_history field is pre-populated, use its relation.
+        if 'diffset_history' in self._state.fields_cache:
+            return self.diffset_history.diffsets.exists()
+
+        # Finally query backwards.
+        return DiffSet.objects.filter(history=self.diffset_history_id).exists()
+
     def get_close_info(self) -> ReviewRequestCloseInfo:
         """Return metadata of the most recent closing of a review request.
 

@@ -300,8 +300,7 @@ class DownloadDiffAction(BaseAction):
 
         return (super().should_render(context=context) and
                 review_request is not None and
-                review_request.repository_id is not None and
-                review_request.diffset_history.diffsets.exists())
+                review_request.has_diffsets)
 
 
 class LegacyEditReviewAction(BaseAction):
@@ -460,7 +459,7 @@ class UploadDiffAction(BaseAction):
         review_request = context['review_request']
         draft = review_request.get_draft(context['request'].user)
 
-        if (draft and draft.diffset) or review_request.get_diffsets():
+        if (draft and draft.diffset) or review_request.has_diffsets:
             return _('Update Diff')
         else:
             return _('Upload Diff')

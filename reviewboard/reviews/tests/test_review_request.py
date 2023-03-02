@@ -1,10 +1,11 @@
 import kgb
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.utils import timezone
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.diffviewer.models import DiffSet
+from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.models import (Comment, ReviewRequest,
                                         ReviewRequestDraft)
@@ -582,6 +583,117 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
                     op=kgb.SpyOpReturn(False))
 
         self.assertFalse(review_request.is_accessible_by(user))
+
+    @add_fixtures(['test_scmtools'])
+    def test_has_diffsets_cached(self) -> None:
+        """Testing ReviewRequest.has_diffsets with cached diffsets."""
+        review_request = self.create_review_request(create_repository=True)
+        review_request.get_diffsets()
+
+        with self.assertNumQueries(0):
+            self.assertFalse(review_request.has_diffsets)
+
+        review_request = self.create_review_request(create_repository=True)
+        self.create_diffset(review_request)
+
+        review_request.get_diffsets()
+
+        with self.assertNumQueries(0):
+            self.assertTrue(review_request.has_diffsets)
+
+    @add_fixtures(['test_scmtools'])
+    def test_has_diffsets_from_history(self) -> None:
+        """Testing ReviewRequest.has_diffsets with loaded diffset_history
+        field
+        """
+        review_request = self.create_review_request(create_repository=True)
+        review_request = (
+            ReviewRequest.objects.filter(pk=review_request.pk)
+            .select_related('diffset_history')
+        )[0]
+
+        self.assertIn('diffset_history', review_request._state.fields_cache)
+
+        queries = [
+            {
+                'model': DiffSet,
+                'limit': 1,
+                'extra': {
+                    'a': ('1', []),
+                },
+                'where': Q(history=DiffSetHistory.objects.get(
+                    review_request=review_request)),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertFalse(review_request.has_diffsets)
+
+        review_request = self.create_review_request(create_repository=True)
+        self.create_diffset(review_request)
+        review_request = (
+            ReviewRequest.objects.filter(pk=review_request.pk)
+            .select_related('diffset_history')
+        )[0]
+
+        self.assertIn('diffset_history', review_request._state.fields_cache)
+
+        queries = [
+            {
+                'model': DiffSet,
+                'limit': 1,
+                'extra': {
+                    'a': ('1', []),
+                },
+                'where': Q(history=DiffSetHistory.objects.get(
+                    review_request=review_request)),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertTrue(review_request.has_diffsets)
+
+    @add_fixtures(['test_scmtools'])
+    def test_has_diffsets_query(self) -> None:
+        """Testing ReviewRequest.has_diffsets with DiffSet query"""
+        review_request = self.create_review_request(create_repository=True)
+        review_request = ReviewRequest.objects.filter(pk=review_request.pk)[0]
+
+        self.assertNotIn('diffset_history', review_request._state.fields_cache)
+
+        queries = [
+            {
+                'model': DiffSet,
+                'limit': 1,
+                'extra': {
+                    'a': ('1', []),
+                },
+                'where': Q(history=1),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertFalse(review_request.has_diffsets)
+
+        review_request = self.create_review_request(create_repository=True)
+        self.create_diffset(review_request)
+        review_request = ReviewRequest.objects.filter(pk=review_request.pk)[0]
+
+        self.assertNotIn('diffset_history', review_request._state.fields_cache)
+
+        queries = [
+            {
+                'model': DiffSet,
+                'limit': 1,
+                'extra': {
+                    'a': ('1', []),
+                },
+                'where': Q(history=2),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertTrue(review_request.has_diffsets)
 
 
 class GetLastActivityInfoTests(TestCase):

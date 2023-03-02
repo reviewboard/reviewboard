@@ -455,7 +455,7 @@ PIPELINE_JAVASCRIPT = dict({
 PIPELINE_STYLESHEETS = dict({
     'common': {
         'source_filenames': (
-            'lib/css/codemirror-5.62.0.css',
+            'lib/css/3rdparty.less',
             'lib/css/jquery-ui-1.8.24.min.css',
             'lib/css/fontawesome.less',
             'rb/css/assets/icons.less',
