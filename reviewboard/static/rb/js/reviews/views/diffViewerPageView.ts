@@ -156,6 +156,7 @@ export class DiffViewerPageView extends ReviewablePageView<
         this.listenTo(this.model.diffReviewables, 'populating', () => {
             this._diffReviewableViews.forEach(view => view.remove());
             this._diffReviewableViews = [];
+            this.#diffFileIndexView.clear();
             this.#$diffs.children('.diff-container').remove();
             this.#$highlightedChunk = null;
 
@@ -1166,6 +1167,7 @@ export class DiffViewerPageView extends ReviewablePageView<
         }
 
         this.#chunkHighlighter.updateLayout();
+        this.#diffFileIndexView.updateLayout();
     }
 
     /**

@@ -504,6 +504,20 @@ export class UnifiedBannerView extends FloatingBannerView<
     }
 
     /**
+     * Return the dock element.
+     *
+     * Returns:
+     *     JQuery:
+     *     The dock element.
+     */
+    getDock(): JQuery {
+        const $dock = this.$('.rb-c-unified-banner__dock');
+        console.assert($dock.length === 1);
+
+        return $dock;
+    }
+
+    /**
      * Publish the current draft.
      *
      * This triggers an event which is handled by RB.ReviewRequestEditorView.
