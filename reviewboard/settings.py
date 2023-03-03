@@ -553,8 +553,14 @@ PIPELINE = build_pipeline_settings(
     # On production (site-installed) builds, we always want to use the
     # pre-compiled versions. We want this regardless of the DEBUG setting
     # (since they may turn DEBUG on in order to get better error output).
-    pipeline_enabled=(PRODUCTION or not DEBUG or
-                      os.environ.get('FORCE_BUILD_MEDIA', '')),
+    #
+    # We also want to avoid compiling during unit test runs.
+    pipeline_enabled=(
+        PRODUCTION or
+        RUNNING_TEST or
+        not DEBUG or
+        bool(os.environ.get('FORCE_BUILD_MEDIA', ''))
+    ),
     node_modules_path=NODE_PATH,
     static_root=STATIC_ROOT,
     compilers=_pipeline_compilers,
