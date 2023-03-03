@@ -233,9 +233,8 @@ def clean_markdown_html(html):
     custom_safe_url_protocols = settings.ALLOWED_MARKDOWN_URL_PROTOCOLS
 
     if custom_safe_url_protocols:
-        safe_url_protocols = list(
-            set(safe_url_protocols) |
-            set(custom_safe_url_protocols))
+        safe_url_protocols = (set(safe_url_protocols) |
+                              set(custom_safe_url_protocols))
 
     # Create a bleach HTML cleaner, and override settings on the html5lib
     # serializer it contains to ensure we use self-closing HTML tags, like
