@@ -38,7 +38,7 @@ djblets_version = '~=3.2'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
-    'bleach': '~=3.3',
+    'bleach': '~=6.0.0',
     'cryptography': '>=1.8.1',
     'Django': django_version,
     'django-cors-headers': '~=3.11.0',
