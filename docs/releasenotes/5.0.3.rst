@@ -130,7 +130,7 @@ New Features
   large diffs.
 
   Review Board now comes bundled with the script used for this diagnosis,
-  :ref:`find-large-diff <management-command-find-large-diffs>`. This will
+  :ref:`find-large-diffs <management-command-find-large-diffs>`. This will
   scan recent diff uploads to find any of unusual size.
 
   We *strongly recommend* that all users set a reasonable diff limit (usually
