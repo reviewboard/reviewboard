@@ -26,9 +26,5 @@ wheel
 # Load in some extra dependencies defined in Review Board's setup.py.
 ReviewBoard[ldap]
 ReviewBoard[s3]
+ReviewBoard[saml]
 ReviewBoard[swift]
-
-# python3-saml requires lxml but caps it's version to < 4.7.1.
-# lxml < 4.7.1 fails to install on Python 3.11, so we only support installing
-# the SAML dependencies for Python <= 3.10.
-ReviewBoard[saml]; python_version <= '3.10'
