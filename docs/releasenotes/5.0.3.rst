@@ -1,0 +1,215 @@
+.. default-intersphinx:: djblets3.x rb5.x
+
+
+================================
+Review Board 5.0.3 Release Notes
+================================
+
+**Release date**: March 7, 2023
+
+
+This release fixes a security issue with LDAP (which depends on insecure
+LDAP servers), improves installation, and fixes a number of bugs.
+
+We've also recently rewritten much of our :ref:`documentation
+<reviewboard-docs>`, better helping users install and upgrade Review Board,
+configure SELinux, and optimize/scale out your deployment.
+
+
+Installation/Upgrade
+====================
+
+Review Board 5.0.3 is compatible with Python 3.7-3.11.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install ReviewBoard==5.0.3
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+* `Review Board Support`_
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Security Fixes
+==============
+
+A security bug was found that enables a user to log in as another user when
+LDAP is configured and *all* the following criteria are met:
+
+1. You're using an LDAP server with a security bug that considers a password
+   with an empty user DN to be valid credentials.
+
+   This is unusual and  against the LDAP standard. It's been found in an
+   old version of Active Directory when directly using LDAP, and in
+   decades-old versions of OpenLDAP in specific configurations.
+
+2. The LDAP server has anonymous binds enabled.
+
+   This allows completely unauthenticated access to the LDAP directory and,
+   along with the first issue, triggers the flawed behavior in Review Board.
+
+3. The target user to log in as exists in the local Review Board database
+   but not in LDAP.
+
+   Users can only log into local-only accounts, not others in LDAP. In most
+   LDAP-based setups, the only local user created is the default Review Board
+   ``admin`` user, which is protected so long as there's also an ``admin``
+   user in LDAP.
+
+Most users should never hit this issue, as it's fully dependent on an insecure
+LDAP server implementation. Modern versions of OpenLDAP, Active Directory, and
+other popular servers are not susceptible to this bug. If you use Active
+Directory with Review Board's "Active Directory" backend, you will not
+encounter this bug.
+
+This issue affects Review Board because an LDAP server with this security bug
+results in a "valid credentials" code path in Review Board when trying to log
+in as a user that doesn't exist in LDAP.
+
+We've tightened the code path and added additional checks to ensure this will
+no longer happen. The fix is present in Review Board :doc:`5.0.3 <5.0.3>`,
+:doc:`4.0.12 <4.0.12>`, and :doc:`3.0.25 <3.0.25>`.
+
+We recommend also upgrading your LDAP server to ensure you have all the latest
+security fixes, and disable anonymous binds if you don't need them.
+
+If you have any questions or concerns, contact `Review Board Support`_.
+
+
+Packaging
+=========
+
+* :pypi:`bleach` 6.0.x is now required.
+
+* :pypi:`cryptography` 39.0.x is now required.
+
+* :pypi:`pygments` 2.14 is now required.
+
+* :pypi:`pyOpenSSL` 23.0.0 is now required.
+
+  This dependency resolves an issue with installing Review Board (and many
+  other Python packages) on a default Ubuntu 20.04 LTS server.
+
+* :pypi:`rbintegrations` 3.1.x is now required.
+
+
+New Features
+============
+
+* Added explicit support for additional new web servers.
+
+  When :ref:`creating a new site directory <creating-sites>`,
+  :command:`rb-site install` will now create the following sample
+  configurations in :file:`{sitedir}/conf/webconfs/`:
+
+  * Apache + mod_wsgi
+  * Nginx + Gunicorn
+  * Nginx + uWSGI
+
+  This gives administrators new default options for setting up their servers.
+
+  These are also documented in :ref:`configuring-web-server`.
+
+* Added a management command for finding large diffs.
+
+  A common performance problem involves people uploading overly-large diffs
+  to the server, sometimes hundreds of megabytes in size. When diagnosing
+  performance problems with `Review Board Support`_, we start by examining
+  large diffs.
+
+  Review Board now comes bundled with the script used for this diagnosis,
+  :ref:`find-large-diff <management-command-find-large-diffs>`. This will
+  scan recent diff uploads to find any of unusual size.
+
+  We *strongly recommend* that all users set a reasonable diff limit (usually
+  no more than 2MB) in Administration UI -> Diff Viewer Settings, in order
+  to avoid this type of issue.
+
+
+Usability
+=========
+
+* Changed the presentation of the :guilabel:`Add <Entry>` links in the
+  Administration UI from links to buttons.
+
+  It's now easier to see these actions and click them.
+
+
+Bug Fixes
+=========
+
+Administration UI
+-----------------
+
+* Fixed an inability to trust SSH keys or certificates when configuring a
+  repository.
+
+  Due to a regression, clicking the :guilabel:`Trust` button when configuring
+  a SSH key or a SSL certificate would cause the page to reload and field
+  errors to show up, instead of trusting and saving.
+
+  This button now works as expected.
+
+* Fixed some small regressions in the presentation of configuration forms.
+
+  These mostly affected spacing between fields.
+
+
+Automated Review
+----------------
+
+* Fixed performing manual :term:`CI` runs when there are multiple
+  configurations for the same integration.
+
+  When using multiple Jenkins, Travis-CI, or CircleCI integrations for
+  :ref:`automated code review <using-automated-code-review>` in Manual Run
+  mode, the wrong configuration could be used when clicking :guilabel:`Run`.
+
+  This is now fixed for all bundled integrations.
+
+
+Mercurial
+---------
+
+* Fixed a bug with browsing to the last page of commits on a Mercurial
+  repository.
+
+
+NIS
+---
+
+* Fixed an error that could occur if Python lacks support for NIS.
+
+  Please note that NIS is deprecated in Python, scheduled to be removed in
+  Python 3.13. If you are still using NIS, contact `Review Board Support`_,
+  and we'll aim to continue supporting it.
+
+
+SSH
+---
+
+* Fixed issues with SSH communication that could lead to lost data or stalled
+  communication.
+
+  While uncommon, this could cause communication errors when talking to
+  services over SSH, such as Subversion or Mercurial.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin
