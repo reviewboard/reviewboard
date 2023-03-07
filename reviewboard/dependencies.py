@@ -39,7 +39,7 @@ djblets_version = '~=3.2'
 #: All dependencies required to install Review Board.
 package_dependencies = {
     'bleach': '~=6.0.0',
-    'cryptography': '>=1.8.1',
+    'cryptography': '~=39.0.2',
     'Django': django_version,
     'django-cors-headers': '~=3.11.0',
     'django_evolution': '~=2.2b1',
@@ -53,6 +53,13 @@ package_dependencies = {
     'paramiko': '>=1.12',
     'pydiffx': '~=1.1',
     'Pygments': '~=2.14.0',
+
+    # While we don't directly use pyOpenSSL, we do use cryptography, and
+    # older versions of pyOpenSSL can break a system badly with newer
+    # cryptography (impacting pip as well). So we pin a compatible version.
+    #
+    # This must match cryptography compatibility.
+    'pyOpenSSL': '~=23.0.0',
 
     # TODO: We can migrate to the latest pymdown-extensions release now that
     # we're Python 3+ only.
