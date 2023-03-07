@@ -4,6 +4,8 @@
 Administration Guide
 ====================
 
+.. _installing-reviewboard-toc:
+
 Installing Review Board
 =======================
 
