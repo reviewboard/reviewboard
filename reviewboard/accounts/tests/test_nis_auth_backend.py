@@ -1,6 +1,6 @@
 """Unit tests for NISBackend."""
 
-import nis
+from unittest import SkipTest
 
 from django.contrib.auth.models import User
 from kgb import SpyAgency
@@ -20,6 +20,9 @@ class NISBackendTests(SpyAgency, TestCase):
         super(NISBackendTests, self).setUp()
 
         self.backend = NISBackend()
+
+        if self.backend.nis is None:
+            raise SkipTest('nis is not available on this build of Python.')
 
     def test_authenticate_with_valid_user(self):
         """Testing NISBackend.authenticate with valid user credentials"""
