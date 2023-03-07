@@ -147,6 +147,9 @@ class LDAPBackend(BaseAuthBackend):
 
         userdn = self._get_user_dn(ldapo, username)
 
+        if not userdn:
+            return None
+
         try:
             # Now that we have the user, attempt to bind to verify
             # authentication.
@@ -233,7 +236,7 @@ class LDAPBackend(BaseAuthBackend):
                                            username=username,
                                            request=request)
 
-                if userdn is None:
+                if not userdn:
                     return None
 
             # Perform a BASE search since we already know the DN of
