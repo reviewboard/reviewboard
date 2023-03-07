@@ -177,6 +177,4 @@ class NISBackend(BaseAuthBackend):
                 The user could not be found, or there was an error performing
                 the lookup.
         """
-        import nis
-
-        return nis.match(username, 'passwd').split(':')
+        return self.nis.match(username, 'passwd').split(':')
