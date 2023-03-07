@@ -5,7 +5,7 @@
 Review Board 3.0.25 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: March 7, 2023
 
 
 Installation/Upgrade
