@@ -1,0 +1,96 @@
+.. default-intersphinx:: djblets1.0 rb3.0
+
+
+=================================
+Review Board 3.0.25 Release Notes
+=================================
+
+**Release date**: March 7, 2023
+
+
+Installation/Upgrade
+====================
+
+Review Board 3.0.25 is compatible with Python 2.7.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip install ReviewBoard==3.0.25
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+* `Review Board Support`_
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Security Fixes
+==============
+
+A security bug was found that enables a user to log in as another user when
+LDAP is configured and *all* the following criteria are met:
+
+1. You're using an LDAP server with a security bug that considers a password
+   with an empty user DN to be valid credentials.
+
+   This is unusual and  against the LDAP standard. It's been found in an
+   old version of Active Directory when directly using LDAP, and in
+   decades-old versions of OpenLDAP in specific configurations.
+
+2. The LDAP server has anonymous binds enabled.
+
+   This allows completely unauthenticated access to the LDAP directory and,
+   along with the first issue, triggers the flawed behavior in Review Board.
+
+3. The target user to log in as exists in the local Review Board database
+   but not in LDAP.
+
+   Users can only log into local-only accounts, not others in LDAP. In most
+   LDAP-based setups, the only local user created is the default Review Board
+   ``admin`` user, which is protected so long as there's also an ``admin``
+   user in LDAP.
+
+Most users should never hit this issue, as it's fully dependent on an insecure
+LDAP server implementation. Modern versions of OpenLDAP, Active Directory, and
+other popular servers are not susceptible to this bug. If you use Active
+Directory with Review Board's "Active Directory" backend, you will not
+encounter this bug.
+
+This issue affects Review Board because an LDAP server with this security bug
+results in a "valid credentials" code path in Review Board when trying to log
+in as a user that doesn't exist in LDAP.
+
+We've tightened the code path and added additional checks to ensure this will
+no longer happen. The fix is present in Review Board :doc:`5.0.3 <5.0.3>`,
+:doc:`4.0.12 <4.0.12>`, and :doc:`3.0.25 <3.0.25>`.
+
+We recommend also upgrading your LDAP server to ensure you have all the latest
+security fixes, and disable anonymous binds if you don't need them.
+
+If you have any questions or concerns, contact `Review Board Support`_.
+
+
+Packaging
+=========
+
+* Capped the dependency on :pypi:`packaging` to < 21.0.
+
+  This is needed for Python 2.7 compatibility.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin

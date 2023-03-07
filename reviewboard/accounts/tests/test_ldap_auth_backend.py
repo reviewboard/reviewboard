@@ -114,6 +114,40 @@ class LDAPAuthBackendTests(SpyAgency, TestCase):
         user = self.backend.authenticate(username='doc', password='mypass')
         self.assertIsNone(user)
 
+    def test_authenticate_with_invalid_credentials_ok_anon_bind(self):
+        """Testing LDAPBackend.authenticate with invalid credentials but
+        anonymous bind without error
+        """
+        class TestLDAPObject(BaseTestLDAPObject):
+            def bind_s(ldapo, username, password):
+                return None
+
+            def search_s(ldapo, base, scope,
+                         filter_str=self.DEFAULT_FILTER_STR,
+                         *args, **kwargs):
+                raise ldap.INVALID_CREDENTIALS()
+
+        self._patch_ldap(TestLDAPObject)
+
+        self.spy_on(TestLDAPObject.bind_s,
+                    owner=TestLDAPObject)
+        self.spy_on(TestLDAPObject.search_s,
+                    owner=TestLDAPObject)
+
+        self.create_user(username='local-user')
+
+        user = self.backend.authenticate(request=None,
+                                         username='local-user',
+                                         password='mypass')
+        self.assertIsNone(user)
+
+        self.assertSpyNotCalled(TestLDAPObject.bind_s)
+        self.assertSpyCalledWith(
+            TestLDAPObject.search_s,
+            'CN=admin,DC=example,DC=com',
+            ldap.SCOPE_SUBTREE,
+            filter_str='(uid=local-user)')
+
     def test_authenticate_with_ldap_error(self):
         """Testing LDAPBackend.authenticate with LDAP error"""
         class TestLDAPObject(BaseTestLDAPObject):

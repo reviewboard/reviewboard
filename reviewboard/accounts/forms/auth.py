@@ -276,7 +276,8 @@ class LDAPSettingsForm(SiteSettingsForm):
                     "sufficient access to perform lookups of users and "
                     "groups in the LDAP server. If the LDAP server permits "
                     "such lookups via anonymous bind, you may leave this "
-                    "field blank."),
+                    "field blank, but we recommend disallowing anonymous "
+                    "binds for security."),
         required=False,
         widget=forms.TextInput(attrs={'size': '40'}))
 
