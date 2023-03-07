@@ -1,11 +1,22 @@
 """NIS authentication backend."""
 
+from __future__ import annotations
+
+import logging
+from importlib import import_module
+from types import ModuleType
+from typing import Optional
+
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import NISSettingsForm
+
+
+logger = logging.getLogger(__name__)
 
 
 class NISBackend(BaseAuthBackend):
@@ -16,6 +27,26 @@ class NISBackend(BaseAuthBackend):
     settings_form = NISSettingsForm
     login_instructions = \
         _('Use your standard NIS username and password.')
+
+    @cached_property
+    def nis(self) -> Optional[ModuleType]:
+        """The nis module, used for interacting with NIS.
+
+        On first access, this will check if NIS is available, logging an
+        error if missing.
+
+        This safeguards against Python environments without NIS, and against
+        versions of Python >= 3.13.
+
+        Type:
+            module
+        """
+        try:
+            return import_module('nis')
+        except ImportError:
+            logger.error('The nis module is not available on your version '
+                         'of Python.')
+            return None
 
     def authenticate(self, request, username, password, **kwargs):
         """Authenticate the user.
@@ -47,10 +78,14 @@ class NISBackend(BaseAuthBackend):
             The authenticated user, or ``None`` if the user could not be
             authenticated.
         """
-        import crypt
-        import nis
+        nis = self.nis
+
+        if nis is None:
+            return None
 
         username = username.strip()
+
+        import crypt
 
         try:
             passwd = self._nis_get_passwd(username)
@@ -87,7 +122,10 @@ class NISBackend(BaseAuthBackend):
             The existing or newly-created user, or ``None`` if an error was
             encountered.
         """
-        import nis
+        nis = self.nis
+
+        if nis is None:
+            return None
 
         username = username.strip()
 
