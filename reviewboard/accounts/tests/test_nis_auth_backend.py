@@ -2,14 +2,14 @@
 
 from unittest import SkipTest
 
+import kgb
 from django.contrib.auth.models import User
-from kgb import SpyAgency
 
 from reviewboard.accounts.backends import NISBackend
 from reviewboard.testing import TestCase
 
 
-class NISBackendTests(SpyAgency, TestCase):
+class NISBackendTests(kgb.SpyAgency, TestCase):
     """Unit tests for NISBackend."""
 
     NIS_SITECONFIG_SETTINGS = {
@@ -35,7 +35,9 @@ class NISBackendTests(SpyAgency, TestCase):
                                              username='test-user',
                                              password='test-pass')
 
-        self.assertIsNotNone(user)
+        # Use a plain assert to help the type checker.
+        assert user is not None
+
         self.assertEqual(user.username, 'test-user')
         self.assertEqual(user.first_name, 'Test')
         self.assertEqual(user.last_name, 'User')
@@ -58,14 +60,14 @@ class NISBackendTests(SpyAgency, TestCase):
 
     def test_authenticate_with_invalid_user(self):
         """Testing NISBackend.authenticate with bad user credentials"""
-        def _get_passwd(_self, username):
-            raise nis.error()
+        backend = self.backend
 
-        self.spy_on(self.backend._nis_get_passwd, _get_passwd)
+        self.spy_on(backend._nis_get_passwd,
+                    op=kgb.SpyOpRaise(backend.nis.error()))
 
-        user = self.backend.authenticate(request=None,
-                                         username='test-user',
-                                         password='test-pass')
+        user = backend.authenticate(request=None,
+                                    username='test-user',
+                                    password='test-pass')
         self.assertIsNone(user)
 
     def test_get_or_create_user_with_user_in_db(self):
@@ -98,7 +100,9 @@ class NISBackendTests(SpyAgency, TestCase):
                 passwd=('test-user', '6a6Sl/u3EOBfo', 100, 100,
                         'Test User,Foo Bar', '/home/test-user', '/bin/sh'))
 
-        self.assertIsNotNone(user)
+        # Use a plain assert to help the type checker.
+        assert user is not None
+
         self.assertEqual(user.username, 'test-user')
         self.assertEqual(user.first_name, 'Test')
         self.assertEqual(user.last_name, 'User')
