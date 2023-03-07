@@ -5,7 +5,7 @@
 Review Board 4.0.12 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: March 7, 2023
 
 
 Installation/Upgrade
