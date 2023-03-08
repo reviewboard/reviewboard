@@ -1,6 +1,7 @@
 suite('rb/reviewRequestPage/views/ReviewRequestPageView', function() {
     const template = dedent`
         <div id="review-banner"></div>
+        <div id="unified-banner"></div>
         <a id="collapse-all"></a>
         <a id="expand-all"></a>
         <div>
@@ -95,6 +96,11 @@ suite('rb/reviewRequestPage/views/ReviewRequestPageView', function() {
             el: $el.find('#review124'),
         }));
 
+        /* Don't communicate with the server for page updates. */
+        spyOn(reviewRequest, 'ready').and.resolveTo();
+        spyOn(reviewRequest.draft, 'ready').and.resolveTo();
+        spyOn(page.get('pendingReview'), 'ready').and.resolveTo();
+
         pageView.render();
 
         expect(pageView._entryViews.length).toBe(2);
@@ -104,6 +110,10 @@ suite('rb/reviewRequestPage/views/ReviewRequestPageView', function() {
 
     afterEach(function() {
         RB.DnDUploader.instance = null;
+
+        if (RB.EnabledFeatures.unifiedBanner) {
+            RB.UnifiedBannerView.resetInstance();
+        }
     });
 
     describe('Actions', function() {

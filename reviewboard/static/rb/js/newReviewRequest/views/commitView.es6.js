@@ -18,7 +18,7 @@ RB.CommitView = Backbone.View.extend({
         <% if (accessible) { %>
          <div class="summary">
           <% if (reviewRequestURL) { %>
-           <span class="fa fa-arrow-circle-right jump-to-commit"/>
+           <span class="fa fa-arrow-circle-right jump-to-commit"></span>
           <% } %>
           <%- summary %>
          </div>

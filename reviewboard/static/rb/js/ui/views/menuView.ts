@@ -311,6 +311,13 @@ export class MenuView extends BaseView<
     }
 
     /**
+     * Clear all the menu items.
+     */
+    clearItems() {
+        this.$('.rb-c-menu__item').remove();
+    }
+
+    /**
      * Open the menu.
      *
      * This will show the menu on the screen. Before it's shown, an ``opening``
@@ -410,11 +417,7 @@ export class MenuView extends BaseView<
             this.trigger(opened ? 'opening' : 'closing');
         }
 
-        if (opened) {
-            this.$el.addClass('-is-open');
-        } else {
-            this.$el.removeClass('-is-open');
-        }
+        this.$el.toggleClass('-is-open', opened);
 
         if (this.$controller) {
             this.$controller

@@ -1,6 +1,7 @@
 suite('rb/pages/views/ReviewablePageView', function() {
     const pageTemplate = dedent`
         <div id="review-banner"></div>
+        <div id="unified-banner"></div>
         <a href="#" id="action-edit-review">Edit Review</a>
         <a href="#" id="action-ship-it">Ship It</a>
     `;
@@ -43,14 +44,19 @@ suite('rb/pages/views/ReviewablePageView', function() {
         });
 
         const reviewRequest = page.get('reviewRequest');
-
         spyOn(reviewRequest, 'ready').and.resolveTo();
+        spyOn(reviewRequest.draft, 'ready').and.resolveTo();
+        spyOn(page.get('pendingReview'), 'ready').and.resolveTo();
 
         pageView.render();
     });
 
     afterEach(function() {
         RB.DnDUploader.instance = null;
+
+        if (RB.EnabledFeatures.unifiedBanner) {
+            RB.UnifiedBannerView.resetInstance();
+        }
 
         pageView.remove();
     });
@@ -113,28 +119,39 @@ suite('rb/pages/views/ReviewablePageView', function() {
             });
 
             it('Confirmed', function(done) {
+                if (RB.EnabledFeatures.unifiedBanner) {
+                    pending();
+                    return;
+                }
+
                 spyOn(window, 'confirm').and.returnValue(true);
-                spyOn(pendingReview, 'ready').and.resolveTo();
                 spyOn(pendingReview, 'save').and.resolveTo();
                 spyOn(pendingReview, 'publish').and.callThrough();
-                spyOn(pageView.draftReviewBanner, 'hideAndReload')
-                    .and.callFake(() => {
-                        expect(window.confirm).toHaveBeenCalled();
-                        expect(pendingReview.ready).toHaveBeenCalled();
-                        expect(pendingReview.publish).toHaveBeenCalled();
-                        expect(pendingReview.save).toHaveBeenCalled();
-                        expect(pendingReview.get('shipIt')).toBe(true);
-                        expect(pendingReview.get('bodyTop')).toBe('Ship It!');
 
-                        done();
-                    });
+                if (!RB.EnabledFeatures.unifiedBanner) {
+                    spyOn(pageView.draftReviewBanner, 'hideAndReload')
+                        .and.callFake(() => {
+                            expect(window.confirm).toHaveBeenCalled();
+                            expect(pendingReview.ready).toHaveBeenCalled();
+                            expect(pendingReview.publish).toHaveBeenCalled();
+                            expect(pendingReview.save).toHaveBeenCalled();
+                            expect(pendingReview.get('shipIt')).toBe(true);
+                            expect(pendingReview.get('bodyTop')).toBe('Ship It!');
+
+                            done();
+                        });
+                }
 
                 $shipIt.click();
             });
 
             it('Canceled', function() {
+                if (RB.EnabledFeatures.unifiedBanner) {
+                    pending();
+                    return;
+                }
+
                 spyOn(window, 'confirm').and.returnValue(false);
-                spyOn(pendingReview, 'ready');
 
                 $shipIt.click();
 

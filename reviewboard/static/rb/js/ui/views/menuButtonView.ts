@@ -136,7 +136,7 @@ export class MenuButtonView<
                   id="<%- labelID %>"
                   type="button"
                   aria-label="<%- menuLabel %>">
-           <span class="rb-icon rb-icon-dropdown-arrow"></span>
+           <span class="<%- menuIconClass %>"></span>
           </button>
          </div>
         <% } else { %>
@@ -144,7 +144,7 @@ export class MenuButtonView<
                  id="<%- labelID %>"
                  type="button">
           <%- buttonText %>
-          <span class="rb-icon rb-icon-dropdown-arrow"></span>
+          <span class="<%- menuIconClass %>"></span>
          </button>
         <% } %>
     `);

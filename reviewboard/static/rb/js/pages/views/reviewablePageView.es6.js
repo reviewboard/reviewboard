@@ -123,7 +123,7 @@ RB.ReviewablePageView = RB.PageView.extend({
     events: _.defaults({
         'click #action-add-general-comment': '_onAddCommentClicked',
         'click #action-edit-review': '_onEditReviewClicked',
-        'click #action-ship-it': '_onShipItClicked',
+        'click #action-ship-it': 'shipIt',
         'click .rb-o-mobile-menu-label': '_onMenuClicked',
     }, RB.PageView.prototype.events),
 
@@ -167,6 +167,7 @@ RB.ReviewablePageView = RB.PageView.extend({
         this._favIconURL = null;
         this._favIconNotifyURL = null;
         this._logoNotificationsURL = null;
+        this._unifiedBanner = null;
 
         /*
          * Some extensions, like Power Pack and rbstopwatch, expect a few legacy
@@ -216,15 +217,31 @@ RB.ReviewablePageView = RB.PageView.extend({
         this._logoNotificationsURL = STATIC_URLS['rb/images/logo.png'];
 
         const pendingReview = this.model.get('pendingReview');
+        const reviewRequest = this.model.get('reviewRequest');
 
-        this.draftReviewBanner = RB.DraftReviewBannerView.create({
-            el: $('#review-banner'),
-            model: pendingReview,
-            reviewRequestEditor: this.model.reviewRequestEditor,
-        });
+        if (RB.EnabledFeatures.unifiedBanner) {
+            if (RB.UserSession.instance.get('authenticated')) {
+                this.unifiedBanner = new RB.UnifiedBannerView({
+                    el: $('#unified-banner'),
+                    model: new RB.UnifiedBanner({
+                        pendingReview: pendingReview,
+                        reviewRequest: reviewRequest,
+                        reviewRequestEditor: this.model.reviewRequestEditor,
+                    }),
+                    reviewRequestEditorView: this.reviewRequestEditorView,
+                });
+                this.unifiedBanner.render();
+            }
+        } else {
+            this.draftReviewBanner = RB.DraftReviewBannerView.create({
+                el: $('#review-banner'),
+                model: pendingReview,
+                reviewRequestEditor: this.model.reviewRequestEditor,
+            });
 
-        this.listenTo(pendingReview, 'destroy published',
-                      () => this.draftReviewBanner.hideAndReload());
+            this.listenTo(pendingReview, 'destroy published',
+                          () => this.draftReviewBanner.hideAndReload());
+        }
 
         this.reviewRequestEditorView.render();
 
@@ -235,8 +252,15 @@ RB.ReviewablePageView = RB.PageView.extend({
      * Remove this view from the page.
      */
     remove() {
-        this.draftReviewBanner.remove();
-        _super(this).remove.call(this);
+        if (!RB.EnabledFeatures.unifiedBanner) {
+            this.draftReviewBanner.remove();
+        }
+
+        if (this._unifiedBanner) {
+            this._unifiedBanner.remove();
+        }
+
+        RB.PageView.prototype.remove.call(this);
     },
 
     /**
@@ -390,8 +414,10 @@ RB.ReviewablePageView = RB.PageView.extend({
             undefined,
             RB.UserSession.instance.get('commentsOpenAnIssue'));
 
-        this.listenTo(comment, 'saved',
-                      () => RB.DraftReviewBannerView.instance.show());
+        if (!RB.EnabledFeatures.unifiedBanner) {
+            this.listenTo(comment, 'saved',
+                          () => RB.DraftReviewBannerView.instance.show());
+        }
 
         RB.CommentDialogView.create({
             comment: comment,
@@ -411,9 +437,12 @@ RB.ReviewablePageView = RB.PageView.extend({
      *    boolean:
      *    false, always.
      */
-    _onShipItClicked() {
+    async shipIt() {
         if (confirm(gettext('Are you sure you want to post this review?'))) {
-            this.model.markShipIt();
+            await this.model.markShipIt();
+
+            const reviewRequest = this.model.get('reviewRequest');
+            RB.navigateTo(reviewRequest.get('reviewURL'));
         }
 
         return false;

@@ -62,9 +62,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
     const pageTemplate = dedent`
         <div>
          <div id="review-banner"></div>
+         <div id="unified-banner"></div>
          <div id="diff_commit_list">
-          <div class="commit-list-container">
-          </div>
+          <div class="commit-list-container"></div>
          </div>
          <div id="view_controls"></div>
          <div id="diffs"></div>
@@ -101,6 +101,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 parse: true,
             });
 
+        /* Don't communicate with the server for page updates. */
+        const reviewRequest = page.get('reviewRequest');
+        spyOn(reviewRequest, 'ready').and.resolveTo();
+        spyOn(reviewRequest.draft, 'ready').and.resolveTo();
+        spyOn(page.get('pendingReview'), 'ready').and.resolveTo();
+
         pageView = new RB.DiffViewerPageView({
             el: $(pageTemplate).appendTo($testsScratch),
             model: page,
@@ -127,6 +133,16 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
     afterEach(function() {
         RB.DnDUploader.instance = null;
+
+        if (RB.EnabledFeatures.unifiedBanner) {
+            RB.UnifiedBannerView.resetInstance();
+        }
+
+        if (pageView) {
+            pageView.remove();
+            pageView = null;
+        }
+
         Backbone.history.stop();
     });
 
@@ -399,9 +415,6 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             });
 
             $diffs = pageView.$el.children('#diffs');
-
-            /* Don't communicate with the server for page updates. */
-            spyOn(page.get('reviewRequest'), 'ready').and.resolveTo();
         });
 
         describe('Anchors', function() {
@@ -445,7 +458,6 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     ],
                 }));
 
-                pageView.render();
                 pageView._updateAnchors(pageView.$el.find('table').eq(0));
 
                 expect(pageView._$anchors.length).toBe(4);
@@ -518,8 +530,6 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                             ],
                         }),
                     ]);
-
-                    pageView.render();
 
                     pageView.$el.find('table').each(function() {
                         pageView._updateAnchors($(this));
@@ -703,7 +713,6 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                         }
 
                         it(label, function() {
-                            pageView.render();
                             spyOn(pageView, funcName);
                             triggerKeyPress(c);
                             expect(pageView[funcName]).toHaveBeenCalled();
@@ -741,8 +750,6 @@ suite('rb/pages/views/DiffViewerPageView', function() {
         describe('Reviewable Management', function() {
             beforeEach(function() {
                 spyOn(pageView, 'queueLoadDiff');
-
-                pageView.render();
             });
 
             it('File added', function() {
@@ -1111,7 +1118,6 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             it('Anchor selection', function() {
                 const $anchor = $('<a name="test"/>');
 
-                pageView.render();
                 pageView.selectAnchor($anchor);
 
                 expect(router.navigate).toHaveBeenCalledWith(
@@ -1183,8 +1189,10 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             $commitList = $testsScratch.find('#diff_commit_list');
 
             /* Don't communicate with the server for page updates. */
-            spyOn(page.get('reviewRequest'), 'ready')
-                .and.resolveTo();
+            const reviewRequest = page.get('reviewRequest');
+            spyOn(reviewRequest, 'ready').and.resolveTo();
+            spyOn(reviewRequest.draft, 'ready').and.resolveTo();
+            spyOn(page.get('pendingReview'), 'ready').and.resolveTo();
         });
 
         describe('Render', function() {

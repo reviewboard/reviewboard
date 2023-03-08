@@ -1,4 +1,5 @@
-import { spina } from '@beanbag/spina';
+import { BaseView, spina } from '@beanbag/spina';
+
 import {
     FloatingBannerView,
     FloatingBannerViewOptions
@@ -44,6 +45,7 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
     /**********************
      * Instance variables *
      **********************/
+
     #reviewRequestEditor: RB.ReviewRequestEditor;
     #template = _.template(dedent`
         <h1>${gettext('This reply is a draft.')}</h1>
@@ -58,7 +60,6 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
          <label>
           <input type="checkbox" class="send-email" checked />
           ${gettext('Send E-Mail')}
-          <%- sendEmailText %>
         </label>
         <% } %>
     `);
@@ -110,5 +111,38 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
      */
     #onDiscardClicked() {
         this.model.destroy();
+    }
+}
+
+
+/**
+ * A static banner for review replies.
+ *
+ * This is used when the unified banner is enabled.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+export class ReviewReplyDraftStaticBannerView extends BaseView {
+    className = 'banner';
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    template = _.template(dedent`
+        <h1><%- draftText %></h1>
+        <p><%- reminderText %></p>
+    `);
+
+    /**
+     * Render the banner.
+     */
+    onInitialRender() {
+        this.$el.html(this.template({
+            draftText: _`This reply is a draft.`,
+            reminderText: _`Be sure to publish when finished.`,
+        }));
     }
 }

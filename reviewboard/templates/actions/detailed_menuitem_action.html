@@ -1,0 +1,16 @@
+{% spaceless %}
+<a id="{{action.get_dom_element_id}}"
+   href="{{url}}"
+   role="menuitem"
+   {% if not visible or has_parent %} style="display: none;"{% endif %}>
+ <h4>
+  <span class="{{action.icon_class}}"></span>
+  {{label}}
+ </h4>
+{%  for description_part in action.description %}
+ <p>
+  {{description_part}}
+ </p>
+{%  endfor %}
+</a>
+{% endspaceless %}
