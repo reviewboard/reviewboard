@@ -67,6 +67,8 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
 
         this.#$label = this.$('.rb-c-unified-banner__menu-label');
         this.#$arrow = this.$('.rb-icon-dropdown-arrow');
+
+        this.#update();
     }
 
     /**
@@ -401,7 +403,7 @@ export class UnifiedBannerView extends FloatingBannerView<
         this.#modeMenu = new DraftModeMenu({
             model: model,
         });
-        this.#modeMenu.renderInto(this.$el);
+        this.#modeMenu.renderInto(this.#$modeSelector);
 
         this.#publishButton = new PublishButtonView({
             model: model,
