@@ -1,4 +1,46 @@
 /**
+ * An icon for showing the general complexity of a diff.
+ */
+import { BaseView, spina } from '@beanbag/spina';
+
+
+/**
+ * Options for the DiffComplexityIconView.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface DiffComplexityIconViewOptions {
+    /** The number of deleted lines. */
+    numDeletes: number;
+
+    /** The number of inserted lines. */
+    numInserts: number;
+
+    /** The number of replaced lines. */
+    numReplaces: number;
+
+    /** The total number of lines in the diff. */
+    totalLines: number;
+}
+
+
+/**
+ * Interface to store colors for the complexity icons.
+ */
+interface DiffComplexityIconColors {
+    /** CSS color definition for an "insert" chunk. */
+    insertColor: string;
+
+    /** CSS color definition for a "replace" chunk. */
+    replaceColor: string;
+
+    /** CSS color definition for a "delete" chunk. */
+    deleteColor: string;
+}
+
+
+/**
  * Renders an icon showing the general complexity of a diff.
  *
  * This icon is a pie graph showing the percentage of inserts vs deletes
@@ -11,8 +53,30 @@
  * of replaces, allowing this to be used when only the most basic insert and
  * delete counts are available.
  */
-RB.DiffComplexityIconView = Backbone.View.extend({
-    ICON_SIZE: 20,
+@spina
+export class DiffComplexityIconView extends BaseView<
+    Backbone.Model,
+    HTMLDivElement,
+    DiffComplexityIconViewOptions
+> {
+    static ICON_SIZE = 20;
+    static _iconColors: DiffComplexityIconColors = null;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The number of deleted lines. */
+    numDeletes: number = null;
+
+    /** The number of inserted lines. */
+    numInserts: number = null;
+
+    /** The number of replaced lines. */
+    numReplaces: number = null;
+
+    /** The total number of lines in the file. */
+    totalLines: number = null;
 
     /**
      * Initialize the view.
@@ -21,37 +85,20 @@ RB.DiffComplexityIconView = Backbone.View.extend({
      * the view expects.
      *
      * Args:
-     *     options (object):
+     *     options (DiffComplexityIconViewOptions):
      *         Options for the view.
-     *
-     * Option Args:
-     *     numInserts (number, optional):
-     *         The number of inserts in the diff file.
-     *
-     *     numDeletes (number, optional):
-     *         The number of deletes in the diff file.
-     *
-     *     numReplaces (number, optional):
-     *         The number of replaces in the diff file.
-     *
-     *     totalLines (number, optional):
-     *         The total number of lines in the file.
      */
-    initialize(options) {
+    initialize(options: DiffComplexityIconViewOptions) {
         this.numInserts = options.numInserts || 0;
         this.numDeletes = options.numDeletes || 0;
         this.numReplaces = options.numReplaces || 0;
         this.totalLines = options.totalLines || null;
-    },
+    }
 
     /**
      * Render the icon.
-     *
-     * Returns:
-     *     RB.DiffComplexityIconView:
-     *     This object, for chaining.
      */
-    render() {
+    onInitialRender() {
         const numTotal = this.numInserts + this.numDeletes + this.numReplaces;
         const numInsertsPct = this.numInserts / numTotal;
         const numDeletesPct = this.numDeletes / numTotal;
@@ -61,39 +108,37 @@ RB.DiffComplexityIconView = Backbone.View.extend({
             0.5 * (this.totalLines === null
                    ? 1
                    : (this.totalLines - numTotal) / this.totalLines));
-        const iconColors = RB.DiffComplexityIconView.getIconColors();
+        const iconColors = DiffComplexityIconView.getIconColors();
 
         this.$el
-            .width(this.ICON_SIZE)
-            .height(this.ICON_SIZE)
+            .width(DiffComplexityIconView.ICON_SIZE)
+            .height(DiffComplexityIconView.ICON_SIZE)
             .plot(
                 [
                     {
                         color: iconColors.insertColor,
-                        data: this._clampValue(numInsertsPct * 360, minValue)
+                        data: this.#clampValue(numInsertsPct * 360, minValue)
                     },
                     {
                         color: iconColors.deleteColor,
-                        data: this._clampValue(numDeletesPct * 360, minValue)
+                        data: this.#clampValue(numDeletesPct * 360, minValue)
                     },
                     {
                         color: iconColors.replaceColor,
-                        data: this._clampValue(numReplacesPct * 360, minValue)
+                        data: this.#clampValue(numReplacesPct * 360, minValue)
                     },
                 ],
                 {
                     series: {
                         pie: {
-                            show: true,
                             innerRadius: innerRadius,
                             radius: 0.8,
+                            show: true,
                         },
                     },
                 }
             );
-
-        return this;
-    },
+    }
 
     /**
      * Clamp the number to be, at minimum, minValue, unless it is 0.
@@ -109,11 +154,12 @@ RB.DiffComplexityIconView = Backbone.View.extend({
      *     number:
      *     The clamped number.
      */
-    _clampValue(val, minValue) {
+    #clampValue(
+        val: number,
+        minValue: number,
+    ): number {
         return val === 0 ? 0 : Math.max(val, minValue);
-    },
-}, {
-    _iconColors: null,
+    }
 
     /**
      * Return the colors used for the complexity icons.
@@ -127,26 +173,30 @@ RB.DiffComplexityIconView = Backbone.View.extend({
      *     object:
      *     An object containing the colors to use for the icon.
      */
-    getIconColors() {
-        if (!this._iconColors) {
-            this._iconColors = {};
-
+    static getIconColors(): DiffComplexityIconColors {
+        if (!DiffComplexityIconView._iconColors) {
             const $iconColor = $('<div/>')
                 .hide()
                 .appendTo(document.body);
 
             $iconColor[0].className = 'diff-changes-icon-insert';
-            this._iconColors.insertColor = $iconColor.css('color');
+            const insertColor = $iconColor.css('color');
 
             $iconColor[0].className = 'diff-changes-icon-replace';
-            this._iconColors.replaceColor = $iconColor.css('color');
+            const replaceColor = $iconColor.css('color');
 
             $iconColor[0].className = 'diff-changes-icon-delete';
-            this._iconColors.deleteColor = $iconColor.css('color');
+            const deleteColor = $iconColor.css('color');
 
             $iconColor.remove();
+
+            DiffComplexityIconView._iconColors = {
+                deleteColor,
+                insertColor,
+                replaceColor,
+            };
         }
 
-        return this._iconColors;
-    },
-});
+        return DiffComplexityIconView._iconColors;
+    }
+}

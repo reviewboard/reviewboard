@@ -330,8 +330,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/diffviewer/views/diffCommentBlockView.es6.js',
             'rb/js/diffviewer/views/diffCommentsHintView.es6.js',
             'rb/js/diffviewer/views/diffCommitListView.es6.js',
-            'rb/js/diffviewer/views/diffComplexityIconView.es6.js',
-            'rb/js/diffviewer/views/diffFileIndexView.es6.js',
             'rb/js/diffviewer/views/diffReviewableView.es6.js',
             'rb/js/diffviewer/views/diffRevisionLabelView.es6.js',
             'rb/js/diffviewer/views/diffRevisionSelectorView.es6.js',
