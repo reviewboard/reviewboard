@@ -454,7 +454,6 @@ export class UnifiedBannerView extends FloatingBannerView<
         const reviewRequest = model.get('reviewRequest');
         const reviewRequestState = reviewRequest.get('state');
         const reviewRequestPublic = reviewRequest.get('public');
-        const reviewRequestDraft = !reviewRequest.draft.isNew();
 
         this.#$discardButton.setVisible(
             draftModes.length > 0 &&
@@ -462,7 +461,9 @@ export class UnifiedBannerView extends FloatingBannerView<
         this.#$modeSelector.setVisible(numDrafts > 0);
         this.#$draftActions.setVisible(numDrafts > 0);
         this.#$changedesc.setVisible(
-            reviewRequestPublic && reviewRequestDraft);
+            reviewRequestPublic &&
+            draftModes.length > 0 &&
+            draftModes[selectedDraftMode].hasReviewRequest);
 
         this.$el
             .toggleClass('-has-draft',
