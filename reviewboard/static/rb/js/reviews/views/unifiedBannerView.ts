@@ -313,6 +313,7 @@ export class UnifiedBannerView extends FloatingBannerView<
 
     modelEvents = {
         'change': this.#update,
+        'change:selectedDraftMode': this.#scrollToReviewReply,
     };
 
     /**********************
@@ -643,6 +644,30 @@ export class UnifiedBannerView extends FloatingBannerView<
             }
         } catch(err) {
             alert(err.xhr.errorText);
+        }
+    }
+
+    /**
+     * Handler for when the selected draft mode changes.
+     *
+     * If the newly selected mode is a review reply, scroll the document to
+     * that review.
+     */
+    #scrollToReviewReply() {
+        const selectedDraftMode = model.get('selectedDraftMode');
+        const draftModes = model.get('draftModes');
+        const draftMode = draftModes[selectedDraftMode];
+
+        if (draftMode.singleReviewReply !== undefined) {
+            const reviewReplyDrafts = model.get('reviewReplyDrafts');
+            const reply = reviewReplyDrafts[draftMode.singleReviewReply];
+            const originalReview = reply.get('parentObject').get('id');
+
+            const $review = $(`#review${originalReview}`);
+            const reviewTop = $review.offset().top;
+            const bannerHeight = this.$el.outerHeight(true);
+
+            $(document).scrollTop(reviewTop - bannerHeight - 20);
         }
     }
 }
