@@ -203,10 +203,10 @@ const DiscardedBannerView = ClosedBannerView.extend({
 /**
  * A banner representing a submitted review request.
  */
-const SubmittedBannerView = ClosedBannerView.extend({
+const CompletedBannerView = ClosedBannerView.extend({
     id: 'submitted-banner',
-    title: gettext('This change has been marked as submitted.'),
-    describeText: gettext('Describe the submission (optional):'),
+    title: gettext('This change has been marked as completed.'),
+    describeText: gettext('Describe the completed change (optional):'),
     closeType: RB.ReviewRequest.CLOSE_SUBMITTED,
 });
 
@@ -426,7 +426,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      */
     initialize() {
         _.bindAll(this, '_checkResizeLayout', '_scheduleResizeLayout',
-                  '_onCloseDiscardedClicked', '_onCloseSubmittedClicked',
+                  '_onCloseDiscardedClicked', '_onCloseCompletedClicked',
                   '_onDeleteReviewRequestClicked', '_onUpdateDiffClicked',
                   '_onUploadFileClicked');
 
@@ -633,7 +633,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         let BannerClass;
 
         if (state === RB.ReviewRequest.CLOSE_SUBMITTED) {
-            BannerClass = SubmittedBannerView;
+            BannerClass = CompletedBannerView;
         } else if (state === RB.ReviewRequest.CLOSE_DISCARDED) {
             BannerClass = DiscardedBannerView;
         } else if (state === RB.ReviewRequest.PENDING &&
@@ -718,7 +718,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      */
     _setupActions() {
         const $closeDiscarded = this.$('#action-close-discarded');
-        const $closeSubmitted = this.$('#action-close-completed');
+        const $closeCompleted = this.$('#action-close-completed');
         const $deletePermanently = this.$('#action-delete-review-request');
         const $updateDiff = this.$('#action-upload-diff');
         const $uploadFile = this.$('#action-upload-file');
@@ -728,7 +728,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          * parent menu, so we can't use events above.
          */
         $closeDiscarded.click(this._onCloseDiscardedClicked);
-        $closeSubmitted.click(this._onCloseSubmittedClicked);
+        $closeCompleted.click(this._onCloseCompletedClicked);
         $deletePermanently.click(this._onDeleteReviewRequestClicked);
         $updateDiff.click(this._onUpdateDiffClicked);
         $uploadFile.click(this._onUploadFileClicked);
@@ -1016,7 +1016,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     },
 
     /**
-     * Handle a click on "Close -> Submitted".
+     * Handle a click on "Close -> Completed".
      *
      * If there's an unpublished draft, this will first confirm if the
      * user is sure.
@@ -1025,7 +1025,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      *     boolean:
      *     False, always.
      */
-    _onCloseSubmittedClicked() {
+    _onCloseCompletedClicked() {
         /*
          * This is a non-destructive event, so don't confirm unless there's
          * a draft.

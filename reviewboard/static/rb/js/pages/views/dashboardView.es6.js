@@ -48,7 +48,7 @@ const DashboardActionsView = Backbone.View.extend({
 
     events: {
         'click .js-action-discard': '_onCloseDiscardedClicked',
-        'click .js-action-submit': '_onCloseSubmittedClicked',
+        'click .js-action-submit': '_onCloseCompletedClicked',
         'click .js-action-archive': '_onArchiveClicked',
         'click .js-action-unarchive': '_onUnarchiveClicked',
         'click .js-action-mute': '_onMuteClicked',
@@ -68,7 +68,7 @@ const DashboardActionsView = Backbone.View.extend({
         this.$el
             .html(this.template({
                 close_discarded_text: gettext('<b>Close</b> Discarded'),
-                close_submitted_text: gettext('<b>Close</b> Submitted'),
+                close_submitted_text: gettext('<b>Close</b> Completed'),
                 archive_text: gettext('<b>Archive</b>'),
                 mute_text: gettext('<b>Mute</b>'),
                 read_only: RB.UserSession.instance.get('readOnly'),
@@ -109,7 +109,7 @@ const DashboardActionsView = Backbone.View.extend({
     },
 
     /**
-     * Handler for when the Close Submitted action is clicked.
+     * Handler for when the Close Completed action is clicked.
      *
      * This will confirm that the user wants to close the selected
      * review requests. Once they confirm, the review requests will
@@ -119,7 +119,7 @@ const DashboardActionsView = Backbone.View.extend({
      *     ev (Event):
      *         The event that triggered the callback.
      */
-    _onCloseSubmittedClicked(ev) {
+    _onCloseCompletedClicked(ev) {
         ev.stopPropagation();
         ev.preventDefault();
 

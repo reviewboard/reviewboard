@@ -52,7 +52,7 @@ Outgoing: All
 -------------
 
 This view shows every review request you have created, including those that
-are discarded or submitted. It works like the :ref:`outgoing-open` but with
+are discarded or completed. It works like the :ref:`outgoing-open` but with
 your complete history.
 
 
@@ -308,7 +308,7 @@ perform some bulk actions. After selecting one or more rows, some of the
 following items will become available:
 
 * :guilabel:`Close Discarded`
-* :guilabel:`Close Submitted`
+* :guilabel:`Close Completed`
 * :guilabel:`Archive`
 * :guilabel:`Unarchive`
 * :guilabel:`Mute`

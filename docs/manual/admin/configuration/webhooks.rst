@@ -90,7 +90,7 @@ objects:
 ``closed_by``
   The user who closed the review request.
 ``close_type``
-  Either ``submitted`` or ``discarded``.
+  Either ``submitted`` (review request was completed) or ``discarded``.
 ``review_request``
   The review request being closed.
 
