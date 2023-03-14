@@ -561,7 +561,7 @@ class FileDiffResource(WebAPIResource):
         # XXX: Kind of a hack.
         api_format = mimetype.split('+')[-1]
 
-        resp = WebAPIResponse(request, payload, api_format=api_format)
+        resp = WebAPIResponse(request, obj=payload, api_format=api_format)
         set_last_modified(resp, filediff.diffset.timestamp)
 
         return resp

@@ -3,8 +3,9 @@ import logging
 import pkg_resources
 from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
+from djblets.deprecation import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard60Warning
+from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.site.models import LocalSite
 
 
@@ -163,8 +164,14 @@ class ToolManager(Manager):
 class RepositoryManager(Manager):
     """A manager for Repository models."""
 
-    def accessible(self, user, visible_only=True, local_site=None,
-                   show_all_local_sites=None, distinct=True):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard70Warning)
+    def accessible(
+        self,
+        user,
+        *,
+        visible_only=True,
+        local_site=None,
+        distinct=True):
         """Return a queryset for repositories accessible by the given user.
 
         For superusers, all public and private repositories will be returned.
@@ -177,6 +184,10 @@ class RepositoryManager(Manager):
 
         The returned list is further filtered down based on the
         ``visible_only`` and ``local_site`` parameters.
+
+        Version Changed:
+            6.0:
+            Removed the ``show_all_local_sites`` argument.
 
         Version Changed:
             5.0:
@@ -209,18 +220,6 @@ class RepositoryManager(Manager):
                     Added support for :py:attr:`LocalSite.ALL
                     <reviewboard.site.models.LocalSite.ALL>`.
 
-            show_all_local_sites (bool, optional):
-                Whether repositories from all :term:`Local Sites` should be
-                returned. This cannot be ``True`` if a ``local_site`` instance
-                was provided.
-
-                Deprecated:
-                    5.0:
-                    Callers should instead set ``local_site`` to
-                    :py:class:`LocalSite.ALL
-                    <reviewboard.site.models.LocalSite.ALL>` instead of
-                    setting this to ``True``.
-
             distinct (bool, optional):
                 Whether to return distinct results.
 
@@ -231,18 +230,6 @@ class RepositoryManager(Manager):
             django.db.models.query.QuerySet:
             The resulting queryset.
         """
-        if show_all_local_sites is not None:
-            RemovedInReviewBoard60Warning.warn(
-                'show_all_local_sites is deprecated. Please pass '
-                'local_site=LocalSite.ALL instead. This will be required '
-                'in Review Board 6.')
-
-            if show_all_local_sites:
-                assert local_site in (None, LocalSite.ALL)
-                local_site = LocalSite.ALL
-            else:
-                assert local_site is not LocalSite.ALL
-
         q = Q()
 
         if user.is_superuser:

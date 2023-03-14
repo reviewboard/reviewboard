@@ -13,6 +13,7 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.chunk_generator import (NoWrapperHtmlFormatter,
                                                     RawDiffChunkGenerator)
 from reviewboard.diffviewer.diffutils import get_chunks_in_range
+from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 
 
@@ -339,7 +340,8 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
             old=orig,
             new=modified,
             orig_filename=self.obj.filename,
-            modified_filename=self.diff_against_obj.filename)
+            modified_filename=self.diff_against_obj.filename,
+            diff_settings=DiffSettings.create(request=self.request))
 
     def _get_source_diff_chunk_generator(self):
         """Return a chunk generator for diffing source text.

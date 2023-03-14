@@ -3,8 +3,9 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.translation import gettext as _, get_language
 from djblets.cache.backend import cache_memoize
+from djblets.deprecation import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard60Warning
+from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header
 from reviewboard.diffviewer.diffutils import populate_diff_chunks
 from reviewboard.diffviewer.errors import UserVisibleError
@@ -45,12 +46,24 @@ class DiffRenderer(object):
     #:     reviewboard.diffviewer.settings.DiffSettings
     diff_settings: DiffSettings
 
-    def __init__(self, diff_file, chunk_index=None, highlighting=None,
-                 collapse_all=True, lines_of_context=None, extra_context=None,
-                 allow_caching=True, template_name=default_template_name,
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard70Warning)
+    def __init__(self,
+                 diff_file,
+                 *,
+                 chunk_index=None,
+                 collapse_all=True,
+                 lines_of_context=None,
+                 extra_context=None,
+                 allow_caching=True,
+                 template_name=default_template_name,
                  show_deleted=False,
-                 *, diff_settings=None):
+                 diff_settings):
         """Initialize the renderer.
+
+        Version Changed:
+            6.0:
+            * Removed the ``highlighting`` argument.
+            * Made ``diff_settings`` mandatory.
 
         Version Changed:
             5.0.2:
@@ -64,10 +77,6 @@ class DiffRenderer(object):
 
             chunk_index (int, optional):
                 The index of a specific chunk to render.
-
-            highlighting (bool, optional):
-                Whether to default to enabling syntax highlighting if
-                ``diff_settings`` is not provided.
 
                 Deprecated:
                     5.0.2:
@@ -105,22 +114,6 @@ class DiffRenderer(object):
                 Version Added:
                     5.0.2
         """
-        if highlighting is not None:
-            RemovedInReviewBoard60Warning.warn(
-                'The `highlighting` argument to %r is deprecated and will '
-                'be removed in Review Board 6.0. Provide `diff_settings` '
-                'instead.'
-                % type(self))
-
-        if diff_settings is None:
-            diff_settings = DiffSettings.create()
-
-            # Satisfy the type checker, due to the parameter being optional.
-            assert diff_settings is not None
-
-            if highlighting is not None:
-                diff_settings.syntax_highlighting = highlighting
-
         self.diff_file = diff_file
         self.diff_settings = diff_settings
         self.chunk_index = chunk_index

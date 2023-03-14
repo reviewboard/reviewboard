@@ -11,9 +11,10 @@ from django.db import connections, router, transaction, IntegrityError
 from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
 from django.utils.text import slugify
+from djblets.deprecation import deprecate_non_keyword_only_args
 from djblets.db.managers import ConcurrencyManager
 
-from reviewboard.deprecation import RemovedInReviewBoard60Warning
+from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.scmtools.errors import ChangeNumberInUseError
 from reviewboard.scmtools.models import Repository
@@ -254,8 +255,13 @@ class DefaultReviewerManager(Manager):
 class ReviewGroupManager(Manager):
     """A manager for Group models."""
 
-    def accessible(self, user, visible_only=True, local_site=None,
-                   show_all_local_sites=None, distinct=True):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard70Warning)
+    def accessible(self,
+                   user,
+                   *,
+                   visible_only=True,
+                   local_site=None,
+                   distinct=True):
         """Return a queryset for review groups accessible by the given user.
 
         For superusers, all public and invite-only review groups will be
@@ -268,6 +274,10 @@ class ReviewGroupManager(Manager):
 
         The returned list is further filtered down based on the
         ``visible_only`` and ``local_site`` parameters.
+
+        Version Changed:
+            6.0:
+            Removed the ``show_all_local_sites`` argument.
 
         Version Changed:
             5.0:
@@ -300,18 +310,6 @@ class ReviewGroupManager(Manager):
                     Added support for :py:attr:`LocalSite.ALL
                     <reviewboard.site.models.LocalSite.ALL>`.
 
-            show_all_local_sites (bool, optional):
-                Whether review groups for all :term:`Local Sites` should be
-                returned. This cannot be ``True`` if a ``local_site``
-                instance was provided.
-
-                Deprecated:
-                    5.0:
-                    Callers should instead set ``local_site`` to
-                    :py:class:`LocalSite.ALL
-                    <reviewboard.site.models.LocalSite.ALL>` instead of
-                    setting this to ``True``.
-
             distinct (bool, optional):
                 Whether to return distinct results.
 
@@ -322,18 +320,6 @@ class ReviewGroupManager(Manager):
             django.db.models.query.QuerySet:
             The resulting queryset.
         """
-        if show_all_local_sites is not None:
-            RemovedInReviewBoard60Warning.warn(
-                'show_all_local_sites is deprecated. Please pass '
-                'local_site=LocalSite.ALL instead. This will be required '
-                'in Review Board 6.')
-
-            if show_all_local_sites:
-                assert local_site in (None, LocalSite.ALL)
-                local_site = LocalSite.ALL
-            else:
-                assert local_site is not LocalSite.ALL
-
         q = Q()
 
         if user.is_superuser:
@@ -1039,14 +1025,17 @@ class ReviewRequestManager(ConcurrencyManager):
 
     def _query(self, user=None, status='P', with_counts=False,
                extra_query=None, local_site=None, filter_private=False,
-               show_inactive=False, show_all_unpublished=False,
-               show_all_local_sites=None):
+               show_inactive=False, show_all_unpublished=False):
         """Return a queryset for review requests matching the given criteria.
 
         By default, the results will not be filtered based on whether a user
         has access to the review requests (via private repository or
         invite-only review group ACLs). To filter based on access, pass
         ``filter_private=True``.
+
+        Version Changed:
+            6.0:
+            Removed the ``show_all_local_sites`` argument.
 
         Version Changed:
             5.0:
@@ -1102,35 +1091,11 @@ class ReviewRequestManager(ConcurrencyManager):
             show_all_unpublished (bool, optional):
                 Whether to include review requests not yet published.
 
-            show_all_local_sites (bool, optional):
-                Whether review requests for all :term:`Local Sites` should be
-                returned. This cannot be ``True`` if a ``local_site``
-                instance was provided.
-
-                Deprecated:
-                    5.0:
-                    Callers should instead set ``local_site`` to
-                    :py:class:`LocalSite.ALL
-                    <reviewboard.site.models.LocalSite.ALL>` instead of
-                    setting this to ``True``.
-
         Returns:
             django.db.models.query.QuerySet:
             The resulting queryset.
         """
         from reviewboard.reviews.models import Group
-
-        if show_all_local_sites is not None:
-            RemovedInReviewBoard60Warning.warn(
-                'show_all_local_sites is deprecated. Please pass '
-                'local_site=LocalSite.ALL instead. This will be required '
-                'in Review Board 6.')
-
-            if show_all_local_sites:
-                assert local_site in (None, LocalSite.ALL)
-                local_site = LocalSite.ALL
-            else:
-                assert local_site is not LocalSite.ALL
 
         is_authenticated = (user is not None and user.is_authenticated)
 

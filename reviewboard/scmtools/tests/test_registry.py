@@ -68,7 +68,7 @@ class SCMToolRegistryTests(TestCase):
         with self.assertLogs(logger=logger) as log_ctx:
             scmtools_registry.populate_db()
 
-        self.assertEqual(len(log_ctx.records), 3)
+        self.assertEqual(len(log_ctx.records), 2)
         self.assertEqual(
             log_ctx.records[0].getMessage(),
             "Tool ID %s (name='Git!', "
@@ -83,9 +83,3 @@ class SCMToolRegistryTests(TestCase):
             "conflicts with SCMTool 'perforce' (name='Perforce', "
             "class_name='reviewboard.scmtools.perforce.PerforceTool')"
             % perforce.pk)
-        self.assertEqual(
-            log_ctx.records[2].getMessage(),
-            "SCMTool 'reviewboard.scmtools.XXXOtherPerforceTool' in the "
-            "scmtools_tool table could not be loaded: Module "
-            "\"reviewboard.scmtools\" does not define a "
-            "\"XXXOtherPerforceTool\" SCM Tool")

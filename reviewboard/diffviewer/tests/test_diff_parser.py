@@ -2,7 +2,6 @@
 
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
 from reviewboard.diffviewer.parser import (BaseDiffParser,
                                            DiffParser,
@@ -51,42 +50,6 @@ class ParsedDiffFileTests(TestCase):
         self.assertEqual(parsed_diff_change.files, [parsed_diff_file])
         self.assertEqual(parsed_diff_file.parent_parsed_diff_change,
                          parsed_diff_change)
-
-    def test_init_with_parser(self):
-        """Testing ParsedDiffFile.__init__ with parser="""
-        parser = BaseDiffParser(b'')
-
-        message = (
-            'Diff parsers must pass a ParsedDiffChange as the '
-            'parsed_diff_change= parameter when creating a ParsedDiffFile. '
-            'They should no longer pass a parser= parameter. This will be '
-            'mandatory in Review Board 6.0.'
-        )
-
-        with self.assertWarns(cls=RemovedInReviewBoard60Warning,
-                              message=message):
-            parsed_diff_file = ParsedDiffFile(parser=parser)
-
-        self.assertIs(parsed_diff_file.parser, parser)
-        self.assertIsNone(parsed_diff_file.parent_parsed_diff_change)
-
-    def test_init_with_no_parser_or_parsed_diff_change(self):
-        """Testing ParsedDiffFile.__init__ without parsed_diff_change= or
-        parser=
-        """
-        message = (
-            'Diff parsers must pass a ParsedDiffChange as the '
-            'parsed_diff_change= parameter when creating a ParsedDiffFile. '
-            'They should no longer pass a parser= parameter. This will be '
-            'mandatory in Review Board 6.0.'
-        )
-
-        with self.assertWarns(cls=RemovedInReviewBoard60Warning,
-                              message=message):
-            parsed_diff_file = ParsedDiffFile()
-
-        self.assertIsNone(parsed_diff_file.parser)
-        self.assertIsNone(parsed_diff_file.parent_parsed_diff_change)
 
 
 class DiffParserTest(DiffParserTestingMixin, TestCase):
@@ -363,29 +326,3 @@ class DiffParserTest(DiffParserTestingMixin, TestCase):
         files = changes[0].files
         self.assertEqual(len(files), 1)
         self.assertEqual(files[0].extra_data, {'foo': True})
-
-    def test_parse_diff_with_get_orig_commit_id(self):
-        """Testing DiffParser.parse_diff with get_orig_commit_id() returning
-        a value
-        """
-        class CustomParser(DiffParser):
-            def get_orig_commit_id(self):
-                return b'abc123'
-
-        parser = CustomParser(self.DEFAULT_FILEDIFF_DATA_DIFF)
-
-        message = (
-            'CustomParser.get_orig_commit_id() will no longer be supported '
-            'in Review Board 6.0. Please set the commit ID in '
-            'self.parsed_diff_change.parent_commit_id, and set '
-            'parsed_diff_change.uses_commit_ids_as_revisions = True.'
-        )
-
-        with self.assertWarns(RemovedInReviewBoard60Warning, message):
-            parsed_diff_file = parser.parse_diff()
-
-        changes = parsed_diff_file.changes
-        self.assertEqual(len(changes), 1)
-
-        self.assertTrue(parsed_diff_file.uses_commit_ids_as_revisions)
-        self.assertEqual(changes[0].parent_commit_id, b'abc123')

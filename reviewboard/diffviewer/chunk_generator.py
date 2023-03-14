@@ -11,6 +11,7 @@ from django.utils.html import escape
 from django.utils.translation import get_language, gettext as _
 from djblets.log import log_timed
 from djblets.cache.backend import cache_memoize
+from djblets.deprecation import deprecate_non_keyword_only_args
 from djblets.siteconfig.models import SiteConfiguration
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
@@ -18,7 +19,7 @@ from pygments.lexers import (find_lexer_class,
                              guess_lexer_for_filename)
 
 from reviewboard.codesafety import code_safety_checker_registry
-from reviewboard.deprecation import RemovedInReviewBoard60Warning
+from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
 from reviewboard.diffviewer.diffutils import (get_filediff_encodings,
                                               get_line_changed_regions,
@@ -119,11 +120,21 @@ class RawDiffChunkGenerator(object):
     #:     reviewboard.diffviewer.settings.DiffSettings
     diff_settings: DiffSettings
 
-    def __init__(self, old, new, orig_filename, modified_filename,
-                 enable_syntax_highlighting=None, encoding_list=None,
+    def __init__(self,
+                 old,
+                 new,
+                 orig_filename,
+                 modified_filename,
+                 encoding_list=None,
                  diff_compat=DiffCompatVersion.DEFAULT,
-                 *, diff_settings=None):
+                 *,
+                 diff_settings: DiffSettings):
         """Initialize the chunk generator.
+
+        Version Changed:
+            6.0:
+            * Removed ``enable_syntax_highlighting``.
+            * Made ``diff_settings`` mandatory.
 
         Version Changed:
             5.0.2:
@@ -144,14 +155,6 @@ class RawDiffChunkGenerator(object):
 
             modified_filename (unicode):
                 The filename corresponding to the new data.
-
-            enable_syntax_highlighting (bool, optional):
-                Whether to default to enabling syntax highlighting if
-                ``diff_settings`` is not provided.
-
-                Deprecated:
-                    5.0.2:
-                    This has been replaced with ``diff_settings``.
 
             encoding_list (list of unicode, optional):
                 A list of encodings to try for the ``old`` and ``new`` data,
@@ -193,22 +196,6 @@ class RawDiffChunkGenerator(object):
             raise TypeError(
                 _('%s expects a Unicode value for "modified_filename"')
                 % type(self).__name__)
-
-        if enable_syntax_highlighting is not None:
-            RemovedInReviewBoard60Warning.warn(
-                'The `enable_syntax_highlighting` argument to %r is '
-                'deprecated and will be removed in Review Board 6.0. '
-                'Please provide `diff_settings` instead.'
-                % type(self))
-
-        if diff_settings is None:
-            diff_settings = DiffSettings.create()
-
-            # Satisfy the type checker, due to the parameter being optional.
-            assert diff_settings is not None
-
-            if enable_syntax_highlighting is not None:
-                diff_settings.syntax_highlighting = enable_syntax_highlighting
 
         self.old = old
         self.new = new
@@ -1132,11 +1119,21 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
        grab a patched file for the interdiff version.
     """
 
-    def __init__(self, request, filediff, interfilediff=None,
-                 force_interdiff=False, enable_syntax_highlighting=None,
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard70Warning)
+    def __init__(self,
+                 request,
+                 filediff,
+                 interfilediff=None,
+                 force_interdiff=False,
                  base_filediff=None,
-                 *, diff_settings=None):
+                 *,
+                 diff_settings):
         """Initialize the DiffChunkGenerator.
+
+        Version Changed:
+            6.0:
+            * Removed the old ``enable_syntax_highlighting`` argument.
+            * Made ``diff_settings`` mandatory.
 
         Args:
             request (django.http.HttpRequest):
@@ -1154,15 +1151,14 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             force_interdiff (bool, optional):
                 Whether or not to force an interdiff.
 
-            enable_syntax_highlighting (bool, optional):
-                Whether or not to enable syntax highlighting.
-
             base_filediff (reviewboard.diffviewer.models.filediff.FileDiff,
                            optional):
                 An ancestor of ``filediff`` that we want to use as the base.
                 Using this argument will result in the history between
                 ``base_filediff`` and ``filediff`` being applied.
 
+            diff_settings (reviewboard.diffviewer.settings.DiffSettings):
+                The settings used to control the display of diffs.
         """
         assert filediff
 
