@@ -230,7 +230,7 @@ level of nesting is possible.
 
 
 Example
-=======
+-------
 
 .. code-block:: python
 

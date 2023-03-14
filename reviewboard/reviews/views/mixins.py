@@ -52,7 +52,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
     class StatusExtraInfo(TypedDict):
         """Extra info to include in the status rendering.
 
-        This is used in :py:method:`get_review_request_status_html`.
+        This is used in :py:meth:`get_review_request_status_html`.
         """
 
         #: A text string to display to the user.

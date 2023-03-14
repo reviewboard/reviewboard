@@ -67,6 +67,8 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
 
         this.#$label = this.$('.rb-c-unified-banner__menu-label');
         this.#$arrow = this.$('.rb-icon-dropdown-arrow');
+
+        this.#update();
     }
 
     /**
@@ -401,7 +403,7 @@ export class UnifiedBannerView extends FloatingBannerView<
         this.#modeMenu = new DraftModeMenu({
             model: model,
         });
-        this.#modeMenu.renderInto(this.$el);
+        this.#modeMenu.renderInto(this.#$modeSelector);
 
         this.#publishButton = new PublishButtonView({
             model: model,
@@ -452,7 +454,6 @@ export class UnifiedBannerView extends FloatingBannerView<
         const reviewRequest = model.get('reviewRequest');
         const reviewRequestState = reviewRequest.get('state');
         const reviewRequestPublic = reviewRequest.get('public');
-        const reviewRequestDraft = !reviewRequest.draft.isNew();
 
         this.#$discardButton.setVisible(
             draftModes.length > 0 &&
@@ -460,7 +461,9 @@ export class UnifiedBannerView extends FloatingBannerView<
         this.#$modeSelector.setVisible(numDrafts > 0);
         this.#$draftActions.setVisible(numDrafts > 0);
         this.#$changedesc.setVisible(
-            reviewRequestPublic && reviewRequestDraft);
+            reviewRequestPublic &&
+            draftModes.length > 0 &&
+            draftModes[selectedDraftMode].hasReviewRequest);
 
         this.$el
             .toggleClass('-has-draft',
