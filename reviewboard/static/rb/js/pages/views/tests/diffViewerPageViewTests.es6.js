@@ -62,7 +62,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
     const pageTemplate = dedent`
         <div>
          <div id="review-banner"></div>
-         <div id="unified-banner"></div>
+         <div id="unified-banner">
+          <div class="rb-c-unified-banner__mode-selector"></div>
+         </div>
          <div id="diff_commit_list">
           <div class="commit-list-container"></div>
          </div>

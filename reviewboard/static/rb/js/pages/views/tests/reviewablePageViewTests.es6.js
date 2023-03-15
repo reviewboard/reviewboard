@@ -1,7 +1,9 @@
 suite('rb/pages/views/ReviewablePageView', function() {
     const pageTemplate = dedent`
         <div id="review-banner"></div>
-        <div id="unified-banner"></div>
+        <div id="unified-banner">
+         <div class="rb-c-unified-banner__mode-selector"></div>
+        </div>
         <a href="#" id="action-edit-review">Edit Review</a>
         <a href="#" id="action-ship-it">Ship It</a>
     `;
