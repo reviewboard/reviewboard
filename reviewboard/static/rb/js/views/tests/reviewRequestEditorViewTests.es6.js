@@ -2,6 +2,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
     const template = dedent`
         <div>
          <div class="rb-c-unified-banner" id="unified-banner">
+          <div class="rb-c-unified-banner__mode-selector"></div>
           <pre id="field_change_description" class="field field-text-area"
                data-field-id="field_change_description"></pre>
          </div>

@@ -1,7 +1,9 @@
 suite('rb/reviewRequestPage/views/ReviewRequestPageView', function() {
     const template = dedent`
         <div id="review-banner"></div>
-        <div id="unified-banner"></div>
+        <div id="unified-banner">
+         <div class="rb-c-unified-banner__mode-selector"></div>
+        </div>
         <a id="collapse-all"></a>
         <a id="expand-all"></a>
         <div>
