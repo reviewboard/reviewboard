@@ -121,7 +121,7 @@ const UpdatesBubbleView = Backbone.View.extend({
  */
 RB.ReviewablePageView = RB.PageView.extend({
     events: _.defaults({
-        'click #action-add-general-comment': '_onAddCommentClicked',
+        'click #action-legacy-add-general-comment': 'addGeneralComment',
         'click #action-edit-review': '_onEditReviewClicked',
         'click #action-ship-it': 'shipIt',
         'click .rb-o-mobile-menu-label': '_onMenuClicked',
@@ -408,7 +408,7 @@ RB.ReviewablePageView = RB.PageView.extend({
      *    boolean:
      *    false, always.
      */
-    _onAddCommentClicked() {
+    addGeneralComment() {
         const pendingReview = this.model.get('pendingReview');
         const comment = pendingReview.createGeneralComment(
             undefined,

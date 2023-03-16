@@ -450,13 +450,41 @@ export class EditReviewActionView extends Actions.ActionView {
 
 
 /**
+ * Action view to add a general comment.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+export class AddGeneralCommentActionView extends Actions.ActionView {
+    events = {
+        'click': this.#onClick,
+    };
+
+    /**
+     * Handle a click on the action.
+     *
+     * Args:
+     *     e (MouseEvent):
+     *         The event.
+     */
+    #onClick(e: MouseEvent) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        RB.PageManager.getPage().addGeneralComment();
+    }
+}
+
+
+/**
  * Action view to mark a review request as "Ship It".
  *
  * Version Added:
  *     6.0
  */
 @spina
-export class ShipItActionView extends RB.Actions.ActionView {
+export class ShipItActionView extends Actions.ActionView {
     events = {
         'click': '_onClick',
     };
