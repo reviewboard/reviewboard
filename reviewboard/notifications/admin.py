@@ -36,6 +36,7 @@ class WebHookTargetAdmin(ModelAdmin):
             'classes': ['collapse'],
         }),
     )
+    raw_id_fields = ('local_site',)
 
 
 admin_site.register(WebHookTarget, WebHookTargetAdmin)

@@ -11,7 +11,7 @@ class FileAttachmentAdmin(ModelAdmin):
                     'review_request_id')
     list_display_links = ('file', 'caption')
     search_fields = ('caption', 'mimetype')
-    raw_id_fields = ('added_in_filediff',)
+    raw_id_fields = ('added_in_filediff', 'local_site', 'user')
 
     def review_request_id(self, obj):
         """Return the review request ID for this file attachment."""
