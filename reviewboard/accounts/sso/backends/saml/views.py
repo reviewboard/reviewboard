@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 import logging
 
 from django.conf import settings
+from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
 from django.core.cache import cache
