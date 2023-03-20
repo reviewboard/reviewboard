@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import quote
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -13,6 +14,7 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
+from django.utils.http import is_safe_url
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
@@ -79,7 +81,16 @@ class LoginView(DjangoLoginView):
         if sso_auto_login_backend:
             try:
                 backend = sso_backends.get('backend_id', sso_auto_login_backend)
-                return HttpResponseRedirect(backend.login_url)
+                login_url = backend.login_url
+
+                redirect_to = self.get_success_url()
+
+                if is_safe_url(url=redirect_to, host=request.get_host()):
+                    login_url = '%s?%s=%s' % (login_url,
+                                              self.redirect_field_name,
+                                              quote(redirect_to))
+
+                return HttpResponseRedirect(login_url)
             except sso_backends.ItemLookupError:
                 logging.error('Unable to find sso_auto_login_backend "%s".',
                               sso_auto_login_backend)

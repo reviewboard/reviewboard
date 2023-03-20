@@ -524,6 +524,79 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
         self.assertNotIn('commits', item_rsp['links'])
         self.assertNotIn('commit_count', item_rsp)
 
+    @webapi_test_template
+    def test_get_patch(self):
+        """Testing the GET <URL> API with Accept: text/x-patch"""
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        self.create_filediff(diffset)
+
+        diff, response = self.api_get_with_response(
+            get_diff_item_url(review_request, diffset.revision),
+            expected_mimetype='text/x-patch',
+            expected_json=False,
+            HTTP_ACCEPT='text/x-patch')
+
+        self.assertEqual(
+            diff,
+            b'--- README\trevision 123\n+++ README\trevision 123\n@@ -1 +1 @@\n'
+            b'-Hello, world!\n+Hello, everybody!\n')
+        self.assertEqual(response['Content-Disposition'],
+                         'inline; filename=diffset')
+
+    @webapi_test_template
+    def test_get_patch_with_bugs_closed(self):
+        """Testing the GET <URL> API with Accept: text/x-patch and bugs_closed
+        field
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True,
+                                                    bugs_closed='123,456')
+        diffset = self.create_diffset(review_request, name='diff')
+        self.create_filediff(diffset)
+
+        diff, response = self.api_get_with_response(
+            get_diff_item_url(review_request, diffset.revision),
+            expected_mimetype='text/x-patch',
+            expected_json=False,
+            HTTP_ACCEPT='text/x-patch')
+
+        self.assertEqual(
+            diff,
+            b'--- README\trevision 123\n+++ README\trevision 123\n@@ -1 +1 @@\n'
+            b'-Hello, world!\n+Hello, everybody!\n')
+        self.assertEqual(response['Content-Disposition'],
+                         'inline; filename=bug123_456.patch')
+
+    @webapi_test_template
+    def test_get_patch_with_bugs_closed_with_newline(self):
+        """Testing the GET <URL> API with Accept: text/x-patch and bugs_closed
+        field with a newline in it.
+        """
+        # We had a report that someone was copy/pasting bug numbers into the
+        # bugs field, and managed to paste something that included a newline
+        # character. This then failed when attempting to use that bug number in
+        # the Content-Disposition header.
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True,
+                                                    bugs_closed='123,\n456')
+        diffset = self.create_diffset(review_request, name='diff')
+        self.create_filediff(diffset)
+
+        diff, response = self.api_get_with_response(
+            get_diff_item_url(review_request, diffset.revision),
+            expected_mimetype='text/x-patch',
+            expected_json=False,
+            HTTP_ACCEPT='text/x-patch')
+
+        self.assertEqual(
+            diff,
+            b'--- README\trevision 123\n+++ README\trevision 123\n@@ -1 +1 @@\n'
+            b'-Hello, world!\n+Hello, everybody!\n')
+        self.assertEqual(response['Content-Disposition'],
+                         'inline; filename=bug123_456.patch')
+
     #
     # HTTP PUT tests
     #
