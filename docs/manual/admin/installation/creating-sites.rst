@@ -224,6 +224,8 @@ If you need any help with SELinux, `reach out to us for support <support_>`_.
 .. _support: https://www.reviewboard.org/support/
 
 
+.. _configuring-web-server:
+
 Configuring the Web Server
 ==========================
 
