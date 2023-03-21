@@ -153,8 +153,9 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
      * Update the state of the draft mode selector.
      */
     #update() {
-        const draftModes = this.model.get('draftModes');
-        const selectedDraftMode = this.model.get('selectedDraftMode');
+        const model = this.model;
+        const draftModes = model.get('draftModes');
+        const selectedDraftMode = model.get('selectedDraftMode');
 
         this.#menuView.clearItems();
 
@@ -168,7 +169,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
                     `);
             } else {
                 this.#menuView.addItem({
-                    onClick: () => this.model.set('selectedDraftMode', i),
+                    onClick: () => model.set('selectedDraftMode', i),
                     text: text,
                 });
             }
@@ -517,15 +518,15 @@ export class UnifiedBannerView extends FloatingBannerView<
             reviews.push(pendingReview.get('id'));
         }
 
-        if (draftMode.hasReviewReplies) {
+        if (draftMode.singleReviewReply !== undefined) {
+            const reply = reviewReplyDrafts[draftMode.singleReviewReply];
+            await reply.ready();
+            reviews.push(reply.get('id'));
+        } else if (draftMode.hasReviewReplies) {
             for (const reply of reviewReplyDrafts) {
                 await reply.ready();
                 reviews.push(reply.get('id'));
             }
-        } else if (draftMode.singleReviewReply !== undefined) {
-            const reply = reviewReplyDrafts[draftMode.singleReviewReply];
-            await reply.ready();
-            reviews.push(reply.get('id'));
         }
 
         try {
@@ -654,12 +655,12 @@ export class UnifiedBannerView extends FloatingBannerView<
      * that review.
      */
     #scrollToReviewReply() {
-        const selectedDraftMode = model.get('selectedDraftMode');
-        const draftModes = model.get('draftModes');
+        const selectedDraftMode = this.model.get('selectedDraftMode');
+        const draftModes = this.model.get('draftModes');
         const draftMode = draftModes[selectedDraftMode];
 
         if (draftMode.singleReviewReply !== undefined) {
-            const reviewReplyDrafts = model.get('reviewReplyDrafts');
+            const reviewReplyDrafts = this.model.get('reviewReplyDrafts');
             const reply = reviewReplyDrafts[draftMode.singleReviewReply];
             const originalReview = reply.get('parentObject').get('id');
 
