@@ -116,6 +116,15 @@ _.throttleLayout = function(layoutFunc, options={}) {
 /*
  * Return the parent prototype for an object.
  *
+ * This is only considered safe when working with Spina or Backbone objects,
+ * due to special state made available when those objects are initialized.
+ * Other types of objects may produce incorrect results.
+ *
+ * Version Changed:
+ *     6.0:
+ *     Added explicit support for safely working with Spina or Backbone
+ *     objects.
+ *
  * Args:
  *     obj (object):
  *         An object.
@@ -126,5 +135,9 @@ _.throttleLayout = function(layoutFunc, options={}) {
  *     roughly equivalent to what you'd get from ES6's ``super``.
  */
 window._super = function(obj) {
+    if (obj.hasOwnProperty('__super__')) {
+        return obj.__super__.prototype;
+    }
+
     return Object.getPrototypeOf(Object.getPrototypeOf(obj));
 };
