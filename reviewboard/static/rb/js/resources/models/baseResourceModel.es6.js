@@ -9,7 +9,7 @@
  * Other resource models are expected to extend this. In particular, they
  * should generally be extending toJSON() and parse().
  */
-RB.BaseResource = Backbone.Model.extend({
+RB.BaseResource = Backbone.Model.extend(_.extend({
     /**
      * Return default values for the model attributes.
      *
@@ -869,7 +869,7 @@ RB.BaseResource = Backbone.Model.extend({
             }
         }
     }
-}, {
+}, RB.ExtraDataMixin), {
     strings: {
         UNSET_PARENT_OBJECT: 'parentObject must be set',
         INVALID_EXTRADATA_TYPE:
@@ -878,6 +878,3 @@ RB.BaseResource = Backbone.Model.extend({
             'extraData.{key} must be null, a number, boolean, or string'
     }
 });
-
-
-_.extend(RB.BaseResource.prototype, RB.ExtraDataMixin);
