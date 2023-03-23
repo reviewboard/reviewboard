@@ -14,10 +14,10 @@ import { ActionView } from './actionView';
 @spina
 export class MenuActionView extends ActionView {
     events = {
-        'focusout': this.onFocusOut,
-        'keydown': this.onKeyDown,
-        'mouseenter': this.openMenu,
-        'mouseleave': this.closeMenu,
+        'focusout': 'onFocusOut',
+        'keydown': 'onKeyDown',
+        'mouseenter': 'openMenu',
+        'mouseleave': 'closeMenu',
     };
 
     /**********************

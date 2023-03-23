@@ -94,12 +94,34 @@ export class MenuButtonView<
     className = 'rb-c-menu-button';
 
     events = {
-        'click .rb-c-menu-button__toggle': this.#onToggleClick,
-        'focusout': this.#onFocusOut,
-        'keydown .rb-c-menu-button__toggle': this.#onToggleButtonKeyDown,
-        'mouseenter .rb-c-menu-button__toggle': this.#openMenu,
-        'mouseleave': this.#closeMenu,
+        'click .rb-c-menu-button__toggle': '_onToggleClick',
+        'focusout': '_onFocusOut',
+        'keydown .rb-c-menu-button__toggle': '_onToggleButtonKeyDown',
+        'mouseenter .rb-c-menu-button__toggle': '_openMenu',
+        'mouseleave': '_closeMenu',
     };
+
+    private static template = _.template(dedent`
+        <% if (hasPrimaryButton) { %>
+         <div class="rb-c-button-group" role="group">
+          <button class="rb-c-menu-button__primary rb-c-button"
+                  type="button"><%- buttonText %></button>
+          <button class="rb-c-menu-button__toggle rb-c-button"
+                  id="<%- labelID %>"
+                  type="button"
+                  aria-label="<%- menuLabel %>">
+           <span class="<%- menuIconClass %>"></span>
+          </button>
+         </div>
+        <% } else { %>
+         <button class="rb-c-button rb-c-menu-button__toggle"
+                 id="<%- labelID %>"
+                 type="button">
+          <%- buttonText %>
+          <span class="<%- menuIconClass %>"></span>
+         </button>
+        <% } %>
+    `);
 
     /**********************
      * Instance variables *
@@ -127,27 +149,6 @@ export class MenuButtonView<
     #menuItems: MenuItemOptions[];
     #menuType: MenuType;
     #onPrimaryButtonClick: { (eventObject: MouseEvent): void };
-    #template = _.template(dedent`
-        <% if (hasPrimaryButton) { %>
-         <div class="rb-c-button-group" role="group">
-          <button class="rb-c-menu-button__primary rb-c-button"
-                  type="button"><%- buttonText %></button>
-          <button class="rb-c-menu-button__toggle rb-c-button"
-                  id="<%- labelID %>"
-                  type="button"
-                  aria-label="<%- menuLabel %>">
-           <span class="<%- menuIconClass %>"></span>
-          </button>
-         </div>
-        <% } else { %>
-         <button class="rb-c-button rb-c-menu-button__toggle"
-                 id="<%- labelID %>"
-                 type="button">
-          <%- buttonText %>
-          <span class="<%- menuIconClass %>"></span>
-         </button>
-        <% } %>
-    `);
 
     /**
      * Initialize the menu button.
@@ -191,7 +192,7 @@ export class MenuButtonView<
         this.$el
             .addClass(this.className)
             .attr('role', 'group')
-            .html(this.#template({
+            .html(MenuButtonView.template({
                 buttonText: this.#buttonText,
                 hasPrimaryButton: this.#hasPrimaryButton,
                 labelID: labelID,
@@ -296,7 +297,7 @@ export class MenuButtonView<
      *     options (MenuTransitionOptions):
      *         Options to pass to :js:meth:`RB.MenuView.open`.
      */
-    #openMenu(options: MenuTransitionOptions) {
+    private _openMenu(options: MenuTransitionOptions) {
         this.menu.open(options);
     }
 
@@ -307,7 +308,7 @@ export class MenuButtonView<
      *     options (MenuTransitionOptions):
      *         Options to pass to :js:meth:`RB.MenuView.close`.
      */
-    #closeMenu(options: MenuTransitionOptions) {
+    private _closeMenu(options: MenuTransitionOptions) {
         this.menu.close(options);
     }
 
@@ -321,7 +322,7 @@ export class MenuButtonView<
      *     evt (FocusEvent):
      *         The focus-in event.
      */
-    #onFocusOut(evt: FocusEvent) {
+    private _onFocusOut(evt: FocusEvent) {
         evt.stopPropagation();
 
         /*
@@ -331,7 +332,7 @@ export class MenuButtonView<
         const currentTarget = evt.currentTarget as Element;
 
         if (!currentTarget.contains(evt.relatedTarget as Element)) {
-            this.#closeMenu({
+            this._closeMenu({
                 animate: false,
             });
         }
@@ -348,12 +349,12 @@ export class MenuButtonView<
      *     evt (KeyboardEvent):
      *         The keydown event.
      */
-    #onToggleButtonKeyDown(evt: KeyboardEvent) {
+    private _onToggleButtonKeyDown(evt: KeyboardEvent) {
         if (evt.key === 'ArrowDown' ||
             evt.key === 'ArrowUp' ||
             evt.key === 'Enter' ||
             evt.key === ' ') {
-            this.#openMenu({
+            this._openMenu({
                 animate: false,
             });
 
@@ -366,7 +367,7 @@ export class MenuButtonView<
             evt.stopPropagation();
             evt.preventDefault();
         } else if (evt.key === 'Escape') {
-            this.#closeMenu({
+            this._closeMenu({
                 animate: false,
             });
 
@@ -388,7 +389,7 @@ export class MenuButtonView<
      *     evt (MouseEvent):
      *         The click event.
      */
-    #onToggleClick(evt: MouseEvent) {
+    private _onToggleClick(evt: MouseEvent) {
         evt.stopPropagation();
         evt.preventDefault();
     }

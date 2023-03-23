@@ -33,21 +33,16 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
 > {
     className = 'banner';
     events = {
-        'click .discard-button': this.#onDiscardClicked,
-        'click .publish-button': this.#onPublishClicked,
+        'click .discard-button': '_onDiscardClicked',
+        'click .publish-button': '_onPublishClicked',
     };
     modelEvents = {
-        'publishError': errorText => alert(errorText),
-        'saved': () => this.$('input').prop('disabled', false),
-        'saving destroying': () => this.$('input').prop('disabled', true),
+        'publishError': '_onPublishError',
+        'saved': '_onSaved',
+        'saving destroying': '_onSavingOrDestroying',
     };
 
-    /**********************
-     * Instance variables *
-     **********************/
-
-    #reviewRequestEditor: RB.ReviewRequestEditor;
-    #template = _.template(dedent`
+    private static template = _.template(dedent`
         <h1>${gettext('This reply is a draft.')}</h1>
         <p>${gettext('Be sure to publish when finished.')}</p>
         <span class="banner-actions">
@@ -63,6 +58,12 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
         </label>
         <% } %>
     `);
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    #reviewRequestEditor: RB.ReviewRequestEditor;
 
     /**
      * Initialize the view.
@@ -86,7 +87,7 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
     onInitialRender() {
         super.onInitialRender();
 
-        this.$el.html(this.#template({
+        this.$el.html(ReviewReplyDraftBannerView.template({
             showSendEmail: this.#reviewRequestEditor.get('showSendEmail'),
         }));
     }
@@ -96,7 +97,7 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
      *
      * Publishes the reply.
      */
-    #onPublishClicked() {
+    private _onPublishClicked() {
         const $sendEmail = this.$('.send-email');
 
         this.model.publish({
@@ -109,8 +110,40 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
      *
      * Discards the reply.
      */
-    #onDiscardClicked() {
+    private _onDiscardClicked() {
         this.model.destroy();
+    }
+
+    /**
+     * Handler for when there's an error publishing.
+     *
+     * The error will be displayed in an alert.
+     *
+     * Args:
+     *     errorText (string):
+     *         The publish error text to show.
+     */
+    private _onPublishError(errorText: string) {
+        alert(errorText);
+    }
+
+    /**
+     * Handler for when the draft is saving or being destroyed.
+     *
+     * This will disable the buttons on the banner while the operation is
+     * in progress.
+     */
+    private _onSavingOrDestroying() {
+        this.$('input').prop('disabled', true);
+    }
+
+    /**
+     * Handler for when the draft is saved.
+     *
+     * This will re-enable the buttons on the banner.
+     */
+    private _onSaved() {
+        this.$('input').prop('disabled', false);
     }
 }
 
@@ -127,11 +160,7 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
 export class ReviewReplyDraftStaticBannerView extends BaseView {
     className = 'banner';
 
-    /**********************
-     * Instance variables *
-     **********************/
-
-    template = _.template(dedent`
+    static template = _.template(dedent`
         <h1><%- draftText %></h1>
         <p><%- reminderText %></p>
     `);
@@ -140,7 +169,7 @@ export class ReviewReplyDraftStaticBannerView extends BaseView {
      * Render the banner.
      */
     onInitialRender() {
-        this.$el.html(this.template({
+        this.$el.html(ReviewReplyDraftStaticBannerView.template({
             draftText: _`This reply is a draft.`,
             reminderText: _`Be sure to publish when finished.`,
         }));
