@@ -5,16 +5,18 @@ Creating and Editing Reviews
 Creating Reviews
 ================
 
-Adding comments on diffs or file attachments will immediately create a new
-review if one doesn't already exist. Once a review is created, a :ref:`review
-draft banner <review-draft-banner>` will show on the page.
+Adding comments (:ref:`General Comments <general-comments>`, :ref:`Diff
+Comments <diff-comments>`, or :ref:`File Attachment Comments
+<file-attachment-comments>`) will immediately create a new review if one
+doesn't already exist. Once a review draft is created, the :ref:`review banner
+<review-banner>` will change to green.
 
 Blank reviews can also be created without having to first add a comment.
 This can be useful if you have a generic comment about the change, rather
 than one specific to diffs or other files.
 
-To create a new, blank review, click :guilabel:`Review` on the review
-request actions bar.
+To create a new, blank review, click :guilabel:`Create a new review` in the
+menu in the review banner.
 
 
 .. _review-dialog:
@@ -22,9 +24,8 @@ request actions bar.
 Editing Reviews
 ===============
 
-Clicking the :guilabel:`Review` button on the review request action bar, or
-clicking :guilabel:`Edit Review` on the review draft banner will display the
-review dialog, showing the entire contents of your draft review.
+Clicking :guilabel:`Edit your review` in the review banner menu will display
+the review dialog, showing the entire contents of your draft review.
 
 .. image:: review-dialog.png
 
@@ -34,7 +35,7 @@ text to appear at the top and bottom of your review. Toggling a checkbox or
 pressing :guilabel:`OK` on a text field will instantly save those changes, so
 you don't have to worry about losing your work if you close the page.
 
-The bottom of the dialog have the following buttons:
+The bottom of the dialog has the following buttons:
 
 .. image:: review-dialog-buttons.png
 

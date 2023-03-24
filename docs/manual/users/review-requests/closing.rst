@@ -13,7 +13,7 @@ menu on the review request's action bar.
 
 .. image:: close-menu.png
 
-A submitted review request is one where the change has been committed to the
+A completed review request is one where the change has been committed to the
 repository and no longer needs further reviews.
 
 A discarded review request is one that has been abandoned and will no longer

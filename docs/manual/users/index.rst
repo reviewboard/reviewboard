@@ -109,8 +109,9 @@ Basic concepts
 --------------
 
 * :doc:`Reviews and comments <reviews/reviews>`
-* :doc:`Review draft banner <reviews/draft-banner>`
+* :doc:`The review banner <reviews/banner>`
 * :doc:`Tracking issues <reviews/issue-tracking>`
+* :doc:`Managing and publishing drafts <reviews/drafts>`
 
 
 Reviewing content
@@ -128,7 +129,6 @@ Managing reviews
 ----------------
 
 * :doc:`Creating and editing reviews <reviews/editing-reviews>`
-* :doc:`Publishing reviews <reviews/publishing>`
 * :doc:`Approving changes (Ship It!) <reviews/approving-changes>`
 
 
