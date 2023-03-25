@@ -20,6 +20,7 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import (get_diff_files,
                                               populate_diff_chunks)
 from reviewboard.diffviewer.models import FileDiff
+from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.webapi.base import (CUSTOM_MIMETYPE_BASE,
                                      ImportExtraDataError,
                                      WebAPIResource)
@@ -529,12 +530,16 @@ class FileDiffResource(WebAPIResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        highlighting = request.GET.get('syntax-highlighting', False)
+        diff_settings = DiffSettings.create(
+            request=request,
+            syntax_highlighting=request.GET.get('syntax-highlighting', False))
 
         files = get_diff_files(diffset=filediff.diffset,
                                filediff=filediff,
                                request=request)
-        populate_diff_chunks(files, highlighting, request=request)
+        populate_diff_chunks(files=files,
+                             request=request,
+                             diff_settings=diff_settings)
 
         if not files:
             # This may not be the right error here.
