@@ -274,6 +274,49 @@ class SAMLViewTests(kgb.SpyAgency, TestCase):
             self.assertEqual(linked_account.service_id, 'sso:saml')
             self.assertEqual(linked_account.service_user_id, 'sleepy')
 
+    def test_post_link_user_invalid_mode(self):
+        """Testing SAMLLinkUserView form POST with invalid mode"""
+        settings = {
+            'saml_enabled': True,
+            'saml_require_login_to_link': True,
+        }
+
+        with self.siteconfig_settings(settings):
+            session = self.client.session
+            session['sso'] = {
+                'user_data': {
+                    'id': 'sleepy',
+                    'first_name': 'Sleepy',
+                    'last_name': 'Dwarf',
+                    'email': 'sleepy@example.com',
+                },
+            }
+            session.save()
+
+            self.assertFalse(User.objects.filter(username='sleepy').exists())
+
+            url = reverse('sso:saml:link-user', kwargs={'backend_id': 'saml'})
+            rsp = self.client.post(url, {
+                'username': '',
+                'password': '',
+                'provision': True,
+                'mode': 'invalid',
+            })
+
+            self.assertEqual(rsp.status_code, 302)
+
+            user = User.objects.get(username='sleepy')
+            self.assertEqual(user.first_name, 'Sleepy')
+            self.assertEqual(user.last_name, 'Dwarf')
+            self.assertEqual(user.email, 'sleepy@example.com')
+
+            linked_accounts = list(user.linked_accounts.all())
+
+            self.assertEqual(len(linked_accounts), 1)
+            linked_account = linked_accounts[0]
+            self.assertEqual(linked_account.service_id, 'sso:saml')
+            self.assertEqual(linked_account.service_user_id, 'sleepy')
+
     def test_post_assertion_replay_countermeasures(self):
         """Testing SAMLACSView POST replay attack countermeasures"""
         class FakeAuth:
