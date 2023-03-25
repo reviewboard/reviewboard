@@ -6,15 +6,15 @@
  <div class="rb-c-alert__content">
   <h3 class="rb-c-alert__heading">
 {% blocktrans %}
-   This file contains special invisible Unicode characters that may maliciously
-   hide code and alter behavior.
+   This file contains special Unicode characters that may maliciously hide
+   code and alter behavior.
 {% endblocktrans %}
   </h3>
   <p>
 {% blocktrans with categories=warning_labels|humanize_list %}
-   Invisible Unicode characters were found in this file that may be safe and
-   intentional, or may be malicious, making code appear one way while
-   executing another way. The following were found:
+   Unicode characters were found in this file that may be safe and intentional,
+   or may be malicious, making code appear one way while executing another way.
+   The following were found:
 {% endblocktrans %}
   </p>
 
@@ -23,7 +23,7 @@
   <h4 class="rb-c-alert__heading">
 {%  blocktrans with cve_url=CVE_2021_42574_URL %}
    Bi-directional Unicode Characters
-   (<a href="cve_url" target="_blank">CVE 2021-42574</a>)
+   (<a href="{{cve_url}}" target="_blank">CVE 2021-42574</a>)
 {%  endblocktrans %}
   </h4>
   <p>
@@ -50,7 +50,7 @@ if (access_level != "user // Check if admin") {
   <h4 class="rb-c-alert__heading">
 {%  blocktrans with cve_url=CVE_2021_42694_URL %}
    Confusable/homoglyph Unicode Characters
-   (<a href="cve_url" target="_blank">CVE-2021-42694</a>)
+   (<a href="{{cve_url}}" target="_blank">CVE 2021-42694</a>)
 {%  endblocktrans %}
   </h4>
   <p>
@@ -74,7 +74,7 @@ if (isΑdmin()) { ... }
   <h4 class="rb-c-alert__heading">
 {%  blocktrans with cve_url=CVE_2021_42574_URL %}
    Zero-width Spaces
-   (<a href="cve_url" target="_blank">CVE 2021-42574</a>)
+   (<a href="{{cve_url}}" target="_blank">CVE 2021-42574</a>)
 {%  endblocktrans %}
   </h4>
   <p>
@@ -106,7 +106,7 @@ bot_user.add_permissions('...')
 {%  endblocktrans %}
   </h4>
   <p>
-   <a href="https://www.trojansource.codes/" target="_blank">{% trans "Learn more about this vulnerability" %}</a>
+   <a href="https://trojansource.codes/" target="_blank">{% trans "Learn more about this vulnerability" %}</a>
   </p>
 {% blocktrans %}
    You can toggle the display of these characters on and off. Lines
