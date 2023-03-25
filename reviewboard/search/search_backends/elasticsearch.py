@@ -122,7 +122,14 @@ class ElasticsearchBackend(SearchBackend):
         'index_name': 'INDEX_NAME',
     }
 
-    def validate(self, **kwargs):
+    # Assign these here to allow for unit tests to override them.
+    _ES_VERSION_SUPPORTED = ES_VERSION_SUPPORTED
+    _es_version = es_version
+
+    def validate(
+        self,
+        **kwargs,
+    ) -> None:
         """Ensure that the elasticsearch Python module is installed.
 
         Raises:
@@ -134,9 +141,31 @@ class ElasticsearchBackend(SearchBackend):
         # Note that technically, elasticsearch 1.x is supported, but it's
         # pretty old. If we're going to reference a version, we want to
         # reference 2.x.
-        if not ES_VERSION_SUPPORTED:
-            raise ValidationError(gettext(
-                'You need to install a supported version of the '
-                'elasticsearch module.'))
+        if not self._ES_VERSION_SUPPORTED:
+            es_version = self._es_version
+            supported_packages = ', '.join(
+                'ReviewBoard[elasticsearch%s]' % _version
+                for _version in SUPPORTED_ES_MAJOR_VERSIONS
+            )
+
+            if es_version:
+                raise ValidationError(
+                    gettext('You need to install a supported version of the '
+                            'elasticsearch module. Version %(cur_version)s '
+                            'is not supported. Compatible packages are: '
+                            '%(packages)s')
+                    % {
+                        'cur_version': '%s.%s' % (es_version[0],
+                                                  es_version[1]),
+                        'packages': supported_packages,
+                    })
+            else:
+                raise ValidationError(
+                    gettext('You need to install a supported version of the '
+                            'elasticsearch module. Compatible packages are: '
+                            '%(packages)s')
+                    % {
+                        'packages': supported_packages,
+                    })
 
         super(ElasticsearchBackend, self).validate(**kwargs)
