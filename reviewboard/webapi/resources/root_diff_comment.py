@@ -26,6 +26,12 @@ class RootDiffCommentResource(BaseDiffCommentResource):
     This is a top level endpoint that allows you to list and query all
     diff comments in the system, across different review requests.
 
+    Version Changed:
+        5.0.4:
+        This was formally named ``diff_comments`` on the root resource, but
+        had to be renamed to ``all_diff_comments`` in order to work around a
+        conflict with URI templates.
+
     Version Added:
         5.0
     """
@@ -35,6 +41,7 @@ class RootDiffCommentResource(BaseDiffCommentResource):
     model = Comment
     uri_object_key = None
 
+    link_name = 'all_diff_comments'
     uri_template_name = 'all_diff_comment'
 
     mimetype_list_resource_name = 'review-diff-comments'

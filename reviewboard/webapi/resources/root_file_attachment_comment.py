@@ -25,6 +25,12 @@ class RootFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     This is a top level endpoint that allows you to list and query all
     file attachment comments in the system, across different review requests.
 
+    Version Changed:
+        5.0.4:
+        This was formally named ``file_attachment_comments`` on the root
+        resource, but had to be renamed to ``all_file_attachment_comments`` in
+        order to work around a conflict with URI templates.
+
     Version Added:
         5.0
     """
@@ -32,6 +38,7 @@ class RootFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     added_in = '5.0'
     allowed_methods = ('GET',)
     model = FileAttachmentComment
+    link_name = 'all_file_attachment_comments'
     uri_template_name = 'all_file_attachment_comment'
     uri_object_key = None
 
