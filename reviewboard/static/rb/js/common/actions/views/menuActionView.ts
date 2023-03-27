@@ -1,4 +1,4 @@
-import { spina } from '@beanbag/spina';
+import { EventsHash, spina } from '@beanbag/spina';
 
 import { MenuView } from 'reviewboard/ui/views/menuView';
 
@@ -13,7 +13,7 @@ import { ActionView } from './actionView';
  */
 @spina
 export class MenuActionView extends ActionView {
-    events = {
+    static events: EventsHash = {
         'focusout': 'onFocusOut',
         'keydown': 'onKeyDown',
         'mouseenter': 'openMenu',

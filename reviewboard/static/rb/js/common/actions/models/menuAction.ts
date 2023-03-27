@@ -25,7 +25,7 @@ interface MenuActionAttrs extends ActionAttrs {
  */
 @spina
 export class MenuAction extends Action<MenuActionAttrs> {
-    defaults: MenuActionAttrs = _.extend({
+    static defaults: Partial<MenuActionAttrs> = {
         children: [],
-    }, super.defaults);
+    };
 }

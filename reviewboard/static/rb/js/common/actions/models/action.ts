@@ -31,7 +31,7 @@ export interface ActionAttrs {
  */
 @spina
 export class Action<T = ActionAttrs> extends BaseModel<T> {
-    defaults = <T>{
+    static defaults: Partial<ActionAttrs> = {
         actionId: '',
         visible: false,
     };

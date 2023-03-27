@@ -1,4 +1,4 @@
-import { spina } from '@beanbag/spina';
+import { EventsHash, spina } from '@beanbag/spina';
 
 import { Actions } from 'reviewboard/common/actions';
 
@@ -11,7 +11,7 @@ import { Actions } from 'reviewboard/common/actions';
  */
 @spina
 export class ArchiveMenuActionView extends Actions.MenuActionView {
-    events = {
+    static events: EventsHash = {
         'click': 'onClick',
         'focusout': 'onFocusOut',
         'keydown': 'onKeyDown',
@@ -153,7 +153,7 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
  */
 @spina
 abstract class BaseVisibilityActionView extends Actions.ActionView {
-    events = {
+    static events: EventsHash = {
         'click': '_toggle',
     };
 
@@ -320,7 +320,7 @@ export class MuteActionView extends BaseVisibilityActionView {
  */
 @spina
 export class CreateReviewActionView extends Actions.ActionView {
-    events = {
+    static events: EventsHash = {
         'click': '_onClick',
     };
 
@@ -389,7 +389,7 @@ export class CreateReviewActionView extends Actions.ActionView {
  */
 @spina
 export class EditReviewActionView extends Actions.ActionView {
-    events = {
+    static events = {
         'click': '_onClick',
     };
 
@@ -457,8 +457,8 @@ export class EditReviewActionView extends Actions.ActionView {
  */
 @spina
 export class AddGeneralCommentActionView extends Actions.ActionView {
-    events = {
-        'click': this.#onClick,
+    static events: EventsHash = {
+        'click': '_onClick',
     };
 
     /**
@@ -468,7 +468,7 @@ export class AddGeneralCommentActionView extends Actions.ActionView {
      *     e (MouseEvent):
      *         The event.
      */
-    #onClick(e: MouseEvent) {
+    private _onClick(e: MouseEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -485,7 +485,7 @@ export class AddGeneralCommentActionView extends Actions.ActionView {
  */
 @spina
 export class ShipItActionView extends Actions.ActionView {
-    events = {
+    static events: EventsHash = {
         'click': '_onClick',
     };
 
