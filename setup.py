@@ -178,16 +178,6 @@ class DevelopCommand(develop):
         if self.with_doc_deps:
             self._run_pip(['install', '-r', 'doc-requirements.txt'])
 
-        # Set up a .djblets symlink to point to the Djblets package directory.
-        #
-        # This will be used for path resolution in JavaScript tools used for
-        # static media building.
-        if os.path.exists('.djblets'):
-            os.unlink('.djblets')
-
-        import djblets
-        os.symlink(os.path.dirname(djblets.__file__), '.djblets')
-
         if not self.no_npm:
             # Install node.js dependencies, needed for packaging.
             if self.use_npm_cache:
@@ -332,6 +322,16 @@ class InstallNodeDependenciesCommand(Command):
                 'Unable to locate %s in the path, which is needed to '
                 'install dependencies required to build this package.'
                 % npm_command)
+
+        # Set up a .djblets symlink to point to the Djblets package directory.
+        #
+        # This will be used for path resolution in JavaScript tools used for
+        # static media building.
+        if os.path.exists('.djblets'):
+            os.unlink('.djblets')
+
+        import djblets
+        os.symlink(os.path.dirname(djblets.__file__), '.djblets')
 
         print('Installing node.js modules...')
         result = os.system('%s install' % npm_command)
