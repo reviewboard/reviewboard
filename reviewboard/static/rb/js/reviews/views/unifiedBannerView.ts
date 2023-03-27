@@ -74,7 +74,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
     /**
      * Open the menu.
      */
-    private openMenu() {
+    private _openMenu() {
         if (this.#menuView.$el.children().length > 0) {
             this.#menuView.open({
                 animate: false,
@@ -85,7 +85,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
     /**
      * Close the menu.
      */
-    private closeMenu() {
+    private _closeMenu() {
         if (this.#menuView.$el.children().length > 0) {
             this.#menuView.close({
                 animate: false,
@@ -100,7 +100,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
      *     evt (FocusEvent):
      *         The event object.
      */
-    private onFocusOut(evt: FocusEvent) {
+    private _onFocusOut(evt: FocusEvent) {
         evt.stopPropagation();
 
         /*
@@ -127,7 +127,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
      *     evt (KeyboardEvent):
      *         The keydown event.
      */
-    private onKeyDown(evt: KeyboardEvent) {
+    private _onKeyDown(evt: KeyboardEvent) {
         if (evt.key === 'ArrowDown' ||
             evt.key === 'ArrowUp' ||
             evt.key === 'Enter' ||
