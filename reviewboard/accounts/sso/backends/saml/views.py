@@ -423,13 +423,19 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
             computed_username)
 
         requested_mode = self.request.GET.get('mode')
+        self._mode = None
 
-        if requested_mode and requested_mode in self.Mode:
-            self._mode = requested_mode
-        elif self._sso_user:
-            self._mode = self.Mode.CONNECT_EXISTING_ACCOUNT
-        else:
-            self._mode = self.Mode.PROVISION
+        if requested_mode:
+            try:
+                self._mode = self.Mode(requested_mode)
+            except ValueError:
+                pass
+
+        if self._mode is None:
+            if self._sso_user:
+                self._mode = self.Mode.CONNECT_EXISTING_ACCOUNT
+            else:
+                self._mode = self.Mode.PROVISION
 
         return super(SAMLLinkUserView, self).dispatch(*args, **kwargs)
 
