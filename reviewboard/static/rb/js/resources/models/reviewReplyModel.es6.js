@@ -37,7 +37,7 @@
  *     timestamp (string):
  *         The timestamp of this reply.
  */
-RB.ReviewReply = RB.BaseResource.extend({
+RB.ReviewReply = RB.BaseResource.extend(_.extend({
     defaults() {
         return _.defaults({
             forceTextType: null,
@@ -263,5 +263,4 @@ RB.ReviewReply = RB.BaseResource.extend({
             });
         });
     }
-});
-_.extend(RB.ReviewReply.prototype, RB.DraftResourceModelMixin);
+}, RB.DraftResourceModelMixin));

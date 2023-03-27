@@ -15,6 +15,8 @@ information about the request.
 
 .. image:: review-request-details.png
 
+.. todo:: new screenshot of review request box
+
 At the top-right are the two major views for the review request: The first is
 the :guilabel:`Reviews` view, which has all of the reviews that people have
 done, as well as a record of the changes that have been made to the review

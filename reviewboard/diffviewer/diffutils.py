@@ -1258,7 +1258,7 @@ def populate_diff_chunks(files, enable_syntax_highlighting=None,
         assert diff_settings is not None
 
         if enable_syntax_highlighting is not None:
-            diff_settings.syntax_highlighting = True
+            diff_settings.syntax_highlighting = enable_syntax_highlighting
 
     for diff_file in files:
         chunk_generator = get_diff_chunk_generator(

@@ -7,12 +7,12 @@ from django.template import Context, Template
 from reviewboard.actions import BaseAction, BaseMenuAction, actions_registry
 from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.extensions.hooks import (ActionHook,
-                                          BaseReviewRequestActionHook,
                                           DiffViewerActionHook,
                                           HeaderActionHook,
                                           HeaderDropdownActionHook,
                                           ReviewRequestActionHook,
                                           ReviewRequestDropdownActionHook)
+from reviewboard.extensions.hooks.actions import BaseReviewRequestActionHook
 from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
 from reviewboard.reviews.actions import (BaseReviewRequestAction,
                                          BaseReviewRequestMenuAction)

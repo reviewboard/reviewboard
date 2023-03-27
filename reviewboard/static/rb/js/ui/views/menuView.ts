@@ -152,7 +152,7 @@ export class MenuView extends BaseView<
 
     className = 'rb-c-menu';
     events = {
-        'keydown': this.#onKeyDown,
+        'keydown': '_onKeyDown',
     };
 
     /**********************
@@ -495,7 +495,7 @@ export class MenuView extends BaseView<
      *     evt (KeyboardEvent):
      *         The keydown event.
      */
-    #onKeyDown(evt: KeyboardEvent) {
+    private _onKeyDown(evt: KeyboardEvent) {
         let preventDefault = true;
 
         if (evt.key === 'Enter') {

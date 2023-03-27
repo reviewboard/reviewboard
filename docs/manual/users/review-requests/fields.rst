@@ -129,7 +129,7 @@ auto-completing, a drop-down of possible groups will be displayed, showing both
 the ID and name.
 
 Review Board doesn't enforce that the groups must review the change before
-it can be submitted. This is a policy that is left up to each organization.
+it can be completed. This is a policy that is left up to each organization.
 
 
 People
@@ -144,7 +144,7 @@ person's first or last name. While auto-completing, a drop-down of possible
 people will be displayed, showing both the username and full name.
 
 Review Board doesn't enforce that the people listed must review the change
-before it can be submitted. This is a policy that is left up to each
+before it can be completed. This is a policy that is left up to each
 organization.
 
 

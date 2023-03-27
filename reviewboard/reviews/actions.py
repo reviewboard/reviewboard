@@ -28,45 +28,6 @@ if TYPE_CHECKING:
 all_review_request_url_names = reviewable_url_names + review_request_url_names
 
 
-class AddGeneralCommentAction(BaseAction):
-    """The action for adding a general comment.
-
-    Version Added:
-        6.0
-    """
-
-    action_id = 'add-general-comment'
-    label = _('Add General Comment')
-    apply_to = all_review_request_url_names
-
-    def should_render(
-        self,
-        *,
-        context: Context,
-    ) -> bool:
-        """Return whether this action should render.
-
-        This differs from :py:attr:`hidden` in that hidden actions still render
-        but are hidden by CSS, whereas if this returns ``False`` the action
-        will not be included in the DOM at all.
-
-        Args:
-            context (django.template.Context):
-                The current rendering context.
-
-        Returns:
-            bool:
-            ``True`` if the action should render.
-        """
-        request = context['request']
-        user = request.user
-
-        return (super().should_render(context=context) and
-                user.is_authenticated and
-                not is_site_read_only_for(user) and
-                general_comments_feature.is_enabled(request=request))
-
-
 class CloseMenuAction(BaseMenuAction):
     """A menu for closing the review request.
 
@@ -385,6 +346,27 @@ class EditReviewAction(BaseAction):
     template_name = 'actions/detailed_menuitem_action.html'
 
 
+class AddGeneralCommentAction(BaseAction):
+    """Action to add a general comment.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'add-general-comment'
+    parent_id = 'review-menu'
+    apply_to = all_review_request_url_names
+    attachment = AttachmentPoint.UNIFIED_BANNER
+    label = _('Add a general comment')
+    description = [
+        _('Add a new general comment about the change, not attached to '
+          'any code or file attachments.'),
+    ]
+    icon_class = 'rb-icon rb-icon-edit'
+    js_view_class = 'RB.AddGeneralCommentActionView'
+    template_name = 'actions/detailed_menuitem_action.html'
+
+
 class ShipItAction(BaseAction):
     """Action to mark a review request as "Ship It".
 
@@ -406,6 +388,46 @@ class ShipItAction(BaseAction):
     icon_class = 'rb-icon rb-icon-shipit'
     js_view_name = 'RB.ShipItActionView'
     template_name = 'actions/detailed_menuitem_action.html'
+
+
+class LegacyAddGeneralCommentAction(BaseAction):
+    """The action for adding a general comment.
+
+    Version Added:
+        6.0
+    """
+
+    action_id = 'legacy-add-general-comment'
+    label = _('Add General Comment')
+    apply_to = all_review_request_url_names
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This differs from :py:attr:`hidden` in that hidden actions still render
+        but are hidden by CSS, whereas if this returns ``False`` the action
+        will not be included in the DOM at all.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        user = request.user
+
+        return (super().should_render(context=context) and
+                user.is_authenticated and
+                not is_site_read_only_for(user) and
+                general_comments_feature.is_enabled(request=request) and
+                not unified_banner_feature.is_enabled(request=request))
 
 
 class LegacyEditReviewAction(BaseAction):

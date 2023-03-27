@@ -6,7 +6,7 @@ Permission Groups
 
 When managing :ref:`users <users>`, it's sometimes useful to give certain
 groups of users special abilities in Review Board. For example, giving a
-certain group the ability to mark other users' review requests as submitted.
+certain group the ability to mark other users' review requests as completed.
 
 While these permissions can be applied to users individually, it's better to
 define special permission groups that the users can belong to.
@@ -14,7 +14,7 @@ define special permission groups that the users can belong to.
 In most installations with one or two administrators, this feature isn't used.
 It's most useful in open source projects when you have a group of developers
 who are responsible for committing the contributed patch and then marking the
-review request as submitted.
+review request as completed.
 
 
 .. _adding-permission-groups:

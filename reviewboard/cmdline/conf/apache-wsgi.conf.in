@@ -1,41 +1,108 @@
+# This is a sample configuration file for an Apache deployment for
+# Review Board.
+#
+# Please go through this file and make sure it's suitable for your setup
+# before using it.
+
 <VirtualHost *:@port@>
-	ServerName @sitedomain@
-	DocumentRoot "@sitedir@/htdocs"
+    # NOTE: If you change the ServerName or add ServerAlias, you must change
+    #       ALLOWED_HOSTS to match. This can be found in:
+    #
+    #       @sitedir@/conf/settings_local.py
+    ServerName @sitedomain@
 
-	# Error handlers
-	ErrorDocument 500 /errordocs/500.html
 
-	WSGIPassAuthorization On
-	WSGIScriptAlias "/@siteroot_noslash@" "@sitedir@/htdocs/reviewboard.wsgi/@siteroot_noslash@"
+    # If enabling SSL on Apache, uncomment these lines and specify the
+    # SSL paths.
+    #
+    # You may also need to add additional options, depending on your setup.
+    # Please refer to the Apache documentation.
+    #
+    # SSLEngine On
+    # SSLCertificateFile @sitedir@/conf/ssl/fullchain.pem
+    # SSLCertificateKeyFile @sitedir@/conf/ssl/privkey.pem
 
-	<Directory "@sitedir@/htdocs">
-		AllowOverride All
-		Options -Indexes +FollowSymLinks
-		@apache_auth@
-	</Directory>
 
-	# Prevent the server from processing or allowing the rendering of
-	# certain file types.
-	<Location "@siteroot@media/uploaded">
-		SetHandler None
-		Options None
+    # mod_wsgi Embedded Mode configuration
+    #
+    # This default configuration enables Embedded Mode, but you can remove
+    # this and uncomment Daemon Mode below.
+    #
+    # Embedded mode is simpler to configure, but daemon mode is recommended
+    # in production environments.
+    WSGIPassAuthorization On
+    WSGIScriptAlias "/@siteroot_noslash@" "@sitedir@/htdocs/reviewboard.wsgi"
 
-		AddType text/plain .html .htm .shtml .php .php3 .php4 .php5 .phps .asp
-		AddType text/plain .pl .py .fcgi .cgi .phtml .phtm .pht .jsp .sh .rb
 
-		<IfModule mod_php5.c>
-			php_flag engine off
-		</IfModule>
+    # mod_wsgi Daemon Mode configuration
+    #
+    # Uncomment this to use daemon mode.
+    #
+    # Make sure to choose a suitable number of processes and threads for your
+    # server.
+    #
+    # See https://modwsgi.readthedocs.io/en/master/user-guides/configuration-guidelines.html#defining-process-groups
+    # WSGIPassAuthorization On
+    # WSGIProcessGroup @sitedomain_id@
+    # WSGIDaemonProcess \
+    #     @sitedomain_id@ \
+    #     display-name=%{GROUP} \
+    #     processes=6 threads=30
+    # WSGIScriptAlias \
+    #     "/@siteroot_noslash@" \
+    #     "@sitedir@/htdocs/reviewboard.wsgi" \
+    #     process-group=@sitedomain_id@ application-group=%{GROUP}
+    # WSGIImportScript \
+    #     @sitedir@/htdocs/reviewboard.wsgi \
+    #     process-group=@sitedomain_id@ application-group=%{GROUP}
 
-		# Force all uploaded media files to download.
-		<IfModule mod_headers.c>
-			Header set Content-Disposition "attachment"
-		</IfModule>
-	</Location>
 
-	# Alias static media requests to filesystem
-	Alias @siteroot@media "@sitedir@/htdocs/media"
-	Alias @siteroot@static "@sitedir@/htdocs/static"
-	Alias @siteroot@errordocs "@sitedir@/htdocs/errordocs"
-	Alias @siteroot@favicon.ico "@sitedir@/htdocs/static/rb/images/favicon.png"
+    # Log configuration
+    #
+    # NOTE: We recommend adding these to your logrotate configuration.
+    ErrorLog @sitedir@/logs/error_log
+    CustomLog @sitedir@/logs/access_log combined
+
+
+    # Aliases and paths for serving static files.
+    DocumentRoot "@sitedir@/htdocs"
+    ErrorDocument 500 /errordocs/500.html
+    Alias @siteroot@media "@sitedir@/htdocs/media"
+    Alias @siteroot@static "@sitedir@/htdocs/static"
+    Alias @siteroot@errordocs "@sitedir@/htdocs/errordocs"
+    Alias @siteroot@robots.txt "@sitedir@/htdocs/robots.txt"
+
+    <Directory "@sitedir@/htdocs">
+      AllowOverride All
+      Options -Indexes +FollowSymLinks
+
+      <IfVersion < 2.4>
+        Allow from all
+      </IfVersion>
+
+      <IfVersion >= 2.4>
+        Require all granted
+      </IfVersion>
+    </Directory>
+
+    # Prevent the server from processing or allowing the rendering of
+    # certain file types.
+    <LocationMatch ^(@siteroot@(static|media|errordocs))>
+        SetHandler None
+        Options None
+
+        AddType text/plain .html .htm .shtml .php .php3 .php4 .php5 .phps .asp
+        AddType text/plain .pl .py .fcgi .cgi .phtml .phtm .pht .jsp .sh .rb
+
+        <IfModule mod_php5.c>
+            php_flag engine off
+        </IfModule>
+    </LocationMatch>
+
+    <Location "@siteroot@media/uploaded">
+        # Force all uploaded media files to download.
+        <IfModule mod_headers.c>
+            Header set Content-Disposition "attachment"
+        </IfModule>
+    </Location>
 </VirtualHost>

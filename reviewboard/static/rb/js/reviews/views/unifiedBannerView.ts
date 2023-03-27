@@ -20,6 +20,20 @@ import { UnifiedBanner } from '../models/unifiedBanner';
 class DraftModeMenu extends BaseView<UnifiedBanner> {
     className = 'rb-c-unified-banner__menu';
 
+    /**
+     * The events to listen to.
+     */
+    events = {
+        'focusout': '_onFocusOut',
+        'keydown': '_onKeyDown',
+        'mouseenter': '_openMenu',
+        'mouseleave': '_closeMenu',
+    };
+
+    modelEvents = {
+        'change:draftModes change:selectedDraftMode': '_update',
+    };
+
     /**********************
      * Instance variables *
      **********************/
@@ -27,20 +41,6 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
     #$arrow: JQuery;
     #$label: JQuery;
     #menuView: MenuView;
-
-    /**
-     * The events to listen to.
-     */
-    events = {
-        'focusout': this.#onFocusOut,
-        'keydown': this.#onKeyDown,
-        'mouseenter': this.#openMenu,
-        'mouseleave': this.#closeMenu,
-    };
-
-    modelEvents = {
-        'change:draftModes change:selectedDraftMode': this.#update,
-    };
 
     /**
      * Render the view.
@@ -68,13 +68,13 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
         this.#$label = this.$('.rb-c-unified-banner__menu-label');
         this.#$arrow = this.$('.rb-icon-dropdown-arrow');
 
-        this.#update();
+        this._update();
     }
 
     /**
      * Open the menu.
      */
-    #openMenu() {
+    private _openMenu() {
         if (this.#menuView.$el.children().length > 0) {
             this.#menuView.open({
                 animate: false,
@@ -85,7 +85,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
     /**
      * Close the menu.
      */
-    #closeMenu() {
+    private _closeMenu() {
         if (this.#menuView.$el.children().length > 0) {
             this.#menuView.close({
                 animate: false,
@@ -100,7 +100,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
      *     evt (FocusEvent):
      *         The event object.
      */
-    #onFocusOut(evt: FocusEvent) {
+    private _onFocusOut(evt: FocusEvent) {
         evt.stopPropagation();
 
         /*
@@ -127,7 +127,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
      *     evt (KeyboardEvent):
      *         The keydown event.
      */
-    #onKeyDown(evt: KeyboardEvent) {
+    private _onKeyDown(evt: KeyboardEvent) {
         if (evt.key === 'ArrowDown' ||
             evt.key === 'ArrowUp' ||
             evt.key === 'Enter' ||
@@ -152,9 +152,10 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
     /**
      * Update the state of the draft mode selector.
      */
-    #update() {
-        const draftModes = this.model.get('draftModes');
-        const selectedDraftMode = this.model.get('selectedDraftMode');
+    private _update() {
+        const model = this.model;
+        const draftModes = model.get('draftModes');
+        const selectedDraftMode = model.get('selectedDraftMode');
 
         this.#menuView.clearItems();
 
@@ -168,7 +169,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
                     `);
             } else {
                 this.#menuView.addItem({
-                    onClick: () => this.model.set('selectedDraftMode', i),
+                    onClick: () => model.set('selectedDraftMode', i),
                     text: text,
                 });
             }
@@ -188,7 +189,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
 @spina
 class PublishButtonView extends MenuButtonView<UnifiedBanner> {
     modelEvents = {
-        'change:draftModes change:selectedDraftMode': this.#update,
+        'change:draftModes change:selectedDraftMode': '_update',
     };
 
     /**********************
@@ -241,7 +242,7 @@ class PublishButtonView extends MenuButtonView<UnifiedBanner> {
             .text(_`Archive after publishing`)
             .appendTo($archive);
 
-        this.#update();
+        this._update();
     }
 
     /**
@@ -257,7 +258,7 @@ class PublishButtonView extends MenuButtonView<UnifiedBanner> {
     /**
      * Update the state of the publish button.
      */
-    #update() {
+    private _update() {
         const draftModes = this.model.get('draftModes');
         const selectedDraftMode = this.model.get('selectedDraftMode');
 
@@ -308,11 +309,12 @@ export class UnifiedBannerView extends FloatingBannerView<
     static instance: UnifiedBannerView = null;
 
     events = {
-        'click #btn-review-request-discard': this.#discardDraft,
+        'click #btn-review-request-discard': '_discardDraft',
     };
 
     modelEvents = {
-        'change': this.#update,
+        'change': '_update',
+        'change:selectedDraftMode': '_scrollToReviewReply',
     };
 
     /**********************
@@ -435,13 +437,13 @@ export class UnifiedBannerView extends FloatingBannerView<
      * Handle re-renders.
      */
     onRender() {
-        this.#update();
+        this._update();
     }
 
     /**
      * Update the state of the banner.
      */
-    #update() {
+    private _update() {
         if (!this.rendered) {
             return;
         }
@@ -516,15 +518,15 @@ export class UnifiedBannerView extends FloatingBannerView<
             reviews.push(pendingReview.get('id'));
         }
 
-        if (draftMode.hasReviewReplies) {
+        if (draftMode.singleReviewReply !== undefined) {
+            const reply = reviewReplyDrafts[draftMode.singleReviewReply];
+            await reply.ready();
+            reviews.push(reply.get('id'));
+        } else if (draftMode.hasReviewReplies) {
             for (const reply of reviewReplyDrafts) {
                 await reply.ready();
                 reviews.push(reply.get('id'));
             }
-        } else if (draftMode.singleReviewReply !== undefined) {
-            const reply = reviewReplyDrafts[draftMode.singleReviewReply];
-            await reply.ready();
-            reviews.push(reply.get('id'));
         }
 
         try {
@@ -610,7 +612,7 @@ export class UnifiedBannerView extends FloatingBannerView<
      * pending review, discard the current review request draft, or close the
      * (unpublished) review request as discarded.
      */
-    async #discardDraft() {
+    private async _discardDraft() {
         const model = this.model;
         const selectedDraftMode = model.get('selectedDraftMode');
         const draftModes = model.get('draftModes');
@@ -643,6 +645,30 @@ export class UnifiedBannerView extends FloatingBannerView<
             }
         } catch(err) {
             alert(err.xhr.errorText);
+        }
+    }
+
+    /**
+     * Handler for when the selected draft mode changes.
+     *
+     * If the newly selected mode is a review reply, scroll the document to
+     * that review.
+     */
+    private _scrollToReviewReply() {
+        const selectedDraftMode = this.model.get('selectedDraftMode');
+        const draftModes = this.model.get('draftModes');
+        const draftMode = draftModes[selectedDraftMode];
+
+        if (draftMode.singleReviewReply !== undefined) {
+            const reviewReplyDrafts = this.model.get('reviewReplyDrafts');
+            const reply = reviewReplyDrafts[draftMode.singleReviewReply];
+            const originalReview = reply.get('parentObject').get('id');
+
+            const $review = $(`#review${originalReview}`);
+            const reviewTop = $review.offset().top;
+            const bannerHeight = this.$el.outerHeight(true);
+
+            $(document).scrollTop(reviewTop - bannerHeight - 20);
         }
     }
 }

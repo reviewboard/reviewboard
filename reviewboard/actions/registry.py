@@ -72,6 +72,7 @@ class ActionsRegistry(OrderedRegistry):
                                                  DeleteAction,
                                                  DownloadDiffAction,
                                                  EditReviewAction,
+                                                 LegacyAddGeneralCommentAction,
                                                  LegacyEditReviewAction,
                                                  LegacyShipItAction,
                                                  MuteAction,
@@ -118,12 +119,13 @@ class ActionsRegistry(OrderedRegistry):
             DownloadDiffAction(),
             LegacyEditReviewAction(),
             LegacyShipItAction(),
-            AddGeneralCommentAction(),
+            LegacyAddGeneralCommentAction(),
 
             # Unified banner actions
             ReviewMenuAction(),
             CreateReviewAction(),
             EditReviewAction(),
+            AddGeneralCommentAction(),
             ShipItAction(),
         ]
 

@@ -25,6 +25,12 @@ class RootReviewResource(BaseReviewResource):
     This is a top level endpoint that allows you to list and query all
     reviews in the system.
 
+    Version Changed:
+        5.0.4:
+        This was formally named ``reviews`` on the root resource, but had to be
+        renamed to ``all_reviews`` in order to work around a conflict with URI
+        templates.
+
     Version Added:
         5.0
     """
@@ -32,6 +38,7 @@ class RootReviewResource(BaseReviewResource):
     added_in = '5.0'
     allowed_methods = ('GET',)
     model = Review
+    link_name = 'all_reviews'
     uri_template_name = 'all_review'
     uri_object_key = None
 

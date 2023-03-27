@@ -577,6 +577,18 @@ class Elasticsearch7SearchBackend(ElasticsearchSearchBackend):
 
         return (content_field_name, mapping)
 
+    # XXX Added by Review Board to correct a bug in Haystack:
+    #
+    # https://github.com/django-haystack/django-haystack/issues/1851
+    def _from_python(self, value):
+        if isinstance(value, bool):
+            if value:
+                return 'true'
+            else:
+                return 'false'
+        else:
+            return super()._from_python(value)
+
 
 class Elasticsearch7SearchQuery(ElasticsearchSearchQuery):
     def add_field_facet(self, field, **options):

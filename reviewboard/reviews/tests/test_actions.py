@@ -316,18 +316,20 @@ class AddGeneralCommentActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
         """Testing AddGeneralCommentAction.should_render with authenticated
         user
         """
-        self.request.user = User.objects.get(username='doc')
-        self.assertTrue(
-            self.action.should_render(
-                context=self._create_request_context(
-                    User.objects.get(username='doc'))))
+        with override_feature_check(unified_banner_feature.feature_id, False):
+            self.request.user = User.objects.get(username='doc')
+            self.assertTrue(
+                self.action.should_render(
+                    context=self._create_request_context(
+                        User.objects.get(username='doc'))))
 
     def test_should_render_with_anonymous(self) -> None:
         """Testing AddGeneralCommentAction.should_render with authenticated
         user
         """
-        self.assertFalse(
-            self.action.should_render(context=self._create_request_context()))
+        with override_feature_check(unified_banner_feature.feature_id, False):
+            self.assertFalse(
+                self.action.should_render(context=self._create_request_context()))
 
 
 class CloseMenuActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):

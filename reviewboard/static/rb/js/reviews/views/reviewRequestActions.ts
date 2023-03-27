@@ -12,13 +12,13 @@ import { Actions } from 'reviewboard/common/actions';
 @spina
 export class ArchiveMenuActionView extends Actions.MenuActionView {
     events = {
-        'click': this.onClick,
-        'focusout': this.onFocusOut,
-        'keydown': this.onKeyDown,
-        'keyup': this.onKeyUp,
-        'mouseenter': this.openMenu,
-        'mouseleave': this.closeMenu,
-        'touchend': this.onTouchEnd,
+        'click': 'onClick',
+        'focusout': 'onFocusOut',
+        'keydown': 'onKeyDown',
+        'keyup': 'onKeyUp',
+        'mouseenter': 'openMenu',
+        'mouseleave': 'closeMenu',
+        'touchend': 'onTouchEnd',
     };
 
     /**********************
@@ -154,7 +154,7 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
 @spina
 abstract class BaseVisibilityActionView extends Actions.ActionView {
     events = {
-        'click': this.#toggle,
+        'click': '_toggle',
     };
 
     /**********************
@@ -216,7 +216,7 @@ abstract class BaseVisibilityActionView extends Actions.ActionView {
      *     e (Event):
      *         The event that triggered the action.
      */
-    async #toggle(e: Event) {
+    private async _toggle(e: Event) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -321,7 +321,7 @@ export class MuteActionView extends BaseVisibilityActionView {
 @spina
 export class CreateReviewActionView extends Actions.ActionView {
     events = {
-        'click': this.#onClick,
+        'click': '_onClick',
     };
 
     /**********************
@@ -372,7 +372,7 @@ export class CreateReviewActionView extends Actions.ActionView {
      *     e (MouseEvent):
      *         The event.
      */
-    #onClick(e: MouseEvent) {
+    private _onClick(e: MouseEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -390,7 +390,7 @@ export class CreateReviewActionView extends Actions.ActionView {
 @spina
 export class EditReviewActionView extends Actions.ActionView {
     events = {
-        'click': this.#onClick,
+        'click': '_onClick',
     };
 
     /**********************
@@ -437,7 +437,7 @@ export class EditReviewActionView extends Actions.ActionView {
      *     e (MouseEvent):
      *         The event.
      */
-    #onClick(e: MouseEvent) {
+    private _onClick(e: MouseEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -450,13 +450,13 @@ export class EditReviewActionView extends Actions.ActionView {
 
 
 /**
- * Action view to mark a review request as "Ship It".
+ * Action view to add a general comment.
  *
  * Version Added:
  *     6.0
  */
 @spina
-export class ShipItActionView extends RB.Actions.ActionView {
+export class AddGeneralCommentActionView extends Actions.ActionView {
     events = {
         'click': this.#onClick,
     };
@@ -469,6 +469,34 @@ export class ShipItActionView extends RB.Actions.ActionView {
      *         The event.
      */
     #onClick(e: MouseEvent) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        RB.PageManager.getPage().addGeneralComment();
+    }
+}
+
+
+/**
+ * Action view to mark a review request as "Ship It".
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+export class ShipItActionView extends Actions.ActionView {
+    events = {
+        'click': '_onClick',
+    };
+
+    /**
+     * Handle a click on the action.
+     *
+     * Args:
+     *     e (MouseEvent):
+     *         The event.
+     */
+    private _onClick(e: MouseEvent) {
         e.preventDefault();
         e.stopPropagation();
 

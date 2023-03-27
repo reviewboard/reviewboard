@@ -30,7 +30,7 @@ the review, and will then immediately create and publish a review simply
 saying "Ship It!". If you're happy with the change and have nothing else to
 add, this is a good, quick way to give your approval.
 
-.. image:: shipit-action.png
+.. image:: review-menu.png
 
 
 .. _review-dialog-ship-it:

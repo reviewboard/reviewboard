@@ -24,8 +24,10 @@ in that diff.
 
 .. image:: review-request-update-banner.png
 
-When you're finished, click :guilabel:`Publish Changes`. If you decided you
-didn't want to make those changes, you can click :guilabel:`Discard Draft`
+.. todo:: replace with new screenshot
+
+When you're finished, click :guilabel:`Publish`. If you decided you
+didn't want to make those changes, you can click :guilabel:`Discard`
 instead.
 
 Depending on your particular setup, publishing a draft may send an e-mail out

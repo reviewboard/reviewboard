@@ -5,12 +5,12 @@ are for legacy compatibility, and will be removed in Review Board 7.0.
 """
 
 from reviewboard.reviews.actions import (
-    AddGeneralCommentAction,
     CloseMenuAction,
     CloseCompletedAction as SubmitAction,
     CloseDiscardedAction as DiscardAction,
     DeleteAction,
     DownloadDiffAction,
+    LegacyAddGeneralCommentAction as AddGeneralCommentAction,
     LegacyEditReviewAction as EditReviewAction,
     LegacyShipItAction as ShipItAction,
     UpdateMenuAction,

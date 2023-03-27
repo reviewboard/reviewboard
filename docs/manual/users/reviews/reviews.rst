@@ -24,8 +24,8 @@ issues <issue-tracking>` that need to be fixed.
 
 Reviews are created automatically when filing comments, or when clicking
 :guilabel:`Review` in the review request action bar. They're private and can
-be edited until published using the :ref:`review draft banner
-<review-draft-banner>` or the :ref:`review dialog <review-dialog>`.
+be edited until published using the :ref:`review banner
+<review-banner>` or the :ref:`review dialog <review-dialog>`.
 
 Let's take a look at the parts of a review:
 

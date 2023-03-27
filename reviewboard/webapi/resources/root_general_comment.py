@@ -24,6 +24,12 @@ class RootGeneralCommentResource(BaseReviewGeneralCommentResource):
     This is a top level endpoint that allows you to list and query all
     general comments in the system, across different review requests.
 
+    Version Changed:
+        5.0.4:
+        This was formally named ``general_comments`` on the root resource, but
+        had to be renamed to ``all_general_comments`` in order to work around a
+        conflict with URI templates.
+
     Version Added:
         5.0
     """
@@ -31,6 +37,7 @@ class RootGeneralCommentResource(BaseReviewGeneralCommentResource):
     added_in = '5.0'
     allowed_methods = ('GET',)
     model = GeneralComment
+    link_name = 'all_general_comments'
     uri_template_name = 'all_general_comment'
     uri_object_key = None
 

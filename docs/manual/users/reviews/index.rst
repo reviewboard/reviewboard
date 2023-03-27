@@ -6,7 +6,8 @@ Reviewing
    :maxdepth: 2
 
    reviews
-   draft-banner
+   banner
+   drafts
    issue-tracking
    reviewing-diffs
    reviewing-files
@@ -14,7 +15,6 @@ Reviewing
    reviewing-markdown
    reviewing-text-files
    editing-reviews
-   publishing
    approving-changes
    replying
    automated-review/index

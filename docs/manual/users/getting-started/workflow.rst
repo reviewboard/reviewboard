@@ -59,7 +59,7 @@ Review Board is built to fully support the pre-commit review process:
 
    1. Push your change to the upstream repository.
 
-   2. Click :menuselection:`Close --> Submitted` on the review request
+   2. Click :menuselection:`Close --> Completed` on the review request
       action bar.
 
       This may happen automatically, if the repository is configured to
@@ -113,7 +113,7 @@ supported workflow in Review Board:
 
 6. If reviewers :ref:`approve the  change ("Ship It!") <approving-changes>`:
 
-   1. Click :menuselection:`Close --> Submitted` on the review request
+   1. Click :menuselection:`Close --> Completed` on the review request
       action bar.
 
       This may happen automatically, if the repository is configured to

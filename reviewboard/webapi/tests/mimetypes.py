@@ -16,6 +16,9 @@ change_item_mimetype = _build_mimetype('review-request-change')
 diff_context_mimetype = _build_mimetype('diff-context')
 
 
+diff_data_mimetype = _build_mimetype('diff.data')
+
+
 default_reviewer_list_mimetype = _build_mimetype('default-reviewers')
 default_reviewer_item_mimetype = _build_mimetype('default-reviewer')
 
