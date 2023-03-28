@@ -144,15 +144,18 @@ To install on Debian_ or Ubuntu_:
 
 .. code-block:: console
 
-    $ apt-get install build-essential python3-dev python3-pip
-    $ apt-get install libffi-dev libjpeg-dev libssl-dev patch
+    $ apt-get install build-essential python3-dev python3-pip \
+                      libffi-dev libjpeg-dev libssl-dev patch \
+                      libxml2-dev libxmlsec1-dev libxmlsec1-openssl
 
 
 To install on a `Red Hat Enterprise`_, Fedora_, or `CentOS Stream`_:
 
 .. code-block:: console
 
-    $ yum install gcc python3-devel libffi-devel openssl-devel patch perl
+    $ yum install gcc python3-devel libffi-devel openssl-devel patch perl \
+                  libxml2-devel xmlsec1-devel xmlsec1-openssl-devel
+                  libtool-ltdl-devel
 
 
 Installing Review Board

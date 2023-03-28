@@ -241,6 +241,7 @@ RUN    apt-get update -y \
            gosu \
            helix-cli \
            libmysqlclient21 \
+           libxmlsec1-openssl \
            patch \
            mysql-client \
            postgresql-client \
