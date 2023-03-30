@@ -894,10 +894,23 @@ table.rb-c-diff-file-index {
  *     <div class="rb-c-diff-file-index-dock">
  *      <div class="rb-c-diff-file-index-dock__table">
  *       <table class="rb-c-diff-file-index">...</table>
+ *       <a href="#" class="rb-c-diff-file-index-dock__disclosure">
+ *        <span class="fa fa-bars"></span>
+ *       </a>
  *      </div>
  *     </div>
  */
 .rb-c-diff-file-index-dock {
+  display: flex;
+
+  /**
+   * The disclosure icon for when the table is collapsed.
+   */
+  &__disclosure {
+    font-size: 120%;
+    padding: 4px 0 4px 8px;
+  }
+
   &__table {
     border: @review-request-field-border;
     flex-grow: 1;
@@ -906,6 +919,17 @@ table.rb-c-diff-file-index {
 
   table.rb-c-diff-file-index, tr, td {
     border: none;
+  }
+
+  &.-is-expanded {
+    .rb-c-diff-file-index-dock__table {
+      transition: max-height 0.3s;
+    }
+
+    table {
+      transform: inherit !important;
+      transition: transform 0.3s;
+    }
   }
 }
 

@@ -58,6 +58,7 @@ export class DiffViewerPageView extends ReviewablePageView<
     static ANCHOR_FILE = 2;
     static ANCHOR_CHUNK = 4;
 
+    /** Number of pixels to offset when scrolling to anchors. */
     static DIFF_SCROLLDOWN_AMOUNT = 15;
 
     static fileEntryTemplate = _.template(dedent`
@@ -705,20 +706,38 @@ export class DiffViewerPageView extends ReviewablePageView<
                 updateURLOnly: true,
             });
 
-            let scrollAmount = DiffViewerPageView.DIFF_SCROLLDOWN_AMOUNT;
+            const anchorOffset = $anchor.offset().top;
+            let scrollAmount = 0;
 
-            if (EnabledFeatures.unifiedBanner) {
-                const banner = UnifiedBannerView.getInstance();
+            if (this.unifiedBanner) {
+                /*
+                 * The scroll offset calculation when we're running with the
+                 * unified banner is somewhat complex because the height of the
+                 * banner isn't static. The file index gets docked into the
+                 * banner, and changes its height depending on what files are
+                 * shown in the viewport.
+                 *
+                 * In order to try to scroll to the position where the top of
+                 * the file is nicely visible, we end up doing this twice.
+                 * First we try to determine a scroll offset based on the
+                 * position of the anchor. We then rerun the calculation using
+                 * the new offset to dial in closer to the right place.
+                 *
+                 * This still may not be perfect, especially when file borders
+                 * are close to the boundary where they're scrolling on or off
+                 * the screen, but it generally seems to do pretty well.
+                 */
+                const newOffset = this.#computeScrollHeight(
+                    anchorOffset - DiffViewerPageView.DIFF_SCROLLDOWN_AMOUNT);
+                scrollAmount = this.#computeScrollHeight(
+                    anchorOffset - newOffset);
 
-                // This may be null if we're running in tests.
-                if (banner) {
-                    scrollAmount += banner.getHeight();
-                }
             } else if (RB.DraftReviewBannerView.instance) {
-                scrollAmount += RB.DraftReviewBannerView.instance.getHeight();
+                scrollAmount = (DiffViewerPageView.DIFF_SCROLLDOWN_AMOUNT +
+                                RB.DraftReviewBannerView.instance.getHeight());
             }
 
-            this.#$window.scrollTop($anchor.offset().top - scrollAmount);
+            this.#$window.scrollTop(anchorOffset - scrollAmount);
         }
 
         this.#highlightAnchor($anchor);
@@ -731,6 +750,34 @@ export class DiffViewerPageView extends ReviewablePageView<
         }
 
         return true;
+    }
+
+    /**
+     * Compute the ideal scroll offset based on the unified banner.
+     *
+     * This attempts to find the ideal scroll offset based on what the diff
+     * file index is doing within the unified banner.
+     *
+     * Args:
+     *     startingOffset (number):
+     *         The target scroll offset.
+     *
+     * Returns:
+     *     number:
+     *     The number of pixels to adjust the starting offset by in order to
+     *     maximize the likelihood of the anchor appearing at the top of the
+     *     visible viewport.
+     */
+    #computeScrollHeight(startingOffset: number): number {
+        const $window = $(window);
+        const bannerHeight = this.unifiedBanner.getHeight(false);
+
+        const newDockHeight = this.#diffFileIndexView.getDockedIndexExtents(
+            startingOffset + bannerHeight,
+            startingOffset + $window.height() - bannerHeight).height;
+
+        return (bannerHeight + newDockHeight + 20 +
+                DiffViewerPageView.DIFF_SCROLLDOWN_AMOUNT);
     }
 
     /**
@@ -1167,7 +1214,10 @@ export class DiffViewerPageView extends ReviewablePageView<
         }
 
         this.#chunkHighlighter.updateLayout();
-        this.#diffFileIndexView.updateLayout();
+
+        if (this.unifiedBanner) {
+            this.#diffFileIndexView.updateLayout();
+        }
     }
 
     /**

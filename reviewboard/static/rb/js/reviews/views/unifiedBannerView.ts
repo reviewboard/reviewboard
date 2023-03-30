@@ -326,6 +326,7 @@ export class UnifiedBannerView extends FloatingBannerView<
     #$draftActions: JQuery;
     #$interdiffLink: JQuery;
     #$modeSelector: JQuery;
+    #$review: JQuery;
     #$reviewActions: JQuery;
     #modeMenu: DraftModeMenu;
     #publishButton: PublishButtonView;
@@ -400,6 +401,7 @@ export class UnifiedBannerView extends FloatingBannerView<
 
         this.#$modeSelector = this.$('.rb-c-unified-banner__mode-selector');
         this.#$draftActions = this.$('.rb-c-unified-banner__draft-actions');
+        this.#$review = this.$('.rb-c-unified-banner__review');
         this.#$reviewActions = this.$('.rb-c-unified-banner__review-actions');
         this.#$changedesc = this.$('.rb-c-unified-banner__changedesc');
         this.#$interdiffLink = $(dedent`
@@ -495,12 +497,21 @@ export class UnifiedBannerView extends FloatingBannerView<
     /**
      * Return the height of the banner.
      *
+     * Args:
+     *     withDock (boolean, optional):
+     *         Whether to include the dock portion of the banner in the height
+     *         value.
+     *
      * Returns:
      *     number:
      *     The height of the banner, in pixels.
      */
-    getHeight(): number {
-        return this.$el.outerHeight();
+    getHeight(withDock = true): number {
+        if (withDock) {
+            return this.$el.outerHeight();
+        } else {
+            return this.#$review.outerHeight();
+        }
     }
 
     /**

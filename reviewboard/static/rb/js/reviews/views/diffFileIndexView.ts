@@ -84,19 +84,21 @@ export class DiffFileIndexView extends BaseView<
     static dockTemplate = `
         <div class="rb-c-diff-file-index-dock">
          <div class="rb-c-diff-file-index-dock__table"></div>
+         <a href="#" class="rb-c-diff-file-index-dock__disclosure">
+          <span class="fa fa-bars"></span>
+         </a>
         </div>
     `;
-
-    static events: EventsHash = {
-        'click a': '_onAnchorClicked',
-    };
 
     /**********************
      * Instance variables *
      **********************/
 
-    #diffFiles = new Map<number, JQuery>();
     #isDocked = false;
+    #isDockExpanded = false;
+    #lastDockHeight: number;
+
+    #diffFiles = new Map<number, JQuery>();
     #unifiedBannerView: UnifiedBannerView;
     #$bannerDock: JQuery = null;
     #$dockContainer: JQuery = null;
@@ -176,6 +178,12 @@ export class DiffFileIndexView extends BaseView<
             this.#$dockTable = this.#$dockContainer
                 .children('.rb-c-diff-file-index-dock__table');
 
+            this.#$dockContainer
+                .children('.rb-c-diff-file-index-dock__disclosure')
+                .click(e => this.#onDisclosureClicked(e));
+
+            this.#$floatSpacer = this.$el.wrap($('<div>')).parent();
+
             $(window).on(`scroll.${this.cid}`,
                          () => this.#updateFloatPosition());
             _.defer(() => this.#updateFloatPosition());
@@ -222,8 +230,11 @@ export class DiffFileIndexView extends BaseView<
 
         this.#diffFiles.set(index, $(diffReviewableView.el));
 
-        if (this.#isDocked) {
+        if (this.#unifiedBannerView !== null) {
             this.updateLayout();
+        }
+
+        if (this.#isDocked) {
             this.#updateItemVisibility();
         }
     }
@@ -363,6 +374,8 @@ export class DiffFileIndexView extends BaseView<
             .append(iconView.$el)
             .attr('title', tooltip);
 
+        $item.find('a').click(e => this._onAnchorClicked(e));
+
         iconView.render();
 
         this.listenTo(
@@ -379,10 +392,10 @@ export class DiffFileIndexView extends BaseView<
      * Gets the name of the target and emits anchorClicked.
      *
      * Args:
-     *     e (MouseEvent):
+     *     e (JQuery.ClickEvent):
      *         The click event.
      */
-    private _onAnchorClicked(e: MouseEvent) {
+    private _onAnchorClicked(e: JQuery.ClickEvent) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -401,10 +414,6 @@ export class DiffFileIndexView extends BaseView<
             return;
         }
 
-        if (this.#$floatSpacer === null) {
-            this.#$floatSpacer = this.$el.wrap($('<div>')).parent();
-        }
-
         const bannerTop = this.#$bannerDock.offset().top;
         const indexHeight = this.#$itemsTable.outerHeight(true);
         const topOffset = this.#$floatSpacer.offset().top - bannerTop;
@@ -414,27 +423,26 @@ export class DiffFileIndexView extends BaseView<
         if (!this.#isDocked &&
             topOffset + indexHeight - lastRowHeight < 0) {
             /* Transition from undocked -> docked */
+
             this.$el.addClass('-is-docked');
             this.#isDocked = true;
             this.#$dockContainer.appendTo(this.#$bannerDock);
             this.#$dockTable.append(this.#$itemsTable);
-            this.#$floatSpacer.height(indexHeight);
 
             this.updateLayout();
             this.#updateItemVisibility();
         } else if (this.#isDocked &&
                    topOffset + indexHeight - lastRowHeight >= 0) {
             /* Transition from docked -> undocked. */
-            this.#$floatSpacer.css('height', '');
 
+            this.#$floatSpacer.height('auto');
             this.$el.removeClass('-is-docked');
+            this.#isDocked = false;
 
             this.#$itemsTable
                 .css('transform', 'inherit')
                 .appendTo(this.$el);
             this.#$dockContainer.detach();
-            this.#isDocked = false;
-            this.#$items.show();
         } else if (this.#isDocked) {
             /* Currently docked. Update index scroll. */
             this.#updateItemVisibility();
@@ -445,43 +453,38 @@ export class DiffFileIndexView extends BaseView<
      * Update the stored sizes for the file index and diff entries.
      */
     updateLayout() {
-        function getExtents(
-            $el: JQuery,
-        ): ScrollExtents {
-            const height = $el.outerHeight();
-            const top = $el.offset().top;
-            const bottom = top + height;
+        this.#indexExtents.clear();
+        this.#diffExtents.clear();
 
-            return {
-                bottom,
-                height,
-                top,
-            };
-        }
+        this.#$floatSpacer.height(this.#$itemsTable.outerHeight(true));
 
-        if (this.#isDocked === true) {
-            this.#indexExtents.clear();
-            this.#diffExtents.clear();
+        const indexListTop = this.#$itemsTable.offset().top;
+        const $items = this.#$items;
+        const indexExtents = this.#indexExtents;
+        const diffExtents = this.#diffExtents;
 
-            const indexListTop = this.#$itemsTable.offset().top;
-            const $items = this.#$items;
-            const indexExtents = this.#indexExtents;
-            const diffExtents = this.#diffExtents;
+        for (const [i, $diffEl] of this.#diffFiles.entries()) {
+            const $indexEl = $items.eq(i);
 
-            for (const [i, $diffEl] of this.#diffFiles.entries()) {
-                const $indexEl = $items.eq(i);
+            const indexHeight = $indexEl.outerHeight();
+            const indexTop = $indexEl.offset().top - indexListTop;
+            const indexBottom = indexTop + indexHeight;
 
-                const indexHeight = $indexEl.outerHeight();
-                const indexTop = $indexEl.offset().top - indexListTop;
-                const indexBottom = indexTop + indexHeight;
+            indexExtents.set(i, {
+                bottom: indexBottom,
+                height: indexHeight,
+                top: indexTop,
+            });
 
-                indexExtents.set(i, {
-                    bottom: indexBottom,
-                    height: indexHeight,
-                    top: indexTop,
-                });
-                diffExtents.set(i, getExtents($diffEl));
-            }
+            const diffHeight = $diffEl.outerHeight();
+            const diffTop = $diffEl.offset().top;
+            const diffBottom = diffTop + diffHeight;
+
+            diffExtents.set(i, {
+                bottom: diffBottom,
+                height: diffHeight,
+                top: diffTop,
+            });
         }
 
         if (this.#isDocked) {
@@ -490,20 +493,31 @@ export class DiffFileIndexView extends BaseView<
     }
 
     /**
-     * Update the visibility state of the (docked) file list.
+     * Compute and return the index size for the visible area.
      *
-     * When the file list is in docked mode, we carefully manage its vertical
-     * offset and height in order to keep it in sync with which files are
-     * visible on the screen.
+     * Args:
+     *     viewportTop (number):
+     *         The top of the visible viewport, measured in pixels from the top
+     *         of the document.
+     *
+     *     viewportBottom (number):
+     *         The bottom of the visible viewport, measured in pixels from the
+     *         top of the document.
+     *
+     * Returns:
+     *     object:
+     *     An object including the height and offset for the file index.
      */
-    #updateItemVisibility() {
-        const $window = $(window);
-        const viewportTop = this.#$dockContainer.offset().top;
-        const viewportBottom = $window.scrollTop() + $window.height();
+    getDockedIndexExtents(
+        viewportTop: number,
+        viewportBottom: number
+    ): {
+        height: number,
+        offset: number,
+    } {
         const buffer = 50; // 50px
-
-        let verticalOffset = undefined;
-        let listHeight = 0;
+        let offset = undefined;
+        let height = 0;
         let fullLastEntry = true;
 
         const diffExtents = this.#diffExtents;
@@ -537,8 +551,8 @@ export class DiffFileIndexView extends BaseView<
                  */
                 const ratio = (diffExtent.bottom - viewportTop) / buffer;
                 const visibleArea = ratio * indexExtent.height;
-                verticalOffset = indexExtent.bottom - visibleArea;
-                listHeight += visibleArea;
+                offset = indexExtent.bottom - visibleArea;
+                height += visibleArea;
             } else if (diffExtent.top > viewportBottom - buffer) {
                 /*
                  * The top of the diff entry is in the process of being
@@ -547,32 +561,87 @@ export class DiffFileIndexView extends BaseView<
                  */
                 const ratio = (viewportBottom - diffExtent.top) / buffer;
                 const visibleArea = ratio * indexExtent.height;
-                listHeight += visibleArea;
+                height += visibleArea;
 
                 fullLastEntry = false;
             } else {
-                if (verticalOffset === undefined) {
-                    verticalOffset = indexExtent.top;
+                if (offset === undefined) {
+                    offset = indexExtent.top;
 
-                    if (verticalOffset > 0) {
+                    if (offset > 0) {
                         // Account for the border between <tr> elements.
-                        verticalOffset += 1;
+                        offset += 1;
                     }
                 }
 
-                listHeight += indexExtent.height;
+                height += indexExtent.height;
             }
         }
 
-        window.requestAnimationFrame(() => {
-            if (fullLastEntry) {
-                // Account for the border between <tr> elements.
-                listHeight -= 1;
-            }
+        if (fullLastEntry) {
+            // Account for the border between <tr> elements.
+            height -= 1;
+        }
 
-            this.#$dockTable.height(listHeight);
+
+        return {
+            height: height,
+            offset: offset,
+        };
+    }
+
+    /**
+     * Update the visibility state of the (docked) file list.
+     *
+     * When the file list is in docked mode, we carefully manage its vertical
+     * offset and height in order to keep it in sync with which files are
+     * visible on the screen.
+     */
+    #updateItemVisibility() {
+        const $window = $(window);
+        const bannerHeight = this.#unifiedBannerView.getHeight(false);
+        const viewportTop = this.#$dockContainer.offset().top + bannerHeight;
+        const viewportBottom = ($window.scrollTop() + $window.height() -
+                                bannerHeight);
+
+        const { height, offset } = this.getDockedIndexExtents(
+            viewportTop,
+            viewportBottom,
+        );
+
+        if (this.#isDockExpanded) {
+            this.#isDockExpanded = false;
+            this.#$dockContainer.removeClass('-is-expanded');
+        }
+
+        window.requestAnimationFrame(() => {
+            this.#lastDockHeight = height;
+            this.#$dockTable.css('max-height', height);
             this.#$itemsTable.css('transform',
-                                  `translateY(-${verticalOffset}px)`);
+                                  `translateY(-${offset}px)`);
         });
+    }
+
+    /**
+     * Handler for when the docked disclosure icon is clicked.
+     *
+     * Args:
+     *     e (JQuery.ClickEvent):
+     *         The click event.
+     */
+    #onDisclosureClicked(e: JQuery.ClickEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        this.#isDockExpanded = !this.#isDockExpanded;
+
+        if (this.#isDockExpanded) {
+            this.#$dockTable.css('max-height',
+                                 this.#$itemsTable.outerHeight());
+        } else {
+            this.#$dockTable.css('max-height', this.#lastDockHeight);
+        }
+
+        this.#$dockContainer.toggleClass('-is-expanded', this.#isDockExpanded);
     }
 }
