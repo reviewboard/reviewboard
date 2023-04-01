@@ -241,6 +241,23 @@
   }
 
   /**
+   * The link to the interdiff, if present.
+   *
+   * Structure:
+   *     <div class="rb-c-unified-banner__interdiff-link">
+   *      This draft adds a new diff.
+   *      <a href="...">Show changes</a>
+   *     </div>
+   */
+  &__interdiff-link {
+    margin-top: 1em;
+
+    a {
+      color: @link-color;
+    }
+  }
+
+  /**
    * The "dock" portion of the unified banner.
    */
   &__dock:not(:empty) {

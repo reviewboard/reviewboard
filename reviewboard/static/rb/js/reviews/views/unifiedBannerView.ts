@@ -324,6 +324,7 @@ export class UnifiedBannerView extends FloatingBannerView<
     #$changedesc: JQuery;
     #$discardButton: JQuery;
     #$draftActions: JQuery;
+    #$interdiffLink: JQuery;
     #$modeSelector: JQuery;
     #$reviewActions: JQuery;
     #modeMenu: DraftModeMenu;
@@ -401,6 +402,13 @@ export class UnifiedBannerView extends FloatingBannerView<
         this.#$draftActions = this.$('.rb-c-unified-banner__draft-actions');
         this.#$reviewActions = this.$('.rb-c-unified-banner__review-actions');
         this.#$changedesc = this.$('.rb-c-unified-banner__changedesc');
+        this.#$interdiffLink = $(dedent`
+                <div class="rb-c-unified-banner__interdiff-link">
+                ${gettext('This draft adds a new diff.')}
+                <a>${gettext('Show changes')}</a>
+                </div>
+            `)
+            .appendTo(this.#$changedesc);
 
         this.#modeMenu = new DraftModeMenu({
             model: model,
@@ -466,6 +474,16 @@ export class UnifiedBannerView extends FloatingBannerView<
             reviewRequestPublic &&
             draftModes.length > 0 &&
             draftModes[selectedDraftMode].hasReviewRequest);
+
+        const interdiffLink = reviewRequest.draft.get('interdiffLink');
+
+        if (interdiffLink) {
+            this.#$interdiffLink
+                .show()
+                .children('a').attr('href', interdiffLink);
+        } else {
+            this.#$interdiffLink.hide();
+        }
 
         this.$el
             .toggleClass('-has-draft',
