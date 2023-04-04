@@ -1357,7 +1357,10 @@ RB.ReviewDialogView = Backbone.View.extend({
         $.funcQueue('reviewForm').add(() => {
             this.close();
 
-            if (!RB.EnabledFeatures.unifiedBanner) {
+            if (RB.EnabledFeatures.unifiedBanner) {
+                // Reload the page.
+                RB.navigateTo(this.model.get('parentObject').get('reviewURL'));
+            } else {
                 const reviewBanner = RB.DraftReviewBannerView.instance;
 
                 if (reviewBanner) {
