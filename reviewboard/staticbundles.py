@@ -34,6 +34,7 @@ PIPELINE_JAVASCRIPT = {
     },
     'js-tests': {
         'source_filenames': (
+            'rb/js/tests/index.ts',
             'rb/js/admin/tests/relatedGroupSelectorViewTests.es6.js',
             'rb/js/admin/tests/relatedRepoSelectorViewTests.es6.js',
             'rb/js/admin/tests/relatedUserSelectorViewTests.es6.js',
@@ -65,7 +66,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/pages/models/tests/diffViewerPageModelTests.es6.js',
             'rb/js/pages/models/tests/pageManagerModelTests.es6.js',
             'rb/js/pages/models/tests/reviewablePageModelTests.es6.js',
-            'rb/js/pages/views/tests/basePageViewTests.es6.js',
             'rb/js/pages/views/tests/diffViewerPageViewTests.es6.js',
             'rb/js/pages/views/tests/reviewablePageViewTests.es6.js',
             'rb/js/resources/collections/tests/repositoryBranchesCollectionTests.es6.js',
@@ -160,8 +160,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/extensions/models/reviewDialogHookModel.es6.js',
             'rb/js/extensions/models/reviewRequestActionHookModel.es6.js',
             'rb/js/pages/models/pageManagerModel.es6.js',
-            'rb/js/pages/models/pageModel.es6.js',
-            'rb/js/pages/views/basePageView.es6.js',
             'rb/js/models/extraDataModel.es6.js',
             'rb/js/models/extraDataMixin.es6.js',
             'rb/js/resources/utils/serializers.es6.js',
