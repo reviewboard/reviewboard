@@ -231,7 +231,10 @@ RUN    groupadd -r reviewboard -g $REVIEWBOARD_GROUP_ID \
 
 COPY --from=builder /etc/apt /etc/apt
 
-RUN    apt-get update -y \
+RUN    set -ex \
+    && export TERM=dumb \
+    && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update -y \
     && apt-get install -y --no-install-recommends \
            ca-certificates \
            cron \
