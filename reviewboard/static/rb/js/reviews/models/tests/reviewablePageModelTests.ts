@@ -1,14 +1,27 @@
+import {
+    describe,
+    expect,
+    it,
+    spyOn,
+    suite,
+} from 'jasmine-core';
+
+import {
+    ReviewablePage,
+} from 'reviewboard/reviews/models/reviewablePageModel';
+
+
 suite('rb/pages/models/ReviewablePage', function() {
     describe('Construction', function() {
         it('Child objects created', function() {
             const reviewRequest = new RB.ReviewRequest();
-            const page = new RB.ReviewablePage({
-                reviewRequest: reviewRequest,
-                pendingReview: new RB.Review(),
+            const page = new ReviewablePage({
                 editorData: {
-                    showSendEmail: false,
                     hasDraft: true,
+                    showSendEmail: false,
                 },
+                pendingReview: new RB.Review(),
+                reviewRequest: reviewRequest,
             });
 
             expect(page.commentIssueManager).toBeTruthy();
@@ -26,7 +39,7 @@ suite('rb/pages/models/ReviewablePage', function() {
 
     describe('parse', function() {
         it('{}', function() {
-            const page = new RB.ReviewablePage({}, {parse: true});
+            const page = new ReviewablePage({}, {parse: true});
 
             expect(page.get('reviewRequest')).toBeTruthy();
             expect(page.get('pendingReview')).toBeTruthy();
@@ -40,19 +53,19 @@ suite('rb/pages/models/ReviewablePage', function() {
         });
 
         it('reviewRequestData', function() {
-            const page = new RB.ReviewablePage({
+            const page = new ReviewablePage({
                 reviewRequestData: {
-                    bugTrackerURL: 'http://bugs.example.com/--bug_id--/',
-                    id: 123,
-                    localSitePrefix: 's/foo/',
                     branch: 'my-branch',
+                    bugTrackerURL: 'http://bugs.example.com/--bug_id--/',
                     bugsClosed: [101, 102, 103],
                     closeDescription: 'This is closed',
                     closeDescriptionRichText: true,
                     description: 'This is a description',
                     descriptionRichText: true,
                     hasDraft: true,
+                    id: 123,
                     lastUpdatedTimestamp: '2017-08-23T15:10:20Z',
+                    localSitePrefix: 's/foo/',
                     public: true,
                     repository: {
                         id: 200,
@@ -73,8 +86,8 @@ suite('rb/pages/models/ReviewablePage', function() {
                     ],
                     targetPeople: [
                         {
-                            username: 'some-user',
                             url: '/s/foo/users/some-user/',
+                            username: 'some-user',
                         },
                     ],
                     testingDone: 'This is testing done',
@@ -120,8 +133,8 @@ suite('rb/pages/models/ReviewablePage', function() {
                 url: '/s/foo/groups/some-group/',
             }]);
             expect(reviewRequest.get('targetPeople')).toEqual([{
-                username: 'some-user',
                 url: '/s/foo/users/some-user/',
+                username: 'some-user',
             }]);
             expect(reviewRequest.get('testingDone'))
                 .toBe('This is testing done');
@@ -140,7 +153,7 @@ suite('rb/pages/models/ReviewablePage', function() {
         });
 
         it('extraReviewRequestDraftData', function() {
-            const page = new RB.ReviewablePage({
+            const page = new ReviewablePage({
                 extraReviewRequestDraftData: {
                     changeDescription: 'Draft change description',
                     changeDescriptionRichText: true,
@@ -162,7 +175,7 @@ suite('rb/pages/models/ReviewablePage', function() {
         });
 
         it('editorData', function() {
-            const page = new RB.ReviewablePage({
+            const page = new ReviewablePage({
                 editorData: {
                     changeDescriptionRenderedText: 'Change description',
                     closeDescriptionRenderedText: 'This is closed',
@@ -192,7 +205,7 @@ suite('rb/pages/models/ReviewablePage', function() {
         });
 
         it('lastActivityTimestamp', function() {
-            const page = new RB.ReviewablePage({
+            const page = new ReviewablePage({
                 lastActivityTimestamp: '2017-08-22T18:20:30Z',
                 checkUpdatesType: 'diff',
             }, {
@@ -204,7 +217,7 @@ suite('rb/pages/models/ReviewablePage', function() {
         });
 
         it('checkUpdatesType', function() {
-            const page = new RB.ReviewablePage({
+            const page = new ReviewablePage({
                 checkUpdatesType: 'diff',
             }, {
                 parse: true,
@@ -217,7 +230,7 @@ suite('rb/pages/models/ReviewablePage', function() {
 
     describe('Actions', function() {
         it('markShipIt', async function() {
-            const page = new RB.ReviewablePage({}, {parse: true});
+            const page = new ReviewablePage({}, {parse: true});
             const pendingReview = page.get('pendingReview');
 
             spyOn(pendingReview, 'ready').and.resolveTo();

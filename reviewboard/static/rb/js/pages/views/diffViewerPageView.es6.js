@@ -191,11 +191,11 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     RB.DiffViewerPageView:
      *     This instance, for chaining.
      */
-    render() {
+    renderPage() {
         const model = this.model;
         const session = RB.UserSession.instance;
 
-        RB.ReviewablePageView.prototype.render.call(this);
+        RB.ReviewablePageView.prototype.renderPage.call(this);
 
         this._$controls = $('#view_controls');
         console.assert(this._$controls.length === 1);

@@ -1,5 +1,47 @@
 /**
  * A page used for editing, viewing, or reviewing review requests.
+ */
+import { ModelAttributes, spina } from '@beanbag/spina';
+
+import { Page } from 'reviewboard/common/models/pageModel';
+
+
+export interface ReviewablePageAttrs extends ModelAttributes {
+    /** Whether the page should periodically check the server for updates. */
+    checkForUpdates?: boolean;
+
+    /**
+     * A type identifier used to represent the page for any update checks.
+     *
+     * This corresponds to strings used server-side. Arbitrary values have
+     * undefined behavior.
+     */
+    checkUpdatesType?: string;
+
+    /** Data to pass into the review request editor. */
+    editorData?: object; // TODO: update once ReviewRequestEditor is TS
+
+    /**
+     * A string-encoded timestamp for the last activity on the review request.
+     */
+    lastActivityTimestamp?: string;
+
+    /**
+     * The pending review used for any new review content.
+     *
+     * This may or may not yet have a server-side representation.
+     */
+    pendingReview?: RB.Review;
+
+    /**
+     * The review request that this page is for.
+     */
+    reviewRequest?: RB.ReviewRequest;
+}
+
+
+/**
+ * A page used for editing, viewing, or reviewing review requests.
  *
  * This is responsible for setting up objects needed for manipulating a
  * review request or related state, for performing reviews, or otherwise
@@ -15,36 +57,29 @@
  *     reviewRequestEditor (RB.ReviewRequestEditor):
  *         Manages the edit states and capabilities for the review request
  *         for the page.
- *
- * Model Attributes:
- *     checkForUpdates (boolean):
- *         Whether the page should periodically check the server for updates
- *         made to the page.
- *
- *     checkUpdatesType (string):
- *         A type identifier used to represent the page for any update checks.
- *         This corresponds to strings used server-side. Arbitrary values
- *         have undefined behavior.
- *
- *     lastActivityTimestamp (string):
- *         A string-encoded timestamp representing the last time there was
- *         known activity on the review request.
- *
- *     pendingReview (RB.Review):
- *         The pending review (which may or may not yet have a server-side
- *         representation) used for any new review content.
- *
- *     reviewRequest (RB.ReviewRequest):
- *         The review request that this page is for.
  */
-RB.ReviewablePage = RB.Page.extend({
-    defaults: _.defaults({
+@spina
+export class ReviewablePage<
+    TDefaults extends ReviewablePageAttrs = ReviewablePageAttrs,
+    TExtraModelOptions = unknown
+> extends Page<TDefaults, TExtraModelOptions> {
+    static defaults: ReviewablePageAttrs = {
         checkForUpdates: false,
         checkUpdatesType: null,
         lastActivityTimestamp: null,
         pendingReview: null,
         reviewRequest: null,
-    }, RB.Page.prototype.defaults),
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** Manages the issue states for published comments. */
+    commentIssueManager: RB.CommentIssueManager;
+
+    /** Manages the edit states and capabilities for the review request. */
+    reviewRequestEditor: RB.ReviewRequestEditor;
 
     /**
      * Initialize the page.
@@ -54,13 +89,19 @@ RB.ReviewablePage = RB.Page.extend({
      * to the page, notifying the user if anything has changed.
      *
      * Args:
-     *     attributes (object):
+     *     attributes (ReviewablePageAttrs):
      *         Initial attributes passed to the constructor. This is used to
      *         access initial state that won't otherwise be stored in this
      *         page.
+     *
+     *     options (object):
+     *         Options for the page.
      */
-    initialize(attributes) {
-        RB.Page.prototype.initialize.apply(this, arguments);
+    initialize(
+        attributes: TDefaults,
+        options: TExtraModelOptions,
+    ) {
+        super.initialize(attributes, options);
 
         const reviewRequest = this.get('reviewRequest');
 
@@ -88,10 +129,10 @@ RB.ReviewablePage = RB.Page.extend({
         this.reviewRequestEditor = new RB.ReviewRequestEditor(
             _.defaults({
                 commentIssueManager: this.commentIssueManager,
-                reviewRequest: reviewRequest,
                 fileAttachments: fileAttachments,
+                reviewRequest: reviewRequest,
             }, editorData),
-            {parse: true});
+            { parse: true });
 
         this.listenTo(reviewRequest, 'updated',
                       info => this.trigger('reviewRequestUpdated', info));
@@ -99,7 +140,7 @@ RB.ReviewablePage = RB.Page.extend({
         if (this.get('checkForUpdates')) {
             this._registerForUpdates();
         }
-    },
+    }
 
     /**
      * Post a review marked as Ship It.
@@ -113,11 +154,11 @@ RB.ReviewablePage = RB.Page.extend({
         await pendingReview.ready();
 
         pendingReview.set({
+            bodyTop: _`Ship It!`,
             shipIt: true,
-            bodyTop: gettext('Ship It!'),
         });
         await pendingReview.publish();
-    },
+    }
 
     /**
      * Parse the data for the page.
@@ -133,7 +174,9 @@ RB.ReviewablePage = RB.Page.extend({
      *     object:
      *     The resulting attributes for the page.
      */
-    parse(rsp) {
+    parse(
+        rsp: object,
+    ): ReviewablePageAttrs {
         let reviewRequestData;
 
         if (rsp.reviewRequestData) {
@@ -158,13 +201,13 @@ RB.ReviewablePage = RB.Page.extend({
             });
 
         return {
-            reviewRequest: reviewRequest,
-            pendingReview: reviewRequest.createReview(),
-            lastActivityTimestamp: rsp.lastActivityTimestamp,
             checkForUpdates: rsp.checkForUpdates,
             checkUpdatesType: rsp.checkUpdatesType,
+            lastActivityTimestamp: rsp.lastActivityTimestamp,
+            pendingReview: reviewRequest.createReview(),
+            reviewRequest: reviewRequest,
         };
-    },
+    }
 
     /**
      * Register for update notification to the review request from the server.
@@ -179,5 +222,5 @@ RB.ReviewablePage = RB.Page.extend({
         this.get('reviewRequest').beginCheckForUpdates(
             this.get('checkUpdatesType'),
             this.get('lastActivityTimestamp'));
-    },
-});
+    }
+}
