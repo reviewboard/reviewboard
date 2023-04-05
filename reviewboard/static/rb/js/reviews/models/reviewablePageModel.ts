@@ -6,6 +6,7 @@ import { ModelAttributes, spina } from '@beanbag/spina';
 import { Page } from 'reviewboard/common/models/pageModel';
 
 
+/** Attributes for the ReviewablePage model. */
 export interface ReviewablePageAttrs extends ModelAttributes {
     /** Whether the page should periodically check the server for updates. */
     checkForUpdates?: boolean;
@@ -37,6 +38,21 @@ export interface ReviewablePageAttrs extends ModelAttributes {
      * The review request that this page is for.
      */
     reviewRequest?: RB.ReviewRequest;
+}
+
+
+/** The format of data passed in to the object. */
+export interface ReviewablePageParseData {
+    reviewRequestData: {
+        state: string,
+        visibility: string,
+        localSitePrefix: string,
+        repository: object,
+    };
+    extraReviewRequestDraftData: object;
+    checkForUpdates: boolean;
+    checkUpdatesType: string;
+    lastActivityTimestamp: string;
 }
 
 
@@ -175,7 +191,7 @@ export class ReviewablePage<
      *     The resulting attributes for the page.
      */
     parse(
-        rsp: object,
+        rsp: ReviewablePageParseData,
     ): ReviewablePageAttrs {
         let reviewRequestData;
 

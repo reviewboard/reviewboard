@@ -1,1 +1,2 @@
+import './diffViewerPageViewTests';
 import './reviewablePageViewTests';

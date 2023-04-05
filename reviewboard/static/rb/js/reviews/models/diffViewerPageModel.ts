@@ -1,37 +1,139 @@
 /**
  * The model for the diff viewer page.
+ */
+import { spina } from '@beanbag/spina';
+
+import {
+    ReviewablePage,
+    ReviewablePageAttrs,
+    ReviewablePageParseData,
+} from './reviewablePageModel';
+
+
+/** Attributes for the DiffViewerPage model. */
+export interface DiffViewerPageAttrs extends ReviewablePageAttrs {
+    /**
+     * Whether to collapse all chunks to only modified ones.
+     *
+     * If this is ``false``, all lines in the file will be shown.
+     */
+    allChunksCollapsed?: boolean;
+
+    /** Whether the diff can be downloaded given the current revision state. */
+    canDownloadDiff?: boolean;
+
+    /**
+     * Whether the user can toggle the display of extra whitespace.
+     *
+     * If ``true``, the user can toggle on or off the display of mismatched
+     * indentation and trailing whitespace.
+     */
+    canToggleExtraWhitespace?: boolean;
+
+    /** A list of filename patterns to filter the diff viewer. */
+    filenamePatterns?: string[];
+
+    /** The total number of diffs. */
+    numDiffs?: number;
+}
+
+
+/** The format of data passed in to the object. */
+interface DiffViewerPageParseData extends ReviewablePageParseData {
+    // TODO: update these as sub-objects are converted to TS.
+    allChunksCollapsed: boolean;
+    canToggleExtraWhitespace: boolean;
+    comments_hint: object;
+    commit_history_diff: object[];
+    commits: object[];
+    filename_patterns: string[];
+    files: object[];
+    num_diffs: number;
+    pagination: object;
+    revision: {
+        revision: number,
+        interdiff_revision: number,
+        is_interdiff: number,
+    };
+}
+
+
+/** The options for loading a new diff revision. */
+interface LoadDiffRevisionOptions {
+    /** The primary key of the base commit to base the diff off of. */
+    baseCommitID?: number;
+
+    /** A comma-separated list of filenames or patterns to load. */
+    filenamePatterns?: string;
+
+    /**
+     * The page number to load.
+     *
+     * Defaults to the first page.
+     */
+    page?: number;
+
+    /**
+     * The base revision.
+     *
+     * If displaying an interdiff, this will be the first revision in the
+     * range.
+     */
+    revision?: number;
+
+    /**
+     * The optional interdiff revision.
+     *
+     * If displaying an interdiff, this will be the last revision in the
+     * range.
+     */
+    interdiffRevision?: number;
+
+    /** The primary key of the tip commit to base the diff off of. */
+    tipCommitID?: number;
+}
+
+
+/**
+ * The model for the diff viewer page.
  *
  * This handles all attribute storage and diff context parsing needed to
  * display and update the diff viewer.
- *
- * Model Attributes:
- *     allChunksCollapsed (boolean):
- *         Whether to collapse all chunks down to only show modified ones,
- *         instead of showing all lines in the file.
- *
- *     canDownloadDiff (boolean):
- *         Whether a diff file can be downloaded, given the current revision
- *         state.
- *
- *     canToggleExtraWhitespace (boolean):
- *         Whether the user can toggle the display of extra whitespace
- *         (mismatched indentation and trailing whitespace).
- *
- *     filenamePatterns (Array):
- *         A list of filenames or patterns used to filter the diff viewer.
- *         This is optional.
- *
- *     numDiffs (number):
- *         The total number of diffs.
  */
-RB.DiffViewerPage = RB.ReviewablePage.extend({
-    defaults: _.defaults({
+@spina
+export class DiffViewerPage extends ReviewablePage<DiffViewerPageAttrs> {
+    static defaults: DiffViewerPageAttrs = {
         allChunksCollapsed: false,
         canDownloadDiff: false,
         canToggleExtraWhitespace: false,
         filenamePatterns: null,
         numDiffs: 1,
-    }, RB.ReviewablePage.prototype.defaults),
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The hint for comments in other revisions. */
+    commentsHint: RB.DiffCommentsHint;
+
+    /** The diff of all the files between currently-shown commits. */
+    commitHistoryDiff: RB.CommitHistoryDiffEntryCollection;
+
+    /** The set of commits attached to the review request. */
+    commits: RB.DiffFCommitCollection;
+
+    /** The set of reviewables for currently-shown files. */
+    diffReviewables: RB.DiffReviewableCollection;
+
+    /** The set of currently-shown files. */
+    files: RB.DiffFileCollection;
+
+    /** Paginator for all of the diff files. */
+    pagination: RB.Pagination;
+
+    /** The current diff revision. */
+    revision: RB.DiffRevision;
 
     /**
      * Handle pre-parse initialization.
@@ -47,7 +149,7 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
         this.files = new RB.DiffFileCollection();
         this.pagination = new RB.Pagination();
         this.revision = new RB.DiffRevision();
-    },
+    }
 
     /**
      * Initialize the page.
@@ -55,30 +157,32 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      * This will begin listening for events on the page and set up default
      * state.
      */
-    initialize() {
-        RB.ReviewablePage.prototype.initialize.apply(this, arguments);
+    initialize(...args: [DiffViewerPageAttrs, object]) {
+        super.initialize(...args);
 
         this.diffReviewables = new RB.DiffReviewableCollection([], {
             reviewRequest: this.get('reviewRequest'),
         });
         this.diffReviewables.watchFiles(this.files);
-    },
+    }
 
     /**
      * Parse the data for the page.
      *
      * Args:
-     *     rsp (object):
+     *     rsp (DiffViewerPageParseData):
      *         The payload to parse.
      *
      * Returns:
-     *     object:
+     *     DiffViewerPageAttrs:
      *     The returned attributes.
      */
-    parse(rsp) {
+    parse(
+        rsp: DiffViewerPageParseData,
+    ): Partial<DiffViewerPageAttrs> {
         const attrs = _.extend(
             this._parseDiffContext(rsp),
-            RB.ReviewablePage.prototype.parse.call(this, rsp));
+            super.parse(rsp));
 
         if (rsp.allChunksCollapsed !== undefined) {
             attrs.allChunksCollapsed = rsp.allChunksCollapsed;
@@ -89,38 +193,16 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
         }
 
         return attrs;
-    },
+    }
 
     /**
      * Load a new diff from the server.
      *
      * Args:
-     *     options (object):
+     *     options (LoadDiffRevisionOptions):
      *         The options for the diff to load.
-     *
-     * Option Args:
-     *     baseCommitID (number):
-     *         The primary key of the base commit to base the diff off of.
-     *
-     *     filenames (string):
-     *         A comma-separated string of filenames or filename patterns to
-     *         load.
-     *
-     *     page (number):
-     *         The page number to load. Defaults to the first page.
-     *
-     *     revision (number):
-     *         The base revision. If displaying an interdiff, this will be
-     *         the first revision in the range.
-     *
-     *     interdiffRevision (number):
-     *         The optional interdiff revision, representing the ending
-     *         revision in a range.
-     *
-     *     tipCommitID (number):
-     *         The primary key of the tip commit to base the diff off of.
      */
-    loadDiffRevision(options={}) {
+    loadDiffRevision(options: LoadDiffRevisionOptions = {}) {
         const reviewRequestURL = this.get('reviewRequest').url();
         const queryData = [];
 
@@ -173,7 +255,7 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
 
         $.ajax(url)
             .done(rsp => this.set(this._parseDiffContext(rsp.diff_context)));
-    },
+    }
 
     /**
      * Parse context for a displayed diff.
@@ -186,7 +268,9 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      *     object:
      *     The returned attributes.
      */
-    _parseDiffContext(rsp) {
+    _parseDiffContext(
+        rsp: DiffViewerPageParseData,
+    ): Partial<DiffViewerPageAttrs> {
         if (rsp.comments_hint) {
             this.commentsHint.set(this.commentsHint.parse(rsp.comments_hint));
         }
@@ -221,5 +305,5 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
             filenamePatterns: rsp.filename_patterns || null,
             numDiffs: rsp.num_diffs || 0,
         };
-    },
-});
+    }
+}

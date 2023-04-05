@@ -1,3 +1,25 @@
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+    suite,
+} from 'jasmine-core';
+
+import { EnabledFeatures } from 'reviewboard/common';
+import {
+    DiffViewerPage,
+} from 'reviewboard/reviews/models/diffViewerPageModel';
+import {
+    DiffViewerPageView,
+} from 'reviewboard/reviews/views/diffViewerPageView';
+import {
+    UnifiedBannerView,
+} from 'reviewboard/reviews/views/unifiedBannerView';
+
+
 suite('rb/pages/views/DiffViewerPageView', function() {
     /**
      * Make a replacement function for $.ajax(url).
@@ -77,10 +99,14 @@ suite('rb/pages/views/DiffViewerPageView', function() {
     let pageView;
     let $diffs;
 
-    function setupPageView(modelAttrs) {
-        page = new RB.DiffViewerPage(
+    function setupPageView(modelAttrs={}) {
+        page = new DiffViewerPage(
             _.extend({
                 checkForUpdates: false,
+                editorData: {
+                    mutableByUser: true,
+                    statusMutableByUser: true,
+                },
                 pagination: {
                     current_page: 1,
                 },
@@ -90,13 +116,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     state: RB.ReviewRequest.PENDING,
                 },
                 revision: {
-                    revision: 1,
                     interdiff_revision: null,
                     is_interdiff: false,
-                },
-                editorData: {
-                    mutableByUser: true,
-                    statusMutableByUser: true,
+                    revision: 1,
                 },
             }, modelAttrs),
             {
@@ -109,7 +131,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
         spyOn(reviewRequest.draft, 'ready').and.resolveTo();
         spyOn(page.get('pendingReview'), 'ready').and.resolveTo();
 
-        pageView = new RB.DiffViewerPageView({
+        pageView = new DiffViewerPageView({
             el: $(pageTemplate).appendTo($testsScratch),
             model: page,
         });
@@ -136,8 +158,8 @@ suite('rb/pages/views/DiffViewerPageView', function() {
     afterEach(function() {
         RB.DnDUploader.instance = null;
 
-        if (RB.EnabledFeatures.unifiedBanner) {
-            RB.UnifiedBannerView.resetInstance();
+        if (EnabledFeatures.unifiedBanner) {
+            UnifiedBannerView.resetInstance();
         }
 
         if (pageView) {
@@ -244,8 +266,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             });
 
             it('With canToggleExtraWhitespace=true and ' +
-               'diffsShowExtraWhitespace=true',
-               function() {
+               'diffsShowExtraWhitespace=true', function() {
                 RB.UserSession.instance.set('diffsShowExtraWhitespace', true);
                 setupPageView({
                     canToggleExtraWhitespace: true,
@@ -320,7 +341,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             it('Show extra whitespace', function() {
                 RB.UserSession.instance.set('diffsShowExtraWhitespace', false);
                 setupPageView({
-                    canToggleExtraWhitespace: true
+                    canToggleExtraWhitespace: true,
                 });
 
                 const $button =
@@ -338,7 +359,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             it('Hide extra whitespace', function() {
                 RB.UserSession.instance.set('diffsShowExtraWhitespace', true);
                 setupPageView({
-                    canToggleExtraWhitespace: true
+                    canToggleExtraWhitespace: true,
                 });
 
                 const $button =
@@ -422,16 +443,15 @@ suite('rb/pages/views/DiffViewerPageView', function() {
         describe('Anchors', function() {
             it('Tracks all types', function() {
                 $diffs.html(tableTemplate({
-                    fileID: 'file1',
                     chunks: [
                         {
                             id: '1.1',
                             lines: [
                                 {
-                                    type: 'insert',
-                                    vNumber: 100,
                                     leftNumber: 100,
                                     rightNumber: 101,
+                                    type: 'insert',
+                                    vNumber: 100,
                                 },
                             ],
                         },
@@ -439,10 +459,10 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                             id: '1.2',
                             lines: [
                                 {
-                                    type: 'equal',
-                                    vNumber: 101,
                                     leftNumber: 101,
                                     rightNumber: 101,
+                                    type: 'equal',
+                                    vNumber: 101,
                                 },
                             ],
                         },
@@ -450,14 +470,15 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                             id: '1.3',
                             lines: [
                                 {
-                                    type: 'delete',
-                                    vNumber: 102,
                                     leftNumber: 102,
                                     rightNumber: 101,
+                                    type: 'delete',
+                                    vNumber: 102,
                                 },
                             ],
                         },
                     ],
+                    fileID: 'file1',
                 }));
 
                 pageView._updateAnchors(pageView.$el.find('table').eq(0));
@@ -474,16 +495,15 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 beforeEach(function() {
                     $diffs.html([
                         tableTemplate({
-                            fileID: 'file1',
                             chunks: [
                                 {
                                     id: '1.1',
                                     lines: [
                                         {
-                                            type: 'insert',
-                                            vNumber: 100,
                                             leftNumber: 100,
                                             rightNumber: 101,
+                                            type: 'insert',
+                                            vNumber: 100,
                                         },
                                     ],
                                 },
@@ -491,45 +511,46 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                     id: '1.2',
                                     lines: [
                                         {
-                                            type: 'equal',
-                                            vNumber: 101,
                                             leftNumber: 101,
                                             rightNumber: 101,
+                                            type: 'equal',
+                                            vNumber: 101,
                                         },
                                     ],
                                 },
                             ],
+                            fileID: 'file1',
                         }),
                         tableTemplate({
-                            fileID: 'file2',
                             chunks: [],
+                            fileID: 'file2',
                         }),
                         tableTemplate({
-                            fileID: 'file3',
                             chunks: [
                                 {
                                     id: '2.1',
                                     lines: [
                                         {
-                                            type: 'insert',
-                                            vNumber: 100,
                                             leftNumber: 100,
                                             rightNumber: 101,
-                                        }
-                                    ]
+                                            type: 'insert',
+                                            vNumber: 100,
+                                        },
+                                    ],
                                 },
                                 {
                                     id: '2.2',
                                     lines: [
                                         {
-                                            type: 'equal',
-                                            vNumber: 101,
                                             leftNumber: 101,
                                             rightNumber: 101,
+                                            type: 'equal',
+                                            vNumber: 101,
                                         },
                                     ],
                                 },
                             ],
+                            fileID: 'file3',
                         }),
                     ]);
 
@@ -760,11 +781,11 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
                 page.files.reset([
                     new RB.DiffFile({
-                        id: 100,
                         filediff: {
                             id: 200,
                             revision: 1,
                         },
+                        id: 100,
                     }),
                 ]);
 
@@ -779,11 +800,11 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 /* Add an initial batch of files. */
                 page.files.reset([
                     new RB.DiffFile({
-                        id: 100,
                         filediff: {
                             id: 200,
                             revision: 1,
                         },
+                        id: 100,
                     }),
                 ]);
 
@@ -793,11 +814,11 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 /* Now do another. */
                 page.files.reset([
                     new RB.DiffFile({
-                        id: 101,
                         filediff: {
                             id: 201,
                             revision: 2,
                         },
+                        id: 101,
                     }),
                 ]);
 
@@ -984,8 +1005,8 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     page.pagination.set('currentPage', 2);
 
                     pageView._navigate({
-                        revision: 2,
                         interdiffRevision: 3,
+                        revision: 2,
                         updateURLOnly: true,
                     });
 
@@ -1090,10 +1111,10 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                         });
                     expect(page.loadDiffRevision).toHaveBeenCalledWith({
                         baseCommitID: null,
+                        filenamePatterns: null,
+                        interdiffRevision: null,
                         page: 1,
                         revision: 1,
-                        interdiffRevision: null,
-                        filenamePatterns: null,
                         tipCommitID: null,
                     });
                 });
@@ -1108,10 +1129,10 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                         });
                     expect(page.loadDiffRevision).toHaveBeenCalledWith({
                         baseCommitID: null,
+                        filenamePatterns: null,
+                        interdiffRevision: null,
                         page: 2,
                         revision: 1,
-                        interdiffRevision: null,
-                        filenamePatterns: null,
                         tipCommitID: null,
                     });
                 });
@@ -1137,25 +1158,8 @@ suite('rb/pages/views/DiffViewerPageView', function() {
         let $commitList;
 
         beforeEach(function() {
-            page = new RB.DiffViewerPage({
+            page = new DiffViewerPage({
                 checkForUpdates: false,
-                pagination: {
-                    current_page: 1,
-                },
-                reviewRequestData: {
-                    id: 123,
-                    loaded: true,
-                    state: RB.ReviewRequest.PENDING,
-                },
-                revision: {
-                    revision: 1,
-                    interdiff_revision: null,
-                    is_interdiff: false,
-                },
-                editorData: {
-                    mutableByUser: true,
-                    statusMutableByUser: true,
-                },
                 commits: [
                     {
                         author_name: 'Author Name',
@@ -1179,11 +1183,28 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                         parent_id: 'r124',
                     },
                 ],
+                editorData: {
+                    mutableByUser: true,
+                    statusMutableByUser: true,
+                },
+                pagination: {
+                    current_page: 1,
+                },
+                reviewRequestData: {
+                    id: 123,
+                    loaded: true,
+                    state: RB.ReviewRequest.PENDING,
+                },
+                revision: {
+                    interdiff_revision: null,
+                    is_interdiff: false,
+                    revision: 1,
+                },
             }, {
                 parse: true,
             });
 
-            pageView = new RB.DiffViewerPageView({
+            pageView = new DiffViewerPageView({
                 el: $(pageTemplate).appendTo($testsScratch),
                 model: page,
             });
@@ -1239,11 +1260,6 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     '/api/review-requests/123/diff-context/?revision=2',
                     {
                         diff_context: {
-                            revision: {
-                                revision: 2,
-                                interdiff_revision: null,
-                                is_interdiff: false,
-                            },
                             commits: [
                                 {
                                     author_name: 'Author Name',
@@ -1253,7 +1269,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                     parent_id: 'r124',
                                 },
                             ],
-                        }
+                            revision: {
+                                interdiff_revision: null,
+                                is_interdiff: false,
+                                revision: 2,
+                            },
+                        },
                     }));
 
                 page.loadDiffRevision({
@@ -1272,11 +1293,16 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
                 const rspPayload = {
                     diff_context: {
-                        revision: {
-                            revision: 2,
-                            interdiff_revision: 3,
-                            is_interdiff: true,
-                        },
+                        commit_history_diff: [
+                            {
+                                entry_type: RB.CommitHistoryDiffEntry.REMOVED,
+                                old_commit_id: 1,
+                            },
+                            {
+                                entry_type: RB.CommitHistoryDiffEntry.ADDED,
+                                new_commit_id: 2,
+                            },
+                        ],
                         commits: [
                             {
                                 author_name: 'Author Name',
@@ -1291,16 +1317,11 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                 id: 2,
                             },
                         ],
-                        commit_history_diff: [
-                            {
-                                entry_type: RB.CommitHistoryDiffEntry.REMOVED,
-                                old_commit_id: 1,
-                            },
-                            {
-                                entry_type: RB.CommitHistoryDiffEntry.ADDED,
-                                new_commit_id: 2,
-                            },
-                        ],
+                        revision: {
+                            interdiff_revision: 3,
+                            is_interdiff: true,
+                            revision: 2,
+                        },
                     },
                 };
 
@@ -1310,8 +1331,8 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     rspPayload));
 
                 page.loadDiffRevision({
-                    revision: 2,
                     interdiffRevision: 3,
+                    revision: 2,
                 });
 
                 expect($.ajax).toHaveBeenCalled();
@@ -1397,8 +1418,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 });
 
                 it('With base-commit-id and tip-commit-id', function() {
-                    pageView._setInitialURL('?base-commit-id=1&tip-commit-id=2',
-                                            'index_header');
+                    pageView._setInitialURL(
+                        '?base-commit-id=1&tip-commit-id=2',
+                        'index_header');
 
                     expect(pageView.router.navigate).toHaveBeenCalledWith(
                         '1/?base-commit-id=1&tip-commit-id=2#index_header',
@@ -1426,10 +1448,10 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                         {
                             diff_context: {
                                 revision: {
-                                    revision: 1,
+                                    base_commit_id: 1,
                                     interdiff_revision: null,
                                     is_interdiff: false,
-                                    base_commit_id: 1,
+                                    revision: 1,
                                     tip_commit_id: null,
                                 },
                             },
