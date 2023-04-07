@@ -1,4 +1,27 @@
-(function() {
+/**
+ * The comment dialog.
+ */
+import { BaseView, EventsHash, spina } from '@beanbag/spina';
+
+import { EnabledFeatures } from 'reviewboard/common';
+
+
+/**
+ * Options for the CommentsListView.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface CommentsListViewOptions {
+    /** The issue manager. */
+    commentIssueManager: RB.CommentIssueManager;
+
+    /** Whether the user can change issue states. */
+    issuesInteractive: boolean;
+
+    /** The URL of the review request. */
+    reviewRequestURL: string;
+}
 
 
 /**
@@ -11,8 +34,13 @@
  *
  * This is used internally in CommentDialogView.
  */
-const CommentsListView = Backbone.View.extend({
-    itemTemplate: _.template(dedent`
+@spina
+class CommentsListView extends BaseView<
+    undefined,
+    HTMLDivElement,
+    CommentsListViewOptions
+> {
+    static itemTemplate = _.template(dedent`
         <li class="<%= itemClass %>">
          <h2>
           <%- comment.user.name %>
@@ -25,29 +53,28 @@ const CommentsListView = Backbone.View.extend({
          </h2>
          <pre><%- comment.text %></pre>
         </li>
-    `),
+    `);
+
+    static replyText = _`Reply`;
+    static viewText = _`View`;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** Options for the view. */
+    options: CommentsListViewOptions;
 
     /**
      * Initialize the view.
      *
      * Args:
-     *     options (object):
+     *     options (CommentsListViewOptions):
      *         Options for the view.
-     *
-     * Option Args:
-     *     commentIssueManager (RB.CommentIssueManager):
-     *         The manager for issues.
-     *
-     *     issuesInteractive (boolean):
-     *         Whether the user can interact with issues (they have permission
-     *         to change the state).
-     *
-     *     reviewRequestURL (string):
-     *         The URL of the review request.
      */
-    initialize(options) {
+    initialize(options: CommentsListViewOptions) {
         this.options = options;
-    },
+    }
 
     /**
      * Set the list of displayed comments.
@@ -72,23 +99,23 @@ const CommentsListView = Backbone.View.extend({
 
         _.each(comments, serializedComment => {
             const commentID = serializedComment.comment_id;
-            const $item = $(this.itemTemplate({
+            const $item = $(CommentsListView.itemTemplate({
                 comment: serializedComment,
                 itemClass: odd ? 'odd' : 'even',
-                reviewRequestURL: reviewRequestURL,
-                replyText: CommentsListView._replyText,
+                replyText: CommentsListView.replyText,
                 replyType: replyType,
-                viewText: CommentsListView._viewText,
+                reviewRequestURL: reviewRequestURL,
+                viewText: CommentsListView.viewText,
             }));
 
             if (serializedComment.issue_opened) {
                 const commentIssueBar = new RB.CommentIssueBarView({
-                    reviewID: serializedComment.review_id,
                     commentID: commentID,
-                    commentType: replyType,
-                    issueStatus: serializedComment.issue_status,
-                    interactive: interactive,
                     commentIssueManager: commentIssueManager,
+                    commentType: replyType,
+                    interactive: interactive,
+                    issueStatus: serializedComment.issue_status,
+                    reviewID: serializedComment.review_id,
                 });
                 commentIssueBar.render().$el.appendTo($item);
 
@@ -113,12 +140,58 @@ const CommentsListView = Backbone.View.extend({
         this.$el
             .empty()
             .append($items);
-    },
-},
-{
-    _replyText: gettext('Reply'),
-    _viewText: gettext('View'),
-});
+    }
+}
+
+
+/**
+ * Options for the CommentDialogView.
+ */
+interface CommentDialogViewOptions {
+    /** Whether to use animation. */
+    animate?: boolean;
+
+    /** The issue manager. */
+    commentIssueManager?: RB.CommentIssueManager;
+}
+
+
+/**
+ * Options for creating the CommentDialogView.
+ */
+interface CommentDialogViewCreationOptions {
+    /** Whether to use animation. */
+    animate?: boolean;
+
+    /** The comment text. */
+    comment: RB.BaseComment;
+
+    /** The issue manager. */
+    commentIssueManager?: RB.CommentIssueManager;
+
+    /** The container to add the dialog to. */
+    container: HTMLElement | JQuery;
+
+    /** Position information for the dialog. */
+    position?: any;
+
+    /**
+     * The thread of previous comments that this draft is a reply to.
+     *
+     * This only applies if the comment is a reply.
+     */
+    publishedComments?: RB.BaseComment[];
+
+    /**
+     * The type of comment that this draft is a reply to.
+     *
+     * This only applies if the comment is a reply.
+     */
+    publishedCommentsType?: string;
+
+    /** The review request editor. */
+    reviewRequestEditor?: RB.ReviewRequestEditor;
+}
 
 
 /**
@@ -129,16 +202,48 @@ const CommentsListView = Backbone.View.extend({
  * the dialog for reference. However, this dialog is not intended to be
  * used to reply to those comments.
  */
-RB.CommentDialogView = Backbone.View.extend({
-    DIALOG_TOTAL_HEIGHT: 350,
-    DIALOG_NON_EDITABLE_HEIGHT: 120,
-    DIALOG_READ_ONLY_HEIGHT: 104,
-    SLIDE_DISTANCE: 10,
-    COMMENTS_BOX_WIDTH: 280,
-    FORM_BOX_WIDTH: 450,
+@spina
+export class CommentDialogView extends BaseView<
+    RB.CommentEditor,
+    HTMLDivElement,
+    CommentDialogViewOptions
+> {
+    static className = 'comment-dlg';
 
-    className: 'comment-dlg',
-    template: _.template(dedent`
+    static events: EventsHash = {
+        'click .buttons .cancel': '_onCancelClicked',
+        'click .buttons .close': '_onCancelClicked',
+        'click .buttons .delete': '_onDeleteClicked',
+        'click .buttons .save': 'save',
+        'keydown .comment-text-field': '_onTextKeyDown',
+    };
+
+    /** The singleton instance. */
+    static _instance = null;
+
+    static DIALOG_TOTAL_HEIGHT = 350;
+    static DIALOG_NON_EDITABLE_HEIGHT = 120;
+    static DIALOG_READ_ONLY_HEIGHT = 104;
+    static SLIDE_DISTANCE = 10;
+    static COMMENTS_BOX_WIDTH = 280;
+    static FORM_BOX_WIDTH = 450;
+
+    static _cancelText = _`Cancel`;
+    static _closeText = _`Close`;
+    static _deleteText = _`Delete`;
+    static _draftWarningTextTemplate = _`The review request's current <a href="%s">draft</a> needs to be published before you can comment.`;
+    static _enableMarkdownText = _`Enable <u>M</u>arkdown`;
+    static _loginTextTemplate = _`You must <a href="%s">log in</a> to post a comment.`;
+    static _markdownText = _`Markdown`;
+    static _openAnIssueText = _`Open an <u>I</u>ssue`;
+    static _otherReviewsText = _`Other reviews`;
+    static _saveText = _`Save`;
+    static _shouldExitText = _`You have unsaved changes. Are you sure you want to exit?`;
+    static _verifyIssueText = _`Require Verification`;
+    static _yourCommentText = _`Your comment`;
+    static _yourCommentDirtyText = _`Your comment (unsaved)`;
+
+    static template = _.template(dedent`
         <div class="other-comments">
          <h1 class="title"><%- otherReviewsText %></h1>
          <ul></ul>
@@ -186,72 +291,183 @@ RB.CommentDialogView = Backbone.View.extend({
           </div>
          </div>
         </form>
-    `),
+    `);
 
-    events: {
-        'click .buttons .cancel': '_onCancelClicked',
-        'click .buttons .close': '_onCancelClicked',
-        'click .buttons .delete': '_onDeleteClicked',
-        'click .buttons .save': 'save',
-        'keydown .comment-text-field': '_onTextKeyDown',
-    },
+    /**
+     * Create and shows a new comment dialog and associated model.
+     *
+     * This is a class method that handles providing a comment dialog
+     * ready to use with the given state.
+     *
+     * Only one comment dialog can appear on the screen at any given time
+     * when using this.
+     *
+     * Args:
+     *     options (CommentDialogViewCreationOptions):
+     *         Options for the view construction.
+     */
+    static create(
+        options: CommentDialogViewCreationOptions,
+    ): CommentDialogView {
+        console.assert(options.comment, 'A comment must be specified');
+
+        const reviewRequestEditor =
+            options.reviewRequestEditor ||
+            RB.PageManager.getPage().model.reviewRequestEditor;
+
+        options.animate = (options.animate !== false);
+
+        const dlg = new this({
+            animate: options.animate,
+            commentIssueManager: (
+                options.commentIssueManager ||
+                reviewRequestEditor.get('commentIssueManager')),
+            model: new RB.CommentEditor({
+                comment: options.comment,
+                publishedComments: options.publishedComments || undefined,
+                publishedCommentsType: options.publishedCommentsType ||
+                                       undefined,
+                reviewRequest: reviewRequestEditor.get('reviewRequest'),
+                reviewRequestEditor: reviewRequestEditor,
+            }),
+        });
+
+        dlg.render().$el
+            .css('z-index', 999) // XXX Use classes for z-indexes.
+            .appendTo(options.container || document.body);
+
+        options.position = options.position || {};
+
+        if (_.isFunction(options.position)) {
+            options.position(dlg);
+        } else if (options.position.beside) {
+            dlg.positionBeside(options.position.beside.el,
+                               options.position.beside);
+        } else {
+            let x = options.position.x;
+            let y = options.position.y;
+
+            if (x === undefined) {
+                /* Center it. */
+                x = $(document).scrollLeft() +
+                    ($(window).width() - dlg.$el.width()) / 2;
+            }
+
+            if (y === undefined) {
+                /* Center it. */
+                y = $(document).scrollTop() +
+                    ($(window).height() - dlg.$el.height()) / 2;
+            }
+
+            dlg.move(x, y);
+        }
+
+        dlg.on('closed', () => CommentDialogView._instance = null);
+
+        const instance = CommentDialogView._instance;
+        const showCommentDlg = function showCommentDlg() {
+            try {
+                dlg.open();
+            } catch(e) {
+                dlg.close();
+                throw e;
+            }
+
+            CommentDialogView._instance = dlg;
+        };
+
+        if (instance) {
+            instance.on('closed', showCommentDlg);
+            instance.close();
+        } else {
+            showCommentDlg();
+        }
+
+        return dlg;
+    }
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The buttons on the dialog. */
+    $buttons: JQuery;
+
+    /** The cancel button. */
+    $cancelButton: JQuery;
+
+    /** The close button. */
+    $closeButton: JQuery;
+
+    /** The delete button. */
+    $deleteButton: JQuery;
+
+    /** The save button. */
+    $saveButton: JQuery;
+
+    /** The list of views for all the comments. */
+    commentsList: CommentsListView;
+
+    /** The options for the view. */
+    options: CommentDialogViewOptions;
+
+    _$body: JQuery;
+    _$commentOptions: JQuery;
+    _$commentsPane: JQuery;
+    _$draftForm: JQuery;
+    _$enableMarkdownField: JQuery;
+    _$footer: JQuery;
+    _$header: JQuery;
+    _$issueField: JQuery;
+    _$issueOptions: JQuery;
+    _$issueVerificationField: JQuery;
+    _$markdownOptions: JQuery;
+    _$title: JQuery;
+    _textEditor: RB.TextEditorView;
 
     /**
      * Initialize the view.
      *
      * Args:
-     *     options (object):
+     *     options (CommentDialogViewOptions):
      *         Options for the view.
-     *
-     * Option Args:
-     *     animate (boolean):
-     *         Whether to use animation.
-     *
-     *     commentIssueManager (RB.CommentIssueManager):
-     *         The manager for issues.
      */
-    initialize(options) {
+    initialize(options: CommentDialogViewOptions) {
         this.options = options;
-    },
+    }
 
     /**
      * Render the view.
-     *
-     * Returns:
-     *     RB.CommentDialogView:
-     *     This object, for chaining.
      */
-    render() {
+    onInitialRender() {
         const userSession = RB.UserSession.instance;
         const reviewRequest = this.model.get('reviewRequest');
         const reviewRequestEditor = this.model.get('reviewRequestEditor');
 
-        this.options.animate = (this.options.animate !== false);
-
         this.$el
             .hide()
-            .html(this.template({
+            .html(CommentDialogView.template({
                 authenticated: userSession.get('authenticated'),
-                hasDraft: reviewRequest.get('hasDraft'),
-                markdownDocsURL: MANUAL_URL + 'users/markdown/',
-                markdownText: RB.CommentDialogView._markdownText,
-                otherReviewsText: RB.CommentDialogView._otherReviewsText,
-                loginText: interpolate(
-                    RB.CommentDialogView._loginTextTemplate,
-                    [userSession.get('loginURL')]),
+                cancelButton: CommentDialogView._cancelText,
+                closeButton: CommentDialogView._closeText,
+                deleteButton: CommentDialogView._deleteText,
                 draftWarning: interpolate(
-                    RB.CommentDialogView._draftWarningTextTemplate,
+                    CommentDialogView._draftWarningTextTemplate,
                     [reviewRequest.get('reviewURL')]),
-                openAnIssueText: RB.CommentDialogView._openAnIssueText,
-                enableMarkdownText: RB.CommentDialogView._enableMarkdownText,
-                saveButton: RB.CommentDialogView._saveText,
-                cancelButton: RB.CommentDialogView._cancelText,
-                deleteButton: RB.CommentDialogView._deleteText,
-                closeButton: RB.CommentDialogView._closeText,
+                enableMarkdownText: CommentDialogView._enableMarkdownText,
+                hasDraft: reviewRequest.get('hasDraft'),
+                loginText: interpolate(
+                    CommentDialogView._loginTextTemplate,
+                    [userSession.get('loginURL')]),
+                markdownDocsURL: MANUAL_URL + 'users/markdown/',
+                markdownText: CommentDialogView._markdownText,
+                openAnIssueText: CommentDialogView._openAnIssueText,
+                otherReviewsText: CommentDialogView._otherReviewsText,
                 readOnly: userSession.get('readOnly'),
-                readOnlyText: gettext('Review Board is currently in read-only mode.'),
-                showVerify: RB.EnabledFeatures.issueVerification,
-                verifyIssueText: RB.CommentDialogView._verifyIssueText,
+                readOnlyText: _`Review Board is currently in read-only mode.`,
+                saveButton: CommentDialogView._saveText,
+                showVerify: EnabledFeatures.issueVerification,
+                verifyIssueText: CommentDialogView._verifyIssueText,
             }));
 
         this._$commentsPane = this.$('.other-comments');
@@ -319,10 +535,10 @@ RB.CommentDialogView = Backbone.View.extend({
             });
 
         this.commentsList = new CommentsListView({
-            el: this._$commentsPane.find('ul'),
-            reviewRequestURL: reviewRequest.get('reviewURL'),
             commentIssueManager: this.options.commentIssueManager,
+            el: this._$commentsPane.find('ul'),
             issuesInteractive: reviewRequestEditor.get('editable'),
+            reviewRequestURL: reviewRequest.get('reviewURL'),
         });
 
         /*
@@ -330,14 +546,14 @@ RB.CommentDialogView = Backbone.View.extend({
          * because jQuery will actually handle it. Backbone fails to.
          */
         this._textEditor = new RB.TextEditorView({
-            el: this._$draftForm.find('.comment-text-field'),
             autoSize: false,
+            bindRichText: {
+                attrName: 'richText',
+                model: this.model,
+            },
+            el: this._$draftForm.find('.comment-text-field'),
             minHeight: 0,
             text: this.model.get('text'),
-            bindRichText: {
-                model: this.model,
-                attrName: 'richText',
-            },
         });
         this._textEditor.render();
         this._textEditor.show();
@@ -352,7 +568,7 @@ RB.CommentDialogView = Backbone.View.extend({
         this.listenTo(this.model, 'change:text',
                       () => this._textEditor.setText(this.model.get('text')));
 
-        this.listenTo(this.model, 'change:richText', this._handleResize);
+        this.listenTo(this.model, 'change:richText', this.#handleResize);
 
         this.$el
             .css('position', 'absolute')
@@ -366,8 +582,8 @@ RB.CommentDialogView = Backbone.View.extend({
             .resizable({
                 handles: $.support.touch ? 'grip,se'
                                          : 'grip,n,e,s,w,se,sw,ne,nw',
+                resize: _.bind(this.#handleResize, this),
                 transparent: true,
-                resize: _.bind(this._handleResize, this),
             })
             .proxyTouchEvents();
 
@@ -376,28 +592,26 @@ RB.CommentDialogView = Backbone.View.extend({
             handle: '.comment-dlg-header',
         });
 
-        this.listenTo(this.model, 'change:dirty', this._updateTitle);
-        this._updateTitle();
+        this.listenTo(this.model, 'change:dirty', this.#updateTitle);
+        this.#updateTitle();
 
         this.listenTo(this.model, 'change:publishedComments',
-                      () => this._onPublishedCommentsChanged());
-        this._onPublishedCommentsChanged();
+                      () => this.#onPublishedCommentsChanged());
+        this.#onPublishedCommentsChanged();
 
         /* Add any hooks. */
         RB.CommentDialogHook.each(hook => {
             const HookViewType = hook.get('viewType');
             const hookView = new HookViewType({
-                extension: hook.get('extension'),
                 commentDialog: this,
                 commentEditor: this.model,
                 el: this.el,
+                extension: hook.get('extension'),
             });
 
             hookView.render();
         });
-
-        return this;
-    },
+    }
 
     /**
      * Callback for when the Save button is pressed.
@@ -414,12 +628,12 @@ RB.CommentDialogView = Backbone.View.extend({
         if (this.model.get('canSave')) {
             this.model.save()
                 .catch(err => {
-                    alert(gettext('Error saving comment: ') + err.message);
+                    alert(_`Error saving comment: ` + err.message);
                 });
 
             this.close();
         }
-    },
+    }
 
     /**
      * Open the comment dialog and focuses the text field.
@@ -430,14 +644,17 @@ RB.CommentDialogView = Backbone.View.extend({
             this._textEditor.focus();
         }
 
-        this.$el
-            .css({
-                top: parseInt(this.$el.css('top'), 10) - this.SLIDE_DISTANCE,
+        if (this.options.animate) {
+            this.$el.css({
                 opacity: 0,
-            })
-            .show();
+                top: (parseInt(this.$el.css('top'), 10) -
+                      CommentDialogView.SLIDE_DISTANCE),
+            });
+        }
 
-        this._handleResize();
+        this.$el.show();
+
+        this.#handleResize();
 
         if (this.model.get('canEdit')) {
             this.model.beginEdit();
@@ -445,13 +662,13 @@ RB.CommentDialogView = Backbone.View.extend({
 
         if (this.options.animate) {
             this.$el.animate({
-                top: `+=${this.SLIDE_DISTANCE}px`,
                 opacity: 1,
+                top: `+=${CommentDialogView.SLIDE_DISTANCE}px`,
             }, 350, 'swing', _.bind(openDialog, this));
         } else {
             openDialog.call(this);
         }
-    },
+    }
 
     /**
      * Close the comment dialog, discarding the comment block if empty.
@@ -479,13 +696,13 @@ RB.CommentDialogView = Backbone.View.extend({
 
         if (this.options.animate && this.$el.is(':visible')) {
             this.$el.animate({
-                top: `-=${this.SLIDE_DISTANCE}px`,
                 opacity: 0,
+                top: `-=${CommentDialogView.SLIDE_DISTANCE}px`,
             }, 350, 'swing', _.bind(closeDialog, this));
         } else {
             closeDialog.call(this);
         }
-    },
+    }
 
     /**
      * Move the comment dialog to the given coordinates.
@@ -499,7 +716,7 @@ RB.CommentDialogView = Backbone.View.extend({
      */
     move(x, y) {
         this.$el.move(x, y);
-    },
+    }
 
     /**
      * Position the dialog beside an element.
@@ -515,16 +732,16 @@ RB.CommentDialogView = Backbone.View.extend({
      */
     positionBeside($el, options) {
         this.$el.positionToSide($el, options);
-    },
+    }
 
     /**
      * Update the title of the comment dialog, based on the current state.
      */
-    _updateTitle() {
+    #updateTitle() {
         this._$title.text(this.model.get('dirty')
-                          ? RB.CommentDialogView._yourCommentDirtyText
-                          : RB.CommentDialogView._yourCommentText);
-    },
+                          ? CommentDialogView._yourCommentDirtyText
+                          : CommentDialogView._yourCommentText);
+    }
 
     /**
      * Callback for when the list of published comments changes.
@@ -532,49 +749,49 @@ RB.CommentDialogView = Backbone.View.extend({
      * Sets the list of comments in the CommentsList, and factors in some
      * new layout properties.
      */
-    _onPublishedCommentsChanged() {
+    #onPublishedCommentsChanged() {
         const comments = this.model.get('publishedComments') || [];
-        this.commentsList.setComments(comments,
-                                       this.model.get('publishedCommentsType'));
+        this.commentsList.setComments(
+            comments, this.model.get('publishedCommentsType'));
 
         const showComments = (comments.length > 0);
         this._$commentsPane.toggle(showComments);
 
         /* Do this here so that calculations can be done before open() */
-        let width = this.FORM_BOX_WIDTH;
+        let width = CommentDialogView.FORM_BOX_WIDTH;
 
         if (showComments) {
-            width += this.COMMENTS_BOX_WIDTH;
+            width += CommentDialogView.COMMENTS_BOX_WIDTH;
         }
 
         let height;
 
         if (this.model.get('canEdit')) {
-            height = this.DIALOG_TOTAL_HEIGHT;
+            height = CommentDialogView.DIALOG_TOTAL_HEIGHT;
         } else if (RB.UserSession.instance.get('readOnly')) {
-            height = this.DIALOG_READ_ONLY_HEIGHT;
+            height = CommentDialogView.DIALOG_READ_ONLY_HEIGHT;
         } else {
-            height = this.DIALOG_NON_EDITABLE_HEIGHT;
+            height = CommentDialogView.DIALOG_NON_EDITABLE_HEIGHT;
         }
 
         this.$el
             .width(width)
             .height(height);
-    },
+    }
 
     /**
      * Handle the resize of the comment dialog.
      *
      * This will lay out the elements in the dialog appropriately.
      */
-    _handleResize() {
+    #handleResize() {
         const height = this.$el.height();
         let width = this.$el.width();
         let commentsWidth = 0;
 
         if (this._$commentsPane.is(':visible')) {
             this._$commentsPane
-                .outerWidth(this.COMMENTS_BOX_WIDTH)
+                .outerWidth(CommentDialogView.COMMENTS_BOX_WIDTH)
                 .outerHeight(height)
                 .move(0, 0, 'absolute');
 
@@ -600,7 +817,7 @@ RB.CommentDialogView = Backbone.View.extend({
              this._$commentOptions.outerHeight() -
              this._$footer.outerHeight() -
              $textField.getExtents('b', 'tb')));
-    },
+    }
 
     /**
      * Callback for when the Cancel button is pressed.
@@ -612,14 +829,14 @@ RB.CommentDialogView = Backbone.View.extend({
         let shouldExit = true;
 
         if (this.model.get('dirty')) {
-            shouldExit = confirm(RB.CommentDialogView._shouldExitText);
+            shouldExit = confirm(CommentDialogView._shouldExitText);
         }
 
         if (shouldExit) {
             this.model.cancel();
             this.close();
         }
-    },
+    }
 
     /**
      * Callback for when the Delete button is pressed.
@@ -631,7 +848,7 @@ RB.CommentDialogView = Backbone.View.extend({
             this.model.deleteComment();
             this.close();
         }
-    },
+    }
 
     /**
      * Callback for keydown events in the text field.
@@ -646,160 +863,30 @@ RB.CommentDialogView = Backbone.View.extend({
      * The keydown event won't be propagated to the parent elements.
      *
      * Args:
-     *     e (Event):
+     *     e (KeyboardEvent):
      *         The keydown event.
      */
-    _onTextKeyDown(e) {
-        e.stopPropagation();
+    _onTextKeyDown(e: KeyboardEvent) {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
 
-        switch (e.which) {
-            case $.ui.keyCode.ESCAPE:
-                this._onCancelClicked();
-                return false;
+            this._onCancelClicked();
+        } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            e.stopPropagation();
 
-            case 10:
-            case $.ui.keyCode.ENTER:
-                /* Enter */
-                if (e.metaKey || e.ctrlKey) {
-                    this.save();
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-                break;
+            this.save();
+        } else if (e.key === 'i' && (e.metaKey || e.altKey)) {
+            e.preventDefault();
+            e.stopPropagation();
 
-            case 73:
-            case 105:
-                /* I */
-                if (e.metaKey || e.altKey) {
-                    // preventDefault is called to avoid Firefox info window.
-                    e.preventDefault();
-                    this.model.set('openIssue', !this.model.get('openIssue'));
-                }
-                break;
+            this.model.set('openIssue', !this.model.get('openIssue'));
+        } else if (e.key === 'm' && (e.metaKey || e.altKey)) {
+            e.preventDefault();
+            e.stopPropagation();
 
-            case 77:
-            case 109:
-                /* M */
-                if (e.metaKey || e.altKey) {
-                    // preventDefault is called to avoid Mac's window minimize.
-                    e.preventDefault();
-                    this.model.set('richText', !this.model.get('richText'));
-                }
-                break;
-
-            default:
-                break;
+            this.model.set('richText', !this.model.get('richText'));
         }
-    },
-}, {
-    /**
-     * The singleton instance.
-     */
-    _instance: null,
-
-    /**
-     * Create and shows a new comment dialog and associated model.
-     *
-     * This is a class method that handles providing a comment dialog
-     * ready to use with the given state.
-     *
-     * Only one comment dialog can appear on the screen at any given time
-     * when using this.
-     *
-     * Args:
-     *     options (object, optional):
-     *         Options for the view construction.
-     */
-    create: function(options={}) {
-        console.assert(options.comment, 'A comment must be specified');
-
-        const reviewRequestEditor =
-            options.reviewRequestEditor ||
-            RB.PageManager.getPage().model.reviewRequestEditor;
-
-        const dlg = new RB.CommentDialogView({
-            animate: options.animate,
-            commentIssueManager: options.commentIssueManager ||
-                                 reviewRequestEditor.get('commentIssueManager'),
-            model: new RB.CommentEditor({
-                comment: options.comment,
-                reviewRequest: reviewRequestEditor.get('reviewRequest'),
-                reviewRequestEditor: reviewRequestEditor,
-                publishedComments: options.publishedComments || undefined,
-                publishedCommentsType: options.publishedCommentsType ||
-                                       undefined,
-            })
-        });
-
-        dlg.render().$el
-            .css('z-index', 999) // XXX Use classes for z-indexes.
-            .appendTo(options.container || document.body);
-
-        options.position = options.position || {};
-
-        if (_.isFunction(options.position)) {
-            options.position(dlg);
-        } else if (options.position.beside) {
-            dlg.positionBeside(options.position.beside.el,
-                               options.position.beside);
-        } else {
-            let x = options.position.x;
-            let y = options.position.y;
-
-            if (x === undefined) {
-                /* Center it. */
-                x = $(document).scrollLeft() +
-                    ($(window).width() - dlg.$el.width()) / 2;
-            }
-
-            if (y === undefined) {
-                /* Center it. */
-                y = $(document).scrollTop() +
-                    ($(window).height() - dlg.$el.height()) / 2;
-            }
-
-            dlg.move(x, y);
-        }
-
-        dlg.on('closed', () => RB.CommentDialogView._instance = null);
-
-        const instance = RB.CommentDialogView._instance;
-        const showCommentDlg = function showCommentDlg() {
-            try {
-                dlg.open();
-            } catch(e) {
-                dlg.close();
-                throw e;
-            }
-
-            RB.CommentDialogView._instance = dlg;
-        };
-
-        if (instance) {
-            instance.on('closed', showCommentDlg);
-            instance.close();
-        } else {
-            showCommentDlg();
-        }
-
-        return dlg;
-    },
-
-    _cancelText: gettext('Cancel'),
-    _closeText: gettext('Close'),
-    _deleteText: gettext('Delete'),
-    _draftWarningTextTemplate: gettext('The review request\'s current <a href="%s">draft</a> needs to be published before you can comment.'),
-    _enableMarkdownText: gettext('Enable <u>M</u>arkdown'),
-    _loginTextTemplate: gettext('You must <a href="%s">log in</a> to post a comment.'),
-    _markdownText: gettext('Markdown'),
-    _openAnIssueText: gettext('Open an <u>I</u>ssue'),
-    _otherReviewsText: gettext('Other reviews'),
-    _saveText: gettext('Save'),
-    _shouldExitText: gettext('You have unsaved changes. Are you sure you want to exit?'),
-    _verifyIssueText: gettext('Require Verification'),
-    _yourCommentText: gettext('Your comment'),
-    _yourCommentDirtyText: gettext('Your comment (unsaved)'),
-});
-
-
-})();
+    }
+}

@@ -1,4 +1,5 @@
 export * from './views/reviewRequestActions';
+export { CommentDialogView } from './views/commentDialogView';
 export { DiffComplexityIconView } from './views/diffComplexityIconView';
 export { DiffFileIndexView } from './views/diffFileIndexView';
 export { DiffViewerPage } from './models/diffViewerPageModel';
