@@ -5,6 +5,8 @@ import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
 import { EnabledFeatures } from 'reviewboard/common';
 
+import { CommentEditor } from '../models/commentEditorModel';
+
 
 /**
  * Options for the CommentsListView.
@@ -204,7 +206,7 @@ interface CommentDialogViewCreationOptions {
  */
 @spina
 export class CommentDialogView extends BaseView<
-    RB.CommentEditor,
+    CommentEditor,
     HTMLDivElement,
     CommentDialogViewOptions
 > {
@@ -322,7 +324,7 @@ export class CommentDialogView extends BaseView<
             commentIssueManager: (
                 options.commentIssueManager ||
                 reviewRequestEditor.get('commentIssueManager')),
-            model: new RB.CommentEditor({
+            model: new CommentEditor({
                 comment: options.comment,
                 publishedComments: options.publishedComments || undefined,
                 publishedCommentsType: options.publishedCommentsType ||

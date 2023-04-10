@@ -55,7 +55,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/diffviewer/models/tests/paginationModelTests.es6.js',
             'rb/js/diffviewer/views/tests/diffCommitListViewTests.es6.js',
             'rb/js/diffviewer/views/tests/diffReviewableViewTests.es6.js',
-            'rb/js/models/tests/commentEditorModelTests.es6.js',
             'rb/js/models/tests/extraDataTests.es6.js',
             'rb/js/models/tests/reviewRequestEditorModelTests.es6.js',
             'rb/js/models/tests/uploadDiffModelTests.es6.js',
@@ -261,7 +260,6 @@ PIPELINE_JAVASCRIPT = {
             # Note: These are roughly in dependency order.
             'rb/js/models/abstractCommentBlockModel.es6.js',
             'rb/js/models/abstractReviewableModel.es6.js',
-            'rb/js/models/commentEditorModel.es6.js',
             'rb/js/models/commentIssueManagerModel.es6.js',
             'rb/js/models/fileAttachmentCommentBlockModel.es6.js',
             'rb/js/models/fileAttachmentReviewableModel.es6.js',

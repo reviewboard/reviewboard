@@ -11,6 +11,9 @@ import {
 import {
     CommentDialogView,
 } from 'reviewboard/reviews/views/commentDialogView';
+import {
+    CommentEditor,
+} from 'reviewboard/reviews/models/commentEditorModel';
 
 declare const $testsScratch: JQuery;
 
@@ -89,7 +92,7 @@ suite('rb/views/CommentDialogView', function() {
         let dlg;
 
         beforeEach(function() {
-            editor = new RB.CommentEditor({
+            editor = new CommentEditor({
                 canEdit: true,
                 comment: new RB.DiffComment(),
                 reviewRequest: reviewRequest,
@@ -339,7 +342,7 @@ suite('rb/views/CommentDialogView', function() {
 
         describe('Height', function() {
             beforeEach(function() {
-                editor = new RB.CommentEditor({
+                editor = new CommentEditor({
                     comment: new RB.DiffComment(),
                     reviewRequest: reviewRequest,
                     reviewRequestEditor: reviewRequestEditor,
@@ -922,7 +925,7 @@ suite('rb/views/CommentDialogView', function() {
                 it('When commentsOpenAnIssue is true', function() {
                     RB.UserSession.instance.set('commentsOpenAnIssue', true);
 
-                    editor = new RB.CommentEditor({
+                    editor = new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,
                     });
@@ -940,7 +943,7 @@ suite('rb/views/CommentDialogView', function() {
                 it('When commentsOpenAnIssue is false', function() {
                     RB.UserSession.instance.set('commentsOpenAnIssue', false);
 
-                    editor = new RB.CommentEditor({
+                    editor = new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,
                     });
@@ -964,7 +967,7 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('New comment', function() {
-                        editor = new RB.CommentEditor({
+                        editor = new CommentEditor({
                             reviewRequest: reviewRequest,
                             reviewRequestEditor: reviewRequestEditor,
                         });
@@ -981,7 +984,7 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('Existing comment with richText=true', function() {
-                        editor = new RB.CommentEditor({
+                        editor = new CommentEditor({
                             comment: new RB.DiffComment({
                                 richText: true,
                             }),
@@ -1001,7 +1004,7 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('Existing comment with richText=false', function() {
-                        editor = new RB.CommentEditor({
+                        editor = new CommentEditor({
                             comment: new RB.DiffComment({
                                 richText: false,
                             }),
@@ -1028,7 +1031,7 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('New comment', function() {
-                        editor = new RB.CommentEditor({
+                        editor = new CommentEditor({
                             reviewRequest: reviewRequest,
                             reviewRequestEditor: reviewRequestEditor,
                         });
@@ -1045,7 +1048,7 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('Existing comment with richText=true', function() {
-                        editor = new RB.CommentEditor({
+                        editor = new CommentEditor({
                             comment: new RB.DiffComment({
                                 richText: true,
                             }),
@@ -1065,7 +1068,7 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('Existing comment with richText=false', function() {
-                        editor = new RB.CommentEditor({
+                        editor = new CommentEditor({
                             comment: new RB.DiffComment({
                                 richText: false,
                             }),
@@ -1093,7 +1096,7 @@ suite('rb/views/CommentDialogView', function() {
 
                 dlg = new CommentDialogView({
                     animate: false,
-                    model: new RB.CommentEditor({
+                    model: new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,
                     }),
@@ -1108,7 +1111,7 @@ suite('rb/views/CommentDialogView', function() {
 
                 dlg = new CommentDialogView({
                     animate: false,
-                    model: new RB.CommentEditor({
+                    model: new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,
                     }),
@@ -1125,7 +1128,7 @@ suite('rb/views/CommentDialogView', function() {
 
                 dlg = new CommentDialogView({
                     animate: false,
-                    model: new RB.CommentEditor({
+                    model: new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,
                     }),
@@ -1141,7 +1144,7 @@ suite('rb/views/CommentDialogView', function() {
 
                 dlg = new CommentDialogView({
                     animate: false,
-                    model: new RB.CommentEditor({
+                    model: new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,
                     }),

@@ -1,3 +1,57 @@
+/** The state for editing a new or existing draft comment. */
+import { BaseModel, spina } from '@beanbag/spina';
+
+
+/**
+ * Attributes for the CommentEditor model.
+ */
+interface CommentEditorAttrs {
+    /** Whether the draft comment can be deleted. */
+    canDelete: boolean;
+
+    /** Whether the draft comment can be edited. */
+    canEdit: boolean;
+
+    /** Whether the draft comment can be saved. */
+    canSave: boolean;
+
+    /** Whether the comment is currently being edited. */
+    editing: boolean;
+
+    /** The draft state for the comment's extra data. */
+    extraData: object;
+
+    /** The comment model. */
+    comment: RB.BaseComment;
+
+    /** Whether the draft comment has been edited but not saved. */
+    dirty: boolean;
+
+    /** Whether the comment opens an issue. */
+    openIssue: boolean;
+
+    /** The thread of previous comments that this draft is a reply to. */
+    publishedComments: RB.BaseComment[];
+
+    /** The type of comment that this draft is a reply to, if applicable. */
+    publishedCommentsType: string;
+
+    /** Whether this draft comment requires issue verification. */
+    requireVerification: boolean;
+
+    /** The review request that this comment is on. */
+    reviewRequest: RB.ReviewRequest;
+
+    /** The review request editor for the review request. */
+    reviewRequestEditor: RB.ReviewRequestEditor;
+
+    /** Whether the comment is formatted in Markdown. */
+    richText: boolean;
+
+    /** The comment text. */
+    text: string;
+}
+
 /**
  * Represents the state for editing a new or existing draft comment.
  *
@@ -6,76 +60,39 @@
  * This will provide state on what actions are available on a comment,
  * informative text, dirty states, existing published comments on the
  * same region this comment is on, and more.
- *
- * Attributes:
- *     canDelete (boolean):
- *         Whether the draft comment can be deleted.
- *
- *     canEdit (boolean):
- *         Whether the draft comment can be edited.
- *
- *     canSave (boolean):
- *         Whether the draft comment can be saved.
- *
- *     editing (boolean):
- *         True if the comment is currently being edited.
- *
- *     extraData (object):
- *         The draft state for the comment's extra data.
- *
- *     comment (RB.BaseComment):
- *         The comment model.
- *
- *     dirty (boolean):
- *         True if the draft comment has been edited but not saved.
- *
- *     openIssue (boolean):
- *         Whether the comment opens an issue.
- *
- *     publishedComments (Array of RB.BaseComment):
- *         The thread of previous comments that this draft is a reply to, if
- *         applicable.
- *
- *     publishedCommentsType (string):
- *         The type of comment that this draft is a reply to, if applicable.
- *
- *     reviewRequest (RB.ReviewRequest):
- *         The review request that the comment is on.
- *
- *     richText (boolean):
- *         Whether the comment is formatted in Markdown.
- *
- *     text (string):
- *         The comment's text.
  */
-RB.CommentEditor = Backbone.Model.extend(_.defaults({
+@spina({
+    mixins: [RB.ExtraDataMixin],
+})
+export class CommentEditor extends BaseModel<CommentEditorAttrs> {
     /**
      * Return the default values for the model attributes.
      *
      * Returns:
-     *     object:
+     *     CommentEditorAttrs:
      *     The default values for the attributes.
      */
-    defaults() {
+    static defaults(): CommentEditorAttrs {
         const userSession = RB.UserSession.instance;
 
         return {
             canDelete: false,
             canEdit: undefined,
             canSave: false,
-            editing: false,
-            extraData: {},
             comment: null,
             dirty: false,
+            editing: false,
+            extraData: {},
             openIssue: userSession.get('commentsOpenAnIssue'),
             publishedComments: [],
             publishedCommentsType: null,
-            requireVerification: false, // TODO: add a user preference for this.
+            requireVerification: false, // TODO: add a user preference for this
             reviewRequest: null,
+            reviewRequestEditor: null,
             richText: userSession.get('defaultUseRichText'),
             text: '',
         };
-    },
+    }
 
     /**
      * Initialize the comment editor.
@@ -83,19 +100,20 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
     initialize() {
         const reviewRequest = this.get('reviewRequest');
 
-        this.on('change:comment', this._updateFromComment, this);
-        this._updateFromComment();
+        this.listenTo(this, 'change:comment', this.#updateFromComment);
+        this.#updateFromComment();
 
         /*
          * Unless a canEdit value is explicitly given, we want to compute
          * the proper state.
          */
         if (this.get('canEdit') === undefined) {
-            reviewRequest.on('change:hasDraft', this._updateCanEdit, this);
-            this._updateCanEdit();
+            this.listenTo(reviewRequest, 'change:hasDraft',
+                          this.#updateCanEdit);
+            this.#updateCanEdit();
         }
 
-        this.on('change:dirty', (model, dirty) => {
+        this.listenTo(this, 'change:dirty', (model, dirty) => {
             const reviewRequestEditor = this.get('reviewRequestEditor');
 
             if (reviewRequestEditor) {
@@ -107,20 +125,21 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
             }
         });
 
-        this.on(
-            'change:openIssue change:requireVerification ' +
-            'change:richText change:text',
+        this.listenTo(
+            this,
+            'change:openIssue change:requireVerification change:richText ' +
+            'change:text',
             () => {
                 if (this.get('editing')) {
                     this.set('dirty', true);
-                    this._updateState();
+                    this.#updateState();
                 }
             });
 
-        this._updateState();
+        this.#updateState();
 
         this._setupExtraData();
-    },
+    }
 
     /**
      * Set the editor to begin editing a new or existing comment.
@@ -136,8 +155,8 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
             editing: true,
         });
 
-        this._updateState();
-    },
+        this.#updateState();
+    }
 
     /**
      * Delete the current comment, if it can be deleted.
@@ -158,7 +177,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
         await comment.destroy();
         this.trigger('deleted');
         this.close();
-    },
+    }
 
     /**
      * Cancel editing of a comment.
@@ -168,9 +187,9 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
      * requiring a new call to beginEdit.
      */
     cancel() {
-        const comment = this.get('comment');
+        this.stopListening(this, 'change:comment');
 
-        this.off('change:comment', this._updateFromComment, this);
+        const comment = this.get('comment');
 
         if (comment) {
             comment.destroyIfEmpty();
@@ -178,7 +197,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
         }
 
         this.close();
-    },
+    }
 
     /**
      * Close editing of the comment.
@@ -201,7 +220,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
         });
 
         this.trigger('closed');
-    },
+    }
 
     /**
      * Save the comment.
@@ -241,28 +260,28 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
         console.assert(this.get('canSave'),
                        'save() called when canSave is false.');
 
-        const extraData =  _.clone(this.get('extraData'));
+        const extraData = _.clone(this.get('extraData'));
         extraData.require_verification = this.get('requireVerification');
 
         const comment = this.get('comment');
         comment.set({
-            text: this.get('text'),
-            issueOpened: this.get('openIssue'),
             extraData: extraData,
-            richText: this.get('richText'),
             includeTextTypes: 'html,raw,markdown',
+            issueOpened: this.get('openIssue'),
+            richText: this.get('richText'),
+            text: this.get('text'),
         });
 
         await comment.save();
 
         this.set('dirty', false);
         this.trigger('saved');
-    },
+    }
 
     /**
      * Update the state of the editor from the currently set comment.
      */
-    async _updateFromComment() {
+    async #updateFromComment() {
         const oldComment = this.previous('comment');
         const comment = this.get('comment');
 
@@ -271,7 +290,8 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
         }
 
         if (comment) {
-            const defaultRichText = this.defaults().richText;
+            const defaults = _.result(this, 'defaults');
+            const defaultRichText = defaults.richText;
 
             /*
              * Set the attributes based on what we know at page load time.
@@ -293,7 +313,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
                 dirty: false,
                 extraData: comment.get('extraData'),
                 openIssue: comment.get('issueOpened') === null
-                           ? this.defaults().openIssue
+                           ? defaults.openIssue
                            : comment.get('issueOpened'),
                 requireVerification: comment.requiresVerification(),
                 richText: defaultRichText || !!comment.get('richText'),
@@ -316,9 +336,9 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
 
             await comment.ready();
 
-            this._updateState();
+            this.#updateState();
         }
-    },
+    }
 
     /**
      * Update the canEdit state of the editor.
@@ -326,7 +346,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
      * This is based on the authentication state of the user, and
      * whether or not there's an existing draft for the review request.
      */
-    _updateCanEdit() {
+    #updateCanEdit() {
         const reviewRequest = this.get('reviewRequest');
         const userSession = RB.UserSession.instance;
 
@@ -334,7 +354,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
                  userSession.get('authenticated') &&
                  !userSession.get('readOnly') &&
                  !reviewRequest.get('hasDraft'));
-    },
+    }
 
     /**
      * Update the capability states of the editor.
@@ -342,7 +362,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
      * Some of the can* properties will change to reflect the various
      * actions that can be performed with the editor.
      */
-    _updateState() {
+    #updateState() {
         const canEdit = this.get('canEdit');
         const editing = this.get('editing');
         const comment = this.get('comment');
@@ -351,5 +371,5 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
             canDelete: canEdit && editing && comment && !comment.isNew(),
             canSave: canEdit && editing && this.get('text') !== '',
         });
-    },
-}, RB.ExtraDataMixin));
+    }
+}
