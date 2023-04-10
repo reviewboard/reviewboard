@@ -104,8 +104,10 @@ class BaseDiffCommentResource(BaseCommentResource):
             except ObjectDoesNotExist:
                 raise self.model.DoesNotExist
 
-            q &= Q(filediff__diffset__history__review_request=review_request,
-                   review__isnull=False)
+            q &= Q(review__isnull=False)
+            q &= Q(
+                Q(filediff__diffset__history__review_request=review_request) |
+                Q(filediff__diffset__review_request_draft__review_request=review_request))
 
         if is_list:
             if review_id:
