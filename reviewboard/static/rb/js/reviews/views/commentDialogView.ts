@@ -155,6 +155,14 @@ interface CommentDialogViewOptions {
 
     /** The issue manager. */
     commentIssueManager?: RB.CommentIssueManager;
+
+    /**
+     * The warning to show to the user about draft objects.
+     *
+     * If the user is commenting on a draft object (such as a diff or file
+     * attachment that has not yet been published), show this warning to them.
+     */
+    draftWarning: string;
 }
 
 
@@ -173,6 +181,14 @@ interface CommentDialogViewCreationOptions {
 
     /** The container to add the dialog to. */
     container: HTMLElement | JQuery;
+
+    /**
+     * The warning to show to the user about draft objects.
+     *
+     * If the user is commenting on a draft object (such as a diff or file
+     * attachment that has not yet been published), show this warning to them.
+     */
+    draftWarning?: string;
 
     /** Position information for the dialog. */
     position?: any;
@@ -233,7 +249,6 @@ export class CommentDialogView extends BaseView<
     static _cancelText = _`Cancel`;
     static _closeText = _`Close`;
     static _deleteText = _`Delete`;
-    static _draftWarningTextTemplate = _`The review request's current <a href="%s">draft</a> needs to be published before you can comment.`;
     static _enableMarkdownText = _`Enable <u>M</u>arkdown`;
     static _loginTextTemplate = _`You must <a href="%s">log in</a> to post a comment.`;
     static _markdownText = _`Markdown`;
@@ -253,7 +268,7 @@ export class CommentDialogView extends BaseView<
         <form method="post">
          <h1 class="comment-dlg-header">
           <span class="title"></span>
-          <% if (authenticated && !hasDraft) { %>
+          <% if (authenticated) { %>
            <a class="markdown-info" href="<%- markdownDocsURL %>"
               target="_blank"><%- markdownText %></a>
           <% } %>
@@ -262,7 +277,8 @@ export class CommentDialogView extends BaseView<
           <p class="login-text"><%= loginText %></p>
          <% } else if (readOnly) { %>
           <p class="read-only-text"><%= readOnlyText %></p>
-         <% } else if (hasDraft) { %>
+         <% } %>
+         <% if (draftWarning) { %>
           <p class="draft-warning"><%= draftWarning %></p>
          <% } %>
          <div class="comment-dlg-body">
@@ -324,6 +340,7 @@ export class CommentDialogView extends BaseView<
             commentIssueManager: (
                 options.commentIssueManager ||
                 reviewRequestEditor.get('commentIssueManager')),
+            draftWarning: options.draftWarning,
             model: new CommentEditor({
                 comment: options.comment,
                 publishedComments: options.publishedComments || undefined,
@@ -426,6 +443,7 @@ export class CommentDialogView extends BaseView<
     _$markdownOptions: JQuery;
     _$title: JQuery;
     _textEditor: RB.TextEditorView;
+    #$draftWarning;
 
     /**
      * Initialize the view.
@@ -453,11 +471,8 @@ export class CommentDialogView extends BaseView<
                 cancelButton: CommentDialogView._cancelText,
                 closeButton: CommentDialogView._closeText,
                 deleteButton: CommentDialogView._deleteText,
-                draftWarning: interpolate(
-                    CommentDialogView._draftWarningTextTemplate,
-                    [reviewRequest.get('reviewURL')]),
+                draftWarning: this.options.draftWarning,
                 enableMarkdownText: CommentDialogView._enableMarkdownText,
-                hasDraft: reviewRequest.get('hasDraft'),
                 loginText: interpolate(
                     CommentDialogView._loginTextTemplate,
                     [userSession.get('loginURL')]),
@@ -511,6 +526,8 @@ export class CommentDialogView extends BaseView<
                     elementToModel: false,
                     inverse: true,
                 });
+
+        this.#$draftWarning = this.$('.draft-warning');
 
         this.$buttons = this._$footer.find('.buttons');
 
@@ -810,6 +827,8 @@ export class CommentDialogView extends BaseView<
             .outerHeight(height)
             .move(commentsWidth, 0, 'absolute');
 
+        const warningHeight = this.#$draftWarning.outerHeight(true) || 0;
+
         const $textField = this._textEditor.$el;
         this._textEditor.setSize(
             (this._$body.width() -
@@ -818,6 +837,7 @@ export class CommentDialogView extends BaseView<
              this._$header.outerHeight() -
              this._$commentOptions.outerHeight() -
              this._$footer.outerHeight() -
+             warningHeight -
              $textField.getExtents('b', 'tb')));
     }
 

@@ -25,3 +25,4 @@ parserOptions:
 
 globals:
   RB: writable
+  $testsScratch: readonly

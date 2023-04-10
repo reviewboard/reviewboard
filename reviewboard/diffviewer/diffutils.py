@@ -1189,6 +1189,9 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                 not filediff.parent_diff
             ),
             'base_filediff': base_filediff,
+            'public': (diffset.history is not None and
+                       (interdiffset is None or
+                        interdiffset.history is not None)),
         }
 
         # When displaying an interdiff, we do not want to display the

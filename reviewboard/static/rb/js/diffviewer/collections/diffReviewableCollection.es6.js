@@ -85,6 +85,7 @@ RB.DiffReviewableCollection = Backbone.Collection.extend({
                 interFileDiffID: interfilediff ? interfilediff.id : null,
                 revision: filediff.revision,
                 interdiffRevision: interdiffRevision,
+                public: file.get('public'),
                 serializedCommentBlocks: file.get('commentCounts'),
             });
         });

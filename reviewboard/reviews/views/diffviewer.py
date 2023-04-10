@@ -294,6 +294,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                 'index': f['index'],
                 'comment_counts': comment_counts(self.request.user, comments,
                                                  filediff, interfilediff),
+                'public': f['public'],
             }
 
             if interfilediff:

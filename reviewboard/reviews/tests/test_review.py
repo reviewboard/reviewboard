@@ -9,7 +9,10 @@ from djblets.util.dates import get_tz_aware_utcnow
 from kgb import SpyAgency, spy_on
 
 from reviewboard.reviews.errors import RevokeShipItError
-from reviewboard.reviews.models import Review, ReviewRequest
+from reviewboard.reviews.models import (Comment,
+                                        FileAttachmentComment,
+                                        Review,
+                                        ReviewRequest)
 from reviewboard.reviews.signals import (review_ship_it_revoked,
                                          review_ship_it_revoking)
 from reviewboard.testing import TestCase
@@ -435,3 +438,41 @@ class ReviewTests(SpyAgency, TestCase):
         self.assertEqual(review_request.time_added, creation_timestamp)
         self.assertEqual(review_request.last_updated, review_timestamp)
         self.assertEqual(review.timestamp, review_timestamp)
+
+    def test_draft_diff_comment_invalidation(self):
+        """Testing invalidation of comments on draft diffs when the diff is
+        replaced.
+        """
+        review_request = self.create_review_request(create_repository=True)
+        diffset = self.create_diffset(review_request=review_request,
+                                      draft=True)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request)
+        comment = self.create_diff_comment(review, filediff)
+
+        # DiffResource.create() will delete an existing draft DiffSet before
+        # replacing it, so we can simulate that here by just deleting the one
+        # we have.
+        diffset.delete()
+
+        self.assertFalse(Comment.objects.filter(pk=comment.pk).exists())
+
+    def test_draft_file_attachment_comment_invalidation(self):
+        """Testing invalidation of comments on draft file attachments when the
+        attachment is replaced.
+        """
+        review_request = self.create_review_request(create_repository=True)
+        attachment = self.create_file_attachment(review_request,
+                                                 draft=True)
+
+        review = self.create_review(review_request)
+        comment = self.create_file_attachment_comment(review, attachment)
+
+        # UploadAttachmentForm.create() will delete an existing draft
+        # attachment before replacing it, so we can simulate that here by just
+        # deleting the one we have.
+        attachment.delete()
+
+        self.assertFalse(
+            FileAttachmentComment.objects.filter(pk=comment.pk).exists())

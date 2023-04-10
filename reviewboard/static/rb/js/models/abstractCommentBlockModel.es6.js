@@ -165,4 +165,16 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
 
         this.set('count', count);
     },
+
+    /**
+     * Return a warning about commenting on a draft object.
+     *
+     * Returns:
+     *     string:
+     *     A warning to display to the user if they're commenting on a draft
+     *     object. Return null if there's no warning.
+     */
+    getDraftWarning() {
+        return null;
+    },
 });

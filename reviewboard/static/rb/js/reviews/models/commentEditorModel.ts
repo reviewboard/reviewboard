@@ -98,8 +98,6 @@ export class CommentEditor extends BaseModel<CommentEditorAttrs> {
      * Initialize the comment editor.
      */
     initialize() {
-        const reviewRequest = this.get('reviewRequest');
-
         this.listenTo(this, 'change:comment', this.#updateFromComment);
         this.#updateFromComment();
 
@@ -108,8 +106,6 @@ export class CommentEditor extends BaseModel<CommentEditorAttrs> {
          * the proper state.
          */
         if (this.get('canEdit') === undefined) {
-            this.listenTo(reviewRequest, 'change:hasDraft',
-                          this.#updateCanEdit);
             this.#updateCanEdit();
         }
 
@@ -347,13 +343,11 @@ export class CommentEditor extends BaseModel<CommentEditorAttrs> {
      * whether or not there's an existing draft for the review request.
      */
     #updateCanEdit() {
-        const reviewRequest = this.get('reviewRequest');
         const userSession = RB.UserSession.instance;
 
         this.set('canEdit',
                  userSession.get('authenticated') &&
-                 !userSession.get('readOnly') &&
-                 !reviewRequest.get('hasDraft'));
+                 !userSession.get('readOnly'));
     }
 
     /**

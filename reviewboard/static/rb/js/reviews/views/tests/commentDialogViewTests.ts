@@ -1122,12 +1122,11 @@ suite('rb/views/CommentDialogView', function() {
             });
         });
 
-        describe('In Draft indicator', function() {
-            it('Shown when hasDraft=true', function() {
-                reviewRequest.set('hasDraft', true);
-
+        describe('Draft indicator', function() {
+            it('Shown when draftWarning != null', function() {
                 dlg = new CommentDialogView({
                     animate: false,
+                    draftWarning: 'warning',
                     model: new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,
@@ -1139,11 +1138,10 @@ suite('rb/views/CommentDialogView', function() {
                     .toBe(1);
             });
 
-            it('Hidden when hasDraft=false', function() {
-                reviewRequest.set('hasDraft', false);
-
+            it('Hidden when draftWarning == null', function() {
                 dlg = new CommentDialogView({
                     animate: false,
+                    draftWarning: null,
                     model: new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,

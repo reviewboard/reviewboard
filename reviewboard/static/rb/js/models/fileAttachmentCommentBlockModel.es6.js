@@ -12,6 +12,9 @@
  *     diffAgainstFileAttachmentID (number):
  *         An optional ID of the file attachment being diffed against.
  *
+ *     public (boolean):
+ *         Whether the diff has been published.
+ *
  * See Also:
  *     :js:class:`RB.AbstractCommentBlock`:
  *         For attributes defined on the base model.
@@ -19,7 +22,8 @@
 RB.FileAttachmentCommentBlock = RB.AbstractCommentBlock.extend({
     defaults: _.defaults({
         fileAttachmentID: null,
-        diffAgainstFileAttachmentID: null
+        diffAgainstFileAttachmentID: null,
+        public: false,
     }, RB.AbstractCommentBlock.prototype.defaults),
 
     /**
@@ -54,5 +58,21 @@ RB.FileAttachmentCommentBlock = RB.AbstractCommentBlock.extend({
                  _.pick(this.attributes, this.serializedFields));
 
         return comment;
+    },
+
+    /**
+     * Return a warning about commenting on a draft object.
+     *
+     * Returns:
+     *     string:
+     *     A warning to display to the user if they're commenting on a draft
+     *     object. Return null if there's no warning.
+     */
+    getDraftWarning() {
+        if (this.get('public')) {
+            return null;
+        } else {
+            return _`The file for this comment is still a draft. Replacing or deleting the file will delete this comment.`;
+        }
     },
 });

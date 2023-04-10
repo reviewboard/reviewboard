@@ -51,7 +51,7 @@ suite('rb/models/CommentEditor', function() {
                 editor = new CommentEditor({
                     reviewRequest: reviewRequest,
                 });
-                expect(editor.get('canEdit')).toBe(false);
+                expect(editor.get('canEdit')).toBe(true);
             });
 
             it('When logged out', function() {
