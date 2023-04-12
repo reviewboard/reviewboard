@@ -1,6 +1,7 @@
 from kgb import SpyAgency
 
 from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
+from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.testing import TestCase
 
@@ -66,7 +67,8 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
         self.repository = self.create_repository(tool_name='Test')
         self.diffset = self.create_diffset(repository=self.repository)
         self.filediff = self.create_filediff(diffset=self.diffset)
-        self.generator = DiffChunkGenerator(None, self.filediff)
+        self.generator = DiffChunkGenerator(
+            None, self.filediff, diff_settings=DiffSettings.create())
 
     def test_get_chunks_with_empty_added_file(self):
         """Testing DiffChunkGenerator.get_chunks with empty added file"""
@@ -179,7 +181,8 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
 
         generator = DiffChunkGenerator(request=None,
                                        filediff=tip_filediff,
-                                       base_filediff=base_filediff)
+                                       base_filediff=base_filediff,
+                                       diff_settings=DiffSettings.create())
 
         chunks = list(generator.get_chunks())
         self.assertEqual(len(chunks), 1)
@@ -225,7 +228,8 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
         filediff = commit3.files.get()
 
         generator = DiffChunkGenerator(request=None,
-                                       filediff=filediff)
+                                       filediff=filediff,
+                                       diff_settings=DiffSettings.create())
 
         chunks = list(generator.get_chunks())
         self.assertEqual(len(chunks), 1)
@@ -262,7 +266,8 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
 
         generator = DiffChunkGenerator(request=None,
                                        filediff=filediff,
-                                       base_filediff=filediff)
+                                       base_filediff=filediff,
+                                       diff_settings=DiffSettings.create())
 
         chunks = list(generator.get_chunks())
         self.assertEqual(len(chunks), 1)
@@ -287,7 +292,8 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
         filediff = commit2.files.get()
 
         generator = DiffChunkGenerator(request=None,
-                                       filediff=filediff)
+                                       filediff=filediff,
+                                       diff_settings=DiffSettings.create())
 
         chunks = list(generator.get_chunks())
         self.assertEqual(len(chunks), 1)
@@ -314,7 +320,8 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
 
         generator = DiffChunkGenerator(request=None,
                                        filediff=filediff,
-                                       base_filediff=base_filediff)
+                                       base_filediff=base_filediff,
+                                       diff_settings=DiffSettings.create())
 
         chunks = list(generator.get_chunks())
         self.assertEqual(len(chunks), 1)
@@ -350,10 +357,12 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
         line_counts = self.filediff.get_line_counts()
 
         # Simulate an interdiff where the changes are reverted.
-        interdiff_generator = DiffChunkGenerator(request=None,
-                                                 filediff=self.filediff,
-                                                 interfilediff=None,
-                                                 force_interdiff=True)
+        interdiff_generator = DiffChunkGenerator(
+            request=None,
+            filediff=self.filediff,
+            interfilediff=None,
+            force_interdiff=True,
+            diff_settings=DiffSettings.create())
 
         # Again, just consuming the generator.
         self.assertEqual(len(list(interdiff_generator.get_chunks())), 1)

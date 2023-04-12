@@ -19,7 +19,6 @@ from reviewboard.admin.form_widgets import (RelatedGroupWidget,
                                             RelatedUserWidget)
 from reviewboard.admin.import_utils import has_module
 from reviewboard.admin.validation import validate_bug_tracker
-from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             SSHKeyAssociationError,
@@ -2285,22 +2284,10 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                         plan=plan,
                         **repository_extra_data)
                 else:
-                    if func_accepts_kwargs(scmtool.check_repository):
-                        scmtool.check_repository(
-                            local_site=self.local_site,
-                            local_site_name=local_site_name,
-                            **repository_extra_data)
-                    else:
-                        RemovedInReviewBoard60Warning.warn(
-                            '%s.check_repository must accept **kwargs. '
-                            'It should also make sure it accepts "path", '
-                            '"username", "password", and "local_site_name" '
-                            'as keyword arguments in any order. This will be '
-                            'required in Review Board 6.0.'
-                            % scmtool.__name__)
-
-                        scmtool.check_repository(
-                            path, username, password, local_site_name)
+                    scmtool.check_repository(
+                        local_site=self.local_site,
+                        local_site_name=local_site_name,
+                        **repository_extra_data)
 
                 # Success.
                 break

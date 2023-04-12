@@ -3,7 +3,6 @@ from django.test import RequestFactory
 from djblets.cache.backend import cache_memoize
 from kgb import SpyAgency
 
-from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.diffviewer.renderers import DiffRenderer
@@ -24,11 +23,15 @@ class DiffRendererTests(SpyAgency, TestCase):
             'chunks_loaded': True,
         }
 
-        renderer = DiffRenderer(diff_file, chunk_index=-1)
+        diff_settings = DiffSettings.create()
+
+        renderer = DiffRenderer(diff_file, chunk_index=-1,
+                                diff_settings=diff_settings)
         self.assertRaises(UserVisibleError,
                           lambda: renderer.render_to_string_uncached(None))
 
-        renderer = DiffRenderer(diff_file, chunk_index=1)
+        renderer = DiffRenderer(diff_file, chunk_index=1,
+                                diff_settings=diff_settings)
         self.assertRaises(UserVisibleError,
                           lambda: renderer.render_to_string_uncached(None))
 
@@ -40,7 +43,8 @@ class DiffRendererTests(SpyAgency, TestCase):
         }
 
         # Should not assert.
-        renderer = DiffRenderer(diff_file, chunk_index=0)
+        renderer = DiffRenderer(diff_file, chunk_index=0,
+                                diff_settings=DiffSettings.create())
         self.spy_on(renderer.render_to_string, call_original=False)
         self.spy_on(renderer.make_context, call_original=False)
 
@@ -80,55 +84,13 @@ class DiffRendererTests(SpyAgency, TestCase):
                                 diff_settings=diff_settings)
         self.assertFalse(renderer.highlighting)
 
-    def test_construction_with_highlighting_true(self):
-        """Testing DiffRenderer construction with legacy highlighting=True"""
-        diff_file = {
-            'chunks': [{}],
-            'chunks_loaded': True,
-        }
-
-        message = (
-            "The `highlighting` argument to <class "
-            "'reviewboard.diffviewer.renderers.DiffRenderer'> is deprecated "
-            "and will be removed in Review Board 6.0. Provide `diff_settings` "
-            "instead."
-        )
-
-        with self.assertWarns(RemovedInReviewBoard60Warning, message):
-            renderer = DiffRenderer(diff_file,
-                                    chunk_index=0,
-                                    highlighting=True)
-
-        self.assertTrue(renderer.highlighting)
-
-    def test_construction_with_highlighting_false(self):
-        """Testing DiffRenderer construction with legacy highlighting=False"""
-        diff_file = {
-            'chunks': [{}],
-            'chunks_loaded': True,
-        }
-
-        message = (
-            "The `highlighting` argument to <class "
-            "'reviewboard.diffviewer.renderers.DiffRenderer'> is deprecated "
-            "and will be removed in Review Board 6.0. Provide `diff_settings` "
-            "instead."
-        )
-
-        with self.assertWarns(RemovedInReviewBoard60Warning, message):
-            renderer = DiffRenderer(diff_file,
-                                    chunk_index=0,
-                                    highlighting=False)
-
-        self.assertFalse(renderer.highlighting)
-
     def test_render_to_response(self):
         """Testing DiffRenderer.render_to_response"""
         diff_file = {
             'chunks': [{}]
         }
 
-        renderer = DiffRenderer(diff_file)
+        renderer = DiffRenderer(diff_file, diff_settings=DiffSettings.create())
         self.spy_on(renderer.render_to_string,
                     call_fake=lambda self, request: 'Foo')
 
@@ -146,7 +108,7 @@ class DiffRendererTests(SpyAgency, TestCase):
             'chunks': [{}]
         }
 
-        renderer = DiffRenderer(diff_file)
+        renderer = DiffRenderer(diff_file, diff_settings=DiffSettings.create())
         self.spy_on(renderer.render_to_string_uncached,
                     call_fake=lambda self, request: 'Foo')
         self.spy_on(renderer.make_cache_key,
@@ -168,7 +130,8 @@ class DiffRendererTests(SpyAgency, TestCase):
             'chunks': [{}]
         }
 
-        renderer = DiffRenderer(diff_file, lines_of_context=[5, 5])
+        renderer = DiffRenderer(diff_file, lines_of_context=[5, 5],
+                                diff_settings=DiffSettings.create())
         self.spy_on(renderer.render_to_string_uncached,
                     call_fake=lambda self, request: 'Foo')
         self.spy_on(renderer.make_cache_key,
@@ -211,7 +174,8 @@ class DiffRendererTests(SpyAgency, TestCase):
             ],
         }
 
-        renderer = DiffRenderer(diff_file, chunk_index=1)
+        renderer = DiffRenderer(diff_file, chunk_index=1,
+                                diff_settings=DiffSettings.create())
         context = renderer.make_context()
 
         self.assertEqual(context['standalone'], True)

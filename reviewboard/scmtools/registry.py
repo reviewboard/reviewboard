@@ -13,7 +13,6 @@ from django.utils.translation import gettext_lazy as _
 from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
                                          NOT_REGISTERED)
 
-from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.registries.registry import EntryPointRegistry
 from reviewboard.scmtools.models import Tool
 
@@ -137,26 +136,6 @@ class SCMToolRegistry(EntryPointRegistry):
 
         if new_tools:
             Tool.objects.bulk_create(new_tools)
-
-        # Look to see if anything exists in the database but does not exist
-        # in entry points.
-        for tool in tools:
-            if self.get_by_class_name(tool.class_name) is None:
-                try:
-                    self.register(tool.get_scmtool_class())
-                    RemovedInReviewBoard60Warning.warn(
-                        'SCMTool %s was found in the Tool table in the '
-                        'database, but not in an entry point. The Tool '
-                        'table will be removed in Review Board 6.0. To '
-                        'continue using this tool, it must be manually '
-                        'added by calling the register() method on the '
-                        'SCMTools registry.'
-                        % tool.class_name)
-                except ImproperlyConfigured as e:
-                    logger.warning(
-                        'SCMTool %r in the scmtools_tool table could not be '
-                        'loaded: %s'
-                        % (tool.class_name, e))
 
     def get_defaults(self):
         """Yield to built-in SCMTools.

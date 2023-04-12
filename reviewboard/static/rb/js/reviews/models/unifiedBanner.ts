@@ -94,9 +94,9 @@ export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
         console.assert(reviewRequest, 'reviewRequest must be provided');
         console.assert(pendingReview, 'pendingReview must be provided');
 
-        this.listenTo(reviewRequest.draft, 'saved destroy',
+        this.listenTo(reviewRequest.draft, 'saved destroyed',
                       this.#updateDraftModes);
-        this.listenTo(pendingReview, 'saved destroy', this.#updateDraftModes);
+        this.listenTo(pendingReview, 'saved destroyed', this.#updateDraftModes);
 
         Promise.all([
             reviewRequest.draft.ready(),

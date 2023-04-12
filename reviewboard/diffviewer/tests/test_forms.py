@@ -335,8 +335,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
     @unittest.skipIf(not is_exe_in_path('hg'),
                      'Hg is not installed')
     def test_create_with_parser_get_orig_commit_id(self):
-        """Testing UploadDiffForm.create uses correct base revision returned
-        by DiffParser.get_orig_commit_id
+        """Testing UploadDiffForm.create uses correct base revision set in
+        ParsedDiffChange.parent_commit_id
         """
         diff = (
             b'# Node ID a6fc203fee9091ff9739c9c00cd4a6694e023f48\n'

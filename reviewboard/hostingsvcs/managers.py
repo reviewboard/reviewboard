@@ -1,18 +1,20 @@
 from django.db.models import Manager, Q
 
-from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.site.models import LocalSite
 
 
 class HostingServiceAccountManager(Manager):
     """A manager for HostingServiceAccount models."""
 
-    def accessible(self, visible_only=True, local_site=None,
-                   filter_local_site=None):
+    def accessible(self, visible_only=True, local_site=None):
         """Return hosting service accounts that are accessible.
 
         These will include all visible accounts that are compatible with the
         specified :term:`Local Site`.
+
+        Version Changed:
+            6.0:
+            Removed the ``filter_local_site`` argument.
 
         Version Changed:
             5.0:
@@ -38,33 +40,10 @@ class HostingServiceAccountManager(Manager):
                     Added support for :py:attr:`LocalSite.ALL
                     <reviewboard.site.models.LocalSite.ALL>`.
 
-            filter_local_site (bool, optional):
-                Whether to factor in the ``local_site`` argument. If ``False``,
-                the :term:`Local Site` will be ignored.
-
-                Deprecated:
-                    5.0:
-                    Callers should instead set ``local_site`` to
-                    :py:class:`LocalSite.ALL
-                    <reviewboard.site.models.LocalSite.ALL>` instead of
-                    setting this to ``True``.
-
         Returns:
             django.db.models.query.QuerySet:
             The resulting queryset.
         """
-        if filter_local_site is not None:
-            RemovedInReviewBoard60Warning.warn(
-                'filter_local_site is deprecated. Please pass '
-                'local_site=LocalSite.ALL instead. This will be required '
-                'in Review Board 6.')
-
-            if filter_local_site:
-                assert local_site is not LocalSite.ALL
-            else:
-                assert local_site in (None, LocalSite.ALL)
-                local_site = LocalSite.ALL
-
         q = LocalSite.objects.build_q(local_site=local_site)
 
         if visible_only:

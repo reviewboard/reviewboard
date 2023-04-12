@@ -26,6 +26,7 @@ from reviewboard.diffviewer.diffutils import (
     _get_last_header_in_chunks_before_line)
 from reviewboard.diffviewer.errors import PatchError
 from reviewboard.diffviewer.models import DiffCommit, FileDiff
+from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.scmtools.models import Repository
@@ -3122,10 +3123,12 @@ class DiffExpansionHeaderTests(TestCase):
 
         with self.siteconfig_settings(siteconfig_settings,
                                       reload_settings=False):
+            diff_settings = DiffSettings.create()
             header = get_last_header_before_line(context=context,
                                                  filediff=filediff,
                                                  interfilediff=None,
-                                                 target_line=line_number)
+                                                 target_line=line_number,
+                                                 diff_settings=diff_settings)
             chunks = get_file_chunks_in_range(
                 context=context,
                 filediff=filediff,
@@ -3134,7 +3137,9 @@ class DiffExpansionHeaderTests(TestCase):
                 num_lines=get_last_line_number_in_diff(
                     context=context,
                     filediff=filediff,
-                    interfilediff=None))
+                    interfilediff=None,
+                    diff_settings=diff_settings),
+                diff_settings=diff_settings)
 
         lines = []
 
@@ -3190,10 +3195,12 @@ class DiffExpansionHeaderTests(TestCase):
 
         with self.siteconfig_settings(siteconfig_settings,
                                       reload_settings=False):
+            diff_settings = DiffSettings.create()
             header = get_last_header_before_line(context=context,
                                                  filediff=filediff,
                                                  interfilediff=None,
-                                                 target_line=line_number)
+                                                 target_line=line_number,
+                                                 diff_settings=diff_settings)
             chunks = get_file_chunks_in_range(
                 context=context,
                 filediff=filediff,
@@ -3202,7 +3209,9 @@ class DiffExpansionHeaderTests(TestCase):
                 num_lines=get_last_line_number_in_diff(
                     context=context,
                     filediff=filediff,
-                    interfilediff=None))
+                    interfilediff=None,
+                    diff_settings=diff_settings),
+                diff_settings=diff_settings)
 
         lines = []
 

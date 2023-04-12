@@ -17,7 +17,6 @@ from djblets.db.fields import JSONField
 from djblets.log import log_timed
 from djblets.util.decorators import cached_property
 
-from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
@@ -33,35 +32,6 @@ from reviewboard.site.models import LocalSite
 
 
 logger = logging.getLogger(__name__)
-
-
-def _deprecated_proxy_property(property_name):
-    """Implement a proxy property for tools.
-
-    The Tool class includes a number of properties that are proxied from the
-    scmtool class, and we'd like to transition away from them in favor of
-    having users get that information directly from the scmtool instead.
-
-    Version Added:
-        5.0
-
-    Args:
-        property_name (str):
-            The name of the property to proxy.
-
-    Returns:
-        property:
-        A property that will proxy the value and raise a warning.
-    """
-    @wraps(property_name)
-    def _wrapped(tool):
-        RemovedInReviewBoard60Warning.warn(
-            'The Tool.%s property is deprecated and will be removed in '
-            'Review Board 6.0. Use the property on the repository or '
-            'SCMTool class instead.'
-            % property_name)
-        return getattr(tool.scmtool_class, property_name)
-    return property(_wrapped)
 
 
 class Tool(models.Model):
@@ -86,33 +56,6 @@ class Tool(models.Model):
     # Templates can't access variables on a class properly. It'll attempt to
     # instantiate the class, which will fail without the necessary parameters.
     # So, we use these as convenient wrappers to do what the template can't do.
-
-    #: Whether or not the SCMTool supports review requests with history.
-    #:
-    #: See :py:attr:`SCMTool.supports_history
-    #: <reviewboard.scmtools.core.SCMTool.supports_history>` for details.
-    supports_history = _deprecated_proxy_property('supports_history')
-
-    #: Whether custom URL masks can be defined to fetching file contents.
-    #:
-    #: See :py:attr:`SCMTool.supports_raw_file_urls
-    #: <reviewboard.scmtools.core.SCMTool.supports_raw_file_urls>` for details.
-    supports_raw_file_urls = _deprecated_proxy_property(
-        'supports_raw_file_urls')
-
-    #: Whether ticket-based authentication is supported.
-    #:
-    #: See :py:attr:`SCMTool.supports_ticket_auth
-    #: <reviewboard.scmtools.core.SCMTool.supports_ticket_auth>` for details.
-    supports_ticket_auth = _deprecated_proxy_property('supports_ticket_auth')
-
-    #: Whether server-side pending changesets are supported.
-    #:
-    #: See :py:attr:`SCMTool.supports_pending_changesets
-    #: <reviewboard.scmtools.core.SCMTool.supports_pending_changesets>` for
-    #: details.
-    supports_pending_changesets = _deprecated_proxy_property(
-        'supports_pending_changesets')
 
     #: Overridden help text for the configuration form fields.
     #:

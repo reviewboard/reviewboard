@@ -1,0 +1,219 @@
+.. default-intersphinx:: djblets4.x rb6.x
+
+
+=====================================
+Review Board 6.0 Beta 1 Release Notes
+=====================================
+
+**Release date**: April 4, 2023
+
+This release contains all bug fixes and features from Review Board version
+:doc:`5.0.4 <5.0.4>`.
+
+
+Installation/Upgrade
+====================
+
+Review Board 6.0 Beta 1 is compatible with Python 3.7 - 3.11.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board to to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install \
+        -f https://downloads.reviewboard.org/betas/reviewboard/6.0-beta-1/ \
+        --pre -U ReviewBoard
+
+.. warning::
+
+   We **do not** recommend upgrading a production server with this version of
+   Review Board. It's best to install on a test server, with a copy of your
+   production database, in case there are any major problems.
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Upgrade Notes
+=============
+
+* This release contains database schema changes to the following tables:
+
+  * ``attachments_fileattachment``
+
+  This will take a small amount of time to migrate the database. Please test
+  the upgrade on a copy of your database first, to ensure the upgrade is smooth
+  and to time how long the upgrade takes.
+
+  .. important::
+
+     Do **not** cancel the upgrade on a production system for **any reason**.
+     Doing so will corrupt your database, requiring a backup or our repair
+     service.
+
+
+Packaging
+=========
+
+* Review Board 6.0 beta 1 supports Python 3.7 - 3.11. Due to Python's end of
+  life schedule, it's likely that 6.0 final will be 3.8 - 3.11.
+
+* :pypi:`Djblets` 4.0 beta 1 is required.
+
+
+New Features
+============
+
+New Review Banner and Grouped Drafts
+------------------------------------
+
+All review-related functionality has been consolidated into a new :ref:`banner
+<review-banner>` at the top of the screen. This collects together the various
+commands for creating and editing reviews, as well as manages all drafts.
+
+When a draft is present, the banner will change to the green draft color and
+offer actions for managing that draft. If multiple drafts are present, the
+banner collects them all together in one place.
+
+
+Grouped Draft Publishing
+------------------------
+
+When you have :ref:`multiple drafts <managing-drafts>` in progress (for
+example, a review request update and a handful of replies to reviews), you can
+now publish all drafts at once, with a single e-mail notification.
+
+
+Other Changes
+-------------
+
+* Changed :guilabel:`Close > Submitted` to :guilabel:`Close > Completed`.
+
+  The word "submitted" throughout the Review Board UI was a holdover from the
+  very earliest days of the tool, and we had followed the Perforce naming
+  convention for when changes were pushed to a central repository. This has
+  long been a source of confusion, so we've renamed this state to "completed".
+
+  The API still uses ``submitted`` for the review request state in order to
+  maintain compatibility.
+
+* The default dashboard view has been changed to "Overview".
+
+  Review Board 4.0 introduced the "Overview" view to the dashboard, which
+  effectively combines the incoming and outgoing views together (showing both
+  things which are assigned to you as well as your own changes). This is now
+  the default view when opening the dashboard.
+
+* Enhanced accessibility.
+
+  We've continued to make progress on improving Review Board's compatibility
+  with accessibility features in browsers, enabling better support for screen
+  readers, alternative input devices, and more.
+
+
+Performance Improvements
+========================
+
+* Closing or changing the archive/mute state of multiple review requests using
+  the checkboxes on the dashboard now performs everything in a single step
+  instead of making separate API requests for each item. This can speed up
+  batch operations from the dashboard significantly.
+
+
+Bug Fixes
+=========
+
+* Fixed a small visual glitch when hovering over the edit icon for review
+  request descriptions.
+
+
+Known Issues
+============
+
+* When a review request is open in multiple browser tabs/windows, if the
+  review is discarded from one tab, attempts to create or edit comments from
+  another tab will result in errors.
+
+  This bug was technically present in earlier versions, but due to the way
+  things are loaded from the server, it's now a lot easier to hit.
+
+  The best way to avoid this for now is to avoid opening the same review
+  request in multiple browser tabs.
+
+
+Extensions and Internal API Changes
+===================================
+
+Several of Review Board's internal APIs have been modernized.
+
+
+Reworked Actions
+----------------
+
+Review Board's extension framework has had a concept of actions for a long
+time, but the implementation was spread out among several different systems
+with varying levels of functionality. These have all been replaced with a new
+generic framework.
+
+Extensions can define their own :ref:`actions <action-hooks>` to attach to
+various hook points on the page (for example, the header, the review request,
+or the review banner).
+
+
+Python Type Hints
+-----------------
+
+We have started adding Python type hints to the Review Board codebase. If you
+maintain extensions, you may want to consider integrating tools such as mypy_
+or pyright_ into your workflow.
+
+
+.. _mypy: https://www.mypy-lang.org/
+.. _pyright: https://github.com/microsoft/pyright
+
+
+TypeScript and ES Modules Support
+---------------------------------
+
+New JavaScript code in Review Board is being written in TypeScript, and uses
+rollup.js to handle modules. These can also be used for your extensions, with
+the ``.ts`` file extension and standard ``export``/``import`` syntax.
+
+
+ES6 Classes with Backbone
+-------------------------
+
+Much of Review Board's JavaScript codebase is built upon Backbone.js_. We have
+built a new library named Spina_ that allows us to start using ES6 classes
+for Backbone objects.
+
+If you have JavaScript code that inherits from Review Board objects (for
+example, ``RB.BaseResource``), you can continue using them as-is, but as we
+work on porting the code over, you will be able to inherit from them as ES6
+classes using the ``@spina`` decorator.
+
+
+.. _Backbone.js: https://backbonejs.org
+.. _Spina: https://github.com/beanbaginc/spina
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin
