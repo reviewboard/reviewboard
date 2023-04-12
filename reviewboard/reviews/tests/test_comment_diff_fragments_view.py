@@ -35,7 +35,6 @@ class CommentDiffFragmentsViewTests(TestCase):
         review = self.create_review(review_request, user=user)
         comment1 = self.create_diff_comment(review, filediff)
         comment2 = self.create_diff_comment(review, filediff)
-        review.publish()
 
         self.assertTrue(self.client.login(username='reviewer',
                                           password='reviewer'))
@@ -57,6 +56,7 @@ class CommentDiffFragmentsViewTests(TestCase):
             submitter=user)
         diffset = self.create_diffset(review_request)
         filediff = self.create_filediff(diffset)
+        review_request.publish(user)
 
         review = self.create_review(review_request, user=user)
         comment1 = self.create_diff_comment(review, filediff)

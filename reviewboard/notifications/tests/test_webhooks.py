@@ -840,7 +840,8 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         target = WebHookTarget.objects.create(events='review_published',
                                               url=self.ENDPOINT_URL)
 
-        review_request = self.create_review_request(create_repository=True)
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
         review = self.create_review(review_request)
 
         # 1 diff comment.
@@ -933,7 +934,8 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         target = WebHookTarget.objects.create(events='reply_published',
                                               url=self.ENDPOINT_URL)
 
-        review_request = self.create_review_request(create_repository=True)
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
         review = self.create_review(review_request)
         reply = self.create_reply(review)
 

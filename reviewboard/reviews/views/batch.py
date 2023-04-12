@@ -364,6 +364,16 @@ class BatchOperationView(CheckRequestMethodViewMixin,
                     },
                     status=404)
 
+            can_publish, err = review.can_publish()
+
+            if not can_publish:
+                return JsonResponse(
+                    data={
+                        'stat': 'fail',
+                        'error': err,
+                    },
+                    status=403)
+
         review_requests_to_archive = set()
 
         # We publish with trivial=True to skip the individual notifications,

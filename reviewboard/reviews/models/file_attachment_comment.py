@@ -99,6 +99,17 @@ class FileAttachmentComment(BaseComment):
         else:
             return self.file_attachment.display_name
 
+    def attachment_is_public(self) -> bool:
+        """Return whether the attachment(s) being commented on are public.
+
+        Returns:
+            bool:
+            True if the file attachment (and diff against file attachment, if
+            applicable) is public.
+        """
+        return (self.file_attachment.review_request.exists() or
+                self.file_attachment.inactive_review_request.exists())
+
     class Meta(BaseComment.Meta):
         db_table = 'reviews_fileattachmentcomment'
         verbose_name = _('File Attachment Comment')

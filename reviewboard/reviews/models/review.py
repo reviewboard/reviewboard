@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -7,11 +7,11 @@ from django.db.models import Q
 from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.functional import cached_property
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
 
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.errors import RevokeShipItError
+from reviewboard.reviews.errors import PublishError, RevokeShipItError
 from reviewboard.reviews.managers import ReviewManager
 from reviewboard.reviews.models.base_comment import BaseComment
 from reviewboard.reviews.models.diff_comment import Comment
@@ -356,6 +356,51 @@ class Review(models.Model):
 
         super(Review, self).save(**kwargs)
 
+    def can_publish(
+        self,
+        review_request_will_publish: bool = False,
+    ) -> Tuple[bool, Optional[str]]:
+        """Check if this review can be published.
+
+        Args:
+            review_request_will_publish (bool, optional):
+                Whether the review request is also being published.
+
+        Returns:
+            tuple:
+            A two-tuple describing whether the review can be published, and if
+            not, why not.
+
+            Tuple:
+                1 (bool):
+                    Whether the review can be published.
+
+                2 (str):
+                    An error message describing why the review cannot be
+                    published.
+        """
+        if not review_request_will_publish:
+            if not self.review_request.public:
+                return False, gettext(
+                    'This review cannot be published until the review request '
+                    'is published.')
+
+            for comment in self.comments.all():
+                if not comment.diff_is_public():
+                    return False, gettext(
+                        'This review cannot be published, because it includes '
+                        'a comment on a diff which has not yet been '
+                        'published.')
+
+            for comment in self.file_attachment_comments.all():
+                if not comment.attachment_is_public():
+                    return False, gettext(
+                        'This review cannot be published, because it includes '
+                        'a comment on a file attachment which has not yet '
+                        'been published.')
+
+        return True, None
+
     def publish(
         self,
         user: Optional[User] = None,
@@ -382,6 +427,11 @@ class Review(models.Model):
             request (djang.http.HttpRequest, optional):
                 The HTTP request.
         """
+        can_publish, err = self.can_publish()
+
+        if not can_publish:
+            raise PublishError(err)
+
         if not user:
             user = self.user
 

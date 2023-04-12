@@ -1080,7 +1080,7 @@ class ReviewEntryTests(TestCase):
         self.request = RequestFactory().get('/r/1/')
         self.request.user = AnonymousUser()
 
-        self.review_request = self.create_review_request()
+        self.review_request = self.create_review_request(publish=True)
 
         self.review = self.create_review(
             self.review_request,
@@ -1466,7 +1466,7 @@ class ChangeEntryTests(TestCase):
         self.request = RequestFactory().get('/r/1/')
         self.request.user = AnonymousUser()
 
-        self.review_request = self.create_review_request()
+        self.review_request = self.create_review_request(publish=True)
         self.changedesc = ChangeDescription.objects.create(
             id=123,
             public=True,

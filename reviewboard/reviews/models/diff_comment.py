@@ -58,6 +58,17 @@ class Comment(BaseComment):
             revision_path, self.filediff.id, self.filediff.id,
             self.first_line)
 
+    def diff_is_public(self) -> bool:
+        """Return whether the diff(s) being commented on are public.
+
+        Returns:
+            bool:
+            True if the diff (and interdiff, if applicable) is public.
+        """
+        return (self.filediff.diffset.history is not None and
+                (self.interfilediff is None or
+                 self.interfilediff.diffset.history is not None))
+
     class Meta(BaseComment.Meta):
         db_table = 'reviews_comment'
         verbose_name = _('Diff Comment')
