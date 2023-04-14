@@ -79,6 +79,125 @@ then run:
 .. _node.js: https://nodejs.org/en/
 
 
+.. _extension-js-file-types:
+
+JavaScript File Types
+---------------------
+
+Depending on the filename for your JavaScript code, the files will be run
+through a compilation step. Files with a :file:`*.es6.js` or :file:`*.ts`
+extension will be compiled with Babel_, as either `ES6+`_ or TypeScript_
+respectively.
+
+This allows you to use modern JavaScript features while still targeting your
+code to the same browsers as supported by Review Board. Using this is highly
+recommended if you expect to use features such as:
+
+* `ES6 classes
+  <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes>`_
+* `ES6 modules
+  <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules>`_
+* `async/await
+  <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function>`_
+* `Generators
+  <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator>`_
+* `Destructuring
+  <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment>`_
+* `Template literals
+  <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals>`_
+
+.. versionchanged:: 6.0
+
+    Support for TypeScript files was added in Review Board 6.0.
+
+
+.. _Babel: https://babeljs.io/
+.. _TypeScript: https://typescriptlang.org/
+.. _ES6+: https://tc39.es/ecma262/
+
+
+.. _extension-es6-modules:
+
+ES6 Modules
+-----------
+
+Starting with Review Board 6.0, you can additionally use ES6 modules to
+organize your code.
+
+To use this, you'll need to write a :file:`rollup.config.js` file with your
+rollup configuration. This should live somewhere in your extension's codebase
+in a directory at or above the location of your javascript files.
+
+This can be customized to your liking. At a minimum it will need to define the
+output module type, some common plugins, and the output namespace:
+
+.. code-block:: javascript
+
+    import babel from '@rollup/plugin-babel';
+    import commonjs from '@rollup/plugin-commonjs';
+    import resolve from '@rollup/plugin-node-resolve';
+
+    export default args => ({
+        external: [
+            'RB',
+        ],
+        output: {
+            exports: 'named',
+            freeze: false,
+            sourcemap: true,
+            format: 'umd',
+            generatedCode: 'es2015',
+
+            // Put all code into window.MyExtension
+            name: 'MyExtension',
+            extend: true,
+        },
+        plugins: {
+            babel: babel({
+                babelHelpers: 'external',
+                extensions: extensions,
+            }),
+            commonjs: commonjs({
+                ignoreTryCatch: false,
+                transformMixedEsModules: true,
+            }),
+            resolve: resolve({
+                browser: true,
+                extensions: [
+                    '.es6.js',
+                    '.js',
+                    '.ts',
+                ],
+            }),
+        },
+    });
+
+
+Any files with a basename of `index` (for example, `index.ts` or
+`index.es6.js`) will be compiled using rollup.js_. You can then use the ES6
+`export` and `import` keywords to manage your dependencies. Anything exported
+from your index file(s) will be made available in the bundle.
+
+With the :file:`rollup.config.js` example above, the following view would be
+available as ``MyExtension.MyView`` within the runtime context.
+
+.. code-block:: javascript
+
+    export const MyView = Backbone.View.extend({
+        ...
+    });
+
+
+.. todo: explain externalGlobals/resolve configuration to allow to import from
+   RB codebase.
+
+
+.. versionadded:: 6.0
+.. _rollup.js: https://rollupjs.org
+
+
+.. _extension-static-media:
+
 Writing Static Media
 ====================
 
@@ -124,8 +243,9 @@ JavaScript
 JavaScript files have access to the Review Board JavaScript codebase,
 jQuery_, Backbone.js_, and other shipped libraries.
 
-It is recommended that you namespace all the code in your JavaScript file, and
-wrap the file in a closure, as so:
+If you're not using ES6 modules to structure your code, it is recommended that
+you namespace all the code in your JavaScript file, and wrap the file in a
+closure, as so:
 
 .. code-block:: javascript
 

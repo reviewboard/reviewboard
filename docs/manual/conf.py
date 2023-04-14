@@ -265,17 +265,21 @@ rst_prolog = """
  rb_release_num,
  rb_released) = reviewboard.VERSION
 
-if rb_release_type == 'final' or rb_release_num > 0:
-    git_branch = 'release-%s.%s' % (rb_major_version, rb_minor_version)
+is_final = (rb_release_type == 'final')
+
+if is_final:
+    git_branch = 'release-%s' % rb_major_version
 
     if rb_released:
+        git_branch += '.%s' % rb_minor_version
+
         if rb_micro_version:
             git_branch += '.%s' % rb_micro_version
 
             if rb_patch_version:
                 git_branch += '.%s' % rb_patch_version
 
-        if rb_release_type != 'final':
+        if not is_final:
             git_branch += rb_release_type
 
             if rb_release_num:
