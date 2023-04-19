@@ -1,10 +1,4 @@
-from djblets.staticbundles import (
-    PIPELINE_JAVASCRIPT as DJBLETS_PIPELINE_JAVASCRIPT,
-    PIPELINE_STYLESHEETS as DJBLETS_PIPELINE_STYLESHEETS)
-
-
-# Media compression
-PIPELINE_JAVASCRIPT = dict({
+PIPELINE_JAVASCRIPT = {
     '3rdparty-base': {
         'source_filenames': (
             'lib/js/3rdparty-base/index.ts',
@@ -449,10 +443,10 @@ PIPELINE_JAVASCRIPT = dict({
         ),
         'output_filename': 'rb/js/widgets.min.js',
     },
-}, **DJBLETS_PIPELINE_JAVASCRIPT)
+}
 
 
-PIPELINE_STYLESHEETS = dict({
+PIPELINE_STYLESHEETS = {
     'common': {
         'source_filenames': (
             'lib/css/3rdparty.less',
@@ -550,4 +544,4 @@ PIPELINE_STYLESHEETS = dict({
         'output_filename': 'rb/css/admin.min.css',
         'absolute_paths': False,
     },
-}, **DJBLETS_PIPELINE_STYLESHEETS)
+}

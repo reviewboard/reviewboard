@@ -7,6 +7,9 @@ import djblets
 from django.urls import reverse
 from djblets.pipeline.settings import (DEFAULT_PIPELINE_COMPILERS,
                                        build_pipeline_settings)
+from djblets.staticbundles import (
+    PIPELINE_JAVASCRIPT as DJBLETS_PIPELINE_JAVASCRIPT,
+    PIPELINE_STYLESHEETS as DJBLETS_PIPELINE_STYLESHEETS)
 
 from reviewboard.dependencies import (dependency_error,
                                       fail_if_missing_dependencies)
@@ -546,6 +549,40 @@ if RUNNING_TEST:
 else:
     _pipeline_compilers = DEFAULT_PIPELINE_COMPILERS
 
+_force_build_media = (os.environ.get('FORCE_BUILD_MEDIA', '') == '1')
+
+if not _force_build_media:
+    # We don't want to include the Djblets bundles within the Review Board
+    # bundles when building static media.
+    #
+    # There are two times when we're building static media:
+    #
+    # 1. During development of Review Board, which assumes that the developer
+    #    has both a Review Board and Djblets source tree available.
+    #
+    #    The Djblets tree is important because compiling Djblets static media
+    #    requires the presence of the babel, rollup, TypeScript, etc. config
+    #    files at the root of the tree, and these aren't present in a Djblets
+    #    package.
+    #
+    #    This happens automatically when loading pages.
+    #
+    # 2. During packaging of Review Board, which may be done against a built
+    #    Djblets package and not a tree. This commonly happens in CI.
+    #
+    #    In this case, we don't want to build Djblets static media, because
+    #    we don't want to include those in a package. And since we may not
+    #    have a Djblets source tree handy (such as when building in CI), we
+    #    won't have the babel, rollup, etc. config files available.
+    #
+    #    This happens when ./contrib/internal/build-media.py is run.
+    #
+    # So we're merging in the Djblets bundles into the Review Board bundles in
+    # all cases but when forcing building static media for packaging.
+    PIPELINE_JAVASCRIPT.update(DJBLETS_PIPELINE_JAVASCRIPT)
+    PIPELINE_STYLESHEETS.update(DJBLETS_PIPELINE_STYLESHEETS)
+
+
 NODE_PATH = os.path.abspath(os.path.join(REVIEWBOARD_ROOT, '..',
                                          'node_modules'))
 
@@ -556,11 +593,14 @@ PIPELINE = build_pipeline_settings(
     # (since they may turn DEBUG on in order to get better error output).
     #
     # We also want to avoid compiling during unit test runs.
+    #
+    # If Pipeline is enabled, it means we're using the built bundle files,
+    # rather than compiling individual source files.
     pipeline_enabled=(
         PRODUCTION or
         RUNNING_TEST or
         not DEBUG or
-        bool(os.environ.get('FORCE_BUILD_MEDIA', ''))
+        _force_build_media
     ),
     node_modules_path=NODE_PATH,
     static_root=STATIC_ROOT,
