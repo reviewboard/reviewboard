@@ -557,3 +557,35 @@ class HeaderDropdownActionHook(ActionHook,
             'derive actions from reviewboard.actions.BaseAction and use '
             'ActionHook.'
             % self.extension.id)
+
+
+class HideActionHook(ExtensionHook, metaclass=ExtensionHookPoint):
+    """A hook for hiding built-in actions.
+
+    Extensions may want to replace bulit-in functionality with their own custom
+    versions, or disable some things entirely (such as the quick ship-it
+    button).
+    """
+
+    #: The list of action IDs hidden by this hook.
+    hidden_action_ids: List[str]
+
+    def initialize(
+        self,
+        action_ids: List[str],
+        *args,
+        **kwargs,
+    ) -> None:
+        """Initialize the hook.
+
+        Args:
+            action_ids (list of str):
+                The list of action IDs to hide.
+
+            *args (tuple):
+                Extra positional arguments.
+
+            **kwargs (dict):
+                Extra keyword arguments.
+        """
+        self.hidden_action_ids = action_ids

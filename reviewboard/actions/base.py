@@ -158,6 +158,12 @@ class BaseAction:
     #:     BaseMenuAction
     parent_action: Optional[BaseMenuAction]
 
+    #: Whether this action has been hidden by an extension.
+    #:
+    #: Type:
+    #:     boolean
+    _hidden_by_extension: Optional[bool] = None
+
     def __init__(self) -> None:
         """Initialize the action."""
         self.parent_action = None
@@ -203,6 +209,19 @@ class BaseAction:
         if (self.apply_to and not
             (request.resolver_match and
              request.resolver_match.url_name in self.apply_to)):
+            return False
+
+        if self._hidden_by_extension is None:
+            from reviewboard.extensions.hooks.actions import HideActionHook
+
+            for hook in HideActionHook.hooks:
+                if self.action_id in hook.hidden_action_ids:
+                    self._hidden_by_extension = True
+                    break
+            else:
+                self._hidden_by_extension = False
+
+        if self._hidden_by_extension:
             return False
 
         return True

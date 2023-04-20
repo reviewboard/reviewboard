@@ -95,6 +95,9 @@ extension hooks available to you.
     :py:class:`~reviewboard.extensions.hooks.ActionHook`:
         Generic hook for adding new-style actions.
 
+    :py:class:`~reviewboard.extensions.hooks.HideActionHook`:
+        Hook for hiding built-in actions.
+
     :py:class:`~reviewboard.extensions.hooks.DiffViewerActionHook`:
         Deprecated hook for adding actions to the diff viewer's review request
         actions bar.
