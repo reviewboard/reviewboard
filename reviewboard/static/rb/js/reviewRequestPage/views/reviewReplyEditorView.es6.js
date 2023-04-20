@@ -56,6 +56,7 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
         this._$draftComment = null;
         this._$editor = null;
         this._$commentsList = null;
+        this._inlineEditorView = null;
     },
 
     /**
@@ -121,7 +122,7 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
      */
     openCommentEditor() {
         this._createCommentEditor(this._makeCommentElement());
-        this._$editor.inlineEditor('startEdit');
+        this._inlineEditorView.startEdit();
     },
 
     /**
@@ -137,49 +138,50 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
         this._$draftComment = $draftComment;
 
         this._$editor = $draftComment.find('pre.reviewtext');
-        this._$editor
-            .inlineEditor(
-                _.extend({
-                    cls: 'inline-comment-editor',
-                    editIconClass: 'rb-icon rb-icon-edit',
-                    notifyUnchangedCompletion: true,
-                    multiline: true,
-                    hasRawValue: true,
-                    rawValue: this._$editor.data('raw-value') || '',
-                },
-                RB.TextEditorView.getInlineEditorOptions({
-                    richText: this._$editor.hasClass('rich-text'),
-                }))
-            )
-            .removeAttr('data-raw-value')
-            .on({
-                beginEdit: () => {
-                    if (reviewRequestEditor) {
-                        reviewRequestEditor.incr('editCount');
-                    }
-                },
-                complete: (e, value) => {
-                    const textEditor = RB.TextEditorView.getFromInlineEditor(
-                        this._$editor);
+        const inlineEditorView = new RB.RichTextInlineEditorView({
+            editIconClass: 'rb-icon rb-icon-edit',
+            el: this._$editor,
+            formClass: 'inline-comment-editor',
+            hasRawValue: true,
+            multiline: true,
+            notifyUnchangedCompletion: true,
+            rawValue: this._$editor.data('raw-value') || '',
+            textEditorOptions: {
+                minHeight: 0,
+                richText: this._$editor.hasClass('rich-text'),
+            },
+        });
+        inlineEditorView.render();
 
-                    if (reviewRequestEditor) {
-                        reviewRequestEditor.decr('editCount');
-                    }
+        this.listenTo(inlineEditorView, 'beginEdit', () => {
+            if (reviewRequestEditor) {
+                reviewRequestEditor.incr('editCount');
+            }
+        });
 
-                    this.model.set({
-                        text: value,
-                        richText: textEditor.richText,
-                    });
-                    this.model.save();
-                },
-                cancel: () => {
-                    if (reviewRequestEditor) {
-                        reviewRequestEditor.decr('editCount');
-                    }
+        this.listenTo(inlineEditorView, 'complete', value => {
+            if (reviewRequestEditor) {
+                reviewRequestEditor.decr('editCount');
+            }
 
-                    this.model.resetStateIfEmpty();
-                },
+            this.model.set({
+                richText: inlineEditorView.textEditor.richText,
+                text: value,
             });
+            this.model.save();
+        });
+
+        this.listenTo(inlineEditorView, 'cancel', () => {
+            if (reviewRequestEditor) {
+                reviewRequestEditor.decr('editCount');
+            }
+
+            this.model.resetStateIfEmpty();
+        });
+
+        this._inlineEditorView = inlineEditorView;
+
+        this._$editor.removeAttr('data-raw-value');
 
         this._$addCommentLink.hide();
     },
