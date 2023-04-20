@@ -71,7 +71,7 @@ interface UnifiedBannerAttrs {
  */
 @spina
 export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
-    defaults: UnifiedBannerAttrs = {
+    static defaults: UnifiedBannerAttrs = {
         draftModes: [],
         numDrafts: 0,
         pendingReview: null,

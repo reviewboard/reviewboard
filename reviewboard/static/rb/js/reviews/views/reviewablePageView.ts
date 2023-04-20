@@ -1,13 +1,53 @@
-(function() {
+/**
+ * A page managing reviewable content for a review request.
+ */
+import { BaseView, EventsHash, spina } from '@beanbag/spina';
+
+import { EnabledFeatures } from 'reviewboard/common';
+import { PageView, PageViewOptions } from 'reviewboard/common/views/pageView';
+
+import { ReviewablePage } from '../models/reviewablePageModel';
+import { UnifiedBanner } from '../models/unifiedBanner';
+import { UnifiedBannerView } from './unifiedBannerView';
+
+
+/**
+ * Update information as received from the server.
+ */
+interface UpdateInfo {
+    /** The summary of the update. */
+    summary: string;
+
+    /** Information about the user who made the update. */
+    user: {
+        fullname?: string,
+        url: string,
+        username: string,
+    };
+}
+
+
+/**
+ * Options for the UpdatesBubbleView.
+ */
+interface UpdatesBubbleViewOptions {
+    /** Information about the update, fetched from the server. */
+    updateInfo: UpdateInfo;
+}
 
 
 /**
  * An update bubble showing an update to the review request or a review.
  */
-const UpdatesBubbleView = Backbone.View.extend({
-    id: 'updates-bubble',
+@spina
+class UpdatesBubbleView extends BaseView<
+    undefined,
+    HTMLDivElement,
+    UpdatesBubbleViewOptions
+> {
+    static id = 'updates-bubble';
 
-    template: _.template([
+    static template = _.template([
         '<span id="updates-bubble-summary"><%- summary %></span>',
         ' by ',
         '<a href="<%- user.url %>" id="updates-bubble-user">',
@@ -17,47 +57,44 @@ const UpdatesBubbleView = Backbone.View.extend({
         ' <a href="#" class="update-page"><%- updatePageText %></a>',
         ' | ',
         ' <a href="#" class="ignore"><%- ignoreText %></a>',
-    ].join('')),
+    ].join(''));
 
-    events: {
-        'click .update-page': '_onUpdatePageClicked',
+    static events: EventsHash = {
         'click .ignore': '_onIgnoreClicked',
-    },
+        'click .update-page': '_onUpdatePageClicked',
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** Options for the view. */
+    options: UpdatesBubbleViewOptions;
 
     /**
      * Initialize the view.
      *
      * Args:
-     *     options (object):
+     *     options (UpdatesBubbleViewOptions):
      *         Options for the view.
-     *
-     * Option Args:
-     *     updateInfo (object):
-     *         Information about the update, fetched from the server.
      */
-    initialize(options) {
+    initialize(options: UpdatesBubbleViewOptions) {
         this.options = options;
-    },
+    }
 
     /**
      * Render the bubble with the information provided during construction.
      *
      * The bubble starts hidden. The caller must call open() to display it.
-     *
-     * Returns:
-     *     UpdatesBubbleView:
-     *     This object, for chaining.
      */
-    render() {
+    onInitialRender() {
         this.$el
-            .html(this.template(_.defaults({
-                updatePageText: gettext('Update Page'),
-                ignoreText: gettext('Ignore'),
+            .html(UpdatesBubbleView.template(_.defaults({
+                ignoreText: _`Ignore`,
+                updatePageText: _`Update Page`,
             }, this.options.updateInfo)))
             .hide();
-
-        return this;
-    },
+    }
 
     /**
      * Open the bubble on the screen.
@@ -66,7 +103,7 @@ const UpdatesBubbleView = Backbone.View.extend({
         this.$el
             .css('position', 'fixed')
             .fadeIn();
-    },
+    }
 
     /**
      * Close the update bubble.
@@ -76,7 +113,7 @@ const UpdatesBubbleView = Backbone.View.extend({
     close() {
         this.trigger('closed');
         this.$el.fadeOut(_.bind(this.remove, this));
-    },
+    }
 
     /**
      * Handle clicks on the "Update Page" link.
@@ -84,15 +121,15 @@ const UpdatesBubbleView = Backbone.View.extend({
      * Loads the review request page.
      *
      * Args:
-     *     e (Event):
+     *     e (JQuery.ClickEvent):
      *         The event which triggered the action.
      */
-    _onUpdatePageClicked(e) {
+    _onUpdatePageClicked(e: JQuery.ClickEvent) {
         e.preventDefault();
         e.stopPropagation();
 
         this.trigger('updatePage');
-    },
+    }
 
     /*
      * Handle clicks on the "Ignore" link.
@@ -100,16 +137,34 @@ const UpdatesBubbleView = Backbone.View.extend({
      * Ignores the update and closes the page.
      *
      * Args:
-     *     e (Event):
+     *     e (JQuery.ClickEvent):
      *         The event which triggered the action.
      */
-    _onIgnoreClicked(e) {
+    _onIgnoreClicked(e: JQuery.ClickEvent) {
         e.preventDefault();
         e.stopPropagation();
 
         this.close();
-    },
-});
+    }
+}
+
+
+/**
+ * Options for the ReviewablePageView.
+ */
+export interface ReviewablePageViewOptions extends PageViewOptions {
+    /** The model attributes for a new RB.ReviewRequest instance. */
+    reviewRequestData?: object; // TODO: update once ReviewRequest is TS
+
+    /** The model attributes for a new RB.ReviewRequestEditor instance. */
+    editorData?: object; // TODO: update once ReviewRequestEditor is TS
+
+    /** The last known timestamp for activity on this review request. */
+    lastActivityTimestamp?: string;
+
+    /** The type of updates to check for. */
+    checkUpdatesType?: string;
+}
 
 
 /**
@@ -119,13 +174,47 @@ const UpdatesBubbleView = Backbone.View.extend({
  * request, such as the diff viewer, review UI, or the review request page
  * itself.
  */
-RB.ReviewablePageView = RB.PageView.extend({
-    events: _.defaults({
-        'click #action-legacy-add-general-comment': 'addGeneralComment',
+@spina
+export class ReviewablePageView<
+    TModel extends ReviewablePage = ReviewablePage,
+    TElement extends HTMLDivElement = HTMLDivElement,
+    TExtraViewOptions extends ReviewablePageViewOptions =
+        ReviewablePageViewOptions
+> extends PageView<TModel, TElement, TExtraViewOptions> {
+    static events: EventsHash = {
         'click #action-edit-review': '_onEditReviewClicked',
+        'click #action-legacy-add-general-comment': 'addGeneralComment',
         'click #action-ship-it': 'shipIt',
         'click .rb-o-mobile-menu-label': '_onMenuClicked',
-    }, RB.PageView.prototype.events),
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The review request editor. */
+    reviewRequestEditorView: RB.ReviewRequestEditorView;
+
+    /** The draft review banner, if present. */
+    draftReviewBanner: RB.DraftReviewBannerview;
+
+    /** The unified banner, if present. */
+    unifiedBanner: UnifiedBannerView;
+
+    /** The star manager. */
+    #starManager: RB.StarManagerView;
+
+    /** The URL to the default favicon. */
+    #favIconURL: string = null;
+
+    /** The URL to the favicon showing an active notification. */
+    #favIconNotifyURL: string = null;
+
+    /** The URL to the logo image to use for notifications. */
+    #logoNotificationsURL: string = null;
+
+    /** The updates bubble view. */
+    _updatesBubble: UpdatesBubbleView = null;
 
     /**
      * Initialize the page.
@@ -135,24 +224,11 @@ RB.ReviewablePageView = RB.PageView.extend({
      * provided during construction.
      *
      * Args:
-     *     options (object):
+     *     options (ReviewablePageViewOptions):
      *         Options for the view.
-     *
-     * Option Args:
-     *     reviewRequestData (object):
-     *         The model attributes for a new RB.ReviewRequest instance.
-     *
-     *     editorData (object):
-     *         The model attributes for a new RB.ReviewRequestEditor instance.
-     *
-     *     lastActivityTimestamp (string):
-     *         The last known timestamp for activity on this review request.
-     *
-     *     checkUpdatesType (string, optional):
-     *         The type of updates to check for.
      */
-    initialize(options) {
-        RB.PageView.prototype.initialize.apply(this, arguments);
+    initialize(options: ReviewablePageViewOptions) {
+        super.initialize(options);
 
         this.options = options;
 
@@ -163,17 +239,11 @@ RB.ReviewablePageView = RB.PageView.extend({
             model: this.model.reviewRequestEditor,
         });
 
-        this._updatesBubble = null;
-        this._favIconURL = null;
-        this._favIconNotifyURL = null;
-        this._logoNotificationsURL = null;
-        this._unifiedBanner = null;
-
         /*
-         * Some extensions, like Power Pack and rbstopwatch, expect a few legacy
-         * attributes on the view. Set these here so these extensions can access
-         * them. Note that extensions should ideally use the new form, if
-         * they're able to support Review Board 3.0+.
+         * Some extensions, like Power Pack and rbstopwatch, expect a few
+         * legacy attributes on the view. Set these here so these extensions
+         * can access them. Note that extensions should ideally use the new
+         * form, if they're able to support Review Board 3.0+.
          */
         ['reviewRequest', 'pendingReview'].forEach(attrName => {
             this[attrName] = this.model.get(attrName);
@@ -190,40 +260,34 @@ RB.ReviewablePageView = RB.PageView.extend({
         RB.NotificationManager.instance.setup();
 
         if (RB.UserSession.instance.get('authenticated')) {
-            this._starManager = new RB.StarManagerView({
-                model: new RB.StarManager(),
+            this.#starManager = new RB.StarManagerView({
                 el: this.$('.star').parent(),
+                model: new RB.StarManager(),
             });
         }
 
         this.listenTo(this.model, 'reviewRequestUpdated',
                       this._onReviewRequestUpdated);
-    },
+    }
 
     /**
      * Render the page.
-     *
-     * Returns:
-     *     RB.ReviewablePageView:
-     *     This object, for chaining.
      */
-    render() {
-        RB.PageView.prototype.render.call(this);
-
+    renderPage() {
         const $favicon = $('head').find('link[rel="shortcut icon"]');
 
-        this._favIconURL = $favicon.attr('href');
-        this._favIconNotifyURL = STATIC_URLS['rb/images/favicon_notify.ico'];
-        this._logoNotificationsURL = STATIC_URLS['rb/images/logo.png'];
+        this.#favIconURL = $favicon.attr('href');
+        this.#favIconNotifyURL = STATIC_URLS['rb/images/favicon_notify.ico'];
+        this.#logoNotificationsURL = STATIC_URLS['rb/images/logo.png'];
 
         const pendingReview = this.model.get('pendingReview');
         const reviewRequest = this.model.get('reviewRequest');
 
-        if (RB.EnabledFeatures.unifiedBanner) {
+        if (EnabledFeatures.unifiedBanner) {
             if (RB.UserSession.instance.get('authenticated')) {
-                this.unifiedBanner = new RB.UnifiedBannerView({
+                this.unifiedBanner = new UnifiedBannerView({
                     el: $('#unified-banner'),
-                    model: new RB.UnifiedBanner({
+                    model: new UnifiedBanner({
                         pendingReview: pendingReview,
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: this.model.reviewRequestEditor,
@@ -244,24 +308,26 @@ RB.ReviewablePageView = RB.PageView.extend({
         }
 
         this.reviewRequestEditorView.render();
-
-        return this;
-    },
+    }
 
     /**
      * Remove this view from the page.
+     *
+     * Returns:
+     *     ReviewablePageView:
+     *     This object, for chaining.
      */
-    remove() {
-        if (!RB.EnabledFeatures.unifiedBanner) {
+    remove(): this {
+        if (!EnabledFeatures.unifiedBanner) {
             this.draftReviewBanner.remove();
         }
 
-        if (this._unifiedBanner) {
-            this._unifiedBanner.remove();
+        if (this.unifiedBanner) {
+            this.unifiedBanner.remove();
         }
 
-        RB.PageView.prototype.remove.call(this);
-    },
+        return super.remove();
+    }
 
     /**
      * Return the review request editor view.
@@ -272,7 +338,7 @@ RB.ReviewablePageView = RB.PageView.extend({
      */
     getReviewRequestEditorView() {
         return this.reviewRequestEditorView;
-    },
+    }
 
     /**
      * Return the review request editor model.
@@ -283,7 +349,7 @@ RB.ReviewablePageView = RB.PageView.extend({
      */
     getReviewRequestEditorModel() {
         return this.model.reviewRequestEditor;
-    },
+    }
 
     /**
      * Catch the review updated event and send the user a visual update.
@@ -292,27 +358,27 @@ RB.ReviewablePageView = RB.PageView.extend({
      * to send a notification depending on browser and user settings.
      *
      * Args:
-     *     info (object):
+     *     info (UpdateInfo):
      *         The last update information for the request.
      */
-    _onReviewRequestUpdated(info) {
-        this._updateFavIcon(this._favIconNotifyURL);
+    _onReviewRequestUpdated(info: UpdateInfo) {
+        this.#updateFavIcon(this.#favIconNotifyURL);
 
         if (RB.NotificationManager.instance.shouldNotify()) {
             this._showDesktopNotification(info);
         }
 
         this._showUpdatesBubble(info);
-    },
+    }
 
     /**
      * Create the updates bubble showing information about the last update.
      *
      * Args:
-     *     info (object):
+     *     info (UpdateInfo):
      *         The last update information for the request.
      */
-    _showUpdatesBubble(info) {
+    _showUpdatesBubble(info: UpdateInfo) {
         if (this._updatesBubble) {
             this._updatesBubble.remove();
         }
@@ -321,11 +387,10 @@ RB.ReviewablePageView = RB.PageView.extend({
 
         this._updatesBubble = new UpdatesBubbleView({
             updateInfo: info,
-            reviewRequest: reviewRequest,
         });
 
         this.listenTo(this._updatesBubble, 'closed',
-                      () => this._updateFavIcon(this._favIconURL));
+                      () => this.#updateFavIcon(this.#favIconURL));
 
         this.listenTo(this._updatesBubble, 'updatePage', () => {
             RB.navigateTo(reviewRequest.get('reviewURL'));
@@ -333,7 +398,7 @@ RB.ReviewablePageView = RB.PageView.extend({
 
         this._updatesBubble.render().$el.appendTo(this.$el);
         this._updatesBubble.open();
-    },
+    }
 
     /**
      * Show the user a desktop notification for the last update.
@@ -343,32 +408,34 @@ RB.ReviewablePageView = RB.PageView.extend({
      * notifications.
      *
      *  Args:
-     *     info (object):
+     *     info (UpdateInfo):
      *         The last update information for the request.
      */
-    _showDesktopNotification(info) {
+    _showDesktopNotification(info: UpdateInfo) {
         const reviewRequest = this.model.get('reviewRequest');
+        const name = info.user.fullname || info.user.username;
 
         RB.NotificationManager.instance.notify({
-            title: info.summary,
-            body: interpolate(gettext('Review request #%s, by %s'), [
-                reviewRequest.id,
-                info.user.fullname || info.user.username,
-            ]),
-            iconURL: this._logoNotificationsURL,
+            body: _`Review request #${reviewRequest.id}, by ${name}`,
+            iconURL: this.#logoNotificationsURL,
             onClick: () => {
                 RB.navigateTo(reviewRequest.get('reviewURL'));
             },
+            title: info.summary,
         });
-    },
+    }
 
     /**
      * Update the favicon for the page.
      *
      * This is used to change the favicon shown on the page based on whether
      * there's a server-side update notification for the review request.
+     *
+     * Args:
+     *     url (string):
+     *         The URL to use for the shortcut icon.
      */
-    _updateFavIcon(url) {
+    #updateFavIcon(url: string) {
         $('head')
             .find('link[rel="shortcut icon"]')
                 .remove()
@@ -379,42 +446,48 @@ RB.ReviewablePageView = RB.PageView.extend({
                     rel: 'shortcut icon',
                     type: 'image/x-icon',
                 }));
-    },
+    }
 
     /**
      * Handle a click on the "Edit Review" button.
      *
      * Displays a review dialog.
      *
-     * Returns:
-     *    boolean:
-     *    false, always.
+     * Args:
+     *     e (JQuery.ClickEvent):
+     *         The event which triggered the action.
      */
-    _onEditReviewClicked() {
+    _onEditReviewClicked(e: JQuery.ClickEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+
         RB.ReviewDialogView.create({
             review: this.model.get('pendingReview'),
             reviewRequestEditor: this.model.reviewRequestEditor,
         });
 
         return false;
-    },
+    }
 
     /**
-     * Handle a click on the "Add Comment" button.
+     * Add a new general comment.
      *
-     * Displays a comment dialog.
-     *
-     * Returns:
-     *    boolean:
-     *    false, always.
+     * Args:
+     *     e (JQuery.ClickEvent, optional):
+     *         The event which triggered the action.
      */
-    addGeneralComment() {
+    addGeneralComment(e?: JQuery.ClickEvent) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
         const pendingReview = this.model.get('pendingReview');
         const comment = pendingReview.createGeneralComment(
             undefined,
             RB.UserSession.instance.get('commentsOpenAnIssue'));
 
-        if (!RB.EnabledFeatures.unifiedBanner) {
+        if (!EnabledFeatures.unifiedBanner) {
             this.listenTo(comment, 'saved',
                           () => RB.DraftReviewBannerView.instance.show());
         }
@@ -425,7 +498,7 @@ RB.ReviewablePageView = RB.PageView.extend({
         });
 
         return false;
-    },
+    }
 
     /**
      * Handle a click on the "Ship It" button.
@@ -433,12 +506,17 @@ RB.ReviewablePageView = RB.PageView.extend({
      * Confirms that the user wants to post the review, and then posts it
      * and reloads the page.
      *
-     * Returns:
-     *    boolean:
-     *    false, always.
+     * Args:
+     *     e (JQuery.ClickEvent, optional):
+     *         The event which triggered the action, if available.
      */
-    async shipIt() {
-        if (confirm(gettext('Are you sure you want to post this review?'))) {
+    async shipIt(e?: JQuery.ClickEvent) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        if (confirm(_`Are you sure you want to post this review?`)) {
             await this.model.markShipIt();
 
             const reviewRequest = this.model.get('reviewRequest');
@@ -446,7 +524,7 @@ RB.ReviewablePageView = RB.PageView.extend({
         }
 
         return false;
-    },
+    }
 
     /**
      * Generic handler for menu clicks.
@@ -457,10 +535,10 @@ RB.ReviewablePageView = RB.PageView.extend({
      * of their dropdown actions are clicked.
      *
      * Args:
-     *     e (Event):
+     *     e (JQuery.ClickEvent):
      *         The event which triggered the action.
      */
-    _onMenuClicked(e) {
+    _onMenuClicked(e: JQuery.ClickEvent) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -477,8 +555,5 @@ RB.ReviewablePageView = RB.PageView.extend({
             $menuButton.attr('aria-expanded', 'false');
             $target.removeClass('-is-visible');
         }
-    },
-});
-
-
-})();
+    }
+}

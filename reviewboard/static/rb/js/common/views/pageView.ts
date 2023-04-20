@@ -1,5 +1,32 @@
 /**
- * Base class for the views for pages.
+ * Base class for page views.
+ */
+import { BaseView, spina } from '@beanbag/spina';
+
+import { ActionView } from '../actions/views/actionView';
+import { Page } from '../models/pageModel';
+
+
+export interface PageViewOptions {
+    /** The body element to use when running unit tests. */
+    $body?: JQuery;
+
+    /** The header element to use when running unit tests. */
+    $headerBar?: JQuery;
+
+    /** The page container element to use when running unit tests. */
+    $pageContainer?: JQuery;
+
+    /** The page content element to use when running unit tests. */
+    $pageContent?: JQuery;
+
+    /** The page sidebar element to use when running unit tests. */
+    $pageSidebar?: JQuery;
+}
+
+
+/**
+ * Base class for page views.
  *
  * This is responsible for setting up and handling the page's UI, including
  * the page header, mobile mode handling, and sidebars. It also provides some
@@ -12,63 +39,96 @@
  * This is intended for use by page views that are set by
  * :js:class:`RB.PageManager`.
  */
-RB.PageView = Backbone.View.extend({
+@spina({
+    prototypeAttrs: ['windowResizeThrottleMS'],
+})
+export class PageView<
+    TModel extends Page = Page,
+    TElement extends HTMLDivElement = HTMLDivElement,
+    TExtraViewOptions extends PageViewOptions = PageViewOptions
+> extends BaseView<TModel, TElement, TExtraViewOptions> {
     /**
      * The maximum frequency at which resize events should be handled.
      *
      * Subclasses can override this if they need to respond to window
      * resizes at a faster or slower rate.
      */
-    windowResizeThrottleMS: 100,
+    static windowResizeThrottleMS = 100;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The sidebar element. */
+    $mainSidebar: JQuery = null;
+
+    /** The page container element. */
+    $pageContainer: JQuery = null;
+
+    /** The page content element. */
+    $pageContent: JQuery = null;
+
+    /** The window, wrapped in JQuery. */
+    $window: JQuery<Window>;
+
+    /** The currently-shown pane for the sidebar. */
+    _$mainSidebarPane: JQuery = null;
+
+    /** The page sidebar element */
+    _$pageSidebar: JQuery = null;
+
+    /** The set of all panes in the sidebar. */
+    _$pageSidebarPanes: JQuery = null;
+
+    /** A list of all registered action views. */
+    _actionViews: ActionView[] = [];
+
+    /** The pop-out drawer, if the page has one. */
+    drawer: RB.Drawer = null;
+
+    /** Whether the page has a sidebar. */
+    hasSidebar: boolean = null;
+
+    /** The view for the page header. */
+    headerView: RB.HeaderView = null;
+
+    /** Whether the page is currently in a mobile view. */
+    inMobileMode: boolean = null;
+
+    /** Whether the page is rendered in full-page content mode. */
+    isFullPage: boolean = null;
+
+    /**
+     * Whether the page is rendered.
+     *
+     * Deprecated:
+     *     6.0:
+     *     Users should use :js:attr:`rendered` instead.
+     */
+    isPageRendered = false;
+
+    options: PageViewOptions;
 
     /**
      * Initialize the page.
      *
      * Args:
-     *     options (object, optional):
+     *     options (PageViewOptions, optional):
      *         Options for the page.
-     *
-     * Option Args:
-     *     $body (jQuery, optional):
-     *         The body element. This is useful for unit tests.
-     *
-     *     $headerBar (jQuery, optional):
-     *         The header bar element. This is useful for unit tests.
-     *
-     *     $pageContainer (jQuery, optional):
-     *         The page container element. This is useful for unit tests.
-     *
-     *     $pageContent (jQuery, optional):
-     *         The page content element. This is useful for unit tests.
-     *
-     *     $pageSidebar (jQuery, optional):
-     *         The page sidebar element. This is useful for unit tests.
      */
-    initialize(options={}) {
+    initialize(options: PageViewOptions = {}) {
         this.options = options;
-
         this.$window = $(window);
-        this.$pageContainer = null;
-        this.$pageContent = null;
-        this.$mainSidebar = null;
-        this._$pageSidebar = null;
-        this._$mainSidebarPane = null;
-
-        this.hasSidebar = null;
-        this.isFullPage = null;
-        this.inMobileMode = null;
-        this.isPageRendered = false;
-
-        this.drawer = null;
-        this.headerView = null;
-
-        this._actionViews = [];
-    },
+    }
 
     /**
      * Remove the page from the DOM and disable event handling.
+     *
+     * Returns:
+     *     PageView:
+     *     This object, for chaining.
      */
-    remove() {
+    remove(): this {
         if (this.$window) {
             this.$window.off('resize.rbPageView');
         }
@@ -77,20 +137,16 @@ RB.PageView = Backbone.View.extend({
             this.headerView.remove();
         }
 
-        Backbone.View.prototype.remove.call(this);
-    },
+        return super.remove();
+    }
 
     /**
      * Render the page.
      *
      * Subclasses should not override this. Instead, they should override
      * :js:func:`RB.PageView.renderPage``.
-     *
-     * Returns:
-     *     RB.PageView:
-     *     This object, for chaining.
      */
-    render() {
+    onInitialRender() {
         const options = this.options;
         const $body = options.$body || $(document.body);
 
@@ -105,9 +161,9 @@ RB.PageView = Backbone.View.extend({
             '.rb-c-page-sidebar__pane-content');
 
         this.headerView = new RB.HeaderView({
-            el: options.$headerBar || $('#headerbar'),
             $body: $body,
             $pageSidebar: this._$pageSidebar,
+            el: options.$headerBar || $('#headerbar'),
         });
         this.headerView.render();
 
@@ -139,9 +195,7 @@ RB.PageView = Backbone.View.extend({
         this._actionViews.forEach(actionView => actionView.render());
 
         this.isPageRendered = true;
-
-        return this;
-    },
+    }
 
     /**
      * Set a drawer that can be shown over the sidebar.
@@ -160,7 +214,7 @@ RB.PageView = Backbone.View.extend({
      *     drawer (RB.Drawer):
      *         The drawer to set.
      */
-    setDrawer(drawer) {
+    setDrawer(drawer: RB.Drawer) {
         console.assert(
             this.drawer === null,
             'A drawer has already been set up for this page.');
@@ -173,7 +227,7 @@ RB.PageView = Backbone.View.extend({
         this._reparentDrawer();
 
         this.listenTo(drawer, 'visibilityChanged', this._updateSize);
-    },
+    }
 
     /**
      * Render the page contents.
@@ -182,7 +236,8 @@ RB.PageView = Backbone.View.extend({
      * UI elements.
      */
     renderPage() {
-    },
+        // Do nothing.
+    }
 
     /**
      * Resize an element to take the full height of a parent container.
@@ -198,13 +253,16 @@ RB.PageView = Backbone.View.extend({
      *     $parent (jQuery, optional):
      *         The specific jQuery-wrapped parent element to base the size on.
      */
-    resizeElementForFullHeight($el, $parent) {
+    resizeElementForFullHeight(
+        $el: JQuery,
+        $parent?: JQuery,
+    ) {
         if ($parent === undefined) {
             $parent = this.$pageContainer;
         }
 
         $el.outerHeight($parent.height() - $el.position().top);
-    },
+    }
 
     /**
      * Handle page resizes.
@@ -218,7 +276,8 @@ RB.PageView = Backbone.View.extend({
      * :js:attr:`windowResizeThrottleMS`.
      */
     onResize() {
-    },
+        // Do nothing.
+    }
 
     /**
      * Handle mobile mode changes.
@@ -232,8 +291,9 @@ RB.PageView = Backbone.View.extend({
      *         value as :js:attr:`inMobileMode`, and is just provided for
      *         convenience.
      */
-    onMobileModeChanged(inMobileMode) {
-    },
+    onMobileModeChanged(inMobileMode: boolean) {
+        // Do nothing.
+    }
 
     /**
      * Add an action to the page.
@@ -242,13 +302,13 @@ RB.PageView = Backbone.View.extend({
      *     actionView (RB.ActionView):
      *         The action instance.
      */
-    addActionView(actionView) {
+    addActionView(actionView: ActionView) {
         this._actionViews.push(actionView);
 
         if (this.isPageRendered) {
             actionView.render();
         }
-    },
+    }
 
     /**
      * Return the action view for the given action ID.
@@ -261,7 +321,9 @@ RB.PageView = Backbone.View.extend({
      *     RB.ActionView:
      *     The view for the given action.
      */
-    getActionView(actionId) {
+    getActionView(
+        actionId: string,
+    ): ActionView {
         for (const view of this._actionViews) {
             if (view.model.get('actionId') === actionId) {
                 return view;
@@ -269,7 +331,7 @@ RB.PageView = Backbone.View.extend({
         }
 
         return null;
-    },
+    }
 
     /**
      * Update the size of the page.
@@ -281,7 +343,7 @@ RB.PageView = Backbone.View.extend({
      * :js:func:`RB.PageView.onResize` so that subclasses can update their
      * elements.
      */
-    _updateSize() {
+    protected _updateSize() {
         const windowHeight = this.$window.height();
         let pageContainerHeight = null;
         let sidebarHeight = null;
@@ -326,7 +388,7 @@ RB.PageView = Backbone.View.extend({
         }
 
         this.onResize();
-    },
+    }
 
     /**
      * Set the new parent for the drawer.
@@ -338,7 +400,7 @@ RB.PageView = Backbone.View.extend({
      * In desktop mode, this will place the drawer within the sidebar area,
      * ensuring that it overlaps it properly.
      */
-    _reparentDrawer() {
+    protected _reparentDrawer() {
         const $el = this.drawer.$el
             .detach();
 
@@ -347,7 +409,7 @@ RB.PageView = Backbone.View.extend({
         } else {
             $el.appendTo(this._$pageSidebarPanes);
         }
-    },
+    }
 
     /**
      * Handle a transition between mobile and desktop mode.
@@ -362,7 +424,7 @@ RB.PageView = Backbone.View.extend({
      *     inMobileMode (boolean):
      *         Whether the page shell is in mobile mode.
      */
-    _onMobileModeChanged(inMobileMode) {
+    protected _onMobileModeChanged(inMobileMode: boolean) {
         this.inMobileMode = inMobileMode;
 
         this._updateSize();
@@ -373,5 +435,5 @@ RB.PageView = Backbone.View.extend({
 
         this.onMobileModeChanged(this.inMobileMode);
         this.trigger('inMobileModeChanged', this.inMobileMode);
-    },
-});
+    }
+}

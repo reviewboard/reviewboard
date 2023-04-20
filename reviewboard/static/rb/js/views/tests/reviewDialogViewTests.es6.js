@@ -940,6 +940,9 @@ suite('rb/views/ReviewDialogView', function() {
                 describe('Ship It', function() {
                     async function runTest(shipIt) {
                         dlg._$shipIt.prop('checked', shipIt);
+
+                        spyOn(RB, 'navigateTo');
+
                         await dlg._saveReview();
 
                         expect(dlg._$shipIt.prop('checked')).toBe(shipIt);

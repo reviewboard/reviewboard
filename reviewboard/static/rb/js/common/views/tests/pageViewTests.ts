@@ -1,3 +1,17 @@
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    jasmine,
+    spyOn,
+    suite,
+} from 'jasmine-core';
+
+import { PageView } from '../pageView';
+
+
 suite('rb/pages/views/PageView', function() {
     const pageSidebarTemplate = dedent`
         <div class="rb-c-page-sidebar test-page-sidebar">
@@ -24,7 +38,7 @@ suite('rb/pages/views/PageView', function() {
 
         spyOn(RB.HeaderView.prototype, '_ensureSingleton');
 
-        pageView = new RB.PageView({
+        pageView = new PageView({
             $body: $body,
             $headerBar: $headerBar,
             $pageContainer: $pageContainer,
@@ -39,13 +53,13 @@ suite('rb/pages/views/PageView', function() {
 
     describe('Rendering', function() {
         it('Default state', function() {
-            expect(pageView.isPageRendered).toBe(false);
+            expect(pageView.rendered).toBe(false);
 
             pageView.render();
 
             expect(pageView.hasSidebar).toBe(false);
             expect(pageView.isFullPage).toBe(false);
-            expect(pageView.isPageRendered).toBe(true);
+            expect(pageView.rendered).toBe(true);
             expect(pageView.inMobileMode).toBe(false);
             expect(pageView.headerView).not.toBe(null);
             expect(pageView.$mainSidebar.length).toBe(1);
@@ -202,12 +216,12 @@ suite('rb/pages/views/PageView', function() {
 
                 spyOn(pageView.$window, 'height').and.callFake(() => 1000);
                 spyOn($pageContainer, 'offset').and.callFake(() => ({
-                    top: 20,
                     left: 0,
+                    top: 20,
                 }));
                 spyOn($pageSidebar, 'offset').and.callFake(() => ({
-                    top: 10,
                     left: 0,
+                    top: 10,
                 }));
             });
 

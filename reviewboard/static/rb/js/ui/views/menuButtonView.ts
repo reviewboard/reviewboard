@@ -1,4 +1,4 @@
-import { BaseView, spina } from '@beanbag/spina';
+import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
 import {
     MenuItemOptions,
@@ -91,9 +91,9 @@ export class MenuButtonView<
     TElement,
     TExtraViewOptions
 > {
-    className = 'rb-c-menu-button';
+    static className = 'rb-c-menu-button';
 
-    events = {
+    static events: EventsHash = {
         'click .rb-c-menu-button__toggle': '_onToggleClick',
         'focusout': '_onFocusOut',
         'keydown .rb-c-menu-button__toggle': '_onToggleButtonKeyDown',

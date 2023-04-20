@@ -1,4 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.query import Q
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -96,9 +97,12 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         invalid_fields = {}
 
         try:
+            query = (
+                Q(diffset__history__review_request=review_request) |
+                Q(diffset__review_request_draft__review_request=review_request))
+
             filediff = FileDiff.objects.get(
-                pk=filediff_id,
-                diffset__history__review_request=review_request)
+                Q(pk=filediff_id) & query)
         except ObjectDoesNotExist:
             invalid_fields['filediff_id'] = [
                 'This is not a valid filediff ID.',

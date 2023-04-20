@@ -1,4 +1,4 @@
-import { BaseView, spina } from '@beanbag/spina';
+import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
 
 /**
@@ -150,8 +150,8 @@ export class MenuView extends BaseView<
     static TYPE_STANDARD_MENU = MenuType.Standard;
     static TYPE_BUTTON_MENU = MenuType.Button;
 
-    className = 'rb-c-menu';
-    events = {
+    static className = 'rb-c-menu';
+    static events: EventsHash = {
         'keydown': '_onKeyDown',
     };
 

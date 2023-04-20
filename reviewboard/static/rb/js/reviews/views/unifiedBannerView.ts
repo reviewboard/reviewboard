@@ -1,7 +1,7 @@
 /**
  * The unified banner view.
  */
-import { BaseView, spina } from '@beanbag/spina';
+import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
 import { FloatingBannerView } from 'reviewboard/ui/views/floatingBannerView';
 import { MenuButtonView } from 'reviewboard/ui/views/menuButtonView';
@@ -18,19 +18,19 @@ import { UnifiedBanner } from '../models/unifiedBanner';
  */
 @spina
 class DraftModeMenu extends BaseView<UnifiedBanner> {
-    className = 'rb-c-unified-banner__menu';
+    static className = 'rb-c-unified-banner__menu';
 
     /**
      * The events to listen to.
      */
-    events = {
+    static events: EventsHash = {
         'focusout': '_onFocusOut',
         'keydown': '_onKeyDown',
         'mouseenter': '_openMenu',
         'mouseleave': '_closeMenu',
     };
 
-    modelEvents = {
+    static modelEvents = {
         'change:draftModes change:selectedDraftMode': '_update',
     };
 
@@ -188,7 +188,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
  */
 @spina
 class PublishButtonView extends MenuButtonView<UnifiedBanner> {
-    modelEvents = {
+    static modelEvents = {
         'change:draftModes change:selectedDraftMode': '_update',
     };
 
@@ -308,11 +308,11 @@ export class UnifiedBannerView extends FloatingBannerView<
 > {
     static instance: UnifiedBannerView = null;
 
-    events = {
+    static events: EventsHash = {
         'click #btn-review-request-discard': '_discardDraft',
     };
 
-    modelEvents = {
+    static modelEvents = {
         'change': '_update',
         'change:selectedDraftMode': '_scrollToReviewReply',
     };

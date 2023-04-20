@@ -1,4 +1,4 @@
-import { BaseView, spina } from '@beanbag/spina';
+import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
 import {
     FloatingBannerView,
@@ -31,12 +31,12 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
     HTMLDivElement,
     ReviewReplyDraftBannerOptions
 > {
-    className = 'banner';
-    events = {
+    static className = 'banner';
+    static events: EventsHash = {
         'click .discard-button': '_onDiscardClicked',
         'click .publish-button': '_onPublishClicked',
     };
-    modelEvents = {
+    static modelEvents: EventsHash = {
         'publishError': '_onPublishError',
         'saved': '_onSaved',
         'saving destroying': '_onSavingOrDestroying',
@@ -158,7 +158,7 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
  */
 @spina
 export class ReviewReplyDraftStaticBannerView extends BaseView {
-    className = 'banner';
+    static className = 'banner';
 
     static template = _.template(dedent`
         <h1><%- draftText %></h1>

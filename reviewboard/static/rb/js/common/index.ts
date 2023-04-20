@@ -95,3 +95,5 @@ export const Product: ProductInfo = {
 
 
 export * from './actions';
+export { Page } from './models/pageModel';
+export { PageView } from './views/pageView';

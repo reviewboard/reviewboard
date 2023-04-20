@@ -873,6 +873,31 @@ class ResourceListTests(SpyAgency, CommentListMixin,
 
         self.assertTrue(FileDiff.get_ancestors.called)
 
+    @webapi_test_template
+    def test_post_with_draft_filediff(self):
+        """Testing the POST <URL> API with a draft FileDiff"""
+        review_request = self.create_review_request(
+            create_repository=True,
+            submitter=self.user)
+        diffset = self.create_diffset(review_request, draft=True)
+        filediff = self.create_filediff(diffset)
+        review = self.create_review(review_request, user=self.user)
+
+        diff_comment_text = 'Test diff comment'
+
+        rsp = self.api_post(
+            get_review_diff_comment_list_url(review),
+            {
+                'filediff_id': filediff.pk,
+                'first_line': 1,
+                'num_lines': 5,
+                'text': diff_comment_text,
+            },
+            expected_mimetype=review_diff_comment_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('diff_comment', rsp)
+        self.assertEqual(rsp['diff_comment']['text'], diff_comment_text)
 
 class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
                         BaseResourceTestCase, metaclass=BasicTestsMetaclass):

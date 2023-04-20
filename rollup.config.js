@@ -152,6 +152,7 @@ const rbConfig = {
         'backbone',
         'django',
         'djblets',
+        'jasmine-core',
         'underscore',
     ],
     output: {
@@ -179,6 +180,7 @@ const rbConfig = {
             backbone: 'Backbone',
             django: 'django',
             djblets: 'Djblets',
+            'jasmine-core': 'window',
             underscore: '_',
         },
     },

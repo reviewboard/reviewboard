@@ -1,10 +1,4 @@
-from djblets.staticbundles import (
-    PIPELINE_JAVASCRIPT as DJBLETS_PIPELINE_JAVASCRIPT,
-    PIPELINE_STYLESHEETS as DJBLETS_PIPELINE_STYLESHEETS)
-
-
-# Media compression
-PIPELINE_JAVASCRIPT = dict({
+PIPELINE_JAVASCRIPT = {
     '3rdparty-base': {
         'source_filenames': (
             'lib/js/3rdparty-base/index.ts',
@@ -40,6 +34,7 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'js-tests': {
         'source_filenames': (
+            'rb/js/tests/index.ts',
             'rb/js/admin/tests/relatedGroupSelectorViewTests.es6.js',
             'rb/js/admin/tests/relatedRepoSelectorViewTests.es6.js',
             'rb/js/admin/tests/relatedUserSelectorViewTests.es6.js',
@@ -70,10 +65,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/newReviewRequest/views/tests/repositorySelectionViewTests.es6.js',
             'rb/js/pages/models/tests/diffViewerPageModelTests.es6.js',
             'rb/js/pages/models/tests/pageManagerModelTests.es6.js',
-            'rb/js/pages/models/tests/reviewablePageModelTests.es6.js',
-            'rb/js/pages/views/tests/basePageViewTests.es6.js',
             'rb/js/pages/views/tests/diffViewerPageViewTests.es6.js',
-            'rb/js/pages/views/tests/reviewablePageViewTests.es6.js',
             'rb/js/resources/collections/tests/repositoryBranchesCollectionTests.es6.js',
             'rb/js/resources/collections/tests/repositoryCommitsCollectionTests.es6.js',
             'rb/js/resources/collections/tests/resourceCollectionTests.es6.js',
@@ -166,8 +158,6 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/extensions/models/reviewDialogHookModel.es6.js',
             'rb/js/extensions/models/reviewRequestActionHookModel.es6.js',
             'rb/js/pages/models/pageManagerModel.es6.js',
-            'rb/js/pages/models/pageModel.es6.js',
-            'rb/js/pages/views/basePageView.es6.js',
             'rb/js/models/extraDataModel.es6.js',
             'rb/js/models/extraDataMixin.es6.js',
             'rb/js/resources/utils/serializers.es6.js',
@@ -287,9 +277,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/models/textBasedCommentBlockModel.es6.js',
             'rb/js/models/textBasedReviewableModel.es6.js',
             'rb/js/models/uploadDiffModel.es6.js',
-            'rb/js/pages/models/reviewablePageModel.es6.js',
             'rb/js/pages/models/diffViewerPageModel.es6.js',
-            'rb/js/pages/views/reviewablePageView.es6.js',
             'rb/js/pages/views/diffViewerPageView.es6.js',
             'rb/js/utils/textUtils.es6.js',
             'rb/js/views/abstractCommentBlockView.es6.js',
@@ -336,8 +324,6 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/diffviewer/views/diffCommentBlockView.es6.js',
             'rb/js/diffviewer/views/diffCommentsHintView.es6.js',
             'rb/js/diffviewer/views/diffCommitListView.es6.js',
-            'rb/js/diffviewer/views/diffComplexityIconView.es6.js',
-            'rb/js/diffviewer/views/diffFileIndexView.es6.js',
             'rb/js/diffviewer/views/diffReviewableView.es6.js',
             'rb/js/diffviewer/views/diffRevisionLabelView.es6.js',
             'rb/js/diffviewer/views/diffRevisionSelectorView.es6.js',
@@ -449,10 +435,10 @@ PIPELINE_JAVASCRIPT = dict({
         ),
         'output_filename': 'rb/js/widgets.min.js',
     },
-}, **DJBLETS_PIPELINE_JAVASCRIPT)
+}
 
 
-PIPELINE_STYLESHEETS = dict({
+PIPELINE_STYLESHEETS = {
     'common': {
         'source_filenames': (
             'lib/css/3rdparty.less',
@@ -550,4 +536,4 @@ PIPELINE_STYLESHEETS = dict({
         'output_filename': 'rb/css/admin.min.css',
         'absolute_paths': False,
     },
-}, **DJBLETS_PIPELINE_STYLESHEETS)
+}

@@ -1,3 +1,26 @@
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    pending,
+    spyOn,
+    suite,
+} from 'jasmine-core';
+
+import { EnabledFeatures } from 'reviewboard/common';
+import {
+    ReviewablePage,
+} from 'reviewboard/reviews/models/reviewablePageModel';
+import {
+    ReviewablePageView,
+} from 'reviewboard/reviews/views/reviewablePageView';
+import {
+    UnifiedBannerView,
+} from 'reviewboard/reviews/views/unifiedBannerView';
+
+
 suite('rb/pages/views/ReviewablePageView', function() {
     const pageTemplate = dedent`
         <div id="review-banner"></div>
@@ -23,16 +46,16 @@ suite('rb/pages/views/ReviewablePageView', function() {
         $editReview = $container.find('#action-edit-review');
         $shipIt = $container.find('#action-ship-it');
 
-        page = new RB.ReviewablePage({
+        page = new ReviewablePage({
             checkForUpdates: false,
+            editorData: {
+                mutableByUser: true,
+                statusMutableByUser: true,
+            },
             reviewRequestData: {
                 id: 123,
                 loaded: true,
                 state: RB.ReviewRequest.PENDING,
-            },
-            editorData: {
-                mutableByUser: true,
-                statusMutableByUser: true,
             },
         }, {
             parse: true,
@@ -40,7 +63,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
         spyOn(RB.HeaderView.prototype, '_ensureSingleton');
 
-        pageView = new RB.ReviewablePageView({
+        pageView = new ReviewablePageView({
             el: $container,
             model: page,
         });
@@ -56,8 +79,8 @@ suite('rb/pages/views/ReviewablePageView', function() {
     afterEach(function() {
         RB.DnDUploader.instance = null;
 
-        if (RB.EnabledFeatures.unifiedBanner) {
-            RB.UnifiedBannerView.resetInstance();
+        if (EnabledFeatures.unifiedBanner) {
+            UnifiedBannerView.resetInstance();
         }
 
         pageView.remove();
@@ -121,7 +144,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
             });
 
             it('Confirmed', function(done) {
-                if (RB.EnabledFeatures.unifiedBanner) {
+                if (EnabledFeatures.unifiedBanner) {
                     pending();
                     return;
                 }
@@ -130,7 +153,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
                 spyOn(pendingReview, 'save').and.resolveTo();
                 spyOn(pendingReview, 'publish').and.callThrough();
 
-                if (!RB.EnabledFeatures.unifiedBanner) {
+                if (!EnabledFeatures.unifiedBanner) {
                     spyOn(pageView.draftReviewBanner, 'hideAndReload')
                         .and.callFake(() => {
                             expect(window.confirm).toHaveBeenCalled();
@@ -148,7 +171,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
             });
 
             it('Canceled', function() {
-                if (RB.EnabledFeatures.unifiedBanner) {
+                if (EnabledFeatures.unifiedBanner) {
                     pending();
                     return;
                 }
@@ -166,8 +189,8 @@ suite('rb/pages/views/ReviewablePageView', function() {
     describe('Update bubble', function() {
         const summary = 'My summary';
         const user = {
-            url: '/users/foo/',
             fullname: 'Mr. User',
+            url: '/users/foo/',
             username: 'user',
         };
         let $bubble;

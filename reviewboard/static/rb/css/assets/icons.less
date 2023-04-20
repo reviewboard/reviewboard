@@ -1,4 +1,5 @@
 @import (reference) "djblets/css/mixins/retina.less";
+@import (reference) "../defs.less";
 
 
 @img_base: '../../images';
@@ -42,7 +43,7 @@
 .icon(datagrid-comment, 66px, 28px);
 .icon(datagrid-shipit, 87px, 28px, 10px, 12px);
 .icon(new-updates, 102px, 29px, 15px, 15px);
-.icon(edit, 124px, 28px, 20px, 16px);
+.icon(edit, 124px, 28px, @rb-icon-edit-width, @rb-icon-edit-height);
 .icon(delete, 5px, 49px, 12px, 12px);
 .icon(diff-collapse-chunk, 22px, 49px, 14px, 14px);
 .icon(diff-expand-above, 41px, 49px, 28px, 14px);

@@ -34,25 +34,19 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
     }, RB.ReviewablePage.prototype.defaults),
 
     /**
-     * Construct the page's instance.
+     * Handle pre-parse initialization.
      *
      * This defines child objects for managing state related to the page
      * prior to parsing the provided attributes payload and initializing
      * the instance.
-     *
-     * NOTE: this explicitly doesn't use the shorthand "member function" syntax
-     * because otherwise browsers get confused about whether this is a class
-     * constructor.
      */
-    constructor: function constructor() {
+    preinitialize() {
         this.commentsHint = new RB.DiffCommentsHint();
         this.commits = new RB.DiffCommitCollection();
         this.commitHistoryDiff = new RB.CommitHistoryDiffEntryCollection();
         this.files = new RB.DiffFileCollection();
         this.pagination = new RB.Pagination();
         this.revision = new RB.DiffRevision();
-
-        RB.ReviewablePage.apply(this, arguments);
     },
 
     /**

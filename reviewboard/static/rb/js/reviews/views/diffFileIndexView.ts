@@ -1,16 +1,41 @@
 /**
+ * A view for the diff file index.
+ */
+import { BaseView, EventsHash, spina } from '@beanbag/spina';
+
+import { DiffComplexityIconView } from './diffComplexityIconView';
+
+
+/**
+ * Options for the DiffFileIndexView.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface DiffFileIndexViewOptions {
+    /** The collection of DiffFile models. */
+    collection: Backbone.Collection;
+}
+
+
+/**
  * Displays the file index for the diffs on a page.
  *
  * The file page lists the names of the files, as well as a little graph
  * icon showing the relative size and complexity of a file, a list of chunks
  * (and their types), and the number of lines added and removed.
  */
-RB.DiffFileIndexView = Backbone.View.extend({
-    chunkTemplate: _.template(
+@spina
+export class DiffFileIndexView extends BaseView<
+    undefined,
+    HTMLDivElement,
+    DiffFileIndexViewOptions
+> {
+    static chunkTemplate = _.template(
         '<a href="#<%= chunkID %>" class="<%= className %>"> </a>'
-    ),
+    );
 
-    _itemTemplate: _.template(dedent`
+    static itemTemplate = _.template(dedent`
         <tr class="loading
          <% if (newfile) { %>new-file<% } %>
          <% if (binary) { %>binary-file<% } %>
@@ -36,70 +61,63 @@ RB.DiffFileIndexView = Backbone.View.extend({
           <% } %>
          </td>
         </tr>
-    `),
+    `);
 
-    events: {
+    static events: EventsHash = {
         'click a': '_onAnchorClicked',
-    },
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+    #$items: JQuery = null;
+    #$itemsTable: JQuery = null;
 
     /**
      * Initialize the view.
      *
      * Args:
-     *     options (object):
+     *     options (DiffFileIndexViewOptions):
      *         Options for the view.
-     *
-     * Option Args:
-     *     collection (RB.DiffFileCollection):
-     *         The collection containing the files.
      */
-    initialize(options) {
-        this.options = options;
-        this._$items = null;
-        this._$itemsTable = null;
-
-        this.collection = this.options.collection;
-        this.listenTo(this.collection, 'reset update', this.update);
-    },
+    initialize(options: DiffFileIndexViewOptions) {
+        this.collection = options.collection;
+        this.listenTo(this.collection, 'reset update', this.#update);
+    }
 
     /**
      * Render the view to the page.
-     *
-     * Returns:
-     *     RB.DiffFileIndexView:
-     *     This object, for chaining.
      */
-    render() {
+    onInitialRender() {
+        // Remove the spinner.
         this.$el.empty();
 
-        this._$itemsTable = $('<table/>').appendTo(this.$el);
-        this._$items = this.$('tr');
+        this.#$itemsTable = $('<table/>').appendTo(this.$el);
+        this.#$items = this.$('tr');
 
-        // Add the files from the collection
-        this.update();
-
-        return this;
-    },
+        // Add the files from the collection.
+        this.#update();
+    }
 
     /**
      * Update the list of files in the index view.
      */
-    update() {
-        this._$itemsTable.empty();
+    #update() {
+        this.#$itemsTable.empty();
 
         this.collection.each(file => {
-            this._$itemsTable.append(this._itemTemplate(
+            this.#$itemsTable.append(DiffFileIndexView.itemTemplate(
                 _.defaults({
-                    binaryFileText: gettext('Binary file'),
-                    deletedFileText: gettext('Deleted'),
-                    wasText: interpolate(gettext('Was %s'),
+                    binaryFileText: _`Binary file`,
+                    deletedFileText: _`Deleted`,
+                    wasText: interpolate(_`Was %s`,
                                          [file.get('depotFilename')]),
                 }, file.attributes)
             ));
         });
 
-        this._$items = this.$('tr');
-    },
+        this.#$items = this.$('tr');
+    }
 
     /**
      * Add a loaded diff to the index.
@@ -114,16 +132,19 @@ RB.DiffFileIndexView = Backbone.View.extend({
      *     diffReviewableView (RB.DiffReviewableView):
      *         The view corresponding to the diff file being added.
      */
-    addDiff(index, diffReviewableView) {
-        const $item = $(this._$items[index])
+    addDiff(
+        index: number,
+        diffReviewableView: RB.DiffReviewableView,
+    ) {
+        const $item = $(this.#$items[index])
             .removeClass('loading');
 
         if (diffReviewableView.$el.hasClass('diff-error')) {
-            this._renderDiffError($item);
+            this.#renderDiffError($item);
         } else {
-            this._renderDiffEntry($item, diffReviewableView);
+            this.#renderDiffEntry($item, diffReviewableView);
         }
-    },
+    }
 
     /**
      * Render a diff loading error.
@@ -135,12 +156,12 @@ RB.DiffFileIndexView = Backbone.View.extend({
      *     $item (jQuery):
      *         The item in the file index which encountered the error.
      */
-    _renderDiffError($item) {
+    #renderDiffError($item: JQuery) {
         $item.find('.diff-file-icon')
             .html('<div class="rb-icon rb-icon-warning" />')
             .attr('title',
-                  gettext('There was an error loading this diff. See the details below.'));
-    },
+                  _`There was an error loading this diff. See the details below.`);
+    }
 
     /**
      * Render the display of a loaded diff.
@@ -152,7 +173,10 @@ RB.DiffFileIndexView = Backbone.View.extend({
      *     diffReviewableView (RB.DiffReviewableView):
      *         The view corresponding to the diff file which was loaded.
      */
-    _renderDiffEntry($item, diffReviewableView) {
+    #renderDiffEntry(
+        $item: JQuery,
+        diffReviewableView: RB.DiffReviewableView,
+    ) {
         const $table = diffReviewableView.$el;
         const fileDeleted = $item.hasClass('deleted-file');
         const fileAdded = $item.hasClass('new-file');
@@ -161,8 +185,6 @@ RB.DiffFileIndexView = Backbone.View.extend({
         let numInserts = 0;
         let numReplaces = 0;
         let tooltip = '';
-        const tooltipParts = [];
-        const chunksList = [];
 
         if (fileAdded) {
             numInserts = 1;
@@ -171,6 +193,8 @@ RB.DiffFileIndexView = Backbone.View.extend({
         } else if ($item.hasClass('binary-file')) {
             numReplaces = 1;
         } else {
+            const chunksList: string[] = [];
+
             $table.children('tbody').each((i, chunk) => {
                 const numRows = chunk.rows.length;
                 const $chunk = $(chunk);
@@ -185,7 +209,7 @@ RB.DiffFileIndexView = Backbone.View.extend({
                     return;
                 }
 
-                chunksList.push(this.chunkTemplate({
+                chunksList.push(DiffFileIndexView.chunkTemplate({
                     chunkID: chunk.id.substr(5),
                     className: chunk.className,
                 }));
@@ -196,26 +220,21 @@ RB.DiffFileIndexView = Backbone.View.extend({
         }
 
         /* Render the complexity icon. */
-        const iconView = new RB.DiffComplexityIconView({
-            numInserts: numInserts,
+        const iconView = new DiffComplexityIconView({
             numDeletes: numDeletes,
+            numInserts: numInserts,
             numReplaces: numReplaces,
             totalLines: linesEqual + numDeletes + numInserts + numReplaces,
         });
 
-        const $fileIcon = $item.find('.diff-file-icon');
-        $fileIcon
-            .empty()
-            .append(iconView.$el);
-
-        iconView.render();
-
         /* Add tooltip for icon */
         if (fileAdded) {
-            tooltip = gettext('New file');
+            tooltip = _`New file`;
         } else if (fileDeleted) {
-            tooltip = gettext('Deleted file');
+            tooltip = _`Deleted file`;
         } else {
+            const tooltipParts: string[] = [];
+
             if (numInserts > 0) {
                 tooltipParts.push(interpolate(
                     ngettext('%s new line', '%s new lines', numInserts),
@@ -237,7 +256,12 @@ RB.DiffFileIndexView = Backbone.View.extend({
             tooltip = tooltipParts.join(', ');
         }
 
-        $fileIcon.attr('title', tooltip);
+        $item.find('.diff-file-icon')
+            .empty()
+            .append(iconView.$el)
+            .attr('title', tooltip);
+
+        iconView.render();
 
         this.listenTo(
             diffReviewableView,
@@ -245,7 +269,7 @@ RB.DiffFileIndexView = Backbone.View.extend({
             chunkID => {
                 this.$(`a[href="#${chunkID}"]`).toggleClass('dimmed');
             });
-    },
+    }
 
     /**
      * Handler for when an anchor is clicked.
@@ -253,13 +277,14 @@ RB.DiffFileIndexView = Backbone.View.extend({
      * Gets the name of the target and emits anchorClicked.
      *
      * Args:
-     *     e (Event):
+     *     e (MouseEvent):
      *         The click event.
      */
-    _onAnchorClicked: function(e) {
+    private _onAnchorClicked(e: MouseEvent) {
         e.preventDefault();
         e.stopPropagation();
 
-        this.trigger('anchorClicked', e.target.href.split('#')[1]);
-    },
-});
+        const target = e.target as HTMLAnchorElement;
+        this.trigger('anchorClicked', target.href.split('#')[1]);
+    }
+}
