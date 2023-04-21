@@ -754,6 +754,7 @@ RB.TextEditorView = Backbone.View.extend({
         }
 
         const filename = file.name.toLowerCase();
+
         return ['.jpeg', '.jpg', '.png', '.gif', '.bmp', '.tiff', '.svg'].some(
             extension => filename.endsWith(extension));
     },
@@ -789,108 +790,7 @@ RB.TextEditorView = Backbone.View.extend({
                     .catch(err => alert(err.message));
             })
             .catch(err => alert(err.message));
-    }
-}, {
-    /**
-     * Return options used to display a TextEditorView in an inlineEditor.
-     *
-     * Args:
-     *     options (object):
-     *         Options to be passed on to the TextEditorView.
-     *
-     * Returns:
-     *     object:
-     *     An options object to be used with an inlineEditor. The resulting
-     *     inlineEditor will make use of the TextEditorView instead of its
-     *     default textarea.
-     */
-    getInlineEditorOptions(options) {
-        let textEditor;
-
-        return {
-            matchHeight: false,
-            multiline: true,
-
-            createMultilineField(editor) {
-                const $editor = editor.element;
-                let origRichText;
-
-                textEditor = new RB.TextEditorView(options);
-                textEditor.render();
-
-                $editor.one('beginEdit', function() {
-                    const $buttons = $editor.inlineEditor('buttons');
-                    const $span = $('<span class="enable-markdown" />');
-
-                    const $checkbox = $('<input/>')
-                        .attr({
-                            id: _.uniqueId('markdown_check'),
-                            type: 'checkbox'
-                        })
-                        .appendTo($span);
-                    textEditor.bindRichTextCheckbox($checkbox);
-
-                    $span.append($('<label/>')
-                        .attr('for', $checkbox[0].id)
-                        .text(gettext('Enable Markdown')));
-
-                    $buttons.append($span);
-
-                    const $markdownRef = $('<a/>')
-                        .addClass('markdown-info')
-                        .attr({
-                            href: MANUAL_URL + 'users/markdown/',
-                            target: '_blank'
-                        })
-                        .text(gettext('Markdown Reference'))
-                        .setVisible(textEditor.richText)
-                        .appendTo($buttons);
-                    textEditor.bindRichTextVisibility($markdownRef);
-                });
-
-                $editor.on('beginEdit', function() {
-                    textEditor._showEditor();
-                    origRichText = textEditor.richText;
-                });
-
-                $editor.on('cancel', function() {
-                    textEditor._hideEditor();
-                    textEditor.setRichText(origRichText);
-                });
-
-                $editor.on('complete', function() {
-                    textEditor._hideEditor();
-                });
-
-                textEditor.$el.data('text-editor', textEditor);
-
-                return textEditor.$el;
-            },
-
-            setFieldValue(editor, value) {
-                textEditor.setText(value || '');
-            },
-
-            getFieldValue() {
-                return textEditor.getText();
-            },
-
-            isFieldDirty(editor, initialValue) {
-                return textEditor.isDirty(initialValue);
-            }
-        };
     },
-
-    /**
-     * Return the TextEditorView for an inlineEditor element.
-     *
-     * Returns:
-     *     TextEditorView:
-     *     The view corresponding to the editor.
-     */
-    getFromInlineEditor($editor) {
-        return $editor.inlineEditor('field').data('text-editor');
-    }
 });
 
 
