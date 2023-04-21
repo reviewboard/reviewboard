@@ -125,6 +125,11 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
     describe('Actions', function() {
         it('Edit Review', function() {
+            if (EnabledFeatures.unifiedBanner) {
+                pending();
+                return;
+            }
+
             spyOn(RB.ReviewDialogView, 'create');
 
             $editReview.click();
