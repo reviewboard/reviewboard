@@ -36,25 +36,31 @@ RB.ScreenshotThumbnail = Backbone.View.extend({
             this.$el.fadeOut(() => this.remove());
         });
 
-        this.$caption = this.$el.find('a.edit')
-            .inlineEditor({
-                editIconClass: 'rb-icon rb-icon-edit',
-                showButtons: false,
-            })
-            .on({
-                'beginEdit': () => this.trigger('beginEdit'),
-                'cancel': () => this.trigger('endEdit'),
-                'complete': async (e, value) => {
-                    /*
-                     * We want to set the caption after ready() finishes,
-                     * it case it loads state and overwrites.
-                     */
-                    await this.model.ready();
-                    this.model.set('caption', value);
-                    this.trigger('endEdit');
-                    await this.model.save();
-                }
+        this.$caption = this.$el.find('a.edit');
+        const captionEditorView = new RB.InlineEditorView({
+            el: this.$caption,
+            editIconClass: 'rb-icon rb-icon-edit',
+            showButtons: false,
+        });
+        captionEditorView.render();
+
+        this.listenTo(captionEditorView, 'beginEdit',
+                      () => this.trigger('beginEdit'));
+        this.listenTo(captionEditorView, 'cancel',
+                      () => this.trigger('endEdit'));
+        this.listenTo(
+            captionEditorView, 'complete', async value => {
+                /*
+                 * We want to set the caption after ready() finishes, it case
+                 * it loads state and overwrites.
+                 */
+                await this.model.ready();
+                this.model.set('caption', value);
+                this.trigger('endEdit');
+                await this.model.save();
             });
+
+        this._captionEditorView = captionEditorView;
 
         return this;
     },

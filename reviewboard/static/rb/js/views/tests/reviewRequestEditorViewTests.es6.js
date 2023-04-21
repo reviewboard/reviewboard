@@ -1497,22 +1497,29 @@ suite('rb/views/ReviewRequestEditorView', function() {
         describe('Events', function() {
             let $thumbnail;
             let screenshot;
+            let screenshotView;
+            let captionEditorView;
 
             beforeEach(function() {
                 $thumbnail = $(screenshotThumbnailTemplate({ id: 42 }))
                     .appendTo($screenshotsContainer);
 
+                spyOn(RB.ScreenshotThumbnail.prototype, 'render')
+                    .and.callThrough();
+
                 view.render();
 
                 screenshot = editor.get('screenshots').at(0);
+                screenshotView = RB.ScreenshotThumbnail.prototype.render
+                    .calls.thisFor(0);
+                captionEditorView = screenshotView._captionEditorView;
             });
 
             describe('beginEdit', function() {
                 it('Increment edit count', function() {
                     expect(editor.get('editCount')).toBe(0);
 
-                    $thumbnail.find('.screenshot-caption .edit')
-                        .inlineEditor('startEdit');
+                    captionEditorView.startEdit();
 
                     expect(editor.get('editCount')).toBe(1);
                 });
@@ -1520,17 +1527,14 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             describe('endEdit', function() {
                 describe('Decrement edit count', function() {
-                    let $caption;
-
                     beforeEach(function() {
                         expect(editor.get('editCount')).toBe(0);
 
-                        $caption = $thumbnail.find('.screenshot-caption .edit')
-                            .inlineEditor('startEdit');
+                        captionEditorView.startEdit();
                     });
 
                     it('On cancel', function() {
-                        $caption.inlineEditor('cancel');
+                        captionEditorView.cancel();
                         expect(editor.get('editCount')).toBe(0);
                     });
 
@@ -1542,7 +1546,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                             .val('Foo')
                             .triggerHandler('keyup');
 
-                        $caption.inlineEditor('submit');
+                        captionEditorView.submit();
 
                         _.defer(() => {
                             expect(editor.get('editCount')).toBe(0);
