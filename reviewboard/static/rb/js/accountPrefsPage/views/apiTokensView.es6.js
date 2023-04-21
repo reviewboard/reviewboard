@@ -531,15 +531,18 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
             .not('.is-invalid')
             .find('span');
 
-        this._$note = this.$('.rb-c-config-api-tokens__note')
-            .inlineEditor({
-                editIconClass: 'rb-icon rb-icon-edit'
-            })
-            .on({
-                beginEdit: () => this._$note.inlineEditor(
-                    'setValue', this.model.get('note')),
-                complete: (e, value) => this.model.saveNote(value)
-            });
+        this._$note = this.$('.rb-c-config-api-tokens__note');
+        noteEditor = new RB.InlineEditorView({
+            el: this._$note,
+            editIconClass: 'rb-icon rb-icon-edit',
+        });
+        noteEditor.render();
+
+        this.listenTo(noteEditor, 'beginEdit', () => {
+            noteEditor.setValue(this.model.get('note'));
+        });
+        this.listenTo(noteEditor, 'complete',
+                      value => this.model.saveNote(value));
 
         const expires = moment(this.model.get('expires'))
             .local()
