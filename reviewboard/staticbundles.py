@@ -22,9 +22,9 @@ PIPELINE_JAVASCRIPT = {
     'js-test-libs': {
         'source_filenames': (
             # The order matters for the Jasmine modules.
-            'lib/js/js-test-libs/jasmine-3.5.0.js',
-            'lib/js/js-test-libs/jasmine-html-3.5.0.js',
-            'lib/js/js-test-libs/jasmine-boot-3.5.0.js',
+            'lib/js/js-test-libs/jasmine-3.8.0.js',
+            'lib/js/js-test-libs/jasmine-html-3.8.0.js',
+            'lib/js/js-test-libs/jasmine-boot-3.8.0.js',
             'lib/js/js-test-libs/jasmine.suites-1.0.js',
             'lib/js/js-test-libs/jasmine.hide-filtered-1.0.js',
             'lib/js/js-test-libs/jasmine.sourcemaps-1.0.js',
