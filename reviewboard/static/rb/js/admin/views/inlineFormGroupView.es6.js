@@ -90,7 +90,7 @@ RB.Admin.InlineFormGroupView = Backbone.View.extend({
          * update just below when we first populate the value on the model.
          */
         this.listenTo(model.inlines, 'update', () => {
-            $addButton.setVisible(model.canAddInline());
+            $addButton.toggle(model.canAddInline());
             $totalForms.val(model.inlines.length);
         });
 

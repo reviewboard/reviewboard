@@ -548,9 +548,9 @@ RB.TextEditorView = Backbone.View.extend({
      *         The element to show when richText is true.
      */
     bindRichTextVisibility($el) {
-        $el.setVisible(this.richText);
+        $el.toggle(this.richText);
 
-        this.on('change:richText', () => $el.setVisible(this.richText));
+        this.on('change:richText', () => $el.toggle(this.richText));
     },
 
     /**

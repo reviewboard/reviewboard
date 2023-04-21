@@ -289,8 +289,8 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
             .filter(`[data-view-mode=${viewMode}]`)
                 .addClass('active');
 
-        this._$textTable.setVisible(viewMode === 'source');
-        this._$renderedTable.setVisible(viewMode === 'rendered');
+        this._$textTable.toggle(viewMode === 'source');
+        this._$renderedTable.toggle(viewMode === 'rendered');
 
         /* Cause all comments to recalculate their sizes. */
         $(window).triggerHandler('resize');

@@ -362,7 +362,7 @@ export class CreateReviewActionView extends Actions.ActionView {
      * This will show the action only when there's no existing pending review.
      */
     #update() {
-        this.$el.parent().setVisible(this.#pendingReview.isNew());
+        this.$el.parent().toggle(this.#pendingReview.isNew());
     }
 
     /**
@@ -427,7 +427,7 @@ export class EditReviewActionView extends Actions.ActionView {
      * Update the visibility state of the action.
      */
     #update() {
-        this.$el.parent().setVisible(!this.#pendingReview.isNew());
+        this.$el.parent().toggle(!this.#pendingReview.isNew());
     }
 
     /**

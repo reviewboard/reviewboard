@@ -175,7 +175,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
             }
         }
 
-        this.#$arrow.setVisible(draftModes.length > 1);
+        this.#$arrow.toggle(draftModes.length > 1);
     }
 }
 
@@ -465,12 +465,12 @@ export class UnifiedBannerView extends FloatingBannerView<
         const reviewRequestState = reviewRequest.get('state');
         const reviewRequestPublic = reviewRequest.get('public');
 
-        this.#$discardButton.setVisible(
+        this.#$discardButton.toggle(
             draftModes.length > 0 &&
             !draftModes[selectedDraftMode].multiple);
-        this.#$modeSelector.setVisible(numDrafts > 0);
-        this.#$draftActions.setVisible(numDrafts > 0);
-        this.#$changedesc.setVisible(
+        this.#$modeSelector.toggle(numDrafts > 0);
+        this.#$draftActions.toggle(numDrafts > 0);
+        this.#$changedesc.toggle(
             reviewRequestPublic &&
             draftModes.length > 0 &&
             draftModes[selectedDraftMode].hasReviewRequest);
@@ -489,7 +489,7 @@ export class UnifiedBannerView extends FloatingBannerView<
             .toggleClass('-has-draft',
                          (reviewRequestPublic === false || numDrafts > 0))
             .toggleClass('-has-multiple', numDrafts > 1)
-            .setVisible(reviewRequestState === RB.ReviewRequest.PENDING);
+            .toggle(reviewRequestState === RB.ReviewRequest.PENDING);
     }
 
     /**

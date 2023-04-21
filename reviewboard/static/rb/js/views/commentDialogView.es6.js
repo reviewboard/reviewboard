@@ -538,7 +538,7 @@ RB.CommentDialogView = Backbone.View.extend({
                                        this.model.get('publishedCommentsType'));
 
         const showComments = (comments.length > 0);
-        this._$commentsPane.setVisible(showComments);
+        this._$commentsPane.toggle(showComments);
 
         /* Do this here so that calculations can be done before open() */
         let width = this.FORM_BOX_WIDTH;
