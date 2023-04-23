@@ -232,6 +232,73 @@ Review Board will handle storing the ticket information and requesting new
 tickets when necessary. You don't have to do anything else.
 
 
+.. _repository-scm-perforce-trigger-script:
+
+Installing the Trigger Script
+=============================
+
+We provide a `trigger script`_ for your Perforce server, which does the
+following:
+
+* Checks that submitted changes are put up for review and approved, blocking
+  them if they fail these checks.
+
+* Automatically closes review requests once changes are submitted.
+
+We recommend this for all Perforce users.
+
+To install the trigger script:
+
+1. `Install RBTools`_ and the Perforce command line tools on the Perforce
+   server.
+
+   .. important::
+
+      Make sure that :command:`rbt` and :command:`p4` are in the system path
+      used by the Perforce server.
+
+2. `Download the trigger script <trigger script_>`_ and place it where the
+   Perforce server can run it.
+
+3. Set the options in the downloaded trigger script to match your environment.
+
+   There are instructions within the file for each option. These will be
+   entirely dependent on your setup.
+
+   You can also choose which checks to activate and which actions to perform.
+
+4. Run :command:`p4 triggers` and add the trigger script:
+
+   .. code-block:: shell
+
+      reviewboard change-submit //depot/... "/path/to/python /path/to/p4-trigger-script %changelist%"
+
+   Customize the Python executable path, depot path, and the path to the
+   trigger script above.
+
+   .. tip::
+
+      Make sure your Python executable path is the same environment in which
+      RBTools was installed.
+
+      If you're installing on Windows and using the `RBTools for Windows
+      installer`_, your Python path should be::
+
+          C:\Program Files\RBTools\Python\python.exe
+
+You should now be up and running!
+
+If you have any trouble configuring the trigger script, you can
+`reach out to us for support <support_>`_.
+
+
+.. _trigger script:
+   https://raw.githubusercontent.com/reviewboard/rbtools/master/contrib/tools/p4-trigger-script
+.. _Install RBTools: https://www.reviewboard.org/downloads/rbtools/
+.. _RBTools for Windows installer:
+   https://www.reviewboard.org/downloads/rbtools/
+
+
 Posting Changes for Review
 ==========================
 
@@ -239,5 +306,5 @@ To post changes for review, you will need to use RBTools_. Standard Perforce
 diffs leave out a lot of important information necessary to properly identify
 files, which RBTools works around.
 
-See :ref:`Using RBTools with Perforce <rbt-post-perforce>` for more
+See :ref:`Using RBTools with Perforce <rbtools-workflow-perforce>` for more
 information.
