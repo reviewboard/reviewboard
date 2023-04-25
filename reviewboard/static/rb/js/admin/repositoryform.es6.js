@@ -221,7 +221,7 @@ $(document).ready(function() {
         updateHostingForm($bugTrackerType, 'bug-tracker-form-hosting',
                           $bugTrackerPlan, $bugTrackerForms);
 
-        $bugTrackerUsernameRow.setVisible(
+        $bugTrackerUsernameRow.toggle(
             planInfo.bug_tracker_requires_username);
     });
 
@@ -284,10 +284,10 @@ $(document).ready(function() {
                     .text($hostingType.find(':selected').text());
             }
 
-            $hostingAccountRow.setVisible(!isFake);
-            $toolRow.setVisible(!isFake);
+            $hostingAccountRow.toggle(!isFake);
+            $toolRow.toggle(!isFake);
 
-            $hostingPowerPackAdvert.setVisible(isFake);
+            $hostingPowerPackAdvert.toggle(isFake);
             $submitButtons.prop('disabled', isFake);
 
             if (!isCustom) {
@@ -322,7 +322,7 @@ $(document).ready(function() {
                      * needed.
                      */
                     $authForm.find('[data-required-for-2fa]').closest('.form-row')
-                        .setVisible(hostingInfo.needs_two_factor_auth_code);
+                        .toggle(hostingInfo.needs_two_factor_auth_code);
 
                     if ($hostingAccount.val() === '') {
                         /* Present fields for linking a new account. */
@@ -374,9 +374,9 @@ $(document).ready(function() {
                 $scmtoolAuthForms.hide();
                 $scmtoolRepoForms.hide();
 
-                $authForm.setVisible(!isFake);
-                $repoForm.setVisible(!isFake);
-                $toolPowerPackAdvert.setVisible(isFake);
+                $authForm.toggle(!isFake);
+                $repoForm.toggle(!isFake);
+                $toolPowerPackAdvert.toggle(isFake);
                 $submitButtons.prop('disabled', isFake);
             }
         })
@@ -403,7 +403,7 @@ $(document).ready(function() {
                 updatePlanEl($bugTrackerPlanRow, $bugTrackerPlan,
                              bugTrackerType, false);
 
-                $bugTrackerHostingURLRow.setVisible(
+                $bugTrackerHostingURLRow.toggle(
                     HOSTING_SERVICES[bugTrackerType].self_hosted);
             }
         })
@@ -412,8 +412,8 @@ $(document).ready(function() {
     $publicAccess
         .change(function() {
             var visible = !this.checked;
-            $('#row-users').setVisible(visible);
-            $('#row-review_groups').setVisible(visible);
+            $('#row-users').toggle(visible);
+            $('#row-review_groups').toggle(visible);
         })
         .triggerHandler('change');
 

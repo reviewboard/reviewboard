@@ -115,6 +115,7 @@ RB.AbstractReviewableView = Backbone.View.extend({
         this.stopListening(this.commentDlg, 'closed');
         this.commentDlg = RB.CommentDialogView.create({
             comment: commentBlock.get('draftComment'),
+            draftWarning: commentBlock.getDraftWarning(),
             publishedComments: commentBlock.get('serializedComments'),
             publishedCommentsType: this.commentsListName,
             position: dlg => commentBlockView.positionCommentDlg(dlg),

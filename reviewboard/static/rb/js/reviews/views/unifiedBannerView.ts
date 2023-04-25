@@ -175,7 +175,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
             }
         }
 
-        this.#$arrow.setVisible(draftModes.length > 1);
+        this.#$arrow.toggle(draftModes.length > 1);
     }
 }
 
@@ -326,6 +326,7 @@ export class UnifiedBannerView extends FloatingBannerView<
     #$draftActions: JQuery;
     #$interdiffLink: JQuery;
     #$modeSelector: JQuery;
+    #$review: JQuery;
     #$reviewActions: JQuery;
     #modeMenu: DraftModeMenu;
     #publishButton: PublishButtonView;
@@ -400,6 +401,7 @@ export class UnifiedBannerView extends FloatingBannerView<
 
         this.#$modeSelector = this.$('.rb-c-unified-banner__mode-selector');
         this.#$draftActions = this.$('.rb-c-unified-banner__draft-actions');
+        this.#$review = this.$('.rb-c-unified-banner__review');
         this.#$reviewActions = this.$('.rb-c-unified-banner__review-actions');
         this.#$changedesc = this.$('.rb-c-unified-banner__changedesc');
         this.#$interdiffLink = $(dedent`
@@ -465,12 +467,12 @@ export class UnifiedBannerView extends FloatingBannerView<
         const reviewRequestState = reviewRequest.get('state');
         const reviewRequestPublic = reviewRequest.get('public');
 
-        this.#$discardButton.setVisible(
+        this.#$discardButton.toggle(
             draftModes.length > 0 &&
             !draftModes[selectedDraftMode].multiple);
-        this.#$modeSelector.setVisible(numDrafts > 0);
-        this.#$draftActions.setVisible(numDrafts > 0);
-        this.#$changedesc.setVisible(
+        this.#$modeSelector.toggle(numDrafts > 0);
+        this.#$draftActions.toggle(numDrafts > 0);
+        this.#$changedesc.toggle(
             reviewRequestPublic &&
             draftModes.length > 0 &&
             draftModes[selectedDraftMode].hasReviewRequest);
@@ -489,18 +491,41 @@ export class UnifiedBannerView extends FloatingBannerView<
             .toggleClass('-has-draft',
                          (reviewRequestPublic === false || numDrafts > 0))
             .toggleClass('-has-multiple', numDrafts > 1)
-            .setVisible(reviewRequestState === RB.ReviewRequest.PENDING);
+            .toggle(reviewRequestState === RB.ReviewRequest.PENDING);
     }
 
     /**
      * Return the height of the banner.
      *
+     * Args:
+     *     withDock (boolean, optional):
+     *         Whether to include the dock portion of the banner in the height
+     *         value.
+     *
      * Returns:
      *     number:
      *     The height of the banner, in pixels.
      */
-    getHeight(): number {
-        return this.$el.outerHeight();
+    getHeight(withDock = true): number {
+        if (withDock) {
+            return this.$el.outerHeight();
+        } else {
+            return this.#$review.outerHeight();
+        }
+    }
+
+    /**
+     * Return the dock element.
+     *
+     * Returns:
+     *     JQuery:
+     *     The dock element.
+     */
+    getDock(): JQuery {
+        const $dock = this.$('.rb-c-unified-banner__dock');
+        console.assert($dock.length === 1);
+
+        return $dock;
     }
 
     /**

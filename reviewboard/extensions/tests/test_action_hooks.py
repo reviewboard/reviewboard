@@ -10,6 +10,7 @@ from reviewboard.extensions.hooks import (ActionHook,
                                           DiffViewerActionHook,
                                           HeaderActionHook,
                                           HeaderDropdownActionHook,
+                                          HideActionHook,
                                           ReviewRequestActionHook,
                                           ReviewRequestDropdownActionHook)
 from reviewboard.extensions.hooks.actions import BaseReviewRequestActionHook
@@ -490,3 +491,21 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
                 },
             },
         })
+
+
+class HideActionHookTests(BaseExtensionHookTestCase):
+    """Tests for HideActionHook."""
+
+    def test_hide_action_hook(self) -> None:
+        """Testing HideActionHook"""
+        HideActionHook(extension=self.extension,
+                       action_ids=['support-menu'])
+
+        action = actions_registry.get('action_id', 'support-menu')
+
+        request = self.create_http_request()
+        context = Context({
+            'request': request,
+        })
+
+        self.assertFalse(action.should_render(context=context))

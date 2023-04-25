@@ -199,7 +199,7 @@ export class ReviewablePageView<
     draftReviewBanner: RB.DraftReviewBannerview;
 
     /** The unified banner, if present. */
-    unifiedBanner: UnifiedBannerView;
+    unifiedBanner: UnifiedBannerView = null;
 
     /** The star manager. */
     #starManager: RB.StarManagerView;

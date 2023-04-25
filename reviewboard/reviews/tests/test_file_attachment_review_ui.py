@@ -315,6 +315,28 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'fileAttachmentID': 1,
                 'fileRevision': 0,
                 'filename': 'filename.txt',
+                'public': True,
+            })
+
+    def test_get_js_model_data_with_draft_attachment(self):
+        """Testing FileAttachmentReviewUI.get_js_model_data with a draft
+        FileAttachment
+        """
+        attachment = self.create_file_attachment(
+            self.review_request,
+            mimetype='application/rbtest',
+            orig_filename='filename.txt',
+            draft=True)
+        review_ui = attachment.review_ui
+
+        self.assertIsInstance(review_ui, MyReviewUI)
+        self.assertEqual(
+            review_ui.get_js_model_data(),
+            {
+                'fileAttachmentID': 1,
+                'fileRevision': 0,
+                'filename': 'filename.txt',
+                'public': False,
             })
 
     def test_get_js_model_data_with_history(self):
@@ -346,6 +368,40 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'fileRevision': 1,
                 'filename': 'filename.txt',
                 'numRevisions': 2,
+                'public': True,
+            })
+
+    def test_get_js_model_data_with_history_and_draft(self):
+        """Testing FileAttachmentReviewUI.get_js_model_data with
+        FileAttachmentHistory and draft attachment
+        """
+        attachment_history = self.create_file_attachment_history(
+            self.review_request)
+        attachment1 = self.create_file_attachment(
+            self.review_request,
+            attachment_history=attachment_history,
+            attachment_revision=0,
+            mimetype='application/rbtest',
+            orig_filename='filename.txt')
+        attachment2 = self.create_file_attachment(
+            self.review_request,
+            attachment_history=attachment_history,
+            attachment_revision=1,
+            mimetype='application/rbtest',
+            orig_filename='filename.txt',
+            draft=True)
+        review_ui = attachment2.review_ui
+
+        self.assertIsInstance(review_ui, MyReviewUI)
+        self.assertEqual(
+            review_ui.get_js_model_data(),
+            {
+                'attachmentRevisionIDs': [attachment1.pk, attachment2.pk],
+                'fileAttachmentID': attachment2.pk,
+                'fileRevision': 1,
+                'filename': 'filename.txt',
+                'numRevisions': 2,
+                'public': False,
             })
 
     def test_get_js_model_data_with_diff(self):
@@ -382,6 +438,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'fileRevision': 1,
                 'filename': 'filename.txt',
                 'numRevisions': 2,
+                'public': True,
             })
 
     def test_get_js_model_data_with_diff_type_mismatch(self):
@@ -421,6 +478,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'fileRevision': 1,
                 'filename': 'filename.txt',
                 'numRevisions': 2,
+                'public': True,
             })
 
     def test_serialize_comment(self):

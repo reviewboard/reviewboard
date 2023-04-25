@@ -1,6 +1,7 @@
 import kgb
 from itertools import zip_longest
 
+from django.contrib.auth.models import User
 from django.test.client import RequestFactory
 from djblets.testing.decorators import add_fixtures
 
@@ -1594,6 +1595,62 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         self.assertSpyCalledWith(tool_class.normalize_path_for_display,
                                  'foo.txt', extra_data={'test': True})
+
+    def test_get_diff_files_public_state(self):
+        """Testing get_diff_files public state"""
+        doc = User.objects.get(username='doc')
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository,
+                                                    target_people=[doc])
+        diffset = self.create_diffset(review_request=review_request,
+                                      draft=True)
+        self.create_filediff(diffset=diffset, source_file='foo.txt',
+                             dest_file='foo2.txt', status=FileDiff.MODIFIED)
+
+        diff_files = get_diff_files(diffset=diffset)
+        self.assertFalse(diff_files[0]['public'])
+
+        draft = review_request.get_draft()
+        assert draft is not None
+        draft.publish()
+
+        diffset.refresh_from_db()
+        diff_files = get_diff_files(diffset=diffset)
+        self.assertTrue(diff_files[0]['public'])
+
+    def test_get_diff_files_public_state_with_interdiff(self):
+        """Testing get_diff_files public state with interdiff"""
+        doc = User.objects.get(username='doc')
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository,
+                                                    target_people=[doc])
+        diffset = self.create_diffset(review_request=review_request)
+        self.create_filediff(diffset=diffset,
+                             source_file='foo.txt',
+                             dest_file='foo.txt',
+                             status=FileDiff.MODIFIED,
+                             diff=b'interdiff1')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2,
+                                           draft=True)
+        self.create_filediff(diffset=interdiffset,
+                             source_file='foo.txt',
+                             dest_file='foo.txt',
+                             status=FileDiff.MODIFIED,
+                             diff=b'interdiff2')
+
+        diff_files = get_diff_files(diffset=diffset, interdiffset=interdiffset)
+        self.assertFalse(diff_files[0]['public'])
+
+        draft = review_request.get_draft()
+        assert draft is not None
+        draft.publish()
+
+        diffset.refresh_from_db()
+        interdiffset.refresh_from_db()
+        diff_files = get_diff_files(diffset=diffset, interdiffset=interdiffset)
+        self.assertTrue(diff_files[0]['public'])
 
 
 class GetFileDiffsMatchTests(TestCase):

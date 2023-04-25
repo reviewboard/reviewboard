@@ -30,6 +30,9 @@
  *     $endRow (jQuery):
  *         The last row in the diffviewer that this comment is on.
  *
+ *     public (boolean):
+ *         Whether the diff for this comment has been published.
+ *
  * See Also:
  *     :js:class:`RB.AbstractCommentBlock`:
  *         For the attributes defined by the base model.
@@ -43,6 +46,7 @@ RB.DiffCommentBlock = RB.AbstractCommentBlock.extend({
         endLineNum: null,
         $beginRow: null,
         $endRow: null,
+        public: false,
     }, RB.AbstractCommentBlock.prototype.defaults),
 
     /**
@@ -76,5 +80,21 @@ RB.DiffCommentBlock = RB.AbstractCommentBlock.extend({
             endLineNum: this.get('endLineNum'),
             baseFileDiffID: this.get('baseFileDiffID'),
         });
+    },
+
+    /**
+     * Return a warning about commenting on a draft object.
+     *
+     * Returns:
+     *     string:
+     *     A warning to display to the user if they're commenting on a draft
+     *     object. Return null if there's no warning.
+     */
+    getDraftWarning() {
+        if (this.get('public')) {
+            return null;
+        } else {
+            return _`The diff for this comment is still a draft. Replacing the draft diff will delete this comment.`;
+        }
     },
 });

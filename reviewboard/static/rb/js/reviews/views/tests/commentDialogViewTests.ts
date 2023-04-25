@@ -1,3 +1,23 @@
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+    suite,
+} from 'jasmine-core';
+
+import {
+    CommentDialogView,
+} from 'reviewboard/reviews/views/commentDialogView';
+import {
+    CommentEditor,
+} from 'reviewboard/reviews/models/commentEditorModel';
+
+declare const $testsScratch: JQuery;
+
+
 suite('rb/views/CommentDialogView', function() {
     let reviewRequest;
     let reviewRequestEditor;
@@ -18,18 +38,19 @@ suite('rb/views/CommentDialogView', function() {
     describe('Class methods', function() {
         describe('create', function() {
             it('Without a comment', function() {
-                expect(() => RB.CommentDialogView.create({
+                expect(() => CommentDialogView.create({
                     animate: false,
+                    comment: undefined,
                     container: $testsScratch,
                     reviewRequestEditor: reviewRequestEditor,
                 })).toThrow();
 
-                expect(RB.CommentDialogView._instance).toBeFalsy();
+                expect(CommentDialogView._instance).toBeFalsy();
                 expect($testsScratch.children().length).toBe(0);
             });
 
             it('With a comment', function() {
-                const dlg = RB.CommentDialogView.create({
+                const dlg = CommentDialogView.create({
                     animate: false,
                     comment: new RB.DiffComment(),
                     container: $testsScratch,
@@ -37,12 +58,12 @@ suite('rb/views/CommentDialogView', function() {
                 });
 
                 expect(dlg).toBeTruthy();
-                expect(RB.CommentDialogView._instance).toBe(dlg);
+                expect(CommentDialogView._instance).toBe(dlg);
                 expect($testsScratch.children().length).toBe(1);
             });
 
             it('Replacing an open dialog', function() {
-                const dlg1 = RB.CommentDialogView.create({
+                const dlg1 = CommentDialogView.create({
                     animate: false,
                     comment: new RB.DiffComment(),
                     container: $testsScratch,
@@ -50,7 +71,7 @@ suite('rb/views/CommentDialogView', function() {
                 });
                 expect(dlg1).toBeTruthy();
 
-                const dlg2 = RB.CommentDialogView.create({
+                const dlg2 = CommentDialogView.create({
                     animate: false,
                     comment: new RB.DiffComment(),
                     container: $testsScratch,
@@ -60,7 +81,7 @@ suite('rb/views/CommentDialogView', function() {
 
                 expect(dlg2).not.toBe(dlg1);
                 expect(dlg1.$el.parents().length).toBe(0);
-                expect(RB.CommentDialogView._instance).toBe(dlg2);
+                expect(CommentDialogView._instance).toBe(dlg2);
                 expect($testsScratch.children().length).toBe(1);
             });
         });
@@ -71,17 +92,17 @@ suite('rb/views/CommentDialogView', function() {
         let dlg;
 
         beforeEach(function() {
-            editor = new RB.CommentEditor({
-                comment: new RB.DiffComment(),
+            editor = new CommentEditor({
                 canEdit: true,
+                comment: new RB.DiffComment(),
                 reviewRequest: reviewRequest,
                 reviewRequestEditor: reviewRequestEditor,
             });
 
-            dlg = new RB.CommentDialogView({
+            dlg = new CommentDialogView({
                 animate: false,
-                model: editor,
                 commentIssueManager: new RB.CommentIssueManager(),
+                model: editor,
             });
 
             dlg.on('closed', () => {
@@ -321,13 +342,13 @@ suite('rb/views/CommentDialogView', function() {
 
         describe('Height', function() {
             beforeEach(function() {
-                editor = new RB.CommentEditor({
+                editor = new CommentEditor({
                     comment: new RB.DiffComment(),
                     reviewRequest: reviewRequest,
                     reviewRequestEditor: reviewRequestEditor,
                 });
 
-                dlg = new RB.CommentDialogView({
+                dlg = new CommentDialogView({
                     animate: false,
                     model: editor,
                 });
@@ -338,7 +359,7 @@ suite('rb/views/CommentDialogView', function() {
                 dlg.render();
                 dlg.open();
                 expect(dlg.$el.height()).toBe(
-                    RB.CommentDialogView.prototype.DIALOG_TOTAL_HEIGHT);
+                    CommentDialogView.DIALOG_TOTAL_HEIGHT);
             });
 
             it('When canEdit=false', function() {
@@ -346,7 +367,7 @@ suite('rb/views/CommentDialogView', function() {
                 dlg.render();
                 dlg.open();
                 expect(dlg.$el.height()).toBe(
-                    RB.CommentDialogView.prototype.DIALOG_NON_EDITABLE_HEIGHT);
+                    CommentDialogView.DIALOG_NON_EDITABLE_HEIGHT);
             });
         });
 
@@ -380,7 +401,8 @@ suite('rb/views/CommentDialogView', function() {
                     comment.comment_id = 1;
                     comment.text = 'Sample comment.';
                     comment.issue_opened = false;
-                    parentCommentReplyLink = '/?reply_id=' + comment.comment_id;
+                    parentCommentReplyLink =
+                        `/?reply_id=${comment.comment_id}`;
 
                     commentReply = new RB.DiffComment();
                     commentReply.user = {
@@ -418,18 +440,21 @@ suite('rb/views/CommentDialogView', function() {
                     dlg.open();
                     const $replyLink =
                         $commentsList.find('.comment-list-reply-action');
-                    expect($replyLink[0].href).toContain(parentCommentReplyLink);
+                    expect($replyLink[0].href)
+                        .toContain(parentCommentReplyLink);
                 });
 
-                it('Both parent and reply comment reply links link to parent comment',
-                    function() {
+                it('Both parent and reply comment reply links link to ' +
+                   'parent comment', function() {
                     editor.set('publishedComments', [comment, commentReply]);
                     dlg.open();
                     const $replyLinks =
                         $commentsList.find('.comment-list-reply-action');
                     expect($replyLinks.length).toEqual(2);
-                    expect($replyLinks[0].href).toContain(parentCommentReplyLink);
-                    expect($replyLinks[1].href).toContain(parentCommentReplyLink);
+                    expect($replyLinks[0].href)
+                        .toContain(parentCommentReplyLink);
+                    expect($replyLinks[1].href)
+                        .toContain(parentCommentReplyLink);
                 });
             });
 
@@ -452,15 +477,16 @@ suite('rb/views/CommentDialogView', function() {
                     reviewRequestEditor.set('editable', true);
                     editor.set('publishedComments', [comment]);
 
-                    dlg = new RB.CommentDialogView({
+                    dlg = new CommentDialogView({
                         animate: false,
-                        model: editor,
                         commentIssueManager: new RB.CommentIssueManager(),
+                        model: editor,
                     });
                     dlg.render().$el.appendTo($testsScratch);
                     dlg.open();
 
-                    const $buttons = dlg.$el.find('.other-comments .issue-button');
+                    const $buttons = dlg.$el
+                        .find('.other-comments .issue-button');
                     expect($buttons.length).toBe(5);
                     expect($buttons.is(':visible')).toBe(true);
                 });
@@ -469,15 +495,16 @@ suite('rb/views/CommentDialogView', function() {
                     reviewRequestEditor.set('editable', false);
                     editor.set('publishedComments', [comment]);
 
-                    dlg = new RB.CommentDialogView({
+                    dlg = new CommentDialogView({
                         animate: false,
-                        model: editor,
                         commentIssueManager: new RB.CommentIssueManager(),
+                        model: editor,
                     });
                     dlg.render().$el.appendTo($testsScratch);
                     dlg.open();
 
-                    const $buttons = dlg.$el.find('.other-comments .issue-button');
+                    const $buttons = dlg.$el
+                        .find('.other-comments .issue-button');
                     expect($buttons.length).toBe(0);
                 });
             });
@@ -532,12 +559,17 @@ suite('rb/views/CommentDialogView', function() {
         describe('Special keys', function() {
             let $textarea;
 
-            function simulateKeyPress(c, altKey, ctrlKey, metaKey) {
+            function simulateKeyPress(
+                key: string,
+                altKey?: boolean,
+                ctrlKey?: boolean,
+                metaKey?: boolean,
+            ) {
                 $textarea.focus();
 
                 ['keydown', 'keypress', 'keyup'].forEach(type => {
                     const e = $.Event(type);
-                    e.which = c;
+                    e.key = key;
                     e.altKey = altKey;
                     e.ctrlKey = ctrlKey;
                     e.metaKey = metaKey;
@@ -545,7 +577,7 @@ suite('rb/views/CommentDialogView', function() {
                 });
             }
 
-            function setupForRichText(richText, canSave) {
+            function setupForRichText(richText, canSave=false) {
                 editor.set('richText', richText);
                 editor.set('canSave', !!canSave);
                 $textarea = dlg.$('textarea');
@@ -563,40 +595,20 @@ suite('rb/views/CommentDialogView', function() {
                 });
 
                 describe('With editor.canSave=true', function() {
-                    describe('Keycode 10', function() {
-                        it('If Markdown', function() {
-                            setupForRichText(true, true);
+                    it('If Markdown', function() {
+                        setupForRichText(true, true);
 
-                            simulateKeyPress(10, false, true);
-                            expect(editor.save).toHaveBeenCalled();
-                            expect(dlg.close).toHaveBeenCalled();
-                        });
-
-                        it('If plain text', function() {
-                            setupForRichText(false, true);
-
-                            simulateKeyPress(10, false, true);
-                            expect(editor.save).toHaveBeenCalled();
-                            expect(dlg.close).toHaveBeenCalled();
-                        });
+                        simulateKeyPress('Enter', false, true);
+                        expect(editor.save).toHaveBeenCalled();
+                        expect(dlg.close).toHaveBeenCalled();
                     });
 
-                    describe('Keycode 13', function() {
-                        it('If Markdown', function() {
-                            setupForRichText(true, true);
+                    it('If plain text', function() {
+                        setupForRichText(false, true);
 
-                            simulateKeyPress(13, false, true);
-                            expect(editor.save).toHaveBeenCalled();
-                            expect(dlg.close).toHaveBeenCalled();
-                        });
-
-                        it('If plain text', function() {
-                            setupForRichText(false, true);
-
-                            simulateKeyPress(13, false, true);
-                            expect(editor.save).toHaveBeenCalled();
-                            expect(dlg.close).toHaveBeenCalled();
-                        });
+                        simulateKeyPress('Enter', false, true);
+                        expect(editor.save).toHaveBeenCalled();
+                        expect(dlg.close).toHaveBeenCalled();
                     });
                 });
 
@@ -605,40 +617,20 @@ suite('rb/views/CommentDialogView', function() {
                         editor.set('canSave', false);
                     });
 
-                    describe('Keycode 10', function() {
-                        it('If Markdown', function() {
-                            setupForRichText(true);
+                    it('If Markdown', function() {
+                        setupForRichText(true);
 
-                            simulateKeyPress(10, false, true);
-                            expect(editor.save).not.toHaveBeenCalled();
-                            expect(dlg.close).not.toHaveBeenCalled();
-                        });
-
-                        it('If plain text', function() {
-                            setupForRichText(false);
-
-                            simulateKeyPress(10, false, true);
-                            expect(editor.save).not.toHaveBeenCalled();
-                            expect(dlg.close).not.toHaveBeenCalled();
-                        });
+                        simulateKeyPress('Enter', false, true);
+                        expect(editor.save).not.toHaveBeenCalled();
+                        expect(dlg.close).not.toHaveBeenCalled();
                     });
 
-                    describe('Keycode 13', function() {
-                        it('If Markdown', function() {
-                            setupForRichText(true);
+                    it('If plain text', function() {
+                        setupForRichText(false);
 
-                            simulateKeyPress(13, false, true);
-                            expect(editor.save).not.toHaveBeenCalled();
-                            expect(dlg.close).not.toHaveBeenCalled();
-                        });
-
-                        it('If plain text', function() {
-                            setupForRichText(false);
-
-                            simulateKeyPress(13, false, true);
-                            expect(editor.save).not.toHaveBeenCalled();
-                            expect(dlg.close).not.toHaveBeenCalled();
-                        });
+                        simulateKeyPress('Enter', false, true);
+                        expect(editor.save).not.toHaveBeenCalled();
+                        expect(dlg.close).not.toHaveBeenCalled();
                     });
                 });
             });
@@ -650,40 +642,20 @@ suite('rb/views/CommentDialogView', function() {
                 });
 
                 describe('With editor.canSave=true', function() {
-                    describe('Keycode 10', function() {
-                        it('If Markdown', function() {
-                            setupForRichText(true, true);
+                    it('If Markdown', function() {
+                        setupForRichText(true, true);
 
-                            simulateKeyPress(10, false, false, true);
-                            expect(editor.save).toHaveBeenCalled();
-                            expect(dlg.close).toHaveBeenCalled();
-                        });
-
-                        it('If plain text', function() {
-                            setupForRichText(false, true);
-
-                            simulateKeyPress(10, false, false, true);
-                            expect(editor.save).toHaveBeenCalled();
-                            expect(dlg.close).toHaveBeenCalled();
-                        });
+                        simulateKeyPress('Enter', false, false, true);
+                        expect(editor.save).toHaveBeenCalled();
+                        expect(dlg.close).toHaveBeenCalled();
                     });
 
-                    describe('Keycode 13', function() {
-                        it('If Markdown', function() {
-                            setupForRichText(true, true);
+                    it('If plain text', function() {
+                        setupForRichText(false, true);
 
-                            simulateKeyPress(13, false, false, true);
-                            expect(editor.save).toHaveBeenCalled();
-                            expect(dlg.close).toHaveBeenCalled();
-                        });
-
-                        it('If plain text', function() {
-                            setupForRichText(false, true);
-
-                            simulateKeyPress(13, false, false, true);
-                            expect(editor.save).toHaveBeenCalled();
-                            expect(dlg.close).toHaveBeenCalled();
-                        });
+                        simulateKeyPress('Enter', false, false, true);
+                        expect(editor.save).toHaveBeenCalled();
+                        expect(dlg.close).toHaveBeenCalled();
                     });
                 });
 
@@ -692,40 +664,20 @@ suite('rb/views/CommentDialogView', function() {
                         editor.set('canSave', false);
                     });
 
-                    describe('Keycode 10', function() {
-                        it('If Markdown', function() {
-                            setupForRichText(true);
+                    it('If Markdown', function() {
+                        setupForRichText(true);
 
-                            simulateKeyPress(10, false, false, true);
-                            expect(editor.save).not.toHaveBeenCalled();
-                            expect(dlg.close).not.toHaveBeenCalled();
-                        });
-
-                        it('If plain text', function() {
-                            setupForRichText(false);
-
-                            simulateKeyPress(10, false, false, true);
-                            expect(editor.save).not.toHaveBeenCalled();
-                            expect(dlg.close).not.toHaveBeenCalled();
-                        });
+                        simulateKeyPress('Enter', false, false, true);
+                        expect(editor.save).not.toHaveBeenCalled();
+                        expect(dlg.close).not.toHaveBeenCalled();
                     });
 
-                    describe('Keycode 13', function() {
-                        it('If Markdown', function() {
-                            setupForRichText(true);
+                    it('If plain text', function() {
+                        setupForRichText(false);
 
-                            simulateKeyPress(13, false, false, true);
-                            expect(editor.save).not.toHaveBeenCalled();
-                            expect(dlg.close).not.toHaveBeenCalled();
-                        });
-
-                        it('If plain text', function() {
-                            setupForRichText(false);
-
-                            simulateKeyPress(13, false, false, true);
-                            expect(editor.save).not.toHaveBeenCalled();
-                            expect(dlg.close).not.toHaveBeenCalled();
-                        });
+                        simulateKeyPress('Enter', false, false, true);
+                        expect(editor.save).not.toHaveBeenCalled();
+                        expect(dlg.close).not.toHaveBeenCalled();
                     });
                 });
             });
@@ -741,7 +693,7 @@ suite('rb/views/CommentDialogView', function() {
                         spyOn(window, 'confirm').and.returnValue(true);
                         setupForRichText(true);
 
-                        simulateKeyPress($.ui.keyCode.ESCAPE, false, false);
+                        simulateKeyPress('Escape', false, false);
                         expect(editor.cancel).toHaveBeenCalled();
                         expect(window.confirm).toHaveBeenCalled();
                         expect(dlg.close).toHaveBeenCalled();
@@ -750,7 +702,7 @@ suite('rb/views/CommentDialogView', function() {
                     it('If plain text', function() {
                         setupForRichText(false);
 
-                        simulateKeyPress($.ui.keyCode.ESCAPE, false, false);
+                        simulateKeyPress('Escape', false, false);
                         expect(editor.cancel).toHaveBeenCalled();
                         expect(dlg.close).toHaveBeenCalled();
                     });
@@ -759,7 +711,7 @@ suite('rb/views/CommentDialogView', function() {
                         spyOn(window, 'confirm').and.returnValue(true);
                         editor.set('dirty', true);
 
-                        simulateKeyPress($.ui.keyCode.ESCAPE, false, false);
+                        simulateKeyPress('Escape', false, false);
                         expect(editor.cancel).toHaveBeenCalled();
                         expect(window.confirm).toHaveBeenCalled();
                         expect(dlg.close).toHaveBeenCalled();
@@ -769,7 +721,7 @@ suite('rb/views/CommentDialogView', function() {
                         spyOn(window, 'confirm').and.returnValue(false);
                         editor.set('dirty', true);
 
-                        simulateKeyPress($.ui.keyCode.ESCAPE, false, false);
+                        simulateKeyPress('Escape', false, false);
                         expect(editor.cancel).not.toHaveBeenCalled();
                         expect(window.confirm).toHaveBeenCalled();
                         expect(dlg.close).not.toHaveBeenCalled();
@@ -785,7 +737,7 @@ suite('rb/views/CommentDialogView', function() {
                     $checkbox.prop('checked', startState);
                     editor.set('openIssue', startState);
 
-                    simulateKeyPress(keyCode.charCodeAt(0), true, false);
+                    simulateKeyPress(keyCode, true, false);
 
                     expect($checkbox.prop('checked')).toBe(!startState);
                     expect(editor.get('openIssue')).toBe(!startState);
@@ -799,21 +751,21 @@ suite('rb/views/CommentDialogView', function() {
                 describe('Alt-I', function() {
                     describe('Checked to unchecked', function() {
                         it('If Markdown', function() {
-                            runToggleIssueTest(true, true, 'I');
+                            runToggleIssueTest(true, true, 'i');
                         });
 
-                        it('If Markdown', function() {
-                            runToggleIssueTest(false, true, 'I');
+                        it('If plain text', function() {
+                            runToggleIssueTest(false, true, 'i');
                         });
                     });
 
                     describe('Unchecked to checked', function() {
                         it('If Markdown', function() {
-                            runToggleIssueTest(true, false, 'I');
+                            runToggleIssueTest(true, false, 'i');
                         });
 
                         it('If plain text', function() {
-                            runToggleIssueTest(false, false, 'I');
+                            runToggleIssueTest(false, false, 'i');
                         });
                     });
                 });
@@ -973,11 +925,11 @@ suite('rb/views/CommentDialogView', function() {
                 it('When commentsOpenAnIssue is true', function() {
                     RB.UserSession.instance.set('commentsOpenAnIssue', true);
 
-                    editor = new RB.CommentEditor({
+                    editor = new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,
                     });
-                    dlg = new RB.CommentDialogView({
+                    dlg = new CommentDialogView({
                         animate: false,
                         model: editor,
                     });
@@ -991,11 +943,11 @@ suite('rb/views/CommentDialogView', function() {
                 it('When commentsOpenAnIssue is false', function() {
                     RB.UserSession.instance.set('commentsOpenAnIssue', false);
 
-                    editor = new RB.CommentEditor({
+                    editor = new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,
                     });
-                    dlg = new RB.CommentDialogView({
+                    dlg = new CommentDialogView({
                         animate: false,
                         model: editor,
                     });
@@ -1010,15 +962,16 @@ suite('rb/views/CommentDialogView', function() {
             describe('Enable Markdown checkbox', function() {
                 describe('When defaultUseRichText is true', function() {
                     beforeEach(function() {
-                        RB.UserSession.instance.set('defaultUseRichText', true);
+                        RB.UserSession.instance.set(
+                            'defaultUseRichText', true);
                     });
 
                     it('New comment', function() {
-                        editor = new RB.CommentEditor({
+                        editor = new CommentEditor({
                             reviewRequest: reviewRequest,
                             reviewRequestEditor: reviewRequestEditor,
                         });
-                        dlg = new RB.CommentDialogView({
+                        dlg = new CommentDialogView({
                             animate: false,
                             model: editor,
                         });
@@ -1031,14 +984,14 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('Existing comment with richText=true', function() {
-                        editor = new RB.CommentEditor({
-                            reviewRequest: reviewRequest,
-                            reviewRequestEditor: reviewRequestEditor,
+                        editor = new CommentEditor({
                             comment: new RB.DiffComment({
                                 richText: true,
                             }),
+                            reviewRequest: reviewRequest,
+                            reviewRequestEditor: reviewRequestEditor,
                         });
-                        dlg = new RB.CommentDialogView({
+                        dlg = new CommentDialogView({
                             animate: false,
                             model: editor,
                         });
@@ -1051,14 +1004,14 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('Existing comment with richText=false', function() {
-                        editor = new RB.CommentEditor({
-                            reviewRequest: reviewRequest,
-                            reviewRequestEditor: reviewRequestEditor,
+                        editor = new CommentEditor({
                             comment: new RB.DiffComment({
                                 richText: false,
                             }),
+                            reviewRequest: reviewRequest,
+                            reviewRequestEditor: reviewRequestEditor,
                         });
-                        dlg = new RB.CommentDialogView({
+                        dlg = new CommentDialogView({
                             animate: false,
                             model: editor,
                         });
@@ -1078,11 +1031,11 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('New comment', function() {
-                        editor = new RB.CommentEditor({
+                        editor = new CommentEditor({
                             reviewRequest: reviewRequest,
                             reviewRequestEditor: reviewRequestEditor,
                         });
-                        dlg = new RB.CommentDialogView({
+                        dlg = new CommentDialogView({
                             animate: false,
                             model: editor,
                         });
@@ -1095,14 +1048,14 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('Existing comment with richText=true', function() {
-                        editor = new RB.CommentEditor({
-                            reviewRequest: reviewRequest,
-                            reviewRequestEditor: reviewRequestEditor,
+                        editor = new CommentEditor({
                             comment: new RB.DiffComment({
                                 richText: true,
                             }),
+                            reviewRequest: reviewRequest,
+                            reviewRequestEditor: reviewRequestEditor,
                         });
-                        dlg = new RB.CommentDialogView({
+                        dlg = new CommentDialogView({
                             animate: false,
                             model: editor,
                         });
@@ -1115,14 +1068,14 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('Existing comment with richText=false', function() {
-                        editor = new RB.CommentEditor({
-                            reviewRequest: reviewRequest,
-                            reviewRequestEditor: reviewRequestEditor,
+                        editor = new CommentEditor({
                             comment: new RB.DiffComment({
                                 richText: false,
                             }),
+                            reviewRequest: reviewRequest,
+                            reviewRequestEditor: reviewRequestEditor,
                         });
-                        dlg = new RB.CommentDialogView({
+                        dlg = new CommentDialogView({
                             animate: false,
                             model: editor,
                         });
@@ -1141,9 +1094,9 @@ suite('rb/views/CommentDialogView', function() {
             it('When logged in', function() {
                 RB.UserSession.instance.set('authenticated', true);
 
-                dlg = new RB.CommentDialogView({
+                dlg = new CommentDialogView({
                     animate: false,
-                    model: new RB.CommentEditor({
+                    model: new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,
                     }),
@@ -1156,9 +1109,9 @@ suite('rb/views/CommentDialogView', function() {
             it('When logged out', function() {
                 RB.UserSession.instance.set('authenticated', false);
 
-                dlg = new RB.CommentDialogView({
+                dlg = new CommentDialogView({
                     animate: false,
-                    model: new RB.CommentEditor({
+                    model: new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,
                     }),
@@ -1169,13 +1122,12 @@ suite('rb/views/CommentDialogView', function() {
             });
         });
 
-        describe('In Draft indicator', function() {
-            it('Shown when hasDraft=true', function() {
-                reviewRequest.set('hasDraft', true);
-
-                dlg = new RB.CommentDialogView({
+        describe('Draft indicator', function() {
+            it('Shown when draftWarning != null', function() {
+                dlg = new CommentDialogView({
                     animate: false,
-                    model: new RB.CommentEditor({
+                    draftWarning: 'warning',
+                    model: new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,
                     }),
@@ -1186,12 +1138,11 @@ suite('rb/views/CommentDialogView', function() {
                     .toBe(1);
             });
 
-            it('Hidden when hasDraft=false', function() {
-                reviewRequest.set('hasDraft', false);
-
-                dlg = new RB.CommentDialogView({
+            it('Hidden when draftWarning == null', function() {
+                dlg = new CommentDialogView({
                     animate: false,
-                    model: new RB.CommentEditor({
+                    draftWarning: null,
+                    model: new CommentEditor({
                         reviewRequest: reviewRequest,
                         reviewRequestEditor: reviewRequestEditor,
                     }),

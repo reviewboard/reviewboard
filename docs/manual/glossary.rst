@@ -99,6 +99,25 @@ Glossary
        limited access to user accounts, without the owner of that account
        divulging their authentication credentials.
 
+   Perforce Operator User
+   Perforce Operator Users
+       A type of user account used in :rbintegration:`Perforce <perforce>`
+       for handling server maintenance tasks.
+
+   Perforce Service User
+   Perforce Service Users
+       A type of user account used in :rbintegration:`Perforce <perforce>` for
+       handling Perforce-to-Perforce replication, log processing, and related
+       operations.
+
+   Perforce Standard User
+   Perforce Standard Users
+       A normal type of user account used in :rbintegration:`Perforce
+       <perforce>`.
+
+       Review Board requires this type of account when :ref:`configuring
+       a Perforce repository <repository-scm-perforce>`.
+
    Post-commit Hook
        A script that is executed after a commit is made to a repository.
        See :ref:`automating-rbt-post` for ways to use post-commit hooks

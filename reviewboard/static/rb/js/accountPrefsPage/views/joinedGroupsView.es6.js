@@ -216,7 +216,7 @@ const SiteGroupsView = Backbone.View.extend({
             'name': name
         });
 
-        this.$el.setVisible(this.collection.length > 0);
+        this.$el.toggle(this.collection.length > 0);
     }
 });
 

@@ -29,6 +29,9 @@
  *     numRevision (number):
  *         The total number of revisions for the given attachment.
  *
+ *     public (boolean):
+ *         Whether the diff has been published.
+ *
  * See Also:
  *     :js:class:`RB.AbstractReviewable`:
  *         For attributes defined on the base model.
@@ -44,11 +47,13 @@ RB.FileAttachmentReviewable = RB.AbstractReviewable.extend({
         fileRevision: null,
         filename: '',
         numRevisions: null,
+        public: false,
     }, RB.AbstractReviewable.prototype.defaults),
 
     defaultCommentBlockFields: [
         'fileAttachmentID',
         'diffAgainstFileAttachmentID',
+        'public',
     ],
 
     /**
@@ -69,6 +74,7 @@ RB.FileAttachmentReviewable = RB.AbstractReviewable.extend({
                 diffAgainstFileAttachmentID:
                     this.get('diffAgainstFileAttachmentID'),
                 serializedComments: serializedCommentBlock,
+                public: this.get('public'),
             }, parsedData));
     },
 });

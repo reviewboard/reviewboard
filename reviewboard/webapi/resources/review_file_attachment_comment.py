@@ -1,3 +1,6 @@
+from typing import Optional
+
+from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
@@ -8,6 +11,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
 from djblets.webapi.fields import IntFieldType
 
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.reviews.models import ReviewRequest
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_file_attachment_comment import \
@@ -32,6 +36,45 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         q = super(ReviewFileAttachmentCommentResource, self).get_queryset(
             request, *args, **kwargs)
         return q.filter(review=review_id)
+
+    def _get_file_attachment(
+        self,
+        file_attachment_id: int,
+        review_request: ReviewRequest,
+        user: User,
+    ) -> Optional[FileAttachment]:
+        """Return the file attachment matching the given ID.
+
+        Args:
+            file_attachment_id (int):
+                The PK of the file attechment.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request.
+
+            user (django.contrib.auth.models.User):
+                The user making the request.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The matching file attachment, if it exists.
+        """
+        try:
+            return FileAttachment.objects.get(pk=file_attachment_id,
+                                              review_request=review_request)
+        except ObjectDoesNotExist:
+            pass
+
+        draft = review_request.get_draft(user)
+
+        if draft:
+            try:
+                return FileAttachment.objects.get(pk=file_attachment_id,
+                                                  drafts=draft)
+            except ObjectDoesNotExist:
+                pass
+
+        return None
 
     @webapi_check_local_site
     @webapi_login_required
@@ -77,11 +120,12 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         if not resources.review.has_modify_permissions(request, review):
             return self.get_no_access_error(request)
 
-        try:
-            file_attachment = \
-                FileAttachment.objects.get(pk=file_attachment_id,
-                                           review_request=review_request)
-        except ObjectDoesNotExist:
+        file_attachment = self._get_file_attachment(
+            file_attachment_id,
+            review_request,
+            request.user)
+
+        if file_attachment is None:
             return INVALID_FORM_DATA, {
                 'fields': {
                     'file_attachment_id': ['This is not a valid file '
@@ -92,11 +136,12 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         diff_against_file_attachment = None
 
         if diff_against_file_attachment_id:
-            try:
-                diff_against_file_attachment = FileAttachment.objects.get(
-                    pk=diff_against_file_attachment_id,
-                    review_request=review_request)
-            except ObjectDoesNotExist:
+            diff_against_file_attachment = self._get_file_attachment(
+                diff_against_file_attachment_id,
+                review_request,
+                request.user)
+
+            if diff_against_file_attachment is None:
                 return INVALID_FORM_DATA, {
                     'fields': {
                         'diff_against_file_attachment_id': [

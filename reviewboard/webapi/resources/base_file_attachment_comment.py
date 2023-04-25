@@ -93,8 +93,16 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
             except ObjectDoesNotExist:
                 raise self.model.DoesNotExist
 
-            q &= (Q(file_attachment__review_request=review_request) |
-                  Q(file_attachment__inactive_review_request=review_request))
+            query = (Q(file_attachment__review_request=review_request) |
+                     Q(file_attachment__inactive_review_request=review_request))
+
+            draft = review_request.get_draft(request.user)
+
+            if draft is not None:
+                query |= (Q(file_attachment__drafts=draft) |
+                          Q(file_attachment__inactive_drafts=draft))
+
+            q &= query
 
         return self.model.objects.filter(q)
 

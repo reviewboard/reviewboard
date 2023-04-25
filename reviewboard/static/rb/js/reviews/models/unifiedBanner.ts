@@ -153,13 +153,40 @@ export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
 
         if (!reviewRequestPublic) {
             /* Review request has never been published */
-            draftModes.push({
-                hasReview: false,
-                hasReviewReplies: false,
-                hasReviewRequest: true,
-                multiple: false,
-                text: _`This review request is a draft`,
-            });
+
+            if (reviewDraft) {
+                /* Review request draft + review draft */
+                draftModes.push({
+                    hasReview: true,
+                    hasReviewReplies: false,
+                    hasReviewRequest: true,
+                    multiple: true,
+                    text: _`Draft and review`,
+                });
+
+                draftModes.push({
+                    hasReview: false,
+                    hasReviewReplies: false,
+                    hasReviewRequest: true,
+                    multiple: false,
+                    text: _`Review request draft`,
+                });
+                draftModes.push({
+                    hasReview: true,
+                    hasReviewReplies: false,
+                    hasReviewRequest: false,
+                    multiple: false,
+                    text: _`Review of the change`,
+                });
+            } else {
+                draftModes.push({
+                    hasReview: false,
+                    hasReviewReplies: false,
+                    hasReviewRequest: true,
+                    multiple: false,
+                    text: _`This review request is a draft`,
+                });
+            }
         } else if (reviewRequestDraft) {
             /* Review request draft */
 

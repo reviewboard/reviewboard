@@ -784,102 +784,151 @@
   }
 }
 
-#diff_index,
-.diff-index {
+/**
+ * The diff file index table.
+ *
+ * This can appear either within the review request box, or as a docked item
+ * within the unified review banner.
+ */
+table.rb-c-diff-file-index {
   @icon-size: 20px;
   @icon-offset: 2px;
 
-  table {
-    border-collapse: collapse;
-    border: @review-request-field-border;
-    padding: 0;
-    width: 100%;
+  border-collapse: collapse;
+  border: @review-request-field-border;
+  padding: 0;
+  width: 100%;
 
-    tr {
-      &:first-child td {
-        border-top: 0;
+  tr {
+    &:first-child td {
+      border-top: 0;
+    }
+  }
+
+  td {
+    background: #FDFDFD;
+    padding: 0.6em;
+    margin: 0;
+    border-top: @review-request-field-table-divider-border;
+    vertical-align: top;
+
+    &.diff-chunks-cell {
+      color: #888;
+      text-align: right;
+      width: 70%;
+    }
+
+    &.diff-file-icon {
+      padding: @icon-offset 0 0 @icon-offset;
+
+      .rb-icon {
+        width: @icon-size;
+        height: @icon-size;
+      }
+
+      .fa-spinner {
+        font-size: @icon-size - 4px;
+        margin: 2px;
       }
     }
 
-    td {
-      background: #FDFDFD;
-      padding: 0.6em;
-      margin: 0;
-      border-top: @review-request-field-table-divider-border;
-      vertical-align: top;
+    &.diff-file-info {
+      padding-left: 0.3em;
+      white-space: nowrap;
+      width: 30%;
 
-      &.diff-chunks-cell {
+      .diff-file-rename {
         color: #888;
-        text-align: right;
-        width: 70%;
+        display: block;
+        font-size: 90%;
+        font-style: italic;
+        padding: 1em 0 0 0;
+      }
+    }
+
+    a {
+      color: @link-color;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
       }
 
-      &.diff-file-icon {
-        padding: @icon-offset 0 0 @icon-offset;
-
-        .rb-icon {
-          width: @icon-size;
-          height: @icon-size;
-        }
-
-        .fa-spinner {
-          font-size: @icon-size - 4px;
-          margin: 2px;
-        }
+      &.dimmed {
+        color: #ABABAB;
       }
+    }
 
-      &.diff-file-info {
-        padding-left: 0.3em;
-        white-space: nowrap;
-        width: 30%;
-
-        .diff-file-rename {
-          color: #888;
-          display: block;
-          font-size: 90%;
-          font-style: italic;
-          padding: 1em 0 0 0;
-        }
-      }
+    .diff-chunks {
+      max-height: 2.5em;
+      overflow: hidden;
+      text-align: right;
 
       a {
-        color: @link-color;
-        text-decoration: none;
+        border-radius: 50%;
+        display: inline-block;
+        margin: 3px 2px 0 2px;
+        width: 8px;
+        height: 8px;
 
-        &:hover {
-          text-decoration: underline;
+        &.insert {
+          background-color: @diff-insert-dot-color;
         }
 
-        &.dimmed {
-          color: #ABABAB;
+        &.delete {
+          background-color: @diff-delete-dot-color;
         }
-      }
 
-      .diff-chunks {
-        max-height: 2.5em;
-        overflow: hidden;
-        text-align: right;
-
-        a {
-          border-radius: 50%;
-          display: inline-block;
-          margin: 3px 2px 0 2px;
-          width: 8px;
-          height: 8px;
-
-          &.insert {
-            background-color: @diff-insert-dot-color;
-          }
-
-          &.delete {
-            background-color: @diff-delete-dot-color;
-          }
-
-          &.replace {
-            background-color: @diff-replace-dot-color;
-          }
+        &.replace {
+          background-color: @diff-replace-dot-color;
         }
       }
+    }
+  }
+}
+
+/**
+ * The diff file index when docked into the unified banner.
+ *
+ * Structure:
+ *     <div class="rb-c-diff-file-index-dock">
+ *      <div class="rb-c-diff-file-index-dock__table">
+ *       <table class="rb-c-diff-file-index">...</table>
+ *       <a href="#" class="rb-c-diff-file-index-dock__disclosure">
+ *        <span class="fa fa-bars"></span>
+ *       </a>
+ *      </div>
+ *     </div>
+ */
+.rb-c-diff-file-index-dock {
+  display: flex;
+
+  /**
+   * The disclosure icon for when the table is collapsed.
+   */
+  &__disclosure {
+    font-size: 120%;
+    padding: 4px 0 4px 8px;
+  }
+
+  &__table {
+    border: @review-request-field-border;
+    flex-grow: 1;
+    overflow: hidden;
+  }
+
+  table.rb-c-diff-file-index, tr, td {
+    border: none;
+  }
+
+  &.-is-expanded {
+    .rb-c-diff-file-index-dock__table {
+      transition: max-height 0.3s;
+    }
+
+    table {
+      transform: inherit !important;
+      transition: transform 0.3s;
     }
   }
 }

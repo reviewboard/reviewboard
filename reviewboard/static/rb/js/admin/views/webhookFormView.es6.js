@@ -72,7 +72,7 @@ RB.WebhookFormView = Backbone.View.extend({
      * selected radio button.
      */
     _onApplyToChanged() {
-        this._$reposRow.setVisible(this._$applyToSelected[0].checked);
+        this._$reposRow.toggle(this._$applyToSelected[0].checked);
     },
 
     /**
@@ -90,6 +90,6 @@ RB.WebhookFormView = Backbone.View.extend({
      * Toggles the visibility of the text box to match the checkbox.
      */
     _onUseCustomContentToggled() {
-        this._$customContentRow.setVisible(this._$useCustomContent[0].checked);
+        this._$customContentRow.toggle(this._$useCustomContent[0].checked);
     },
 });

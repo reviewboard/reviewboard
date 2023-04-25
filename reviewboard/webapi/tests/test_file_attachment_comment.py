@@ -1,10 +1,15 @@
+from djblets.webapi.testing.decorators import webapi_test_template
+
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
-from reviewboard.webapi.tests.mimetypes import \
-    file_attachment_comment_list_mimetype
+from reviewboard.webapi.tests.mimetypes import (
+    file_attachment_comment_item_mimetype,
+    file_attachment_comment_list_mimetype)
 from reviewboard.webapi.tests.mixins import (BasicTestsMetaclass,
                                              ReviewRequestChildListMixin)
-from reviewboard.webapi.tests.urls import get_file_attachment_comment_list_url
+from reviewboard.webapi.tests.urls import (
+    get_file_attachment_comment_list_url,
+    get_review_file_attachment_comment_list_url)
 
 
 class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
@@ -55,6 +60,33 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
                                                      local_site_name),
                 file_attachment_comment_list_mimetype,
                 items)
+
+    #
+    # HTTP POST tests
+    #
+
+    @webapi_test_template
+    def test_post_with_draft_attachment(self):
+        """Testing the POST <URL> API with a draft file attachment"""
+        review_request = self.create_review_request(submitter=self.user)
+        file_attachment = self.create_file_attachment(review_request,
+                                                      draft=True)
+        review = self.create_review(review_request, user=self.user)
+
+        comment_text = 'Test attachment comment'
+
+        rsp = self.api_post(
+            get_review_file_attachment_comment_list_url(review),
+            {
+                'file_attachment_id': file_attachment.pk,
+                'text': comment_text,
+            },
+            expected_mimetype=file_attachment_comment_item_mimetype)
+
+        assert rsp is not None
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('file_attachment_comment', rsp)
+        self.assertEqual(rsp['file_attachment_comment']['text'], comment_text)
 
 
 # Satisfy the linter check. This resource is a list only, and doesn't

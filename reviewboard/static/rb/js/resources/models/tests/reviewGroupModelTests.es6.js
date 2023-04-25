@@ -196,7 +196,7 @@ suite('rb/resources/models/ReviewGroup', function() {
             group.set('id', null);
             expect(group.isNew()).toBe(true);
 
-            expectAsync(group.removeUser('my-user')).toBeRejectedWith(
+            await expectAsync(group.removeUser('my-user')).toBeRejectedWith(
                 Error('Unable to remove from the group.'));
 
             expect(RB.apiCall).not.toHaveBeenCalled();

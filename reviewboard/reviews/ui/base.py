@@ -734,6 +734,7 @@ class FileAttachmentReviewUI(ReviewUI):
             'fileAttachmentID': self.obj.pk,
             'fileRevision': self.obj.attachment_revision,
             'filename': self.obj.orig_filename,
+            'public': self.obj.review_request.exists(),
         }
 
         if self.obj.attachment_history is not None:

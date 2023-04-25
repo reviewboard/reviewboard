@@ -139,18 +139,18 @@ RB.UploadDiffView = Backbone.View.extend({
      *         The current state of the upload process.
      */
     _onStateChanged(model, state) {
-        this._$promptForDiff.setVisible(
+        this._$promptForDiff.toggle(
             state === this.model.State.PROMPT_FOR_DIFF);
-        this._$promptForParentDiff.setVisible(
+        this._$promptForParentDiff.toggle(
             state === this.model.State.PROMPT_FOR_PARENT_DIFF);
-        this._$promptForBasedir.setVisible(
+        this._$promptForBasedir.toggle(
             state === this.model.State.PROMPT_FOR_BASEDIR);
-        this._$processingDiff.setVisible(
+        this._$processingDiff.toggle(
             state === this.model.State.PROCESSING_DIFF);
-        this._$promptForChangeNumber.setVisible(
+        this._$promptForChangeNumber.toggle(
             state === this.model.State.PROMPT_FOR_CHANGE_NUMBER);
-        this._$uploading.setVisible(state === this.model.State.UPLOADING);
-        this._$error.setVisible(state === this.model.State.ERROR);
+        this._$uploading.toggle(state === this.model.State.UPLOADING);
+        this._$error.toggle(state === this.model.State.ERROR);
     },
 
     /**

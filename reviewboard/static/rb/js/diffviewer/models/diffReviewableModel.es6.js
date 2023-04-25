@@ -20,6 +20,9 @@
  *     revision (number):
  *         The revision of the FileDiff.
  *
+ *     public (boolean):
+ *         Whether the diff has been published.
+ *
  * See Also:
  *     :js:class:`RB.AbstractReviewable`:
  *         For the attributes defined by the base model.
@@ -32,6 +35,7 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
         interdiffRevision: null,
         interFileDiffID: null,
         revision: null,
+        public: false,
     }, RB.AbstractReviewable.prototype.defaults),
 
     commentBlockModel: RB.DiffCommentBlock,
@@ -40,6 +44,7 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
         'baseFileDiffID',
         'fileDiffID',
         'interFileDiffID',
+        'public',
     ],
 
     /**
@@ -59,6 +64,7 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
             endLineNum: serializedCommentBlock.linenum +
                         serializedCommentBlock.num_lines - 1,
             serializedComments: serializedCommentBlock.comments || [],
+            public: this.get('public'),
         });
     },
 

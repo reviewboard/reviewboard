@@ -37,6 +37,9 @@
  *     newfile (boolean):
  *         Whether or not the file is newly created.
  *
+ *     public (boolean):
+ *         Whether the diff has been published or not.
+ *
  *     revision (number):
  *         The base revision of the file.
  */
@@ -55,6 +58,7 @@ RB.DiffFile = Backbone.Model.extend({
         newfile: false,
         forceInterdiff: null,
         forceInterdiffRevision: null,
+        public: false,
     },
 
     /**
@@ -85,6 +89,7 @@ RB.DiffFile = Backbone.Model.extend({
             revision: rsp.revision,
             forceInterdiff: rsp.force_interdiff,
             forceInterdiffRevision: rsp.interdiff_revision,
+            public: rsp.public,
         };
     },
 });

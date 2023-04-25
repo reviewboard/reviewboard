@@ -265,14 +265,14 @@ RB.FormView = Backbone.View.extend({
                 const enabled = $enabler.is(':checked');
 
                 $subform
-                    .setVisible(enabled)
+                    .toggle(enabled)
                     .prop('disabled', !enabled);
 
                 $enabler.on('change', () => {
                     const enabled = $enabler.is(':checked');
 
                     $subform
-                        .setVisible(enabled)
+                        .toggle(enabled)
                         .prop('disabled', !enabled);
                 });
             }

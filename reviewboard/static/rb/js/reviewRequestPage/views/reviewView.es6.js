@@ -230,7 +230,7 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
 
         this._$bodyBottom
             .html(html)
-            .closest('li').setVisible(html && html.length > 0);
+            .closest('li').toggle(html && html.length > 0);
     },
 
     /**

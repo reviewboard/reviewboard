@@ -9,7 +9,10 @@ from djblets.util.dates import get_tz_aware_utcnow
 from kgb import SpyAgency, spy_on
 
 from reviewboard.reviews.errors import RevokeShipItError
-from reviewboard.reviews.models import Review, ReviewRequest
+from reviewboard.reviews.models import (Comment,
+                                        FileAttachmentComment,
+                                        Review,
+                                        ReviewRequest)
 from reviewboard.reviews.signals import (review_ship_it_revoked,
                                          review_ship_it_revoking)
 from reviewboard.testing import TestCase
@@ -435,3 +438,131 @@ class ReviewTests(SpyAgency, TestCase):
         self.assertEqual(review_request.time_added, creation_timestamp)
         self.assertEqual(review_request.last_updated, review_timestamp)
         self.assertEqual(review.timestamp, review_timestamp)
+
+    def test_draft_diff_comment_invalidation(self):
+        """Testing invalidation of comments on draft diffs when the diff is
+        replaced.
+        """
+        review_request = self.create_review_request(create_repository=True)
+        diffset = self.create_diffset(review_request=review_request,
+                                      draft=True)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request)
+        comment = self.create_diff_comment(review, filediff)
+
+        # DiffResource.create() will delete an existing draft DiffSet before
+        # replacing it, so we can simulate that here by just deleting the one
+        # we have.
+        diffset.delete()
+
+        self.assertFalse(Comment.objects.filter(pk=comment.pk).exists())
+
+    def test_draft_file_attachment_comment_invalidation(self):
+        """Testing invalidation of comments on draft file attachments when the
+        attachment is replaced.
+        """
+        review_request = self.create_review_request(create_repository=True)
+        attachment = self.create_file_attachment(review_request,
+                                                 draft=True)
+
+        review = self.create_review(review_request)
+        comment = self.create_file_attachment_comment(review, attachment)
+
+        # UploadAttachmentForm.create() will delete an existing draft
+        # attachment before replacing it, so we can simulate that here by just
+        # deleting the one we have.
+        attachment.delete()
+
+        self.assertFalse(
+            FileAttachmentComment.objects.filter(pk=comment.pk).exists())
+
+    def test_can_publish(self):
+        """Testing Review.can_publish"""
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        review = self.create_review(review_request,
+                                    body_top=Review.SHIP_IT_TEXT,
+                                    ship_it=True)
+
+        can_publish, err = review.can_publish()
+
+        self.assertTrue(can_publish)
+        self.assertIsNone(err)
+
+    def test_can_publish_draft_review_request(self):
+        """Testing Review.can_publish with a draft review request"""
+        review_request = self.create_review_request(create_repository=True)
+        review = self.create_review(review_request,
+                                    body_top=Review.SHIP_IT_TEXT,
+                                    ship_it=True)
+
+        can_publish, err = review.can_publish()
+
+        self.assertFalse(can_publish)
+        self.assertEqual(err,
+                         'This review cannot be published until the review '
+                         'request is published.')
+
+    def test_can_publish_with_draft_diff_comments(self):
+        """Testing Review.can_publish with comments on a draft diff"""
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request, draft=True)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request,
+                                    body_top=Review.SHIP_IT_TEXT,
+                                    ship_it=True)
+        self.create_diff_comment(review, filediff)
+
+        can_publish, err = review.can_publish()
+
+        self.assertFalse(can_publish)
+        self.assertEqual(err,
+                         'This review cannot be published, because it '
+                         'includes a comment on a diff which has not yet '
+                         'been published.')
+
+    def test_can_publish_with_draft_interdiff_comments(self):
+        """Testing Review.can_publish with comments on a draft interdiff"""
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+
+        interdiffset = self.create_diffset(review_request, draft=True)
+        interfilediff = self.create_filediff(interdiffset)
+
+        review = self.create_review(review_request,
+                                    body_top=Review.SHIP_IT_TEXT,
+                                    ship_it=True)
+        self.create_diff_comment(review, filediff, interfilediff)
+
+        can_publish, err = review.can_publish()
+
+        self.assertFalse(can_publish)
+        self.assertEqual(err,
+                         'This review cannot be published, because it '
+                         'includes a comment on a diff which has not yet '
+                         'been published.')
+
+    def test_can_publish_with_draft_file_comments(self):
+        """Testing Review.can_publish with comments on a draft file attachment
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        attachment = self.create_file_attachment(review_request, draft=True)
+
+        review = self.create_review(review_request,
+                                    body_top=Review.SHIP_IT_TEXT,
+                                    ship_it=True)
+        self.create_file_attachment_comment(review, attachment)
+
+        can_publish, err = review.can_publish()
+
+        self.assertFalse(can_publish)
+        self.assertEqual(err,
+                         'This review cannot be published, because it '
+                         'includes a comment on a file attachment which has '
+                         'not yet been published.')

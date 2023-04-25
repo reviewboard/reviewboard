@@ -121,7 +121,7 @@ runtime_npm_dependencies: Dict[str, str] = {
     '@rollup/plugin-commonjs': '^24.0.1',
     'babel-polyfill': '^6.26.0',
     'codemirror': '^5.65.11',
-    'jasmine-core': '~3.5.0',
+    'jasmine-core': '~3.8.0',
     'jquery': '^3.3.1',
     'jquery-flot': '^0.8.3',
     'jquery-form': '^4.2.2',

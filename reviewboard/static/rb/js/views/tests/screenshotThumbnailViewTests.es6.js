@@ -24,28 +24,28 @@ suite('rb/views/ScreenshotThumbnail', function() {
 
     describe('Actions', function() {
         it('Begin caption editing', function() {
-            view.$caption.inlineEditor('startEdit');
+            view._captionEditorView.startEdit();
             expect(view.trigger).toHaveBeenCalledWith('beginEdit');
         });
 
         it('Cancel caption editing', function() {
-            view.$caption.inlineEditor('startEdit');
+            view._captionEditorView.startEdit();
             expect(view.trigger).toHaveBeenCalledWith('beginEdit');
 
-            view.$caption.inlineEditor('cancel');
+            view._captionEditorView.cancel();
             expect(view.trigger).toHaveBeenCalledWith('endEdit');
         });
 
         it('Save caption', function(done) {
             spyOn(model, 'save');
 
-            view.$caption.inlineEditor('startEdit');
+            view._captionEditorView.startEdit();
             expect(view.trigger).toHaveBeenCalledWith('beginEdit');
 
             view.$el.find('input')
                 .val('Foo')
                 .triggerHandler('keyup');
-            view.$caption.inlineEditor('submit');
+            view._captionEditorView.submit();
 
             _.defer(() => {
                 expect(view.trigger).toHaveBeenCalledWith('endEdit');

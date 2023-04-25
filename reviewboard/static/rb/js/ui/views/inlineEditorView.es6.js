@@ -795,7 +795,7 @@ RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
             const $markdownRef = $('<a class="markdown-info" target="_blank">')
                 .attr('href', `${MANUAL_URL}users/markdown/`)
                 .text(gettext('Markdown Reference'))
-                .setVisible(this.textEditor.richText)
+                .toggle(this.textEditor.richText)
                 .appendTo(this.$buttons);
 
             this.textEditor.bindRichTextVisibility($markdownRef);

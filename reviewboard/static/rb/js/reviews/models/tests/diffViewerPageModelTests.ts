@@ -1,7 +1,21 @@
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+    suite,
+} from 'jasmine-core';
+
+import {
+    DiffViewerPage,
+} from 'reviewboard/reviews/models/diffViewerPageModel';
+
+
 suite('rb/pages/models/DiffViewerPage', function() {
     describe('parse', function() {
         it('{}', function() {
-            const page = new RB.DiffViewerPage({}, {parse: true});
+            const page = new DiffViewerPage({}, {parse: true});
 
             expect(page.get('allChunksCollapsed')).toBeFalse();
             expect(page.get('canDownloadDiff')).toBeFalse();
@@ -24,7 +38,7 @@ suite('rb/pages/models/DiffViewerPage', function() {
         });
 
         it('Diff view options', function() {
-            const page = new RB.DiffViewerPage({
+            const page = new DiffViewerPage({
                 allChunksCollapsed: true,
                 canToggleExtraWhitespace: true,
             }, {
@@ -36,19 +50,19 @@ suite('rb/pages/models/DiffViewerPage', function() {
         });
 
         it('reviewRequestData', function() {
-            const page = new RB.DiffViewerPage({
+            const page = new DiffViewerPage({
                 reviewRequestData: {
-                    bugTrackerURL: 'http://bugs.example.com/--bug_id--/',
-                    id: 123,
-                    localSitePrefix: 's/foo/',
                     branch: 'my-branch',
+                    bugTrackerURL: 'http://bugs.example.com/--bug_id--/',
                     bugsClosed: [101, 102, 103],
                     closeDescription: 'This is closed',
                     closeDescriptionRichText: true,
                     description: 'This is a description',
                     descriptionRichText: true,
                     hasDraft: true,
+                    id: 123,
                     lastUpdatedTimestamp: '2017-08-23T15:10:20Z',
+                    localSitePrefix: 's/foo/',
                     public: true,
                     repository: {
                         id: 200,
@@ -69,8 +83,8 @@ suite('rb/pages/models/DiffViewerPage', function() {
                     ],
                     targetPeople: [
                         {
-                            username: 'some-user',
                             url: '/s/foo/users/some-user/',
+                            username: 'some-user',
                         },
                     ],
                     testingDone: 'This is testing done',
@@ -116,8 +130,8 @@ suite('rb/pages/models/DiffViewerPage', function() {
                 url: '/s/foo/groups/some-group/',
             }]);
             expect(reviewRequest.get('targetPeople')).toEqual([{
-                username: 'some-user',
                 url: '/s/foo/users/some-user/',
+                username: 'some-user',
             }]);
             expect(reviewRequest.get('testingDone'))
                 .toBe('This is testing done');
@@ -136,7 +150,7 @@ suite('rb/pages/models/DiffViewerPage', function() {
         });
 
         it('extraReviewRequestDraftData', function() {
-            const page = new RB.DiffViewerPage({
+            const page = new DiffViewerPage({
                 extraReviewRequestDraftData: {
                     changeDescription: 'Draft change description',
                     changeDescriptionRichText: true,
@@ -158,7 +172,7 @@ suite('rb/pages/models/DiffViewerPage', function() {
         });
 
         it('editorData', function() {
-            const page = new RB.DiffViewerPage({
+            const page = new DiffViewerPage({
                 editorData: {
                     changeDescriptionRenderedText: 'Change description',
                     closeDescriptionRenderedText: 'This is closed',
@@ -188,9 +202,9 @@ suite('rb/pages/models/DiffViewerPage', function() {
         });
 
         it('lastActivityTimestamp', function() {
-            const page = new RB.DiffViewerPage({
-                lastActivityTimestamp: '2017-08-22T18:20:30Z',
+            const page = new DiffViewerPage({
                 checkUpdatesType: 'diff',
+                lastActivityTimestamp: '2017-08-22T18:20:30Z',
             }, {
                 parse: true,
             });
@@ -200,7 +214,7 @@ suite('rb/pages/models/DiffViewerPage', function() {
         });
 
         it('checkUpdatesType', function() {
-            const page = new RB.DiffViewerPage({
+            const page = new DiffViewerPage({
                 checkUpdatesType: 'diff',
             }, {
                 parse: true,
@@ -211,20 +225,20 @@ suite('rb/pages/models/DiffViewerPage', function() {
         });
 
         it('comments_hint', function() {
-            const page = new RB.DiffViewerPage({
+            const page = new DiffViewerPage({
                 comments_hint: {
                     diffsets_with_comments: [
                         {
-                            revision: 1,
                             is_current: false,
+                            revision: 1,
                         },
                     ],
                     has_other_comments: true,
                     interdiffs_with_comments: [
                         {
-                            old_revision: 1,
-                            new_revision: 2,
                             is_current: true,
+                            new_revision: 2,
+                            old_revision: 1,
                         },
                     ],
                 },
@@ -236,15 +250,15 @@ suite('rb/pages/models/DiffViewerPage', function() {
             expect(commentsHint.get('hasOtherComments')).toBe(true);
             expect(commentsHint.get('diffsetsWithComments')).toEqual([
                 {
-                    revision: 1,
                     isCurrent: false,
+                    revision: 1,
                 },
             ]);
             expect(commentsHint.get('interdiffsWithComments')).toEqual([
                 {
-                    oldRevision: 1,
-                    newRevision: 2,
                     isCurrent: true,
+                    newRevision: 2,
+                    oldRevision: 1,
                 },
             ]);
         });
@@ -254,7 +268,7 @@ suite('rb/pages/models/DiffViewerPage', function() {
         let page;
 
         beforeEach(function() {
-            page = new RB.DiffViewerPage({
+            page = new DiffViewerPage({
                 reviewRequestData: {
                     id: 123,
                 },
@@ -276,9 +290,9 @@ suite('rb/pages/models/DiffViewerPage', function() {
                     done: cb => cb({
                         diff_context: {
                             revision: {
-                                revision: query.revision,
                                 interdiff_revision:
                                     query['interdiff-revision'] || null,
+                                revision: query.revision,
                             },
                         },
                     }),
@@ -310,9 +324,9 @@ suite('rb/pages/models/DiffViewerPage', function() {
 
             it('First page, interdiffs', function() {
                 page.loadDiffRevision({
+                    interdiffRevision: 2,
                     page: 1,
                     revision: 1,
-                    interdiffRevision: 2,
                 });
 
                 expect($.ajax).toHaveBeenCalledWith(
@@ -322,9 +336,9 @@ suite('rb/pages/models/DiffViewerPage', function() {
 
             it('Other page, interdiffs', function() {
                 page.loadDiffRevision({
+                    interdiffRevision: 2,
                     page: 2,
                     revision: 1,
-                    interdiffRevision: 2,
                 });
 
                 expect($.ajax).toHaveBeenCalledWith(
@@ -334,9 +348,9 @@ suite('rb/pages/models/DiffViewerPage', function() {
 
             it('Filename patterns', function() {
                 page.loadDiffRevision({
+                    filenamePatterns: '*.txt,src/*',
                     page: 2,
                     revision: 1,
-                    filenamePatterns: '*.txt,src/*',
                 });
 
                 expect($.ajax).toHaveBeenCalledWith(
@@ -355,8 +369,8 @@ suite('rb/pages/models/DiffViewerPage', function() {
 
             it('false for interdiffs', function() {
                 page.loadDiffRevision({
-                    revision: 1,
                     interdiffRevision: 2,
+                    revision: 1,
                 });
                 expect(page.get('canDownloadDiff')).toBe(false);
             });

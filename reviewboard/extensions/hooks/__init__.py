@@ -14,6 +14,7 @@ from reviewboard.extensions.hooks.actions import (
     DiffViewerActionHook,
     HeaderActionHook,
     HeaderDropdownActionHook,
+    HideActionHook,
     ReviewRequestActionHook,
     ReviewRequestDropdownActionHook)
 from reviewboard.extensions.hooks.admin_widget import AdminWidgetHook
@@ -71,6 +72,7 @@ __all__ = [
     'FileDiffACLHook',
     'HeaderActionHook',
     'HeaderDropdownActionHook',
+    'HideActionHook',
     'HostingServiceHook',
     'IntegrationHook',
     'NavigationBarHook',

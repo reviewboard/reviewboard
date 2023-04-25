@@ -1026,6 +1026,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         review_request.target_people.add(site_user1, site_user2, site_user3,
                                          non_site_user1)
         review_request.target_groups.add(group)
+        review_request.publish(User.objects.get(username='doc'))
 
         review = Review.objects.create(review_request=review_request,
                                        user=site_user4)

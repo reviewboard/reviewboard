@@ -1,31 +1,67 @@
 /**
- * Manages the diff viewer page.
+ * A page view for the diff viewer.
+ */
+import { Router, spina } from '@beanbag/spina';
+
+import { EnabledFeatures } from 'reviewboard/common';
+
+import { DiffFileIndexView } from './diffFileIndexView';
+import { DiffViewerPage } from '../models/diffViewerPageModel';
+import {
+    ReviewablePageView,
+    ReviewablePageViewOptions,
+} from './reviewablePageView';
+import { UnifiedBannerView } from './unifiedBannerView';
+
+
+/** Options for adding a toggle button to the diff view. */
+interface ToggleButtonOptions {
+    /** The description of the active state and what clicking will do. */
+    activeDescription: string;
+
+    /** The label text for the active state. */
+    activeText: string;
+
+    /** The ID to use for the button element. */
+    id: string;
+
+    /** The description of the inactive state and what clicking will do. */
+    inactiveDescription: string;
+
+    /** The label text for the inactive state. */
+    inactiveText: string;
+
+    /** The default active state. */
+    isActive: boolean;
+
+    /** The callback for when the active state is explicitly toggled. */
+    onToggled: (isToggled: boolean) => void;
+}
+
+
+/**
+ * A page view for the diff viewer.
  *
  * This provides functionality for the diff viewer page for managing the
  * loading and display of diffs, and all navigation around the diffs.
  */
-RB.DiffViewerPageView = RB.ReviewablePageView.extend({
-    SCROLL_BACKWARD: -1,
-    SCROLL_FORWARD: 1,
+@spina({
+    mixins: [RB.KeyBindingsMixin],
+})
+export class DiffViewerPageView extends ReviewablePageView<
+    DiffViewerPage
+> {
+    static SCROLL_BACKWARD = -1;
+    static SCROLL_FORWARD = 1;
 
-    ANCHOR_COMMENT: 1,
-    ANCHOR_FILE: 2,
-    ANCHOR_CHUNK: 4,
+    static ANCHOR_COMMENT = 1;
+    static ANCHOR_FILE = 2;
+    static ANCHOR_CHUNK = 4;
 
-    DIFF_SCROLLDOWN_AMOUNT: 15,
+    /** Number of pixels to offset when scrolling to anchors. */
+    static DIFF_SCROLLDOWN_AMOUNT = 15;
 
-    keyBindings: {
-        'aAKP<m': '_selectPreviousFile',
-        'fFJN>': '_selectNextFile',
-        'sSkp,': '_selectPreviousDiff',
-        'dDjn.': '_selectNextDiff',
-        '[x': '_selectPreviousComment',
-        ']c': '_selectNextComment',
-        '\x0d': '_recenterSelected',
-        'rR': '_createComment',
-    },
-
-    _fileEntryTemplate: _.template(dedent`
+    static fileEntryTemplate = _.template(dedent`
         <div class="diff-container">
          <div class="diff-box">
           <table class="sidebyside loading <% if (newFile) { %>newfile<% } %>"
@@ -41,39 +77,65 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
           </table>
          </div>
         </div>
-    `),
+    `);
 
-    _viewToggleButtonContentTemplate: _.template(dedent`
+    static viewToggleButtonContentTemplate = _.template(dedent`
         <span class="fa <%- iconClass %>"></span> <%- text %>
-    `),
+    `);
 
     /* Template for code line link anchor */
-    anchorTemplate: _.template(
-        '<a name="<%- anchorName %>" class="highlight-anchor"></a>'),
+    static anchorTemplate = _.template(
+        '<a name="<%- anchorName %>" class="highlight-anchor"></a>');
+
+    keyBindings = {
+        'aAKP<m': '_selectPreviousFile',
+        'fFJN>': '_selectNextFile',
+        'sSkp,': '_selectPreviousDiff',
+        'dDjn.': '_selectNextDiff',
+        '[x': '_selectPreviousComment',
+        ']c': '_selectNextComment',
+        '\x0d': '_recenterSelected',
+        'rR': '_createComment',
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    #$controls: JQuery = null;
+    #$diffs: JQuery = null;
+    #$highlightedChunk: JQuery = null;
+    #$window: JQuery<Window>;
+    #chunkHighlighter: RB.ChunkHighlighterView = null;
+    #commentsHintView: RB.DiffCommentsHintView = null;
+    #diffFileIndexView: DiffFileIndexView = null;
+    #diffRevisionLabelView: RB.DiffRevisionLabelView = null;
+    #diffRevisionSelectorView: RB.DiffRevisionSelectorView = null;
+    #paginationView1: RB.PaginationView = null;
+    #paginationView2: RB.PaginationView = null;
+    #startAtAnchorName: string = null;
+    _$anchors: JQuery;
+    _commitListView: RB.DiffCommitListView = null;
+    _diffReviewableViews: RB.DiffReviewableView[] = [];
+    _selectedAnchorIndex = -1;
+    router: Router;
 
     /**
      * Initialize the diff viewer page.
      *
      * Args:
-     *     options (object):
+     *     options (ReviewablePageViewOptions):
      *         Options for the view.
      *
      *  See Also:
      *      :js:class:`RB.ReviewablePageView`:
      *          For the option arguments this method takes.
      */
-    initialize(options) {
-        RB.ReviewablePageView.prototype.initialize.call(this, options);
+    initialize(options: Partial<ReviewablePageViewOptions>) {
+        super.initialize(options);
 
-        this._selectedAnchorIndex = -1;
-        this._$window = $(window);
+        this.#$window = $(window);
         this._$anchors = $();
-        this._$controls = null;
-        this._$diffs = null;
-        this._diffReviewableViews = [];
-        this._diffFileIndexView = null;
-        this._highlightedChunk = null;
-        this._commitListView = null;
 
         /*
          * Listen for the construction of added DiffReviewables.
@@ -83,7 +145,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
          * constructed, once the data from the server is loaded.
          */
         this.listenTo(this.model.diffReviewables, 'add',
-                      this._onDiffReviewableAdded);
+                      this.#onDiffReviewableAdded);
 
         /*
          * Listen for when we're started and finished populating the list
@@ -95,15 +157,16 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this.listenTo(this.model.diffReviewables, 'populating', () => {
             this._diffReviewableViews.forEach(view => view.remove());
             this._diffReviewableViews = [];
-            this._$diffs.children('.diff-container').remove();
-            this._highlightedChunk = null;
+            this.#diffFileIndexView.clear();
+            this.#$diffs.children('.diff-container').remove();
+            this.#$highlightedChunk = null;
 
             diffQueue.clear();
         });
         this.listenTo(this.model.diffReviewables, 'populated',
                       () => diffQueue.start());
 
-        this.router = new Backbone.Router();
+        this.router = new Router();
         this.router.route(
             /^(\d+(?:-\d+)?)\/?(\?[^#]*)?/,
             'revision',
@@ -133,11 +196,11 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 }
 
                 this.model.loadDiffRevision({
-                    page: page ? parseInt(page, 10) : 1,
-                    filenamePatterns: queryArgs.filenames || null,
-                    revision: parseInt(revisionRange[0], 10),
-                    interdiffRevision: interdiffRevision,
                     baseCommitID: baseCommitID,
+                    filenamePatterns: queryArgs.filenames || null,
+                    interdiffRevision: interdiffRevision,
+                    page: page ? parseInt(page, 10) : 1,
+                    revision: parseInt(revisionRange[0], 10),
                     tipCommitID: tipCommitID,
                 });
             });
@@ -157,32 +220,36 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
          * when the page was loaded.
          */
         Backbone.history.start({
-            pushState: true,
             hashChange: false,
+            pushState: true,
             root: `${this.model.get('reviewRequest').get('reviewURL')}diff/`,
             silent: true,
         });
 
         this._setInitialURL(document.location.search || '',
                             RB.getLocationHash());
-    },
+    }
 
     /**
      * Remove the view from the page.
+     *
+     * Returns:
+     *     DiffViewerPageView:
+     *     This object, for chaining.
      */
-    remove() {
-        RB.ReviewablePageView.prototype.remove.call(this);
+    remove(): this {
+        this.#$window.off(`resize.${this.cid}`);
 
-        this._$window.off(`resize.${this.cid}`);
-
-        if (this._diffFileIndexView) {
-            this._diffFileIndexView.remove();
+        if (this.#diffFileIndexView) {
+            this.#diffFileIndexView.remove();
         }
 
         if (this._commitListView) {
             this._commitListView.remove();
         }
-    },
+
+        return super.remove();
+    }
 
     /**
      * Render the page and begins loading all diffs.
@@ -192,48 +259,46 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     This instance, for chaining.
      */
     renderPage() {
+        super.renderPage();
+
         const model = this.model;
         const session = RB.UserSession.instance;
 
-        RB.ReviewablePageView.prototype.renderPage.call(this);
-
-        this._$controls = $('#view_controls');
-        console.assert(this._$controls.length === 1);
+        this.#$controls = $('#view_controls');
+        console.assert(this.#$controls.length === 1);
 
         /* Set up the view buttons. */
         this.addViewToggleButton({
-            id: 'action-diff-toggle-collapse-changes',
-            activeText: _`Collapse changes`,
-            inactiveText: _`Expand changes`,
             activeDescription: _`
                 All lines of the files are being shown. Toggle to
                 collapse down to only modified sections instead.
             `,
+            activeText: _`Collapse changes`,
+            id: 'action-diff-toggle-collapse-changes',
             inactiveDescription: _`
                 Only modified sections of the files are being shown. Toggle
                 to show all lines instead.
             `,
+            inactiveText: _`Expand changes`,
             isActive: !this.model.get('allChunksCollapsed'),
             onToggled: isActive => {
-                RB.navigateTo(  isActive
-                              ? '.?expand=1'
-                              : '.?collapse=1');
+                RB.navigateTo(isActive ? '.?expand=1' : '.?collapse=1');
             },
         });
 
         if (model.get('canToggleExtraWhitespace')) {
             this.addViewToggleButton({
-                id: 'action-diff-toggle-extra-whitespace',
-                activeText: _`Hide extra whitespace`,
-                inactiveText: _`Show extra whitespace`,
                 activeDescription: _`
                     Mismatched indentation and trailing whitespace are
                     being shown. Toggle to hide instead.
                 `,
+                activeText: _`Hide extra whitespace`,
+                id: 'action-diff-toggle-extra-whitespace',
                 inactiveDescription: _`
                     Mismatched indentation and trailing whitespace are
                     being hidden. Toggle to show instead.
                 `,
+                inactiveText: _`Show extra whitespace`,
                 isActive: session.get('diffsShowExtraWhitespace'),
                 onToggled: isActive => {
                     session.set('diffsShowExtraWhitespace', isActive);
@@ -242,19 +307,19 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         }
 
         this.addViewToggleButton({
-            id: 'action-diff-toggle-whitespace-only',
-            activeText: _`Hide whitespace-only changes`,
-            inactiveText: _`Show whitespace-only changes`,
             activeDescription: _`
                 Sections of the diff containing only whitespace changes are
                 being shown. Toggle to hide those instead.
             `,
+            activeText: _`Hide whitespace-only changes`,
+            id: 'action-diff-toggle-whitespace-only',
             inactiveDescription: _`
                 Sections of the diff containing only whitespace changes are
                 being hidden. Toggle to show those instead.
             `,
+            inactiveText: _`Show whitespace-only changes`,
             isActive: true,
-            onToggled: isActive => {
+            onToggled: () => {
                 this._diffReviewableViews.forEach(
                     view => view.toggleWhitespaceOnlyChunks());
             },
@@ -263,9 +328,9 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         /* Listen for changes on the commit selector. */
         if (!model.commits.isEmpty()) {
             const commitListModel = new RB.DiffCommitList({
+                baseCommitID: model.revision.get('baseCommitID'),
                 commits: model.commits,
                 historyDiff: model.commitHistoryDiff,
-                baseCommitID: model.revision.get('baseCommitID'),
                 tipCommitID: model.revision.get('tipCommitID'),
             });
 
@@ -280,7 +345,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             this.listenTo(
                 commitListModel,
                 'change:baseCommitID change:tipCommitID',
-                this._onCommitIntervalChanged);
+                this.#onCommitIntervalChanged);
 
             this._commitListView = new RB.DiffCommitListView({
                 el: $('#diff_commit_list').find('.commit-list-container'),
@@ -290,23 +355,23 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             this._commitListView.render();
         }
 
-        this._diffFileIndexView = new RB.DiffFileIndexView({
-            el: $('#diff_index').find('.diff-index-container'),
+        this.#diffFileIndexView = new DiffFileIndexView({
             collection: model.files,
+            el: $('#diff_index').find('.diff-index-container'),
         });
 
-        this._diffFileIndexView.render();
+        this.#diffFileIndexView.render();
 
-        this.listenTo(this._diffFileIndexView, 'anchorClicked',
+        this.listenTo(this.#diffFileIndexView, 'anchorClicked',
                       this.selectAnchorByName);
 
-        this._diffRevisionLabelView = new RB.DiffRevisionLabelView({
+        this.#diffRevisionLabelView = new RB.DiffRevisionLabelView({
             el: $('#diff_revision_label'),
             model: model.revision,
         });
-        this._diffRevisionLabelView.render();
+        this.#diffRevisionLabelView.render();
 
-        this.listenTo(this._diffRevisionLabelView, 'revisionSelected',
+        this.listenTo(this.#diffRevisionLabelView, 'revisionSelected',
                       this._onRevisionSelected);
 
         /*
@@ -316,54 +381,54 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         const numDiffs = model.get('numDiffs');
 
         if (numDiffs > 1) {
-            this._diffRevisionSelectorView = new RB.DiffRevisionSelectorView({
+            this.#diffRevisionSelectorView = new RB.DiffRevisionSelectorView({
                 el: $('#diff_revision_selector'),
                 model: model.revision,
                 numDiffs: numDiffs,
             });
-            this._diffRevisionSelectorView.render();
+            this.#diffRevisionSelectorView.render();
 
-            this.listenTo(this._diffRevisionSelectorView, 'revisionSelected',
+            this.listenTo(this.#diffRevisionSelectorView, 'revisionSelected',
                           this._onRevisionSelected);
         }
 
-        this._commentsHintView = new RB.DiffCommentsHintView({
+        this.#commentsHintView = new RB.DiffCommentsHintView({
             el: $('#diff_comments_hint'),
             model: model.commentsHint,
         });
-        this._commentsHintView.render();
-        this.listenTo(this._commentsHintView, 'revisionSelected',
+        this.#commentsHintView.render();
+        this.listenTo(this.#commentsHintView, 'revisionSelected',
                       this._onRevisionSelected);
 
-        this._paginationView1 = new RB.PaginationView({
+        this.#paginationView1 = new RB.PaginationView({
             el: $('#pagination1'),
             model: model.pagination,
         });
-        this._paginationView1.render();
-        this.listenTo(this._paginationView1, 'pageSelected',
+        this.#paginationView1.render();
+        this.listenTo(this.#paginationView1, 'pageSelected',
                       _.partial(this._onPageSelected, false));
 
-        this._paginationView2 = new RB.PaginationView({
+        this.#paginationView2 = new RB.PaginationView({
             el: $('#pagination2'),
             model: model.pagination,
         });
-        this._paginationView2.render();
-        this.listenTo(this._paginationView2, 'pageSelected',
+        this.#paginationView2.render();
+        this.listenTo(this.#paginationView2, 'pageSelected',
                       _.partial(this._onPageSelected, true));
 
-        this._$diffs = $('#diffs')
+        this.#$diffs = $('#diffs')
             .bindClass(RB.UserSession.instance,
                        'diffsShowExtraWhitespace', 'ewhl');
 
-        this._chunkHighlighter = new RB.ChunkHighlighterView();
-        this._chunkHighlighter.render().$el.prependTo(this._$diffs);
+        this.#chunkHighlighter = new RB.ChunkHighlighterView();
+        this.#chunkHighlighter.render().$el.prependTo(this.#$diffs);
 
         $('#diff-details').removeClass('loading');
         $('#download-diff-action').bindVisibility(model,
                                                   'canDownloadDiff');
 
-        this._$window.on(`resize.${this.cid}`,
-                         _.throttleLayout(this._onWindowResize.bind(this)));
+        this.#$window.on(`resize.${this.cid}`,
+                         _.throttleLayout(this.#onWindowResize.bind(this)));
 
         /*
          * Begin creating any DiffReviewableViews needed for the page, and
@@ -371,42 +436,20 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
          */
         if (model.diffReviewables.length > 0) {
             model.diffReviewables.each(
-                diffReviewable => this._onDiffReviewableAdded(diffReviewable));
+                diffReviewable => this.#onDiffReviewableAdded(diffReviewable));
             $.funcQueue('diff_files').start();
         }
-
-        return this;
-    },
+    }
 
     /**
      * Add a toggle button for changing the view of the diff.
      *
      * Args:
-     *     options (object):
+     *     options (ToggleButtonOptions):
      *         The options for the button.
-     *
-     * Option Args:
-     *     activeDescription (string):
-     *         The description of the active state and what clicking will do.
-     *
-     *     activeText (string):
-     *         The label text for the active state.
-     *
-     *     inactiveDescription (string):
-     *         The description of the inactive state and what clicking will do.
-     *
-     *     inactiveText (string):
-     *         The label text for the inactive state.
-     *
-     *     isActive (boolean):
-     *         The default active state.
-     *
-     *     onToggled (function):
-     *         The callback handler for when the active state is explicitly
-     *         toggled.
      */
-    addViewToggleButton(options) {
-        console.assert(options);
+    addViewToggleButton(options: ToggleButtonOptions) {
+        console.assert(!!options);
 
         const $button = $('<button>');
         const updateButton = isActive => {
@@ -430,7 +473,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             $button
                 .data('is-active', isActive)
                 .attr('title', description)
-                .html(this._viewToggleButtonContentTemplate({
+                .html(DiffViewerPageView.viewToggleButtonContentTemplate({
                     iconClass: icon,
                     text: text,
                 }));
@@ -444,14 +487,14 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 e.preventDefault();
                 e.stopPropagation();
 
-                let isActive = !$button.data('is-active');
+                const isActive = !$button.data('is-active');
 
                 updateButton(isActive);
                 options.onToggled(isActive);
             });
 
-        this._$controls.append($('<li>').append($button));
-    },
+        this.#$controls.append($('<li>').append($button));
+    }
 
     /**
      * Queue the loading of the corresponding diff.
@@ -468,11 +511,16 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *         The option arguments that control the behavior of this function.
      *
      * Option Args:
-     *     showDeleted (boolean):
+     *     showDeleted (boolean, optional):
      *         Determines whether or not we want to requeue the corresponding
      *         diff in order to show its deleted content.
      */
-    queueLoadDiff(diffReviewable, options={}) {
+    queueLoadDiff(
+        diffReviewable: RB.DiffReviewable,
+        options: {
+            showDeleted?: boolean,
+        } = {},
+    ) {
         $.funcQueue('diff_files').add(async () => {
             const fileDiffID = diffReviewable.get('fileDiffID');
 
@@ -481,7 +529,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                  * We already have this diff (probably pre-loaded), and we
                  * don't want to requeue it to show its deleted content.
                  */
-                this._renderFileDiff(diffReviewable);
+                this.#renderFileDiff(diffReviewable);
             } else {
                 /*
                  * We either want to queue this diff for the first time, or we
@@ -518,10 +566,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                  * directly.
                  */
                 $container[0].innerHTML = html;
-                this._renderFileDiff(diffReviewable);
+                this.#renderFileDiff(diffReviewable);
             }
         });
-    },
+    }
 
     /**
      * Set up a diff as DiffReviewableView and renders it.
@@ -537,7 +585,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     diffReviewable (RB.DiffReviewable):
      *         The reviewable diff to render.
      */
-    _renderFileDiff(diffReviewable) {
+    #renderFileDiff(diffReviewable: RB.DiffReviewable) {
         const elementName = 'file' + diffReviewable.get('fileDiffID');
         const $el = $(`#${elementName}`);
 
@@ -547,6 +595,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
              * the target element no longer exists. Just return.
              */
             $.funcQueue('diff_files').next();
+
             return;
         }
 
@@ -555,7 +604,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             model: diffReviewable,
         });
 
-        this._diffFileIndexView.addDiff(this._diffReviewableViews.length,
+        this.#diffFileIndexView.addDiff(this._diffReviewableViews.length,
                                         diffReviewableView);
 
         this._diffReviewableViews.push(diffReviewableView);
@@ -579,14 +628,14 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this.listenTo(diffReviewableView, 'chunkExpansionChanged', () => {
             /* The selection rectangle may not update -- bug #1353. */
-            this._highlightAnchor(
+            this.#highlightAnchor(
                 $(this._$anchors[this._selectedAnchorIndex]));
         });
 
-        if (this._startAtAnchorName) {
+        if (this.#startAtAnchorName) {
             /* See if we've loaded the anchor the user wants to start at. */
             let $anchor =
-                $(document.getElementsByName(this._startAtAnchorName));
+                $(document.getElementsByName(this.#startAtAnchorName));
 
             /*
              * Some anchors are added by the template (such as those at
@@ -594,13 +643,13 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
              * but the URL hash is indicating that we want to start at a
              * location within this file, add the anchor.
              * */
-            const urlSplit = this._startAtAnchorName.split(',');
+            const urlSplit = this.#startAtAnchorName.split(',');
 
             if ($anchor.length === 0 &&
                 urlSplit.length === 2 &&
                 elementName === urlSplit[0]) {
-                $anchor = $(this.anchorTemplate({
-                    anchorName: this._startAtAnchorName,
+                $anchor = $(DiffViewerPageView.anchorTemplate({
+                    anchorName: this.#startAtAnchorName,
                 }));
 
                 diffReviewableView.$el
@@ -611,7 +660,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
             if ($anchor.length !== 0) {
                 this.selectAnchor($anchor);
-                this._startAtAnchorName = null;
+                this.#startAtAnchorName = null;
             }
         }
 
@@ -621,7 +670,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         });
 
         $.funcQueue('diff_files').next();
-    },
+    }
 
     /**
      * Select the anchor at a specified location.
@@ -642,7 +691,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     ``true`` if the anchor was found and selected. ``false`` if not
      *     found.
      */
-    selectAnchor($anchor, scroll) {
+    selectAnchor(
+        $anchor: JQuery,
+        scroll?: boolean,
+    ): boolean {
         if (!$anchor || $anchor.length === 0 ||
             $anchor.parent().is(':hidden')) {
             return false;
@@ -654,23 +706,41 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 updateURLOnly: true,
             });
 
-            let scrollAmount = this.DIFF_SCROLLDOWN_AMOUNT;
+            const anchorOffset = $anchor.offset().top;
+            let scrollAmount = 0;
 
-            if (RB.EnabledFeatures.unifiedBanner) {
-                const banner = RB.UnifiedBannerView.getInstance();
+            if (this.unifiedBanner) {
+                /*
+                 * The scroll offset calculation when we're running with the
+                 * unified banner is somewhat complex because the height of the
+                 * banner isn't static. The file index gets docked into the
+                 * banner, and changes its height depending on what files are
+                 * shown in the viewport.
+                 *
+                 * In order to try to scroll to the position where the top of
+                 * the file is nicely visible, we end up doing this twice.
+                 * First we try to determine a scroll offset based on the
+                 * position of the anchor. We then rerun the calculation using
+                 * the new offset to dial in closer to the right place.
+                 *
+                 * This still may not be perfect, especially when file borders
+                 * are close to the boundary where they're scrolling on or off
+                 * the screen, but it generally seems to do pretty well.
+                 */
+                const newOffset = this.#computeScrollHeight(
+                    anchorOffset - DiffViewerPageView.DIFF_SCROLLDOWN_AMOUNT);
+                scrollAmount = this.#computeScrollHeight(
+                    anchorOffset - newOffset);
 
-                // This may be null if we're running in tests.
-                if (banner) {
-                    scrollAmount += banner.getHeight();
-                }
             } else if (RB.DraftReviewBannerView.instance) {
-                scrollAmount += RB.DraftReviewBannerView.instance.getHeight();
+                scrollAmount = (DiffViewerPageView.DIFF_SCROLLDOWN_AMOUNT +
+                                RB.DraftReviewBannerView.instance.getHeight());
             }
 
-            this._$window.scrollTop($anchor.offset().top - scrollAmount);
+            this.#$window.scrollTop(anchorOffset - scrollAmount);
         }
 
-        this._highlightAnchor($anchor);
+        this.#highlightAnchor($anchor);
 
         for (let i = 0; i < this._$anchors.length; i++) {
             if (this._$anchors[i] === $anchor[0]) {
@@ -680,7 +750,35 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         }
 
         return true;
-    },
+    }
+
+    /**
+     * Compute the ideal scroll offset based on the unified banner.
+     *
+     * This attempts to find the ideal scroll offset based on what the diff
+     * file index is doing within the unified banner.
+     *
+     * Args:
+     *     startingOffset (number):
+     *         The target scroll offset.
+     *
+     * Returns:
+     *     number:
+     *     The number of pixels to adjust the starting offset by in order to
+     *     maximize the likelihood of the anchor appearing at the top of the
+     *     visible viewport.
+     */
+    #computeScrollHeight(startingOffset: number): number {
+        const $window = $(window);
+        const bannerHeight = this.unifiedBanner.getHeight(false);
+
+        const newDockHeight = this.#diffFileIndexView.getDockedIndexExtents(
+            startingOffset + bannerHeight,
+            startingOffset + $window.height() - bannerHeight).height;
+
+        return (bannerHeight + newDockHeight + 20 +
+                DiffViewerPageView.DIFF_SCROLLDOWN_AMOUNT);
+    }
 
     /**
      * Select an anchor by name.
@@ -698,9 +796,12 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     ``true`` if the anchor was found and selected. ``false`` if not
      *     found.
      */
-    selectAnchorByName(name, scroll) {
+    selectAnchorByName(
+        name: string,
+        scroll?: boolean,
+    ): boolean {
         return this.selectAnchor($(document.getElementsByName(name)), scroll);
-    },
+    }
 
     /**
      * Highlight a chunk bound to an anchor element.
@@ -709,12 +810,12 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     $anchor (jQuery):
      *         The anchor to highlight.
      */
-    _highlightAnchor($anchor) {
-        this._highlightedChunk =
+    #highlightAnchor($anchor: JQuery) {
+        this.#$highlightedChunk =
             $anchor.closest('tbody')
             .add($anchor.closest('thead'));
-        this._chunkHighlighter.highlight(this._highlightedChunk);
-    },
+        this.#chunkHighlighter.highlight(this.#$highlightedChunk);
+    }
 
     /**
      * Update the list of known anchors.
@@ -729,16 +830,16 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     $table (jQuery):
      *         The table containing anchors.
      */
-    _updateAnchors($table) {
+    _updateAnchors($table: JQuery) {
         this._$anchors = this._$anchors.add($table.find('th a[name]'));
 
         /* Skip over the change index to the first item. */
         if (this._selectedAnchorIndex === -1 && this._$anchors.length > 0) {
             this._selectedAnchorIndex = 0;
-            this._highlightAnchor(
+            this.#highlightAnchor(
                 $(this._$anchors[this._selectedAnchorIndex]));
         }
-    },
+    }
 
     /**
      * Return the next navigatable anchor.
@@ -762,7 +863,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     The anchor, if found. If an anchor was not found, ``null`` is
      *     returned.
      */
-    _getNextAnchor(dir, anchorTypes) {
+    #getNextAnchor(
+        dir: number,
+        anchorTypes: number,
+    ): JQuery {
         for (let i = this._selectedAnchorIndex + dir;
              i >= 0 && i < this._$anchors.length;
              i += dir) {
@@ -772,81 +876,87 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 continue;
             }
 
-            if (((anchorTypes & this.ANCHOR_COMMENT) &&
+            if (((anchorTypes & DiffViewerPageView.ANCHOR_COMMENT) &&
                  $anchor.hasClass('commentflag-anchor')) ||
-                ((anchorTypes & this.ANCHOR_FILE) &&
+                ((anchorTypes & DiffViewerPageView.ANCHOR_FILE) &&
                  $anchor.hasClass('file-anchor')) ||
-                ((anchorTypes & this.ANCHOR_CHUNK) &&
+                ((anchorTypes & DiffViewerPageView.ANCHOR_CHUNK) &&
                  $anchor.hasClass('chunk-anchor'))) {
                 return $anchor;
             }
         }
 
         return null;
-    },
+    }
 
     /**
      * Select the previous file's header on the page.
      */
-    _selectPreviousFile() {
-        this.selectAnchor(this._getNextAnchor(this.SCROLL_BACKWARD,
-                                              this.ANCHOR_FILE));
-    },
+    private _selectPreviousFile() {
+        this.selectAnchor(
+            this.#getNextAnchor(DiffViewerPageView.SCROLL_BACKWARD,
+                                DiffViewerPageView.ANCHOR_FILE));
+    }
 
     /**
      * Select the next file's header on the page.
      */
-    _selectNextFile() {
-        this.selectAnchor(this._getNextAnchor(this.SCROLL_FORWARD,
-                                              this.ANCHOR_FILE));
-    },
+    private _selectNextFile() {
+        this.selectAnchor(
+            this.#getNextAnchor(DiffViewerPageView.SCROLL_FORWARD,
+                                DiffViewerPageView.ANCHOR_FILE));
+    }
 
     /**
      * Select the previous diff chunk on the page.
      */
-    _selectPreviousDiff() {
+    private _selectPreviousDiff() {
         this.selectAnchor(
-            this._getNextAnchor(this.SCROLL_BACKWARD,
-                                this.ANCHOR_CHUNK | this.ANCHOR_FILE));
-    },
+            this.#getNextAnchor(DiffViewerPageView.SCROLL_BACKWARD,
+                                (DiffViewerPageView.ANCHOR_CHUNK |
+                                 DiffViewerPageView.ANCHOR_FILE)));
+    }
 
     /**
      * Select the next diff chunk on the page.
      */
-    _selectNextDiff() {
+    private _selectNextDiff() {
         this.selectAnchor(
-            this._getNextAnchor(this.SCROLL_FORWARD,
-                                this.ANCHOR_CHUNK | this.ANCHOR_FILE));
-    },
+            this.#getNextAnchor(DiffViewerPageView.SCROLL_FORWARD,
+                                (DiffViewerPageView.ANCHOR_CHUNK |
+                                 DiffViewerPageView.ANCHOR_FILE)));
+    }
 
     /**
      * Select the previous comment on the page.
      */
-    _selectPreviousComment() {
+    private _selectPreviousComment() {
         this.selectAnchor(
-            this._getNextAnchor(this.SCROLL_BACKWARD, this.ANCHOR_COMMENT));
-    },
+            this.#getNextAnchor(DiffViewerPageView.SCROLL_BACKWARD,
+                                DiffViewerPageView.ANCHOR_COMMENT));
+    }
 
     /**
      * Select the next comment on the page.
      */
-    _selectNextComment() {
+    private _selectNextComment() {
         this.selectAnchor(
-            this._getNextAnchor(this.SCROLL_FORWARD, this.ANCHOR_COMMENT));
-    },
+            this.#getNextAnchor(DiffViewerPageView.SCROLL_FORWARD,
+                                DiffViewerPageView.ANCHOR_COMMENT));
+    }
 
     /**
      * Re-center the currently selected area on the page.
      */
-    _recenterSelected() {
+    private _recenterSelected() {
         this.selectAnchor($(this._$anchors[this._selectedAnchorIndex]));
-    },
+    }
 
-   /**
-    * Create a comment for a chunk of a diff
-    */
-    _createComment() {
-        const chunkID = this._highlightedChunk[0].id;
+    /**
+     * Create a comment for a chunk of a diff
+     */
+    private _createComment() {
+        const chunkID = this.#$highlightedChunk[0].id;
         const chunkElement = document.getElementById(chunkID);
 
         if (chunkElement) {
@@ -864,7 +974,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 }
             });
         }
-    },
+    }
 
     /**
      * Set the initial URL for the page.
@@ -890,15 +1000,18 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     anchor (string):
      *         The anchor provided in the URL.
      */
-    _setInitialURL(queryString, anchor) {
-        this._startAtAnchorName = anchor || null;
+    _setInitialURL(
+        queryString: string,
+        anchor: string,
+    ) {
+        this.#startAtAnchorName = anchor || null;
 
         this._navigate({
-            queryString: queryString,
             anchor: anchor,
+            queryString: queryString,
             updateURLOnly: true,
         });
-    },
+    }
 
     /**
      * Navigate to a new page state by calculating and setting a URL.
@@ -945,7 +1058,16 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     tipCommitID (string, optional):
      *         The ID of the top commit to use in the request.
      */
-    _navigate(options) {
+    _navigate(options: {
+        revision?: number,
+        interdiffRevision?: number,
+        page?: number,
+        anchor?: string,
+        queryString?: string,
+        updateURLOnly?: boolean,
+        baseCommitID?: string,
+        tipCommitID?: string,
+    }) {
         const curRevision = this.model.revision.get('revision');
         const curInterdiffRevision =
             this.model.revision.get('interdiffRevision');
@@ -970,7 +1092,11 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
          * If an explicit query string is provided, we'll just use that.
          * Otherwise, we'll generate one.
          */
-        let queryData = options.queryString;
+        type QueryData = string | {
+            name: string,
+            value: any,
+        }[];
+        let queryData: QueryData = options.queryString;
 
         if (queryData === undefined) {
             /*
@@ -1030,9 +1156,9 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         }
 
         const url = Djblets.buildURL({
+            anchor: options.anchor,
             baseURL: baseURL,
             queryData: queryData,
-            anchor: options.anchor,
         });
 
         /*
@@ -1053,7 +1179,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         }
 
         this.router.navigate(url, navOptions);
-    },
+    }
 
     /**
      * Handler for when a RB.DiffReviewable is added.
@@ -1065,30 +1191,34 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     diffReviewable (RB.DiffReviewable):
      *         The DiffReviewable that was added.
      */
-    _onDiffReviewableAdded(diffReviewable) {
+    #onDiffReviewableAdded(diffReviewable: RB.DiffReviewable) {
         const file = diffReviewable.get('file');
 
-        this._$diffs.append(this._fileEntryTemplate({
+        this.#$diffs.append(DiffViewerPageView.fileEntryTemplate({
+            filename: file.get('depotFilename'),
             id: file.id,
             newFile: file.get('isnew'),
-            filename: file.get('depotFilename'),
         }));
 
         this.queueLoadDiff(diffReviewable);
-    },
+    }
 
     /**
      * Handler for when the window resizes.
      *
      * Triggers a relayout of all the diffs and the chunk highlighter.
      */
-    _onWindowResize() {
+    #onWindowResize() {
         for (let i = 0; i < this._diffReviewableViews.length; i++) {
             this._diffReviewableViews[i].updateLayout();
         }
 
-        this._chunkHighlighter.updateLayout();
-    },
+        this.#chunkHighlighter.updateLayout();
+
+        if (this.unifiedBanner) {
+            this.#diffFileIndexView.updateLayout();
+        }
+    }
 
     /**
      * Callback for when a new revision is selected.
@@ -1098,8 +1228,12 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * `tip` will be shown.
      *
      * This will always implicitly navigate to page 1 of any paginated diffs.
+     *
+     * Args:
+     *     revisions (Array of number):
+     *         The revision range to show.
      */
-    _onRevisionSelected(revisions) {
+    _onRevisionSelected(revisions: number[]) {
         let base = revisions[0];
         let tip = revisions[1];
 
@@ -1110,10 +1244,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         }
 
         this._navigate({
-            revision: base,
             interdiffRevision: tip,
+            revision: base,
         });
-    },
+    }
 
     /**
      * Callback for when a new page is selected.
@@ -1127,7 +1261,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     page (number):
      *         The page number to navigate to.
      */
-    _onPageSelected(scroll, page) {
+    _onPageSelected(
+        scroll: boolean,
+        page: number,
+    ) {
         if (scroll) {
             this.selectAnchorByName('index_header', true);
         }
@@ -1135,7 +1272,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._navigate({
             page: page,
         });
-    },
+    }
 
     /**
      * Handle the selected commit interval changing.
@@ -1146,11 +1283,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     model (RB.DiffCommitList):
      *          The model that changed.
      */
-    _onCommitIntervalChanged(model) {
+    #onCommitIntervalChanged(model: RB.DiffCommitList) {
         this._navigate({
             baseCommitID: model.get('baseCommitID'),
             tipCommitID: model.get('tipCommitID'),
         });
-    },
-});
-_.extend(RB.DiffViewerPageView.prototype, RB.KeyBindingsMixin);
+    }
+}
