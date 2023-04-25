@@ -17,7 +17,8 @@ from reviewboard.accounts.sso.backends.saml.settings import (
     SAMLBinding,
     SAMLDigestAlgorithm,
     SAMLSignatureAlgorithm,
-    NameIDFormat)
+    NameIDFormat,
+    UserAttributeMapping)
 from reviewboard.accounts.sso.backends.saml.views import (
     SAMLACSView,
     SAMLLinkUserView,
@@ -49,6 +50,9 @@ class SAMLSSOBackend(BaseSSOBackend):
         'saml_sso_url': '',
         'saml_verfication_cert': '',
         'saml_nameid_format': NameIDFormat.PERSISTENT,
+        'saml_email_attribute_name': UserAttributeMapping.EMAIL,
+        'saml_firstname_attribute_name': UserAttributeMapping.FIRSTNAME,
+        'saml_lastname_attribute_name': UserAttributeMapping.LASTNAME,
     }
     login_view_cls = SAMLLoginView
 

@@ -166,6 +166,19 @@ class NameIDFormat(object):
         TO_SAML2_SETTING_MAP = {}
         FROM_SAML2_SETTING_MAP = {}
 
+
+class UserAttributeMapping(object):
+    """Definitions for the UserAttributeMapping.
+
+    Version Added:
+        5.0
+    """
+
+    EMAIL = 'User.email'
+    FIRSTNAME = 'User.FirstName'
+    LASTNAME = 'User.LastName'
+
+
 def get_saml2_settings():
     """Return the SAML2.0 settings.
 

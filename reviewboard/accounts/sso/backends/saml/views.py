@@ -281,10 +281,11 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
         else:
             username = auth.get_nameid()
 
+            siteconfig = SiteConfiguration.objects.get_current()
             try:
-                email = self._get_user_attr_value(auth, 'User.email')
-                first_name = self._get_user_attr_value(auth, 'User.FirstName')
-                last_name = self._get_user_attr_value(auth, 'User.LastName')
+                email = self._get_user_attr_value(auth, siteconfig.get('saml_email_attribute_name'))
+                first_name = self._get_user_attr_value(auth, siteconfig.get('saml_firstname_attribute_name'))
+                last_name = self._get_user_attr_value(auth, siteconfig.get('saml_lastname_attribute_name'))
             except KeyError as e:
                 logger.error('SAML: Assertion is missing %s attribute', e)
                 return HttpResponseBadRequest('Bad SSO response: assertion is '
@@ -331,7 +332,8 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
         # Some identity providers only allow setting the full name, not
         # separate first and last. In this case, we need to fake it by
         # splitting.
-        if key in ('User.FirstName', 'User.LastName'):
+        siteconfig = SiteConfiguration.objects.get_current()
+        if key in (siteconfig.get('saml_firstname_attribute_name'), siteconfig.get('saml_lastname_attribute_name')):
             try:
                 fullname = self._get_user_attr_value(auth, 'User.FullName')
             except KeyError:
@@ -344,7 +346,7 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
             # two parts as the first and last names.
             name_parts = fullname.split(' ', 1)
 
-            if key == 'User.FirstName':
+            if key == siteconfig.get('saml_firstname_attribute_name'):
                 return name_parts[0]
             else:
                 return len(name_parts) > 1 and name_parts[1] or ''
@@ -597,10 +599,8 @@ class SAMLLoginView(SAMLViewMixin, BaseSSOView):
         """
         auth = self.get_saml_auth(request)
 
-        redirect = self.request.GET.get(REDIRECT_FIELD_NAME,
-                                        settings.LOGIN_REDIRECT_URL)
-
-        return HttpResponseRedirect(auth.login(redirect))
+        return HttpResponseRedirect(
+            auth.login(settings.LOGIN_REDIRECT_URL))
 
 
 class SAMLMetadataView(SAMLViewMixin, BaseSSOView):

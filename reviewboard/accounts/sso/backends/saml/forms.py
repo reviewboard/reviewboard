@@ -17,7 +17,8 @@ from reviewboard.accounts.sso.backends.saml.settings import (
     SAMLBinding,
     SAMLDigestAlgorithm,
     SAMLSignatureAlgorithm,
-    NameIDFormat)
+    NameIDFormat,
+    UserAttributeMapping)
 
 
 class SAMLLinkUserForm(AuthenticationForm):
@@ -143,6 +144,42 @@ class SAMLSettingsForm(SiteSettingsForm):
                     'sending the correct username for all existing users.'),
         required=False)
 
+    saml_email_attribute_name = forms.CharField(
+        label=_('Custom `Email` attribute name'),
+        min_length=1,
+        required=True,
+        initial=UserAttributeMapping.EMAIL,
+        help_text=_('Sometimes you can not modify SAML attributes returned '
+                    'by your IdP. You may set custom `Email` attribute name. '
+                    'Make sure your setting corresponds with your IdP '
+                    'SAML response. Default value is '
+                    f"{UserAttributeMapping.EMAIL}"),
+        widget=forms.TextInput(attrs={'size': '60'}))
+
+    saml_firstname_attribute_name = forms.CharField(
+        label=_('Custom `First Name` attribute name'),
+        min_length=1,
+        required=True,
+        initial=UserAttributeMapping.FIRSTNAME,
+        help_text=_('Sometimes you can not modify SAML attributes returned '
+                    'by your IdP. You may set custom `First Name` attribute name. '
+                    'Make sure your setting corresponds with your IdP '
+                    'SAML response. Default value is '
+                    f"{UserAttributeMapping.FIRSTNAME}"),
+        widget=forms.TextInput(attrs={'size': '60'}))
+
+    saml_lastname_attribute_name = forms.CharField(
+        label=_('Custom `Last Name` attribute name'),
+        min_length=1,
+        required=True,
+        initial=UserAttributeMapping.LASTNAME,
+        help_text=_('Sometimes you can not modify SAML attributes returned '
+                    'by your IdP. You may set custom `First Name` attribute name. '
+                    'Make sure your setting corresponds with your IdP '
+                    'SAML response. Default value is '
+                    f"{UserAttributeMapping.LASTNAME}"),
+        widget=forms.TextInput(attrs={'size': '60'}))
+
     class Meta:
         """Metadata for the SAMLSettingsForm."""
 
@@ -159,6 +196,9 @@ class SAMLSettingsForm(SiteSettingsForm):
                            'saml_slo_url',
                            'saml_slo_binding_type',
                            'saml_nameid_format',
-                           'saml_require_login_to_link'),
+                           'saml_require_login_to_link',
+                           'saml_email_attribute_name',
+                           'saml_firstname_attribute_name',
+                           'saml_lastname_attribute_name'),
             }),
         )
