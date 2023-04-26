@@ -116,9 +116,11 @@ class RepositoriesChoice(RepositoryConditionChoiceMixin,
             else:
                 local_site = LocalSite.ALL
 
-            return Repository.objects.accessible(
-                user=request.user,
-                local_site=local_site)
+            return (
+                Repository.objects.accessible(
+                    user=request.user,
+                    local_site=local_site)
+                .order_by('name'))
 
     def get_match_value(self, repository, **kwargs):
         """Return the value used for matching.
@@ -169,7 +171,7 @@ class RepositoryTypeChoice(RepositoryConditionChoiceMixin,
                 expansion.
 
         Returns:
-            djblets.conditions.values.ConditionValueMultipleModelField:
+            djblets.conditions.values.ConditionValueMultipleChoiceField:
             The form field for the value.
         """
         repository_type_choices = [
@@ -177,7 +179,7 @@ class RepositoryTypeChoice(RepositoryConditionChoiceMixin,
             for scmtool in scmtools_registry
         ]
         return ConditionValueMultipleChoiceField(
-            choices=repository_type_choices)
+            choices=sorted(repository_type_choices, key=lambda x: x[1]))
 
     def get_match_value(self, repository, **kwargs):
         """Return the value used for matching.
