@@ -131,9 +131,11 @@ class ReviewGroupsChoice(BaseConditionModelMultipleChoice):
             else:
                 local_site = LocalSite.ALL
 
-            return Group.objects.accessible(
-                user=request.user,
-                local_site=local_site)
+            return (
+                Group.objects.accessible(
+                    user=request.user,
+                    local_site=local_site)
+                .order_by('name'))
 
     def get_match_value(self, review_groups, value_state_cache, **kwargs):
         """Return the review groups used for matching.
