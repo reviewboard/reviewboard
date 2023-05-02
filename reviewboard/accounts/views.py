@@ -14,7 +14,7 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
-from django.utils.http import is_safe_url
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
@@ -23,6 +23,7 @@ from djblets.auth.views import register
 from djblets.configforms.views import ConfigPagesView
 from djblets.features.decorators import feature_required
 from djblets.forms.fieldsets import filter_fieldsets
+from djblets.registries.errors import ItemLookupError
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.views.generic.etag import ETagViewMixin
@@ -85,13 +86,14 @@ class LoginView(DjangoLoginView):
 
                 redirect_to = self.get_success_url()
 
-                if is_safe_url(url=redirect_to, host=request.get_host()):
+                if url_has_allowed_host_and_scheme(
+                    url=redirect_to, allowed_hosts=request.get_host()):
                     login_url = '%s?%s=%s' % (login_url,
                                               self.redirect_field_name,
                                               quote(redirect_to))
 
                 return HttpResponseRedirect(login_url)
-            except sso_backends.ItemLookupError:
+            except ItemLookupError:
                 logging.error('Unable to find sso_auto_login_backend "%s".',
                               sso_auto_login_backend)
 
@@ -131,7 +133,7 @@ def logout(request, *args, **kwargs):
         try:
             backend = sso_backends.get('backend_id', sso_auto_login_backend)
             return LogoutView.as_view()(request, *args, **kwargs)
-        except sso_backends.ItemLookupError:
+        except ItemLookupError:
             logging.error('Unable to find sso_auto_login_backend "%s".',
                           sso_auto_login_backend)
 
