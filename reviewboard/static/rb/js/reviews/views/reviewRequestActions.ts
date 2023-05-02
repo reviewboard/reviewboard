@@ -1,6 +1,7 @@
 import { EventsHash, spina } from '@beanbag/spina';
 
 import { Actions } from 'reviewboard/common/actions';
+import { BaseResource } from 'reviewboard/common/resources/models/baseResource';
 
 
 /**
@@ -162,7 +163,7 @@ abstract class BaseVisibilityActionView extends Actions.ActionView {
      **********************/
 
     /** The collection to use for making changes to the visibility. */
-    collection: RB.BaseResource;
+    collection: BaseResource;
 
     /** The visibility type controlled by this action. */
     visibilityType = RB.ReviewRequest.VISIBILITY_ARCHIVED;

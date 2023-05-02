@@ -1,6 +1,8 @@
 /** The state for editing a new or existing draft comment. */
 import { BaseModel, spina } from '@beanbag/spina';
 
+import { ExtraDataMixin } from 'reviewboard/common/models/extraDataMixin';
+
 
 /**
  * Attributes for the CommentEditor model.
@@ -62,7 +64,7 @@ interface CommentEditorAttrs {
  * same region this comment is on, and more.
  */
 @spina({
-    mixins: [RB.ExtraDataMixin],
+    mixins: [ExtraDataMixin],
 })
 export class CommentEditor extends BaseModel<CommentEditorAttrs> {
     /**

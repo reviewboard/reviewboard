@@ -95,5 +95,8 @@ export const Product: ProductInfo = {
 
 
 export * from './actions';
+export * from './resources';
+export { ExtraData } from './models/extraData';
+export { ExtraDataMixin } from './models/extraDataMixin';
 export { Page } from './models/pageModel';
 export { PageView } from './views/pageView';

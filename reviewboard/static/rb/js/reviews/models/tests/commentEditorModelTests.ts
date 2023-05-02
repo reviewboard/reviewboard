@@ -7,9 +7,8 @@ import {
     suite,
 } from 'jasmine-core';
 
-import {
-    CommentEditor,
-} from 'reviewboard/reviews/models/commentEditorModel';
+import { BaseResource } from '../../../common/resources/models/baseResource';
+import { CommentEditor } from '../commentEditorModel';
 
 suite('rb/models/CommentEditor', function() {
     let editor;
@@ -18,7 +17,7 @@ suite('rb/models/CommentEditor', function() {
 
     function createComment() {
         return new RB.BaseComment({
-            parentObject: new RB.BaseResource({
+            parentObject: new BaseResource({
                 'public': true,
             }),
         });
