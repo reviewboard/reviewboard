@@ -1,10 +1,25 @@
 /**
  * The base class used for Review Board collections.
+ * */
+import { BaseCollection as SpinaCollection, spina } from '@beanbag/spina';
+
+
+/**
+ * The base class used for Review Board collections.
  *
  * This is a thin subclass over Backbone.Collection that just provides
  * some useful additional abilities.
  */
-RB.BaseCollection = Backbone.Collection.extend({
+@spina
+export class BaseCollection<
+    TModel extends Backbone.Model = Backbone.Model,
+    TExtraCollectionOptions = unknown,
+    TCollectionOptions = Backbone.CollectionOptions<TModel>
+> extends SpinaCollection<
+    TModel,
+    TExtraCollectionOptions,
+    TCollectionOptions
+> {
     /**
      * Fetch models from the server.
      *
@@ -28,24 +43,28 @@ RB.BaseCollection = Backbone.Collection.extend({
      *     Promise:
      *     A promise which resolves when the fetch operation is complete.
      */
-    fetch: function(options={}, context=undefined) {
+    fetch(
+        options: Backbone.CollectionFetchOptions = {},
+        context: object = undefined,
+    ): Promise<BaseCollection> {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error)) {
             console.warn('RB.BaseCollection.fetch was called using ' +
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
+
             return RB.promiseToCallbacks(
                 options, context, newOptions => this.fetch(newOptions));
         }
 
         return new Promise((resolve, reject) => {
-            Backbone.Collection.prototype.fetch.call(this, _.defaults({
-                success: result => resolve(result),
+            super.fetch(_.defaults({
                 error: (model, xhr, options) => reject(
                     new BackboneError(model, xhr, options)),
+                success: result => resolve(result),
             }, options));
         });
-    },
+    }
 
     /**
      * Handle all AJAX communication for the collection.
@@ -66,15 +85,19 @@ RB.BaseCollection = Backbone.Collection.extend({
      *     options (object):
      *         Options for the sync operation.
      */
-    sync(method, model, options={}) {
+    sync(
+        method: string,
+        model: BaseCollection,
+        options: JQuery.AjaxSettings = {},
+    ) {
         return Backbone.sync.call(this, method, model, _.defaults({
-            error: xhr => {
+            error: (xhr, textStatus, errorThrown) => {
                 RB.storeAPIError(xhr);
 
                 if (_.isFunction(options.error)) {
-                    options.error(xhr);
+                    options.error(xhr, textStatus, errorThrown);
                 }
-            }
+            },
         }, options));
     }
-});
+}

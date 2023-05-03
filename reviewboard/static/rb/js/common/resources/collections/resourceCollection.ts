@@ -1,5 +1,59 @@
 /**
  * Base collection for resource models.
+ */
+
+import { spina } from '@beanbag/spina';
+
+import { BaseCollection } from '../../collections/baseCollection';
+import { BaseResource, ResourceLink } from '../models/baseResource';
+
+
+/** Options for the ResourceCollection object. */
+export interface ResourceCollectionOptions {
+    /** Extra data to send with the HTTP request. */
+    extraQueryData: JQuery.PlainObject;
+
+    /** The parent resource of the collection. */
+    parentResource: BaseResource;
+
+    /** The number of results to fetch at a time. */
+    maxResults: number;
+}
+
+
+/** Options for the ResourceCollection.fetch method. */
+interface ResourceCollectionFetchOptions
+    extends Backbone.CollectionFetchOptions {
+    /**
+     * Whether to check if the next page exists.
+     *
+     * Some resources may continue to return information even if we think we're
+     * done fetching. If this is explicitly set to ``false``, calls to the
+     * ``fetchNext`` method will continue to fetch even if ``hasNext`` is
+     * ``false``.
+     */
+    enforceHasNext?: boolean;
+
+    /** The number of results to fetch. */
+    maxResults?: number;
+
+    /** The index of the item to start at. */
+    start?: number;
+}
+
+
+/** Options for the ResourceCollection.parse method. */
+interface ResourceCollectionParseOptions {
+    /** Whether we're in the process of fetching all the items. */
+    fetchingAll?: boolean;
+
+    /** The page of results that were fetched. */
+    page?: number;
+}
+
+
+/**
+ * Base collection for resource models.
  *
  * ResourceCollection handles the fetching of models from resource lists
  * in the API.
@@ -13,7 +67,45 @@
  * Use fetchAll to automatically paginate through all items and store them
  * all within the collection.
  */
-RB.ResourceCollection = RB.BaseCollection.extend({
+@spina
+export class ResourceCollection<
+    TModel extends Backbone.Model = Backbone.Model,
+    TExtraCollectionOptions = ResourceCollectionOptions,
+    TCollectionOptions = Backbone.CollectionOptions<TModel>
+> extends BaseCollection<TModel, TExtraCollectionOptions, TCollectionOptions> {
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The parent resource of the collection. */
+    parentResource: BaseResource;
+
+    /** Extra data to send with the HTTP request. */
+    extraQueryData: JQuery.PlainObject;
+
+    /** The number of results to fetch at a time. */
+    maxResults: number;
+
+    /** Whether there is a previous page that can be fetched. */
+    hasPrev = false;
+
+    /** Whether there is a next page that can be fetched. */
+    hasNext = false;
+
+    /** The current page to fetch. */
+    currentPage = 0;
+
+    /** The total number of results, if available. */
+    totalResults: number;
+
+    /** The URL to use when fetching. */
+    private _fetchURL: string = null;
+
+    /** The links returned by the resource. */
+    private _links: {
+        [key: string]: ResourceLink;
+    };
+
     /**
      * Initialize the collection.
      *
@@ -32,13 +124,16 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *         Additional attributes to include in the API request query
      *         string.
      */
-    initialize(models, options) {
+    initialize(
+        models: TModel[] | Array<Record<string, unknown>>,
+        options: Backbone.CombinedCollectionConstructorOptions<
+            TExtraCollectionOptions,
+            TModel
+        >,
+    ): void {
         this.parentResource = options.parentResource;
         this.extraQueryData = options.extraQueryData;
         this.maxResults = options.maxResults;
-        this.hasPrev = false;
-        this.hasNext = false;
-        this.currentPage = 0;
 
         /*
          * Undefined means "we don't know how many results there are."
@@ -49,7 +144,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
 
         this._fetchURL = null;
         this._links = null;
-    },
+    }
 
     /**
      * Return the URL for fetching models.
@@ -63,7 +158,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *     string:
      *     The URL to fetch.
      */
-    url() {
+    url(): string {
         if (this._fetchURL) {
             return this._fetchURL;
         }
@@ -77,7 +172,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         }
 
         return null;
-    },
+    }
 
     /**
      * Parse the results from the list payload.
@@ -86,17 +181,13 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *     rsp (object):
      *         The response from the server.
      *
-     *     options (object):
+     *     options (ResourceCollectionParseOptions):
      *         The options that were used for the fetch operation.
-     *
-     * Option Args:
-     *     fetchingAll (boolean):
-     *         Whether we're in the process of fetching all the items.
-     *
-     *     page (number):
-     *         The page of results that were fetched.
      */
-    parse(rsp, options={}) {
+    parse(
+        rsp: JQuery.PlainObject,
+        options: ResourceCollectionParseOptions = {},
+    ) {
         const listKey = _.result(this.model.prototype, 'listKey');
 
         this._links = rsp.links || null;
@@ -116,7 +207,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         }
 
         return rsp[listKey];
-    },
+    }
 
     /**
      * Fetch models from the list.
@@ -133,46 +224,23 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *     Deprecated callbacks and added a promise return value.
      *
      * Args:
-     *     options (object):
+     *     options (ResourceCollectionFetchOptions):
      *         Options for the fetch operation.
      *
      *     context (object):
      *         Context to be used when calling callbacks.
-     *
-     * Option Args:
-     *     start (string):
-     *         The start position to use when fetching paginated results.
-     *
-     *     maxResults (number):
-     *         The number of results to return.
-     *
-     *     reset (boolean):
-     *         Whether the collection should be reset with the newly-fetched
-     *         items, or those items should be appended to the collection.
-     *
-     *     data (object):
-     *         Data to pass to the API request.
-     *
-     *     success (function):
-     *         Callback to be called when the fetch is successful.
-     *
-     *     error (function):
-     *         Callback to be called when the fetch fails.
-     *
-     *     complete (function):
-     *         Callback to be called after either success or error.
-     *
-     * Returns:
-     *     Promise:
-     *     A promise which resolves when the fetch operation is complete.
      */
-    fetch: async function(options={}, context=undefined) {
+    async fetch(
+        options: ResourceCollectionFetchOptions = {},
+        context: object = undefined,
+    ): Promise<void> {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
             console.warn('RB.ResourceCollection.fetch was called using ' +
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
+
             return RB.promiseToCallbacks(
                 options, context, newOptions => this.fetch(newOptions));
         }
@@ -213,6 +281,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         options.remove = options.reset;
 
         const expandedFields = this.model.prototype.expandedFields;
+
         if (expandedFields.length > 0) {
             data.expand = expandedFields.join(',');
         }
@@ -227,8 +296,8 @@ RB.ResourceCollection = RB.BaseCollection.extend({
             await this.parentResource.ready();
         }
 
-        await RB.BaseCollection.prototype.fetch.call(this, options);
-    },
+        await super.fetch(options);
+    }
 
     /**
      * Fetch the previous batch of models from the resource list.
@@ -245,7 +314,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *     Deprecated callbacks and added a promise return value.
      *
      * Args:
-     *     options (object):
+     *     options (ResourceCollectionFetchOptions):
      *         Options for the fetch operation.
      *
      *     context (object):
@@ -255,13 +324,17 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    fetchPrev(options={}, context=undefined) {
+    fetchPrev(
+        options: ResourceCollectionFetchOptions = {},
+        context: object = undefined,
+    ): Promise<void> {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
             console.warn('RB.ResourceCollection.fetchPrev was called using ' +
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
+
             return RB.promiseToCallbacks(
                 options, context, newOptions => this.fetchPrev(newOptions));
         }
@@ -274,9 +347,9 @@ RB.ResourceCollection = RB.BaseCollection.extend({
 
         return this.fetch(
             _.defaults({
-                page: this.currentPage - 1
+                page: this.currentPage - 1,
             }, options));
-    },
+    }
 
     /**
      * Fetch the next batch of models from the resource list.
@@ -293,7 +366,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *     Deprecated callbacks and added a promise return value.
      *
      * Args:
-     *     options (object):
+     *     options (ResourceCollectionFetchOptions):
      *         Options for the fetch operation.
      *
      *     context (object):
@@ -303,13 +376,17 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    fetchNext(options={}, context=undefined) {
+    fetchNext(
+        options: ResourceCollectionFetchOptions = {},
+        context: object = undefined,
+    ): Promise<void> {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
             console.warn('RB.ResourceCollection.fetchNext was called using ' +
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
+
             return RB.promiseToCallbacks(
                 options, context, newOptions => this.fetchNext(newOptions));
         }
@@ -322,9 +399,9 @@ RB.ResourceCollection = RB.BaseCollection.extend({
 
         return this.fetch(
             _.defaults({
-                page: this.currentPage + 1
+                page: this.currentPage + 1,
             }, options));
-    },
+    }
 
     /**
      * Fetch all models from the resource list.
@@ -343,7 +420,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *     Deprecated callbacks and added a promise return value.
      *
      * Args:
-     *     options (object):
+     *     options (ResourceCollectionFetchOptions):
      *         Options for the fetch operation.
      *
      *     context (object):
@@ -353,22 +430,26 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    async fetchAll(options={}, context=undefined) {
+    async fetchAll(
+        options: ResourceCollectionFetchOptions = {},
+        context: object = undefined,
+    ): Promise<void> {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
             console.warn('RB.ResourceCollection.fetchNext was called using ' +
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
+
             return RB.promiseToCallbacks(
                 options, context, newOptions => this.fetchAll(newOptions));
         }
 
         const fetchOptions = _.defaults({
-            reset: false,
-            fetchingAll: true,
             enforceHasNext: false,
+            fetchingAll: true,
             maxResults: 50,
+            reset: false,
         }, options);
 
         this._fetchURL = null;
@@ -380,7 +461,7 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         while (this._links.next) {
             await this.fetchNext(fetchOptions);
         }
-    },
+    }
 
     /**
      * Prepare the model for the collection.
@@ -392,11 +473,14 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      *     Backbone.Model:
      *     The new model.
      */
-    _prepareModel() {
-        const model = RB.BaseCollection.prototype._prepareModel.apply(this, arguments);
+    _prepareModel(
+        attributes?: unknown,
+        options?: unknown,
+    ): TModel {
+        const model = super._prepareModel(attributes, options);
 
         model.set('parentObject', this.parentResource);
 
         return model;
-    },
-});
+    }
+}

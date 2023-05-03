@@ -7,7 +7,7 @@ import { ExtraDataMixin } from '../../models/extraDataMixin';
 
 
 /** A link within the resource tree. */
-interface ResourceLink {
+export interface ResourceLink {
     /** The link URL. */
     href: string;
 
