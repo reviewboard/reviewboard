@@ -5,6 +5,7 @@ import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
 import { EnabledFeatures } from 'reviewboard/common';
 import { PageView, PageViewOptions } from 'reviewboard/common/views/pageView';
+import { UserSession } from 'reviewboard/common/models/userSession';
 
 import { ReviewablePage } from '../models/reviewablePageModel';
 import { UnifiedBanner } from '../models/unifiedBanner';
@@ -259,7 +260,7 @@ export class ReviewablePageView<
          */
         RB.NotificationManager.instance.setup();
 
-        if (RB.UserSession.instance.get('authenticated')) {
+        if (UserSession.instance.get('authenticated')) {
             this.#starManager = new RB.StarManagerView({
                 el: this.$('.star').parent(),
                 model: new RB.StarManager(),
@@ -284,7 +285,7 @@ export class ReviewablePageView<
         const reviewRequest = this.model.get('reviewRequest');
 
         if (EnabledFeatures.unifiedBanner) {
-            if (RB.UserSession.instance.get('authenticated')) {
+            if (UserSession.instance.get('authenticated')) {
                 this.unifiedBanner = new UnifiedBannerView({
                     el: $('#unified-banner'),
                     model: new UnifiedBanner({
@@ -485,7 +486,7 @@ export class ReviewablePageView<
         const pendingReview = this.model.get('pendingReview');
         const comment = pendingReview.createGeneralComment(
             undefined,
-            RB.UserSession.instance.get('commentsOpenAnIssue'));
+            UserSession.instance.get('commentsOpenAnIssue'));
 
         if (!EnabledFeatures.unifiedBanner) {
             this.listenTo(comment, 'saved',

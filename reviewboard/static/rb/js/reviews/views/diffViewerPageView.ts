@@ -4,6 +4,7 @@
 import { Router, spina } from '@beanbag/spina';
 
 import { EnabledFeatures } from 'reviewboard/common';
+import { UserSession } from 'reviewboard/common/models/userSession';
 
 import { DiffFileIndexView } from './diffFileIndexView';
 import { DiffViewerPage } from '../models/diffViewerPageModel';
@@ -262,7 +263,7 @@ export class DiffViewerPageView extends ReviewablePageView<
         super.renderPage();
 
         const model = this.model;
-        const session = RB.UserSession.instance;
+        const session = UserSession.instance;
 
         this.#$controls = $('#view_controls');
         console.assert(this.#$controls.length === 1);
@@ -417,7 +418,7 @@ export class DiffViewerPageView extends ReviewablePageView<
                       _.partial(this._onPageSelected, true));
 
         this.#$diffs = $('#diffs')
-            .bindClass(RB.UserSession.instance,
+            .bindClass(UserSession.instance,
                        'diffsShowExtraWhitespace', 'ewhl');
 
         this.#chunkHighlighter = new RB.ChunkHighlighterView();

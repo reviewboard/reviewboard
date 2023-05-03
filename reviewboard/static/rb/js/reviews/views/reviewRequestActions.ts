@@ -1,7 +1,10 @@
 import { EventsHash, spina } from '@beanbag/spina';
 
 import { Actions } from 'reviewboard/common/actions';
-import { BaseResource } from 'reviewboard/common/resources/models/baseResource';
+import {
+    BaseResource,
+} from 'reviewboard/common/resources/models/baseResource';
+import { UserSession } from 'reviewboard/common/models/userSession';
 
 
 /**
@@ -76,8 +79,8 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
                 visibility === RB.ReviewRequest.VISIBILITY_VISIBLE);
             const collection = (
                 visibility === RB.ReviewRequest.VISIBILITY_MUTED
-                ? RB.UserSession.instance.mutedReviewRequests
-                : RB.UserSession.instance.archivedReviewRequests)
+                ? UserSession.instance.mutedReviewRequests
+                : UserSession.instance.archivedReviewRequests)
 
             if (visible) {
                 await collection.addImmediately(this.#reviewRequest);
@@ -251,7 +254,7 @@ export class ArchiveActionView extends BaseVisibilityActionView {
      **********************/
 
     /** The collection to use for making changes to the visibility. */
-    collection = RB.UserSession.instance.archivedReviewRequests;
+    collection = UserSession.instance.archivedReviewRequests;
 
     /**
      * Return the label to use for the menu item.
@@ -287,7 +290,7 @@ export class MuteActionView extends BaseVisibilityActionView {
      **********************/
 
     /** The collection to use for making changes to the visibility. */
-    collection = RB.UserSession.instance.mutedReviewRequests;
+    collection = UserSession.instance.mutedReviewRequests;
 
     /** The visibility type controlled by this action. */
     visibilityType = RB.ReviewRequest.VISIBILITY_MUTED;

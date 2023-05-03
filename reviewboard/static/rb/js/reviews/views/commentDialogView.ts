@@ -4,6 +4,7 @@
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
 import { EnabledFeatures } from 'reviewboard/common';
+import { UserSession } from 'reviewboard/common/models/userSession';
 
 import { CommentEditor } from '../models/commentEditorModel';
 
@@ -460,7 +461,7 @@ export class CommentDialogView extends BaseView<
      * Render the view.
      */
     onInitialRender() {
-        const userSession = RB.UserSession.instance;
+        const userSession = UserSession.instance;
         const reviewRequest = this.model.get('reviewRequest');
         const reviewRequestEditor = this.model.get('reviewRequestEditor');
 
@@ -787,7 +788,7 @@ export class CommentDialogView extends BaseView<
 
         if (this.model.get('canEdit')) {
             height = CommentDialogView.DIALOG_TOTAL_HEIGHT;
-        } else if (RB.UserSession.instance.get('readOnly')) {
+        } else if (UserSession.instance.get('readOnly')) {
             height = CommentDialogView.DIALOG_READ_ONLY_HEIGHT;
         } else {
             height = CommentDialogView.DIALOG_NON_EDITABLE_HEIGHT;

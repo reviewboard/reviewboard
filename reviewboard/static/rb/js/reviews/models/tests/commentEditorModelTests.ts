@@ -7,8 +7,11 @@ import {
     suite,
 } from 'jasmine-core';
 
+import { UserSession } from 'reviewboard/common/models/userSession';
+
 import { BaseResource } from '../../../common/resources/models/baseResource';
 import { CommentEditor } from '../commentEditorModel';
+
 
 suite('rb/models/CommentEditor', function() {
     let editor;
@@ -35,7 +38,7 @@ suite('rb/models/CommentEditor', function() {
     describe('Attribute defaults', function() {
         describe('canEdit', function() {
             it('When logged in and hasDraft=false', function() {
-                RB.UserSession.instance.set('authenticated', true);
+                UserSession.instance.set('authenticated', true);
 
                 editor = new CommentEditor({
                     reviewRequest: reviewRequest,
@@ -44,7 +47,7 @@ suite('rb/models/CommentEditor', function() {
             });
 
             it('When logged in and hasDraft=true', function() {
-                RB.UserSession.instance.set('authenticated', true);
+                UserSession.instance.set('authenticated', true);
                 reviewRequest.set('hasDraft', true);
 
                 editor = new CommentEditor({
@@ -54,7 +57,7 @@ suite('rb/models/CommentEditor', function() {
             });
 
             it('When logged out', function() {
-                RB.UserSession.instance.set('authenticated', false);
+                UserSession.instance.set('authenticated', false);
 
                 editor = new CommentEditor({
                     reviewRequest: reviewRequest,
@@ -63,7 +66,7 @@ suite('rb/models/CommentEditor', function() {
             });
 
             it('With explicitly set value', function() {
-                RB.UserSession.instance.set('authenticated', false);
+                UserSession.instance.set('authenticated', false);
 
                 editor = new CommentEditor({
                     canEdit: true,
@@ -75,7 +78,7 @@ suite('rb/models/CommentEditor', function() {
 
         describe('openIssue', function() {
             it('When user preference is true', function() {
-                RB.UserSession.instance.set('commentsOpenAnIssue', true);
+                UserSession.instance.set('commentsOpenAnIssue', true);
 
                 editor = new CommentEditor({
                     reviewRequest: reviewRequest,
@@ -84,7 +87,7 @@ suite('rb/models/CommentEditor', function() {
             });
 
             it('When user preference is false', function() {
-                RB.UserSession.instance.set('commentsOpenAnIssue', false);
+                UserSession.instance.set('commentsOpenAnIssue', false);
 
                 editor = new CommentEditor({
                     reviewRequest: reviewRequest,
@@ -93,7 +96,7 @@ suite('rb/models/CommentEditor', function() {
             });
 
             it('With explicitly set value', function() {
-                RB.UserSession.instance.set('commentsOpenAnIssue', false);
+                UserSession.instance.set('commentsOpenAnIssue', false);
 
                 editor = new CommentEditor({
                     openIssue: true,
@@ -103,7 +106,7 @@ suite('rb/models/CommentEditor', function() {
             });
 
             it('When reloading the page with explicitly set value', function() {
-                RB.UserSession.instance.set('commentsOpenAnIssue', true);
+                UserSession.instance.set('commentsOpenAnIssue', true);
 
                 comment = createComment();
                 comment.set({
@@ -121,7 +124,7 @@ suite('rb/models/CommentEditor', function() {
 
         describe('richText', function() {
             it('When user preference is true', function() {
-                RB.UserSession.instance.set('defaultUseRichText', true);
+                UserSession.instance.set('defaultUseRichText', true);
 
                 editor = new CommentEditor({
                     reviewRequest: reviewRequest,
@@ -130,7 +133,7 @@ suite('rb/models/CommentEditor', function() {
             });
 
             it('When user preference is false', function() {
-                RB.UserSession.instance.set('defaultUseRichText', false);
+                UserSession.instance.set('defaultUseRichText', false);
 
                 editor = new CommentEditor({
                     reviewRequest: reviewRequest,
@@ -139,7 +142,7 @@ suite('rb/models/CommentEditor', function() {
             });
 
             it('With explicitly set value', function() {
-                RB.UserSession.instance.set('defaultUseRichText', false);
+                UserSession.instance.set('defaultUseRichText', false);
 
                 editor = new CommentEditor({
                     reviewRequest: reviewRequest,
@@ -172,7 +175,7 @@ suite('rb/models/CommentEditor', function() {
             });
 
             it('When defaultUseRichText=true', function() {
-                RB.UserSession.instance.set('defaultUseRichText', true);
+                UserSession.instance.set('defaultUseRichText', true);
                 editor.set('comment', comment);
                 editor.beginEdit();
 
@@ -182,7 +185,7 @@ suite('rb/models/CommentEditor', function() {
             });
 
             it('When defaultUseRichText=false', function() {
-                RB.UserSession.instance.set('defaultUseRichText', false);
+                UserSession.instance.set('defaultUseRichText', false);
                 editor.set('comment', comment);
                 editor.beginEdit();
 
@@ -213,7 +216,7 @@ suite('rb/models/CommentEditor', function() {
             });
 
             it('When defaultUseRichText=true', function() {
-                RB.UserSession.instance.set('defaultUseRichText', true);
+                UserSession.instance.set('defaultUseRichText', true);
                 editor.set('comment', comment);
                 editor.beginEdit();
 
@@ -223,7 +226,7 @@ suite('rb/models/CommentEditor', function() {
             });
 
             it('When defaultUseRichText=false', function() {
-                RB.UserSession.instance.set('defaultUseRichText', false);
+                UserSession.instance.set('defaultUseRichText', false);
                 editor.set('comment', comment);
                 editor.beginEdit();
 

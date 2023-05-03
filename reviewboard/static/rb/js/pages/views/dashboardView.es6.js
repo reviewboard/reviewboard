@@ -269,9 +269,6 @@ const DashboardActionsView = Backbone.View.extend({
         ev.stopPropagation();
         ev.preventDefault();
 
-        const collection = RB.UserSession.instance.mutedReviewRequests;
-        const visibilityFunc = collection.addImmediately.bind(collection);
-
         $('<div/>')
             .append($('<p/>')
                 .text(_`Are you sure you want to mute these review requests?`))

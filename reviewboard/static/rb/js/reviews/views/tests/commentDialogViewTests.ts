@@ -14,6 +14,7 @@ import {
 import {
     CommentEditor,
 } from 'reviewboard/reviews/models/commentEditorModel';
+import { UserSession } from 'reviewboard/common/models/userSession';
 
 declare const $testsScratch: JQuery;
 
@@ -923,7 +924,7 @@ suite('rb/views/CommentDialogView', function() {
         describe('User preference defaults', function() {
             describe('Open Issue checkbox', function() {
                 it('When commentsOpenAnIssue is true', function() {
-                    RB.UserSession.instance.set('commentsOpenAnIssue', true);
+                    UserSession.instance.set('commentsOpenAnIssue', true);
 
                     editor = new CommentEditor({
                         reviewRequest: reviewRequest,
@@ -941,7 +942,7 @@ suite('rb/views/CommentDialogView', function() {
                 });
 
                 it('When commentsOpenAnIssue is false', function() {
-                    RB.UserSession.instance.set('commentsOpenAnIssue', false);
+                    UserSession.instance.set('commentsOpenAnIssue', false);
 
                     editor = new CommentEditor({
                         reviewRequest: reviewRequest,
@@ -962,7 +963,7 @@ suite('rb/views/CommentDialogView', function() {
             describe('Enable Markdown checkbox', function() {
                 describe('When defaultUseRichText is true', function() {
                     beforeEach(function() {
-                        RB.UserSession.instance.set(
+                        UserSession.instance.set(
                             'defaultUseRichText', true);
                     });
 
@@ -1026,7 +1027,7 @@ suite('rb/views/CommentDialogView', function() {
 
                 describe('When defaultUseRichText is false', function() {
                     beforeEach(function() {
-                        RB.UserSession.instance.set('defaultUseRichText',
+                        UserSession.instance.set('defaultUseRichText',
                                                     false);
                     });
 
@@ -1092,7 +1093,7 @@ suite('rb/views/CommentDialogView', function() {
 
         describe('Logged Out indicator', function() {
             it('When logged in', function() {
-                RB.UserSession.instance.set('authenticated', true);
+                UserSession.instance.set('authenticated', true);
 
                 dlg = new CommentDialogView({
                     animate: false,
@@ -1107,7 +1108,7 @@ suite('rb/views/CommentDialogView', function() {
             });
 
             it('When logged out', function() {
-                RB.UserSession.instance.set('authenticated', false);
+                UserSession.instance.set('authenticated', false);
 
                 dlg = new CommentDialogView({
                     animate: false,

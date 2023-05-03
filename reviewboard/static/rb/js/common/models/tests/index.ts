@@ -1,1 +1,2 @@
 import './extraDataTests';
+import './userSessionTests';

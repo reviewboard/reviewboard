@@ -6,6 +6,7 @@ import { BaseView, EventsHash, spina } from '@beanbag/spina';
 import { FloatingBannerView } from 'reviewboard/ui/views/floatingBannerView';
 import { MenuButtonView } from 'reviewboard/ui/views/menuButtonView';
 import { MenuType, MenuView } from 'reviewboard/ui/views/menuView';
+import { UserSession } from 'reviewboard/common/models/userSession';
 
 import { UnifiedBanner } from '../models/unifiedBanner';
 
@@ -391,7 +392,7 @@ export class UnifiedBannerView extends FloatingBannerView<
      * Render the banner.
      */
     onInitialRender() {
-        if (!RB.UserSession.instance.get('authenticated')) {
+        if (!UserSession.instance.get('authenticated')) {
             return;
         }
 
