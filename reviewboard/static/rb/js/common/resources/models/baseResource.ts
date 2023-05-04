@@ -4,6 +4,7 @@
 import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
 
 import { ExtraDataMixin } from '../../models/extraDataMixin';
+import { SerializerState } from '../utils/serializers';
 
 
 /** A link within the resource tree. */
@@ -79,6 +80,16 @@ interface SyncOptions extends JQuery.AjaxSettings {
 }
 
 
+type SerializerMap = {
+    [key: string]: (unknown, SerializerState) => unknown,
+}
+
+
+type DeserializerMap = {
+    [key: string]: (unknown) => unknown,
+}
+
+
 /**
  * The base model for all API-backed resource models.
  *
@@ -150,16 +161,16 @@ export class BaseResource<
     static attrToJsonMap = {};
 
     /** A list of attributes to serialize in toJSON(). */
-    static serializedAttrs = [];
+    static serializedAttrs: string[] = [];
 
     /** A list of attributes to deserialize in parseResourceData(). */
-    static deserializedAttrs = [];
+    static deserializedAttrs: string[] = [];
 
     /** Special serializer functions called in toJSON(). */
-    static serializers = {};
+    static serializers: SerializerMap = {};
 
     /** Special deserializer functions called in parseResourceData(). */
-    static deserializers = {};
+    static deserializers: DeserializerMap = {};
 
     /**
      * Return default values for the model attributes.
@@ -850,7 +861,7 @@ export class BaseResource<
     toJSON(
         options?: object,
     ): object {
-        const serializerState = {
+        const serializerState: SerializerState = {
             isNew: this.isNew(),
             loaded: this.get('loaded'),
         };

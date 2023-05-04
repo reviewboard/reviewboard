@@ -149,7 +149,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/extensions/models/reviewDialogHookModel.es6.js',
             'rb/js/extensions/models/reviewRequestActionHookModel.es6.js',
             'rb/js/pages/models/pageManagerModel.es6.js',
-            'rb/js/resources/utils/serializers.es6.js',
             'rb/js/resources/models/apiTokenModel.es6.js',
             'rb/js/resources/models/repositoryBranchModel.es6.js',
             'rb/js/resources/models/repositoryCommitModel.es6.js',
