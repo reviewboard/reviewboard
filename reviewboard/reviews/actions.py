@@ -386,7 +386,7 @@ class ShipItAction(BaseAction):
           'a new review" above.'),
     ]
     icon_class = 'rb-icon rb-icon-shipit'
-    js_view_name = 'RB.ShipItActionView'
+    js_view_class = 'RB.ShipItActionView'
     template_name = 'actions/detailed_menuitem_action.html'
 
 
