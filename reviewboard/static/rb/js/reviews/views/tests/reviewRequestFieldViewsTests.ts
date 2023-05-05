@@ -1,3 +1,18 @@
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+    suite,
+} from 'jasmine-core';
+
+import {
+    BaseFieldView,
+    MultilineTextFieldView,
+    TextFieldView,
+} from '../reviewRequestFieldViews';
+
 suite('rb/views/reviewRequestFieldViews', function() {
     let reviewRequest;
     let draft;
@@ -34,9 +49,9 @@ suite('rb/views/reviewRequestFieldViews', function() {
 
     describe('BaseFieldView', function() {
         beforeEach(function() {
-            field = new RB.ReviewRequestFields.BaseFieldView({
-                model: editor,
+            field = new BaseFieldView({
                 fieldID: 'my_field',
+                model: editor,
             });
         });
 
@@ -47,10 +62,10 @@ suite('rb/views/reviewRequestFieldViews', function() {
             });
 
             it('With custom jsonFieldName', function() {
-                const field = new RB.ReviewRequestFields.BaseFieldView({
-                    model: editor,
+                const field = new BaseFieldView({
                     fieldID: 'my_field',
                     jsonFieldName: 'my_custom_name',
+                    model: editor,
                 });
 
                 expect(field.$el.data('field-id')).toBe('my_field');
@@ -80,10 +95,10 @@ suite('rb/views/reviewRequestFieldViews', function() {
                 });
 
                 it('Custom field and custom jsonFieldName', function() {
-                    const field = new RB.ReviewRequestFields.BaseFieldView({
-                        model: editor,
+                    const field = new BaseFieldView({
                         fieldID: 'my_field',
                         jsonFieldName: 'foo',
+                        model: editor,
                     });
 
                     extraData.foo = 'this is a test';
@@ -121,10 +136,10 @@ suite('rb/views/reviewRequestFieldViews', function() {
                 });
 
                 it('Custom field and custom jsonFieldName', function(done) {
-                    const field = new RB.ReviewRequestFields.BaseFieldView({
-                        model: editor,
+                    const field = new BaseFieldView({
                         fieldID: 'my_field',
                         jsonFieldName: 'foo',
+                        model: editor,
                     });
 
                     field._saveValue('this is a test')
@@ -144,9 +159,9 @@ suite('rb/views/reviewRequestFieldViews', function() {
 
     describe('TextFieldView', function() {
         beforeEach(function() {
-            field = new RB.ReviewRequestFields.TextFieldView({
-                model: editor,
+            field = new TextFieldView({
                 fieldID: 'my_field',
+                model: editor,
             });
             editorView.addFieldView(field);
         });
@@ -159,9 +174,9 @@ suite('rb/views/reviewRequestFieldViews', function() {
                 });
 
                 it('With fieldID = "text"', function() {
-                    field = new RB.ReviewRequestFields.TextFieldView({
-                        model: editor,
+                    field = new TextFieldView({
                         fieldID: 'text',
+                        model: editor,
                     });
 
                     expect(field.jsonTextTypeFieldName).toBe('text_type');
@@ -317,7 +332,9 @@ suite('rb/views/reviewRequestFieldViews', function() {
 
                         try {
                             field._loadRichTextValue();
-                        } catch (e) {}
+                        } catch (e) {
+                            // Do nothing.
+                        }
 
                         expect(console.assert).toHaveBeenCalledWith(
                             false,
@@ -340,11 +357,11 @@ suite('rb/views/reviewRequestFieldViews', function() {
 
             describe('allowRichText', function() {
                 it('allow-markdown=true', function() {
-                    field = new RB.ReviewRequestFields.MultilineTextFieldView({
-                        model: editor,
+                    field = new MultilineTextFieldView({
+                        el: $el,
                         fieldID: 'my_field',
                         jsonFieldName: 'foo',
-                        el: $el,
+                        model: editor,
                     });
 
                     expect(field.allowRichText).toBe(true);
@@ -352,22 +369,22 @@ suite('rb/views/reviewRequestFieldViews', function() {
 
                 it('allow-markdown=false', function() {
 
-                    field = new RB.ReviewRequestFields.MultilineTextFieldView({
-                        model: editor,
+                    field = new MultilineTextFieldView({
+                        el: $el.attr('data-allow-markdown', 'false'),
                         fieldID: 'my_field',
                         jsonFieldName: 'foo',
-                        el: $el.attr('data-allow-markdown', 'false'),
+                        model: editor,
                     });
 
                     expect(field.allowRichText).toBe(false);
                 });
 
                 it('allow-markdown unset', function() {
-                    field = new RB.ReviewRequestFields.MultilineTextFieldView({
-                        model: editor,
+                    field = new MultilineTextFieldView({
+                        el: $el.removeAttr('data-allow-markdown'),
                         fieldID: 'my_field',
                         jsonFieldName: 'foo',
-                        el: $el.removeAttr('data-allow-markdown'),
+                        model: editor,
                     });
 
                     expect(field.allowRichText).toBe(undefined);
@@ -377,11 +394,11 @@ suite('rb/views/reviewRequestFieldViews', function() {
             describe('Text value', function() {
                 it('raw-value set', function() {
 
-                    field = new RB.ReviewRequestFields.MultilineTextFieldView({
-                        model: editor,
+                    field = new MultilineTextFieldView({
+                        el: $el.attr('data-raw-value', 'attr text value'),
                         fieldID: 'my_field',
                         jsonFieldName: 'foo',
-                        el: $el.attr('data-raw-value', 'attr text value'),
+                        model: editor,
                     });
 
                     expect(extraData.foo).toBe('attr text value');
@@ -389,11 +406,11 @@ suite('rb/views/reviewRequestFieldViews', function() {
                 });
 
                 it('raw-value unset', function() {
-                    field = new RB.ReviewRequestFields.MultilineTextFieldView({
-                        model: editor,
+                    field = new MultilineTextFieldView({
+                        el: $el,
                         fieldID: 'my_field',
                         jsonFieldName: 'foo',
-                        el: $el,
+                        model: editor,
                     });
 
                     expect(extraData.foo).toBe('DOM text value');
@@ -402,22 +419,22 @@ suite('rb/views/reviewRequestFieldViews', function() {
 
             describe('Text type value', function() {
                 it('rich-text class present', function() {
-                    field = new RB.ReviewRequestFields.MultilineTextFieldView({
-                        model: editor,
+                    field = new MultilineTextFieldView({
+                        el: $el.addClass('rich-text'),
                         fieldID: 'my_field',
                         jsonFieldName: 'foo',
-                        el: $el.addClass('rich-text'),
+                        model: editor,
                     });
 
                     expect(extraData.foo_text_type).toBe('markdown');
                 });
 
                 it('rich-text class not present', function() {
-                    field = new RB.ReviewRequestFields.MultilineTextFieldView({
-                        model: editor,
+                    field = new MultilineTextFieldView({
+                        el: $el,
                         fieldID: 'my_field',
                         jsonFieldName: 'foo',
-                        el: $el,
+                        model: editor,
                     });
 
                     expect(extraData.foo_text_type).toBe('plain');

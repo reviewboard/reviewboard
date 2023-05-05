@@ -9,6 +9,7 @@ import { MenuType, MenuView } from 'reviewboard/ui/views/menuView';
 import { UserSession } from 'reviewboard/common/models/userSession';
 
 import { UnifiedBanner } from '../models/unifiedBanner';
+import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
 
 
 /**
@@ -437,7 +438,7 @@ export class UnifiedBannerView extends FloatingBannerView<
                          reviewRequest.get('changeDescriptionRichText'));
 
         this.#reviewRequestEditorView.addFieldView(
-            new RB.ReviewRequestFields.ChangeDescriptionFieldView({
+            new ChangeDescriptionFieldView({
                 el: $changeDescription,
                 fieldID: 'change_description',
                 model: reviewRequestEditor,

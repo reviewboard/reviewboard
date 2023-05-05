@@ -1,3 +1,4 @@
+export * as ReviewRequestFields from './views/reviewRequestFieldViews';
 export * from './views/reviewRequestActions';
 export { CommentDialogView } from './views/commentDialogView';
 export { CommentEditor } from './models/commentEditorModel';
