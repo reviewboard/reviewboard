@@ -7,6 +7,7 @@ import { EnabledFeatures } from 'reviewboard/common';
 import { PageView, PageViewOptions } from 'reviewboard/common/views/pageView';
 import { UserSession } from 'reviewboard/common/models/userSession';
 
+import { ReviewRequestEditor } from '../models/reviewRequestEditor';
 import { ReviewablePage } from '../models/reviewablePageModel';
 import { UnifiedBanner } from '../models/unifiedBanner';
 import { UnifiedBannerView } from './unifiedBannerView';
@@ -157,8 +158,8 @@ export interface ReviewablePageViewOptions extends PageViewOptions {
     /** The model attributes for a new RB.ReviewRequest instance. */
     reviewRequestData?: object; // TODO: update once ReviewRequest is TS
 
-    /** The model attributes for a new RB.ReviewRequestEditor instance. */
-    editorData?: object; // TODO: update once ReviewRequestEditor is TS
+    /** The model attributes for a new ReviewRequestEditor instance. */
+    editorData?: Partial<ReviewRequestEditorAttrs>;
 
     /** The last known timestamp for activity on this review request. */
     lastActivityTimestamp?: string;
@@ -345,10 +346,10 @@ export class ReviewablePageView<
      * Return the review request editor model.
      *
      * Returns:
-     *     RB.ReviewRequestEditor:
+     *     ReviewRequestEditor:
      *     The review request editor model.
      */
-    getReviewRequestEditorModel() {
+    getReviewRequestEditorModel(): ReviewRequestEditor {
         return this.model.reviewRequestEditor;
     }
 

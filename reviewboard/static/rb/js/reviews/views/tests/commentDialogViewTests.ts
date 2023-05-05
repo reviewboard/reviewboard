@@ -16,6 +16,8 @@ import {
 } from 'reviewboard/reviews/models/commentEditorModel';
 import { UserSession } from 'reviewboard/common/models/userSession';
 
+import { ReviewRequestEditor } from '../../models/reviewRequestEditor';
+
 declare const $testsScratch: JQuery;
 
 
@@ -27,7 +29,7 @@ suite('rb/views/CommentDialogView', function() {
         RB.DnDUploader.create();
 
         reviewRequest = new RB.ReviewRequest();
-        reviewRequestEditor = new RB.ReviewRequestEditor({
+        reviewRequestEditor = new ReviewRequestEditor({
             reviewRequest: reviewRequest,
         });
     });

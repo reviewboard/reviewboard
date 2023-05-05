@@ -3,6 +3,8 @@
  */
 import { BaseModel, spina } from '@beanbag/spina';
 
+import { ReviewRequestEditor } from './reviewRequestEditor';
+
 
 /**
  * Information about a selectable draft mode.
@@ -54,7 +56,7 @@ interface UnifiedBannerAttrs {
     reviewRequest: RB.ReviewRequest;
 
     /** The review request editor. */
-    reviewRequestEditor: RB.ReviewRequestEditor;
+    reviewRequestEditor: ReviewRequestEditor;
 
     /** The currently selected draft mode (indexing into draftModes). */
     selectedDraftMode: number;

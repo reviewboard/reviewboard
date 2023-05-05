@@ -5,6 +5,8 @@ import {
     FloatingBannerViewOptions
 } from 'reviewboard/ui/views/floatingBannerView';
 
+import { ReviewRequestEditor } from '../models/reviewRequestEditor';
+
 
 /**
  * Options for the ReviewReplyDraftBannerView.
@@ -16,7 +18,7 @@ interface ReviewReplyDraftBannerOptions extends FloatingBannerViewOptions {
     /**
      * The review request editor.
      */
-    reviewRequestEditor: RB.ReviewRequestEditor;
+    reviewRequestEditor: ReviewRequestEditor;
 }
 
 
@@ -63,7 +65,7 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
      * Instance variables *
      **********************/
 
-    #reviewRequestEditor: RB.ReviewRequestEditor;
+    #reviewRequestEditor: ReviewRequestEditor;
 
     /**
      * Initialize the view.

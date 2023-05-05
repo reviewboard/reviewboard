@@ -7,6 +7,7 @@ import { EnabledFeatures } from 'reviewboard/common';
 import { UserSession } from 'reviewboard/common/models/userSession';
 
 import { CommentEditor } from '../models/commentEditorModel';
+import { ReviewRequestEditor } from '../models/reviewRequestEditor';
 
 
 /**
@@ -209,7 +210,7 @@ interface CommentDialogViewCreationOptions {
     publishedCommentsType?: string;
 
     /** The review request editor. */
-    reviewRequestEditor?: RB.ReviewRequestEditor;
+    reviewRequestEditor?: ReviewRequestEditor;
 }
 
 

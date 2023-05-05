@@ -4,6 +4,12 @@
 
 import { BaseView, spina } from '@beanbag/spina';
 
+import {
+    GetDraftFieldOptions,
+    ReviewRequestEditor,
+    SetDraftFieldOptions,
+} from '../models/reviewRequestEditor';
+
 
 declare const SITE_ROOT: string;
 
@@ -19,66 +25,6 @@ interface BaseFieldViewOptions {
 
 
 /**
- * Options for getting a draft field.
- *
- * TODO: This should be moved over to the ReviewRequestEditor definitions once
- * that's been converted to TypeScript.
- */
-interface GetDraftFieldOptions {
-    /**
-     * The key to use for the field name in the API.
-     *
-     * This is required if ``useExtraData`` is set.
-     */
-    jsonFieldName?: string;
-
-    /**
-     * Whether the field is stored as part of extraData.
-     *
-     * If this is ``false``, the value will instead be stored as a regular
-     * attribute on the model. If this is ``true``, ``jsonFieldName`` needs to
-     * be set.
-     */
-    useExtraData?: boolean;
-
-    /**
-     * Whether to return the raw text value for a field.
-     *
-     * This requires ``useExtraData`` to be ``true``.
-     */
-    useRawTextValue?: boolean;
-}
-
-
-/**
- * Options for setting a draft field.
- *
- * TODO: This should be moved over to the ReviewRequestEditor definitions once
- * that's been converted to TypeScript.
- */
-interface SetDraftFieldOptions {
-    /**
-     * Whether the field can support rich text (Markdown).
-     *
-     * This requires that ``jsonTextTypeFieldName`` is set.
-     */
-    allowMarkdown?: boolean;
-
-    /** The key to use for the field name in the API. */
-    jsonFieldName?: string;
-
-    /** The key to use for the name of the field indicating the text type. */
-    jsonTextTypeFieldName?: string;
-
-    /** Whether the field is rich text (Markdown). */
-    richText?: boolean;
-
-    /** Whether the field should be set in extraData or as an attribute. */
-    useExtraData?: boolean;
-}
-
-
-/**
  * Base class for all field views.
  */
 @spina({
@@ -88,7 +34,7 @@ interface SetDraftFieldOptions {
     ],
 })
 export class BaseFieldView extends BaseView<
-    RB.ReviewRequestEditor,
+    ReviewRequestEditor,
     HTMLDivElement,
     BaseFieldViewOptions
 > {
@@ -158,7 +104,7 @@ export class BaseFieldView extends BaseView<
      * (``useExtraData === true``).
      *
      * Args:
-     *     options (object):
+     *     options (GetDraftFieldOptions):
      *         Options for :js:func:`RB.ReviewRequestEditor.getDraftField`.
      *
      * Returns:
@@ -186,7 +132,7 @@ export class BaseFieldView extends BaseView<
      *     value (*):
      *         The new value for the field.
      *
-     *     options (object):
+     *     options (SetDraftFieldOptions):
      *         Options for the save operation.
      *
      * Returns:

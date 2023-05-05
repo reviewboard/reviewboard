@@ -4,6 +4,8 @@ import { BaseModel, spina } from '@beanbag/spina';
 import { ExtraDataMixin } from 'reviewboard/common/models/extraDataMixin';
 import { UserSession } from 'reviewboard/common/models/userSession';
 
+import { ReviewRequestEditor } from './reviewRequestEditor';
+
 
 /**
  * Attributes for the CommentEditor model.
@@ -46,7 +48,7 @@ interface CommentEditorAttrs {
     reviewRequest: RB.ReviewRequest;
 
     /** The review request editor for the review request. */
-    reviewRequestEditor: RB.ReviewRequestEditor;
+    reviewRequestEditor: ReviewRequestEditor;
 
     /** Whether the comment is formatted in Markdown. */
     richText: boolean;
