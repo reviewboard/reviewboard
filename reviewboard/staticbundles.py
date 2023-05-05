@@ -138,7 +138,7 @@ PIPELINE_JAVASCRIPT = {
             # Legacy JavaScript
             'rb/js/utils/consoleUtils.es6.js',
             'rb/js/utils/underscoreUtils.es6.js',
-            'rb/js/common.es6.js',
+            'rb/js/init.es6.js',
             'rb/js/utils/apiErrors.es6.js',
             'rb/js/utils/apiUtils.es6.js',
             'rb/js/utils/dataUtils.es6.js',
