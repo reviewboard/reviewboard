@@ -8,6 +8,7 @@ import {
 } from 'jasmine-core';
 
 import { ReviewRequestEditor } from '../../models/reviewRequestEditor';
+import { ReviewRequestEditorView } from '../reviewRequestEditorView';
 import {
     BaseFieldView,
     MultilineTextFieldView,
@@ -40,7 +41,7 @@ suite('rb/views/reviewRequestFieldViews', function() {
             reviewRequest: reviewRequest,
         });
 
-        editorView = new RB.ReviewRequestEditorView({
+        editorView = new ReviewRequestEditorView({
             model: editor,
         });
 

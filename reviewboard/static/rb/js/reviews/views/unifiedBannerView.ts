@@ -10,6 +10,7 @@ import { UserSession } from 'reviewboard/common/models/userSession';
 
 import { UnifiedBanner } from '../models/unifiedBanner';
 import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
+import { ReviewRequestEditorView } from './reviewRequestEditorView';
 
 
 /**
@@ -285,7 +286,7 @@ class PublishButtonView extends MenuButtonView<UnifiedBanner> {
  */
 interface UnifiedBannerViewOptions {
     /** The review request editor. */
-    reviewRequestEditorView: RB.ReviewRequestEditorView;
+    reviewRequestEditorView: ReviewRequestEditorView;
 }
 
 
@@ -332,7 +333,7 @@ export class UnifiedBannerView extends FloatingBannerView<
     #$reviewActions: JQuery;
     #modeMenu: DraftModeMenu;
     #publishButton: PublishButtonView;
-    #reviewRequestEditorView: RB.ReviewRequestEditorView;
+    #reviewRequestEditorView: ReviewRequestEditorView;
 
     /**
      * Reset the UnifiedBannerView instance.
@@ -533,7 +534,7 @@ export class UnifiedBannerView extends FloatingBannerView<
     /**
      * Publish the current draft.
      *
-     * This triggers an event which is handled by RB.ReviewRequestEditorView.
+     * This triggers an event which is handled by ReviewRequestEditorView.
      */
     async publish(
         options: {

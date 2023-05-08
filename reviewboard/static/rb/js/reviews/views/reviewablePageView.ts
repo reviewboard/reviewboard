@@ -8,6 +8,7 @@ import { PageView, PageViewOptions } from 'reviewboard/common/views/pageView';
 import { UserSession } from 'reviewboard/common/models/userSession';
 
 import { ReviewRequestEditor } from '../models/reviewRequestEditor';
+import { ReviewRequestEditorView } from './reviewRequestEditorView';
 import { ReviewablePage } from '../models/reviewablePageModel';
 import { UnifiedBanner } from '../models/unifiedBanner';
 import { UnifiedBannerView } from './unifiedBannerView';
@@ -195,7 +196,7 @@ export class ReviewablePageView<
      **********************/
 
     /** The review request editor. */
-    reviewRequestEditorView: RB.ReviewRequestEditorView;
+    reviewRequestEditorView: ReviewRequestEditorView;
 
     /** The draft review banner, if present. */
     draftReviewBanner: RB.DraftReviewBannerview;
@@ -236,7 +237,7 @@ export class ReviewablePageView<
 
         RB.DnDUploader.create();
 
-        this.reviewRequestEditorView = new RB.ReviewRequestEditorView({
+        this.reviewRequestEditorView = new ReviewRequestEditorView({
             el: $('#review-request'),
             model: this.model.reviewRequestEditor,
         });
@@ -335,10 +336,10 @@ export class ReviewablePageView<
      * Return the review request editor view.
      *
      * Returns:
-     *     RB.ReviewRequestEditorView:
+     *     ReviewRequestEditorView:
      *     The review request editor view.
      */
-    getReviewRequestEditorView() {
+    getReviewRequestEditorView(): ReviewRequestEditorView {
         return this.reviewRequestEditorView;
     }
 

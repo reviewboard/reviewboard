@@ -9,6 +9,7 @@ import {
     ReviewRequestEditor,
     SetDraftFieldOptions,
 } from '../models/reviewRequestEditor';
+import { ReviewRequestEditorView } from '../views/reviewRequestEditorView';
 
 
 declare const SITE_ROOT: string;
@@ -58,6 +59,9 @@ export class BaseFieldView extends BaseView<
 
     /** The name of to use when storing the data in a model attribute. */
     _fieldName: string;
+
+    /** The review request editor view. */
+    reviewRequestEditorView: ReviewRequestEditorView;
 
     /**
      * Initialize the view.
