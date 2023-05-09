@@ -1,3 +1,125 @@
+/** View classes for various types of inline editors. */
+
+import { BaseView, spina } from '@beanbag/spina';
+
+
+interface InlineEditorViewOptions {
+    /** The duration of animated transitions, in milliseconds. */
+    animationSpeedMS: number;
+
+    /**
+     * Whether to defer event setup after rendering.
+     *
+     * This should be used when a consumer wants to prioritize event handling
+     * (such as handling the "enter" key for autocomplete).
+     */
+    deferEventSetup: boolean;
+
+    /**
+     * The class name to use for the edit icon.
+     *
+     * This is only used if ``editIconPath`` is unspecified.
+     */
+    editIconClass: string;
+
+    /** The path for an image for the edit icon. */
+    editIconPath: string;
+
+    /** Whether editing is enabled. */
+    enabled: boolean;
+
+    /** Extra height to add when displaying the editor, in pixels. */
+    extraHeight: number;
+
+    /** Whether to focus the field when opening the editor. */
+    focusOnOpen: boolean;
+
+    /**
+     * A function to format the resulting value.
+     *
+     * After the value is saved, this function can transform it for display
+     * into the HTML element.
+     */
+    formatResult: (unknown) => string;
+
+    /** The class to add to the form's DOM element. */
+    formClass: string;
+
+    /** A function to retrieve the field value. */
+    getFieldValue: (InlineEditorView) => unknown;
+
+    /**
+     * Whether the field has a "raw value".
+     *
+     * If this is ``true``, it means that there is data for the field separate
+     * from the actual contents of the element.
+     */
+    hasRawValue: boolean;
+
+    /** A function to calculate whether the editor value is dirty. */
+    isFieldDirty: (InlineEditorView, unknown) => boolean;
+
+    /**
+     * Whether to attempt to match the editor height to the replaced element.
+     */
+    matchHeight: boolean;
+
+    /** Whether the text input should be multi-line or single-line. */
+    multiline: boolean;
+
+    /**
+     * Whether to trigger a ``complete`` event even if the value is unchanged.
+     *
+     * If this is ``false``, the editor will trigger a ``cancel`` event
+     * instead.
+     */
+    notifyUnchangedCompletion: boolean;
+
+    /** Whether to prompt the user before cancelling if the editor is dirty. */
+    promptOnCancel: boolean;
+
+    /**
+     * The data of the raw value.
+     *
+     * This is only used if ``hasRawValue`` is ``true``.
+     */
+    rawValue: unknown;
+
+    /** A function to set the field value. */
+    setFieldValue: (InlineEditorView, unknown) => void;
+
+    /** Whether to show OK/Cancel buttons. */
+    showButtons: boolean;
+
+    /** Whether to show the edit icon. */
+    showEditIcon: boolean;
+
+    /** Whether to show the required flag on the edit icon. */
+    showRequiredFlag: boolean;
+
+    /** Whether the editor should be open when first created. */
+    startOpen: boolean;
+
+    /** Whether to strip out HTML tags when normalizing input. */
+    stripTags: boolean;
+
+    /**
+     * Whether the editor can be opened only by clicking the edit icon.
+     *
+     * If this is ``true``, the only way to start an edit is by clicking the
+     * edit icon. If this is ``false``, clicking on the value will also
+     * trigger an edit.
+     */
+    useEditIconOnly: boolean;
+}
+
+
+interface EditOptions {
+    /** Whether to suppress animation. */
+    preventAnimation?: boolean;
+}
+
+
 /**
  * A view for inline editors.
  *
@@ -5,20 +127,27 @@
  * way to switch between a normal view and an edit view, which is usually a
  * text box (either single- or multiple-line).
  */
-RB.InlineEditorView = Backbone.View.extend({
+@spina({
+    prototypeAttrs: ['defaultOptions'],
+})
+export class InlineEditorView<
+    TModel extends Backbone.Model = undefined,
+    TElement extends HTMLElement = HTMLDivElement,
+    TExtraViewOptions extends InlineEditorViewOptions = InlineEditorViewOptions
+> extends BaseView<TModel, TElement, TExtraViewOptions> {
     /**
      * Defaults for the view options.
      */
-    defaultOptions: {
+    static defaultOptions: Partial<InlineEditorViewOptions> = {
         animationSpeedMS: 200,
         deferEventSetup: false,
-        editIconPath: null,
         editIconClass: null,
+        editIconPath: null,
         enabled: true,
         extraHeight: 100,
         focusOnOpen: true,
-        formatResult: value => value.htmlEncode(),
         formClass: '',
+        formatResult: value => value.htmlEncode(),
         getFieldValue: editor => editor.$field.val(),
         hasRawValue: false,
         isFieldDirty: (editor, initialValue) => {
@@ -41,117 +170,38 @@ RB.InlineEditorView = Backbone.View.extend({
         showEditIcon: true,
         showRequiredFlag: false,
         startOpen: false,
-    },
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    $buttons: JQuery;
+    $field: JQuery;
+    options: TExtraViewOptions;
+    _$editIcon: JQuery;
+    _$form: JQuery;
+    _dirty = false;
+    _dirtyCalcTimeout: number = null;
+    _editing = false;
+    _initialValue: unknown = null;
+    _isTextArea: boolean;
 
     /**
      * Initialize the view.
      *
      * Args:
-     *     options (object):
+     *     options (InlineEditorViewOptions):
      *         Options for the view.
-     *
-     * Option Args:
-     *     animationSpeedMS (number, optional):
-     *         The duration of animated transitions, in milliseconds.
-     *
-     *     deferEventSetup (boolean, optional):
-     *         Whether to defer event setup after rendering. This should be
-     *         used when a consumer wants to prioritize event handling (such as
-     *         handling the "enter" key for autocomplete).
-     *
-     *     editIconClass (string, optional):
-     *         The class name to use for the edit icon, when the icon is
-     *         created via CSS rules. This is only used if ``editIconPath`` is
-     *         unspecified.
-     *
-     *     editIconPath (string, optional):
-     *         The path for an image for the edit icon.
-     *
-     *     enabled (boolean):
-     *         Whether editing is enabled.
-     *
-     *     extraHeight (number, optional):
-     *         Extra height to add when displaying the editor, in pixels.
-     *
-     *     focusOnOpen (boolean, optional):
-     *         Whether to focus the field when opening the editor.
-     *
-     *     formatResult (function, optional):
-     *         A function to format the resulting value after editing back
-     *         into the element.
-     *
-     *     formClass (string, optional):
-     *         The class to add to the form's DOM element.
-     *
-     *     getFieldValue (function, optional):
-     *         A function to retrieve the field value.
-     *
-     *     hasRawValue (boolean, optional):
-     *         Whether the field has a "raw value", which is data for the field
-     *         separate from the actual contents of the element.
-     *
-     *     isFieldDirty (function, optional):
-     *         A function to calculate whether the editor value is dirty.
-     *
-     *     matchHeight (boolean, optional):
-     *         Whether to attempt to match the height of the editor and the
-     *         element it's replacing.
-     *
-     *     multiline (boolean, optional):
-     *         Whether the text input should be multi-line or single-line.
-     *
-     *     notifyUnchangedCompletion (boolean, optional):
-     *         Whether the editor should trigger a ``complete`` event even if
-     *         the value was unchanged. If this is ``false``, the editor will
-     *         trigger a ``cancel`` event instead.
-     *
-     *     promptOnCancel (boolean, optional):
-     *         Whether to prompt the user before cancelling if the editor is
-     *         dirty.
-     *
-     *     rawValue (*, optional):
-     *         When ``hasRawValue`` is ``true``, this provides the data for the
-     *         raw value of the item being edited.
-     *
-     *     setFieldValue (function, optional):
-     *         A function to set the field value.
-     *
-     *     showButtons (boolean, optional):
-     *         Whether to show OK/Cancel buttons.
-     *
-     *     showEditIcon (boolean, optional):
-     *         Whether to show the edit icon.
-     *
-     *     showRequiredFlag (boolean, optional):
-     *         Whether to show the required flag on the edit icon.
-     *
-     *     startOpen (boolean, optional):
-     *         Whether the editor should be open when first created.
-     *
-     *     stripTags (boolean, optional):
-     *         Whether to strip out HTML tags when normalizing input.
-     *
-     *     useEditIconOnly (boolean, optional):
-     *         Whether the editor can be opened only by clicking on the edit
-     *         icon. If false, clicking on the field value will also trigger an
-     *         edit.
      */
-    initialize(options) {
+    initialize(options: Partial<TExtraViewOptions>) {
         this.options = _.defaults(options, this.defaultOptions);
-        this._initialValue = null;
-        this._editing = false;
-        this._dirty = false;
-        this._dirtyCalcTimeout = null;
-    },
+    }
 
     /**
      * Render the view.
-     *
-     * Returns:
-     *     RB.InlineEditorView:
-     *     This object, for chaining.
      */
-    render() {
+    onInitialRender() {
         this.$el.data('inline-editor', this);
 
         this._$form = $('<form>')
@@ -173,12 +223,12 @@ RB.InlineEditorView = Backbone.View.extend({
                 .appendTo(this._$form);
 
             $('<input type="button" class="save">')
-                .val(gettext('OK'))
+                .val(_`OK`)
                 .appendTo(this.$buttons)
                 .click(this.submit.bind(this));
 
             $('<input type="button" class="cancel">')
-                .val(gettext('Cancel'))
+                .val(_`Cancel`)
                 .appendTo(this.$buttons)
                 .click(this.cancel.bind(this));
         }
@@ -186,11 +236,11 @@ RB.InlineEditorView = Backbone.View.extend({
         this._$editIcon = $();
 
         if (this.options.showEditIcon) {
-            const editText = gettext('Edit this field');
+            const editText = _`Edit this field`;
             this._$editIcon = $('<a class="editicon" href="#" role="button">')
                 .attr({
-                    'title': editText,
                     'aria-label': editText,
+                    'title': editText,
                 })
                 .click(e => {
                     e.preventDefault();
@@ -208,7 +258,7 @@ RB.InlineEditorView = Backbone.View.extend({
             }
 
             if (this.options.showRequiredFlag) {
-                const requiredText = gettext('This field is required');
+                const requiredText = _`This field is required`;
                 $('<span class="required-flag">*</span>')
                     .attr({
                         'aria-label': requiredText,
@@ -240,9 +290,7 @@ RB.InlineEditorView = Backbone.View.extend({
         } else {
             this.disable();
         }
-
-        return this;
-    },
+    }
 
     /**
      * Create and return the field to use for the input element.
@@ -251,22 +299,28 @@ RB.InlineEditorView = Backbone.View.extend({
      *     jQuery:
      *     The newly created input element.
      */
-    createField() {
+    createField(): JQuery {
         if (this.options.multiline) {
             return $('<textarea>').autoSizeTextArea();
         } else {
             return $('<input type="text">');
         }
-    },
+    }
 
     /**
-     * Disconnect all events.
+     * Remove the view.
+     *
+     * Returns:
+     *     InlineEditorView:
+     *     This object, for chaining.
      */
-    remove() {
-        Backbone.View.prototype.remove.call(this);
+    remove(): this {
+        super.remove();
 
         $(window).off(this.cid);
-    },
+
+        return this;
+    }
 
     /**
      * Connect events.
@@ -276,32 +330,21 @@ RB.InlineEditorView = Backbone.View.extend({
             .keydown(e => {
                 e.stopPropagation();
 
-                switch (e.keyCode || e.charCode || e.which) {
-                    case 13: // Enter
-                        if (!this.options.multiline || e.ctrlKey) {
-                            this.submit();
-                        }
+                if (e.key === 'Enter') {
+                    if (!this.options.multiline || e.ctrlKey) {
+                        this.submit();
+                    }
 
-                        if (!this.options.multiline) {
-                            e.preventDefault();
-                        }
-
-                        break;
-
-                    case 27: // Escape
-                        this.cancel();
-                        break;
-
-                    case 83: // S
-                    case 115: // s
-                        if (e.ctrlKey) {
-                            this.submit();
-                            e.preventDefault();
-                        }
-                        break;
-
-                    default:
-                        break;
+                    if (!this.options.multiline) {
+                        e.preventDefault();
+                    }
+                } else if (e.key === 'Escape') {
+                    this.cancel();
+                } else if (e.key === 's' || e.key === 'S') {
+                    if (e.ctrlKey) {
+                        this.submit();
+                        e.preventDefault();
+                    }
                 }
             })
             .keypress(e => e.stopPropagation())
@@ -344,20 +387,16 @@ RB.InlineEditorView = Backbone.View.extend({
         }
 
         $(window).on(`resize.${this.cid}`, this._fitWidthToParent());
-    },
+    }
 
     /**
      * Start editing.
      *
      * Args:
-     *     options (object, optional):
+     *     options (EditOptions, optional):
      *         Options for the operation.
-     *
-     * Option Args:
-     *     preventAnimation (boolean, optional):
-     *         Whether to prevent the default animation.
      */
-    startEdit(options={}) {
+    startEdit(options: EditOptions = {}) {
         if (this._editing || !this.options.enabled) {
             return;
         }
@@ -378,20 +417,16 @@ RB.InlineEditorView = Backbone.View.extend({
         this.trigger('beginEditPreShow');
         this.showEditor(options);
         this.trigger('beginEdit');
-    },
+    }
 
     /**
      * Show the editor.
      *
      * Args:
-     *     options (object, optional):
+     *     options (EditOptions, optional):
      *         Options for the operation.
-     *
-     * Options Args:
-     *     preventAnimation (boolean, optional):
-     *         Whether to prevent the default animation.
      */
-    showEditor(options={}) {
+    showEditor(options: EditOptions = {}) {
         if (this.options.multiline && !options.preventAnimation) {
             this._$editIcon.fadeOut(this.options.animationSpeedMS);
         } else {
@@ -432,7 +467,7 @@ RB.InlineEditorView = Backbone.View.extend({
                      * the source text.
                      */
                     this.$field.autoSizeTextArea('autoSize', true, false,
-                                                  elHeight);
+                                                 elHeight);
                 }
             }
         }
@@ -458,7 +493,7 @@ RB.InlineEditorView = Backbone.View.extend({
 
             this.$field.dequeue();
         });
-    },
+    }
 
     /**
      * Hide the inline editor.
@@ -480,7 +515,7 @@ RB.InlineEditorView = Backbone.View.extend({
             this.$field
                 .css('overflow', 'hidden')
                 .animate({ height: this.$el.outerHeight() },
-                        this.options.animationSpeedMS);
+                         this.options.animationSpeedMS);
         }
 
         this.$field.queue(() => {
@@ -491,7 +526,7 @@ RB.InlineEditorView = Backbone.View.extend({
 
         this._editing = false;
         this._updateDirtyState();
-    },
+    }
 
     /**
      * Save the value of the editor.
@@ -515,7 +550,7 @@ RB.InlineEditorView = Backbone.View.extend({
         } else {
             this.trigger('cancel', this._initialValue);
         }
-    },
+    }
 
     /**
      * Submit the editor.
@@ -524,7 +559,7 @@ RB.InlineEditorView = Backbone.View.extend({
         // hideEditor() resets the _dirty flag, so we need to save() first.
         this.save();
         this.hideEditor();
-    },
+    }
 
     /**
      * Cancel the edit.
@@ -532,11 +567,11 @@ RB.InlineEditorView = Backbone.View.extend({
     cancel() {
         if (!this.isDirty() ||
             !this.options.promptOnCancel ||
-            confirm(gettext('You have unsaved changes. Are you sure you want to discard them?'))) {
+            confirm(_`You have unsaved changes. Are you sure you want to discard them?`)) {
             this.hideEditor();
             this.trigger('cancel', this._initialValue);
         }
-    },
+    }
 
     /**
      * Return the dirty state of the editor.
@@ -545,14 +580,14 @@ RB.InlineEditorView = Backbone.View.extend({
      *     boolean:
      *     Whether the editor is currently dirty.
      */
-    isDirty() {
+    isDirty(): boolean {
         if (this._dirtyCalcTimeout !== null) {
             clearTimeout(this._dirtyCalcTimeout);
             this._updateDirtyState();
         }
 
         return this._dirty;
-    },
+    }
 
     /**
      * Return the value in the field.
@@ -561,9 +596,9 @@ RB.InlineEditorView = Backbone.View.extend({
      *     *:
      *     The current value of the field.
      */
-    getValue() {
+    getValue(): unknown {
         return this.options.getFieldValue(this);
-    },
+    }
 
     /**
      * Set the value in the field.
@@ -572,10 +607,10 @@ RB.InlineEditorView = Backbone.View.extend({
      *     value (*):
      *     The new value for the field.
      */
-    setValue(value) {
+    setValue(value: unknown) {
         this.options.setFieldValue(this, value);
         this._updateDirtyState();
-    },
+    }
 
     /**
      * Enable the editor.
@@ -587,7 +622,7 @@ RB.InlineEditorView = Backbone.View.extend({
 
         this._$editIcon.show();
         this.options.enabled = true;
-    },
+    }
 
     /**
      * Disable the editor.
@@ -599,7 +634,7 @@ RB.InlineEditorView = Backbone.View.extend({
 
         this._$editIcon.hide();
         this.options.enabled = false;
-    },
+    }
 
     /**
      * Return whether the editor is currently in edit mode.
@@ -608,9 +643,9 @@ RB.InlineEditorView = Backbone.View.extend({
      *     boolean:
      *     true if the inline editor is open.
      */
-    editing() {
+    editing(): boolean {
         return this._editing;
-    },
+    }
 
     /**
      * Normalize the given text.
@@ -624,7 +659,7 @@ RB.InlineEditorView = Backbone.View.extend({
      *     The text with ``<br>`` elements turned into newlines and (in the
      *     case of multi-line data), whitespace collapsed.
      */
-    normalizeText(text) {
+    normalizeText(text: string): string {
         if (this.options.stripTags) {
             /*
              * Turn <br> elements back into newlines before stripping out all
@@ -640,7 +675,7 @@ RB.InlineEditorView = Backbone.View.extend({
         }
 
         return text;
-    },
+    }
 
     /**
      * Schedule an update for the dirty state.
@@ -650,7 +685,7 @@ RB.InlineEditorView = Backbone.View.extend({
             this._dirtyCalcTimeout = setTimeout(
                 this._updateDirtyState.bind(this), 200);
         }
-    },
+    }
 
     /**
      * Update the dirty state of the editor.
@@ -666,7 +701,7 @@ RB.InlineEditorView = Backbone.View.extend({
         }
 
         this._dirtyCalcTimeout = null;
-    },
+    }
 
     /**
      * Fit the editor width to the parent element.
@@ -678,11 +713,10 @@ RB.InlineEditorView = Backbone.View.extend({
 
         if (this.options.multiline) {
             this.$field.css({
-                '-webkit-box-sizing': 'border-box',
-                '-moz-box-sizing': 'border-box',
                 'box-sizing': 'border-box',
                 'width': '100%',
             });
+
             return;
         }
 
@@ -737,29 +771,49 @@ RB.InlineEditorView = Backbone.View.extend({
         if (!isLeftAligned) {
             $formParent.css('text-align', parentTextAlign);
         }
-    },
-});
+    }
+}
+
+
+interface RichTextInlineEditorViewOptions extends InlineEditorViewOptions {
+    /** Options to pass through to the text editor. */
+    textEditorOptions: unknown; // TODO: update once TextEditorView is TS
+}
 
 
 /**
  * A view for inline editors which use the CodeMirror editor for Markdown.
  */
-RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
+@spina({
+    prototypeAttrs: ['defaultOptions'],
+})
+export class RichTextInlineEditorView<
+    TModel extends Backbone.Model = undefined,
+    TElement extends HTMLElement = HTMLDivElement,
+    TExtraViewOptions extends RichTextInlineEditorViewOptions =
+        RichTextInlineEditorViewOptions
+> extends InlineEditorView<TModel, TElement, TExtraViewOptions> {
     /**
      * Defaults for the view options.
      */
-    defaultOptions: _.defaults({
-        matchHeight: false,
-        multiline: true,
-        setFieldValue: (editor, value) =>
-            editor.textEditor.setText(value || ''),
+    static defaultOptions = _.defaults({
         getFieldValue: editor => editor.textEditor.getText(),
         isFieldDirty: (editor, initialValue) => {
             initialValue = editor.normalizeText(initialValue);
 
             return editor.textEditor.isDirty(initialValue);
         },
-    }, RB.InlineEditorView.prototype.defaultOptions),
+        matchHeight: false,
+        multiline: true,
+        setFieldValue: (editor, value) =>
+            editor.textEditor.setText(value || ''),
+    }, InlineEditorView.prototype.defaultOptions);
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    textEditor: RB.TextEditorView;
 
     /**
      * Create and return the field to use for the input element.
@@ -768,10 +822,11 @@ RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
      *     jQuery:
      *     The newly created input element.
      */
-    createField() {
+    createField(): JQuery {
         let origRichText;
 
-        this.textEditor = new RB.TextEditorView(this.options.textEditorOptions);
+        this.textEditor = new RB.TextEditorView(
+            this.options.textEditorOptions);
         this.textEditor.$el.on('resize', () => this.trigger('resize'));
 
         this.$el.data('text-editor', this.textEditor);
@@ -787,14 +842,14 @@ RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
 
             $('<label>')
                 .attr('for', $checkbox[0].id)
-                .text(gettext('Enable Markdown'))
+                .text(_`Enable Markdown`)
                 .appendTo($span);
 
             this.$buttons.append($span);
 
             const $markdownRef = $('<a class="markdown-info" target="_blank">')
                 .attr('href', `${MANUAL_URL}users/markdown/`)
-                .text(gettext('Markdown Reference'))
+                .text(_`Markdown Reference`)
                 .toggle(this.textEditor.richText)
                 .appendTo(this.$buttons);
 
@@ -814,8 +869,29 @@ RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
         this.listenTo(this, 'complete', () => this.textEditor._hideEditor());
 
         return this.textEditor.render().$el;
-    },
-});
+    }
+}
+
+
+interface DateInlineEditorViewOptions extends InlineEditorViewOptions {
+    /** Optional text that can be prepended to the date picker. */
+    descriptorText: string;
+
+    /**
+     * The optional earliest date that can be chosen in the date picker.
+     *
+     * This must be a local date in YYYY-MM-DD format.
+     */
+    minDate: string;
+
+    /**
+     * The optional latest date that can be chosen in the date picker.
+     *
+     * This must be a local date in YYYY-MM-DD format.
+     */
+    maxDate: string;
+}
+
 
 /**
  * A view for inline editors that edit dates.
@@ -826,48 +902,39 @@ RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
  * Version Added:
  *     5.0
  */
-RB.DateInlineEditorView = RB.InlineEditorView.extend({
+@spina({
+    prototypeAttrs: ['defaultOptions'],
+})
+export class DateInlineEditorView<
+    TModel extends Backbone.Model = undefined,
+    TElement extends HTMLElement = HTMLDivElement,
+    TExtraViewOptions extends DateInlineEditorViewOptions =
+        DateInlineEditorViewOptions
+> extends InlineEditorView<TModel, TElement, TExtraViewOptions> {
     /**
      * Defaults for the view options.
      */
-    defaultOptions: _.defaults({
-        /**
-         * Optional text that can be prepended to the date picker.
-         *
-         * Type:
-         *     string
-         */
+    static defaultOptions = _.defaults({
         descriptorText: null,
         editIconClass: 'rb-icon rb-icon-edit',
         getFieldValue: editor => editor._$datePickerInput.val(),
         hasRawValue: true,
         isFieldDirty: (editor, initialValue) =>
             (editor.getValue() !== initialValue),
-
-        /**
-         * The optional minimum date that can be chosen in the date picker.
-         *
-         * This must be a local date in YYYY-MM-DD format.
-         *
-         * Type:
-         *     string
-         */
-        minDate: null,
-
-        /**
-         * The optional maximum date that can be chosen in the date picker.
-         *
-         * This must be a local date in YYYY-MM-DD format.
-         *
-         * Type:
-         *     string
-         */
         maxDate: null,
+        minDate: null,
         multiline: false,
         setFieldValue: (editor, value) =>
             editor._$datePickerInput.val(value),
         useEditIconOnly: true,
-    }, RB.InlineEditorView.prototype.defaultOptions),
+    }, InlineEditorView.prototype.defaultOptions);
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    _$datePicker: JQuery;
+    _$datePickerInput: JQuery;
 
     /**
      * Create and return the date input element.
@@ -876,7 +943,7 @@ RB.DateInlineEditorView = RB.InlineEditorView.extend({
      *     jQuery:
      *     The newly created date input element.
      */
-    createField() {
+    createField(): JQuery {
         this._$datePickerInput = $('<input type="date"/>')
             .attr({
                 'max': this.options.maxDate,
@@ -889,13 +956,13 @@ RB.DateInlineEditorView = RB.InlineEditorView.extend({
         .append(this.options.descriptorText, this._$datePickerInput);
 
         return this._$datePicker;
-     },
+    }
 
     /**
      * Connect events.
      */
     setupEvents() {
-        RB.InlineEditorView.prototype.setupEvents.call(this);
+        super.setupEvents();
 
         this.$field.change(e => {
             e.stopPropagation();
@@ -903,8 +970,9 @@ RB.DateInlineEditorView = RB.InlineEditorView.extend({
 
             this._scheduleUpdateDirtyState();
         });
-    },
-});
+    }
+}
+
 
 /**
  * A view for inline editors that edit datetimes.
@@ -916,32 +984,8 @@ RB.DateInlineEditorView = RB.InlineEditorView.extend({
  * Version Added:
  *     5.0.2
  */
-RB.DateTimeInlineEditorView = RB.DateInlineEditorView.extend({
-    /**
-     * Defaults for the view options.
-     */
-    defaultOptions: _.defaults({
-        /**
-         * The optional minimum datetime that can be chosen in the picker.
-         *
-         * This must be a local datetime in YYYY-MM-DDThh:mm format.
-         *
-         * Type:
-         *     string
-         */
-        minDate: null,
-
-        /**
-         * The optional maximum datetime that can be chosen in the picker.
-         *
-         * This must be a local datetime in YYYY-MM-DDThh:mm format.
-         *
-         * Type:
-         *     string
-         */
-        maxDate: null,
-    }, RB.DateInlineEditorView.prototype.defaultOptions),
-
+@spina
+export class DateTimeInlineEditorView extends DateInlineEditorView {
     /**
      * Create and return the datetime input element.
      *
@@ -949,7 +993,7 @@ RB.DateTimeInlineEditorView = RB.DateInlineEditorView.extend({
      *     jQuery:
      *     The newly created datetime input element.
      */
-    createField() {
+    createField(): JQuery {
         this._$datePickerInput = $('<input type="datetime-local"/>')
             .attr({
                 'max': this.options.maxDate,
@@ -962,5 +1006,5 @@ RB.DateTimeInlineEditorView = RB.DateInlineEditorView.extend({
         .append(this.options.descriptorText, this._$datePickerInput);
 
         return this._$datePicker;
-     },
-});
+    }
+}

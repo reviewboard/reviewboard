@@ -1,3 +1,20 @@
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+    suite,
+} from 'jasmine-core';
+
+import { DateTimeInlineEditorView } from '../inlineEditorView';
+
+
+declare const $testsScratch: JQuery;
+declare const dedent: (string) => string;
+
+
 suite('rb/ui/views/DateTimeInlineEditorView', function() {
     const initialDateTime = '2022-09-16T03:45';
     let view;
@@ -9,7 +26,7 @@ suite('rb/ui/views/DateTimeInlineEditorView', function() {
 
     describe('Construction', function() {
         it('Default', function() {
-            view = new RB.DateTimeInlineEditorView({
+            view = new DateTimeInlineEditorView({
                 el: $container,
             });
             view.render();
@@ -25,11 +42,11 @@ suite('rb/ui/views/DateTimeInlineEditorView', function() {
         });
 
         it('With options provided', function() {
-            view = new RB.DateTimeInlineEditorView({
+            view = new DateTimeInlineEditorView({
                 el: $container,
-                rawValue: initialDateTime,
-                minDate: '2020-10-10T15:20',
                 maxDate: '2030-11-12T:06:30',
+                minDate: '2020-10-10T15:20',
+                rawValue: initialDateTime,
             });
             view.render();
 
@@ -56,7 +73,7 @@ suite('rb/ui/views/DateTimeInlineEditorView', function() {
 
         describe('startEdit', function() {
             it('With an initial date', function() {
-                view = new RB.DateTimeInlineEditorView({
+                view = new DateTimeInlineEditorView({
                     el: $container,
                     rawValue: initialDateTime,
                 });
@@ -70,7 +87,7 @@ suite('rb/ui/views/DateTimeInlineEditorView', function() {
             });
 
             it('With no initial date', function() {
-                view = new RB.DateTimeInlineEditorView({
+                view = new DateTimeInlineEditorView({
                     el: $container,
                 });
                 view.render();
@@ -83,9 +100,9 @@ suite('rb/ui/views/DateTimeInlineEditorView', function() {
             });
 
             it('With a descriptor text', function() {
-                view = new RB.DateTimeInlineEditorView({
-                    el: $container,
+                view = new DateTimeInlineEditorView({
                     descriptorText: 'Test',
+                    el: $container,
                 });
                 view.render();
                 view.startEdit();
@@ -98,9 +115,9 @@ suite('rb/ui/views/DateTimeInlineEditorView', function() {
             });
 
             it('With a descriptor text and initial datetime', function() {
-                view = new RB.DateTimeInlineEditorView({
-                    el: $container,
+                view = new DateTimeInlineEditorView({
                     descriptorText: 'Test',
+                    el: $container,
                     rawValue: initialDateTime,
                 });
                 view.render();
@@ -116,7 +133,7 @@ suite('rb/ui/views/DateTimeInlineEditorView', function() {
 
         describe('save', function() {
             it('With a new date', function() {
-                view = new RB.DateTimeInlineEditorView({
+                view = new DateTimeInlineEditorView({
                     el: $container,
                 });
                 view.render();
@@ -130,7 +147,7 @@ suite('rb/ui/views/DateTimeInlineEditorView', function() {
             });
 
             it('With an empty value', function() {
-                view = new RB.DateTimeInlineEditorView({
+                view = new DateTimeInlineEditorView({
                     el: $container,
                     rawValue: initialDateTime,
                 });
@@ -145,7 +162,7 @@ suite('rb/ui/views/DateTimeInlineEditorView', function() {
             });
 
             it('Without any changes made', function() {
-                view = new RB.DateTimeInlineEditorView({
+                view = new DateTimeInlineEditorView({
                     el: $container,
                     rawValue: initialDateTime,
                 });
@@ -162,7 +179,7 @@ suite('rb/ui/views/DateTimeInlineEditorView', function() {
 
     describe('Events', function() {
         it('On change', function() {
-            view = new RB.DateTimeInlineEditorView({
+            view = new DateTimeInlineEditorView({
                 el: $container,
             });
 
