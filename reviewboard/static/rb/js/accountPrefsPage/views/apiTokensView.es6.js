@@ -532,7 +532,7 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
             .find('span');
 
         this._$note = this.$('.rb-c-config-api-tokens__note');
-        noteEditor = new RB.InlineEditorView({
+        const noteEditor = new RB.InlineEditorView({
             el: this._$note,
             editIconClass: 'rb-icon rb-icon-edit',
         });
