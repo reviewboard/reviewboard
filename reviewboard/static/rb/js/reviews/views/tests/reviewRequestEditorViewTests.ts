@@ -250,11 +250,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
         $filesContainer = $testsScratch.find('#file-list');
         $screenshotsContainer = $testsScratch.find('#screenshot-thumbnails');
 
-        /*
-         * XXX Prevent _refreshPage from being called. Eventually, that
-         *     function will go away.
-         */
-        spyOn(view, '_refreshPage');
+        // Don't let the page navigate away.
+        spyOn(RB, 'navigateTo');
     });
 
     afterEach(function() {
@@ -408,21 +405,21 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                         // Set up some basic state so that we pass validation.
                         reviewRequest.draft.set({
-                            targetGroups: [{
-                                name: 'foo',
-                                url: '/groups/foo',
-                            }],
-                            summary: 'foo',
+                            description: 'foo',
                             links: {
                                 submitter: {
                                     title: 'submitter',
                                 },
                             },
-                            description: 'foo',
+                            summary: 'foo',
+                            targetGroups: [{
+                                name: 'foo',
+                                url: '/groups/foo',
+                            }],
                         });
                     });
 
-                    it('Basic publishing', function(done) {
+                    it('Basic publishing', async function() {
                         if (EnabledFeatures.unifiedBanner) {
                             pending();
 
@@ -433,16 +430,13 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                         reviewRequest.draft.publish.and.callFake(() => {
                             expect(editor.get('publishing')).toBe(true);
-                            expect(editor.get('pendingSaveCount')).toBe(0);
                             expect(editor.publishDraft).toHaveBeenCalled();
-
-                            done();
                         });
 
-                        $('#btn-draft-publish').click();
+                        await view.banner._onPublishDraftClicked();
                     });
 
-                    it('With submitter changed', function(done) {
+                    it('With submitter changed', async function() {
                         if (EnabledFeatures.unifiedBanner) {
                             pending();
 
@@ -462,17 +456,14 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                         reviewRequest.draft.publish.and.callFake(() => {
                             expect(editor.get('publishing')).toBe(true);
-                            expect(editor.get('pendingSaveCount')).toBe(0);
                             expect(editor.publishDraft).toHaveBeenCalled();
                             expect(window.confirm).toHaveBeenCalled();
-
-                            done();
                         });
 
-                        $('#btn-draft-publish').click();
+                        await view.banner._onPublishDraftClicked();
                     });
 
-                    it('With Send E-Mail turned on', function(done) {
+                    it('With Send E-Mail turned on', async function() {
                         if (EnabledFeatures.unifiedBanner) {
                             pending();
 
@@ -484,18 +475,14 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                         reviewRequest.draft.publish.and.callFake(options => {
                             expect(editor.get('publishing')).toBe(true);
-                            expect(editor.get('pendingSaveCount')).toBe(0);
                             expect(editor.publishDraft).toHaveBeenCalled();
                             expect(options.trivial).toBe(0);
-
-                            done();
                         });
 
-                        $('#btn-draft-publish').click();
-
+                        await view.banner._onPublishDraftClicked();
                     });
 
-                    it('With Send E-Mail turned off', function(done) {
+                    it('With Send E-Mail turned off', async function() {
                         if (EnabledFeatures.unifiedBanner) {
                             pending();
 
@@ -509,14 +496,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                         reviewRequest.draft.publish.and.callFake(options => {
                             expect(editor.get('publishing')).toBe(true);
-                            expect(editor.get('pendingSaveCount')).toBe(0);
                             expect(editor.publishDraft).toHaveBeenCalled();
                             expect(options.trivial).toBe(1);
-
-                            done();
                         });
 
-                        $('#btn-draft-publish').click();
+                        await view.banner._onPublishDraftClicked();
                     });
                 });
             });

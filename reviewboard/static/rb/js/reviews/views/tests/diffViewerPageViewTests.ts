@@ -84,7 +84,16 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
     const pageTemplate = dedent`
         <div>
-         <div id="review-banner"></div>
+         <div id="review-banner">
+          <div class="banner">
+           <h1>You have a pending review.</h1>
+           <input id="review-banner-edit" type="button"
+                  value="Edit Review" />
+           <div id="review-banner-publish-container"></div>
+           <input id="review-banner-discard" type="button"
+                  value="Discard" />
+          </div>
+         </div>
          <div id="unified-banner">
           <div class="rb-c-unified-banner__mode-selector"></div>
           <div class="rb-c-unified-banner__dock"></div>

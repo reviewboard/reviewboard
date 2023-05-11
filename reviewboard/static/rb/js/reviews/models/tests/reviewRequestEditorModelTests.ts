@@ -168,50 +168,6 @@ suite('rb/models/ReviewRequestEditor', function() {
                 draft = editor.get('reviewRequest').draft;
             });
 
-            describe('When publishing', function() {
-                beforeEach(function() {
-                    spyOn(editor, 'publishDraft');
-
-                    editor.set({
-                        pendingSaveCount: 1,
-                        publishing: true,
-                    });
-                });
-
-                it('Successful saves', async function() {
-                    spyOn(draft, 'save').and.resolveTo();
-
-                    await editor.setDraftField(
-                        'summary', 'My Summary', { jsonFieldName: 'summary' });
-
-                    expect(editor.get('publishing')).toBe(false);
-                    expect(editor.get('pendingSaveCount')).toBe(0);
-                    expect(editor.publishDraft).toHaveBeenCalled();
-                });
-
-                it('Field set errors', async function() {
-                    spyOn(draft, 'save').and.rejectWith(new BackboneError(
-                        draft,
-                        {
-                            errorPayload: {
-                                fields: {
-                                    summary: ['Something went wrong'],
-                                },
-                            },
-                        },
-                        {}));
-
-                    await expectAsync(
-                        editor.setDraftField('summary', 'My Summary',
-                                             { jsonFieldName: 'summary' }))
-                        .toBeRejectedWith(Error('"Something went wrong"'));
-
-                    expect(editor.get('publishing')).toBe(false);
-                    expect(editor.get('pendingSaveCount')).toBe(1);
-                    expect(editor.publishDraft).not.toHaveBeenCalled();
-                });
-            });
-
             describe('Rich text fields', function() {
                 describe('changeDescription', function() {
                     describe('Draft description', function() {

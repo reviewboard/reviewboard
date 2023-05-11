@@ -365,10 +365,10 @@ class DraftBannerView extends BannerView {
      *     boolean:
      *     False, always.
      */
-    _onPublishDraftClicked() {
+    async _onPublishDraftClicked() {
         const $sendEmail = this.$('.send-email');
 
-        this.reviewRequestEditorView.publishDraft({
+        await this.reviewRequestEditorView.publishDraft({
             trivial: ($sendEmail.length === 1 && !$sendEmail.is(':checked')),
         });
 
@@ -744,21 +744,18 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      *     options (object):
      *         Options for the publish operation.
      */
-    publishDraft(options) {
-        // Save all the fields if we need to.
-        const fields = Object.values(this.#fieldViews)
-            .filter(view => view.needsSave());
-
+    async publishDraft(options) {
         this.model.set({
-            pendingSaveCount: fields.length,
             publishing: true,
         });
 
-        if (fields.length === 0) {
-            this.model.publishDraft(options);
-        } else {
-            fields.forEach(field => field.finishSave());
-        }
+        // Save all the fields if we need to.
+        await Promise.all(
+            Object.values(this.#fieldViews)
+                .filter(field => field.needsSave())
+                .map(field => field.finishSave()));
+
+        await this.model.publishDraft(options);
     }
 
     /**

@@ -177,7 +177,9 @@ export interface ReviewablePageViewOptions extends PageViewOptions {
  * request, such as the diff viewer, review UI, or the review request page
  * itself.
  */
-@spina
+@spina({
+    prototypeAttrs: ['events'],
+})
 export class ReviewablePageView<
     TModel extends ReviewablePage = ReviewablePage,
     TElement extends HTMLDivElement = HTMLDivElement,
@@ -321,7 +323,7 @@ export class ReviewablePageView<
      *     This object, for chaining.
      */
     remove(): this {
-        if (!EnabledFeatures.unifiedBanner) {
+        if (this.draftReviewBanner) {
             this.draftReviewBanner.remove();
         }
 

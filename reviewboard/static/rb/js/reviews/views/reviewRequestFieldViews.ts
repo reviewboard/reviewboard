@@ -522,8 +522,37 @@ export class TextFieldView extends BaseFieldView {
     /**
      * Finish the field's save operation.
      */
-    finishSave() {
-        this.inlineEditorView.submit();
+    finishSave(): Promise<void> {
+        const value = this.inlineEditorView.submit({
+            preventEvents: true,
+        });
+
+        if (value) {
+            this.trigger('resize');
+            this.model.decr('editCount');
+
+            const saveOptions = {
+                allowMarkdown: this.allowRichText,
+            };
+
+            if (this.allowRichText) {
+                saveOptions.richText =
+                    this.inlineEditorView.textEditor.richText;
+                saveOptions.jsonTextTypeFieldName = this.jsonTextTypeFieldName;
+            }
+
+            return this._saveValue(value, saveOptions)
+                .then(() => {
+                    this._formatField();
+                    this.trigger('fieldSaved');
+                })
+                .catch(err => {
+                    this._formatField();
+                    this.trigger('fieldError', err.message);
+                });
+        } else {
+            return Promise.resolve();
+        }
     }
 
     /**

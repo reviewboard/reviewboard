@@ -44,9 +44,6 @@ export interface ReviewRequestEditorAttrs extends ModelAttributes {
     /** Whether or not the user can mutate the review request. */
     mutableByUser: boolean;
 
-    /** The number of fields that have yet to be saved. */
-    pendingSaveCount: number;
-
     /** Whether or not we are currently publishing the review request. */
     publishing: boolean;
 
@@ -152,7 +149,6 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
             fileAttachments: null,
             hasDraft: false,
             mutableByUser: false,
-            pendingSaveCount: 0,
             publishing: false,
             reviewRequest: null,
             screenshots: null,
@@ -396,15 +392,6 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
 
                 this.trigger('fieldChanged:' + fieldName, value);
                 this.trigger('fieldChanged', fieldName, value);
-
-                if (this.get('publishing')) {
-                    this.decr('pendingSaveCount');
-
-                    if (this.get('pendingSaveCount') === 0) {
-                        this.set('publishing', false);
-                        this.publishDraft();
-                    }
-                }
             })
             .catch(err => {
                 let message = '';
