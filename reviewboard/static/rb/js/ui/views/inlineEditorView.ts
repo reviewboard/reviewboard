@@ -120,6 +120,12 @@ interface EditOptions {
 }
 
 
+interface SaveOptions {
+    /** Whether to suppress event triggers. */
+    preventEvents?: boolean;
+}
+
+
 /**
  * A view for inline editors.
  *
@@ -530,8 +536,16 @@ export class InlineEditorView<
 
     /**
      * Save the value of the editor.
+     *
+     * Args:
+     *     options (SaveOptions):
+     *         Options for the save operation.
+     *
+     * Returns:
+     *     unknown:
+     *     The new value, if available.
      */
-    save() {
+    save(options: SaveOptions = {}): unknown {
         const value = this.getValue();
         const initialValue = this._initialValue;
         const dirty = this.isDirty();
@@ -542,23 +556,39 @@ export class InlineEditorView<
         }
 
         if (dirty || this.options.notifyUnchangedCompletion) {
-            this.trigger('complete', value, initialValue);
+            if (!options.preventEvents) {
+                this.trigger('complete', value, initialValue);
+            }
 
             if (this.options.hasRawValue) {
                 this.options.rawValue = value;
             }
+
+            return value;
         } else {
-            this.trigger('cancel', this._initialValue);
+            if (!options.preventEvents) {
+                this.trigger('cancel', this._initialValue);
+            }
         }
     }
 
     /**
      * Submit the editor.
+     *
+     * Args:
+     *     options (SaveOptions):
+     *         Options for the save operation.
+     *
+     * Returns:
+     *     unknown:
+     *     The new value, if available.
      */
-    submit() {
+    submit(options: SaveOptions = {}) {
         // hideEditor() resets the _dirty flag, so we need to save() first.
-        this.save();
+        const value = this.save(options);
         this.hideEditor();
+
+        return value;
     }
 
     /**

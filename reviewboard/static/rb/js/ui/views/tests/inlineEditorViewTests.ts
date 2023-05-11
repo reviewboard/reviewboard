@@ -196,6 +196,47 @@ suite('rb/ui/views/InlineEditorView', () => {
 
                 expect(gotComplete).toBe(true);
             });
+
+            it('With preventEvents', () => {
+                view = new InlineEditorView({
+                    el: $container,
+                    hasRawValue: true,
+                    rawValue: 'initial',
+                });
+                view.render();
+                view.startEdit();
+
+                view.once('complete', () => {
+                    fail();
+                });
+
+                view.setValue('value');
+                const value = view.save({
+                    preventEvents: true,
+                });
+
+                expect(value).toBe('value');
+            });
+
+            it('With preventEvents and no change', () => {
+                view = new InlineEditorView({
+                    el: $container,
+                    hasRawValue: true,
+                    rawValue: 'initial',
+                });
+                view.render();
+                view.startEdit();
+
+                view.once('complete', () => {
+                    fail();
+                });
+
+                const value = view.save({
+                    preventEvents: true,
+                });
+
+                expect(value).toBe(undefined);
+            });
         });
     });
 
