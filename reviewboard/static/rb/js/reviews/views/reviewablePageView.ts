@@ -187,9 +187,9 @@ export class ReviewablePageView<
         ReviewablePageViewOptions
 > extends PageView<TModel, TElement, TExtraViewOptions> {
     static events: EventsHash = {
-        'click #action-edit-review': '_onEditReviewClicked',
+        'click #action-legacy-edit-review': '_onEditReviewClicked',
         'click #action-legacy-add-general-comment': 'addGeneralComment',
-        'click #action-ship-it': 'shipIt',
+        'click #action-legacy-ship-it': 'shipIt',
         'click .rb-o-mobile-menu-label': '_onMenuClicked',
     };
 

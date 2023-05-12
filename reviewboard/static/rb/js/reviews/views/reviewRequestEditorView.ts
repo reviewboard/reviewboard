@@ -488,6 +488,9 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
     /** The views for all of the file attachment thumbnails. */
     #fileAttachmentThumbnailViews: RB.FileAttachmentThumbnailView[] = [];
 
+    /** The views for all of the review reply editors. */
+    #reviewReplyEditorViews: RB.ReviewReplyEditorView[] = [];
+
     /**
      * The active banner, if available.
      *
@@ -735,6 +738,23 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
     }
 
     /**
+     * Add a review reply editor view.
+     *
+     * These views are constructed by the individual review views. We keep
+     * track of them here so that we can save any open editors when performing
+     * publish operations.
+     *
+     * Args:
+     *     reviewReplyEditorView (RB.ReviewRequestPage.ReviewReplyEditorView):
+     *          The review reply editor view.
+     */
+    addReviewReplyEditorView(
+        reviewReplyEditorView: RB.ReviewRequestPage.ReviewReplyEditorView,
+    ) {
+        this.#reviewReplyEditorViews.push(reviewReplyEditorView);
+    }
+
+    /**
      * Handle a click on the "Publish Draft" button.
      *
      * Begins publishing the review request. If there are any field editors
@@ -749,13 +769,23 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
             publishing: true,
         });
 
-        // Save all the fields if we need to.
+        await this.saveOpenEditors();
+        await this.model.publishDraft(options);
+    }
+
+    /**
+     * Finish saving all open editors.
+     */
+    async saveOpenEditors() {
         await Promise.all(
             Object.values(this.#fieldViews)
                 .filter(field => field.needsSave())
                 .map(field => field.finishSave()));
 
-        await this.model.publishDraft(options);
+        await Promise.all(
+            this.#reviewReplyEditorViews
+                .filter(view => view.needsSave())
+                .map(field => field.save()));
     }
 
     /**

@@ -27,12 +27,11 @@ suite('rb/pages/views/ReviewablePageView', function() {
         <div id="unified-banner">
          <div class="rb-c-unified-banner__mode-selector"></div>
         </div>
-        <a href="#" id="action-edit-review">Edit Review</a>
-        <a href="#" id="action-ship-it">Ship It</a>
+        <a href="#" id="action-legacy-edit-review">Edit Review</a>
+        <a href="#" id="action-legacy-ship-it">Ship It</a>
     `;
 
     let $editReview;
-    let $shipIt;
     let page;
     let pageView;
 
@@ -43,8 +42,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
         RB.DnDUploader.instance = null;
 
-        $editReview = $container.find('#action-edit-review');
-        $shipIt = $container.find('#action-ship-it');
+        $editReview = $container.find('#action-legacy-edit-review');
 
         page = new ReviewablePage({
             checkForUpdates: false,

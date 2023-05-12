@@ -13,6 +13,10 @@ import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
 import { ReviewRequestEditorView } from './reviewRequestEditorView';
 
 
+declare const dedent: (string, ...args) => string;
+declare const gettext: (string) => string;
+
+
 /**
  * A view for a dropdown menu within the unified banner.
  *
@@ -574,6 +578,8 @@ export class UnifiedBannerView extends FloatingBannerView<
                 reviews.push(reply.get('id'));
             }
         }
+
+        await this.#reviewRequestEditorView.saveOpenEditors();
 
         try {
             await this.#runPublishBatch(reviewRequest.get('localSitePrefix'),

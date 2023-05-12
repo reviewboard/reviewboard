@@ -17,10 +17,19 @@ RB.ReviewRequestPage.ReviewEntryView = ParentView.extend({
 
     /**
      * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     reviewRequestEditorView (RB.ReviewRequestEditorView):
+     *         The review request editor view.
      */
-    initialize() {
-        ParentView.prototype.initialize.call(this);
+    initialize(options) {
+        ParentView.prototype.initialize.call(this, options);
 
+        this.reviewRequestEditorView = options.reviewRequestEditorView;
         this._reviewView = null;
         this._draftBannerShown = false;
         this._$boxStatus = null;
@@ -66,6 +75,7 @@ RB.ReviewRequestPage.ReviewEntryView = ParentView.extend({
             $bannerFloatContainer: this._$box,
             $bannerParent: this.$('.banners'),
             bannerNoFloatContainerClass: 'collapsed',
+            reviewRequestEditorView: this.reviewRequestEditorView,
         });
 
         this._$boxStatus = this.$('.box-status');

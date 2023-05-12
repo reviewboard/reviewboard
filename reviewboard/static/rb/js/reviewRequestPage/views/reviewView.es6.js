@@ -6,10 +6,22 @@
 RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
     /**
      * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     entryModel (RB.ReviewRequestPage.Entry):
+     *         The entry model.
+     *
+     *     reviewRequestEditorView (RB.ReviewRequestEditorView):
+     *         The review request editor view.
      */
     initialize(options) {
         this.options = options;
         this.entryModel = options.entryModel;
+        this.reviewRequestEditorView = options.reviewRequestEditorView;
 
         this._bannerView = null;
         this._draftBannerShown = false;
@@ -63,7 +75,8 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
                  * We make this conditional to make unit tests easier to write.
                  */
                 if (banner) {
-                    banner.model.updateReplyDraftState(this._reviewReply, hasDraft);
+                    banner.model.updateReplyDraftState(
+                        this._reviewReply, hasDraft);
                 }
             }
 
@@ -150,6 +163,10 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
 
             this._replyEditors.push(editor);
             this._replyEditorViews.push(view);
+
+            if (this.reviewRequestEditorView) {
+                this.reviewRequestEditorView.addReviewReplyEditorView(view);
+            }
 
             if (editor.get('hasDraft')) {
                 this._replyDraftsCount++;
