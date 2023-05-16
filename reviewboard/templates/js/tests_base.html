@@ -31,6 +31,8 @@
     RB.ajaxOptions.enableQueuing = false;
     RB.ajaxOptions.enableIndicator = false;
 
+    window.rbRunningTests = true;
+
     // Disable animations so we don't have to worry about them in tests.
     $.fx.off = true;
 

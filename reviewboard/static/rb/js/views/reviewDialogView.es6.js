@@ -1262,6 +1262,8 @@ RB.ReviewDialogView = Backbone.View.extend({
                 this.close();
                 await this.model.destroy();
 
+                RB.ClientCommChannel.getInstance().reload();
+
                 if (!RB.EnabledFeatures.unifiedBanner) {
                     RB.DraftReviewBannerView.instance.hideAndReload();
                 }

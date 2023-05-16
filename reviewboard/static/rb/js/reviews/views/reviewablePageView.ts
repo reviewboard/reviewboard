@@ -100,6 +100,21 @@ class UpdatesBubbleView extends BaseView<
     }
 
     /**
+     * Return data to use for assessing cross-tab page reloads.
+     *
+     * This returns a filter blob that will be recognized by all other tabs
+     * that have the same review request.
+     *
+     * Version Added:
+     *     6.0
+     */
+    getReloadData(): unknown {
+        return {
+            'review-request': this.model.get('reviewRequest').id,
+        };
+    }
+
+    /**
      * Open the bubble on the screen.
      */
     open() {

@@ -3,6 +3,7 @@
  */
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
+import { ClientCommChannel } from 'reviewboard/common/models/commChannel';
 import { FloatingBannerView } from 'reviewboard/ui/views/floatingBannerView';
 import { MenuButtonView } from 'reviewboard/ui/views/menuButtonView';
 import { MenuType, MenuView } from 'reviewboard/ui/views/menuView';
@@ -558,6 +559,8 @@ export class UnifiedBannerView extends FloatingBannerView<
         const reviews: number[] = [];
         const reviewRequests: number[] = [];
 
+        ClientCommChannel.getInstance().reload();
+
         if (draftMode.hasReviewRequest) {
             await reviewRequest.ready();
             reviewRequests.push(reviewRequest.get('id'));
@@ -670,6 +673,8 @@ export class UnifiedBannerView extends FloatingBannerView<
         const draftModes = model.get('draftModes');
         const draftMode = draftModes[selectedDraftMode];
         const reviewRequest = model.get('reviewRequest');
+
+        ClientCommChannel.getInstance().reload();
 
         try {
             if (draftMode.hasReview) {

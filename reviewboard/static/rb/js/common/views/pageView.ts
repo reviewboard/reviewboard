@@ -4,6 +4,7 @@
 import { BaseView, spina } from '@beanbag/spina';
 
 import { ActionView } from '../actions/views/actionView';
+import { ClientCommChannel } from '../models/commChannel';
 import { Page } from '../models/pageModel';
 
 
@@ -58,6 +59,9 @@ export class PageView<
     /**********************
      * Instance variables *
      **********************/
+
+    /** The client (tab to tab) communication channel. */
+    #commChannel: ClientCommChannel = null;
 
     /** The sidebar element. */
     $mainSidebar: JQuery = null;
@@ -119,6 +123,14 @@ export class PageView<
     initialize(options: PageViewOptions = {}) {
         this.options = options;
         this.$window = $(window);
+
+        if (!window.rbRunningTests) {
+            this.#commChannel = new ClientCommChannel();
+            this.listenTo(this.#commChannel, 'reload', () => {
+                alert(_`This page is out of date and needs to be reloaded.`);
+                RB.navigateTo(window.location);
+            });
+        }
     }
 
     /**
@@ -195,6 +207,19 @@ export class PageView<
         this._actionViews.forEach(actionView => actionView.render());
 
         this.isPageRendered = true;
+    }
+
+    /**
+     * Return data to use for assessing cross-tab page reloads.
+     *
+     * This is intended to be overridden by subclasses in order to filter which
+     * reload signals apply to this page.
+     *
+     * Version Added:
+     *     6.0
+     */
+    getReloadData(): unknown {
+        return null;
     }
 
     /**
