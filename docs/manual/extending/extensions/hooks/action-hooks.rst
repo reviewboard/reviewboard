@@ -172,6 +172,8 @@ For the JavaScript:
     }
 
 
+.. _hide-action-hook:
+
 =======================
 Hiding Standard Actions
 =======================
