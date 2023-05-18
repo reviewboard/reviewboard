@@ -147,7 +147,6 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
             notifyUnchangedCompletion: true,
             rawValue: this._$editor.data('raw-value') || '',
             textEditorOptions: {
-                minHeight: 0,
                 richText: this._$editor.hasClass('rich-text'),
             },
         });
