@@ -20,7 +20,7 @@ from collections import OrderedDict
 from datetime import datetime
 from importlib import import_module
 from random import choice as random_choice
-from typing import Optional
+from typing import Dict, List, Optional
 from urllib.request import urlopen
 
 from django.db.utils import OperationalError
@@ -220,6 +220,7 @@ class Site(object):
         """Initialize the site."""
         self.install_dir = self.get_default_site_path(install_dir)
         self.abs_install_dir = os.path.abspath(self.install_dir)
+        self.venv_dir = os.path.join(self.abs_install_dir, 'venv')
         self.site_id = \
             os.path.basename(install_dir).replace(" ", "_").replace(".", "_")
         self.options = options
@@ -1145,6 +1146,71 @@ class Site(object):
 
         os.chdir(cwd)
 
+    def run_pip(
+        self,
+        args: List[str],
+    ) -> None:
+        """Run the correct version of pip.
+
+        This will run :command:`pip` via the Python runtime, bypassing any
+        command line scripts.
+
+        This utilizes :py:meth:`run_python`, ensuring we run the right for a
+        virtual environment or global install.
+
+        Args:
+            args (list of str):
+                Arguments to pass to :command:`pip`.
+        """
+        self.run_python(['-m', 'pip'] + args)
+
+    def run_python(
+        self,
+        args: List[str] = [],
+        *,
+        capture_output: bool = False,
+        env: Dict[str, str] = {},
+        stdin: Optional[bytes] = None,
+    ) -> None:
+        """Run the correct version of Python.
+
+        If the Review Board site directory contains a virtual environment,
+        this will run :file:`{sitedir}/venv/bin/python`. Otherwise, it will
+        run :file:`python{major}.{minor}` for the version of Python currently
+        being run.
+
+        Args:
+            args (list of str):
+                Arguments to pass to :command:`python`.
+
+            capture_output (bool, optional):
+                Whether to capture and return output from the command.
+
+            env (dict, optional):
+                Environment variables to pass to the process.
+
+            stdin (bytes, optional):
+                Data to pipe in as standard input.
+        """
+        venv_python_path = os.path.join(self.venv_dir, 'bin', 'python')
+
+        if os.path.exists(venv_python_path):
+            python = venv_python_path
+        else:
+            python = 'python%s.%s' % sys.version_info[:2]
+
+        if env:
+            new_env = os.environ.copy()
+            new_env.update(env)
+        else:
+            new_env = env
+
+        return subprocess.run([python] + args,
+                              input=stdin,
+                              capture_output=capture_output,
+                              check=True,
+                              env=new_env)
+
     def mkdir(self, dirname):
         """Create a directory, but only if it doesn't already exist."""
         if not os.path.exists(dirname):
@@ -1772,6 +1838,16 @@ class InstallCommand(Command):
                  '(defaults to %s)'
                  % pkg_resources.resource_filename(
                      'reviewboard', 'cmdline/conf/settings_local.py.in'))
+        parser.add_argument(
+            '--allow-non-empty-sitedir',
+            default=False,
+            action='store_true',
+            help=(
+                'allow installing into a non-empty site directory. This '
+                'is considered advanced functionality and may lead to data '
+                'loss. This should not be used unless you know what you are '
+                'doing.'
+            ))
 
         if not is_windows:
             parser.add_argument(
@@ -1791,7 +1867,7 @@ class InstallCommand(Command):
         """
         self.site = site
 
-        if not self.check_permissions():
+        if not self.check_permissions(options):
             sys.exit(1)
 
         if (options.secret_key and
@@ -1883,10 +1959,14 @@ class InstallCommand(Command):
 
         return path
 
-    def check_permissions(self):
+    def check_permissions(self, options):
         """Check that permissions are usable.
 
         If not, this will show an error to the user.
+
+        Args:
+            options (argparse.Namespace):
+                The parsed options for the command.
         """
         error = None
 
@@ -1895,7 +1975,11 @@ class InstallCommand(Command):
         if os.path.exists(install_dir):
             # The install directory already exists. Let's see if it's safe
             # to install here.
-            if os.listdir(install_dir) != []:
+            site_contents = os.listdir(install_dir)
+
+            if (site_contents and
+                site_contents != ['venv'] and
+                not options.allow_non_empty_sitedir):
                 # There are existing files in the directory.
                 error = (
                     'The directory already contains files. Make sure you '
@@ -2769,6 +2853,14 @@ class ManageCommand(Command):
                 'List all installed and available extensions.'
             ),
         },
+        'Package Management and Runtime': {
+            'python': 'Run the version of Python for the site.',
+            'pip': (
+                'Run the version of the pip Python package management tool '
+                'for the site.'
+            ),
+            'python': 'Run the version of Python for the site.',
+        },
         'Search': {
             'clear_index': 'Clear the search index.',
             'rebuild_index': 'Rebuild the search index from scratch.',
@@ -2813,7 +2905,7 @@ class ManageCommand(Command):
         initialize()
 
         manage_command = options.manage_command[0]
-        manage_args = options.manage_command[1:]
+        manage_args: List[str] = options.manage_command[1:]
 
         if manage_command == 'list-commands':
             manage_command = 'help'
@@ -2824,9 +2916,22 @@ class ManageCommand(Command):
             # 4.0 onward, this must be removed.
             manage_args = manage_args[1:]
 
-        site.run_manage_command(manage_command, manage_args)
+        rc: int = 0
 
-        sys.exit(0)
+        if manage_command == 'pip':
+            try:
+                site.run_pip(manage_args)
+            except subprocess.CalledProcessError as e:
+                rc = e.returncode
+        elif manage_command == 'python':
+            try:
+                site.run_python(manage_args)
+            except subprocess.CalledProcessError as e:
+                rc = e.returncode
+        else:
+            site.run_manage_command(manage_command, manage_args)
+
+        sys.exit(rc)
 
     def _get_commands_help(self):
         """Return help text for common commands.
