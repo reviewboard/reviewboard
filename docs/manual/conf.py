@@ -66,6 +66,7 @@ extensions = [
     'sphinx.ext.linkcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
+    'sphinx_tabs.tabs',
     'beanbag_docutils.sphinx.ext.autodoc_utils',
     'beanbag_docutils.sphinx.ext.django_utils',
     'beanbag_docutils.sphinx.ext.extlinks',
@@ -358,6 +359,9 @@ autosummary_generate = True
 napoleon_beanbag_docstring = True
 napoleon_google_docstring = False
 napoleon_numpy_docstring = False
+
+sphinx_tabs_valid_builders = ['html', 'json', 'pickle']
+sphinx_tabs_disable_tab_closing = True
 
 webapi_docname_map = {
     'o-auth-application': 'oauth-application',

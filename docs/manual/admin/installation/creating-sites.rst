@@ -259,23 +259,21 @@ configuration is also provided below.
 How you enable your Apache configuration depends on the Linux distribution.
 We'll provide examples, using ``reviews.example.com``.
 
-On Debian_ or Ubuntu_:
+.. tabs::
 
-.. code-block:: console
+   .. code-tab:: console Debian/Ubuntu
 
-   $ cd /etc/apache2
-   $ cp /var/www/reviews.example.com/conf/webconfs/apache-wsgi.conf \
-        sites-available/reviews.example.com.conf
-   $ ln -s sites-available/reviews.example.com.conf \
-           sites-enabled/
+      $ cd /etc/apache2
+      $ cp /var/www/reviews.example.com/conf/webconfs/apache-wsgi.conf \
+           sites-available/reviews.example.com.conf
+      $ ln -s sites-available/reviews.example.com.conf \
+              sites-enabled/
 
-On `Red Hat Enterprise`_, Fedora_, or `CentOS Stream`_:
+   .. code-tab:: console RHEL/Fedora/CentOS
 
-.. code-block:: console
-
-   $ cd /etc/httpd/conf.d
-   $ cp /var/www/reviews.example.com/conf/webconfs/apache-wsgi.conf \
-        reviews.example.com.conf
+      $ cd /etc/httpd/conf.d
+      $ cp /var/www/reviews.example.com/conf/webconfs/apache-wsgi.conf \
+           reviews.example.com.conf
 
 Once set up, you'll need to restart Apache.
 

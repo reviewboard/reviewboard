@@ -140,22 +140,19 @@ You will need to install a handful of dependencies required by Review Board.
 Some of these are required to install Review Board's dependencies, and some
 are required at runtime.
 
-To install on Debian_ or Ubuntu_:
+.. tabs::
 
-.. code-block:: console
+   .. code-tab:: console Debian/Ubuntu
 
-    $ apt-get install build-essential python3-dev python3-pip \
-                      libffi-dev libjpeg-dev libssl-dev patch \
-                      libxml2-dev libxmlsec1-dev libxmlsec1-openssl
+      $ apt-get install build-essential python3-dev python3-pip \
+                        libffi-dev libjpeg-dev libssl-dev patch \
+                        libxml2-dev libxmlsec1-dev libxmlsec1-openssl
 
+   .. code-tab:: console RHEL/Fedora/CentOS
 
-To install on a `Red Hat Enterprise`_, Fedora_, or `CentOS Stream`_:
-
-.. code-block:: console
-
-    $ yum install gcc python3-devel libffi-devel openssl-devel patch perl \
-                  libxml2-devel xmlsec1-devel xmlsec1-openssl-devel
-                  libtool-ltdl-devel
+      $ yum install gcc python3-devel libffi-devel openssl-devel patch perl \
+                    libxml2-devel xmlsec1-devel xmlsec1-openssl-devel
+                    libtool-ltdl-devel
 
 
 Installing Review Board
@@ -230,20 +227,17 @@ these, you will need to install the appropriate packages.
 MySQL / MariaDB
 ---------------
 
-To install on Debian_ or Ubuntu_:
+.. tabs::
 
-.. code-block:: console
+   .. code-tab:: console Debian/Ubuntu
 
-    $ apt-get install libmysqlclient-dev
-    $ pip3 install -U 'ReviewBoard[mysql]'
+      $ apt-get install libmysqlclient-dev
+      $ pip3 install -U 'ReviewBoard[mysql]'
 
+   .. code-tab:: console RHEL/Fedora/CentOS
 
-To install on `Red Hat Enterprise`_, Fedora_ or `CentOS Stream`_:
-
-.. code-block:: console
-
-    $ yum install mariadb-connector-c-devel
-    $ pip3 install -U 'ReviewBoard[mysql]'
+      $ yum install mariadb-connector-c-devel
+      $ pip3 install -U 'ReviewBoard[mysql]'
 
 
 PostgreSQL
@@ -266,18 +260,15 @@ Memcached_ is a high-performance caching server used by Review Board.
 Review Board requires a memcached server, either locally or accessible over a
 network.
 
-To install memcached on Debian_ or Ubuntu_:
+.. tabs::
 
-.. code-block:: console
+   .. code-tab:: console Debian/Ubuntu
 
-    $ apt-get install memcached
+      $ apt-get install memcached
 
+   .. code-tab:: console RHEL/Fedora/CentOS
 
-To install memcached on `Red Hat Enterprise`_, Fedora_ or `CentOS Stream`_:
-
-.. code-block:: console
-
-    $ yum install memcached
+      $ yum install memcached
 
 :ref:`Learn how to optimize memcached for Review Board
 <optimizing-memcached>`.
@@ -298,17 +289,15 @@ you need to work with.
 CVS
 ---
 
-To install on Debian_ or Ubuntu_:
+.. tabs::
 
-.. code-block:: console
+   .. code-tab:: console Debian/Ubuntu
 
-    $ apt-get install cvs
+      $ apt-get install cvs
 
-To install on `Red Hat Enterprise`_, Fedora_ or `CentOS Stream`_:
+   .. code-tab:: console RHEL/Fedora/CentOS
 
-.. code-block:: console
-
-    $ yum install cvs
+      $ yum install cvs
 
 
 .. _CVS: http://www.nongnu.org/cvs/
@@ -319,17 +308,15 @@ To install on `Red Hat Enterprise`_, Fedora_ or `CentOS Stream`_:
 Git
 ---
 
-To install on Debian_ or Ubuntu_:
+.. tabs::
 
-.. code-block:: console
+   .. code-tab:: console Debian/Ubuntu
 
-    $ apt-get install git
+      $ apt-get install git
 
-To install on `Red Hat Enterprise`_, Fedora_ or `CentOS Stream`_:
+   .. code-tab:: console RHEL/Fedora/CentOS
 
-.. code-block:: console
-
-    $ yum install git
+      $ yum install git
 
 
 .. _installing-mercurial:
@@ -377,20 +364,17 @@ Subversion
 To use Review Board with Subversion_, you'll need both Subversion and
 PySVN_ installed.
 
-To install on Debian_ or Ubuntu_:
+.. tabs::
 
-.. code-block:: console
+   .. code-tab:: console Debian/Ubuntu
 
-    $ apt-get install subversion python3-svn
+      $ apt-get install subversion python3-svn
 
+   .. code-tab:: console RHEL/Fedora/CentOS
 
-To install on `Red Hat Enterprise`_, Fedora_ or `CentOS Stream`_:
-
-.. code-block:: console
-
-    $ yum install subversion subversion-devel
-    $ pip3 install wheel
-    $ curl https://pysvn.reviewboard.org | python3
+      $ yum install subversion subversion-devel
+      $ pip3 install wheel
+      $ curl https://pysvn.reviewboard.org | python3
 
 
 Learn more about our `PySVN installer`_ if you need help. Simply follow the
