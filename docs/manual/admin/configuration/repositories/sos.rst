@@ -20,19 +20,18 @@ developers can use RBTools to manage their review requests.
 Requirements
 ============
 
-On the Review Board server:
+For Review Board:
 
 * SOS 7.20 or higher, with a valid license.
 
-* `Power Pack`_ 5 or higher, with a valid license. You can `download a trial
+* `Power Pack`_ 5.2 or higher, with a valid license. You can `download a trial
   license`_ or `purchase a license`_ for your team.
 
-
-On developer machines:
+For developers:
 
 * SOS 7.20 or higher, with a valid license.
 
-* RBTools_ 3.1 or higher, used to post changes for review.
+* RBTools_ 4 or higher, used to post changes for review.
 
 
 .. _Power Pack: https://www.reviewboard.org/powerpack/
@@ -40,7 +39,33 @@ On developer machines:
 .. _purchase a license: https://www.reviewboard.org/powerpack/purchase/
 
 
-.. _repository-scm-add-repository:
+.. _repository-scm-sos-connectivity:
+
+Connectivity and SOS Licensing
+==============================
+
+Review Board can talk to SOS via:
+
+* **An SSH connection** to a server running SOS.
+
+  This is the recommended way to talk to SOS, and allows you to communicate
+  with SOS using any licensed user on a remote server or on the Review Board
+  server.
+
+* **Local communication with SOS**.
+
+  This requires SOS to be running on the Review Board server, and requires
+  having a license for the web server's user (often ``httpd`` or ``apache2``).
+
+SSH communication is available in `Power Pack`_ 5.2 or higher.
+
+The licensed user in SOS must have read access to all files in all SOS
+projects that may need to be posted for review.
+
+Review Board will not write any files or modify any SOS settings.
+
+
+.. _repository-scm-sos-add-repository:
 
 Adding the Repository
 =====================
@@ -48,8 +73,11 @@ Adding the Repository
 You will need to complete these steps for each SOS project you want set up in
 Review Board.
 
-To get started, :ref:`add a repository <adding-repositories>` and then select
-:guilabel:`Cliosoft SOS` from the :guilabel:`Repository type` field.
+To get started:
+
+1. :ref:`Add a repository <adding-repositories>`
+
+2. Choose :guilabel:`Repository type -> Cliosoft SOS`.
 
 
 .. _repository-scm-sos-fields:
@@ -63,14 +91,36 @@ map to.
 
 You can specify these with the following fields:
 
+:guilabel:`Connection method`:
+    The method Review Board will use to talk to SOS. This will be one of:
+
+    * :guilabel:`Connect using SSH (local or remote)`
+
+    * :guilabel:`Local install of SOS`
+
+    We recommend always using SSH. See :ref:`repository-scm-sos-connectivity`
+    above.
+
+:guilabel:`Connected SSH server`:
+    The hostname and optional port (in ``hostname:port`` form) of the
+    server running SOS and SSH.
+
+    *This is only available when choosing SSH connection methods.*
+
+:guilabel:`Connected/licensed user`:
+    The username used to SSH into the server. This user must be licensed to
+    use SOS (see :ref:`repository-scm-sos-connectivity` above).
+
+    *This is only available when choosing SSH connection methods.*
+
 :guilabel:`SOS installation directory`:
     The absolute path to the SOS installation on the server.
 
     This is equivalent to :envvar:`CLIOSOFT_DIR` environment variable.
 
 :guilabel:`SOS license`:
-    The absolute path to the license file for this installation, or the port
-    and host for the license server.
+    The absolute path to the license file for this installation on the
+    target server running SOS, or the port and host for the license server.
 
     This is equivalent to the :envvar:`CLIOLMD_LICENSE_FILE` or
     :envvar:`LM_LICENSE_FILE` environment variables.
