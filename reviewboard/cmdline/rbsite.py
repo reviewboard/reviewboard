@@ -221,6 +221,7 @@ class Site(object):
         self.install_dir = self.get_default_site_path(install_dir)
         self.abs_install_dir = os.path.abspath(self.install_dir)
         self.venv_dir = os.path.join(self.abs_install_dir, 'venv')
+        self.bin_dir = os.path.join(self.abs_install_dir, 'bin')
         self.site_id = \
             os.path.basename(install_dir).replace(" ", "_").replace(".", "_")
         self.options = options
@@ -255,23 +256,25 @@ class Site(object):
 
         return os.path.join(INSTALLED_SITE_PATH, install_dir)
 
-    def rebuild_site_directory(self):
+    def rebuild_site_directory(self) -> None:
         """Rebuild the site hierarchy."""
-        htdocs_dir = os.path.join(self.install_dir, "htdocs")
+        install_dir = self.install_dir
+        htdocs_dir = os.path.join(install_dir, 'htdocs')
         errordocs_dir = os.path.join(htdocs_dir, 'errordocs')
-        media_dir = os.path.join(htdocs_dir, "media")
-        static_dir = os.path.join(htdocs_dir, "static")
-        conf_dir = os.path.join(self.install_dir, 'conf')
+        media_dir = os.path.join(htdocs_dir, 'media')
+        static_dir = os.path.join(htdocs_dir, 'static')
+        conf_dir = os.path.join(install_dir, 'conf')
 
-        self.mkdir(self.install_dir)
+        self.mkdir(install_dir)
         self.mkdir(conf_dir)
-        self.mkdir(os.path.join(self.install_dir, "logs"))
+        self.mkdir(self.bin_dir)
+        self.mkdir(os.path.join(install_dir, 'logs'))
         self.mkdir(os.path.join(conf_dir, 'webconfs'))
 
-        self.mkdir(os.path.join(self.install_dir, "tmp"))
-        os.chmod(os.path.join(self.install_dir, "tmp"), 0o777)
+        self.mkdir(os.path.join(install_dir, 'tmp'))
+        os.chmod(os.path.join(install_dir, 'tmp'), 0o777)
 
-        self.mkdir(os.path.join(self.install_dir, "data"))
+        self.mkdir(os.path.join(install_dir, 'data'))
 
         self.mkdir(htdocs_dir)
         self.mkdir(media_dir)
@@ -330,9 +333,9 @@ class Site(object):
                           os.path.join(static_dir, 'djblets'))
 
         # Remove any old media directories from old sites
-        self.unlink_media_dir(os.path.join(media_dir, 'admin'))
-        self.unlink_media_dir(os.path.join(media_dir, 'djblets'))
-        self.unlink_media_dir(os.path.join(media_dir, 'rb'))
+        self.remove_files(os.path.join(media_dir, 'admin'))
+        self.remove_files(os.path.join(media_dir, 'djblets'))
+        self.remove_files(os.path.join(media_dir, 'rb'))
 
         # Generate .htaccess files that enable compression and
         # never expires various file types.
@@ -1216,26 +1219,96 @@ class Site(object):
         if not os.path.exists(dirname):
             os.mkdir(dirname)
 
-    def link_pkg_dir(self, pkgname, src_path, dest_dir, replace=True):
-        """Create the package directory."""
-        src_dir = pkg_resources.resource_filename(pkgname, src_path)
+    def mirror_files(
+        self,
+        *,
+        source_path: str,
+        dest_path: str,
+        replace: bool = True,
+        use_symlink: Optional[bool] = None,
+    ) -> None:
+        """Mirror files from one location to another.
 
-        if os.path.islink(dest_dir) and not os.path.exists(dest_dir):
-            os.unlink(dest_dir)
+        This will either use a symlink or copy a tree, depending on the
+        caller's needs, or the :option:`--copy-media` flag if unspecified.
 
-        if os.path.exists(dest_dir):
+        Args:
+            source_path (str):
+                The source path containing the file(s) to mirror.
+
+            dest_path (str):
+                The destination path to place the file(s).
+
+            replace (bool, optional):
+                Whether to replace the destination if it exists.
+
+                If set, this will completely remove the destination.
+
+            use_symlink (bol, optional):
+                Whether to use a symlink to mirror the files.
+
+                If not specified, this will be based on whether the user
+                passed :option:`--copy-media`.
+        """
+        if os.path.islink(dest_path) and not os.path.exists(dest_path):
+            # This is a dangling symlink. Remove it.
+            os.unlink(dest_path)
+
+        if os.path.exists(dest_path):
             if not replace:
                 return
 
-            self.unlink_media_dir(dest_dir)
+            self.remove_files(dest_path)
 
-        if self.options.copy_media:
-            shutil.copytree(src_dir, dest_dir)
+        if use_symlink is None:
+            use_symlink = not self.options.copy_media
+
+        if use_symlink:
+            os.symlink(source_path, dest_path)
         else:
-            os.symlink(src_dir, dest_dir)
+            shutil.copytree(source_path, dest_path)
 
-    def unlink_media_dir(self, path):
-        """Delete the given media directory and all contents."""
+    def link_pkg_dir(
+        self,
+        pkg_name: str,
+        src_path: str,
+        dest_dir: str,
+        replace: bool = True,
+    ) -> None:
+        """Mirror files from a package-provided directory.
+
+        Args:
+            pkg_name (str):
+                The name of the package containing the file.
+
+            src_path (str):
+                The source path of the file within the package.
+
+            dest_dir (str):
+                The destination directory for the files. This will be a symlink
+                unless :option:`--copy-media` is being used.
+
+            replace (bool, optional):
+                Whether to replace the destination if it exists.
+        """
+        self.mirror_files(
+            source_path=pkg_resources.resource_filename(pkg_name, src_path),
+            dest_path=dest_dir,
+            replace=replace)
+
+    def remove_files(
+        self,
+        path: str,
+    ) -> None:
+        """Delete the given directory and all contents.
+
+        If the destination is a symlink, it will be unlinked, and the original
+        files will be untouched.
+
+        Args:
+            path (str):
+                The path to remove.
+        """
         if os.path.exists(path):
             if os.path.islink(path):
                 os.unlink(path)
