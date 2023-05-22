@@ -84,6 +84,7 @@ class CloseCompletedAction(BaseAction):
     parent_id = CloseMenuAction.action_id
     label = _('Completed')
     apply_to = all_review_request_url_names
+    js_view_class = 'RB.CloseCompletedActionView'
 
     def should_render(
         self,
@@ -123,6 +124,7 @@ class CloseDiscardedAction(BaseAction):
     parent_id = CloseMenuAction.action_id
     label = _('Discarded')
     apply_to = all_review_request_url_names
+    js_view_class = 'RB.CloseDiscardedActionView'
 
 
 class DeleteAction(BaseAction):
@@ -136,6 +138,7 @@ class DeleteAction(BaseAction):
     parent_id = CloseMenuAction.action_id
     label = _('Delete Permanently')
     apply_to = all_review_request_url_names
+    js_view_class = 'RB.DeleteActionView'
 
     def should_render(
         self,
@@ -276,6 +279,7 @@ class ReviewMenuAction(BaseMenuAction):
     attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Review')
     icon_class = 'rb-icon rb-icon-compose-review'
+    js_view_class = 'RB.ReviewMenuActionView'
 
     def should_render(
         self,
@@ -567,6 +571,7 @@ class UploadDiffAction(BaseAction):
     action_id = 'upload-diff'
     parent_id = UpdateMenuAction.action_id
     apply_to = all_review_request_url_names
+    js_view_class = 'RB.UpdateDiffActionView'
 
     def get_label(
         self,
@@ -635,6 +640,7 @@ class UploadFileAction(BaseAction):
     parent_id = UpdateMenuAction.action_id
     label = _('Add File')
     apply_to = all_review_request_url_names
+    js_view_class = 'RB.AddFileActionView'
 
     def should_render(
         self,

@@ -175,7 +175,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/resources/models/screenshotCommentReplyModel.es6.js',
             'rb/js/resources/models/userFileAttachmentModel.es6.js',
             'rb/js/resources/models/validateDiffModel.es6.js',
-            'rb/js/resources/collections/resourceCollection.es6.js',
             'rb/js/resources/collections/repositoryBranchesCollection.es6.js',
             'rb/js/resources/collections/repositoryCommitsCollection.es6.js',
             'rb/js/ui/views/centeredElementManager.es6.js',

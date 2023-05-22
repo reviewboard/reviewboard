@@ -506,10 +506,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      * Initialize the view.
      */
     initialize() {
-        _.bindAll(this, '_checkResizeLayout', '_scheduleResizeLayout',
-                  '_onCloseDiscardedClicked', '_onCloseCompletedClicked',
-                  '_onDeleteReviewRequestClicked', '_onUpdateDiffClicked',
-                  '_onUploadFileClicked');
+        _.bindAll(this, '_checkResizeLayout', '_scheduleResizeLayout');
 
         this.draft = this.model.get('reviewRequest').draft;
     }
@@ -811,17 +808,6 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      * Set up all review request actions and listens for events.
      */
     _setupActions() {
-        /*
-         * We don't want the click event filtering from these down to the
-         * parent menu, so we can't use events above.
-         */
-        this.$('#action-close-discarded').click(this._onCloseDiscardedClicked);
-        this.$('#action-close-completed').click(this._onCloseCompletedClicked);
-        this.$('#action-delete-review-request')
-            .click(this._onDeleteReviewRequestClicked);
-        this.$('#action-upload-diff').click(this._onUpdateDiffClicked);
-        this.$('#action-upload-file').click(this._onUploadFileClicked);
-
         RB.ReviewRequestActionHook.each(hook => {
             _.each(hook.get('callbacks'),
                    (handler, selector) => this.$(selector).click(handler));
@@ -1095,101 +1081,6 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
         { defer: true });
 
     /**
-     * Handle a click on "Close -> Discarded".
-     *
-     * The user will be asked for confirmation before the review request is
-     * discarded.
-     *
-     * Returns:
-     *     boolean:
-     *     False, always.
-     */
-    _onCloseDiscardedClicked() {
-        const confirmText =
-            _`Are you sure you want to discard this review request?`;
-
-        if (confirm(confirmText)) {
-            this.model.get('reviewRequest')
-                .close({
-                    type: RB.ReviewRequest.CLOSE_DISCARDED,
-                })
-                .catch(err => this.model.trigger('closeError', err.message));
-        }
-
-        return false;
-    }
-
-    /**
-     * Handle a click on "Close -> Completed".
-     *
-     * If there's an unpublished draft, this will first confirm if the
-     * user is sure.
-     *
-     * Returns:
-     *     boolean:
-     *     False, always.
-     */
-    _onCloseCompletedClicked() {
-        /*
-         * This is a non-destructive event, so don't confirm unless there's
-         * a draft.
-         */
-        let submit = true;
-
-        if (this.banner) {
-            submit = confirm(_`
-                You have an unpublished draft. If you close this review
-                request, the draft will be discarded. Are you sure you want
-                to close the review request?
-            `);
-        }
-
-        if (submit) {
-            this.model.get('reviewRequest')
-                .close({
-                    type: RB.ReviewRequest.CLOSE_SUBMITTED,
-                })
-                .catch(err => this.model.trigger('closeError', err.message));
-        }
-
-        return false;
-    }
-
-    /**
-     * Handle a click on "Close -> Delete Permanently".
-     *
-     * The user will be asked for confirmation before the review request is
-     * deleted.
-     *
-     * Returns:
-     *     boolean:
-     *     False, always.
-     */
-    _onDeleteReviewRequestClicked() {
-        const $dlg = $('<p>')
-            .text(_`
-                This deletion cannot be undone. All diffs and reviews will be
-                deleted as well.
-            `)
-            .modalBox({
-                buttons: [
-                    $(`<input type="button" value="${gettext('Cancel')}"/>`),
-                    $(`<input type="button" value="${gettext('Delete')}"/>`)
-                        .click(() => {
-                            this.model.get('reviewRequest')
-                                .destroy({
-                                    buttons: $('input', $dlg.modalBox('buttons')),
-                                })
-                                .then(() => RB.navigateTo(SITE_ROOT));
-                        }),
-                ],
-                title: _`Are you sure you want to delete this review request?`,
-            });
-
-        return false;
-    }
-
-    /**
      * Handle a click on "Update -> Update Diff".
      *
      * Returns:
@@ -1209,25 +1100,6 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
         updateDiffView.render();
 
         return false;
-    }
-
-    /**
-     * Handle a click on the "Add File" button.
-     *
-     * This method displays a popup for attachment upload.
-     *
-     * Args:
-     *     e (Event):
-     *         The event which triggered the action.
-     */
-    _onUploadFileClicked(e: Event) {
-        e.stopPropagation();
-        e.preventDefault();
-
-        const uploadDialog = new RB.UploadAttachmentView({
-            reviewRequestEditor: this.model,
-        });
-        uploadDialog.show();
     }
 
     /**
