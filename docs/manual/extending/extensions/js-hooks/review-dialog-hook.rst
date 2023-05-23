@@ -5,17 +5,18 @@ ReviewDialogHook
 ================
 
 :js:class:`RB.ReviewDialogHook` is used to add additional fields or
-information to the top of the review dialog (around the :guilabel:`Ship It!`
+information to the top of the Review Dialog (around the :guilabel:`Ship It!`
 area). The hook is instantiated with a ``viewType`` option that expects a
 custom Backbone.js_ view class, which is your custom view for modifying the
-comment dialog.
+Review Dialog.
 
 The view should inherit from :backbonejs:`View` (or a subclass of this), and
 its model will be set to the :js:class:`RB.Review` model being modified. The
 view's element will be added in-between the :guilabel:`Ship It!` checkbox and
-the review body field.
+the Review body field.
 
-The view should not modify other fields for the comment.
+It will also be bound to the same element as the Review Dialog, allowing you
+to perform queries and modifications to ``this.$el``.
 
 
 Example
@@ -23,28 +24,28 @@ Example
 
 .. code-block:: javascript
 
-    var MyReviewDialogHookView = Backbone.View.extend({
+    const MyReviewDialogHookView = Backbone.View.extend({
         events: {
             'change input': '_onCheckboxToggled'
         },
 
-        render: function() {
+        render() {
             this.extraData = this.model.get('extraData')['my-extension-id'];
             this.$input = $('<input type="checkbox"/>')
-                .prop('checked', extraData.myBool)
+                .prop('checked', this.extraData.myBool)
                 .appendTo(this.$el);
 
             return this;
         },
 
-        _onCheckboxToggled: function() {
+        _onCheckboxToggled() {
             this.extraData.myBool = this.$input.prop('checked');
         }
     });
 
     MyProject.Extension = RB.Extension.extend({
-        initialize: function() {
-            RB.Extension.initialize.call(this);
+        initialize() {
+            RB.Extension.prototype.initialize.call(this);
 
             new RB.ReviewDialogHook({
                 extension: this,
