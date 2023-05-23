@@ -8,5 +8,6 @@ JavaScript Extension Hooks
    :maxdepth: 1
 
    comment-dialog-hook
+   file-attachment-thumbnail-container-hook
    review-dialog-comment-hook
    review-dialog-hook

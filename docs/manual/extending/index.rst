@@ -227,6 +227,9 @@ just like Python hooks.
     :ref:`js-comment-dialog-hook`:
         Adds new fields or content to the comment dialog.
 
+    :ref:`js-file-attachment-thumbnail-container-hook`:
+        Adds new content or file actions to file attachment thumbnails.
+
     :ref:`js-review-dialog-comment-hook`:
         Adds new fields or content to comments shown in the review dialog.
 

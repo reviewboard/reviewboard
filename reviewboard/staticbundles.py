@@ -140,6 +140,7 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/collections/filteredCollection.es6.js',
             'rb/js/extensions/models/aliases.es6.js',
             'rb/js/extensions/models/commentDialogHookModel.es6.js',
+            'rb/js/extensions/models/fileAttachmentThumbnailContainerHookModel.es6.js',
             'rb/js/extensions/models/reviewDialogCommentHookModel.es6.js',
             'rb/js/extensions/models/reviewDialogHookModel.es6.js',
             'rb/js/extensions/models/reviewRequestActionHookModel.es6.js',

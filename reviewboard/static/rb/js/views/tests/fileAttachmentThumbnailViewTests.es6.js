@@ -43,10 +43,10 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             model.set('loaded', true);
 
             view = new RB.FileAttachmentThumbnail({
-                renderThumbnail: true,
-                reviewRequest: reviewRequest,
                 el: $el,
                 model: model,
+                renderThumbnail: true,
+                reviewRequest: reviewRequest,
             });
             $testsScratch.append(view.$el);
             view.render();
@@ -59,9 +59,9 @@ suite('rb/views/FileAttachmentThumbnail', function() {
 
         it('Rendered thumbnail with unloaded model', function() {
             view = new RB.FileAttachmentThumbnail({
-                reviewRequest: reviewRequest,
-                renderThumbnail: true,
                 model: model,
+                renderThumbnail: true,
+                reviewRequest: reviewRequest,
             });
             $testsScratch.append(view.$el);
             view.render();
@@ -85,9 +85,9 @@ suite('rb/views/FileAttachmentThumbnail', function() {
                 model.set('reviewURL', '/review/');
 
                 view = new RB.FileAttachmentThumbnail({
-                    reviewRequest: reviewRequest,
-                    renderThumbnail: true,
                     model: model,
+                    renderThumbnail: true,
+                    reviewRequest: reviewRequest,
                 });
                 $testsScratch.append(view.$el);
                 view.render();
@@ -103,9 +103,9 @@ suite('rb/views/FileAttachmentThumbnail', function() {
 
             it('No review UI', function() {
                 view = new RB.FileAttachmentThumbnail({
-                    reviewRequest: reviewRequest,
-                    renderThumbnail: true,
                     model: model,
+                    renderThumbnail: true,
+                    reviewRequest: reviewRequest,
                 });
                 $testsScratch.append(view.$el);
                 view.render();
@@ -130,9 +130,9 @@ suite('rb/views/FileAttachmentThumbnail', function() {
 
             view = new RB.FileAttachmentThumbnail({
                 canEdit: true,
-                reviewRequest: reviewRequest,
-                renderThumbnail: true,
                 model: model,
+                renderThumbnail: true,
+                reviewRequest: reviewRequest,
             });
             $testsScratch.append(view.$el);
             view.render();
@@ -186,6 +186,154 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             });
 
             view.$('.file-delete').click();
+        });
+    });
+
+    describe('addAction', function() {
+        beforeEach(function() {
+            model.id = 123;
+            model.attributes.id = 123;
+            model.set('loaded', true);
+            model.url = '/api/file-attachments/123/';
+
+            view = new RB.FileAttachmentThumbnail({
+                canEdit: true,
+                model: model,
+                renderThumbnail: true,
+                reviewRequest: reviewRequest,
+            });
+            $testsScratch.append(view.$el);
+            view.render();
+        });
+
+        it('After the download action', function() {
+            const oldActionsLength = view._$actions.children().length;
+
+            /*
+             * The file-download class is on the inner <a> element
+             * instead of the <li> element.
+             */
+            view.addAction(
+                'file-download',
+                'new-action',
+                '<a href="#">New Action</a>');
+            const newAction = view.$('li.new-action');
+
+            expect(newAction.length).toBe(1);
+            expect(newAction.find('a').attr('href')).toBe('#');
+            expect(newAction.find('a').text()).toBe('New Action');
+            expect(newAction.parent().attr('class'))
+                .toEqual(view._$actions.attr('class'));
+            expect(view._$actions.children().length)
+                .toBe(oldActionsLength + 1);
+            expect(newAction.prev().find('a').attr('class'))
+                .toEqual('file-download');
+        });
+
+        it('After the delete action', function() {
+            const oldActionsLength = view._$actions.children().length;
+
+            /* The file-delete class is on the <li> element. */
+            view.addAction(
+                'file-delete',
+                'new-action',
+                '<a href="#">New Action</a>');
+            const newAction = view.$('li.new-action');
+
+            expect(newAction.length).toBe(1);
+            expect(newAction.find('a').attr('href')).toBe('#');
+            expect(newAction.find('a').text()).toBe('New Action');
+            expect(newAction.parent().attr('class'))
+                .toEqual(view._$actions.attr('class'));
+            expect(view._$actions.children().length)
+                .toBe(oldActionsLength + 1);
+            expect(newAction.prev().attr('class')).toEqual('file-delete');
+        });
+
+        it('After one that does not exist', function() {
+            const oldActionsLength = view._$actions.children().length;
+
+            view.addAction(
+                'non-existing-action',
+                'new-action',
+                '<a href="#">New Action</a>');
+            const newAction = view.$('li.new-action');
+
+            expect(newAction.length).toBe(0);
+            expect(view._$actions.children().length)
+                .toBe(oldActionsLength);
+        });
+
+        it('With one that already exists', function() {
+            const oldActionsLength = view._$actions.children().length;
+
+            view.addAction(
+                'file-delete',
+                'new-action',
+                '<a href="#">New Action</a>');
+            let newAction = view.$('li.new-action');
+
+            expect(newAction.length).toBe(1);
+            expect(newAction.find('a').attr('href')).toBe('#');
+            expect(newAction.find('a').text()).toBe('New Action');
+            expect(newAction.parent().attr('class'))
+                .toEqual(view._$actions.attr('class'));
+            expect(view._$actions.children().length)
+                .toBe(oldActionsLength + 1);
+            expect(newAction.prev().attr('class')).toEqual('file-delete');
+
+            /* Add the action again, with some different content. */
+            view.addAction(
+                'file-delete',
+                'new-action',
+                '<a href="link">Changed Action</a>');
+            newAction = view.$('li.new-action');
+
+            expect(newAction.length).toBe(1);
+            expect(newAction.find('a').attr('href')).toBe('link');
+            expect(newAction.find('a').text()).toBe('Changed Action');
+            expect(newAction.parent().attr('class'))
+                .toEqual(view._$actions.attr('class'));
+            expect(view._$actions.children().length)
+                .toBe(oldActionsLength + 1);
+            expect(newAction.prev().attr('class')).toEqual('file-delete');
+        });
+
+        it('When another thumbnail for the same file exists',
+           function() {
+            const view2 = new RB.FileAttachmentThumbnail({
+                canEdit: false,
+                model: model,
+                renderThumbnail: true,
+                reviewRequest: reviewRequest,
+            });
+            $testsScratch.append(view2.$el);
+            view2.render();
+
+            const viewOldActionsLength = view._$actions.children().length;
+            const view2OldActionsLength = view2._$actions.children().length;
+
+            view.addAction(
+                'file-delete',
+                'new-action',
+                '<a href="#">New Action</a>');
+            const newAction = view.$('li.new-action');
+            const newAction2 = view2.$('li.new-action');
+
+            /* Check the first thumbnail. */
+            expect(newAction.length).toBe(1);
+            expect(newAction.find('a').attr('href')).toBe('#');
+            expect(newAction.find('a').text()).toBe('New Action');
+            expect(newAction.parent().attr('class'))
+                .toEqual(view._$actions.attr('class'));
+            expect(view._$actions.children().length)
+                .toBe(viewOldActionsLength + 1);
+            expect(newAction.prev().attr('class')).toEqual('file-delete');
+
+            /* Check the second thumbnail. The action should not exist here. */
+            expect(newAction2.length).toBe(0);
+            expect(view2._$actions.children().length)
+                .toBe(view2OldActionsLength);
         });
     });
 });
