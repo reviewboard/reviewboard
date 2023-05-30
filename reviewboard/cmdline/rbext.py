@@ -156,6 +156,12 @@ class TestCommand(BaseCommand):
                 The argument parser.
         """
         parser.add_argument(
+            '--pytest',
+            action='store_true',
+            default=False,
+            dest='pytest',
+            help='Use pytest runner instead of nose.')
+        parser.add_argument(
             '--app',
             metavar='APP_LABEL',
             action='append',
@@ -272,10 +278,21 @@ class TestCommand(BaseCommand):
 
         from reviewboard.test import RBTestRunner
 
-        test_runner = RBTestRunner(test_packages=module_names,
-                                   cover_packages=module_names,
-                                   verbosity=1,
-                                   needs_collect_static=False)
+        use_pytest = options.pytest or os.path.exists('conftest.py')
+
+        if not use_pytest:
+            console.note(
+                'Tests are running using the legacy nose test runner. Review '
+                'Board 7 will switch to a pytest-based runner. To opt in to '
+                'the new behavior, run with --pytest or create a conftest.py '
+                'file.')
+
+        test_runner = RBTestRunner(
+            test_packages=module_names,
+            cover_packages=module_names,
+            verbosity=1,
+            needs_collect_static=False,
+            use_pytest=use_pytest)
 
         # Don't use +=, as we don't want to modify the list on the class.
         # We want to create a new one on the instance.
