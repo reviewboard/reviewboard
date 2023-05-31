@@ -448,6 +448,14 @@ class CreateCommand(BaseCommand):
                                   class_name=class_name),
             mode=0o755)
 
+        self._write_file(
+            os.path.join(root_dir, 'pyproject.toml'),
+            self._create_pyproject_toml(package_name=package_name))
+
+        self._write_file(
+            os.path.join(root_dir, 'conftest.py'),
+            self._create_conftest_py())
+
         # Create the extension source files.
         self._write_file(os.path.join(ext_dir, '__init__.py'), '')
 
@@ -728,6 +736,55 @@ class CreateCommand(BaseCommand):
             'package_name': package_name,
             'version': version,
         }
+
+    def _create_pyproject_toml(
+        self,
+        package_name: str,
+    ) -> str:
+        """Create the content for a pyproject.toml file.
+
+        Args:
+            package_name (str):
+                The name of the package.
+
+        Returns:
+            str:
+            The resulting content for the file.
+        """
+        return f"""
+            [tool.pytest.ini_options]
+            DJANGO_SETTINGS_MODULE = "reviewboard.settings"
+            django_debug_mode = false
+
+            python_files = ["tests.py", "test_*.py"]
+            python_classes = ["*Tests"]
+            python_functions = ["test_*"]
+            pythonpath = "."
+            testpaths = ["{package_name}"]
+
+            env = [
+                "RB_RUNNING_TESTS=1",
+                "RBSSH_STORAGE_BACKEND=reviewboard.ssh.storage.FileSSHStorage",
+            ]
+
+            addopts = ["--reuse-db"]
+
+            required_plugins = [
+                "pytest-django",
+                "pytest-env",
+            ]
+        """
+
+    def _create_conftest_py(self) -> str:
+        """Return the content for a conftest.py file.
+
+        Returns:
+            str:
+            The resulting content for the file.
+        """
+        return """
+            pytest_plugins = ['reviewboard.testing.pytest_fixtures']
+        """
 
     def _create_extension_py(self, name, package_name, class_name, summary,
                              configurable, has_static_media):
