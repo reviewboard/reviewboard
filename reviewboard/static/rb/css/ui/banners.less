@@ -112,6 +112,7 @@
     display: flex;
     flex-direction: column;
     padding: 0 @banner-padding;
+    position: relative;
 
     .-has-draft & {
       background: @draft-color;
@@ -198,6 +199,12 @@
       margin-left: -1px;
       min-width: 30em;
     }
+
+    .rb-c-menu__item:not(.rb-c-button) {
+      &:focus, &:hover {
+        background: @draft-hover-color;
+      }
+    }
   }
 
   /**
@@ -239,10 +246,25 @@
   &__mode,
   #action-review-menu > a {
     box-sizing: border-box;
-    display: inline-block;
+    display: block;
     font-size: 9pt;
     font-weight: bold;
     padding: @banner-padding;
+  }
+
+  /*
+   * This makes sure that items in the review menu are clickable across
+   * their entire breadth.
+   */
+  #action-review-menu .rb-c-menu__item {
+    padding: 0;
+
+    & > a {
+      @_menu-vars: #rb-ns-ui.menus();
+
+      display: inline-block;
+      padding: @_menu-vars[@item-padding-vert] @_menu-vars[@item-padding-horiz];
+    }
   }
 
   /**
@@ -288,6 +310,7 @@
 
     &__review {
       padding: 0;
+      z-index: @z-index-menu;
     }
   }
 });

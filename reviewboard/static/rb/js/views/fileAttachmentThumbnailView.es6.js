@@ -228,6 +228,24 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
             });
         }
 
+        if (!this.options.renderThumbnail) {
+            /*
+             * Add any hooks. If renderThumbnail is true then the hooks will
+             * have already been added.
+            */
+            RB.FileAttachmentThumbnailContainerHook.each(hook => {
+                const HookViewType = hook.get('viewType');
+                const hookView = new HookViewType({
+                    el: this.el,
+                    extension: hook.get('extension'),
+                    fileAttachment: this.model,
+                    thumbnailView: this,
+                });
+
+                hookView.render();
+            });
+        }
+
         return this;
     },
 
@@ -238,6 +256,48 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         this.$el
             .css('opacity', 0)
             .fadeTo(1000, 1);
+    },
+
+    /**
+     * Add a new action to the actions menu.
+     *
+     * Args:
+     *     appendToClass (str):
+     *         The class of an existing action item for which the new
+     *         action item will follow. In the actions menu list, the
+     *         new action will appear as the next item after this action.
+     *
+     *     itemClass (str):
+     *         The class of the new action, to set on the list element
+     *         that wraps the action. If an action of this class already
+     *         exists, it will be removed and replaced by this new action.
+     *
+     *     itemHTML (str):
+     *         The HTML of the new action item.
+     *
+     * Returns:
+     *     jQuery:
+     *     The element of the new action item.
+     */
+    addAction(appendToClass, itemClass, itemHTML) {
+        this._$actions.find(`.${itemClass}`).remove();
+
+        const itemTemplate = _.template(dedent`
+            <li class="<%= itemClass %>">
+             <%=  itemHTML %>
+            </li>
+        `);
+        const $appendItem = this._$actions
+            .find(`.${appendToClass}`).closest('li');
+
+        const $action = $(itemTemplate({
+            itemClass: itemClass,
+            itemHTML: itemHTML,
+        }));
+
+        $appendItem.after($action);
+
+        return $action;
     },
 
     /**
@@ -372,6 +432,22 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
             commentText: gettext('Comment'),
             updateText: gettext('Update'),
         }, this.model.attributes)));
+
+        /*
+        * Some hooks may depend on the elements being added above, so
+        * render the hooks here too.
+        */
+        RB.FileAttachmentThumbnailContainerHook.each(hook => {
+            const HookViewType = hook.get('viewType');
+            const hookView = new HookViewType({
+                el: this.el,
+                extension: hook.get('extension'),
+                fileAttachment: this.model,
+                thumbnailView: this,
+            });
+
+            hookView.render();
+        });
     },
 
     /**

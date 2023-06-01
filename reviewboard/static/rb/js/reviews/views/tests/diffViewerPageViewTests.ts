@@ -18,6 +18,7 @@ import {
 import {
     UnifiedBannerView,
 } from 'reviewboard/reviews/views/unifiedBannerView';
+import { UserSession } from 'reviewboard/common/models/userSession';
 
 
 suite('rb/pages/views/DiffViewerPageView', function() {
@@ -83,7 +84,16 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
     const pageTemplate = dedent`
         <div>
-         <div id="review-banner"></div>
+         <div id="review-banner">
+          <div class="banner">
+           <h1>You have a pending review.</h1>
+           <input id="review-banner-edit" type="button"
+                  value="Edit Review" />
+           <div id="review-banner-publish-container"></div>
+           <input id="review-banner-discard" type="button"
+                  value="Discard" />
+          </div>
+         </div>
          <div id="unified-banner">
           <div class="rb-c-unified-banner__mode-selector"></div>
           <div class="rb-c-unified-banner__dock"></div>
@@ -152,8 +162,8 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
         /* Ensure that tests don't alter cookies. Set defaults. */
         spyOn($, 'cookie');
-        RB.UserSession.instance.set('canToggleExtraWhitespace', false);
-        RB.UserSession.instance.set('diffsShowExtraWhitespace', true);
+        UserSession.instance.set('canToggleExtraWhitespace', false);
+        UserSession.instance.set('diffsShowExtraWhitespace', true);
     });
 
     afterEach(function() {
@@ -268,7 +278,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
             it('With canToggleExtraWhitespace=true and ' +
                'diffsShowExtraWhitespace=true', function() {
-                RB.UserSession.instance.set('diffsShowExtraWhitespace', true);
+                UserSession.instance.set('diffsShowExtraWhitespace', true);
                 setupPageView({
                     canToggleExtraWhitespace: true,
                 });
@@ -340,7 +350,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             });
 
             it('Show extra whitespace', function() {
-                RB.UserSession.instance.set('diffsShowExtraWhitespace', false);
+                UserSession.instance.set('diffsShowExtraWhitespace', false);
                 setupPageView({
                     canToggleExtraWhitespace: true,
                 });
@@ -352,13 +362,13 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
                 $button.click();
 
-                expect(RB.UserSession.instance.get('diffsShowExtraWhitespace'))
+                expect(UserSession.instance.get('diffsShowExtraWhitespace'))
                     .toBeTrue();
                 expect($button.text().trim()).toBe('Hide extra whitespace');
             });
 
             it('Hide extra whitespace', function() {
-                RB.UserSession.instance.set('diffsShowExtraWhitespace', true);
+                UserSession.instance.set('diffsShowExtraWhitespace', true);
                 setupPageView({
                     canToggleExtraWhitespace: true,
                 });
@@ -370,7 +380,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
                 $button.click();
 
-                expect(RB.UserSession.instance.get('diffsShowExtraWhitespace'))
+                expect(UserSession.instance.get('diffsShowExtraWhitespace'))
                     .toBeFalse();
                 expect($button.text().trim()).toBe('Show extra whitespace');
             });

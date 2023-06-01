@@ -5,7 +5,10 @@ import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
 import { EnabledFeatures } from 'reviewboard/common';
 import { PageView, PageViewOptions } from 'reviewboard/common/views/pageView';
+import { UserSession } from 'reviewboard/common/models/userSession';
 
+import { ReviewRequestEditor } from '../models/reviewRequestEditor';
+import { ReviewRequestEditorView } from './reviewRequestEditorView';
 import { ReviewablePage } from '../models/reviewablePageModel';
 import { UnifiedBanner } from '../models/unifiedBanner';
 import { UnifiedBannerView } from './unifiedBannerView';
@@ -97,6 +100,21 @@ class UpdatesBubbleView extends BaseView<
     }
 
     /**
+     * Return data to use for assessing cross-tab page reloads.
+     *
+     * This returns a filter blob that will be recognized by all other tabs
+     * that have the same review request.
+     *
+     * Version Added:
+     *     6.0
+     */
+    getReloadData(): unknown {
+        return {
+            'review-request': this.model.get('reviewRequest').id,
+        };
+    }
+
+    /**
      * Open the bubble on the screen.
      */
     open() {
@@ -156,8 +174,8 @@ export interface ReviewablePageViewOptions extends PageViewOptions {
     /** The model attributes for a new RB.ReviewRequest instance. */
     reviewRequestData?: object; // TODO: update once ReviewRequest is TS
 
-    /** The model attributes for a new RB.ReviewRequestEditor instance. */
-    editorData?: object; // TODO: update once ReviewRequestEditor is TS
+    /** The model attributes for a new ReviewRequestEditor instance. */
+    editorData?: Partial<ReviewRequestEditorAttrs>;
 
     /** The last known timestamp for activity on this review request. */
     lastActivityTimestamp?: string;
@@ -174,7 +192,9 @@ export interface ReviewablePageViewOptions extends PageViewOptions {
  * request, such as the diff viewer, review UI, or the review request page
  * itself.
  */
-@spina
+@spina({
+    prototypeAttrs: ['events'],
+})
 export class ReviewablePageView<
     TModel extends ReviewablePage = ReviewablePage,
     TElement extends HTMLDivElement = HTMLDivElement,
@@ -182,9 +202,9 @@ export class ReviewablePageView<
         ReviewablePageViewOptions
 > extends PageView<TModel, TElement, TExtraViewOptions> {
     static events: EventsHash = {
-        'click #action-edit-review': '_onEditReviewClicked',
+        'click #action-legacy-edit-review': '_onEditReviewClicked',
         'click #action-legacy-add-general-comment': 'addGeneralComment',
-        'click #action-ship-it': 'shipIt',
+        'click #action-legacy-ship-it': 'shipIt',
         'click .rb-o-mobile-menu-label': '_onMenuClicked',
     };
 
@@ -193,7 +213,7 @@ export class ReviewablePageView<
      **********************/
 
     /** The review request editor. */
-    reviewRequestEditorView: RB.ReviewRequestEditorView;
+    reviewRequestEditorView: ReviewRequestEditorView;
 
     /** The draft review banner, if present. */
     draftReviewBanner: RB.DraftReviewBannerview;
@@ -234,7 +254,7 @@ export class ReviewablePageView<
 
         RB.DnDUploader.create();
 
-        this.reviewRequestEditorView = new RB.ReviewRequestEditorView({
+        this.reviewRequestEditorView = new ReviewRequestEditorView({
             el: $('#review-request'),
             model: this.model.reviewRequestEditor,
         });
@@ -259,7 +279,7 @@ export class ReviewablePageView<
          */
         RB.NotificationManager.instance.setup();
 
-        if (RB.UserSession.instance.get('authenticated')) {
+        if (UserSession.instance.get('authenticated')) {
             this.#starManager = new RB.StarManagerView({
                 el: this.$('.star').parent(),
                 model: new RB.StarManager(),
@@ -284,7 +304,7 @@ export class ReviewablePageView<
         const reviewRequest = this.model.get('reviewRequest');
 
         if (EnabledFeatures.unifiedBanner) {
-            if (RB.UserSession.instance.get('authenticated')) {
+            if (UserSession.instance.get('authenticated')) {
                 this.unifiedBanner = new UnifiedBannerView({
                     el: $('#unified-banner'),
                     model: new UnifiedBanner({
@@ -318,7 +338,7 @@ export class ReviewablePageView<
      *     This object, for chaining.
      */
     remove(): this {
-        if (!EnabledFeatures.unifiedBanner) {
+        if (this.draftReviewBanner) {
             this.draftReviewBanner.remove();
         }
 
@@ -333,10 +353,10 @@ export class ReviewablePageView<
      * Return the review request editor view.
      *
      * Returns:
-     *     RB.ReviewRequestEditorView:
+     *     ReviewRequestEditorView:
      *     The review request editor view.
      */
-    getReviewRequestEditorView() {
+    getReviewRequestEditorView(): ReviewRequestEditorView {
         return this.reviewRequestEditorView;
     }
 
@@ -344,10 +364,10 @@ export class ReviewablePageView<
      * Return the review request editor model.
      *
      * Returns:
-     *     RB.ReviewRequestEditor:
+     *     ReviewRequestEditor:
      *     The review request editor model.
      */
-    getReviewRequestEditorModel() {
+    getReviewRequestEditorModel(): ReviewRequestEditor {
         return this.model.reviewRequestEditor;
     }
 
@@ -485,7 +505,7 @@ export class ReviewablePageView<
         const pendingReview = this.model.get('pendingReview');
         const comment = pendingReview.createGeneralComment(
             undefined,
-            RB.UserSession.instance.get('commentsOpenAnIssue'));
+            UserSession.instance.get('commentsOpenAnIssue'));
 
         if (!EnabledFeatures.unifiedBanner) {
             this.listenTo(comment, 'saved',

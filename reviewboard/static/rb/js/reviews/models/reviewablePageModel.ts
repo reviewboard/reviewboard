@@ -5,6 +5,11 @@ import { ModelAttributes, spina } from '@beanbag/spina';
 
 import { Page } from 'reviewboard/common/models/pageModel';
 
+import {
+    ReviewRequestEditor,
+    ReviewRequestEditorAttrs,
+} from './reviewRequestEditor';
+
 
 /** Attributes for the ReviewablePage model. */
 export interface ReviewablePageAttrs extends ModelAttributes {
@@ -20,7 +25,7 @@ export interface ReviewablePageAttrs extends ModelAttributes {
     checkUpdatesType?: string;
 
     /** Data to pass into the review request editor. */
-    editorData?: object; // TODO: update once ReviewRequestEditor is TS
+    editorData?: Partial<ReviewRequestEditorAttrs>;
 
     /**
      * A string-encoded timestamp for the last activity on the review request.
@@ -65,14 +70,6 @@ export interface ReviewablePageParseData {
  *
  * This can be used directly or can be subclassed in order to provide
  * additional logic.
- *
- * Attributes:
- *     commentIssueManager (RB.CommentIssueManager):
- *         Manages the issue states for published comments.
- *
- *     reviewRequestEditor (RB.ReviewRequestEditor):
- *         Manages the edit states and capabilities for the review request
- *         for the page.
  */
 @spina
 export class ReviewablePage<
@@ -95,7 +92,7 @@ export class ReviewablePage<
     commentIssueManager: RB.CommentIssueManager;
 
     /** Manages the edit states and capabilities for the review request. */
-    reviewRequestEditor: RB.ReviewRequestEditor;
+    reviewRequestEditor: ReviewRequestEditor;
 
     /**
      * Initialize the page.
@@ -142,7 +139,7 @@ export class ReviewablePage<
                 model: RB.FileAttachment,
             });
 
-        this.reviewRequestEditor = new RB.ReviewRequestEditor(
+        this.reviewRequestEditor = new ReviewRequestEditor(
             _.defaults({
                 commentIssueManager: this.commentIssueManager,
                 fileAttachments: fileAttachments,

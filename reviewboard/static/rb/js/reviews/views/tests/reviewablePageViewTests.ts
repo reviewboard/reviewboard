@@ -27,12 +27,11 @@ suite('rb/pages/views/ReviewablePageView', function() {
         <div id="unified-banner">
          <div class="rb-c-unified-banner__mode-selector"></div>
         </div>
-        <a href="#" id="action-edit-review">Edit Review</a>
-        <a href="#" id="action-ship-it">Ship It</a>
+        <a href="#" id="action-legacy-edit-review">Edit Review</a>
+        <a href="#" id="action-legacy-ship-it">Ship It</a>
     `;
 
     let $editReview;
-    let $shipIt;
     let page;
     let pageView;
 
@@ -43,8 +42,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
         RB.DnDUploader.instance = null;
 
-        $editReview = $container.find('#action-edit-review');
-        $shipIt = $container.find('#action-ship-it');
+        $editReview = $container.find('#action-legacy-edit-review');
 
         page = new ReviewablePage({
             checkForUpdates: false,
@@ -72,6 +70,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
         spyOn(reviewRequest, 'ready').and.resolveTo();
         spyOn(reviewRequest.draft, 'ready').and.resolveTo();
         spyOn(page.get('pendingReview'), 'ready').and.resolveTo();
+        spyOn(RB, 'navigateTo');
 
         pageView.render();
     });
@@ -127,6 +126,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
         it('Edit Review', function() {
             if (EnabledFeatures.unifiedBanner) {
                 pending();
+
                 return;
             }
 
@@ -148,9 +148,10 @@ suite('rb/pages/views/ReviewablePageView', function() {
                 pendingReview = page.get('pendingReview');
             });
 
-            it('Confirmed', function(done) {
+            it('Confirmed', async function() {
                 if (EnabledFeatures.unifiedBanner) {
                     pending();
+
                     return;
                 }
 
@@ -166,24 +167,24 @@ suite('rb/pages/views/ReviewablePageView', function() {
                             expect(pendingReview.publish).toHaveBeenCalled();
                             expect(pendingReview.save).toHaveBeenCalled();
                             expect(pendingReview.get('shipIt')).toBe(true);
-                            expect(pendingReview.get('bodyTop')).toBe('Ship It!');
-
-                            done();
+                            expect(pendingReview.get('bodyTop'))
+                                .toBe('Ship It!');
                         });
                 }
 
-                $shipIt.click();
+                await pageView.shipIt();
             });
 
-            it('Canceled', function() {
+            it('Canceled', async function() {
                 if (EnabledFeatures.unifiedBanner) {
                     pending();
+
                     return;
                 }
 
                 spyOn(window, 'confirm').and.returnValue(false);
 
-                $shipIt.click();
+                await pageView.shipIt();
 
                 expect(window.confirm).toHaveBeenCalled();
                 expect(pendingReview.ready).not.toHaveBeenCalled();

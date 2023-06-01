@@ -55,8 +55,8 @@ an appropriate bundle (such as the :file:`js/extension.js` shown above):
     window.SampleExtensionProject = {};
 
     SampleExtensionProject.Extension = RB.Extension.extend({
-        initialize: function() {
-            RB.Extension.initialize.call(this);
+        initialize() {
+            RB.Extension.prototype.initialize.call(this);
 
             /* Your setup goes here. */
         }
@@ -86,8 +86,8 @@ so:
 .. code-block:: javascript
 
     SampleExtensionProject.Extension = RB.Extension.extend({
-        initialize: function() {
-            RB.Extension.initialize.call(this);
+        initialize() {
+            RB.Extension.prototype.initialize.call(this);
 
             new RB.SomeExampleHook({
                 extension: this,
@@ -202,8 +202,8 @@ Here's an example of how extension settings can work:
     .. code-block:: javascript
 
         SampleExtensionProject.Extension = RB.Extension.extend({
-            initialize: function() {
-                RB.Extension.initialize.call(this);
+            initialize() {
+                RB.Extension.prototype.initialize.call(this);
 
                 if (this.get('settings').feature_enabled) {
                     ...
@@ -265,10 +265,10 @@ Backbone.js attribute accessors:
 .. code-block:: javascript
 
     SampleExtensionProject.Extension = RB.Extension.extend({
-        initialize: function() {
-            var someState;
+        initialize() {
+            let someState;
 
-            RB.Extension.initialize.call(this);
+            RB.Extension.prototype.initialize.call(this);
 
             someState = this.get('some_state');
 

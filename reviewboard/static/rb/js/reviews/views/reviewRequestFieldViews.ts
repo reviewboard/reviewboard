@@ -1,49 +1,91 @@
-(function() {
+/**
+ * Views for review request fields.
+ */
+
+import { BaseView, spina } from '@beanbag/spina';
+
+import {
+    GetDraftFieldOptions,
+    ReviewRequestEditor,
+    SetDraftFieldOptions,
+} from '../models/reviewRequestEditor';
+import { ReviewRequestEditorView } from '../views/reviewRequestEditorView';
 
 
-const Fields = {};
+declare const SITE_ROOT: string;
+
+
+/** Options for field views. */
+interface BaseFieldViewOptions {
+    /** The ID of the field. */
+    fieldID: string;
+
+    /** The name of the JSON field to use, if available. */
+    jsonFieldName?: string;
+}
 
 
 /**
  * Base class for all field views.
  */
-Fields.BaseFieldView = Backbone.View.extend({
+@spina({
+    prototypeAttrs: [
+        'editableProp',
+        'useExtraData',
+    ],
+})
+export class BaseFieldView extends BaseView<
+    ReviewRequestEditor,
+    HTMLDivElement,
+    BaseFieldViewOptions
+> {
     /**
      * The name of the property in the model for if this field is editable.
      */
-    editableProp: 'editable',
+    static editableProp = 'editable';
 
     /** Whether the contents of the field should be stored in extraData. */
-    useExtraData: true,
+    static useExtraData = true;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The ID of the field. */
+    fieldID: string;
+
+    /** The name to use when storing the data as JSON. */
+    jsonFieldName: string;
+
+    /** The name of to use when storing the data in a model attribute. */
+    _fieldName: string;
+
+    /** The review request editor view. */
+    reviewRequestEditorView: ReviewRequestEditorView;
 
     /**
      * Initialize the view.
      *
      * Args:
-     *     options (object):
+     *     options (BaseFieldViewOptions):
      *         Options for the view.
-     *
-     * Option Args:
-     *     fieldID (string):
-     *         The ID of the field.
      */
-    initialize(options) {
+    initialize(options: BaseFieldViewOptions) {
         this.fieldID = options.fieldID;
         this.jsonFieldName = options.jsonFieldName ||
                              this.jsonFieldName ||
                              this.fieldID;
-        this._fieldName = undefined;
         this.$el.data('field-id', this.fieldID);
-    },
+    }
 
     /**
      * The name of the attribute within the model.
      *
      * Returns:
      *     string:
-     *     The namee of the attribute that this field will reflect.
+     *     The name of the attribute that this field will reflect.
      */
-    fieldName() {
+    fieldName(): string {
         /*
          * This implementation will convert names with underscores to camel
          * case. This covers the typical naming between Python and JavaScript.
@@ -56,7 +98,7 @@ Fields.BaseFieldView = Backbone.View.extend({
         }
 
         return this._fieldName;
-    },
+    }
 
     /**
      * Load the stored value for the field.
@@ -66,14 +108,16 @@ Fields.BaseFieldView = Backbone.View.extend({
      * (``useExtraData === true``).
      *
      * Args:
-     *     options (object):
+     *     options (GetDraftFieldOptions):
      *         Options for :js:func:`RB.ReviewRequestEditor.getDraftField`.
      *
      * Returns:
      *     *:
      *     The stored value for the field.
      */
-    _loadValue(options) {
+    _loadValue(
+        options: GetDraftFieldOptions = {},
+    ): unknown {
         const fieldName = (this.useExtraData
                            ? this.jsonFieldName
                            : _.result(this, 'fieldName'));
@@ -83,7 +127,7 @@ Fields.BaseFieldView = Backbone.View.extend({
             _.defaults({
                 useExtraData: this.useExtraData,
             }, options));
-    },
+    }
 
     /**
      * Save a new value for the field.
@@ -92,14 +136,17 @@ Fields.BaseFieldView = Backbone.View.extend({
      *     value (*):
      *         The new value for the field.
      *
-     *     options (object):
+     *     options (SetDraftFieldOptions):
      *         Options for the save operation.
      *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    _saveValue(value, options) {
+    _saveValue(
+        value: unknown,
+        options: SetDraftFieldOptions = {},
+    ): Promise<void> {
         return this.model.setDraftField(
             _.result(this, 'fieldName'),
             value,
@@ -107,7 +154,7 @@ Fields.BaseFieldView = Backbone.View.extend({
                 jsonFieldName: this.jsonFieldName,
                 useExtraData: this.useExtraData,
             }, options));
-    },
+    }
 
     /**
      * Return whether the field has an unsaved editor open.
@@ -118,9 +165,9 @@ Fields.BaseFieldView = Backbone.View.extend({
      *     boolean:
      *     Whether the field is unsaved.
      */
-    needsSave() {
+    needsSave(): boolean {
         return false;
-    },
+    }
 
     /**
      * Finish the field's save operation.
@@ -128,26 +175,31 @@ Fields.BaseFieldView = Backbone.View.extend({
      * This should be overridden by subclasses, if necessary.
      */
     finishSave() {
-    },
-});
+        // Intentionally left blank.
+    }
+}
 
 
 /**
  * A field view for text-based fields.
  */
-Fields.TextFieldView = Fields.BaseFieldView.extend({
+@spina({
+    prototypeAttrs: [
+        'autocomplete',
+        'multiline',
+        'useEditIconOnly',
+    ],
+})
+export class TextFieldView extends BaseFieldView {
     /**
      * Autocomplete definitions.
      *
      * This should be overridden by subclasses.
      */
-    autocomplete: null,
+    static autocomplete = null;
 
     /** Whether the view is multi-line or single line. */
-    multiline: false,
-
-    /** Whether the field allows Markdown-formatted text. */
-    allowRichText: false,
+    static multiline = false;
 
     /**
      * Whether edits should be triggered only by clicking on the icon.
@@ -155,7 +207,20 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
      * If this is true, edits can only be triggered by clicking on the icon.
      * If this is false, clicks on the field itself will also trigger an edit.
      */
-    useEditIconOnly: false,
+    static useEditIconOnly = false;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** Whether the field allows Markdown-formatted text. */
+    allowRichText = false;
+
+    /** The inline editor view. */
+    inlineEditorView: RB.InlineEditorView;
+
+    /** The field name for storing the text type. */
+    jsonTextTypeFieldName: string;
 
     /**
      * The model attribute for if this field is rich text.
@@ -168,26 +233,26 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
      *     The name of the model atribute indicating whether the field contains
      *     rich text.
      */
-    richTextAttr() {
+    richTextAttr(): string {
         return this.allowRichText
                ? `${_.result(this, 'fieldName')}RichText`
                : null;
-    },
+    }
 
     /**
      * Initialize the view.
      *
      * Args:
-     *     options (object):
+     *     options (BaseFieldViewOptions):
      *         Options for the view. See the parent class for details.
      */
-    initialize(options) {
-        Fields.BaseFieldView.prototype.initialize.call(this, options);
+    initialize(options: BaseFieldViewOptions) {
+        super.initialize(options);
 
         this.jsonTextTypeFieldName = (this.jsonFieldName === 'text'
                                       ? 'text_type'
                                       : `${this.jsonFieldName}_text_type`);
-    },
+    }
 
     /**
      * Return the type to use for the inline editor view.
@@ -196,49 +261,45 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
      *     function:
      *     The constructor for the inline editor class to instantiate.
      */
-    _getInlineEditorClass() {
+    _getInlineEditorClass(): string {
         return (this.allowRichText
                 ? RB.RichTextInlineEditorView
                 : RB.InlineEditorView);
-    },
+    }
 
     /**
      * Render the view.
-     *
-     * Returns:
-     *     RB.ReviewRequestFields.TextFieldView:
-     *     This object, for chaining.
      */
-    render() {
+    onInitialRender() {
         if (!this.$el.hasClass('editable')) {
-            return this;
+            return;
         }
 
         const fieldName = _.result(this, 'fieldName');
         const EditorClass = this._getInlineEditorClass();
 
         const inlineEditorOptions = {
-            el: this.$el,
-            formClass: `${this.$el.prop('id')}-editor`,
-            editIconClass: 'rb-icon rb-icon-edit',
-            enabled: this.model.get(this.editableProp),
-            multiline: this.multiline,
-            useEditIconOnly: this.useEditIconOnly,
-            showRequiredFlag: this.$el.hasClass('required'),
             deferEventSetup: this.autocomplete !== null,
+            editIconClass: 'rb-icon rb-icon-edit',
+            el: this.$el,
+            enabled: this.model.get(this.editableProp),
+            formClass: `${this.$el.prop('id')}-editor`,
+            multiline: this.multiline,
+            showRequiredFlag: this.$el.hasClass('required'),
+            useEditIconOnly: this.useEditIconOnly,
         };
 
         if (this.allowRichText) {
             _.extend(inlineEditorOptions, {
+                hasRawValue: true,
+                matchHeight: false,
+                rawValue: this._loadValue({
+                    useRawTextValue: true,
+                }) || '',
                 textEditorOptions: {
                     minHeight: 0,
                     richText: this._loadRichTextValue(),
                 },
-                matchHeight: false,
-                hasRawValue: true,
-                rawValue: this._loadValue({
-                    useRawTextValue: true,
-                }) || '',
             });
         }
 
@@ -299,9 +360,7 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
 
         this.listenTo(this.model, `fieldChanged:${fieldName}`,
                       this._formatField);
-
-        return this;
-    },
+    }
 
     /**
      * Convert an item to a hyperlink.
@@ -330,7 +389,14 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
      *     jQuery:
      *     The resulting link element wrapped in jQuery.
      */
-    _convertToLink(item, options={}) {
+    _convertToLink(
+        item: unknown,
+        options: {
+            cssClass?: string;
+            makeItemText?: (unknown) => string;
+            makeItemURL?: (unknown) => string;
+        } = {},
+    ): JQuery {
         if (!item) {
             return $();
         }
@@ -346,7 +412,7 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
         }
 
         return $link;
-    },
+    }
 
     /**
      * Add auto-complete functionality to the field.
@@ -357,6 +423,19 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
 
         this.inlineEditorView.$field
             .rbautocomplete({
+                cmp: ac.cmp,
+                error: xhr => {
+                    let text;
+
+                    try {
+                        text = JSON.parse(xhr.responseText).err.msg;
+                    } catch (e) {
+                        text = `HTTP ${xhr.status} ${xhr.statusText}`;
+                    }
+
+                    alert(text);
+                },
+                extraParams: ac.extraParams,
                 formatItem: data => {
                     let s = data[ac.nameKey];
 
@@ -380,27 +459,14 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
 
                         return {
                             data: item,
-                            value: item[ac.nameKey],
                             result: item[ac.nameKey],
+                            value: item[ac.nameKey],
                         };
                     });
                 },
                 url: SITE_ROOT + reviewRequest.get('localSitePrefix') +
                      'api/' + (ac.resourceName || ac.fieldName) + '/',
-                extraParams: ac.extraParams,
-                cmp: ac.cmp,
                 width: 350,
-                error: xhr => {
-                    let text;
-
-                    try {
-                        text = JSON.parse(xhr.responseText).err.msg;
-                    } catch (e) {
-                        text = `HTTP ${xhr.status} ${xhr.statusText}`;
-                    }
-
-                    alert(text);
-                },
             })
             .on('autocompleteshow', () => {
                 /*
@@ -422,7 +488,7 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
                         .appendTo(resultsPane);
                 }
             });
-    },
+    }
 
     /**
      * Format the contents of the field.
@@ -440,7 +506,7 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
         } else {
             this.$el.text(value);
         }
-    },
+    }
 
     /**
      * Return whether the field has an unsaved editor open.
@@ -449,16 +515,45 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
      *     boolean:
      *     Whether the field is unsaved.
      */
-    needsSave() {
+    needsSave(): boolean {
         return this.inlineEditorView && this.inlineEditorView.isDirty();
-    },
+    }
 
     /**
      * Finish the field's save operation.
      */
-    finishSave() {
-        this.inlineEditorView.submit();
-    },
+    finishSave(): Promise<void> {
+        const value = this.inlineEditorView.submit({
+            preventEvents: true,
+        });
+
+        if (value) {
+            this.trigger('resize');
+            this.model.decr('editCount');
+
+            const saveOptions = {
+                allowMarkdown: this.allowRichText,
+            };
+
+            if (this.allowRichText) {
+                saveOptions.richText =
+                    this.inlineEditorView.textEditor.richText;
+                saveOptions.jsonTextTypeFieldName = this.jsonTextTypeFieldName;
+            }
+
+            return this._saveValue(value, saveOptions)
+                .then(() => {
+                    this._formatField();
+                    this.trigger('fieldSaved');
+                })
+                .catch(err => {
+                    this._formatField();
+                    this.trigger('fieldError', err.message);
+                });
+        } else {
+            return Promise.resolve();
+        }
+    }
 
     /**
      * Load the rich text value for the field.
@@ -472,7 +567,7 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
      *     Whether the field is set for rich text. This will be
      *     ``undefined`` if an explicit value isn't stored.
      */
-    _loadRichTextValue() {
+    _loadRichTextValue(): boolean {
         if (this.useExtraData) {
             const textTypeFieldName = this.jsonTextTypeFieldName;
             const textType = this.model.getDraftField(
@@ -495,26 +590,32 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
         } else {
             return this.model.getDraftField(_.result(this, 'richTextAttr'));
         }
-    },
-});
+    }
+}
 
 
 /**
  * A field view for multiline text-based fields.
  */
-Fields.MultilineTextFieldView = Fields.TextFieldView.extend({
-    multiline: true,
-    allowRichText: null,
+@spina({
+    prototypeAttrs: [
+        'multiline',
+    ],
+})
+export class MultilineTextFieldView extends TextFieldView {
+    static multiline = true;
+
+    allowRichText = null;
 
     /**
      * Initialize the view.
      *
      * Args:
-     *     options (object):
+     *     options (BaseFieldViewOptions):
      *         Options for the view.
      */
-    initialize(options) {
-        Fields.TextFieldView.prototype.initialize.call(this, options);
+    initialize(options: BaseFieldViewOptions) {
+        super.initialize(options);
 
         /*
          * If this field is coming from an extension which doesn't specify any
@@ -537,7 +638,7 @@ Fields.MultilineTextFieldView = Fields.TextFieldView.extend({
                     (this.$el.hasClass('rich-text') ? 'markdown' : 'plain');
             }
         }
-    },
+    }
 
     /**
      * Linkify a block of text.
@@ -554,7 +655,11 @@ Fields.MultilineTextFieldView = Fields.TextFieldView.extend({
      *         The new text to format into the element. If not specified, the
      *         existing contents of the element are used.
      */
-    formatText(options) {
+    formatText(
+        options: {
+            newText?: string;
+        } = {},
+    ) {
         const reviewRequest = this.model.get('reviewRequest');
 
         options = _.defaults({
@@ -569,22 +674,15 @@ Fields.MultilineTextFieldView = Fields.TextFieldView.extend({
         RB.formatText(this.$el, options);
 
         this.$('img').on('load', () => this.trigger('resize'));
-    },
+    }
 
     /**
      * Render the view.
-     *
-     * Returns:
-     *     RB.ReviewRequestFields.MultilineTextFieldView:
-     *     This object, for chaining.
      */
-    render() {
-        Fields.TextFieldView.prototype.render.call(this);
-
+    onInitialRender() {
+        super.onInitialRender();
         this.formatText();
-
-        return this;
-    },
+    }
 
     /**
      * Format the value into the field.
@@ -593,19 +691,22 @@ Fields.MultilineTextFieldView = Fields.TextFieldView.extend({
      *     data (object):
      *         The new value of the field.
      */
-    formatValue(data) {
+    formatValue(data: string) {
         if (this.allowRichText) {
             this.formatText({ newText: data });
         }
-    },
-});
+    }
+}
 
 
 /**
  * A field view for fields that include multiple comma-separated values.
  */
-Fields.CommaSeparatedValuesTextFieldView = Fields.TextFieldView.extend({
-    useEditIconOnly: true,
+@spina({
+    prototypeAttrs: ['useEditIconOnly'],
+})
+export class CommaSeparatedValuesTextFieldView extends TextFieldView {
+    static useEditIconOnly = true;
 
     /**
      * Convert an array of items to a list of hyperlinks.
@@ -633,7 +734,14 @@ Fields.CommaSeparatedValuesTextFieldView = Fields.TextFieldView.extend({
      *     jQuery:
      *     The resulting link elements in a jQuery list.
      */
-    _urlizeList(list, options={}) {
+    _urlizeList(
+        list: unknown[],
+        options: {
+            cssClass?: string;
+            makeItemText?: (unknown) => string;
+            makeItemURL?: (unknown) => string;
+        } = {},
+    ): JQuery {
         let $links = $();
 
         if (list) {
@@ -647,7 +755,7 @@ Fields.CommaSeparatedValuesTextFieldView = Fields.TextFieldView.extend({
         }
 
         return $links;
-    },
+    }
 
     /**
      * Format the value into the field.
@@ -656,92 +764,75 @@ Fields.CommaSeparatedValuesTextFieldView = Fields.TextFieldView.extend({
      *     data (Array):
      *         The new value of the field.
      */
-    formatValue(data) {
+    formatValue(data?: string[]) {
         data = data || [];
         this.$el.html(data.join(', '));
-    },
-});
+    }
+}
 
 
 /**
  * A field view for checkbox fields.
  */
-Fields.CheckboxFieldView = Fields.BaseFieldView.extend({
+@spina
+export class CheckboxFieldView extends BaseFieldView {
     /**
      * Render the field.
-     *
-     * Returns:
-     *     RB.ReviewRequestFields.CheckboxFieldView:
-     *     This object, for chaining.
      */
-    render() {
-        Fields.BaseFieldView.prototype.render.call(this);
-
+    onInitialRender() {
         this.$el.change(() => {
             this._saveValue(this.$el.is(':checked'))
                 .then(() => this.trigger('fieldSaved'))
                 .catch(err => this.trigger('fieldError', err.message));
         });
-
-        return this;
-    },
-});
+    }
+}
 
 
 /**
  * A field view for dropdown fields.
  */
-Fields.DropdownFieldView = Fields.BaseFieldView.extend({
+@spina
+export class DropdownFieldView extends BaseFieldView {
     /**
      * Render the field.
-     *
-     * Returns:
-     *     RB.ReviewRequestFields.DropdownFieldView:
-     *     This object, for chaining.
      */
-    render() {
-        Fields.BaseFieldView.prototype.render.call(this);
+    onInitialRender() {
+        super.onInitialRender();
 
         this.$el.change(() => {
             this._saveValue(this.$el.val())
                 .then(() => this.trigger('fieldSaved'))
                 .catch(err => this.trigger('fieldError', err.message));
         });
-
-        return this;
-    },
-});
+    }
+}
 
 
 /**
  * A field view for date fields.
  */
-Fields.DateFieldView = Fields.TextFieldView.extend({
+@spina
+export class DateFieldView extends TextFieldView {
     /**
      * Render the field.
-     *
-     * Returns:
-     *     RB.ReviewRequestFields.DateFieldView:
-     *     This object, for chaining.
      */
-    render() {
-        Fields.TextFieldView.prototype.render.call(this);
+    onInitialRender() {
+        super.onInitialRender();
 
         this.inlineEditorView.$field
             .datepicker({
                 changeMonth: true,
                 changeYear: true,
                 dateFormat: $.datepicker.ISO_8601,
-                showButtonPanel: true,
                 onSelect: (dateText, instance) => {
                     if (dateText !== instance.lastVal) {
                         this.inlineEditorView._dirty = true;
                     }
                 },
+                showButtonPanel: true,
             });
-
-        return this;
-    },
+    }
 
     /**
      * Save a new value for the field.
@@ -757,7 +848,10 @@ Fields.DateFieldView = Fields.TextFieldView.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    _saveValue(value, options) {
+    _saveValue(
+        value: unknown,
+        options: SetDraftFieldOptions = {},
+    ): Promise<void> {
         const m = moment(value, 'YYYY-MM-DD', true);
 
         if (!m.isValid()) {
@@ -765,25 +859,30 @@ Fields.DateFieldView = Fields.TextFieldView.extend({
             this.$el.text('');
         }
 
-        return Fields.TextFieldView.prototype._saveValue.call(
-            this, value, options);
-    },
-});
+        return super._saveValue(value, options);
+    }
+}
 
 
 /**
  * The "Branch" field.
  */
-Fields.BranchFieldView = Fields.TextFieldView.extend({
-    useExtraData: false,
-});
+@spina({
+    prototypeAttrs: ['useExtraData'],
+})
+export class BranchFieldView extends TextFieldView {
+    static useExtraData = false;
+}
 
 
 /**
  * The "Bugs" field.
  */
-Fields.BugsFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
-    useExtraData: false,
+@spina({
+    prototypeAttrs: ['useExtraData'],
+})
+export class BugsFieldView extends CommaSeparatedValuesTextFieldView {
+    static useExtraData = false;
 
     /**
      * Format the value into the field.
@@ -792,7 +891,7 @@ Fields.BugsFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
      *     data (Array):
      *         The new value of the field.
      */
-    formatValue(data) {
+    formatValue(data: string[]) {
         data = data || [];
 
         const reviewRequest = this.model.get('reviewRequest');
@@ -802,26 +901,34 @@ Fields.BugsFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
             this.$el
                 .empty()
                 .append(this._urlizeList(data, {
+                    cssClass: 'bug',
                     makeItemURL: item => bugTrackerURL.replace(
                         '--bug_id--', item),
-                    cssClass: 'bug',
                 }))
                 .find('.bug').bug_infobox();
         } else {
             this.$el.text(data.join(', '));
         }
-    },
-});
+    }
+}
 
 
 /**
  * The change description field.
  */
-Fields.ChangeDescriptionFieldView = Fields.MultilineTextFieldView.extend({
-    allowRichText: true,
-    jsonFieldName: 'changedescription',
-    useExtraData: false,
-});
+@spina({
+    prototypeAttrs: ['useExtraData'],
+})
+export class ChangeDescriptionFieldView extends MultilineTextFieldView {
+    static useExtraData = false;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    allowRichText = true;
+    jsonFieldName = 'changedescription';
+}
 
 
 /**
@@ -830,48 +937,54 @@ Fields.ChangeDescriptionFieldView = Fields.MultilineTextFieldView.extend({
  * This provides expand/collapse functionality for commit messages that are
  * more than a single line.
  */
-Fields.CommitListFieldView = Fields.BaseFieldView.extend({
-    /**
-     * Initialize the field.
-     */
-    initialize() {
-        this._commitListView = null;
-    },
+@spina
+export class CommitListFieldView extends BaseFieldView {
+    /**********************
+     * Instance variables *
+     **********************/
+
+    #commitListView: RB.DiffCommitListView = null;
 
     /**
      * Render the field.
-     *
-     * Returns:
-     *     RB.ReviewRequestFields.CommitListFieldView:
-     *     This view (for chaining).
      */
-    render() {
-        Fields.BaseFieldView.prototype.render.call(this);
+    onInitialRender() {
+        super.onInitialRender();
 
         /*
          * We needn't render the view because it has already been rendered by
          * the server.
          */
-        this._commitListView = new RB.DiffCommitListView({
+        this.#commitListView = new RB.DiffCommitListView({
             el: this.$('.commit-list'),
             model: new RB.DiffCommitList({
                 commits: this.model.get('commits'),
                 isInterdiff: false,
             }),
         });
-
-        return this;
-    },
-});
+    }
+}
 
 
 /**
  * The close description field.
  */
-Fields.CloseDescriptionFieldView = Fields.MultilineTextFieldView.extend({
-    allowRichText: true,
-    useExtraData: false,
-    editableProp: 'statusEditable',
+@spina({
+    prototypeAttrs: [
+        'editableProp',
+        'useExtraData',
+    ],
+})
+export class CloseDescriptionFieldView extends MultilineTextFieldView {
+    static editableProp = 'statusEditable';
+    static useExtraData = false;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    allowRichText = true;
+    closeType: string;
 
     /**
      * Save a new value for the field.
@@ -887,43 +1000,53 @@ Fields.CloseDescriptionFieldView = Fields.MultilineTextFieldView.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    _saveValue(value, options) {
+    _saveValue(
+        value: string,
+        options: SetDraftFieldOptions = {},
+    ): Promise<void> {
         return this.model.get('reviewRequest').close(_.defaults({
-            type: this.closeType,
             description: value,
             postData: {
                 force_text_type: 'html',
                 include_text_types: 'raw',
             },
+            type: this.closeType,
         }, options));
-    },
-});
+    }
+}
 
 
 /**
  * The "Depends On" field.
  */
-Fields.DependsOnFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
-    autocomplete: {
-        fieldName: data => data.search.review_requests,
-        nameKey: 'id',
+@spina({
+    prototypeAttrs: [
+        'autocomplete',
+        'useEditIconOnly',
+        'useExtraData',
+    ],
+})
+export class DependsOnFieldView extends CommaSeparatedValuesTextFieldView {
+    static autocomplete = {
+        cmp: (term, a, b) => b.data.id - a.data.id,
         descKey: 'id',
         display_name: 'summary',
-        resourceName: 'search',
+        extraParams: {
+            summary: 1,
+        },
+        fieldName: data => data.search.review_requests,
+        nameKey: 'id',
         parseItem: item => {
             item.id = item.id.toString();
             item.display_name = item.summary;
 
             return item;
         },
-        extraParams: {
-            summary: 1,
-        },
-        cmp: (term, a, b) => b.data.id - a.data.id,
-    },
+        resourceName: 'search',
+    };
 
-    useEditIconOnly: true,
-    useExtraData: false,
+    static useEditIconOnly = true;
+    static useExtraData = false;
 
     /**
      * Format the value into the field.
@@ -932,41 +1055,46 @@ Fields.DependsOnFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
      *     data (Array):
      *         The new value of the field.
      */
-    formatValue(data) {
+    formatValue(data: string[]) {
         data = data || [];
 
         this.$el
             .empty()
             .append(this._urlizeList(data, {
-                makeItemURL: item => item.url,
-                makeItemText: item => item.id,
                 cssClass: 'review-request-link',
+                makeItemText: item => item.id,
+                makeItemURL: item => item.url,
             }))
             .find('.review-request-link').review_request_infobox();
-    },
-});
+    }
+}
 
 
 /**
  * The "Description" field.
  */
-Fields.DescriptionFieldView = Fields.MultilineTextFieldView.extend({
-    allowRichText: true,
-    useExtraData: false,
-});
+@spina({
+    prototypeAttrs: ['useExtraData'],
+})
+export class DescriptionFieldView extends MultilineTextFieldView {
+    static useExtraData = false;
+
+    allowRichText = true;
+}
 
 
 /**
  * The "Owner" field.
  */
-Fields.OwnerFieldView = Fields.TextFieldView.extend({
-    autocomplete: {
-        fieldName: 'users',
-        nameKey: 'username',
-        descKey: 'fullname',
-        extraParams: {
-            fullname: 1,
-        },
+@spina({
+    prototypeAttrs: [
+        'autocomplete',
+        'useEditIconOnly',
+        'useExtraData',
+    ],
+})
+export class OwnerFieldView extends TextFieldView {
+    static autocomplete = {
         cmp: (term, a, b) => {
             /*
              * Sort the results with username matches first (in alphabetical
@@ -989,10 +1117,16 @@ Fields.OwnerFieldView = Fields.TextFieldView.extend({
                 return aFullname.localeCompare(bFullname);
             }
         },
-    },
+        descKey: 'fullname',
+        extraParams: {
+            fullname: 1,
+        },
+        fieldName: 'users',
+        nameKey: 'username',
+    };
 
-    useEditIconOnly: true,
-    useExtraData: false,
+    static useEditIconOnly = true;
+    static useExtraData = false;
 
     /**
      * Format the value into the field.
@@ -1001,48 +1135,59 @@ Fields.OwnerFieldView = Fields.TextFieldView.extend({
      *     data (string):
      *         The new value of the field.
      */
-    formatValue(data) {
+    formatValue(data: string) {
         const $link = this._convertToLink(
             data,
             {
+                cssClass: 'user',
+                makeItemText: item => item.title,
                 makeItemURL: item => {
                     const href = item.href;
+
                     return href.substr(href.indexOf('/users'));
                 },
-                makeItemText: item => item.title,
-                cssClass: 'user',
             });
 
         this.$el
             .empty()
             .append($link.user_infobox());
     }
-});
+}
 
 
 /**
  * The "Summary" field.
  */
-Fields.SummaryFieldView = Fields.TextFieldView.extend({
-    useExtraData: false,
-});
+@spina({
+    prototypeAttrs: ['useExtraData'],
+})
+export class SummaryFieldView extends TextFieldView {
+    static useExtraData = false;
+}
 
 
 /**
  * The "Groups" field.
  */
-Fields.TargetGroupsFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
-    autocomplete: {
-        fieldName: 'groups',
-        nameKey: 'name',
+@spina({
+    prototypeAttrs: [
+        'autocomplete',
+        'useEditIconOnly',
+        'useExtraData',
+    ],
+})
+export class TargetGroupsFieldView extends CommaSeparatedValuesTextFieldView {
+    static autocomplete = {
         descKey: 'display_name',
         extraParams: {
             displayname: 1,
         },
-    },
+        fieldName: 'groups',
+        nameKey: 'name',
+    };
 
-    useEditIconOnly: true,
-    useExtraData: false,
+    static useEditIconOnly = true;
+    static useExtraData = false;
 
     /**
      * Format the value into the field.
@@ -1051,30 +1196,31 @@ Fields.TargetGroupsFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
      *     data (Array):
      *         The new value of the field.
      */
-    formatValue(data) {
+    formatValue(data: string[]) {
         data = data || [];
 
         this.$el
             .empty()
             .append(this._urlizeList(data, {
-                makeItemURL: item => item.url,
                 makeItemText: item => item.name,
+                makeItemURL: item => item.url,
             }));
-    },
-});
+    }
+}
 
 
 /**
  * The "People" field.
  */
-Fields.TargetPeopleFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
-    autocomplete: {
-        fieldName: 'users',
-        nameKey: 'username',
-        descKey: 'fullname',
-        extraParams: {
-            fullname: 1,
-        },
+@spina({
+    prototypeAttrs: [
+        'autocomplete',
+        'useEditIconOnly',
+        'useExtraData',
+    ],
+})
+export class TargetPeopleFieldView extends CommaSeparatedValuesTextFieldView {
+    static autocomplete = {
         cmp: (term, a, b) => {
             /*
              * Sort the results with username matches first (in alphabetical
@@ -1089,6 +1235,7 @@ Fields.TargetPeopleFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
                 if (bUsername.indexOf(term) === 0) {
                     return aUsername.localeCompare(bUsername);
                 }
+
                 return -1;
             } else if (bUsername.indexOf(term) === 0) {
                 return 1;
@@ -1096,10 +1243,16 @@ Fields.TargetPeopleFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
                 return aFullname.localeCompare(bFullname);
             }
         },
-    },
+        descKey: 'fullname',
+        extraParams: {
+            fullname: 1,
+        },
+        fieldName: 'users',
+        nameKey: 'username',
+    };
 
-    useEditIconOnly: true,
-    useExtraData: false,
+    static useEditIconOnly = true;
+    static useExtraData = false;
 
     /**
      * Format the value into the field.
@@ -1108,30 +1261,28 @@ Fields.TargetPeopleFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
      *     data (Array):
      *         The new value of the field.
      */
-    formatValue(data) {
+    formatValue(data: string[]) {
         data = data || [];
         this.$el
             .empty()
             .append(this._urlizeList(data, {
-                makeItemURL: item => item.url,
-                makeItemText: item => item.username,
                 cssClass: 'user',
+                makeItemText: item => item.username,
+                makeItemURL: item => item.url,
             }))
             .find('.user').user_infobox();
     }
-});
+}
 
 
 /**
  * The "Testing Done" field.
  */
-Fields.TestingDoneFieldView = Fields.MultilineTextFieldView.extend({
-    allowRichText: true,
-    useExtraData: false,
-});
+@spina({
+    prototypeAttrs: ['useExtraData'],
+})
+export class TestingDoneFieldView extends MultilineTextFieldView {
+    static useExtraData = false;
 
-
-RB.ReviewRequestFields = Fields;
-
-
-})();
+    allowRichText = true;
+}

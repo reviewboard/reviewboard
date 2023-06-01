@@ -153,6 +153,7 @@ export class MenuView extends BaseView<
     static className = 'rb-c-menu';
     static events: EventsHash = {
         'keydown': '_onKeyDown',
+        'touchstart': '_onTouchStart',
     };
 
     /**********************

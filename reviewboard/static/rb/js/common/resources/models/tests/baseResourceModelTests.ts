@@ -1,12 +1,25 @@
+import {
+    beforeEach,
+    describe,
+    expect,
+    expectAsync,
+    it,
+    spyOn,
+    suite,
+} from 'jasmine-core';
+
+import { BaseResource } from '../baseResource';
+
+
 suite('rb/resources/models/BaseResource', function() {
     let model;
     let parentObject;
 
     beforeEach(function() {
-        model = new RB.BaseResource();
+        model = new BaseResource();
         model.rspNamespace = 'foo';
 
-        parentObject = new RB.BaseResource({
+        parentObject = new BaseResource({
             links: {
                 foos: {
                     href: '/api/foos/',
@@ -44,8 +57,8 @@ suite('rb/resources/models/BaseResource', function() {
 
         it('With loaded=false, isNew=false', async function() {
             model.set({
-                loaded: false,
                 id: 1,
+                loaded: false,
             });
 
             await model.ensureCreated();
@@ -57,12 +70,13 @@ suite('rb/resources/models/BaseResource', function() {
 
         it('With callbacks', function(done) {
             model.set({
-                loaded: false,
                 id: 1,
+                loaded: false,
             });
             spyOn(console, 'warn');
 
             model.ensureCreated({
+                error: () => done.fail(),
                 success: () => {
                     expect(model.ready).toHaveBeenCalled();
                     expect(model.fetch).toHaveBeenCalled();
@@ -71,7 +85,6 @@ suite('rb/resources/models/BaseResource', function() {
 
                     done();
                 },
-                error: () => done.fail(),
             });
         });
     });
@@ -105,8 +118,8 @@ suite('rb/resources/models/BaseResource', function() {
 
             it('With isNew=false and parentObject', async function() {
                 model.set({
-                    parentObject: parentObject,
                     id: 123,
+                    parentObject: parentObject,
                 });
 
                 spyOn(parentObject, 'ready').and.resolveTo();
@@ -119,8 +132,8 @@ suite('rb/resources/models/BaseResource', function() {
 
             it('With isNew=false and parentObject with error', async function() {
                 model.set({
-                    parentObject: parentObject,
                     id: 123,
+                    parentObject: parentObject,
                 });
 
                 spyOn(parentObject, 'ready').and.rejectWith(new BackboneError(
@@ -137,22 +150,23 @@ suite('rb/resources/models/BaseResource', function() {
 
             it('With callbacks', function(done) {
                 model.set({
-                    parentObject: parentObject,
                     id: 123,
+                    parentObject: parentObject,
                 });
 
                 spyOn(parentObject, 'ready').and.resolveTo();
                 spyOn(console, 'warn');
 
                 model.fetch({
+                    error: () => done.fail(),
                     success: () => {
                         expect(parentObject.ready).toHaveBeenCalled();
-                        expect(Backbone.Model.prototype.fetch).toHaveBeenCalled();
+                        expect(Backbone.Model.prototype.fetch)
+                            .toHaveBeenCalled();
                         expect(console.warn).toHaveBeenCalled();
 
                         done();
                     },
-                    error: () => done.fail(),
                 });
             });
         });
@@ -197,16 +211,16 @@ suite('rb/resources/models/BaseResource', function() {
 
                 spyOn($, 'ajax').and.callFake(request => {
                     request.success({
-                        stat: 'ok',
                         foo: {
+                            a: 20,
                             id: 42,
                             links: {
                                 foo: {
                                     href: 'bar',
                                 },
                             },
-                            a: 20,
                         },
+                        stat: 'ok',
                     });
                 });
 
@@ -309,8 +323,8 @@ suite('rb/resources/models/BaseResource', function() {
 
         it('With loaded=false and isNew=false', async function() {
             model.set({
-                loaded: false,
                 id: 123,
+                loaded: false,
             });
             expect(model.isNew()).toBe(false);
 
@@ -320,20 +334,20 @@ suite('rb/resources/models/BaseResource', function() {
 
         it('With callbacks', function(done) {
             model.set({
-                loaded: false,
                 id: 123,
+                loaded: false,
             });
             expect(model.isNew()).toBe(false);
             spyOn(console, 'warn');
 
             model.ready({
+                error: () => done.fail(),
                 success: () => {
                     expect(model.fetch).toHaveBeenCalled();
                     expect(console.warn).toHaveBeenCalled();
 
                     done();
                 },
-                error: () => done.fail(),
             });
         });
     });
@@ -387,7 +401,7 @@ suite('rb/resources/models/BaseResource', function() {
 
             try {
                 await model.save();
-                done.fail();
+                throw new Error();
             } catch (err) {
                 expect(Backbone.Model.prototype.save)
                     .not.toHaveBeenCalled();
@@ -423,8 +437,8 @@ suite('rb/resources/models/BaseResource', function() {
             spyOn(Backbone.Model.prototype, 'save').and.callThrough();
 
             model.set({
-                parentObject: parentObject,
                 id: 123,
+                parentObject: parentObject,
             });
 
             spyOn(parentObject, 'ready').and.resolveTo();
@@ -450,8 +464,8 @@ suite('rb/resources/models/BaseResource', function() {
 
         it('With isNew=false and parentObject with error', async function() {
             model.set({
-                parentObject: parentObject,
                 id: 123,
+                parentObject: parentObject,
             });
 
             spyOn(parentObject, 'ready').and.rejectWith(new BackboneError(
@@ -498,6 +512,7 @@ suite('rb/resources/models/BaseResource', function() {
 
             model.save({
                 success: () => {
+                error: () => done.fail(),
                     expect(Backbone.Model.prototype.save).toHaveBeenCalled();
                     expect(parentObject.ensureCreated).toHaveBeenCalled();
                     expect(RB.apiCall).toHaveBeenCalled();
@@ -508,7 +523,6 @@ suite('rb/resources/models/BaseResource', function() {
 
                     done();
                 },
-                error: () => done.fail(),
             });
         });
 
@@ -539,14 +553,14 @@ suite('rb/resources/models/BaseResource', function() {
                     expect(request.data.c).toBe(30);
 
                     request.success({
-                        stat: 'ok',
                         foo: {
-                            id: 1,
                             a: 10,
                             b: 20,
                             c: 30,
+                            id: 1,
                             links: {},
                         },
+                        stat: 'ok',
                     });
                 });
 
@@ -562,6 +576,7 @@ suite('rb/resources/models/BaseResource', function() {
             beforeEach(function() {
                 model.payloadFileKeys = ['file'];
                 model.url = '/api/foos/';
+
                 model.toJSON = function() {
                     return {
                         file: this.get('file'),
@@ -575,11 +590,9 @@ suite('rb/resources/models/BaseResource', function() {
 
             it('With file', async function() {
                 const boundary = '-----multipartformboundary';
-                const blob = new Blob(['Hello world!'], {
+                const blob = new File(['Hello world!'], 'myfile', {
                     type: 'text/plain',
                 });
-
-                blob.name = 'myfile';
 
                 spyOn($, 'ajax').and.callFake(request => {
                     const fileReader = new FileReader();
@@ -611,12 +624,13 @@ suite('rb/resources/models/BaseResource', function() {
                             '--' + boundary + '--\r\n\r\n');
 
                         request.success({
-                            stat: 'ok',
                             foo: {
                                 id: 42,
                             },
+                            stat: 'ok',
                         });
                     };
+
                     fileReader.readAsArrayBuffer(request.data);
                 });
 
@@ -631,17 +645,16 @@ suite('rb/resources/models/BaseResource', function() {
             it('With multiple files', async function() {
                 const boundary = '-----multipartformboundary';
 
-                const blob1 = new Blob(['Hello world!'], {
+                const blob1 = new File(['Hello world!'], 'myfile1', {
                     type: 'text/plain',
                 });
-                blob1.name = 'myfile1';
 
-                const blob2 = new Blob(['Goodbye world!'], {
+                const blob2 = new File(['Goodbye world!'], 'myfile2', {
                     type: 'text/plain',
                 });
-                blob2.name = 'myfile2';
 
                 model.payloadFileKeys = ['file1', 'file2'];
+
                 model.toJSON = function() {
                     return {
                         file1: this.get('file1'),
@@ -686,10 +699,10 @@ suite('rb/resources/models/BaseResource', function() {
                             '--' + boundary + '--\r\n\r\n');
 
                         request.success({
-                            stat: 'ok',
                             foo: {
                                 id: 42,
                             },
+                            stat: 'ok',
                         });
                     };
 
@@ -761,7 +774,8 @@ suite('rb/resources/models/BaseResource', function() {
                     .append($('<input name="foo"/>'));
 
                 model.payloadFileKey = 'file';
-                    model.toJSON = function() {
+
+                model.toJSON = function() {
                     return {
                         file: this.get('file'),
                     };
@@ -801,8 +815,8 @@ suite('rb/resources/models/BaseResource', function() {
 
         it('With parentObject and model ID', function() {
             model.set({
-                parentObject: parentObject,
                 id: 123,
+                parentObject: parentObject,
             });
 
             expect(model.url()).toBe('/api/foos/123/');

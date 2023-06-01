@@ -1,7 +1,7 @@
 import { Action } from './models/action';
 import { MenuAction } from './models/menuAction';
 import { ActionView } from './views/actionView';
-import { MenuActionView } from './views/menuActionView';
+import { MenuActionView, MenuItemActionView } from './views/menuActionView';
 
 
 export const Actions = {
@@ -9,4 +9,5 @@ export const Actions = {
     ActionView,
     MenuAction,
     MenuActionView,
+    MenuItemActionView,
 };

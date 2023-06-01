@@ -18,7 +18,9 @@ urlpatterns = [
              authentication_form=AuthenticationForm),
          name='login'),
     path('logout/',
-         auth_views.LogoutView.as_view(),
+         auth_views.LogoutView.as_view(
+             template_name='accounts/logged_out.html',
+         ),
          name='logout'),
     path('preferences/',
          accounts_views.MyAccountView.as_view(),

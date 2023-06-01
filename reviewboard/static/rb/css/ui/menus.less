@@ -116,7 +116,7 @@
   background: @_menu-vars[@bg-color];
   border: @_menu-vars[@border];
   box-shadow: @_menu-vars[@box-shadow];
-  display: block;
+  display: none;
   list-style: none;
   opacity: 0;
   margin: 0;
@@ -127,6 +127,7 @@
   z-index: @_menu-vars[@z-index];
 
   &.-is-open {
+    display: block;
     opacity: 1;
     visibility: visible;
   }
@@ -189,7 +190,7 @@
        */
       padding: @_menu-vars[@item-padding-vert] @_menu-vars[@item-padding-horiz];
 
-      &:focus {
+      &:focus, &:hover {
         background: @_menu-vars[@hover-bg-color];
         outline: 0;
       }
@@ -225,4 +226,15 @@
   &:hover > .menu {
     .rb-c-menu.-is-open();
   }
+}
+
+.rb-c-event-overlay {
+  background-color: black;
+  height: 100%;
+  left: 0;
+  opacity: 20%;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: @z-index-menu-mask;
 }

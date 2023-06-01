@@ -1,9 +1,17 @@
 /**
  * A model for holding a resource's extra data.
+ */
+
+import { BaseModel, spina } from '@beanbag/spina';
+
+
+/**
+ * A model for holding a resource's extra data.
  *
  * Contains utility methods for serializing it.
  */
-RB.ExtraData = Backbone.Model.extend({
+@spina
+export class ExtraData extends BaseModel {
     /**
      * JSONify the extra data.
      *
@@ -15,13 +23,13 @@ RB.ExtraData = Backbone.Model.extend({
      *     object:
      *     An object suitable for serializing to JSON.
      */
-    toJSON() {
+    toJSON(): object {
         const data = {};
 
-        _.each(this.attributes, (value, key) => {
+        for (const [key, value] of Object.entries(this.attributes)) {
             data[`extra_data.${key}`] = value;
-        });
+        }
 
         return data;
-    },
-});
+    }
+}

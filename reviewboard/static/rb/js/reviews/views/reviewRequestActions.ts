@@ -1,6 +1,14 @@
 import { EventsHash, spina } from '@beanbag/spina';
 
 import { Actions } from 'reviewboard/common/actions';
+import {
+    BaseResource,
+} from 'reviewboard/common/resources/models/baseResource';
+import { UserSession } from 'reviewboard/common/models/userSession';
+import { Overlay } from 'reviewboard/ui/views/overlay';
+
+
+declare const SITE_ROOT: string;
 
 
 /**
@@ -18,7 +26,7 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
         'keyup': 'onKeyUp',
         'mouseenter': 'openMenu',
         'mouseleave': 'closeMenu',
-        'touchend': 'onTouchEnd',
+        'touchend .menu-title': 'onTouchEnd',
     };
 
     /**********************
@@ -75,8 +83,8 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
                 visibility === RB.ReviewRequest.VISIBILITY_VISIBLE);
             const collection = (
                 visibility === RB.ReviewRequest.VISIBILITY_MUTED
-                ? RB.UserSession.instance.mutedReviewRequests
-                : RB.UserSession.instance.archivedReviewRequests)
+                ? UserSession.instance.mutedReviewRequests
+                : UserSession.instance.archivedReviewRequests)
 
             if (visible) {
                 await collection.addImmediately(this.#reviewRequest);
@@ -115,6 +123,13 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
      */
     protected onKeyUp() {
         this.#activationKeyDown = false;
+    }
+
+    /**
+     * Handle a touchstart event.
+     */
+    protected onTouchStart() {
+        // Do nothing.
     }
 
     /**
@@ -162,7 +177,7 @@ abstract class BaseVisibilityActionView extends Actions.ActionView {
      **********************/
 
     /** The collection to use for making changes to the visibility. */
-    collection: RB.BaseResource;
+    collection: BaseResource;
 
     /** The visibility type controlled by this action. */
     visibilityType = RB.ReviewRequest.VISIBILITY_ARCHIVED;
@@ -250,7 +265,7 @@ export class ArchiveActionView extends BaseVisibilityActionView {
      **********************/
 
     /** The collection to use for making changes to the visibility. */
-    collection = RB.UserSession.instance.archivedReviewRequests;
+    collection = UserSession.instance.archivedReviewRequests;
 
     /**
      * Return the label to use for the menu item.
@@ -286,7 +301,7 @@ export class MuteActionView extends BaseVisibilityActionView {
      **********************/
 
     /** The collection to use for making changes to the visibility. */
-    collection = RB.UserSession.instance.mutedReviewRequests;
+    collection = UserSession.instance.mutedReviewRequests;
 
     /** The visibility type controlled by this action. */
     visibilityType = RB.ReviewRequest.VISIBILITY_MUTED;
@@ -319,11 +334,7 @@ export class MuteActionView extends BaseVisibilityActionView {
  *     6.0
  */
 @spina
-export class CreateReviewActionView extends Actions.ActionView {
-    static events: EventsHash = {
-        'click': '_onClick',
-    };
-
+export class CreateReviewActionView extends Actions.MenuItemActionView {
     /**********************
      * Instance variables *
      **********************/
@@ -366,16 +377,9 @@ export class CreateReviewActionView extends Actions.ActionView {
     }
 
     /**
-     * Handle a click on the action.
-     *
-     * Args:
-     *     e (MouseEvent):
-     *         The event.
+     * Handle activation of the action.
      */
-    private _onClick(e: MouseEvent) {
-        e.stopPropagation();
-        e.preventDefault();
-
+    activate() {
         this.#pendingReview.save();
     }
 }
@@ -388,11 +392,7 @@ export class CreateReviewActionView extends Actions.ActionView {
  *     6.0
  */
 @spina
-export class EditReviewActionView extends Actions.ActionView {
-    static events = {
-        'click': '_onClick',
-    };
-
+export class EditReviewActionView extends Actions.MenuItemActionView {
     /**********************
      * Instance variables *
      **********************/
@@ -431,16 +431,9 @@ export class EditReviewActionView extends Actions.ActionView {
     }
 
     /**
-     * Handle a click on the action.
-     *
-     * Args:
-     *     e (MouseEvent):
-     *         The event.
+     * Handle the action activation.
      */
-    private _onClick(e: MouseEvent) {
-        e.stopPropagation();
-        e.preventDefault();
-
+    activate() {
         RB.ReviewDialogView.create({
             review: this.#pendingReview,
             reviewRequestEditor: this.#reviewRequestEditor,
@@ -456,22 +449,11 @@ export class EditReviewActionView extends Actions.ActionView {
  *     6.0
  */
 @spina
-export class AddGeneralCommentActionView extends Actions.ActionView {
-    static events: EventsHash = {
-        'click': '_onClick',
-    };
-
+export class AddGeneralCommentActionView extends Actions.MenuItemActionView {
     /**
-     * Handle a click on the action.
-     *
-     * Args:
-     *     e (MouseEvent):
-     *         The event.
+     * Handle the action activation.
      */
-    private _onClick(e: MouseEvent) {
-        e.stopPropagation();
-        e.preventDefault();
-
+    activate() {
         RB.PageManager.getPage().addGeneralComment();
     }
 }
@@ -484,22 +466,217 @@ export class AddGeneralCommentActionView extends Actions.ActionView {
  *     6.0
  */
 @spina
-export class ShipItActionView extends Actions.ActionView {
-    static events: EventsHash = {
-        'click': '_onClick',
-    };
+export class ShipItActionView extends Actions.MenuItemActionView {
+    /**
+     * Handle the action activation.
+     */
+    activate() {
+        RB.PageManager.getPage().shipIt();
+    }
+}
+
+
+/**
+ * Action view for the review menu.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+export class ReviewMenuActionView extends Actions.MenuActionView {
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The event overlay when the menu is shown in mobile mode. */
+    #overlay: Overlay = null;
 
     /**
-     * Handle a click on the action.
+     * Close the menu.
+     */
+    protected closeMenu() {
+        super.closeMenu();
+
+        if (this.#overlay) {
+            this.#overlay.remove();
+            this.#overlay = null;
+        }
+    }
+
+    /**
+     * Handle a touchstart event.
      *
      * Args:
-     *     e (MouseEvent):
-     *         The event.
+     *     e (TouchEvent):
+     *         The touch event.
      */
-    private _onClick(e: MouseEvent) {
-        e.preventDefault();
-        e.stopPropagation();
+    protected onTouchStart(e: TouchEvent) {
+        super.onTouchStart(e);
 
-        RB.PageManager.getPage().shipIt();
+        if (this.menu.isOpen) {
+            this.#overlay = new Overlay();
+            this.#overlay.$el.appendTo('body');
+
+            this.listenTo(this.#overlay, 'click', () => {
+                this.closeMenu();
+            });
+        }
+    }
+}
+
+
+/**
+ * Action view for the "Add File" command.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+export class AddFileActionView extends Actions.MenuItemActionView {
+    /**
+     * Handle the action activation.
+     */
+    activate() {
+        const page = RB.PageManager.getPage();
+        const uploadDialog = new RB.UploadAttachmentView({
+            model: page.reviewRequestEditorView.model,
+        });
+        uploadDialog.show();
+    }
+}
+
+
+/**
+ * Action view for the "Update Diff" command.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+export class UpdateDiffActionView extends Actions.MenuItemActionView {
+    /**
+     * Handle the action activation.
+     */
+    activate() {
+        const page = RB.PageManager.getPage();
+        const reviewRequestEditor = page.reviewRequestEditorView.model;
+        const reviewRequest = reviewRequestEditor.get('reviewRequest');
+
+        const updateDiffView = new RB.UpdateDiffView({
+            model: new RB.UploadDiffModel({
+                changeNumber: reviewRequest.get('commitID'),
+                repository: reviewRequest.get('repository'),
+                reviewRequest: reviewRequest,
+            }),
+        });
+        updateDiffView.render();
+    }
+}
+
+
+/**
+ * Action view for the "Close > Discarded" command.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+export class CloseDiscardedActionView extends Actions.MenuItemActionView {
+    /**
+     * Handle the action activation.
+     */
+    activate() {
+        const page = RB.PageManager.getPage();
+        const reviewRequestEditor = page.reviewRequestEditorView.model;
+        const reviewRequest = reviewRequestEditor.get('reviewRequest');
+
+        const confirmText =
+            _`Are you sure you want to discard this review request?`;
+
+        if (confirm(confirmText)) {
+            reviewRequest
+                .close({
+                    type: RB.ReviewRequest.CLOSE_DISCARDED,
+                })
+                .catch(err => this.model.trigger('closeError', err.message));
+        }
+    }
+}
+
+
+/**
+ * Action view for the "Close > Completed" command.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+export class CloseCompletedActionView extends Actions.MenuItemActionView {
+    /**
+     * Handle the action activation.
+     */
+    activate() {
+        const page = RB.PageManager.getPage();
+        const reviewRequestEditor = page.reviewRequestEditorView.model;
+        const reviewRequest = reviewRequestEditor.get('reviewRequest');
+
+        /*
+         * This is a non-destructive event, so don't confirm unless there's
+         * a draft.
+         */
+        let submit = true;
+
+        if (reviewRequestEditor.get('hasDraft')) {
+            submit = confirm(_`
+                You have an unpublished draft. If you close this review
+                request, the draft will be discarded. Are you sure you want
+                to close the review request?
+            `);
+        }
+
+        if (submit) {
+            reviewRequest
+                .close({
+                    type: RB.ReviewRequest.CLOSE_SUBMITTED,
+                })
+                .catch(err => this.model.trigger('closeError', err.message));
+        }
+    }
+}
+
+
+/**
+ * Action view for the "Close > Delete Permanently" command.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+export class DeleteActionView extends Actions.MenuItemActionView {
+    /**
+     * Handle the action activation.
+     */
+    activate() {
+        const page = RB.PageManager.getPage();
+        const reviewRequestEditor = page.reviewRequestEditorView.model;
+        const reviewRequest = reviewRequestEditor.get('reviewRequest');
+
+        const $dlg = $('<p>')
+            .text(_`
+                This deletion cannot be undone. All diffs and reviews will be
+                deleted as well.
+            `)
+            .modalBox({
+                buttons: [
+                    $(`<input type="button" value="${gettext('Cancel')}"/>`),
+                    $(`<input type="button" value="${gettext('Delete')}"/>`)
+                        .click(() => reviewRequest
+                            .destroy({
+                                buttons: $('input', $dlg.modalBox('buttons')),
+                            })
+                            .then(() => RB.navigateTo(SITE_ROOT))),
+                ],
+                title: _`Are you sure you want to delete this review request?`,
+            });
     }
 }

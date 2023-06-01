@@ -13,7 +13,7 @@ suite('rb/ui/views/MenuView', function() {
             expect(view.el).not.toHaveClass('-is-vertical');
             expect(view.el.tabIndex).toBe(-1);
             expect(view.$el.attr('role')).toBe('menu');
-            expect(view.$el.css('display')).toBe('block');
+            expect(view.$el.css('display')).toBe('none');
             expect(view.$el.css('visibility')).toBe('hidden');
             expect(view.$el.css('opacity')).toBe('0');
         });
@@ -31,7 +31,7 @@ suite('rb/ui/views/MenuView', function() {
             expect(view.el).toHaveClass('-is-vertical');
             expect(view.el.tabIndex).toBe(-1);
             expect(view.$el.attr('role')).toBe('menu');
-            expect(view.$el.css('display')).toBe('block');
+            expect(view.$el.css('display')).toBe('none');
             expect(view.$el.css('visibility')).toBe('hidden');
             expect(view.$el.css('opacity')).toBe('0');
         });
@@ -143,7 +143,7 @@ suite('rb/ui/views/MenuView', function() {
                 });
                 view.render().$el.appendTo($testsScratch);
 
-                expect(view.$el.css('display')).toBe('block');
+                expect(view.$el.css('display')).toBe('none');
                 expect(view.$el.css('visibility')).toBe('hidden');
                 expect(view.$el.css('opacity')).toBe('0');
 
@@ -218,7 +218,7 @@ suite('rb/ui/views/MenuView', function() {
                     expect(view.isOpen).toBeFalse();
                     expect(view.el).not.toHaveClass('-is-open');
                     expect(view.el).not.toHaveClass('js-no-animation');
-                    expect(view.$el.css('display')).toBe('block');
+                    expect(view.$el.css('display')).toBe('none');
                     expect(view.$el.css('visibility')).toBe('hidden');
                     expect(view.$el.css('opacity')).toBe('0');
                     expect($controller.attr('aria-expanded')).toBe('false');
@@ -234,7 +234,7 @@ suite('rb/ui/views/MenuView', function() {
                 expect(view.isOpen).toBeFalse();
                 expect(view.el).toHaveClass('js-no-animation');
                 expect(view.el).not.toHaveClass('-is-open');
-                expect(view.$el.css('display')).toBe('block');
+                expect(view.$el.css('display')).toBe('none');
                 expect(view.$el.css('visibility')).toBe('hidden');
                 expect(view.$el.css('opacity')).toBe('0');
                 expect(view.trigger).toHaveBeenCalledWith('closing');

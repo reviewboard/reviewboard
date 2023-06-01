@@ -1,6 +1,11 @@
 /** The state for editing a new or existing draft comment. */
 import { BaseModel, spina } from '@beanbag/spina';
 
+import { ExtraDataMixin } from 'reviewboard/common/models/extraDataMixin';
+import { UserSession } from 'reviewboard/common/models/userSession';
+
+import { ReviewRequestEditor } from './reviewRequestEditor';
+
 
 /**
  * Attributes for the CommentEditor model.
@@ -43,7 +48,7 @@ interface CommentEditorAttrs {
     reviewRequest: RB.ReviewRequest;
 
     /** The review request editor for the review request. */
-    reviewRequestEditor: RB.ReviewRequestEditor;
+    reviewRequestEditor: ReviewRequestEditor;
 
     /** Whether the comment is formatted in Markdown. */
     richText: boolean;
@@ -62,7 +67,7 @@ interface CommentEditorAttrs {
  * same region this comment is on, and more.
  */
 @spina({
-    mixins: [RB.ExtraDataMixin],
+    mixins: [ExtraDataMixin],
 })
 export class CommentEditor extends BaseModel<CommentEditorAttrs> {
     /**
@@ -73,7 +78,7 @@ export class CommentEditor extends BaseModel<CommentEditorAttrs> {
      *     The default values for the attributes.
      */
     static defaults(): CommentEditorAttrs {
-        const userSession = RB.UserSession.instance;
+        const userSession = UserSession.instance;
 
         return {
             canDelete: false,
@@ -343,7 +348,7 @@ export class CommentEditor extends BaseModel<CommentEditorAttrs> {
      * whether or not there's an existing draft for the review request.
      */
     #updateCanEdit() {
-        const userSession = RB.UserSession.instance;
+        const userSession = UserSession.instance;
 
         this.set('canEdit',
                  userSession.get('authenticated') &&

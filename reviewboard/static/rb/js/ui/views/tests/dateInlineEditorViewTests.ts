@@ -1,3 +1,19 @@
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+    suite,
+} from 'jasmine-core';
+
+import { DateInlineEditorView } from '../inlineEditorView';
+
+
+declare const $testsScratch: JQuery;
+
+
 suite('rb/ui/views/DateInlineEditorView', function() {
     const initialDate = '2022-09-16';
     let view;
@@ -9,7 +25,7 @@ suite('rb/ui/views/DateInlineEditorView', function() {
 
     describe('Construction', function() {
         it('Default', function() {
-            view = new RB.DateInlineEditorView({
+            view = new DateInlineEditorView({
                 el: $container,
             });
             view.render();
@@ -30,12 +46,12 @@ suite('rb/ui/views/DateInlineEditorView', function() {
         });
 
         it('With options provided', function() {
-            view = new RB.DateInlineEditorView({
-                el: $container,
-                rawValue: initialDate,
+            view = new DateInlineEditorView({
                 descriptorText: 'Test',
-                minDate: '2020-10-10',
+                el: $container,
                 maxDate: '2030-10-10',
+                minDate: '2020-10-10',
+                rawValue: initialDate,
             });
             view.render();
 
@@ -62,7 +78,7 @@ suite('rb/ui/views/DateInlineEditorView', function() {
 
         describe('startEdit', function() {
             it('With an initial date', function() {
-                view = new RB.DateInlineEditorView({
+                view = new DateInlineEditorView({
                     el: $container,
                     rawValue: initialDate,
                 });
@@ -76,7 +92,7 @@ suite('rb/ui/views/DateInlineEditorView', function() {
             });
 
             it('With no initial date', function() {
-                view = new RB.DateInlineEditorView({
+                view = new DateInlineEditorView({
                     el: $container,
                 });
                 view.render();
@@ -89,9 +105,9 @@ suite('rb/ui/views/DateInlineEditorView', function() {
             });
 
             it('With a descriptor text', function() {
-                view = new RB.DateInlineEditorView({
-                    el: $container,
+                view = new DateInlineEditorView({
                     descriptorText: 'Test',
+                    el: $container,
                 });
                 view.render();
                 view.startEdit();
@@ -104,9 +120,9 @@ suite('rb/ui/views/DateInlineEditorView', function() {
             });
 
             it('With a descriptor text and initial date', function() {
-                view = new RB.DateInlineEditorView({
-                    el: $container,
+                view = new DateInlineEditorView({
                     descriptorText: 'Test',
+                    el: $container,
                     rawValue: initialDate,
                 });
                 view.render();
@@ -122,7 +138,7 @@ suite('rb/ui/views/DateInlineEditorView', function() {
 
         describe('save', function() {
             it('With a new date', function() {
-                view = new RB.DateInlineEditorView({
+                view = new DateInlineEditorView({
                     el: $container,
                 });
                 view.render();
@@ -136,7 +152,7 @@ suite('rb/ui/views/DateInlineEditorView', function() {
             });
 
             it('With an empty value', function() {
-                view = new RB.DateInlineEditorView({
+                view = new DateInlineEditorView({
                     el: $container,
                     rawValue: initialDate,
                 });
@@ -151,7 +167,7 @@ suite('rb/ui/views/DateInlineEditorView', function() {
             });
 
             it('Without any changes made', function() {
-                view = new RB.DateInlineEditorView({
+                view = new DateInlineEditorView({
                     el: $container,
                     rawValue: initialDate,
                 });
@@ -168,7 +184,7 @@ suite('rb/ui/views/DateInlineEditorView', function() {
 
     describe('Events', function() {
         it('On change', function() {
-            view = new RB.DateInlineEditorView({
+            view = new DateInlineEditorView({
                 el: $container,
             });
 

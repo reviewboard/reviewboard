@@ -18,6 +18,7 @@ export class MenuActionView extends ActionView {
         'keydown': 'onKeyDown',
         'mouseenter': 'openMenu',
         'mouseleave': 'closeMenu',
+        'touchstart': 'onTouchStart',
     };
 
     /**********************
@@ -131,5 +132,73 @@ export class MenuActionView extends ActionView {
             evt.stopPropagation();
             evt.preventDefault();
         }
+    }
+
+    /**
+     * Handle a touchstart event.
+     *
+     * Args:
+     *     e (TouchEvent):
+     *         The touch event.
+     */
+    protected onTouchStart(e: TouchEvent) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        if (this.menu.isOpen) {
+            this.closeMenu();
+        } else {
+            this.openMenu();
+        }
+    }
+}
+
+
+/**
+ * Base class for an action within a menu.
+ *
+ * This handles event registration for the click and touch events in order to
+ * behave properly on both desktop and mobile.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+export class MenuItemActionView extends ActionView {
+    static events: EventsHash = {
+        'click': '_onClick',
+        'touchstart': '_onTouchStart',
+    };
+
+    /**
+     * Handle a click event.
+     *
+     * Args:
+     *     e (MouseEvent):
+     *         The event.
+     */
+    protected _onClick(e: MouseEvent) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        this.activate();
+    }
+
+    /**
+     * Handle a touchstart event.
+     */
+    protected _onTouchStart() {
+        /*
+         * For touch events, we explicitly let the event bubble up so that the
+         * parent menu can close.
+         */
+        this.activate();
+    }
+
+    /**
+     * Activate the action.
+     */
+    activate() {
+        // This is expected to be overridden by subclasses.
     }
 }

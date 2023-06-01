@@ -126,6 +126,45 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
     },
 
     /**
+     * Return whether this editor needs to be saved.
+     *
+     * Returns:
+     *     boolean:
+     *     Whether the comment editor has unsaved content.
+     */
+    needsSave() {
+        return this._inlineEditorView && this._inlineEditorView.isDirty();
+    },
+
+    /**
+     * Save the editor.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the save is complete.
+     */
+    async save() {
+        const value = this._inlineEditorView.submit({
+            preventEvents: true,
+        });
+
+        if (value) {
+            const reviewRequestEditor = this.options.reviewRequestEditor;
+
+            if (reviewRequestEditor) {
+                reviewRequestEditor.decr('editCount');
+            }
+
+            this.model.set({
+                richText: this._inlineEditorView.textEditor.richText,
+                text: value,
+            });
+
+            await this.model.save();
+        }
+    },
+
+    /**
      * Create a comment editor for an element.
      *
      * Args:
@@ -147,7 +186,6 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
             notifyUnchangedCompletion: true,
             rawValue: this._$editor.data('raw-value') || '',
             textEditorOptions: {
-                minHeight: 0,
                 richText: this._$editor.hasClass('rich-text'),
             },
         });

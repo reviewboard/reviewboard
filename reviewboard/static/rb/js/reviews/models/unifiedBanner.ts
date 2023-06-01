@@ -3,6 +3,11 @@
  */
 import { BaseModel, spina } from '@beanbag/spina';
 
+import { ReviewRequestEditor } from './reviewRequestEditor';
+
+
+declare function ngettext(singular: string, plural: string, n: number): string;
+
 
 /**
  * Information about a selectable draft mode.
@@ -54,7 +59,7 @@ interface UnifiedBannerAttrs {
     reviewRequest: RB.ReviewRequest;
 
     /** The review request editor. */
-    reviewRequestEditor: RB.ReviewRequestEditor;
+    reviewRequestEditor: ReviewRequestEditor;
 
     /** The currently selected draft mode (indexing into draftModes). */
     selectedDraftMode: number;
@@ -96,7 +101,8 @@ export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
 
         this.listenTo(reviewRequest.draft, 'saved destroyed',
                       this.#updateDraftModes);
-        this.listenTo(pendingReview, 'saved destroyed', this.#updateDraftModes);
+        this.listenTo(pendingReview, 'saved destroyed',
+                      this.#updateDraftModes);
 
         Promise.all([
             reviewRequest.draft.ready(),

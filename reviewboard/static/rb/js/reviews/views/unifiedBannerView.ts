@@ -3,11 +3,19 @@
  */
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
+import { ClientCommChannel } from 'reviewboard/common/models/commChannel';
 import { FloatingBannerView } from 'reviewboard/ui/views/floatingBannerView';
 import { MenuButtonView } from 'reviewboard/ui/views/menuButtonView';
 import { MenuType, MenuView } from 'reviewboard/ui/views/menuView';
+import { UserSession } from 'reviewboard/common/models/userSession';
 
 import { UnifiedBanner } from '../models/unifiedBanner';
+import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
+import { ReviewRequestEditorView } from './reviewRequestEditorView';
+
+
+declare const dedent: (string, ...args) => string;
+declare const gettext: (string) => string;
 
 
 /**
@@ -283,7 +291,7 @@ class PublishButtonView extends MenuButtonView<UnifiedBanner> {
  */
 interface UnifiedBannerViewOptions {
     /** The review request editor. */
-    reviewRequestEditorView: RB.ReviewRequestEditorView;
+    reviewRequestEditorView: ReviewRequestEditorView;
 }
 
 
@@ -330,7 +338,7 @@ export class UnifiedBannerView extends FloatingBannerView<
     #$reviewActions: JQuery;
     #modeMenu: DraftModeMenu;
     #publishButton: PublishButtonView;
-    #reviewRequestEditorView: RB.ReviewRequestEditorView;
+    #reviewRequestEditorView: ReviewRequestEditorView;
 
     /**
      * Reset the UnifiedBannerView instance.
@@ -391,7 +399,7 @@ export class UnifiedBannerView extends FloatingBannerView<
      * Render the banner.
      */
     onInitialRender() {
-        if (!RB.UserSession.instance.get('authenticated')) {
+        if (!UserSession.instance.get('authenticated')) {
             return;
         }
 
@@ -436,7 +444,7 @@ export class UnifiedBannerView extends FloatingBannerView<
                          reviewRequest.get('changeDescriptionRichText'));
 
         this.#reviewRequestEditorView.addFieldView(
-            new RB.ReviewRequestFields.ChangeDescriptionFieldView({
+            new ChangeDescriptionFieldView({
                 el: $changeDescription,
                 fieldID: 'change_description',
                 model: reviewRequestEditor,
@@ -531,7 +539,7 @@ export class UnifiedBannerView extends FloatingBannerView<
     /**
      * Publish the current draft.
      *
-     * This triggers an event which is handled by RB.ReviewRequestEditorView.
+     * This triggers an event which is handled by ReviewRequestEditorView.
      */
     async publish(
         options: {
@@ -550,6 +558,8 @@ export class UnifiedBannerView extends FloatingBannerView<
 
         const reviews: number[] = [];
         const reviewRequests: number[] = [];
+
+        ClientCommChannel.getInstance().reload();
 
         if (draftMode.hasReviewRequest) {
             await reviewRequest.ready();
@@ -571,6 +581,8 @@ export class UnifiedBannerView extends FloatingBannerView<
                 reviews.push(reply.get('id'));
             }
         }
+
+        await this.#reviewRequestEditorView.saveOpenEditors();
 
         try {
             await this.#runPublishBatch(reviewRequest.get('localSitePrefix'),
@@ -661,6 +673,8 @@ export class UnifiedBannerView extends FloatingBannerView<
         const draftModes = model.get('draftModes');
         const draftMode = draftModes[selectedDraftMode];
         const reviewRequest = model.get('reviewRequest');
+
+        ClientCommChannel.getInstance().reload();
 
         try {
             if (draftMode.hasReview) {

@@ -1,4 +1,25 @@
-(function() {
+/**
+ * Object to manage the user's session.
+ */
+import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
+
+import {
+    BaseResource,
+    BaseResourceAttrs,
+} from '../resources/models/baseResource';
+
+
+/** Attributes for the StoredItems model. */
+interface StoredItemsAttrs extends BaseResourceAttrs {
+    /** The root of the URL for the resource list. */
+    baseURL: string;
+
+    /** The ID of the item. */
+    objectID: string;
+
+    /** Whether or not the item has been stored on the server. */
+    stored: boolean;
+}
 
 
 /**
@@ -21,7 +42,8 @@
  *     stored (boolean):
  *         Whether or not the item has been stored on the server.
  */
-const Item = RB.BaseResource.extend({
+@spina
+class Item extends BaseResource<StoredItemsAttrs> {
     /**
      * Return defaults for the model attributes.
      *
@@ -29,14 +51,14 @@ const Item = RB.BaseResource.extend({
      *     object:
      *     Default values for the attributes.
      */
-    defaults() {
+    defaults(): StoredItemsAttrs {
         return _.defaults({
             baseURL: null,
             loaded: true,
             objectID: null,
             stored: false,
-        }, RB.BaseResource.prototype.defaults());
-    },
+        }, super.defaults());
+    }
 
     /**
      * Return the URL for the item resource.
@@ -45,7 +67,7 @@ const Item = RB.BaseResource.extend({
      *     string:
      *     The URL to use for updating the item.
      */
-    url() {
+    url(): string {
         let url = this.get('baseURL');
 
         if (this.get('stored')) {
@@ -53,7 +75,7 @@ const Item = RB.BaseResource.extend({
         }
 
         return url;
-    },
+    }
 
     /**
      * Return whether the item is new (not yet stored on the server).
@@ -62,9 +84,9 @@ const Item = RB.BaseResource.extend({
      *     boolean:
      *     Whether the item is new.
      */
-    isNew() {
+    isNew(): boolean {
         return !this.get('stored');
-    },
+    }
 
     /**
      * Return a JSON-serializable representation of the item.
@@ -77,14 +99,25 @@ const Item = RB.BaseResource.extend({
         return {
             object_id: this.get('objectID') || undefined,
         };
-    },
+    }
 
     /**
      * Parse the response from the server.
      */
-    parse(/* rsp */) {
-    },
-});
+    parse(/* rsp */): StoredItemsAttrs {
+        return undefined;
+    }
+}
+
+
+/** Attributes for the StoredItems model. */
+interface StoredItemsAttrs extends BaseResourceAttrs {
+    /** The error to use when adding an item fails. */
+    addError: string;
+
+    /** The error to use when removing an item fails. */
+    removeError: string;
+}
 
 
 /**
@@ -93,15 +126,9 @@ const Item = RB.BaseResource.extend({
  * This interfaces with a Watched Items resource (for groups or review
  * requests) and a Hidden Items resource, allowing immediate adding/removing
  * of objects.
- *
- * Model Attributes:
- *     addError (string):
- *         The error string to use when adding an item fails.
- *
- *     removeError (string):
- *         The error string to use when removing an item fails.
  */
-const StoredItems = RB.BaseResource.extend({
+@spina
+class StoredItems extends BaseResource<StoredItemsAttrs> {
     /**
      * Return the defaults for the model attributes.
      *
@@ -109,12 +136,12 @@ const StoredItems = RB.BaseResource.extend({
      *     object:
      *     The default values for the model attributes.
      */
-    defaults() {
+    defaults(): StoredItemsAttrs {
         return _.defaults({
             addError: '',
             removeError: '',
-        }, RB.BaseResource.prototype.defaults());
-    },
+        }, super.defaults());
+    }
 
     /**
      * Return the URL for the resource.
@@ -125,10 +152,14 @@ const StoredItems = RB.BaseResource.extend({
      */
     url() {
         return this.get('url');
-    },
+    }
 
     /**
      * Immediately add an object to a stored list on the server.
+     *
+     * Version Changed:
+     *     6.0:
+     *     Removed options and context parameters.
      *
      * Version Changed:
      *     5.0:
@@ -136,7 +167,7 @@ const StoredItems = RB.BaseResource.extend({
      *     a promise.
      *
      * Args:
-     *     obj (Item):
+     *     obj (Backbone.Model):
      *         The item to add.
      *
      *     options (object, optional):
@@ -149,33 +180,27 @@ const StoredItems = RB.BaseResource.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    addImmediately(obj, options={}, context=undefined) {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('StoredItems.addImmediately was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.addImmediately(obj));
-        }
-
+    addImmediately(obj: Backbone.Model) {
         const url = this.url();
 
         if (url) {
             const item = new Item({
-                objectID: obj.id,
                 baseURL: url,
+                objectID: String(obj.id),
             });
 
             return item.save();
         } else {
-            return Promise.reject(new Error(this.addError));
+            return Promise.reject(new Error(this.attributes.addError));
         }
-    },
+    }
 
     /**
      * Immediately remove an object from a stored list on the server.
+     *
+     * Version Changed:
+     *     6.0:
+     *     Removed options and context parameters.
      *
      * Version Changed:
      *     5.0:
@@ -183,47 +208,84 @@ const StoredItems = RB.BaseResource.extend({
      *     a promise.
      *
      * Args:
-     *     obj (Item):
+     *     obj (Backbone.Model):
      *         The item to remove.
-     *
-     *     options (object, optional):
-     *         Options for the save operation.
-     *
-     *     context (object, optional):
-     *         Context to use when calling the callbacks in ``options``.
      *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    removeImmediately(obj, options={}, context=undefined) {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('StoredItems.removeImmediately was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.removeImmediately(obj));
-        }
-
+    removeImmediately(obj: Backbone.Model) {
         const url = this.url();
 
         return new Promise((resolve, reject) => {
             if (url) {
                 const item = new Item({
-                    objectID: obj.id,
                     baseURL: url,
+                    objectID: String(obj.id),
                     stored: true,
                 });
 
                 resolve(item.destroy());
             } else {
-                reject(new Error(this.removeError));
+                reject(new Error(this.attributes.removeError));
             }
         });
-    },
-});
+    }
+}
+
+
+/** Attributes for the UserSession model. */
+interface UserSessionAttrs extends ModelAttributes {
+    /** The URL for the archived review requests API resource. */
+    archivedReviewRequestsURL: string;
+
+    /** Whether the user is currently authenticated. */
+    authenticated: boolean;
+
+    /**
+     * Whether the user wants to see diffs with excess whitespace highlighted.
+     */
+    diffsShowExtraWhitespace: boolean;
+
+    /** The user's full name. */
+    fullName: string;
+
+    /** The URL to the login page (if the user is anonymous). */
+    loginURL: string;
+
+    /** The URL for the muted review requests API resource. */
+    mutedReviewRequestsURL: string;
+
+    /** Whether the server is operating in read-only mode. */
+    readOnly: boolean;
+
+    /** The URL to the session API resource. */
+    sessionURL: string;
+
+    /**
+     * The user's offset from UTC.
+     *
+     * This should be in the format that will attach to an ISO 8601 style date,
+     * such as "-0800" for PST.
+     */
+    timezoneOffset: string;
+
+    /** The URL for the user file attachments API resource. */
+    userFileAttachmentsURL: string;
+
+    /** The URL for the user's profile page. */
+    userPageURL: string;
+
+    /** The user's username. */
+    username: string;
+
+    /** The URL for the watched review groups API resource. */
+    watchedReviewGroupsURL: string;
+
+    /** The URL for the watched review requests API resource. */
+    watchedReviewRequestsURL: string;
+}
 
 
 /**
@@ -236,54 +298,37 @@ const StoredItems = RB.BaseResource.extend({
  * There should only ever be one instance of a UserSession. It should always
  * be created through UserSession.create, and retrieved through
  * UserSession.instance.
- *
- * Model Attributes:
- *     archivedReviewRequestsURL (string):
- *         The URL for the archived review requests API resource.
- *
- *     authenticated (boolean):
- *         Whether the user is currently authenticated.
- *
- *     diffsShowExtraWhitespace (boolean):
- *         Whether the user wants to see diffs with excess whitespace
- *         highlighted.
- *
- *     fullName (string):
- *         The user's full name.
- *
- *     loginURL (string):
- *         The URL to the login page (if the user is anonymous).
- *
- *     mutedReviewRequestsURL (string):
- *         The URL for the archived review requests API resource.
- *
- *     readOnly (boolean):
- *         Whether the user is operating in read-only mode.
- *
- *     sessionURL (string):
- *         The URL to the session API resource.
- *
- *     timezoneOffset (string):
- *         The user's offset from UTC. This will be in the format that would
- *         attach to an ISO8601-style date, such as "-0800" for PST.
- *
- *     userFileAttachmentsURL (string):
- *         The URL for the user file attachments API resource.
- *
- *     userPageURL (string):
- *         The URL for the user's profile page.
- *
- *     username: (string):
- *         The user's username.
- *
- *     watchedReviewGroupsURL (string):
- *         The URL for the watched review groups API resource.
- *
- *     watchedReviewRequestsURL (string):
- *         The URL for the watched review requests API resource.
  */
-RB.UserSession = Backbone.Model.extend({
-    defaults: {
+@spina
+export class UserSession extends BaseModel<UserSessionAttrs> {
+    /** The singleton instance of the session object. */
+    static instance: UserSession = null;
+
+    /**
+     * Create the UserSession for the current user.
+     *
+     * Only one will ever exist. Calling this a second time will assert.
+     *
+     * Args:
+     *     attributes (object):
+     *         Attributes to pass into the UserSession initializer.
+     *
+     * Returns:
+     *     UserSession:
+     *     The user session instance.
+     */
+    static create(
+        attributes: Partial<UserSessionAttrs>,
+    ): UserSession {
+        console.assert(!this.instance,
+                       'UserSession.create can only be called once.');
+
+        this.instance = new this(attributes);
+
+        return this.instance;
+    }
+
+    defaults: UserSessionAttrs = {
         archivedReviewRequestsURL: null,
         authenticated: false,
         diffsShowExtraWhitespace: false,
@@ -298,7 +343,23 @@ RB.UserSession = Backbone.Model.extend({
         username: null,
         watchedReviewGroupsURL: null,
         watchedReviewRequestsURL: null,
-    },
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The API endpoint for archiving. */
+    archivedReviewRequests: StoredItems;
+
+    /** The API endpoint for muting. */
+    mutedReviewRequests: StoredItems;
+
+    /** The API endpoint for starring groups. */
+    watchedGroups: StoredItems;
+
+    /** The API endpoint for starring review requests. */
+    watchedReviewRequests: StoredItems;
 
     /**
      * Initialize the model.
@@ -306,26 +367,26 @@ RB.UserSession = Backbone.Model.extend({
     initialize() {
         this.watchedGroups = new StoredItems({
             url: this.get('watchedReviewGroupsURL'),
-            addError: gettext('Must log in to add a watched item.'),
-            removeError: gettext('Must log in to remove a watched item.'),
+            addError: _`Must log in to add a watched item.`,
+            removeError: _`Must log in to remove a watched item.`,
         });
 
         this.watchedReviewRequests = new StoredItems({
             url: this.get('watchedReviewRequestsURL'),
-            addError: gettext('Must log in to add a watched item.'),
-            removeError: gettext('Must log in to remove a watched item.'),
+            addError: _`Must log in to add a watched item.`,
+            removeError: _`Must log in to remove a watched item.`,
         });
 
         this.archivedReviewRequests = new StoredItems({
             url: this.get('archivedReviewRequestsURL'),
-            removeError: gettext('Must log in to remove a archived item.'),
-            addError: gettext('Must log in to add an archived item.'),
+            removeError: _`Must log in to remove a archived item.`,
+            addError: _`Must log in to add an archived item.`,
         });
 
         this.mutedReviewRequests = new StoredItems({
             url: this.get('mutedReviewRequestsURL'),
-            removeError: gettext('Must log in to remove a muted item.'),
-            addError: gettext('Must log in to add a muted item.'),
+            removeError: _`Must log in to remove a muted item.`,
+            addError: _`Must log in to add a muted item.`,
         });
 
         this._bindCookie({
@@ -333,7 +394,7 @@ RB.UserSession = Backbone.Model.extend({
             cookieName: 'show_ew',
             deserialize: value => (value !== 'false'),
         });
-    },
+    }
 
     /**
      * Toggle a boolean attribute.
@@ -344,9 +405,9 @@ RB.UserSession = Backbone.Model.extend({
      *     attr (string):
      *         The name of the attribute to toggle.
      */
-    toggleAttr(attr) {
+    toggleAttr(attr: string) {
         this.set(attr, !this.get(attr));
-    },
+    }
 
     /*
      * Return avatar HTML for the user with the given size.
@@ -363,38 +424,13 @@ RB.UserSession = Backbone.Model.extend({
      *     string:
      *     The HTML for the avatar.
      */
-    getAvatarHTML: function(size) {
-        var urls = this.get('avatarHTML') || {};
-        return urls[size] || '';
-    },
+    getAvatarHTML(
+        size: number,
+    ): string {
+        const urls = this.get('avatarHTML') || {};
 
-    /**
-     * Return avatar URLs for the user with the given size.
-     *
-     * Deprecated:
-     *     3.0.19:
-     *     :js:meth:`getAvatarHTML` should be used instead.
-     *
-     * Args:
-     *     size (number):
-     *         The size of the avatar, in pixels. This is both the width and
-     *         height.
-     *
-     * Return:
-     *     object:
-     *     An object containing avatar URLs, if the requested avatar size is
-     *     available. This object will contain the following keys:
-     *
-     *     * ``1x``: The url for the avatar.
-     *     * ``2x``: The high-DPI URL for the avatar.
-     *
-     *     If the requested avatar size is unavailable, this function returns
-     *     an empty object.
-     */
-    getAvatarURLs(size) {
-        const urls = this.get('avatarURLs') || {};
-        return urls[size] || {};
-    },
+        return urls[size] || '';
+    }
 
     /**
      * Bind a cookie to an attribute.
@@ -421,7 +457,12 @@ RB.UserSession = Backbone.Model.extend({
      *    serialize (function, optional):
      *        A serialization function to use when storing the attribute value.
      */
-    _bindCookie(options) {
+    _bindCookie(options: {
+        attr: string;
+        cookieName: string;
+        deserialize: (string) => unknown;
+        serialize: (unknown) => string;
+    }) {
         const deserialize = options.deserialize || _.identity;
         const serialize = (options.serialize ||
                            (value => value.toString()));
@@ -433,34 +474,5 @@ RB.UserSession = Backbone.Model.extend({
                 path: SITE_ROOT,
             });
         });
-    },
-}, {
-    instance: null,
-
-    ARCHIVED: 'A',
-    MUTED: 'M',
-
-    /**
-     * Create the UserSession for the current user.
-     *
-     * Only one will ever exist. Calling this a second time will assert.
-     *
-     * Args:
-     *     options (object):
-     *         Options to pass into the UserSession initializer.
-     *
-     * Returns:
-     *     RB.UserSession:
-     *     The user session instance.
-     */
-    create(options) {
-        console.assert(!RB.UserSession.instance,
-                       'UserSession.create can only be called once.');
-
-        RB.UserSession.instance = new RB.UserSession(options);
-        return RB.UserSession.instance;
-    },
-});
-
-
-})();
+    }
+}

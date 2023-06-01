@@ -1,3 +1,16 @@
+import {
+    beforeEach,
+    describe,
+    expect,
+    expectAsync,
+    it,
+    spyOn,
+    suite,
+} from 'jasmine-core';
+
+import { ReviewRequestEditor } from '../reviewRequestEditor';
+
+
 suite('rb/models/ReviewRequestEditor', function() {
     let reviewRequest;
     let editor;
@@ -7,7 +20,7 @@ suite('rb/models/ReviewRequestEditor', function() {
             id: 1,
         });
 
-        editor = new RB.ReviewRequestEditor({
+        editor = new ReviewRequestEditor({
             reviewRequest: reviewRequest,
         });
     });
@@ -59,7 +72,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                     editor.decr('editCount');
                     expect(editor.get('editCount')).toBe(0);
                     expect(editor.validationError).toBe(
-                        RB.ReviewRequestEditor.strings.UNBALANCED_EDIT_COUNT);
+                        ReviewRequestEditor.strings.UNBALANCED_EDIT_COUNT);
                 });
             });
         });
@@ -110,7 +123,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 extraData.foo = '**Test**';
 
                 const value = editor.getDraftField('foo', {
-                    useExtraData: true
+                    useExtraData: true,
                 });
                 expect(value).toBe('**Test**');
             });
@@ -155,68 +168,6 @@ suite('rb/models/ReviewRequestEditor', function() {
                 draft = editor.get('reviewRequest').draft;
             });
 
-            describe('When publishing', function() {
-                beforeEach(function() {
-                    spyOn(editor, 'publishDraft');
-
-                    editor.set({
-                        publishing: true,
-                        pendingSaveCount: 1,
-                    });
-                });
-
-                it('Successful saves', async function() {
-                    spyOn(draft, 'save').and.resolveTo();
-
-                    await editor.setDraftField(
-                        'summary', 'My Summary', { jsonFieldName: 'summary' });
-
-                    expect(editor.get('publishing')).toBe(false);
-                    expect(editor.get('pendingSaveCount')).toBe(0);
-                    expect(editor.publishDraft).toHaveBeenCalled();
-                });
-
-                it('Field set errors', async function() {
-                    spyOn(draft, 'save').and.rejectWith(new BackboneError(
-                        draft,
-                        {
-                            errorPayload: {
-                                fields: {
-                                    summary: ['Something went wrong'],
-                                },
-                            },
-                        },
-                        {}));
-
-                    await expectAsync(
-                        editor.setDraftField('summary', 'My Summary',
-                                             { jsonFieldName: 'summary' }))
-                        .toBeRejectedWith(Error('"Something went wrong"'));
-
-                    expect(editor.get('publishing')).toBe(false);
-                    expect(editor.get('pendingSaveCount')).toBe(1);
-                    expect(editor.publishDraft).not.toHaveBeenCalled();
-                });
-
-                it('With callbacks', function(done) {
-                    spyOn(draft, 'save').and.resolveTo();
-                    spyOn(console, 'warn');
-
-                    editor.setDraftField('summary', 'My Summary', {
-                        jsonFieldName: 'summary',
-                        success: () => {
-                            expect(editor.get('publishing')).toBe(false);
-                            expect(editor.get('pendingSaveCount')).toBe(0);
-                            expect(editor.publishDraft).toHaveBeenCalled();
-                            expect(console.warn).toHaveBeenCalled();
-
-                            done();
-                        },
-                        error: () => done.fail(),
-                    });
-                });
-            });
-
             describe('Rich text fields', function() {
                 describe('changeDescription', function() {
                     describe('Draft description', function() {
@@ -230,10 +181,10 @@ suite('rb/models/ReviewRequestEditor', function() {
                                 {
                                     allowMarkdown: true,
                                     fieldID: 'changedescription',
-                                    richText: richText,
                                     jsonFieldName: 'changedescription',
                                     jsonTextTypeFieldName:
-                                        'changedescription_text_type'
+                                        'changedescription_text_type',
+                                    richText: richText,
                                 });
 
                             expect(reviewRequest.close).not.toHaveBeenCalled();
@@ -241,10 +192,10 @@ suite('rb/models/ReviewRequestEditor', function() {
                             expect(
                                 reviewRequest.draft.save.calls.argsFor(0)[0].data
                             ).toEqual({
-                                changedescription_text_type: textType,
                                 changedescription: 'My description',
+                                changedescription_text_type: textType,
                                 force_text_type: 'html',
-                                include_text_types: 'raw'
+                                include_text_types: 'raw',
                             });
                         }
 
@@ -265,7 +216,8 @@ suite('rb/models/ReviewRequestEditor', function() {
                         spyOn(draft, 'save').and.resolveTo();
 
                         await editor.setDraftField(
-                            'targetGroups', '', { jsonFieldName: 'target_groups' });
+                            'targetGroups', '',
+                            { jsonFieldName: 'target_groups' });
 
                         expect(draft.save).toHaveBeenCalled();
                     });
@@ -293,8 +245,9 @@ suite('rb/models/ReviewRequestEditor', function() {
                             {}));
 
                         await expectAsync(
-                            editor.setDraftField('targetGroups', 'group1, group2',
-                                                 { jsonFieldName: 'target_groups' }))
+                            editor.setDraftField(
+                                'targetGroups', 'group1, group2',
+                                { jsonFieldName: 'target_groups' }))
                             .toBeRejectedWith(Error(
                                 'Groups "group1" and "group2" do not exist.'));
                     });
@@ -305,7 +258,8 @@ suite('rb/models/ReviewRequestEditor', function() {
                         spyOn(draft, 'save').and.resolveTo();
 
                         await editor.setDraftField(
-                            'targetPeople', '', { jsonFieldName: 'target_people' });
+                            'targetPeople', '',
+                            { jsonFieldName: 'target_people' });
 
                         expect(draft.save).toHaveBeenCalled();
                     });
@@ -333,10 +287,11 @@ suite('rb/models/ReviewRequestEditor', function() {
                             {}));
 
                         await expectAsync(
-                            editor.setDraftField('targetPeople', 'user1, user2',
-                                                 { jsonFieldName: 'target_people' }))
-                            .toBeRejectedWith(
-                                Error('Users "user1" and "user2" do not exist.'));
+                            editor.setDraftField(
+                                'targetPeople', 'user1, user2',
+                                { jsonFieldName: 'target_people' }))
+                            .toBeRejectedWith(Error(
+                                'Users "user1" and "user2" do not exist.'));
                     });
                 });
 
@@ -354,7 +309,8 @@ suite('rb/models/ReviewRequestEditor', function() {
                         spyOn(draft, 'save').and.resolveTo();
 
                         await editor.setDraftField(
-                            'submitter', 'user1', { jsonFieldName: 'submitter' });
+                            'submitter', 'user1',
+                            { jsonFieldName: 'submitter' });
 
                         expect(draft.save).toHaveBeenCalled();
                     });
@@ -372,9 +328,11 @@ suite('rb/models/ReviewRequestEditor', function() {
                             {}));
 
                         await expectAsync(
-                            editor.setDraftField('submitter', 'user1',
-                                                 { jsonFieldName: 'submitter' }))
-                            .toBeRejectedWith(Error('User "user1" does not exist.'));
+                            editor.setDraftField(
+                                'submitter', 'user1',
+                                { jsonFieldName: 'submitter' }))
+                            .toBeRejectedWith(Error(
+                                'User "user1" does not exist.'));
                     });
                 });
             });
@@ -389,22 +347,21 @@ suite('rb/models/ReviewRequestEditor', function() {
                             'Test text.',
                             {
                                 allowMarkdown: true,
-                                useExtraData: true,
                                 fieldID: 'myfield',
-                                richText: richText,
                                 jsonFieldName: 'myfield',
-                                jsonTextTypeFieldName:
-                                    'myfield_text_type'
+                                jsonTextTypeFieldName: 'myfield_text_type',
+                                richText: richText,
+                                useExtraData: true,
                             });
 
                         expect(reviewRequest.draft.save).toHaveBeenCalled();
                         expect(
                             reviewRequest.draft.save.calls.argsFor(0)[0].data
                         ).toEqual({
-                            'extra_data.myfield_text_type': textType,
                             'extra_data.myfield': 'Test text.',
-                            force_text_type: 'html',
-                            include_text_types: 'raw'
+                            'extra_data.myfield_text_type': textType,
+                            'force_text_type': 'html',
+                            'include_text_types': 'raw',
                         });
                     }
 
@@ -477,10 +434,10 @@ suite('rb/models/ReviewRequestEditor', function() {
                 const fileAttachment =
                     reviewRequest.draft.createFileAttachment();
 
-                editor = new RB.ReviewRequestEditor({
-                    reviewRequest: reviewRequest,
+                editor = new ReviewRequestEditor({
                     fileAttachments: new Backbone.Collection(
-                        [fileAttachment])
+                        [fileAttachment]),
+                    reviewRequest: reviewRequest,
                 });
 
                 spyOn(editor, 'trigger');
@@ -493,10 +450,10 @@ suite('rb/models/ReviewRequestEditor', function() {
                 const fileAttachment =
                     reviewRequest.draft.createFileAttachment();
 
-                editor = new RB.ReviewRequestEditor({
-                    reviewRequest: reviewRequest,
+                editor = new ReviewRequestEditor({
                     fileAttachments: new Backbone.Collection(
-                        [fileAttachment])
+                        [fileAttachment]),
+                    reviewRequest: reviewRequest,
                 });
 
                 spyOn(reviewRequest.draft, 'ensureCreated').and.resolveTo();
@@ -510,9 +467,9 @@ suite('rb/models/ReviewRequestEditor', function() {
             it('When existing screenshot saved', function() {
                 const screenshot = reviewRequest.createScreenshot();
 
-                editor = new RB.ReviewRequestEditor({
+                editor = new ReviewRequestEditor({
                     reviewRequest: reviewRequest,
-                    screenshots: new Backbone.Collection([screenshot])
+                    screenshots: new Backbone.Collection([screenshot]),
                 });
 
                 spyOn(editor, 'trigger');
@@ -524,9 +481,9 @@ suite('rb/models/ReviewRequestEditor', function() {
             it('When existing screenshot destroyed', async function() {
                 const screenshot = reviewRequest.createScreenshot();
 
-                editor = new RB.ReviewRequestEditor({
+                editor = new ReviewRequestEditor({
                     reviewRequest: reviewRequest,
-                    screenshots: new Backbone.Collection([screenshot])
+                    screenshots: new Backbone.Collection([screenshot]),
                 });
 
                 spyOn(reviewRequest.draft, 'ensureCreated').and.resolveTo();
@@ -552,10 +509,10 @@ suite('rb/models/ReviewRequestEditor', function() {
                 const fileAttachment =
                     reviewRequest.draft.createFileAttachment();
 
-                editor = new RB.ReviewRequestEditor({
-                    reviewRequest: reviewRequest,
+                editor = new ReviewRequestEditor({
                     fileAttachments: new Backbone.Collection(
-                        [fileAttachment])
+                        [fileAttachment]),
+                    reviewRequest: reviewRequest,
                 });
 
                 spyOn(editor, 'trigger');
@@ -567,9 +524,9 @@ suite('rb/models/ReviewRequestEditor', function() {
             it('When screenshot saving', function() {
                 const screenshot = reviewRequest.createScreenshot();
 
-                editor = new RB.ReviewRequestEditor({
+                editor = new ReviewRequestEditor({
                     reviewRequest: reviewRequest,
-                    screenshots: new Backbone.Collection([screenshot])
+                    screenshots: new Backbone.Collection([screenshot]),
                 });
 
                 spyOn(editor, 'trigger');

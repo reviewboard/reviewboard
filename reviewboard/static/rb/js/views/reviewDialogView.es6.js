@@ -1262,6 +1262,8 @@ RB.ReviewDialogView = Backbone.View.extend({
                 this.close();
                 await this.model.destroy();
 
+                RB.ClientCommChannel.getInstance().reload();
+
                 if (!RB.EnabledFeatures.unifiedBanner) {
                     RB.DraftReviewBannerView.instance.hideAndReload();
                 }
@@ -1358,8 +1360,11 @@ RB.ReviewDialogView = Backbone.View.extend({
             this.close();
 
             if (RB.EnabledFeatures.unifiedBanner) {
-                // Reload the page.
-                RB.navigateTo(this.model.get('parentObject').get('reviewURL'));
+                if (publish) {
+                    // Reload the page.
+                    RB.navigateTo(
+                        this.model.get('parentObject').get('reviewURL'));
+                }
             } else {
                 const reviewBanner = RB.DraftReviewBannerView.instance;
 

@@ -1,79 +1,154 @@
 /**
- * Handles all operations and state related to editing review requests.
+ * Model that handles all operations and state for editing review requests.
+ */
+
+import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
+
+
+/** Attributes for the ReviewRequestEditor model. */
+export interface ReviewRequestEditorAttrs extends ModelAttributes {
+    /** The collection of commits on this review request. */
+    commits: RB.DiffCommitCollection;
+
+    /** The rendered change description text, if any. */
+    changeDescriptionRenderedText: string;
+
+    /** The rendered close description text, if any. */
+    closeDescriptionRenderedText: string;
+
+    /** The issue manager for the editor. */
+    commentIssueManager: RB.CommentIssueManager;
+
+    /**
+     * Whether or not the review request is currently editable.
+     *
+     * This is derived from the ``mutableByUser`` attribute and the review
+     * request's ``state`` attribute.
+     */
+    editable: boolean;
+
+    /** The number of outstanding edits. */
+    editCount: number;
+
+    /** Whether or not a draft currently exists. */
+    hasDraft: boolean;
+
+    /** The files attached to this review request. */
+    fileAttachments: Backbone.Collection<RB.FileAttachment>;
+
+    /** A mapping of file attachment IDs to their comments. */
+    fileAttachmentComments: {
+        [key: string]: RB.FileAttachmentComment;
+    };
+
+    /** Whether or not the user can mutate the review request. */
+    mutableByUser: boolean;
+
+    /** Whether or not we are currently publishing the review request. */
+    publishing: boolean;
+
+    /** The review request model. */
+    reviewRequest: RB.ReviewRequest;
+
+    /** The legacy screenshots attached to this review request. */
+    screenshots: Backbone.Collection<RB.Screenshot>;
+
+    /** Whether or not to show the "Send e-mail" checkbox. */
+    showSendEmail: boolean;
+
+    /** Whether or not the status is currently editable. */
+    statusEditable: boolean;
+
+    /** Whether or not the status is mutable by the current user. */
+    statusMutableByUser: boolean;
+}
+
+
+/**
+ * Options for getting a draft field.
+ */
+export interface GetDraftFieldOptions {
+    /**
+     * The key to use for the field name in the API.
+     *
+     * This is required if ``useExtraData`` is set.
+     */
+    jsonFieldName?: string;
+
+    /**
+     * Whether the field is stored as part of extraData.
+     *
+     * If this is ``false``, the value will instead be stored as a regular
+     * attribute on the model. If this is ``true``, ``jsonFieldName`` needs to
+     * be set.
+     */
+    useExtraData?: boolean;
+
+    /**
+     * Whether to return the raw text value for a field.
+     *
+     * This requires ``useExtraData`` to be ``true``.
+     */
+    useRawTextValue?: boolean;
+}
+
+
+/**
+ * Options for setting a draft field.
+ */
+export interface SetDraftFieldOptions {
+    /**
+     * Whether the field can support rich text (Markdown).
+     *
+     * This requires that ``jsonTextTypeFieldName`` is set.
+     */
+    allowMarkdown?: boolean;
+
+    /** The key to use for the field name in the API. */
+    jsonFieldName?: string;
+
+    /** The key to use for the name of the field indicating the text type. */
+    jsonTextTypeFieldName?: string;
+
+    /** Whether the field is rich text (Markdown). */
+    richText?: boolean;
+
+    /** Whether the field should be set in extraData or as an attribute. */
+    useExtraData?: boolean;
+}
+
+
+export interface PublishDraftOptions {
+    /** Whether to skip e-mail notifications. */
+    trivial?: boolean;
+}
+
+
+/**
+ * Model that handles all operations and state for editing review requests.
  *
  * This manages the editing of all fields and objects on a review request,
  * the publishing workflow, and validation.
- *
- * Model Attributes:
- *     commits (RB.DiffCommitCollection):
- *         The collection of commits on this review request.
- *
- *     changeDescriptionRenderedText (string):
- *         The rendered change description text, if any.
- *
- *     closeDescriptionRenderedText (string):
- *         The rendered close description text, if any.
- *
- *     commentIssueManager (RB.CommentIssueManager):
- *         The issue manager for the editor.
- *
- *     editable (boolean):
- *         Whether or not the review request is currently editable.
- *
- *         This is derived from the ``mutableByUser`` attribute and the review
- *         request's ``state`` attribute.
- *
- *     editCount (number):
- *         The number of outstanding edits.
- *
- *     hasDraft (boolean):
- *         Whether or not a draft currently exists.
- *
- *     fileAttachemnts (Backbone.Collection of RB.FileAttachment):
- *         The files attached to this review request.
- *
- *     fileAttachmentComments (object):
- *         A mapping of file attachment IDs to their comments.
- *
- *     mutableByUser (boolean):
- *         Whether or not the user can mutate the review request.
- *
- *     pendingSaveCount (number):
- *         The number of fields that have yet to be saved.
- *
- *     publishing (boolean):
- *         Whether or not we are currently publishing the review request.
- *
- *     reviewRequest (RB.ReviewRequest):
- *         The review request model.
- *
- *     screenshots (Backbone.Collection of RB.Screenshot):
- *         The legacy screenshots attached to this review request.
- *
- *     showSendEmail (boolean):
- *         Whether or not to show the "Send e-mail" checkbox for this review
- *         request.
- *
- *     statusEditable (boolean):
- *         Whether or not the status is currently editable.
- *
- *     statusMutableByUser (boolean):
- *         Whether or not the status is mutable by the current user.
  */
-RB.ReviewRequestEditor = Backbone.Model.extend({
-    defaults() {
+@spina
+export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
+    static strings = {
+        UNBALANCED_EDIT_COUNT:
+            _`There is an internal error balancing the edit count`,
+    };
+
+    static defaults(): Partial<ReviewRequestEditorAttrs> {
         return {
-            commitMessages: [],
             changeDescriptionRenderedText: '',
             closeDescriptionRenderedText: '',
             commentIssueManager: null,
-            editable: false,
+            commitMessages: [],
             editCount: 0,
-            hasDraft: false,
-            fileAttachments: null,
+            editable: false,
             fileAttachmentComments: {},
+            fileAttachments: null,
+            hasDraft: false,
             mutableByUser: false,
-            pendingSaveCount: 0,
             publishing: false,
             reviewRequest: null,
             screenshots: null,
@@ -81,7 +156,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             statusEditable: false,
             statusMutableByUser: false,
         };
-    },
+    }
 
     /**
      * Initialize the editor.
@@ -126,7 +201,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                       () => this.trigger('saved'));
         this.listenTo(reviewRequest, 'change:state', this._computeEditable);
         this._computeEditable();
-    },
+    }
 
     /**
      * Parse the given attributes into model attributes.
@@ -139,14 +214,16 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *     object:
      *     The parsed attributes.
      */
-    parse(attrs) {
+    parse(
+        attrs: object,
+    ): Partial<ReviewRequestEditorAttrs> {
         return _.defaults({
             commits: new RB.DiffCommitCollection(
                 attrs.commits || [],
                 {parse: true}
             ),
         }, attrs);
-    },
+    }
 
     /**
      * Create a file attachment tracked by the editor.
@@ -166,7 +243,9 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *     RB.FileAttachment:
      *     The new file attachment model.
      */
-    createFileAttachment(attributes={}) {
+    createFileAttachment(
+        attributes={}, // TODO: Add typing once RB.FileAttachment is TS
+    ): RB.FileAttachment {
         const draft = this.get('reviewRequest').draft;
         const fileAttachment = draft.createFileAttachment(attributes);
 
@@ -185,7 +264,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         }
 
         return fileAttachment;
-    },
+    }
 
     /**
      * Return a field from the draft.
@@ -198,27 +277,17 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *     fieldName (string):
      *         The name of the field to get.
      *
-     *     options (object, optional):
+     *     options (GetDraftFieldOptions, optional):
      *         Options for the operation.
-     *
-     * Option Args:
-     *     jsonFieldName (string, optional):
-     *         The key to use for the field name in the API. This is required
-     *         if ``useExtraData`` is set.
-     *
-     *     useExtraData (boolean, optional):
-     *         Whether the field is stored as part of the extraData or is a
-     *         regular attribute. This requires ``jsonFieldName`` to be set.
-     *
-     *     useRawTextValue (boolean, optional):
-     *         Whether to return the raw text value for a field. This requires
-     *         ``useExtraData`` to be set to ``true``.
      *
      * Returns:
      *     *:
      *     The value of the field.
      */
-    getDraftField(fieldName, options={}) {
+    getDraftField(
+        fieldName: string,
+        options: GetDraftFieldOptions = {},
+    ): unknown {
         const reviewRequest = this.get('reviewRequest');
         const draft = reviewRequest.draft;
 
@@ -244,7 +313,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         } else {
             return draft.get(fieldName);
         }
-    },
+    }
 
     /**
      * Set a field in the draft.
@@ -257,6 +326,10 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *     * fieldChanged(fieldName, value)
      *     * fieldChanged:<fieldName>(value)
      *
+     * Veersion Changed:
+     *     6.0:
+     *     Removed the callbacks entirely, along with the ``context`` argument.
+     *
      * Version Changed:
      *     5.0:
      *     Deprecated callbacks and added a promise return value.
@@ -268,54 +341,25 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *     value (*):
      *         The value to set in the field.
      *
-     *     options (object, optional):
+     *     options (SetDraftFieldOptions, optional):
      *         Options for the set operation.
-     *
-     *     context (object, optional):
-     *         Context to bind when calling callbacks.
-     *
-     * Option Args:
-     *     allowMarkdown (boolean, optional):
-     *         Whether the field can support rich text (Markdown).
-     *         This requires that ``jsonTextTypeFieldName`` is set.
-     *
-     *     jsonFieldName (string):
-     *         The key to use for the field name in the API. This is required.
-     *
-     *     jsonTextTypeFieldName (string, optional):
-     *         The key to use for the name of the field indicating the text
-     *         type (rich text or plain) in the API.
-     *
-     *     richText (boolean, optional):
-     *         Whether the field is rich text (Markdown) formatted.
-     *
-     *     useExtraData (boolean, optional):
-     *         Whether the field should be set as a key in extraData or as a
-     *         direct attribute.
      *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    setDraftField: function(fieldName, value, options={}, context=undefined) {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.ReviewRequestEditor.setDraftField was called ' +
-                         'using callbacks. Callers should be updated to ' +
-                         'use promises instead.');
-            return RB.promiseToCallbacks(
-                options, context,
-                newOptions => this.setDraftField(fieldName, value, newOptions));
-        }
-
+    setDraftField(
+        fieldName: string,
+        value: unknown,
+        options: SetDraftFieldOptions = {},
+    ): Promise<void> {
         const reviewRequest = this.get('reviewRequest');
-        const data = {};
+        const data = {}; // TODO: add typing once RB.ReviewRequest is TS
 
         let jsonFieldName = options.jsonFieldName;
 
         console.assert(
-            jsonFieldName,
+            !!jsonFieldName,
             `jsonFieldName must be set when setting draft ` +
             `field "${fieldName}".`);
 
@@ -326,7 +370,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         if (options.allowMarkdown) {
             let jsonTextTypeFieldName = options.jsonTextTypeFieldName;
 
-            console.assert(jsonTextTypeFieldName,
+            console.assert(!!jsonTextTypeFieldName,
                            'jsonTextTypeFieldName must be set.');
 
             if (options.useExtraData) {
@@ -342,23 +386,14 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
 
         data[jsonFieldName] = value;
 
-        return reviewRequest.draft.save({ data }).then(
-            () => {
+        return reviewRequest.draft.save({ data })
+            .then(() => {
                 this.set('hasDraft', true);
 
                 this.trigger('fieldChanged:' + fieldName, value);
                 this.trigger('fieldChanged', fieldName, value);
-
-                if (this.get('publishing')) {
-                    this.decr('pendingSaveCount');
-
-                    if (this.get('pendingSaveCount') === 0) {
-                        this.set('publishing', false);
-                        this.publishDraft();
-                    }
-                }
-            },
-            err => {
+            })
+            .catch(err => {
                 let message = '';
 
                 this.set('publishing', false);
@@ -418,9 +453,10 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                 }
 
                 err.message = message;
+
                 return Promise.reject(err);
             });
-    },
+    }
 
     /**
      * Publish the draft to the server.
@@ -442,7 +478,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *         Whether the publish is "trivial" (if true, no e-mail
      *         notifications will be sent).
      */
-    async publishDraft(options={}) {
+    async publishDraft(options: PublishDraftOptions = {}) {
         const reviewRequest = this.get('reviewRequest');
 
         try {
@@ -450,7 +486,13 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
 
             if (reviewRequest.attributes.links.submitter.title !==
                 reviewRequest.draft.attributes.links.submitter.title) {
-                if (!confirm(gettext('Are you sure you want to change the ownership of this review request? Doing so may prevent you from editing the review request afterwards.'))) {
+                const confirmed = confirm(_`
+                    Are you sure you want to change the ownership of this
+                    review request? Doing so may prevent you from editing
+                    the review request afterwards.
+                `);
+
+                if (!confirmed) {
                     return;
                 }
             }
@@ -462,7 +504,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         } catch (err) {
             this.trigger('publishError', err.message);
         }
-    },
+    }
 
     /**
      * Increment an attribute by 1.
@@ -473,13 +515,15 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *     attr (string):
      *         The name of the attribute to increment.
      */
-    incr(attr) {
+    incr(
+        attr: Backbone._StringKey<ReviewRequestEditorAttrs>,
+    ) {
         const value = this.get(attr);
         console.assert(_.isNumber(value));
         this.set(attr, value + 1, {
             validate: true,
         });
-    },
+    }
 
     /**
      * Decrement an attribute by 1.
@@ -490,13 +534,15 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *     attr (string):
      *         The name of the attribute to decrement.
      */
-    decr(attr) {
+    decr(
+        attr: Backbone._StringKey<ReviewRequestEditorAttrs>,
+    ) {
         const value = this.get(attr);
         console.assert(_.isNumber(value));
         this.set(attr, value - 1, {
             validate: true,
         });
-    },
+    }
 
     /**
      * Validate the given attributes.
@@ -505,13 +551,15 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *     attrs (object):
      *         The attributes to validate.
      */
-    validate(attrs) {
-        const strings = RB.ReviewRequestEditor.strings;
+    validate(
+        attrs: Partial<ReviewRequestEditorAttrs>,
+    ): string {
+        const strings = ReviewRequestEditor.strings;
 
         if (_.has(attrs, 'editCount') && attrs.editCount < 0) {
             return strings.UNBALANCED_EDIT_COUNT;
         }
-    },
+    }
 
     /**
      * Compute the editable state of the review request and open/close states.
@@ -530,7 +578,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             editable: this.get('mutableByUser') && pending,
             statusEditable: this.get('statusMutableByUser') && !pending,
         });
-    },
+    }
 
     /**
      * Handle when a FileAttachment or Screenshot is added.
@@ -542,7 +590,9 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *     attachment (RB.FileAttachment or RB.Screenshot):
      *         The new file attachment or screenshot.
      */
-    _onFileAttachmentOrScreenshotAdded(attachment) {
+    _onFileAttachmentOrScreenshotAdded(
+        attachment: RB.FileAttachment | RB.Screenshot,
+    ) {
         this.listenTo(attachment, 'saving',
                       () => this.trigger('saving'));
 
@@ -550,10 +600,5 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             this.set('hasDraft', true);
             this.trigger('saved');
         });
-    },
-}, {
-    strings: {
-        UNBALANCED_EDIT_COUNT:
-            gettext('There is an internal error balancing the edit count'),
-    },
-});
+    }
+}

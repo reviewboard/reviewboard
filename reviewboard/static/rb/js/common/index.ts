@@ -95,5 +95,11 @@ export const Product: ProductInfo = {
 
 
 export * from './actions';
+export * from './resources';
+export { BaseCollection } from './collections/baseCollection';
+export { ClientCommChannel } from './models/commChannel';
+export { ExtraData } from './models/extraData';
+export { ExtraDataMixin } from './models/extraDataMixin';
 export { Page } from './models/pageModel';
 export { PageView } from './views/pageView';
+export { UserSession } from './models/userSession';

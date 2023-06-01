@@ -20,9 +20,10 @@ from collections import OrderedDict
 from datetime import datetime
 from importlib import import_module
 from random import choice as random_choice
-from typing import Optional
+from typing import Dict, List, Optional
 from urllib.request import urlopen
 
+from packaging.version import parse as parse_version
 from django.db.utils import OperationalError
 from django.dispatch import receiver
 from django.utils.encoding import force_str
@@ -220,6 +221,8 @@ class Site(object):
         """Initialize the site."""
         self.install_dir = self.get_default_site_path(install_dir)
         self.abs_install_dir = os.path.abspath(self.install_dir)
+        self.venv_dir = os.path.join(self.abs_install_dir, 'venv')
+        self.bin_dir = os.path.join(self.abs_install_dir, 'bin')
         self.site_id = \
             os.path.basename(install_dir).replace(" ", "_").replace(".", "_")
         self.options = options
@@ -254,23 +257,25 @@ class Site(object):
 
         return os.path.join(INSTALLED_SITE_PATH, install_dir)
 
-    def rebuild_site_directory(self):
+    def rebuild_site_directory(self) -> None:
         """Rebuild the site hierarchy."""
-        htdocs_dir = os.path.join(self.install_dir, "htdocs")
+        install_dir = self.install_dir
+        htdocs_dir = os.path.join(install_dir, 'htdocs')
         errordocs_dir = os.path.join(htdocs_dir, 'errordocs')
-        media_dir = os.path.join(htdocs_dir, "media")
-        static_dir = os.path.join(htdocs_dir, "static")
-        conf_dir = os.path.join(self.install_dir, 'conf')
+        media_dir = os.path.join(htdocs_dir, 'media')
+        static_dir = os.path.join(htdocs_dir, 'static')
+        conf_dir = os.path.join(install_dir, 'conf')
 
-        self.mkdir(self.install_dir)
+        self.mkdir(install_dir)
         self.mkdir(conf_dir)
-        self.mkdir(os.path.join(self.install_dir, "logs"))
+        self.mkdir(self.bin_dir)
+        self.mkdir(os.path.join(install_dir, 'logs'))
         self.mkdir(os.path.join(conf_dir, 'webconfs'))
 
-        self.mkdir(os.path.join(self.install_dir, "tmp"))
-        os.chmod(os.path.join(self.install_dir, "tmp"), 0o777)
+        self.mkdir(os.path.join(install_dir, 'tmp'))
+        os.chmod(os.path.join(install_dir, 'tmp'), 0o777)
 
-        self.mkdir(os.path.join(self.install_dir, "data"))
+        self.mkdir(os.path.join(install_dir, 'data'))
 
         self.mkdir(htdocs_dir)
         self.mkdir(media_dir)
@@ -329,9 +334,9 @@ class Site(object):
                           os.path.join(static_dir, 'djblets'))
 
         # Remove any old media directories from old sites
-        self.unlink_media_dir(os.path.join(media_dir, 'admin'))
-        self.unlink_media_dir(os.path.join(media_dir, 'djblets'))
-        self.unlink_media_dir(os.path.join(media_dir, 'rb'))
+        self.remove_files(os.path.join(media_dir, 'admin'))
+        self.remove_files(os.path.join(media_dir, 'djblets'))
+        self.remove_files(os.path.join(media_dir, 'rb'))
 
         # Generate .htaccess files that enable compression and
         # never expires various file types.
@@ -733,17 +738,29 @@ class Site(object):
         # version before encryption was added).
         Repository.objects.encrypt_plain_text_passwords()
 
-    def get_static_media_upgrade_needed(self):
-        """Determine if a static media config upgrade is needed."""
+    def get_static_media_upgrade_needed(self) -> bool:
+        """Determine if a static media config upgrade is needed.
+
+        Returns:
+            bool:
+            ``True`` if static media configuration needs to be upgraded.
+            ``False`` if it does not.
+        """
         from djblets.siteconfig.models import SiteConfiguration
 
         siteconfig = SiteConfiguration.objects.get_current()
         manual_updates = siteconfig.settings.get('manual-updates', {})
         resolved_update = manual_updates.get('static-media', False)
 
-        return (not resolved_update and
-                (pkg_resources.parse_version(siteconfig.version) <
-                 pkg_resources.parse_version("1.7")))
+        # Note that we're parsing a version that may have version suffixes
+        # (e.g., " alpha 0 (dev)") that can't safely be parsed as a version.
+        # We know the format, so we can just split out the first part of the
+        # version and compare against that.
+        return (
+            not resolved_update and
+            (parse_version(siteconfig.version.split(' ')[0]) <
+             parse_version('1.7'))
+        )
 
     def get_diff_dedup_needed(self):
         """Determine if there's likely duplicate diff data stored."""
@@ -1145,31 +1162,166 @@ class Site(object):
 
         os.chdir(cwd)
 
+    def run_pip(
+        self,
+        args: List[str],
+    ) -> None:
+        """Run the correct version of pip.
+
+        This will run :command:`pip` via the Python runtime, bypassing any
+        command line scripts.
+
+        This utilizes :py:meth:`run_python`, ensuring we run the right for a
+        virtual environment or global install.
+
+        Args:
+            args (list of str):
+                Arguments to pass to :command:`pip`.
+        """
+        self.run_python(['-m', 'pip'] + args)
+
+    def run_python(
+        self,
+        args: List[str] = [],
+        *,
+        capture_output: bool = False,
+        env: Dict[str, str] = {},
+        stdin: Optional[bytes] = None,
+    ) -> None:
+        """Run the correct version of Python.
+
+        If the Review Board site directory contains a virtual environment,
+        this will run :file:`{sitedir}/venv/bin/python`. Otherwise, it will
+        run :file:`python{major}.{minor}` for the version of Python currently
+        being run.
+
+        Args:
+            args (list of str):
+                Arguments to pass to :command:`python`.
+
+            capture_output (bool, optional):
+                Whether to capture and return output from the command.
+
+            env (dict, optional):
+                Environment variables to pass to the process.
+
+            stdin (bytes, optional):
+                Data to pipe in as standard input.
+        """
+        venv_python_path = os.path.join(self.venv_dir, 'bin', 'python')
+
+        if os.path.exists(venv_python_path):
+            python = venv_python_path
+        else:
+            python = 'python%s.%s' % sys.version_info[:2]
+
+        if env:
+            new_env = os.environ.copy()
+            new_env.update(env)
+        else:
+            new_env = env
+
+        return subprocess.run([python] + args,
+                              input=stdin,
+                              capture_output=capture_output,
+                              check=True,
+                              env=new_env)
+
     def mkdir(self, dirname):
         """Create a directory, but only if it doesn't already exist."""
         if not os.path.exists(dirname):
             os.mkdir(dirname)
 
-    def link_pkg_dir(self, pkgname, src_path, dest_dir, replace=True):
-        """Create the package directory."""
-        src_dir = pkg_resources.resource_filename(pkgname, src_path)
+    def mirror_files(
+        self,
+        *,
+        source_path: str,
+        dest_path: str,
+        replace: bool = True,
+        use_symlink: Optional[bool] = None,
+    ) -> None:
+        """Mirror files from one location to another.
 
-        if os.path.islink(dest_dir) and not os.path.exists(dest_dir):
-            os.unlink(dest_dir)
+        This will either use a symlink or copy a tree, depending on the
+        caller's needs, or the :option:`--copy-media` flag if unspecified.
 
-        if os.path.exists(dest_dir):
+        Args:
+            source_path (str):
+                The source path containing the file(s) to mirror.
+
+            dest_path (str):
+                The destination path to place the file(s).
+
+            replace (bool, optional):
+                Whether to replace the destination if it exists.
+
+                If set, this will completely remove the destination.
+
+            use_symlink (bol, optional):
+                Whether to use a symlink to mirror the files.
+
+                If not specified, this will be based on whether the user
+                passed :option:`--copy-media`.
+        """
+        if os.path.islink(dest_path) and not os.path.exists(dest_path):
+            # This is a dangling symlink. Remove it.
+            os.unlink(dest_path)
+
+        if os.path.exists(dest_path):
             if not replace:
                 return
 
-            self.unlink_media_dir(dest_dir)
+            self.remove_files(dest_path)
 
-        if self.options.copy_media:
-            shutil.copytree(src_dir, dest_dir)
+        if use_symlink is None:
+            use_symlink = not self.options.copy_media
+
+        if use_symlink:
+            os.symlink(source_path, dest_path)
         else:
-            os.symlink(src_dir, dest_dir)
+            shutil.copytree(source_path, dest_path)
 
-    def unlink_media_dir(self, path):
-        """Delete the given media directory and all contents."""
+    def link_pkg_dir(
+        self,
+        pkg_name: str,
+        src_path: str,
+        dest_dir: str,
+        replace: bool = True,
+    ) -> None:
+        """Mirror files from a package-provided directory.
+
+        Args:
+            pkg_name (str):
+                The name of the package containing the file.
+
+            src_path (str):
+                The source path of the file within the package.
+
+            dest_dir (str):
+                The destination directory for the files. This will be a symlink
+                unless :option:`--copy-media` is being used.
+
+            replace (bool, optional):
+                Whether to replace the destination if it exists.
+        """
+        self.mirror_files(
+            source_path=pkg_resources.resource_filename(pkg_name, src_path),
+            dest_path=dest_dir,
+            replace=replace)
+
+    def remove_files(
+        self,
+        path: str,
+    ) -> None:
+        """Delete the given directory and all contents.
+
+        If the destination is a symlink, it will be unlinked, and the original
+        files will be untouched.
+
+        Args:
+            path (str):
+                The path to remove.
+        """
         if os.path.exists(path):
             if os.path.islink(path):
                 os.unlink(path)
@@ -1772,6 +1924,16 @@ class InstallCommand(Command):
                  '(defaults to %s)'
                  % pkg_resources.resource_filename(
                      'reviewboard', 'cmdline/conf/settings_local.py.in'))
+        parser.add_argument(
+            '--allow-non-empty-sitedir',
+            default=False,
+            action='store_true',
+            help=(
+                'allow installing into a non-empty site directory. This '
+                'is considered advanced functionality and may lead to data '
+                'loss. This should not be used unless you know what you are '
+                'doing.'
+            ))
 
         if not is_windows:
             parser.add_argument(
@@ -1791,7 +1953,7 @@ class InstallCommand(Command):
         """
         self.site = site
 
-        if not self.check_permissions():
+        if not self.check_permissions(options):
             sys.exit(1)
 
         if (options.secret_key and
@@ -1883,10 +2045,14 @@ class InstallCommand(Command):
 
         return path
 
-    def check_permissions(self):
+    def check_permissions(self, options):
         """Check that permissions are usable.
 
         If not, this will show an error to the user.
+
+        Args:
+            options (argparse.Namespace):
+                The parsed options for the command.
         """
         error = None
 
@@ -1895,7 +2061,11 @@ class InstallCommand(Command):
         if os.path.exists(install_dir):
             # The install directory already exists. Let's see if it's safe
             # to install here.
-            if os.listdir(install_dir) != []:
+            site_contents = os.listdir(install_dir)
+
+            if (site_contents and
+                site_contents != ['venv'] and
+                not options.allow_non_empty_sitedir):
                 # There are existing files in the directory.
                 error = (
                     'The directory already contains files. Make sure you '
@@ -2769,6 +2939,14 @@ class ManageCommand(Command):
                 'List all installed and available extensions.'
             ),
         },
+        'Package Management and Runtime': {
+            'python': 'Run the version of Python for the site.',
+            'pip': (
+                'Run the version of the pip Python package management tool '
+                'for the site.'
+            ),
+            'python': 'Run the version of Python for the site.',
+        },
         'Search': {
             'clear_index': 'Clear the search index.',
             'rebuild_index': 'Rebuild the search index from scratch.',
@@ -2813,7 +2991,7 @@ class ManageCommand(Command):
         initialize()
 
         manage_command = options.manage_command[0]
-        manage_args = options.manage_command[1:]
+        manage_args: List[str] = options.manage_command[1:]
 
         if manage_command == 'list-commands':
             manage_command = 'help'
@@ -2824,9 +3002,22 @@ class ManageCommand(Command):
             # 4.0 onward, this must be removed.
             manage_args = manage_args[1:]
 
-        site.run_manage_command(manage_command, manage_args)
+        rc: int = 0
 
-        sys.exit(0)
+        if manage_command == 'pip':
+            try:
+                site.run_pip(manage_args)
+            except subprocess.CalledProcessError as e:
+                rc = e.returncode
+        elif manage_command == 'python':
+            try:
+                site.run_python(manage_args)
+            except subprocess.CalledProcessError as e:
+                rc = e.returncode
+        else:
+            site.run_manage_command(manage_command, manage_args)
+
+        sys.exit(rc)
 
     def _get_commands_help(self):
         """Return help text for common commands.
