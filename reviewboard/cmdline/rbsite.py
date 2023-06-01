@@ -23,6 +23,7 @@ from random import choice as random_choice
 from typing import Dict, List, Optional
 from urllib.request import urlopen
 
+from packaging.version import parse as parse_version
 from django.db.utils import OperationalError
 from django.dispatch import receiver
 from django.utils.encoding import force_str
@@ -737,17 +738,29 @@ class Site(object):
         # version before encryption was added).
         Repository.objects.encrypt_plain_text_passwords()
 
-    def get_static_media_upgrade_needed(self):
-        """Determine if a static media config upgrade is needed."""
+    def get_static_media_upgrade_needed(self) -> bool:
+        """Determine if a static media config upgrade is needed.
+
+        Returns:
+            bool:
+            ``True`` if static media configuration needs to be upgraded.
+            ``False`` if it does not.
+        """
         from djblets.siteconfig.models import SiteConfiguration
 
         siteconfig = SiteConfiguration.objects.get_current()
         manual_updates = siteconfig.settings.get('manual-updates', {})
         resolved_update = manual_updates.get('static-media', False)
 
-        return (not resolved_update and
-                (pkg_resources.parse_version(siteconfig.version) <
-                 pkg_resources.parse_version("1.7")))
+        # Note that we're parsing a version that may have version suffixes
+        # (e.g., " alpha 0 (dev)") that can't safely be parsed as a version.
+        # We know the format, so we can just split out the first part of the
+        # version and compare against that.
+        return (
+            not resolved_update and
+            (parse_version(siteconfig.version.split(' ')[0]) <
+             parse_version('1.7'))
+        )
 
     def get_diff_dedup_needed(self):
         """Determine if there's likely duplicate diff data stored."""
