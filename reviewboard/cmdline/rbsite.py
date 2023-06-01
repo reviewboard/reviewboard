@@ -693,16 +693,28 @@ class Site(object):
         Repository.objects.encrypt_plain_text_passwords()
 
     def get_static_media_upgrade_needed(self):
-        """Determine if a static media config upgrade is needed."""
+        """Determine if a static media config upgrade is needed.
+
+        Returns:
+            bool:
+            ``True`` if static media configuration needs to be upgraded.
+            ``False`` if it does not.
+        """
         from djblets.siteconfig.models import SiteConfiguration
 
         siteconfig = SiteConfiguration.objects.get_current()
         manual_updates = siteconfig.settings.get('manual-updates', {})
         resolved_update = manual_updates.get('static-media', False)
 
-        return (not resolved_update and
-                (pkg_resources.parse_version(siteconfig.version) <
-                 pkg_resources.parse_version("1.7")))
+        # Note that we're parsing a version that may have version suffixes
+        # (e.g., " alpha 0 (dev)") that can't safely be parsed as a version.
+        # We know the format, so we can just split out the first part of the
+        # version and compare against that.
+        return (
+            not resolved_update and
+            (pkg_resources.parse_version(siteconfig.version.split(' ')[0]) <
+             pkg_resources.parse_version('1.7'))
+        )
 
     def get_diff_dedup_needed(self):
         """Determine if there's likely duplicate diff data stored."""
