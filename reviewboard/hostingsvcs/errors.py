@@ -1,14 +1,60 @@
-from typing import Optional
+"""Errors for hosting service operations."""
 
-from django.utils.translation import gettext_lazy as _
+from __future__ import annotations
+
+from typing import Dict, Optional
+
+from django.utils.translation import gettext, gettext_lazy as _
 
 
 class HostingServiceError(Exception):
     """Base class for errors related to a hosting service."""
 
-    def __init__(self, message, http_code=None, help_link=None,
-                 help_link_text=None):
-        super(HostingServiceError, self).__init__(message)
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The optional HTTP status code for the error.
+    http_code: Optional[int]
+
+    #: An optional URL for further information on the error.
+    help_link: Optional[str]
+
+    #: A label for the optional URL for further information on the error.
+    #:
+    #: This will always be provided if :py:attr:`help_link` is set.
+    help_link_text: Optional[str]
+
+    def __init__(
+        self,
+        message: str,
+        http_code: Optional[int] = None,
+        help_link: Optional[str] = None,
+        help_link_text: Optional[str] = None,
+    ) -> None:
+        """Initialize the error.
+
+        Args:
+            message (str):
+                The error message.
+
+            http_code (int, optional):
+                An optional HTTP status code for the error.
+
+            help_link (str, optional):
+                An optional URL for further information on the error.
+
+            help_link_text (str, optional):
+                A label for the optional URL for further information on the
+                error.
+
+                This must be provided if ``help_link`` is set.
+
+        Raises:
+            ValueError:
+                ``help_link`` was provided but ``help_link_text`` was not.
+        """
+        super().__init__(message)
 
         self.http_code = http_code
         self.help_link = help_link
@@ -35,7 +81,22 @@ class HostingServiceAPIError(HostingServiceError):
             The parsed payload for the error, if available.
     """
 
-    def __init__(self, msg=None, http_code=None, rsp=None):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The HTTP status code for the error, if available.
+    http_code: Optional[int]
+
+    #: The parsed payload for the error, if available.
+    rsp: Optional[Dict]
+
+    def __init__(
+        self,
+        msg: Optional[str] = None,
+        http_code: Optional[int] = None,
+        rsp: Optional[Dict] = None,
+    ) -> None:
         """Initialize the error.
 
         Args:
@@ -48,7 +109,7 @@ class HostingServiceAPIError(HostingServiceError):
             rsp (object, optional):
                 The parsed payload for the error.
         """
-        super(HostingServiceAPIError, self).__init__(msg)
+        super().__init__(msg or '')
 
         self.http_code = http_code
         self.rsp = rsp
@@ -56,11 +117,10 @@ class HostingServiceAPIError(HostingServiceError):
 
 class RepositoryError(HostingServiceError):
     """An error validating, configuring or using a repository."""
-    pass
 
 
 class AuthorizationError(HostingServiceError):
-    pass
+    """An error authorizing an account with a hosting service."""
 
 
 class MissingHostingServiceError(HostingServiceError):
@@ -119,17 +179,25 @@ class TwoFactorAuthCodeRequiredError(AuthorizationError):
     Services can raise this error, along with a helpful message, to
     inform the user and the repository form of this.
     """
-    pass
 
 
 class InvalidPlanError(HostingServiceError):
     """Indicates an invalid plan name was used."""
 
-    def __init__(self, plan):
-        HostingServiceError.__init__(
-            self,
-            '%s is not a valid plan for this hosting service' % plan)
+    def __init__(
+        self,
+        plan: str,
+    ) -> None:
+        """Initialize the error.
+
+        Args:
+            plan (str):
+                The ID of the plan.
+        """
+        super().__init__(
+            gettext('%s is not a valid plan for this hosting service')
+            % plan)
 
 
 class SSHKeyAssociationError(HostingServiceError):
-    pass
+    """An error associating an SSH key with an account on a hosting service."""

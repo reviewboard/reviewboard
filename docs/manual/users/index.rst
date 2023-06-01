@@ -1,3 +1,4 @@
+.. _rb-users-guide:
 .. _usersguide:
 
 ===========

@@ -1,0 +1,15 @@
+{% extends "accounts/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Logged out" %}{% endblock title %}
+
+{% block auth_content %}
+<div class="auth-header">
+ <h1>{% trans "Logged out" %}</h1>
+ <p>
+{%  blocktrans %}
+  You have successfully logged out of Review Board. See you next time!
+{%  endblocktrans %}
+ </p>
+</div>
+{% endblock auth_content %}

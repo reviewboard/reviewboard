@@ -62,6 +62,7 @@ package_dependencies = {
     'docutils': '',
     'markdown': '~=3.3.7',
     'mimeparse': '~=0.1.3',
+    'packaging': '>=23.1',
     'paramiko': '>=1.12',
     'pydiffx': '~=1.1',
     'Pygments': '~=2.14.0',
