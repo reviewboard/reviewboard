@@ -142,7 +142,7 @@ RB.ReviewGroup = RB.BaseResource.extend({
      * Add a user to this group.
      *
      * Sends the request to the server to add the user, and notifies on
-     * succes or failure.
+     * success or failure.
      *
      * Version Changed:
      *     5.0:
