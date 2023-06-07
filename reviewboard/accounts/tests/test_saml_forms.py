@@ -104,6 +104,10 @@ class SAMLSettingsFormTests(TestCase):
                 'saml_slo_url': 'https://example.com/saml/slo',
                 'saml_slo_binding_type': SAMLBinding.HTTP_REDIRECT,
                 'saml_require_login_to_link': False,
+                'saml_attr_email': 'User.Email',
+                'saml_attr_firstname': 'User.FirstName',
+                'saml_attr_lastname': 'User.LastName',
+                'saml_attr_fullname': 'User.FullName',
             })
 
         self.assertTrue(form.is_valid())

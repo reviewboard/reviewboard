@@ -14,10 +14,14 @@ from djblets.util.decorators import cached_property
 from reviewboard.accounts.sso.backends.base import BaseSSOBackend
 from reviewboard.accounts.sso.backends.saml.forms import SAMLSettingsForm
 from reviewboard.accounts.sso.backends.saml.settings import (
+    DEFAULT_ATTR_EMAIL,
+    DEFAULT_ATTR_FIRSTNAME,
+    DEFAULT_ATTR_FULLNAME,
+    DEFAULT_ATTR_LASTNAME,
     SAMLBinding,
     SAMLDigestAlgorithm,
     SAMLNameIDFormat,
-    SAMLSignatureAlgorithm)
+    SAMLSignatureAlgorithm,)
 from reviewboard.accounts.sso.backends.saml.views import (
     SAMLACSView,
     SAMLLinkUserView,
@@ -37,6 +41,10 @@ class SAMLSSOBackend(BaseSSOBackend):
     name = _('SAML 2.0')
     settings_form = SAMLSettingsForm
     siteconfig_defaults = {
+        'saml_attr_email': DEFAULT_ATTR_EMAIL,
+        'saml_attr_firstname': DEFAULT_ATTR_FIRSTNAME,
+        'saml_attr_fullname': DEFAULT_ATTR_FULLNAME,
+        'saml_attr_lastname': DEFAULT_ATTR_LASTNAME,
         'saml_digest_algorithm': SAMLDigestAlgorithm.SHA1,
         'saml_enabled': False,
         'saml_issuer': '',

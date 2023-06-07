@@ -167,6 +167,12 @@ class SAMLNameIDFormat:
         FROM_SAML2_SETTING_MAP = {}
 
 
+DEFAULT_ATTR_EMAIL = 'User.email'
+DEFAULT_ATTR_FIRSTNAME = 'User.FirstName'
+DEFAULT_ATTR_FULLNAME = 'User.FullName'
+DEFAULT_ATTR_LASTNAME = 'User.LastName'
+
+
 def get_saml2_settings():
     """Return the SAML2.0 settings.
 

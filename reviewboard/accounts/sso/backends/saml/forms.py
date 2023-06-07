@@ -14,6 +14,10 @@ from django.utils.translation import gettext_lazy as _
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.accounts.sso.backends.saml.settings import (
+    DEFAULT_ATTR_EMAIL,
+    DEFAULT_ATTR_FIRSTNAME,
+    DEFAULT_ATTR_FULLNAME,
+    DEFAULT_ATTR_LASTNAME,
     SAMLBinding,
     SAMLDigestAlgorithm,
     SAMLNameIDFormat,
@@ -143,6 +147,44 @@ class SAMLSettingsForm(SiteSettingsForm):
                     'sending the correct username for all existing users.'),
         required=False)
 
+    saml_attr_email = forms.CharField(
+        label=_('Custom e-mail attribute'),
+        required=True,
+        initial=DEFAULT_ATTR_EMAIL,
+        help_text=_('If your Identity Provider does not allow you to '
+                    'configure attribute names, set this to the E-mail '
+                    'attribute name returned in the SAML response.'),
+        widget=forms.TextInput(attrs={'size': '60'}))
+
+    saml_attr_firstname = forms.CharField(
+        label=_('Custom first name attribute'),
+        required=True,
+        initial=DEFAULT_ATTR_FIRSTNAME,
+        help_text=_('If your Identity Provider does not allow you to '
+                    'configure attribute names, set this to the FirstName '
+                    'attribute name returned in the SAML response.'),
+        widget=forms.TextInput(attrs={'size': '60'}))
+
+    saml_attr_lastname = forms.CharField(
+        label=_('Custom last name attribute'),
+        required=True,
+        initial=DEFAULT_ATTR_LASTNAME,
+        help_text=_('If your Identity Provider does not allow you to '
+                    'configure attribute names, set this to the LastName '
+                    'attribute name returned in the SAML response.'),
+        widget=forms.TextInput(attrs={'size': '60'}))
+
+    saml_attr_fullname = forms.CharField(
+        label=_('Custom e-mail attribute'),
+        required=True,
+        initial=DEFAULT_ATTR_FULLNAME,
+        help_text=_('If your Identity Provider does not allow you to '
+                    'configure attribute names, set this to the FullName '
+                    'attribute name returned in the SAML response. This is '
+                    'only used if the separate first and last name '
+                    'attributes are not available in the response.'),
+        widget=forms.TextInput(attrs={'size': '60'}))
+
     class Meta:
         """Metadata for the SAMLSettingsForm."""
 
@@ -159,6 +201,10 @@ class SAMLSettingsForm(SiteSettingsForm):
                            'saml_sso_binding_type',
                            'saml_slo_url',
                            'saml_slo_binding_type',
-                           'saml_require_login_to_link'),
+                           'saml_require_login_to_link',
+                           'saml_attr_email',
+                           'saml_attr_firstname',
+                           'saml_attr_lastname',
+                           'saml_attr_fullname'),
             }),
         )
