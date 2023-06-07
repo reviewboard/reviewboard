@@ -16,6 +16,7 @@ from reviewboard.accounts.sso.backends.saml.forms import SAMLSettingsForm
 from reviewboard.accounts.sso.backends.saml.settings import (
     SAMLBinding,
     SAMLDigestAlgorithm,
+    SAMLNameIDFormat,
     SAMLSignatureAlgorithm)
 from reviewboard.accounts.sso.backends.saml.views import (
     SAMLACSView,
@@ -40,6 +41,7 @@ class SAMLSSOBackend(BaseSSOBackend):
         'saml_enabled': False,
         'saml_issuer': '',
         'saml_login_button_text': _('Log in with SAML SSO'),
+        'saml_nameid_format': SAMLNameIDFormat.PERSISTENT,
         'saml_require_login_to_link': True,
         'saml_signature_algorithm': SAMLSignatureAlgorithm.DSA_SHA1,
         'saml_slo_binding_type': SAMLBinding.HTTP_REDIRECT,

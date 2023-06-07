@@ -254,7 +254,8 @@ Review Board configuration:
 1. URLs for the Issuer and SAML/SLO endpoints, as well as the binding type for
    each.
 2. A copy of the X.509 certificate.
-3. Possibly, specific digest and signature algorithm types.
+3. Possibly, specific digest and signature algorithm types and the format of
+   the NameID field.
 
 The :guilabel:`Require login to link` setting allows you to control the
 behavior when first authenticating a user via SSO who already has an account on
