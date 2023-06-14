@@ -4,6 +4,7 @@ Version Added:
     6.0
 """
 
+import json
 import logging
 from typing import Iterable, List
 
@@ -110,3 +111,58 @@ def actions_js(
                              action.action_id)
 
     return mark_safe(''.join(rendered))
+
+
+@register.simple_tag(takes_context=True)
+def action_js_model_data(
+    context: Context,
+    action: BaseAction,
+) -> SafeText:
+    """Render the JS model data for an action.
+
+    Version Added:
+        6.0
+
+    Args:
+        context (django.template.Context):
+            The current template rendering context.
+
+        action (reviewboard.actions.base.BaseAction):
+            The action to render.
+
+    Returns:
+        django.utils.safestring.SafeText:
+        The rendered JavaScript.
+    """
+    return mark_safe(json.dumps(
+        action.get_js_model_data(context=context)))
+
+
+@register.simple_tag(takes_context=True)
+def action_js_view_data_items(
+    context: Context,
+    action: BaseAction,
+) -> SafeText:
+    """Render the JS view data for an action.
+
+    Version Added:
+        6.0
+
+    Args:
+        context (django.template.Context):
+            The current template rendering context.
+
+        action (reviewboard.actions.base.BaseAction):
+            The action to render.
+
+    Returns:
+        django.utils.safestring.SafeText:
+        The rendered JavaScript.
+    """
+    encoded = json.dumps(action.get_js_view_data(context=context))[1:-1]
+
+    if encoded:
+        encoded += ','
+
+    return mark_safe(encoded)
+

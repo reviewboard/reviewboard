@@ -235,8 +235,16 @@ class BaseAction:
         """
         return 'action-%s' % self.action_id
 
-    def get_js_model_data(self) -> dict:
+    def get_js_model_data(
+        self,
+        *,
+        context: Context,
+    ) -> dict:
         """Return data to be passed to the JavaScript model.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
 
         Returns:
             dict:
@@ -247,8 +255,16 @@ class BaseAction:
             'visible': self.visible,
         }
 
-    def get_js_view_data(self) -> dict:
+    def get_js_view_data(
+        self,
+        *,
+        context: Context,
+    ) -> dict:
         """Return data to be passed to the JavaScript view.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
 
         Returns:
             dict:
@@ -452,12 +468,24 @@ class BaseMenuAction(BaseAction):
 
         extra_context = super().get_extra_context(request=request,
                                                   context=context)
-        extra_context['children'] = list(
-            actions_registry.get_children(self.action_id))
+        extra_context['children'] = ([
+            child
+            for child in actions_registry.get_children(self.action_id)
+            if child.should_render(context=context)
+        ])
+
         return extra_context
 
-    def get_js_model_data(self) -> dict:
+    def get_js_model_data(
+        self,
+        *,
+        context: Context,
+    ) -> dict:
         """Return data to be passed to the JavaScript model.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
 
         Returns:
             dict:
@@ -465,9 +493,10 @@ class BaseMenuAction(BaseAction):
         """
         from reviewboard.actions import actions_registry
 
-        data = super().get_js_model_data()
+        data = super().get_js_model_data(context=context)
         data['children'] = [
             child.action_id
             for child in actions_registry.get_children(self.action_id)
+            if child.should_render(context=context)
         ]
         return data
