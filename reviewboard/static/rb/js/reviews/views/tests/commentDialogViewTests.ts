@@ -14,6 +14,7 @@ import {
 import {
     CommentEditor,
 } from 'reviewboard/reviews/models/commentEditorModel';
+import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
 import { UserSession } from 'reviewboard/common/models/userSession';
 
 import { ReviewRequestEditor } from '../../models/reviewRequestEditor';
@@ -26,7 +27,7 @@ suite('rb/views/CommentDialogView', function() {
     let reviewRequestEditor;
 
     beforeEach(function() {
-        RB.DnDUploader.create();
+        DnDUploader.create();
 
         reviewRequest = new RB.ReviewRequest();
         reviewRequestEditor = new ReviewRequestEditor({
@@ -35,7 +36,7 @@ suite('rb/views/CommentDialogView', function() {
     });
 
     afterEach(function() {
-        RB.DnDUploader.instance = null;
+        DnDUploader.instance = null;
     });
 
     describe('Class methods', function() {

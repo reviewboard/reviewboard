@@ -1,10 +1,16 @@
-(function() {
+import {
+    BaseModel,
+    BaseView,
+    Collection,
+    EventsHash,
+    spina,
+} from '@beanbag/spina';
 
 
 /**
  * A model for creating drag and drop targets.
  *
- * Registering a RB.DnDDropTarget with the RB.DnDUploader will create an
+ * Registering a DnDDropTarget with the DnDUploader will create an
  * overlay on top of the target when files are dragged over the page. This
  * overlay will accept dropped files and run the dropAction for each file
  * dropped on it.
@@ -19,15 +25,16 @@
  *     dropText (string):
  *         The string to show in the overlay.
  */
-const DnDDropTarget = Backbone.Model.extend({
+@spina
+class DnDDropTarget extends BaseModel {
     defaults() {
         return {
             $target: $(window),
             callback: function() {},
-            dropText: gettext('Drop to upload')
+            dropText: _`Drop to upload`,
         };
     }
-});
+}
 
 
 /**
@@ -39,33 +46,32 @@ const DnDDropTarget = Backbone.Model.extend({
  * If the user cancels the drop or moves the mouse out of the page, the
  * overlay will fade away.
  */
-const DnDDropOverlayView = Backbone.View.extend({
-    className: 'dnd-overlay',
+@spina
+class DnDDropOverlayView extends BaseView<DnDDropTarget> {
+    static className = 'dnd-overlay';
 
-    events: {
+    static events: EventsHash = {
         'dragenter': '_onDragEnter',
-        'dragover': '_onDragOver',
         'dragleave': '_onDragLeave',
-        'drop': '_onDrop'
-    },
+        'dragover': '_onDragOver',
+        'drop': '_onDrop',
+    };
 
     /**
      * Render the view.
+     */
+    onInitialRender() {
+        this.$el.text(this.model.get('dropText'));
+    }
+
+    /**
+     * Show the overlay.
      *
      * Returns:
      *     DnDDropOverlayView:
      *     This object, for chaining.
      */
-    render() {
-        this.$el.text(this.model.get('dropText'));
-
-        return this;
-    },
-
-    /**
-     * Show the overlay.
-     */
-    show() {
+    show(): this {
         const $target = this.model.get('$target');
         $target.addClass('dnd-overlay-visible');
 
@@ -80,23 +86,31 @@ const DnDDropOverlayView = Backbone.View.extend({
 
             this.$el
                 .css({
-                    width: width,
-                    height: height,
+                    'height': height,
+                    'left': offset.left + 'px',
                     'line-height': height,
-                    left: offset.left + 'px',
-                    top: offset.top + 'px'
+                    'top': offset.top + 'px',
+                    'width': width,
                 })
                 .show();
         });
-    },
+
+        return this;
+    }
 
     /**
      * Hide the overlay.
+     *
+     * Returns:
+     *     DnDDropOverlayView:
+     *     This object, for chaining.
      */
-    hide() {
+    hide(): this {
         this.model.get('$target').removeClass('dnd-overlay-visible');
         this.$el.hide();
-    },
+
+        return this;
+    }
 
     /**
      * Close the overlay.
@@ -109,7 +123,7 @@ const DnDDropOverlayView = Backbone.View.extend({
             this.trigger('closed');
             this.remove();
         });
-    },
+    }
 
     /**
      * Handle drop events on the overlay.
@@ -120,7 +134,7 @@ const DnDDropOverlayView = Backbone.View.extend({
      *     e (DragEvent):
      *         The event that triggered the callback.
      */
-    _onDrop(e) {
+    private _onDrop(e: JQuery.DragEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -130,13 +144,13 @@ const DnDDropOverlayView = Backbone.View.extend({
         if (files) {
             const callback = this.model.get('callback');
 
-            for (let file of Array.from(files)) {
+            for (const file of Array.from(files)) {
                 callback(file);
             }
         }
 
         this.trigger('closing');
-    },
+    }
 
     /**
      * Handle dragenter events on the overlay.
@@ -148,7 +162,7 @@ const DnDDropOverlayView = Backbone.View.extend({
      *     e (DragEvent):
      *         The event that triggered the callback.
      */
-    _onDragEnter(e) {
+    private _onDragEnter(e: JQuery.DragEvent) {
         e.preventDefault();
 
         const dt = e.originalEvent.dataTransfer;
@@ -157,7 +171,7 @@ const DnDDropOverlayView = Backbone.View.extend({
             dt.dropEffect = 'copy';
             this.$el.addClass('dnd-overlay-highlight');
         }
-    },
+    }
 
     /**
      * Handle dragover events on the overlay.
@@ -169,9 +183,9 @@ const DnDDropOverlayView = Backbone.View.extend({
      *     e (DragEvent):
      *         The event which triggered the callback.
      */
-    _onDragOver(e) {
+    private _onDragOver(e: JQuery.DragEvent) {
         e.preventDefault();
-    },
+    }
 
     /**
      * Handle dragleave events on the overlay.
@@ -185,7 +199,7 @@ const DnDDropOverlayView = Backbone.View.extend({
      *     e (DragEvent):
      *         The event that triggered the callback.
      */
-    _onDragLeave(e) {
+    private _onDragLeave(e: JQuery.DragEvent) {
         e.preventDefault();
 
         const dt = e.originalEvent.dataTransfer;
@@ -195,7 +209,7 @@ const DnDDropOverlayView = Backbone.View.extend({
             this.$el.removeClass('dnd-overlay-highlight');
         }
     }
-});
+}
 
 
 /*
@@ -208,25 +222,69 @@ const DnDDropOverlayView = Backbone.View.extend({
  * The moment the DnDUploader is created, it will begin listening for
  * DnD-related events on the window.
  */
-RB.DnDUploader = Backbone.View.extend({
+@spina({
+    prototypeAttrs: ['instance'],
+})
+export class DnDUploader extends BaseView {
+    static instance: DnDUploader = null;
+
+    /**
+     * Create the DnDUploader instance.
+     *
+     * Returns:
+     *     DnDUploader:
+     *     The new instance.
+     */
+    static create(): DnDUploader {
+        console.assert(this.instance === null,
+                       'DnDUploader.create may only be called once');
+
+        this.instance = new this();
+
+        return this.instance;
+    }
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /**
+     * The set of drop targets for the page.
+     */
+    #dropTargets: Collection<DnDDropTarget>;
+
+    /**
+     * The overlay views.
+     */
+    #dropOverlays: DnDDropOverlayView[] = [];
+
+    /**
+     * The timeout identifier for hiding the overlays.
+     */
+    #hideOverlayTimeout: number = null;
+
+    /**
+     * Whether the drop overlays are visible.
+     */
+    #overlaysVisible = false;
+
+    /**
+     * Whether the drop overlays are in the process of hiding.
+     */
+    #overlaysHiding = false;
+
     /**
      * Initialize the view.
      */
     initialize() {
-        this._dropTargets = new Backbone.Collection({
-            model: DnDDropTarget
-        });
-        this._dropOverlays = [];
-        this._hideOverlayTimeout = null;
-        this._overlaysVisible = false;
-        this._overlaysHiding = false;
+        this.#dropTargets = new Collection<DnDDropTarget>();
 
         _.bindAll(this, '_showOverlays', '_hideOverlays');
 
         $(window)
             .on('dragstart dragenter dragover', this._showOverlays)
             .on('dragend dragleave', this._hideOverlays);
-    },
+    }
 
     /**
      * Register a new drop target.
@@ -244,16 +302,16 @@ RB.DnDUploader = Backbone.View.extend({
      *         on the target.
      */
     registerDropTarget($target, dropText, callback) {
-        if (this._dropTargets.findWhere({ $target }) === undefined) {
+        if (this.#dropTargets.findWhere({ $target }) === undefined) {
             const target = new DnDDropTarget({
                 $target,
+                callback,
                 dropText,
-                callback
             });
-            this._dropTargets.add(target);
+            this.#dropTargets.add(target);
 
             const overlay = new DnDDropOverlayView({
-                model: target
+                model: target,
             });
 
             overlay.render().$el
@@ -261,11 +319,11 @@ RB.DnDUploader = Backbone.View.extend({
                 .appendTo(document.body);
             this.listenTo(overlay, 'closing', this._hideOverlays);
 
-            this._dropOverlays.push(overlay);
+            this.#dropOverlays.push(overlay);
         } else {
             console.error('Drop target was already registered!', $target);
         }
-    },
+    }
 
     /**
      * Unregister an existing drop target.
@@ -275,19 +333,19 @@ RB.DnDUploader = Backbone.View.extend({
      *         The target element for drops.
      */
     unregisterDropTarget($target) {
-        const target = this._dropTargets.findWhere({ $target: $target });
-        const overlayIx = this._dropOverlays.findIndex(
+        const target = this.#dropTargets.findWhere({ $target: $target });
+        const overlayIx = this.#dropOverlays.findIndex(
             overlay => (overlay.model === target));
 
         if (overlayIx !== -1) {
-            this._dropOverlays[overlayIx].remove();
-            this._dropOverlays.splice(overlayIx, 1);
+            this.#dropOverlays[overlayIx].remove();
+            this.#dropOverlays.splice(overlayIx, 1);
         }
 
         if (target !== undefined) {
-            this._dropTargets.remove(target);
+            this.#dropTargets.remove(target);
         }
-    },
+    }
 
     /**
      * Show the drop overlays.
@@ -300,22 +358,22 @@ RB.DnDUploader = Backbone.View.extend({
      *     e (DragEvent):
      *         The event that triggered the callback.
      */
-    _showOverlays(e) {
+    private _showOverlays(e) {
         if (e.originalEvent.dataTransfer !== undefined &&
             Array.from(e.originalEvent.dataTransfer.types).includes('Files')) {
-            this._overlaysHiding = false;
+            this.#overlaysHiding = false;
 
-            if (!this._overlaysVisible) {
-                this._overlaysVisible = true;
-                this._dropOverlays.forEach(overlay => overlay.show());
+            if (!this.#overlaysVisible) {
+                this.#overlaysVisible = true;
+                this.#dropOverlays.forEach(overlay => overlay.show());
             }
         }
-    },
+    }
 
     /**
      * Hide the drop overlays.
      */
-    _hideOverlays() {
+    private _hideOverlays() {
         /*
          * This will get called many times because the event bubbles up from
          * all the children of the document. We only want to hide the overlays
@@ -325,36 +383,16 @@ RB.DnDUploader = Backbone.View.extend({
          * a timeout (to make sure there's not a dragenter event coming
          * immediately after this).
          */
-        if (this._hideOverlayTimeout) {
-            clearTimeout(this._hideOverlayTimeout);
+        if (this.#hideOverlayTimeout) {
+            clearTimeout(this.#hideOverlayTimeout);
         }
 
-        this._overlaysHiding = true;
-        this._hideOverlayTimeout = setTimeout(() => {
-            if (this._overlaysHiding) {
-                this._overlaysVisible = false;
-                this._dropOverlays.forEach(overlay => overlay.hide());
+        this.#overlaysHiding = true;
+        this.#hideOverlayTimeout = setTimeout(() => {
+            if (this.#overlaysHiding) {
+                this.#overlaysVisible = false;
+                this.#dropOverlays.forEach(overlay => overlay.hide());
             }
         }, 200);
     }
-}, {
-    instance: null,
-
-    /**
-     * Create the DnDUploader instance.
-     *
-     * Returns:
-     *     RB.DnDUploader:
-     *     The new instance.
-     */
-    create() {
-        console.assert(RB.DnDUploader.instance === null,
-                       'DnDUploader.create may only be called once');
-
-        RB.DnDUploader.instance = new RB.DnDUploader();
-        return RB.DnDUploader.instance;
-    }
-});
-
-
-})();
+}

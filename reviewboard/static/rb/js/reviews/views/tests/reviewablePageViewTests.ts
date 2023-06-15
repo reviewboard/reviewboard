@@ -9,6 +9,7 @@ import {
     suite,
 } from 'jasmine-core';
 
+import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
 import { EnabledFeatures } from 'reviewboard/common';
 import {
     ReviewablePage,
@@ -40,7 +41,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
             .html(pageTemplate)
             .appendTo($testsScratch);
 
-        RB.DnDUploader.instance = null;
+        DnDUploader.instance = null;
 
         $editReview = $container.find('#action-legacy-edit-review');
 
@@ -76,7 +77,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
     });
 
     afterEach(function() {
-        RB.DnDUploader.instance = null;
+        DnDUploader.instance = null;
 
         if (EnabledFeatures.unifiedBanner) {
             UnifiedBannerView.resetInstance();

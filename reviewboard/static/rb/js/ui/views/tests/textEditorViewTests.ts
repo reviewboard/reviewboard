@@ -1,17 +1,33 @@
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+    suite,
+} from 'jasmine-core';
+
+import { UserSession } from 'reviewboard/common/models/userSession';
+
+import { DnDUploader } from '../dndUploaderView';
+import { TextEditorView } from '../textEditorView';
+
+
 suite('rb/ui/views/TextEditorView', function() {
     let view;
 
     beforeEach(function() {
-        RB.DnDUploader.create();
+        DnDUploader.create();
     });
 
     afterEach(function() {
-        RB.DnDUploader.instance = null;
+        DnDUploader.instance = null;
     });
 
     describe('Construction', function() {
         it('Initial text', function() {
-            view = new RB.TextEditorView({
+            view = new TextEditorView({
                 text: 'Test',
             });
             view.render();
@@ -21,7 +37,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
         describe('Text field wrapper', function() {
             it('If plain text', function() {
-                view = new RB.TextEditorView({
+                view = new TextEditorView({
                     richText: false,
                 });
                 view.render();
@@ -33,7 +49,7 @@ suite('rb/ui/views/TextEditorView', function() {
             });
 
             it('If Markdown', function() {
-                view = new RB.TextEditorView({
+                view = new TextEditorView({
                     richText: true,
                 });
                 view.render();
@@ -48,11 +64,11 @@ suite('rb/ui/views/TextEditorView', function() {
         describe('Default richText', function() {
             describe('If user default is true', function() {
                 beforeEach(function() {
-                    RB.UserSession.instance.set('defaultUseRichText', true);
+                    UserSession.instance.set('defaultUseRichText', true);
                 });
 
                 it('And richText unset', function() {
-                    view = new RB.TextEditorView();
+                    view = new TextEditorView();
                     view.render();
                     view.show();
 
@@ -62,7 +78,7 @@ suite('rb/ui/views/TextEditorView', function() {
                 });
 
                 it('And richText=true', function() {
-                    view = new RB.TextEditorView({
+                    view = new TextEditorView({
                         richText: true,
                     });
                     view.render();
@@ -74,7 +90,7 @@ suite('rb/ui/views/TextEditorView', function() {
                 });
 
                 it('And richText=false', function() {
-                    view = new RB.TextEditorView({
+                    view = new TextEditorView({
                         richText: false,
                     });
                     view.render();
@@ -88,11 +104,11 @@ suite('rb/ui/views/TextEditorView', function() {
 
             describe('If user default is false', function() {
                 beforeEach(function() {
-                    RB.UserSession.instance.set('defaultUseRichText', false);
+                    UserSession.instance.set('defaultUseRichText', false);
                 });
 
                 it('And richText unset', function() {
-                    view = new RB.TextEditorView();
+                    view = new TextEditorView();
                     view.render();
                     view.show();
 
@@ -102,7 +118,7 @@ suite('rb/ui/views/TextEditorView', function() {
                 });
 
                 it('And richText=true', function() {
-                    view = new RB.TextEditorView({
+                    view = new TextEditorView({
                         richText: true,
                     });
                     view.render();
@@ -114,7 +130,7 @@ suite('rb/ui/views/TextEditorView', function() {
                 });
 
                 it('And richText=false', function() {
-                    view = new RB.TextEditorView({
+                    view = new TextEditorView({
                         richText: false,
                     });
                     view.render();
@@ -137,7 +153,7 @@ suite('rb/ui/views/TextEditorView', function() {
                     richText: false,
                 });
 
-                view = new RB.TextEditorView();
+                view = new TextEditorView();
             });
 
             it('Updates on change', function() {
@@ -171,7 +187,7 @@ suite('rb/ui/views/TextEditorView', function() {
             beforeEach(function() {
                 $checkbox = $('<input type="checkbox">');
 
-                view = new RB.TextEditorView();
+                view = new TextEditorView();
                 view.setRichText(false);
             });
 
@@ -230,7 +246,7 @@ suite('rb/ui/views/TextEditorView', function() {
             beforeEach(function() {
                 $el = $('<div>');
 
-                view = new RB.TextEditorView();
+                view = new TextEditorView();
                 view.setRichText(false);
             });
 
@@ -329,7 +345,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
             describe('Markdown to Text', function() {
                 beforeEach(function() {
-                    view = new RB.TextEditorView({
+                    view = new TextEditorView({
                         richText: true,
                     });
                     view.render();
@@ -355,7 +371,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
             describe('Text to Markdown', function() {
                 beforeEach(function() {
-                    view = new RB.TextEditorView({
+                    view = new TextEditorView({
                         richText: false,
                     });
                     view.render();
@@ -383,7 +399,7 @@ suite('rb/ui/views/TextEditorView', function() {
         describe('setText', function() {
             describe('If shown', function() {
                 it('If plain text', function() {
-                    view = new RB.TextEditorView({
+                    view = new TextEditorView({
                         richText: false,
                     });
                     view.show();
@@ -393,7 +409,7 @@ suite('rb/ui/views/TextEditorView', function() {
                 });
 
                 it('If Markdown', function() {
-                    view = new RB.TextEditorView({
+                    view = new TextEditorView({
                         richText: true,
                     });
                     view.show();
@@ -404,7 +420,7 @@ suite('rb/ui/views/TextEditorView', function() {
             });
 
             it('If hidden', function() {
-                view = new RB.TextEditorView();
+                view = new TextEditorView();
                 view.setText('Test');
 
                 expect(view.getText()).toBe('Test');
@@ -413,7 +429,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
         describe('getText', function() {
             it('If plain text', function() {
-                view = new RB.TextEditorView({
+                view = new TextEditorView({
                     richText: false,
                 });
                 view.show();
@@ -423,7 +439,7 @@ suite('rb/ui/views/TextEditorView', function() {
             });
 
             it('If Markdown', function() {
-                view = new RB.TextEditorView({
+                view = new TextEditorView({
                     richText: true,
                 });
                 view.show();
@@ -435,7 +451,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
         describe('insertLine', function() {
             it('If plain text', function() {
-                view = new RB.TextEditorView({
+                view = new TextEditorView({
                     richText: false,
                 });
                 view.show();
@@ -446,7 +462,7 @@ suite('rb/ui/views/TextEditorView', function() {
             });
 
             it('If Markdown', function() {
-                view = new RB.TextEditorView({
+                view = new TextEditorView({
                     richText:true,
                 });
                 view.show();
@@ -459,41 +475,41 @@ suite('rb/ui/views/TextEditorView', function() {
 
         describe('show', function() {
             it('registers drop target if rich text', function() {
-                spyOn(RB.DnDUploader.instance, 'registerDropTarget');
+                spyOn(DnDUploader.instance, 'registerDropTarget');
 
-                view = new RB.TextEditorView({
+                view = new TextEditorView({
                     richText: true,
                 });
                 view.show();
 
-                expect(RB.DnDUploader.instance.registerDropTarget)
+                expect(DnDUploader.instance.registerDropTarget)
                     .toHaveBeenCalled();
             });
 
             it('does not register drop target if plain text', function() {
-                spyOn(RB.DnDUploader.instance, 'registerDropTarget');
+                spyOn(DnDUploader.instance, 'registerDropTarget');
 
-                view = new RB.TextEditorView({
+                view = new TextEditorView({
                     richText: false,
                 });
                 view.show();
 
-                expect(RB.DnDUploader.instance.registerDropTarget)
+                expect(DnDUploader.instance.registerDropTarget)
                     .not.toHaveBeenCalled();
             });
         });
 
         describe('hide', function() {
             it('disables drop target', function() {
-                spyOn(RB.DnDUploader.instance, 'unregisterDropTarget');
+                spyOn(DnDUploader.instance, 'unregisterDropTarget');
 
-                view = new RB.TextEditorView({
+                view = new TextEditorView({
                     richText: true,
                 });
                 view.show();
                 view.hide();
 
-                expect(RB.DnDUploader.instance.unregisterDropTarget)
+                expect(DnDUploader.instance.unregisterDropTarget)
                     .toHaveBeenCalled();
             });
         });
@@ -501,7 +517,7 @@ suite('rb/ui/views/TextEditorView', function() {
 
     describe('Drag and Drop', function() {
         beforeEach(function() {
-            view = new RB.TextEditorView({
+            view = new TextEditorView({
                 richText: true,
             });
         });
@@ -509,8 +525,8 @@ suite('rb/ui/views/TextEditorView', function() {
         describe('_isImage', function() {
             it('correctly checks mimetype', function() {
                 const file = {
-                    type: 'image/jpeg',
                     name: 'testimage.jpg',
+                    type: 'image/jpeg',
                 };
 
                 expect(view._isImage(file)).toBe(true);
@@ -526,8 +542,8 @@ suite('rb/ui/views/TextEditorView', function() {
 
             it('returns false when given invalid type', function() {
                 const file = {
-                    type: 'application/json',
                     name: 'testimage.jps',
+                    type: 'application/json',
                 };
 
                 expect(view._isImage(file)).toBe(false);

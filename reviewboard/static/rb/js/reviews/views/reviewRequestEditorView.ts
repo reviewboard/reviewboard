@@ -3,6 +3,7 @@
  */
 import { BaseView, spina } from '@beanbag/spina';
 
+import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
 import { EnabledFeatures } from 'reviewboard/common';
 import { UserSession } from 'reviewboard/common/models/userSession';
 
@@ -15,7 +16,6 @@ import {
 import { ReviewRequestEditor } from '../models/reviewRequestEditor';
 
 
-declare const SITE_ROOT: string;
 declare const dedent: (string) => string;
 
 
@@ -581,7 +581,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
         this.showBanner();
 
         if (this.model.get('editable')) {
-            RB.DnDUploader.instance.registerDropTarget(
+            DnDUploader.instance.registerDropTarget(
                 this.#$attachmentsContainer,
                 _`Drop to add a file attachment`,
                 this._uploadFile.bind(this));

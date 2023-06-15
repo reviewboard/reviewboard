@@ -3,6 +3,7 @@
  */
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
+import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
 import { EnabledFeatures } from 'reviewboard/common';
 import { PageView, PageViewOptions } from 'reviewboard/common/views/pageView';
 import { UserSession } from 'reviewboard/common/models/userSession';
@@ -237,7 +238,7 @@ export class ReviewablePageView<
 
         this.options = options;
 
-        RB.DnDUploader.create();
+        DnDUploader.create();
 
         this.reviewRequestEditorView = new ReviewRequestEditorView({
             el: $('#review-request'),

@@ -9,6 +9,7 @@ import {
     suite,
 } from 'jasmine-core';
 
+import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
 import { EnabledFeatures } from 'reviewboard/common';
 
 import { ReviewRequestEditor } from '../../models/reviewRequestEditor';
@@ -115,7 +116,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
     let $screenshotsContainer;
 
     beforeEach(function() {
-        RB.DnDUploader.create();
+        DnDUploader.create();
 
         reviewRequest = new RB.ReviewRequest({
             id: 123,
@@ -255,7 +256,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
     });
 
     afterEach(function() {
-        RB.DnDUploader.instance = null;
+        DnDUploader.instance = null;
 
         if (EnabledFeatures.unifiedBanner) {
             UnifiedBannerView.resetInstance();

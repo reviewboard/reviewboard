@@ -2,6 +2,8 @@
 
 import { BaseView, spina } from '@beanbag/spina';
 
+import { TextEditorView, TextEditorViewOptions } from './textEditorView';
+
 
 interface InlineEditorViewOptions {
     /** The duration of animated transitions, in milliseconds. */
@@ -360,7 +362,7 @@ export class InlineEditorView<
 
                 this._scheduleUpdateDirtyState();
             })
-            .on('cut paste', () => this._scheduleUpdateDirtyState());
+            .on('cut paste', () => this._scheduleUpdateDirtyState())
 
         if (!this.options.useEditIconOnly) {
             /*
@@ -807,7 +809,7 @@ export class InlineEditorView<
 
 interface RichTextInlineEditorViewOptions extends InlineEditorViewOptions {
     /** Options to pass through to the text editor. */
-    textEditorOptions: unknown; // TODO: update once TextEditorView is TS
+    textEditorOptions: Partial<TextEditorViewOptions>;
 }
 
 
@@ -843,7 +845,7 @@ export class RichTextInlineEditorView<
      * Instance variables *
      **********************/
 
-    textEditor: RB.TextEditorView;
+    textEditor: TextEditorView;
 
     /**
      * Create and return the field to use for the input element.
@@ -855,7 +857,7 @@ export class RichTextInlineEditorView<
     createField(): JQuery {
         let origRichText;
 
-        this.textEditor = new RB.TextEditorView(
+        this.textEditor = new TextEditorView(
             this.options.textEditorOptions);
         this.textEditor.$el.on('resize', () => this.trigger('resize'));
 
@@ -887,18 +889,28 @@ export class RichTextInlineEditorView<
         });
 
         this.listenTo(this, 'beginEdit', () => {
-            this.textEditor._showEditor();
+            this.textEditor.showEditor();
             origRichText = this.textEditor.richText;
         });
 
         this.listenTo(this, 'cancel', () => {
-            this.textEditor._hideEditor();
+            this.textEditor.hideEditor();
             this.textEditor.setRichText(origRichText);
         });
 
-        this.listenTo(this, 'complete', () => this.textEditor._hideEditor());
+        this.listenTo(this, 'complete', () => this.textEditor.hideEditor());
 
         return this.textEditor.render().$el;
+    }
+
+    /**
+     * Set up events for the view.
+     */
+    setupEvents() {
+        super.setupEvents();
+
+        this.listenTo(this.textEditor, 'change',
+                      this._scheduleUpdateDirtyState);
     }
 }
 
