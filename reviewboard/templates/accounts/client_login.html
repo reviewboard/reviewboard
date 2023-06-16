@@ -1,0 +1,40 @@
+{% extends "accounts/base.html" %}
+{% load djblets_js i18n %}
+
+{% block title %}
+{%  blocktrans %}{{client_name}} Login{% endblocktrans %}
+{% endblock title %}
+
+{% block auth_content %}
+<div class="auth-header">
+ <p>
+{%  if not client_allowed or not client_name %}
+{%   blocktrans %}
+For security reasons, clients logging in to the Review Board API must
+pass a <tt>client-url</tt> that points to the local host and a
+<tt>client-name</tt>. This may be a bug in your software, please contact
+your administrator if this issue persists.
+{%   endblocktrans %}
+{%  elif error %}
+{{error}}
+{%  else %}
+  <span class="djblets-o-spinner"></span>
+{%   blocktrans %}Logging in for {{client_name}}...{% endblocktrans %}
+{%  endif %}
+ </p>
+</div>
+{% endblock auth_content %}
+
+{% block scripts-post %}
+{%  if client_allowed and not error %}
+<script>
+$(document).ready(async function() {
+  const view = new RB.ClientLoginView({
+    el: $('#auth_container'),
+    {{js_view_data|json_dumps_items:','}}
+  });
+  await view.render();
+});
+</script>
+{%  endif %}
+{% endblock scripts-post %}
