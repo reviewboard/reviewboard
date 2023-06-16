@@ -10,8 +10,11 @@ A new API token has been added to your {{PRODUCT_NAME}} account on
 
 The API token ID starts with {{partial_token}} and was added
 {{api_token.time_added|date:"F jS, Y, P T"}}.
-
+{% if client %}
+This token was automatically created for {{client}}. If you did not just
+authenticate to Review Board for {{client}}, you should revoke this token at
+{{api_token_url}}, change your password, and talk to your administrator.
+{% else %}
 If you did not create this token, you should revoke it at
-{{api_token_url}}, change your password, and talk to your
-administrator.
-{% endautoescape %}
+{{api_token_url}}, change your password, and talk to your administrator.
+{% endif %}{% endautoescape %}
