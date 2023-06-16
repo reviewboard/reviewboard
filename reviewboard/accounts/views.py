@@ -82,6 +82,11 @@ class LoginView(DjangoLoginView):
 
     Version Added:
         5.0
+
+    Version Changed:
+        5.0.5:
+        Added the ``client-name`` and ``client-url`` query parameters for
+        authenticating clients.
     """
 
     template_name = 'accounts/login.html'
