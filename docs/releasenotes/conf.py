@@ -47,6 +47,8 @@ extensions = [
     'beanbag_docutils.sphinx.ext.extlinks',
     'beanbag_docutils.sphinx.ext.http_role',
     'beanbag_docutils.sphinx.ext.intersphinx_utils',
+    'beanbag_docutils.sphinx.ext.json_writer',
+    'beanbag_docutils.sphinx.ext.metadata',
     'beanbag_docutils.sphinx.ext.retina_images',
     'extralinks',
 ]

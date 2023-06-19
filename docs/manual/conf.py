@@ -72,6 +72,8 @@ extensions = [
     'beanbag_docutils.sphinx.ext.extlinks',
     'beanbag_docutils.sphinx.ext.http_role',
     'beanbag_docutils.sphinx.ext.image_srcsets',
+    'beanbag_docutils.sphinx.ext.json_writer',
+    'beanbag_docutils.sphinx.ext.metadata',
     'beanbag_docutils.sphinx.ext.ref_utils',
     'webapidocs',
 ]
