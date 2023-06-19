@@ -130,7 +130,7 @@ example:
     $ sudo -s
     $ export http_proxy=http://proxy.example.com/
     $ export https_proxy=https://proxy.example.com/
-    $ pip3 install ....
+    $ pip3 install ...
 
 
 Installing Required System Dependencies
@@ -151,7 +151,7 @@ are required at runtime.
    .. code-tab:: console RHEL/Fedora/CentOS
 
       $ yum install gcc python3-devel libffi-devel openssl-devel patch perl \
-                    libxml2-devel xmlsec1-devel xmlsec1-openssl-devel
+                    libxml2-devel xmlsec1-devel xmlsec1-openssl-devel \
                     libtool-ltdl-devel
 
 
