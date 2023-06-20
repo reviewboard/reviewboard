@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Setup script for Review Board.
 #
@@ -37,10 +37,11 @@ pyver = sys.version_info[:2]
 
 if pyver < PYTHON_MIN_VERSION:
     sys.stderr.write(
-        'Review Board %s is incompatible with your version of Python.\n'
+        'Review Board %s is incompatible with your version of Python '
+        '(%s.%s).\n'
         'Please install Review Board 4.0.x or upgrade to Python %s or '
         'newer.\n'
-        % (get_package_version(), PYTHON_MIN_VERSION_STR))
+        % (pyver, get_package_version(), PYTHON_MIN_VERSION_STR))
     sys.exit(1)
 
 
