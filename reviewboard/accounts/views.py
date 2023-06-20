@@ -1,5 +1,11 @@
+"""Views for handling authentication and user accounts."""
+
+from __future__ import annotations
+
+import datetime
 import logging
-from urllib.parse import quote
+from typing import Optional
+from urllib.parse import quote, urlparse
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -9,11 +15,16 @@ from django.contrib.auth.views import (
     LogoutView,
     logout_then_login as auth_logout_then_login)
 from django.forms.forms import ErrorDict
-from django.http import HttpResponseRedirect
+from django.http import (Http404,
+                         HttpRequest,
+                         HttpResponse,
+                         HttpResponseRedirect)
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
+from django.utils.html import escape
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
@@ -27,10 +38,12 @@ from djblets.registries.errors import ItemLookupError
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.views.generic.etag import ETagViewMixin
+from djblets.webapi.errors import WebAPITokenGenerationError
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.forms.registration import RegistrationForm
-from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
+from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
+                                         LoginRequiredViewMixin)
 from reviewboard.accounts.pages import AccountPage, OAuth2Page, PrivacyPage
 from reviewboard.accounts.privacy import is_consent_missing
 from reviewboard.accounts.sso.backends import sso_backends
@@ -45,6 +58,7 @@ from reviewboard.oauth.forms import (UserApplicationChangeForm,
 from reviewboard.oauth.models import Application
 from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
+from reviewboard.webapi.models import WebAPIToken
 
 
 logger = logging.getLogger(__name__)
@@ -53,11 +67,78 @@ logger = logging.getLogger(__name__)
 class LoginView(DjangoLoginView):
     """A view for rendering the login page.
 
+    This view may be called when clients are trying to authenticate to
+    Review Board through a web-based login flow. In that case, callers must
+    include a ``client-name`` query parameter containing the client name,
+    and a ``client-url`` parameter containing the URL of where to send
+    authentication data upon a successful login. Client callers may include a
+    ``next`` parameter containing a URL for redirection, making sure to
+    encode any query parameters in that URL.
+
+    Version Changed:
+        5.0.5:
+        Added the ``client-name`` and ``client-url`` query parameters for
+        authenticating clients.
+
     Version Added:
         5.0
+
+    Version Changed:
+        5.0.5:
+        Added the ``client-name`` and ``client-url`` query parameters for
+        authenticating clients.
     """
 
     template_name = 'accounts/login.html'
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: Whether the request is for authenticating a client.
+    #:
+    #: Version Added:
+    #:     5.0.5
+    #:
+    #: Type:
+    #:     bool
+    client_auth_flow: bool
+
+    #: The name of the client who is authenticating.
+    #:
+    #: Version Added:
+    #:     5.0.5
+    #:
+    #: Type:
+    #:     str
+    client_name: Optional[str]
+
+    #: The URL to the client login page.
+    #:
+    #: Version Added:
+    #:     5.0.5
+    #:
+    #: Type:
+    #:     str
+    client_login_url: str
+
+    #: The URL to the client login confirmation page.
+    #:
+    #: Version Added:
+    #:     5.0.5
+    #:
+    #: Type:
+    #:     str
+    client_login_confirm_url: str
+
+    #: The URL of where to send authentication data for the client.
+    #:
+    #: Version Added:
+    #:     5.0.5
+    #:
+    #: Type:
+    #:     str
+    client_url: Optional[str]
 
     def dispatch(self, request, *args, **kwargs):
         """Dispatch the view.
@@ -77,6 +158,53 @@ class LoginView(DjangoLoginView):
             The response to send to the client.
         """
         siteconfig = SiteConfiguration.objects.get_current()
+        self.client_name = None
+        self.client_url = None
+
+        if siteconfig.get('client_web_login'):
+            self.client_name = self.request.GET.get(
+                'client-name',
+                self.request.POST.get('client-name', ''))
+            self.client_url = self.request.GET.get(
+                'client-url',
+                self.request.POST.get('client-url', ''))
+            client_url_port = urlparse(self.client_url).port
+            self.success_url_allowed_hosts = \
+                _get_client_allowed_hosts(client_url_port)
+
+        client_name = self.client_name
+        client_url = self.client_url
+        client_auth_flow = bool(client_name and client_url)
+        self.client_auth_flow = client_auth_flow
+        client_redirect_param_str = ''
+        redirect_field_name = self.redirect_field_name
+        redirect_to = quote(self.get_redirect_url())
+
+        if redirect_to and client_auth_flow:
+            client_redirect_param_str = (
+                '&%s=%s' % (redirect_field_name, redirect_to))
+
+        client_login_url = (
+            '%s?client-name=%s&client-url=%s%s'
+            % (local_site_reverse('client-login'),
+               client_name,
+               client_url,
+               client_redirect_param_str))
+        client_login_confirm_url = (
+            '%s?client-name=%s&client-url=%s%s'
+            % (local_site_reverse('client-login-confirm'),
+               client_name,
+               client_url,
+               client_redirect_param_str))
+        self.client_login_url = client_login_url
+        self.client_login_confirm_url = client_login_confirm_url
+
+        if (request.method == 'GET' and client_auth_flow and
+            request.user.is_authenticated):
+            # The request is for client web-based login, with the user already
+            # logged in.
+            return HttpResponseRedirect(client_login_confirm_url)
+
         sso_auto_login_backend = siteconfig.get('sso_auto_login_backend', None)
 
         if sso_auto_login_backend:
@@ -84,12 +212,15 @@ class LoginView(DjangoLoginView):
                 backend = sso_backends.get('backend_id', sso_auto_login_backend)
                 login_url = backend.login_url
 
-                redirect_to = self.get_success_url()
+                if client_auth_flow:
+                    redirect_to = client_login_confirm_url
+                else:
+                    redirect_to = self.get_success_url()
 
                 if url_has_allowed_host_and_scheme(
                     url=redirect_to, allowed_hosts=request.get_host()):
                     login_url = '%s?%s=%s' % (login_url,
-                                              self.redirect_field_name,
+                                              redirect_field_name,
                                               quote(redirect_to))
 
                 return HttpResponseRedirect(login_url)
@@ -117,6 +248,14 @@ class LoginView(DjangoLoginView):
             for sso_backend in sso_backends
             if sso_backend.is_enabled()
         ]
+
+        if self.client_auth_flow:
+            context['client_name'] = self.client_name
+            context['client_url'] = self.client_url
+
+            # While in the client web-based login flow, redirect to
+            # the client login page upon successful login.
+            context[self.redirect_field_name] = self.client_login_url
 
         return context
 
@@ -468,3 +607,357 @@ def edit_oauth_app(request, app_id=None):
             'oauth2_page_url': OAuth2Page.get_absolute_url(),
             'request': request,
         })
+
+
+class BaseClientLoginView(LoginRequiredViewMixin,
+                          TemplateView):
+    """Base view for views dealing with the client web-based login flow.
+
+    Callers must include a ``client-name`` query parameter containing the
+    client name, and a ``client-url`` parameter containing the URL of where
+    to send authentication data upon a successful login. Callers may include
+    a ``next`` parameter containing a URL for redirection, making sure to
+    encode any query parameters in that URL.
+
+    Version Added:
+        5.0.5
+    """
+
+    #: The name of the redirect field.
+    #:
+    #: Type:
+    #:     str
+    redirect_field_name: str = LoginView.redirect_field_name
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: Whether the client is safe to redirect and POST to.
+    #:
+    #: Type:
+    #:     bool
+    client_allowed: bool
+
+    #: The hosts that are allowed to authenticate clients to Review Board.
+    #:
+    #: This will only allow the local host server at the given client
+    #: port and the Review Board server.
+    #:
+    #: Type:
+    #:     set
+    client_allowed_hosts: set
+
+    #: The name of the client who is authenticating.
+    #:
+    #: Type:
+    #:     str
+    client_name: str
+
+    #: The URL of where to send authentication data for the client.
+    #:
+    #: Type:
+    #:     str
+    client_url: str
+
+    #: The URL of where to redirect to upon a successful login.
+    #:
+    #: This is URL encoded.
+    #:
+    #: Type:
+    #:     str
+    redirect_to: str
+
+    #: The name of the template to render.
+    #:
+    #: This must be set by the subclass.
+    #:
+    #: Type:
+    #:     str
+    template_name: str
+
+    def dispatch(
+        self,
+        request: HttpRequest,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
+        """Dispatch the view.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request.
+
+            *args (tuple):
+                Positional arguments to pass through to the parent class.
+
+            **kwargs (dict):
+                Keyword arguments to pass through to the parent class.
+
+        Returns:
+            django.http.HttpResponse:
+            The response to send to the client.
+        """
+        self.siteconfig = SiteConfiguration.objects.get_current()
+        request_GET = self.request.GET
+
+        if self.siteconfig.get('client_web_login'):
+            self.client_name = request_GET.get('client-name', '')
+            self.client_url = request_GET.get('client-url', '')
+
+            client_url_port = urlparse(self.client_url).port
+            client_allowed_hosts = _get_client_allowed_hosts(client_url_port)
+            client_allowed_hosts.add(request.get_host())
+            self.client_allowed_hosts = client_allowed_hosts
+
+            self.client_allowed = self._url_is_safe(self.client_url)
+            self.redirect_to = self._get_redirect_url()
+
+            return super().dispatch(request, *args, **kwargs)
+
+        raise Http404
+
+    def get_context_data(self, **kwargs) -> dict:
+        """Return extra data for rendering the template.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments to pass to the parent class.
+
+        Returns:
+            dict:
+            Context to use when rendering the template.
+        """
+        context = super().get_context_data(**kwargs)
+
+        context['client_allowed'] = self.client_allowed
+        context['client_name'] = self.client_name
+        context['client_url'] = self.client_url
+        context['username'] = self.request.user.username
+
+        return context
+
+    def _url_is_safe(
+        self,
+        url: str,
+    ) -> bool:
+        """Return whether the given URL is safe to redirect and/or POST to.
+
+        Args:
+            url (str):
+                The URL.
+
+        Returns:
+            bool:
+            Whether the url is safe to redirect and/or POST to.
+        """
+        return url_has_allowed_host_and_scheme(
+            url=url,
+            allowed_hosts=self.client_allowed_hosts)
+
+    def _get_redirect_url(self) -> str:
+        """Return the redirect URL.
+
+        This encodes the URL.
+
+        Returns:
+            str:
+            The redirect URL or an empty string if the redirect URL is
+            not safe.
+        """
+        redirect_to = self.request.POST.get(
+            self.redirect_field_name,
+            self.request.GET.get(self.redirect_field_name, ''))
+        assert isinstance(redirect_to, str)
+
+        if self._url_is_safe(redirect_to):
+            return quote(redirect_to)
+
+        return ''
+
+
+class ClientLoginView(BaseClientLoginView):
+    """View for rendering the client login page.
+
+    The client login page handles authenticating a client to Review Board
+    by POSTing authentication data to the client.
+
+    Callers must include a ``client-name`` query parameter containing the
+    client name, and a ``client-url`` parameter containing the URL of where
+    to send authentication data upon a successful login. Callers may include
+    a ``next`` parameter containing a URL for redirection, making sure to
+    encode any query parameters in that URL.
+
+    Version Added:
+        5.0.5
+    """
+
+    template_name = 'accounts/client_login.html'
+
+    def get_context_data(self, **kwargs) -> dict:
+        """Return extra data for rendering the template.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments to pass to the parent class.
+
+        Returns:
+            dict:
+            Context to use when rendering the template.
+        """
+        context = super().get_context_data(**kwargs)
+
+        context['js_view_data'] = self.get_js_view_data()
+        error = context['js_view_data'].pop('error', '')
+
+        if error:
+            context['error'] = error
+
+        return context
+
+    def get_js_view_data(self) -> dict:
+        """Return the data for the ClientLoginView JavaScript view.
+
+        Returns:
+            dict:
+            Data to be passed to the JavaScript view.
+        """
+        client_allowed = self.client_allowed
+        client_name = self.client_name
+        client_url = self.client_url
+        payload = {}
+        error = ''
+
+        if client_allowed:
+            expire_amount = \
+                self.siteconfig.get('client_token_expiration')
+
+            if expire_amount:
+                assert isinstance(expire_amount, int)
+                expires = (timezone.now() +
+                           datetime.timedelta(days=expire_amount))
+            else:
+                expires = None
+
+            try:
+                api_token = WebAPIToken.objects.get_or_create_client_token(
+                    client_name=client_name,
+                    expires=expires,
+                    user=self.request.user)[0]
+
+                payload = {
+                    'api_token': api_token.token,
+                }
+            except WebAPITokenGenerationError:
+                error = _(
+                    'Failed to generate a unique API token for '
+                    'authentication. Please reload the page to try again.')
+        else:
+            logger.warning('Blocking an attempt to send authentication info '
+                           'to unsafe URL %s', client_url)
+        return {
+            'clientName': escape(client_name),
+            'clientURL': quote(client_url),
+            'error': error,
+            'payload': payload,
+            'redirectTo': self.redirect_to,
+            'username': self.request.user.username,
+        }
+
+
+class ClientLoginConfirmationView(BaseClientLoginView):
+    """View for rendering the client login confirmation page.
+
+    This page asks the user if they want to authenticate the client as
+    the current user who is logged in to Review Board. If yes, they will be
+    redirected to the client login page. If not, they will be logged
+    out and redirected to the login page.
+
+    Callers must include a ``client-name`` query parameter containing the
+    client name, and a ``client-url`` parameter containing the URL of where
+    to send authentication data upon a successful login. Callers may include
+    a ``next`` parameter containing a URL for redirection, making sure to
+    encode any query parameters in that URL.
+
+    Version Added:
+        5.0.5
+    """
+
+    template_name = 'accounts/client_login_confirm.html'
+
+    def get_context_data(self, **kwargs) -> dict:
+        """Return extra data for rendering the template.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments to pass to the parent class.
+
+        Returns:
+            dict:
+            Context to use when rendering the template.
+        """
+        context = super().get_context_data(**kwargs)
+
+        client_name = self.client_name
+        client_url = self.client_url
+        redirect_field_name = self.redirect_field_name
+        redirect_to = self.redirect_to
+        client_redirect_param_str = ''
+
+        if redirect_to:
+            client_redirect_param_str = (
+                '&%s=%s' % (redirect_field_name, redirect_to))
+
+        context['client_login_url'] = (
+            '%s?client-name=%s&client-url=%s%s'
+            % (local_site_reverse('client-login'),
+               client_name,
+               client_url,
+               client_redirect_param_str))
+
+        # The client redirect part of the URL is encoded twice
+        # in order to preserve all of its query parameters.
+        logout_redirect = quote(
+            '%s?client-name=%s&client-url=%s%s'
+            % (local_site_reverse('login'),
+               client_name,
+               client_url,
+               client_redirect_param_str))
+        context['logout_url'] = (
+            '%s?%s=%s'
+            % (local_site_reverse('logout'),
+               redirect_field_name,
+               logout_redirect))
+
+        return context
+
+
+def _get_client_allowed_hosts(
+    port: Optional[int],
+) -> set:
+    """Return the set of hosts that are allowed to authenticate clients.
+
+    This will return a set of the local host names at the given port,
+    or with no port specified if one is not given.
+
+    Version Added:
+        5.0.5
+
+    Args:
+        port (int):
+            The specific port to allow for the hosts. If this is
+            ``None`` then no port will be specified.
+
+    Returns:
+        set:
+        The set of allowed hosts.
+    """
+    if port:
+        suffix = f':{port}'
+    else:
+        suffix = ''
+
+    return {
+        f'127.0.0.1{suffix}',
+        f'localhost{suffix}'
+    }

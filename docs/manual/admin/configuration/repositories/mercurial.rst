@@ -43,9 +43,17 @@ Before you add the repository, you will need to install Mercurial on the
 server. We recommend installing this using the Python packages instead of your
 distribution packages.
 
-To install Mercurial, run::
+To install Mercurial, run:
 
-    $ pip install mercurial
+.. tabs::
+
+   .. code-tab:: console Python Virtual Environments
+
+      $ /opt/reviewboard/bin/pip install mercurial
+
+   .. code-tab:: console System Installs
+
+      $ pip3 install mercurial
 
 
 Adding the Repository

@@ -62,4 +62,10 @@ urlpatterns = [
          accounts_views.preview_password_changed_email,
          name='preview-password-change-email'),
     path('sso/', include(([sso_dynamic_urls], 'accounts'), namespace='sso')),
+    path('client-login/',
+         accounts_views.ClientLoginView.as_view(),
+         name='client-login'),
+    path('client-login/confirm',
+         accounts_views.ClientLoginConfirmationView.as_view(),
+         name='client-login-confirm'),
 ]

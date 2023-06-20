@@ -1,12 +1,69 @@
 #!/bin/sh
+#
+# Run the Review Board server with Gunicorn.
+#
+# If Review Board is installed into a virtual environment, Gunicorn must
+# also be installed in the same environment in order to run.
+#
+# If Review Board is installed in a system Python environment, Gunicorn must
+# be installed using the same version of Python used to install Review Board.
+#
+# You can tweak the parameters for Gunicorn below.
+#
+# NOTE: Gunicorn does not serve static media files (CSS, JavaScript, images,
+#       or file attachments). This must be paired with another web server
+#       that can serve these files.
 
 
-gunicorn \
-    --bind=0.0.0.0:8000 \
+# The address:port that Gunicorn will listen on for requests.
+BIND=0.0.0.0:8000
+
+# The number of worker processes available to serve requests.
+NUM_WORKERS=6
+
+# The number of threads per worker that are available to serve requests.
+NUM_THREADS=30
+
+# The maximum time a request can remain alive in seconds before it's timed out.
+TIMEOUT=120
+
+# The location of the Review Board site directory.
+SITEDIR="@sitedir@"
+
+# The Gunicorn log file, used to debug startup and monitor requests.
+LOG_FILE="${SITEDIR}/logs/gunicorn.log"
+
+# Additional flags to pass to Gunicorn.
+GUNICORN_FLAGS=
+
+
+# Set up the environment for Gunicorn.
+VENV_DIR="@sitedir@/venv"
+
+if test -e "${VENV_DIR}"; then
+    GUNICORN="${VENV_DIR}/bin/gunicorn"
+
+    if test ! -e "${GUNICORN}"; then
+        echo "Gunicorn must be installed in ${VENV_DIR}. To install it, run:"
+        echo
+        echo "    $ ${VENV_DIR}/bin/pip install gunicorn"
+        exit 1
+    fi
+
+    . "${VENV_DIR}/bin/activate"
+else
+    GUNICORN=gunicorn
+fi
+
+
+# Launch Gunicorn with the configured flags.
+$GUNICORN \
+    --bind=$BIND \
     --log-level=info \
-    --timeout=120 \
-    --workers=6 \
-    --threads=30 \
-    --log-file=@sitedir@/logs/gunicorn.log \
-    --env REVIEWBOARD_SITEDIR=@sitedir@ \
+    --timeout=$TIMEOUT \
+    --workers=$NUM_WORKERS \
+    --threads=$NUM_THREADS \
+    --log-file="$LOG_FILE" \
+    --env REVIEWBOARD_SITEDIR="$SITEDIR" \
+    $GUNICORN_FLAGS \
     reviewboard.wsgi

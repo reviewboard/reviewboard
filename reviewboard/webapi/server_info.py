@@ -4,6 +4,7 @@ import logging
 from copy import deepcopy
 
 from django.conf import settings
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.admin.server import get_server_url
@@ -15,6 +16,11 @@ logger = logging.getLogger(__name__)
 
 _registered_capabilities = {}
 _capabilities_defaults = {
+    'authentication': {
+        # Whether to allow clients to authenticate to Review Board
+        # via a web browser.
+        'client_web_login': True,
+    },
     'diffs': {
         'base_commit_ids': True,
         'moved_files': True,
@@ -110,6 +116,10 @@ def get_capabilities(request=None):
 
     for category, cap, enabled in get_feature_gated_capabilities(request):
         capabilities.setdefault(category, {})[cap] = enabled
+
+    siteconfig = SiteConfiguration.objects.get_current()
+    capabilities['authentication']['client_web_login'] = \
+        siteconfig.get('client_web_login', False)
 
     return capabilities
 

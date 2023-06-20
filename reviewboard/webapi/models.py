@@ -3,6 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from djblets.webapi.models import BaseWebAPIToken
 
 from reviewboard.site.models import LocalSite
+from reviewboard.webapi.managers import WebAPITokenManager
 
 
 class WebAPIToken(BaseWebAPIToken):
@@ -20,6 +21,8 @@ class WebAPIToken(BaseWebAPIToken):
                                    on_delete=models.CASCADE,
                                    related_name='webapi_tokens',
                                    blank=True, null=True)
+
+    objects = WebAPITokenManager()
 
     @classmethod
     def get_root_resource(cls):

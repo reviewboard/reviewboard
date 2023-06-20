@@ -28,12 +28,12 @@ ARG REVIEWBOARD_VERSION
 # Power Pack version to install.
 #
 # This can be in X.Y or X.Y.Z form.
-ARG POWERPACK_VERSION=5.1
+ARG POWERPACK_VERSION=5.2
 
 # Review Bot extension version to install.
 #
 # This can be in X.Y or X.Y.Z form.
-ARG REVIEWBOT_VERSION=3.1
+ARG REVIEWBOT_VERSION=3.2
 
 # Extra extension packages needed by the server.
 #

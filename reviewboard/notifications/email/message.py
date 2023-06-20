@@ -754,6 +754,7 @@ def prepare_webapi_token_mail(
     context = {
         'api_token': webapi_token,
         'api_token_url': AuthenticationPage.get_absolute_url(),
+        'client': webapi_token.extra_data.get('client'),
         'partial_token': '%s...' % webapi_token.token[:15],
         'user': user,
         'site_root_url': get_server_url(),

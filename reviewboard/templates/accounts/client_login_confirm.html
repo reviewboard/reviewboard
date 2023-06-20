@@ -1,0 +1,27 @@
+{% extends "accounts/base.html" %}
+{% load avatars i18n %}
+
+{% block title %}
+{%  blocktrans %}{{client_name}} Login{% endblocktrans %}
+{% endblock title %}
+
+{% block auth_content %}
+<div class="auth-header">
+{%  avatar request.user 128 %}
+ <h1>{% blocktrans %}Log in to {{client_name}} as {{username}}?{% endblocktrans %}</h1>
+</div>
+<div class="auth-section main-auth-section">
+ <div class="auth-form-row">
+  <div class="auth-button-container">
+   <a href="{{client_login_url}}">
+    <button type="button" class="rb-c-button primary">Yes</button>
+   </a>
+  </div>
+  <div class="auth-button-container">
+   <a href="{{logout_url}}">
+    <button type="button" class="rb-c-button">No, login as a different user</button>
+   </a>
+  </div>
+ </div>
+</div>
+{% endblock auth_content %}

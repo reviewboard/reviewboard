@@ -11,7 +11,9 @@ from importlib import import_module
 
 # Initialize Review Board before we load anything from Django.
 import reviewboard
-reviewboard.initialize()
+reviewboard.initialize(load_extensions=False,
+                       setup_logging=False,
+                       setup_templates=False)
 
 from beanbag_docutils.sphinx.ext.http_role import (
     DEFAULT_HTTP_STATUS_CODES_URL, HTTP_STATUS_CODES)
