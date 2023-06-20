@@ -68,17 +68,21 @@
  *     </div>
  */
 .rb-c-unified-banner {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   display: none;
   margin: -@page-container-padding -@page-container-padding
           @page-container-padding -@page-container-padding;
   z-index: @z-index-banner;
 
   &.-has-multiple {
+    box-shadow: none;
+
     &::after {
       background: @draft-color;
       border-color: @draft-border-color;
       border-style: solid;
       border-width: 0 1px 1px 1px;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
       content: ' ';
       display: block;
       height: 2px;

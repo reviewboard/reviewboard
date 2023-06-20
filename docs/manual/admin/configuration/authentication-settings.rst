@@ -220,9 +220,19 @@ Fixing a Broken Authentication Setup
 
 Misconfiguring authentication can leave you unable to log in to your Review
 Board server to fix it. In this case, you can reset the authentication backend
-back to the builtin database method with the :command:`rb-site` command::
+back to the builtin database method with the :command:`rb-site` command:
 
-    $ rb-site manage /path/to/site set-siteconfig -- --key=auth_backend --value=builtin
+.. tabs::
+
+   .. code-tab:: console Python Virtual Environments
+
+      $ /opt/reviewboard/bin/rb-site manage /path/to/site \
+            set-siteconfig --key=auth_backend --value=builtin
+
+   .. code-tab:: console System Installs
+
+      $ rb-site manage /path/to/site \
+            set-siteconfig --key=auth_backend --value=builtin
 
 
 .. _saml-settings:
@@ -233,9 +243,15 @@ SAML 2.0 Authentication
 Review Board supports SAML 2.0 for Single Sign-On (SSO). This requires
 installing additional dependencies:
 
-.. code-block:: console
+.. tabs::
 
-    $ pip install -U 'ReviewBoard[saml]'
+   .. code-tab:: console Python Virtual Environments
+
+      $ /opt/reviewboard/bin/pip install -U 'ReviewBoard[saml]'
+
+   .. code-tab:: console System Installs
+
+      $ pip3 install -U 'ReviewBoard[saml]'
 
 To enable SAML 2.0, you'll need to configure both the settings in Review Board
 (the Service Provider) and your Identity Provider.
@@ -254,7 +270,8 @@ Review Board configuration:
 1. URLs for the Issuer and SAML/SLO endpoints, as well as the binding type for
    each.
 2. A copy of the X.509 certificate.
-3. Possibly, specific digest and signature algorithm types.
+3. Possibly, specific digest and signature algorithm types and the format of
+   the NameID field.
 
 The :guilabel:`Require login to link` setting allows you to control the
 behavior when first authenticating a user via SSO who already has an account on

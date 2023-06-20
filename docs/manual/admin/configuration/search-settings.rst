@@ -44,9 +44,15 @@ Elasticsearch requires the following:
 
    For example, to install support for Elasticsearch 7.x, run:
 
-   .. code-block:: shell
+   .. tabs::
 
-      $ pip install "ReviewBoard[elasticsearch7]"
+      .. code-tab:: console Python Virtual Environments
+
+         $ /opt/reviewboard/bin/pip install "ReviewBoard[elasticsearch7]"
+
+      .. code-tab:: console System Installs
+
+         $ pip3 install "ReviewBoard[elasticsearch7]"
 
 Once you have everything set up, you can configure Elasticsearch in
 Review Board by providing the following fields:
@@ -98,9 +104,17 @@ The default crontab will perform an index update every 10 minutes.
 
 Whether you are using scheduled indexing or on-the-fly, you will need to
 perform one full index when you first enable search. To do this, type the
-following (as the web server user, if using Whoosh)::
+following (as the web server user, if using Whoosh):
 
-    $ rb-site manage /path/to/site rebuild_index
+.. tabs::
+
+   .. code-tab:: console Python Virtual Environments
+
+      $ /opt/reviewboard/bin/rb-site manage /path/to/site rebuild_index
+
+   .. code-tab:: console System Installs
+
+      $ rb-site manage /path/to/site rebuild_index
 
 
 For more information on generating search indexes, see the section on the

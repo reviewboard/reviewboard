@@ -35,9 +35,17 @@ Before you add the repository, you will need to install Bazaar on the server.
 We recommend installing this using the Python packages instead of your
 distribution packages.
 
-To install Bazaar, run::
+To install Bazaar, run:
 
-    $ pip install bzr
+.. tabs::
+
+   .. code-tab:: console Python Virtual Environments
+
+      $ /opt/reviewboard/bin/pip install breezy
+
+   .. code-tab:: console System Installs
+
+      $ pip3 install breezy
 
 
 Adding the Repository

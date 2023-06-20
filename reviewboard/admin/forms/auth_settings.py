@@ -4,6 +4,7 @@ import logging
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
+from djblets.forms.widgets import AmountSelectorWidget
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.accounts.forms.auth import LegacyAuthModuleSettingsForm
@@ -40,6 +41,25 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         widget=forms.Select(attrs={
             'data-subform-group': 'auth-backend',
         }))
+
+    automatic_api_token_expiration = forms.IntegerField(
+        label=_('Automatic token expiration'),
+        help_text=_('API tokens are automatically created when authenticating '
+                    'services to Review Board via the login page. This sets '
+                    'how long it will take for tokens to expire after '
+                    'creation.'),
+        required=False,
+        widget=AmountSelectorWidget(
+            unit_choices=[
+                (1, _('days')),
+                (7, _('weeks')),
+                (30, _('months')),
+                (365, _('years')),
+                (None, _('Never')),
+            ],
+            number_attrs={
+                'min': 0,
+            }))
 
     def __init__(self, siteconfig, *args, **kwargs):
         """Initialize the settings form.
@@ -150,6 +170,8 @@ class AuthenticationSettingsForm(SiteSettingsForm):
 
         self.fields['auth_anonymous_access'].initial = \
             not self.siteconfig.get('auth_require_sitewide_login')
+        self.fields['automatic_api_token_expiration'].initial = \
+            self.siteconfig.get('client_token_expiration')
 
     def save(self):
         """Save the form.
@@ -159,6 +181,9 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         """
         self.siteconfig.set('auth_require_sitewide_login',
                             not self.cleaned_data['auth_anonymous_access'])
+        self.siteconfig.set(
+            'client_token_expiration',
+            self.cleaned_data['automatic_api_token_expiration'])
 
         auth_backend = self.cleaned_data['auth_backend']
 
@@ -266,6 +291,18 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         fieldsets = (
             {
                 'classes': ('wide',),
-                'fields': ['auth_anonymous_access', 'auth_backend'],
+                'fields': ['auth_anonymous_access',
+                           'auth_backend'],
+            },
+            {
+                'title': _('API Authentication Settings'),
+                'description': _(
+                    'Manage how applications and services (e.g. RBTools) '
+                    'authenticate to the Review Board API.'
+                ),
+                'classes': ('wide',),
+                'fields': (
+                    'automatic_api_token_expiration',
+                ),
             },
         )

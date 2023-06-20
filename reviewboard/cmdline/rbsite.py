@@ -57,7 +57,16 @@ VERSION = get_version_string()
 DEBUG = False
 
 
-is_windows = (platform.system() == 'Windows')
+#: Whether this is running on Windows.
+is_windows: bool = (platform.system() == 'Windows')
+
+
+#: Whether this is running within an existing virtualenv.
+is_virtualenv: bool = (
+    getattr(sys, 'base_prefix', None) or
+    getattr(sys, 'real_prefix', None) or
+    sys.prefix
+) != sys.prefix
 
 
 #: The console instance to use for all output.
@@ -284,6 +293,13 @@ class Site(object):
         uploaded_dir = os.path.join(media_dir, 'uploaded')
 
         self.mkdir(uploaded_dir)
+
+        # If rb-site is running in a virtualenv, reuse it for the site
+        # directory.
+        if is_virtualenv:
+            self.mirror_files(source_path=sys.prefix,
+                              dest_path=self.venv_dir,
+                              use_symlink=True)
 
         # Assuming this is an upgrade, the 'uploaded' directory should
         # already have the right permissions for writing, so use that as a
@@ -1375,7 +1391,12 @@ class Site(object):
             imp.is_frozen('__main__')):   # tools/freeze
             rbsite_path = sys.executable
         else:
-            rbsite_path = '"%s" "%s"' % (sys.executable, sys.argv[0])
+            venv_rbsite_path = os.path.join(self.venv_dir, 'bin', 'rb-site')
+
+            if os.path.exists(venv_rbsite_path):
+                rbsite_path = '"%s"' % venv_rbsite_path
+            else:
+                rbsite_path = '"%s" "%s"' % (sys.executable, sys.argv[0])
 
         context = {
             'rbsite': rbsite_path,
@@ -2928,6 +2949,10 @@ class ManageCommand(Command):
                 'Open a database shell using your standard database '
                 'tools (e.g., mysql or psql).'
             ),
+            'find-large-diffs': (
+                'Scan the database looking for very large diffs that may '
+                'be contributing to performance problems.'
+            ),
             'shell': (
                 'Open a Python shell in the Review Board environment.'
             ),
@@ -2955,6 +2980,9 @@ class ManageCommand(Command):
         'Users': {
             'changepassword': 'Change the password for a user.',
             'createsuperuser': 'Create a new Review Board administrator.',
+            'invalidate-api-tokens': (
+                'Invalidate API tokens for one or more users.'
+            ),
         },
     }
 

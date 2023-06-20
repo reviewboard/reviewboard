@@ -72,8 +72,11 @@ extensions = [
     'beanbag_docutils.sphinx.ext.extlinks',
     'beanbag_docutils.sphinx.ext.http_role',
     'beanbag_docutils.sphinx.ext.image_srcsets',
+    'beanbag_docutils.sphinx.ext.json_writer',
+    'beanbag_docutils.sphinx.ext.metadata',
     'beanbag_docutils.sphinx.ext.ref_utils',
     'webapidocs',
+    'rbwebsite_refs',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -299,7 +302,7 @@ else:
     rbwebsite_url = 'https://www.reviewboard.org'
 
 
-django_doc_base_url = ('http://django.readthedocs.io/en/%s.x/'
+django_doc_base_url = ('https://django.readthedocs.io/en/%s.x/'
                        % django_doc_major_version)
 
 
@@ -317,7 +320,7 @@ intersphinx_mapping = {
 
 extlinks = {
     'djangodoc': ('%s%%s.html' % django_doc_base_url, '%s'),
-    'backbonejs': ('http://backbonejs.org/#%s', 'Backbone.%s'),
+    'backbonejs': ('https://backbonejs.org/#%s', 'Backbone.%s'),
     'pypi': ('https://pypi.org/project/%s/', '%s'),
     'rbintegration': ('https://www.reviewboard.org/integrations/%s', '%s'),
     'rbsource': ('https://github.com/reviewboard/reviewboard/blob/%s/%%s'

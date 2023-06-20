@@ -14,8 +14,8 @@ here, we will use :file:`/var/www/reviews.example.com`. The directory
 should not exist yet. :command:`rb-site` will create it.
 
 
-Creating the Database
-=====================
+1. Create the Database
+======================
 
 Before you create the Review Board site, you'll need to create a database. The
 particular steps for this depend on the database server software that you
@@ -29,7 +29,7 @@ We recommend using MySQL 8 or higher, or MariaDB. If you're using an older
 version of MySQL, start by choosing the right encoding.
 
 
-Choose the encoding
+Choose the Encoding
 ~~~~~~~~~~~~~~~~~~~
 
 If you are running a version of MySQL prior to 8.x, you will want to use the
@@ -50,8 +50,8 @@ following settings:
 After making these changes, restart your MySQL server.
 
 
-Create the database
-~~~~~~~~~~~~~~~~~~~
+Create the MySQL Database
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You'll need to create the Review Board user and database through the
 :command:`mysql` command prompt, as follows:
@@ -77,6 +77,9 @@ For example:
 PostgreSQL
 ----------
 
+Create the PostgreSQL Database
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 You'll need to create the Review Board user and database through the
 :command:`psql` command prompt, as follows:
 
@@ -96,37 +99,55 @@ For example:
     postgres=# CREATE DATABASE reviewboard WITH OWNER rbuser;
 
 
-Beginning Installation
-======================
+2. Create the Site Directory
+============================
 
-Begin installation by running the following command:
+1. Begin installation by running the following command:
 
-.. code-block:: console
+   .. tabs::
 
-    $ rb-site install <path>
+      .. group-tab:: Python Virtual Environments
 
-For example:
+         .. code-block:: console
 
-.. code-block:: console
+            $ /opt/reviewboard/bin/rb-site install <path>
 
-    $ rb-site install /var/www/reviews.example.com
+         For example:
 
-You will now be asked a series of questions about your site setup, including:
+         .. code-block:: console
 
-* The domain name for the server
-* The path for the server, relative to the domain
-* The database information (as configured above)
-* The memcached server address
-* The administrator username and password
+            $ /opt/reviewboard/bin/rb-site install /var/www/reviews.example.com
 
-Once finished, follow :command:`rb-site`'s instructions to complete your
-installation.
+      .. group-tab:: System Installs
 
-We'll go over those next.
+         .. code-block:: console
+
+             $ rb-site install <path>
+
+         For example:
+
+         .. code-block:: console
+
+            $ rb-site install /var/www/reviews.example.com
+
+2. Answer the questions about your install. These will include:
+   including:
+
+   * The domain name for the server
+   * The path for the server, relative to the domain
+   * The database information (as configured above)
+   * The memcached server address
+   * The username and password to use for the Review Board administrator
+     account
+
+3. Once finished, follow :command:`rb-site`'s instructions to complete your
+   installation.
+
+   We'll go over those next.
 
 
-Configuring Permissions
-=======================
+3. Configure Permissions
+========================
 
 Review Board must have write access to the following directories and their
 subdirectories:
@@ -153,8 +174,8 @@ For example:
 
 .. _configuring-selinux:
 
-Configuring SELinux
-===================
+4. Configuring SELinux (optional)
+=================================
 
 Your system may be configured for SELinux_, which is designed to keep your
 Linux distribution secure. This is usually enabled by default on
@@ -226,8 +247,8 @@ If you need any help with SELinux, `reach out to us for support <support_>`_.
 
 .. _configuring-web-server:
 
-Configuring the Web Server
-==========================
+5. Configure the Web Server
+===========================
 
 Your web server must be configured to serve Review Board. This section
 will go over different configurations that are available.
@@ -722,8 +743,8 @@ Sample Nginx Configuration
 
 .. _configuring-cron:
 
-Configuring Task Scheduling
-===========================
+6. Configure Task Scheduling
+============================
 
 Cron is used for automatically running periodic maintenance tasks, including:
 
@@ -746,15 +767,27 @@ For example:
 
 A sample Crontab configuration looks like:
 
-.. code-block:: shell
+.. tabs::
 
-   # Update search index every 10 minutes
-   0,10,20,30,40,50 * * * * "/usr/bin/python3.11" "/usr/bin/rb-site" \
-       manage "/var/www/reviews.example.com" update_index -- -a 1
+   .. code-tab:: shell Python Virtual Environments
 
-   # Clear expired sessions once a day at 2am
-   0 2 * * * "/usr/bin/python3.11" "/usr/bin/rb-site" \
-       manage "/var/www/reviews.example.com" clearsessions
+      # Update search index every 10 minutes
+      0,10,20,30,40,50 * * * * "/opt/reviewboard/bin/rb-site" \
+          manage "/var/www/reviews.example.com" update_index -- -a 1
+
+      # Clear expired sessions once a day at 2am
+      0 2 * * * "/opt/reviewboard/bin/rb-site" \
+          manage "/var/www/reviews.example.com" clearsessions
+
+   .. code-tab:: shell System Installs
+
+      # Update search index every 10 minutes
+      0,10,20,30,40,50 * * * * "/usr/bin/python3.11" "/usr/bin/rb-site" \
+          manage "/var/www/reviews.example.com" update_index -- -a 1
+
+      # Clear expired sessions once a day at 2am
+      0 2 * * * "/usr/bin/python3.11" "/usr/bin/rb-site" \
+          manage "/var/www/reviews.example.com" clearsessions
 
 
 You're Done!

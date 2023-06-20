@@ -8,6 +8,7 @@ from reviewboard.accounts.sso.backends.saml.forms import (SAMLLinkUserForm,
 from reviewboard.accounts.sso.backends.saml.settings import (
     SAMLBinding,
     SAMLDigestAlgorithm,
+    SAMLNameIDFormat,
     SAMLSignatureAlgorithm)
 from reviewboard.testing import TestCase
 
@@ -96,12 +97,17 @@ class SAMLSettingsFormTests(TestCase):
                 'saml_issuer': 'https://example.com/saml/issuer',
                 'saml_signature_algorithm': SAMLSignatureAlgorithm.RSA_SHA1,
                 'saml_digest_algorithm': SAMLDigestAlgorithm.SHA512,
+                'saml_nameid_format': SAMLNameIDFormat.PERSISTENT,
                 'saml_verification_cert': VALID_CERT,
                 'saml_sso_url': 'https://example.com/saml/sso',
                 'saml_sso_binding_type': SAMLBinding.HTTP_POST,
                 'saml_slo_url': 'https://example.com/saml/slo',
                 'saml_slo_binding_type': SAMLBinding.HTTP_REDIRECT,
                 'saml_require_login_to_link': False,
+                'saml_attr_email': 'User.Email',
+                'saml_attr_firstname': 'User.FirstName',
+                'saml_attr_lastname': 'User.LastName',
+                'saml_attr_fullname': 'User.FullName',
             })
 
         self.assertTrue(form.is_valid())
@@ -116,6 +122,8 @@ class SAMLSettingsFormTests(TestCase):
                          SAMLSignatureAlgorithm.RSA_SHA1)
         self.assertEqual(siteconfig.get('saml_digest_algorithm'),
                          SAMLDigestAlgorithm.SHA512)
+        self.assertEqual(siteconfig.get('saml_nameid_format'),
+                         SAMLNameIDFormat.PERSISTENT)
         self.assertEqual(siteconfig.get('saml_verification_cert'),
                          VALID_CERT)
         self.assertEqual(siteconfig.get('saml_sso_url'),

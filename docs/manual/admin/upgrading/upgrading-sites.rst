@@ -34,15 +34,31 @@ To upgrade a Review Board site:
 
 1. Run:
 
-   .. code-block:: console
+   .. tabs::
 
-       $ rb-site upgrade /path/to/sitedir
+      .. group-tab:: Python Virtual Environments
 
-   For example:
+         .. code-block:: console
 
-   .. code-block:: console
+            $ /opt/reviewboard/bin/rb-site upgrade /path/to/sitedir
 
-       $ rb-site upgrade /var/www/reviews.example.com
+         For example:
+
+         .. code-block:: console
+
+            $ /opt/reviewboard/bin/rb-site upgrade /var/www/reviews.example.com
+
+      .. group-tab:: System Installs
+
+         .. code-block:: console
+
+            $ rb-site upgrade /path/to/sitedir
+
+         For example:
+
+         .. code-block:: console
+
+            $ rb-site upgrade /var/www/reviews.example.com
 
    This will report the progress of the upgrade. If it fails to report a
    successful upgrade, stop and `reach out to support <support_>`_ for help.

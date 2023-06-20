@@ -1967,16 +1967,93 @@ class WebAPITokenEmailTests(kgb.SpyAgency,
         correct_email_body = (
             '\n------------------------------------------\n'
             'This is an automatically generated e-mail.\n'
-            '------------------------------------------\n\n'
-            'Hi Sample User,\n\n'
+            '------------------------------------------\n'
+            '\n'
+            'Hi Sample User,\n'
+            '\n'
             'A new API token has been added to your Review Board account on\n'
-            'http://example.com/.\n\n'
+            'http://example.com/.\n'
+            '\n'
             'The API token ID starts with %s and was added\n'
-            'August 2nd, 2022, 5:45 a.m. UTC.\n\n'
+            'August 2nd, 2022, 5:45 a.m. UTC.\n'
+            '\n'
             'If you did not create this token, you should revoke it at\n'
             'http://example.com/account/preferences/#authentication'
-            ', change your password, and talk to your\n'
-            'administrator.\n\n'
+            ', change your password, and talk to your administrator.\n'
+            '\n'
+        ) % partial_token
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(email.subject, 'New Review Board API token created')
+        self.assertEqual(email.from_email, self.sender)
+        self.assertEqual(email.extra_headers['From'],
+                         settings.DEFAULT_FROM_EMAIL)
+        self.assertEqual(email.to[0], build_email_address_for_user(self.user))
+        self.assertHTMLEqual(html_body, correct_html)
+        self.assertEqual(email.body, correct_email_body)
+
+    def test_create_client_api_token(self):
+        """Testing sending e-mail when a new client API Token is created"""
+        self.spy_on(timezone.now, op=kgb.SpyOpReturn(
+            timezone.make_aware(datetime.datetime(2022, 8, 2, 5, 45))
+        ))
+
+        webapi_token = self.create_webapi_token(
+            self.user,
+            extra_data={
+                'client': 'TestClient',
+            })
+
+        email = mail.outbox[0]
+        html_body = email.alternatives[0][0]
+        partial_token = '%s...' % webapi_token.token[:15]
+
+        correct_html = (
+            '<html>'
+            '<body style="font-family: Verdana, Arial, Helvetica, '
+            'Sans-Serif;">'
+            '<table bgcolor="#f9f3c9" width="100%%" cellpadding="8"'
+            'style="border: 1px #c9c399 solid;">'
+            '<tr><td>This is an automatically generated e-mail.</td></tr>'
+            '</table>'
+            '<p>Hi Sample User,</p>'
+            '<p>'
+            'A new API token has been added to your Review Board account on'
+            '<a href="http://example.com/">http://example.com/</a>.'
+            '</p>'
+            '<p>'
+            'The API token ID starts with <code>%s</code>'
+            'and was added August 2nd, 2022, 5:45 a.m. UTC.'
+            '</p>'
+            '<p>'
+            'This token was automatically created for TestClient. '
+            'If you did not just authenticate to Review Board for '
+            'TestClient, you should revoke this token on your'
+            '<a href="http://example.com/account/preferences/#authentication">'
+            'API Tokens</a> page, change your password, and talk to your '
+            'administrator.'
+            '</p></body></html>'
+        ) % partial_token
+        correct_email_body = (
+            '\n------------------------------------------\n'
+            'This is an automatically generated e-mail.\n'
+            '------------------------------------------\n'
+            '\n'
+            'Hi Sample User,\n'
+            '\n'
+            'A new API token has been added to your Review Board account on\n'
+            'http://example.com/.\n'
+            '\n'
+            'The API token ID starts with %s and was added\n'
+            'August 2nd, 2022, 5:45 a.m. UTC.\n'
+            '\n'
+            'This token was automatically created for TestClient. '
+            'If you did not just\n'
+            'authenticate to Review Board for TestClient, you should revoke '
+            'this token at\n'
+            'http://example.com/account/preferences/#authentication, '
+            'change your password, and talk to your administrator.\n'
+            '\n'
         ) % partial_token
 
         self.assertEqual(len(mail.outbox), 1)
@@ -2038,16 +2115,21 @@ class WebAPITokenEmailTests(kgb.SpyAgency,
         correct_email_body = (
             '\n------------------------------------------\n'
             'This is an automatically generated e-mail.\n'
-            '------------------------------------------\n\n'
-            'Hi Sample User,\n\n'
+            '------------------------------------------\n'
+            '\n'
+            'Hi Sample User,\n'
+            '\n'
             'One of your API tokens has been updated on your Review Board '
-            'account on\nhttp://example.com/.\n\n'
+            'account on\nhttp://example.com/.\n'
+            '\n'
             'The API token ID starts with %s and was updated\n'
-            'August 2nd, 2022, 5:45 a.m. UTC.\n\n'
+            'August 2nd, 2022, 5:45 a.m. UTC.\n'
+            '\n'
             'If you did not update this token, you should revoke it at\n'
             'http://example.com/account/preferences/#authentication'
             ', change your password, and talk to your\n'
-            'administrator.\n\n'
+            'administrator.\n'
+            '\n'
         ) % partial_token
 
         self.assertEqual(len(mail.outbox), 1)
@@ -2095,14 +2177,19 @@ class WebAPITokenEmailTests(kgb.SpyAgency,
         correct_email_body = (
             '\n------------------------------------------\n'
             'This is an automatically generated e-mail.\n'
-            '------------------------------------------\n\n'
-            'Hi Sample User,\n\n'
+            '------------------------------------------\n'
+            '\n'
+            'Hi Sample User,\n'
+            '\n'
             'One of your API tokens has been deleted from your Review Board '
-            'account on\nhttp://example.com/.\n\n'
+            'account on\nhttp://example.com/.\n'
+            '\n'
             'The API token ID was %s. Any clients\nthat were using this '
-            'token will no longer be able to authenticate.\n\n'
+            'token will no longer be able to authenticate.\n'
+            '\n'
             'If you did not delete this token, you should change your '
-            'password and talk\nto your administrator.\n\n'
+            'password and talk\nto your administrator.\n'
+            '\n'
         ) % webapi_token.token
 
         self.assertEqual(len(mail.outbox), 1)
@@ -2171,15 +2258,20 @@ class WebAPITokenEmailTests(kgb.SpyAgency,
         correct_email_body = (
             '\n------------------------------------------\n'
             'This is an automatically generated e-mail.\n'
-            '------------------------------------------\n\n'
-            'Hi Sample User,\n\n'
+            '------------------------------------------\n'
+            '\n'
+            'Hi Sample User,\n'
+            '\n'
             'One of your API tokens has expired on your Review Board '
             'account\non http://example.com/. Any clients that were using '
-            'this token will no\nlonger be able to authenticate.\n\n'
+            'this token will no\nlonger be able to authenticate.\n'
+            '\n'
             'The API token ID starts with %s and expired on\n'
-            'August 1st, 2022, 5:45 a.m. UTC.\n\n'
+            'August 1st, 2022, 5:45 a.m. UTC.\n'
+            '\n'
             'New tokens can be created at '
-            'http://example.com/account/preferences/#authentication.\n\n'
+            'http://example.com/account/preferences/#authentication.\n'
+            '\n'
         ) % partial_token
 
         self.assertEqual(len(mail.outbox), 1)

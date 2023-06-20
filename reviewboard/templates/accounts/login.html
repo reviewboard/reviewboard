@@ -20,7 +20,11 @@
       id="login_form">
 {%  block hidden_fields %}
  <input type="hidden" name="next" value="{{next}}" />
-  {% csrf_token %}
+{%   if client and client_url %}
+ <input type="hidden" name="client-name" value="{{client_name}}">
+ <input type="hidden" name="client-url" value="{{client_url}}">
+{%   endif %}
+ {% csrf_token %}
 {%  endblock %}
  <div class="auth-form-row auth-field-row">
   {{form.username.label_tag}}
@@ -38,7 +42,7 @@
   <div class="auth-button-container">
    <input type="submit" class="primary" value="{% trans "Log in" %}" />
 {%  for sso_backend in enabled_sso_backends %}
-   <a href="{{sso_backend.login_url}}{% if next %}?next={{next}}{% endif %}">
+   <a href="{{sso_backend.login_url}}{% if next %}?next={{next|urlencode}}{% endif %}">
     <button type="button" class="rb-c-button">{{sso_backend.login_label}}</button>
    </a>
 {%  endfor %}

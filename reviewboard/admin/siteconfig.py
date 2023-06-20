@@ -163,6 +163,11 @@ defaults.update({
     'site_domain_method': 'http',
     'site_read_only': False,
     'sso_auto_login_backend': '',
+    'client_web_login': True,
+
+    # The number of days in which client API tokens should expire
+    # after creation.
+    'client_token_expiration': 365,
 
     'privacy_enable_user_consent': False,
     'privacy_info_html': None,

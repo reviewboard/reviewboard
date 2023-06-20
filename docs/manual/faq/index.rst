@@ -67,8 +67,8 @@ project.
 Can Review Board be integrated with other tools?
 ================================================
 
-Yes. Review Board natively provides integrations with many `integrations_`,
-including...
+Yes. Review Board natively provides `integrations with many services
+<integrations_>`_, including...
 
 Chat services:
 

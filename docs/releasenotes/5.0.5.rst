@@ -1,0 +1,133 @@
+.. default-intersphinx:: djblets3.x rb5.x
+
+
+================================
+Review Board 5.0.5 Release Notes
+================================
+
+**Release date**: June 20, 2023
+
+
+Installation/Upgrade
+====================
+
+Review Board 5.0.5 is compatible with Python 3.7-3.11.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install ReviewBoard==5.0.5
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+New Features
+============
+
+Installation and Maintenance
+----------------------------
+
+* Simplified installation in Python Virtual Environments and newer Linux
+  distributions.
+
+  Python Virtual Environments provide a way to isolate Python applications
+  and services from the system or other Python applications. They help you
+  avoid various forms of installation problems. They're also now required
+  in Ubuntu 23.04, Debian Bookworm, and Fedora 39.
+
+  Review Board will now auto-detect if it's been installed with a Virtual
+  Environment and perform the work to "activate" it automatically. This
+  keeps installation and management of Review Board easy.
+
+  We've updated our :ref:`installation guide <installation-linux>` to provide
+  instructions for both Virtual Environment installation and traditional
+  installation.
+
+  .. note::
+
+     If you're upgrading an existing server, you don't need to worry about
+     Virtual Environments right now.
+
+     However, if you plan to upgrade to a newer Linux distribution, you will
+     need to re-install using Virtual Environments.
+
+* Added new :rb-management-command:`pip` and :rb-management-command:`python`
+  site management commands.
+
+  These are used to execute the correct versions of :command:`pip` and
+  :command:`python` for your installation. They're recommended over using
+  the system versions of these commands, if you're building integrations
+  or automation scripts.
+
+
+Integrations
+------------
+
+* Added a web-based login flow for the upcoming RBTools 5.
+
+  Users of the in-development RBTools_ 5 will be able to authenticate with
+  Review Board using your standard web-based login flow (such as Single
+  Sign-On, LDAP, or Active Directory), instead of supplying a username and
+  password to RBTools.
+
+  This feature will be available to all users once RBTools 5 is released.
+
+* Improved selecting review groups and repositories when configuring
+  integrations.
+
+  When configuring integrations based on review groups or repositories,
+  you'll now be able to search for the items you want and see the items
+  that were selected.
+
+  This is a more refined experience over the old one, which was hard to use
+  on large installations and made it hard to select the items you wanted.
+
+
+.. _RBTools: https://www.reviewboard.org/downloads/rbtools/
+
+
+Bug Fixes
+=========
+
+Authentication
+--------------
+
+* Fixed crashes that could occur during the Single Sign-On process.
+
+* Fixed navigating to the redirect URL after logging in with Single Sign-On.
+
+  If you navigate to a page in Review Board, and you're required to log in
+  first, you'll be taken back to the page after logging in successfully.
+
+* Fixed the display of the Log Out page.
+
+
+Installation
+------------
+
+* Fixed site upgrades between pre-release versions of Review Board when the
+  latest versions of the :pypi:`setuptools` package is installed.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin

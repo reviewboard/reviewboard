@@ -284,10 +284,15 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
         else:
             username = auth.get_nameid()
 
+            siteconfig = SiteConfiguration.objects.get_current()
+            attr_email = siteconfig.get('saml_attr_email')
+            attr_firstname = siteconfig.get('saml_attr_firstname')
+            attr_lastname = siteconfig.get('saml_attr_lastname')
+
             try:
-                email = self._get_user_attr_value(auth, 'User.email')
-                first_name = self._get_user_attr_value(auth, 'User.FirstName')
-                last_name = self._get_user_attr_value(auth, 'User.LastName')
+                email = self._get_user_attr_value(auth, attr_email)
+                first_name = self._get_user_attr_value(auth, attr_firstname)
+                last_name = self._get_user_attr_value(auth, attr_lastname)
             except KeyError as e:
                 logger.error('SAML: Assertion is missing %s attribute', e,
                              extra={'request': request})
@@ -332,12 +337,17 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
         if value and isinstance(value, list):
             return value[0]
 
+        siteconfig = SiteConfiguration.objects.get_current()
+        attr_firstname = siteconfig.get('saml_attr_firstname')
+        attr_lastname = siteconfig.get('saml_attr_lastname')
+
         # Some identity providers only allow setting the full name, not
         # separate first and last. In this case, we need to fake it by
         # splitting.
-        if key in ('User.FirstName', 'User.LastName'):
+        if key in (attr_firstname, attr_lastname):
             try:
-                fullname = self._get_user_attr_value(auth, 'User.FullName')
+                attr_fullname = siteconfig.get('saml_attr_fullname')
+                fullname = self._get_user_attr_value(auth, attr_fullname)
             except KeyError:
                 # Reraise with the original key name so that this fallback
                 # isn't exposed in the exception message.
@@ -348,7 +358,7 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
             # two parts as the first and last names.
             name_parts = fullname.split(' ', 1)
 
-            if key == 'User.FirstName':
+            if key == attr_firstname:
                 return name_parts[0]
             else:
                 return len(name_parts) > 1 and name_parts[1] or ''

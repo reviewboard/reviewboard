@@ -8,9 +8,15 @@ Upgrading Review Board is simple. It's essentially a three-step process.
 
 1. Upgrade Review Board by running:
 
-   .. code-block:: console
+   .. tabs::
 
-      $ pip3 install -U ReviewBoard
+      .. code-tab:: console Python Virtual Environments
+
+         $ /opt/reviewboard/bin/pip install -U ReviewBoard
+
+      .. code-tab:: console System Installs
+
+         $ pip3 install -U ReviewBoard
 
    This may need to be done as ``root``, or using :command:`sudo`, depending
    on your setup.
