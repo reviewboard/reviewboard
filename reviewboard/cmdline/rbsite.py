@@ -1375,7 +1375,12 @@ class Site(object):
             imp.is_frozen('__main__')):   # tools/freeze
             rbsite_path = sys.executable
         else:
-            rbsite_path = '"%s" "%s"' % (sys.executable, sys.argv[0])
+            venv_rbsite_path = os.path.join(self.venv_dir, 'bin', 'rb-site')
+
+            if os.path.exists(venv_rbsite_path):
+                rbsite_path = '"%s"' % venv_rbsite_path
+            else:
+                rbsite_path = '"%s" "%s"' % (sys.executable, sys.argv[0])
 
         context = {
             'rbsite': rbsite_path,
