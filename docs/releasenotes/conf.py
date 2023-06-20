@@ -23,14 +23,12 @@
 import os
 import sys
 from datetime import datetime
-sys.path.append(os.path.abspath('_ext'))
 
+cur_dir = os.path.abspath(os.path.join(__file__, '..'))
 
-# Set this up to parse Django-driven code.
-sys.path.insert(0, os.path.abspath(os.path.join(__file__, '..', '..', '..')))
-sys.path.insert(0, os.path.abspath(os.path.join(__file__, '..', '..', '..',
-                                                '..', 'djblets')))
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.append(os.path.join(cur_dir, '_ext'))
+sys.path.append(os.path.abspath(os.path.join(cur_dir, '..', 'manual', '_ext')))
+
 
 import reviewboard
 from reviewboard.dependencies import django_doc_major_version
@@ -51,6 +49,7 @@ extensions = [
     'beanbag_docutils.sphinx.ext.metadata',
     'beanbag_docutils.sphinx.ext.retina_images',
     'extralinks',
+    'rbwebsite_refs',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

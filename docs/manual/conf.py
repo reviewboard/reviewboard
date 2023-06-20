@@ -298,7 +298,7 @@ else:
     rbwebsite_url = 'https://www.reviewboard.org'
 
 
-django_doc_base_url = ('http://django.readthedocs.io/en/%s.x/'
+django_doc_base_url = ('https://django.readthedocs.io/en/%s.x/'
                        % django_doc_major_version)
 
 
@@ -316,7 +316,7 @@ intersphinx_mapping = {
 
 extlinks = {
     'djangodoc': ('%s%%s.html' % django_doc_base_url, '%s'),
-    'backbonejs': ('http://backbonejs.org/#%s', 'Backbone.%s'),
+    'backbonejs': ('https://backbonejs.org/#%s', 'Backbone.%s'),
     'pypi': ('https://pypi.org/project/%s/', '%s'),
     'rbintegration': ('https://www.reviewboard.org/integrations/%s', '%s'),
     'rbsource': ('https://github.com/reviewboard/reviewboard/blob/%s/%%s'
