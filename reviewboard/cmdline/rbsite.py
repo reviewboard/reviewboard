@@ -57,7 +57,16 @@ VERSION = get_version_string()
 DEBUG = False
 
 
-is_windows = (platform.system() == 'Windows')
+#: Whether this is running on Windows.
+is_windows: bool = (platform.system() == 'Windows')
+
+
+#: Whether this is running within an existing virtualenv.
+is_virtualenv: bool = (
+    getattr(sys, 'base_prefix', None) or
+    getattr(sys, 'real_prefix', None) or
+    sys.prefix
+) != sys.prefix
 
 
 #: The console instance to use for all output.
@@ -284,6 +293,13 @@ class Site(object):
         uploaded_dir = os.path.join(media_dir, 'uploaded')
 
         self.mkdir(uploaded_dir)
+
+        # If rb-site is running in a virtualenv, reuse it for the site
+        # directory.
+        if is_virtualenv:
+            self.mirror_files(source_path=sys.prefix,
+                              dest_path=self.venv_dir,
+                              use_symlink=True)
 
         # Assuming this is an upgrade, the 'uploaded' directory should
         # already have the right permissions for writing, so use that as a

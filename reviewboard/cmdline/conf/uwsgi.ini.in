@@ -11,3 +11,7 @@ cmod-socket = 664
 vacuum = true
 
 die-on-term = true
+
+if-exists = @sitedir@/venv
+virtualenv = @sitedir@/venv
+endif =
