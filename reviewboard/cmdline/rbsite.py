@@ -2928,6 +2928,10 @@ class ManageCommand(Command):
                 'Open a database shell using your standard database '
                 'tools (e.g., mysql or psql).'
             ),
+            'find-large-diffs': (
+                'Scan the database looking for very large diffs that may '
+                'be contributing to performance problems.'
+            ),
             'shell': (
                 'Open a Python shell in the Review Board environment.'
             ),
@@ -2955,6 +2959,9 @@ class ManageCommand(Command):
         'Users': {
             'changepassword': 'Change the password for a user.',
             'createsuperuser': 'Create a new Review Board administrator.',
+            'invalidate-api-tokens': (
+                'Invalidate API tokens for one or more users.'
+            ),
         },
     }
 

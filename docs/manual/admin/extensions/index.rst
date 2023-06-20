@@ -24,6 +24,8 @@ Please prefer to the particular extension's documentation for installation
 instructions.
 
 
+.. _admin-ui-manage-extensions:
+
 Managing Extensions
 ===================
 

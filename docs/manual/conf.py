@@ -76,6 +76,7 @@ extensions = [
     'beanbag_docutils.sphinx.ext.metadata',
     'beanbag_docutils.sphinx.ext.ref_utils',
     'webapidocs',
+    'rbwebsite_refs',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
