@@ -428,6 +428,7 @@ PIPELINE_STYLESHEETS = {
             'rb/css/ui/content-header.less',
             'rb/css/ui/datagrids.less',
             'rb/css/ui/drawer.less',
+            'rb/css/ui/formatting-toolbar.less',
             'rb/css/ui/forms.less',
             'rb/css/ui/infoboxes.less',
             'rb/css/ui/markdown.less',

@@ -409,6 +409,552 @@ class TextAreaWrapper extends BaseView<
 
 
 /**
+ * Options for the FormattingToolbarView.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface FormattingToolbarViewOptions {
+    /** The CodeMirror wrapper object. */
+    editor: CodeMirrorWrapper;
+}
+
+
+interface FormattingToolbarButton {
+    /**
+     * The class to apply to the element.
+     */
+    className: string;
+
+    /**
+     * The name of a callback function when the button is clicked.
+     */
+    onClick?: string;
+
+    /**
+     * HTML contet to use instead of creating a new button.
+     */
+    $content?: JQuery;
+}
+
+
+/**
+ * The formatting toolbar for rich text fields.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+class FormattingToolbarView extends BaseView<
+    Backbone.Model,
+    HTMLDivElement,
+    FormattingToolbarViewOptions
+> {
+    static className = 'rb-c-formatting-toolbar';
+
+    static template = dedent`
+        <div class="rb-c-formatting-toolbar__btn-group">
+         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-bold"></a>
+         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-italic"></a>
+         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-strikethrough"></a>
+        </div>
+        <div class="rb-c-formatting-toolbar__btn-group">
+         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-link"></a>
+         <label class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-image"
+                aria-role="button" tabindex="0">
+          <input type="file" style="display: none;">
+         </label>
+         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-code"></a>
+        </div>
+        <div class="rb-c-formatting-toolbar__btn-group">
+         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-list-ul"></a>
+         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-list-ol"></a>
+        </div>
+    `;
+
+    static events: EventsHash = {
+        'click .rb-c-formatting-toolbar__btn-bold': '_onBoldBtnClick',
+        'click .rb-c-formatting-toolbar__btn-code': '_onCodeBtnClick',
+        'click .rb-c-formatting-toolbar__btn-italic': '_onItalicBtnClick',
+        'click .rb-c-formatting-toolbar__btn-link': '_onLinkBtnClick',
+        'click .rb-c-formatting-toolbar__btn-list-ol': '_onOListBtnClick',
+        'click .rb-c-formatting-toolbar__btn-list-ul': '_onUListBtnClick',
+        'click .rb-c-formatting-toolbar__btn-strikethrough':
+            '_onStrikethroughBtnClick',
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /**
+     * The CodeMirror instance.
+     */
+    #codeMirror: CodeMirror;
+
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (FormattingToolbarViewOptions):
+     *         Options for the view.
+     */
+    initialize(options: FormattingToolbarViewOptions) {
+        this.#codeMirror = options.editor._codeMirror;
+    }
+
+    /**
+     * Render the view.
+     */
+    onInitialRender() {
+        this.$el.html(FormattingToolbarView.template);
+    }
+
+    /**
+     * Handle a click on the "bold" button.
+     *
+     * Args:
+     *     e (JQuery.ClickEvent):
+     *         The event object.
+     */
+    private _onBoldBtnClick(e: JQuery.ClickEvent) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        this.#toggleInlineTextFormat(['**']);
+    }
+
+    /**
+     * Handle a click on the "code" button.
+     *
+     * Args:
+     *     e (JQuery.ClickEvent):
+     *         The event object.
+     */
+    private _onCodeBtnClick(e: JQuery.ClickEvent) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        this.#toggleInlineTextFormat(['`']);
+    }
+
+    /**
+     * Handle a click on the "italic" button.
+     *
+     * Args:
+     *     e (JQuery.ClickEvent):
+     *         The event object.
+     */
+    private _onItalicBtnClick(e: JQuery.ClickEvent) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        this.#toggleInlineTextFormat(['_', '*']);
+    }
+
+    /**
+     * Handle a click on the "link" button.
+     *
+     * Args:
+     *     e (JQuery.ClickEvent):
+     *         The event object.
+     */
+    private _onLinkBtnClick(e: JQuery.ClickEvent) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        this.#toggleLinkSyntax();
+    }
+
+    /**
+     * Handle a click on the "ordered list" button.
+     *
+     * Args:
+     *     e (JQuery.ClickEvent):
+     *         The event object.
+     */
+    private _onOListBtnClick(e: JQuery.ClickEvent) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        this.#toggleListSyntax(true);
+    }
+
+    /**
+     * Handle a click on the "strikethrough" button.
+     *
+     * Args:
+     *     e (JQuery.ClickEvent):
+     *         The event object.
+     */
+    private _onStrikethroughBtnClick(e: JQuery.ClickEvent) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        this.#toggleInlineTextFormat(['~~']);
+    }
+
+    /**
+     * Handle a click on the "unordered list" button.
+     *
+     * Args:
+     *     e (JQuery.ClickEvent):
+     *         The event object.
+     */
+    private _onUListBtnClick(e: JQuery.ClickEvent) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        this.#toggleListSyntax(false);
+    }
+
+    /**
+     * Toggle the state of the given inline text format.
+     *
+     * This toggles the syntax for inline markup such as bold, italic,
+     * strikethrough, or code.
+     *
+     * Args:
+     *     symbols (Array of string):
+     *         The surrounding markup to add or remove.
+     */
+    #toggleInlineTextFormat(symbols: string[]) {
+        const codeMirror = this.#codeMirror;
+        const selection = codeMirror.getSelection();
+
+        if (selection === '') {
+            /*
+             * If the syntax being toggled does not exist in the group where
+             * the cursor is positioned, insert the syntax and position the
+             * cursor between the inserted symbols. Otherwise, remove the
+             * syntax.
+             */
+            const [groupStart, groupEnd] = this.#getCurrentTokenGroup();
+            const range = codeMirror.getRange(groupStart, groupEnd);
+
+            let wasReplaced = false;
+
+            for (const sym of symbols) {
+                if (range.startsWith(sym) && range.endsWith(sym)) {
+                    const trimmedRange = this.#removeSyntax(range, sym);
+                    codeMirror.replaceRange(trimmedRange, groupStart,
+                                            groupEnd);
+                    wasReplaced = true;
+                    break;
+                }
+            }
+
+            if (!wasReplaced) {
+                const sym = symbols[0];
+
+                codeMirror.replaceRange(`${sym}${range}${sym}`,
+                                        groupStart, groupEnd);
+
+                const cursor = codeMirror.getCursor();
+                cursor.ch -= sym.length;
+                codeMirror.setCursor(cursor);
+            }
+        } else {
+            let wasReplaced = false;
+
+            for (const sym of symbols) {
+                if (selection.startsWith(sym) && selection.endsWith(sym)) {
+                    /*
+                     * The selection starts and ends with syntax matching the
+                     * provided symbol, so remove them.
+                     *
+                     * For example: |**bold text**|
+                     */
+                    const newSelection = this.#removeSyntax(selection, sym);
+                    codeMirror.replaceSelection(newSelection, 'around');
+                    wasReplaced = true;
+                    break;
+                }
+            }
+
+            if (!wasReplaced) {
+                /*
+                 * There is an existing selection that may have syntax outside
+                 * of it, so find the beginning and end of the entire token
+                 * group, including both word and punctuation characters.
+                 *
+                 * For example: **|bold text|**
+                 */
+                const [groupStart, groupEnd] = this.#getCurrentTokenGroup();
+
+                /* Update the selection for replacement. */
+                codeMirror.setSelection(groupStart, groupEnd);
+                const group = codeMirror.getSelection();
+
+                for (const sym of symbols) {
+                    if (group.startsWith(sym) && group.endsWith(sym)) {
+                        const newGroup = this.#removeSyntax(group, sym);
+                        codeMirror.replaceSelection(newGroup, 'around');
+                        wasReplaced = true;
+                        break;
+                    }
+                }
+
+                if (!wasReplaced) {
+                    /* The group is not formatted, so add syntax. */
+                    const sym = symbols[0];
+                    codeMirror.replaceSelection(`${sym}${group}${sym}`,
+                                                'around');
+                }
+            }
+        }
+
+        codeMirror.focus();
+    }
+
+    /**
+     * Return the current token group for the cursor/selection.
+     *
+     * This will find the surrounding text given the current user's cursor
+     * position or selection.
+     *
+     * Returns:
+     *     Array of number:
+     *     A 2-element array containing the start and end position of the
+     *     current token group.
+     */
+    #getCurrentTokenGroup(): number[] {
+        const codeMirror = this.#codeMirror;
+        const cursorStart = codeMirror.getCursor(true);
+        const cursorEnd = codeMirror.getCursor(false);
+
+        const groupStart = Object.assign({}, cursorStart);
+
+        for (let curToken = codeMirror.getTokenAt(cursorStart, true);
+             curToken.string !== ' ' && groupStart.ch !== 0;
+             curToken = codeMirror.getTokenAt(groupStart, true)) {
+            groupStart.ch -= 1;
+        }
+
+        const line = codeMirror.getLine(cursorStart.line);
+        const lineLength = line.length;
+
+        const groupEnd = Object.assign({}, cursorEnd);
+
+        for (let curToken = codeMirror.getTokenAt(cursorEnd, true);
+             curToken.string !== ' ' && groupEnd.ch !== lineLength;
+             curToken = codeMirror.getTokenAt(groupEnd, true)) {
+            groupEnd.ch += 1;
+        }
+
+        if (groupEnd.ch !== lineLength) {
+            groupEnd.ch -= 1;
+        }
+
+        return [groupStart, groupEnd];
+    }
+
+    /**
+     * Remove the given syntax from the provided text.
+     *
+     * Args:
+     *     text (string):
+     *         The text to edit.
+     *
+     *     sym (string):
+     *         The markup to remove from the text.
+     *
+     * Returns:
+     *     string:
+     *     The text with the surrounding markup removed.
+     */
+    #removeSyntax(
+        text: string,
+        sym: string,
+    ): string {
+        let escapedSymbol;
+
+        if (sym === '*') {
+            escapedSymbol = '\\*';
+        } else if (sym === '**') {
+            escapedSymbol = '\\*\\*';
+        } else {
+            escapedSymbol = sym;
+        }
+
+        const regex = new RegExp(`^(${escapedSymbol})(.*)\\1$`, 'gm');
+
+        return text.replace(regex, '$2');
+    }
+
+    /**
+     * Toggle markdown list syntax for the current cursor position.
+     *
+     * Args:
+     *     isOrderedList (boolean):
+     *         ``true`` if toggling syntax for an ordered list, ``false`` for
+     *         an unordered list.
+     */
+    #toggleListSyntax(isOrderedList: boolean) {
+        const regex = isOrderedList ? /^[0-9]+\.\s/ : /^[\*|\+|-]\s/;
+        const listSymbol = isOrderedList ? '1.' : '-';
+        const codeMirror = this.#codeMirror;
+        const cursor = codeMirror.getCursor();
+        const line = codeMirror.getLine(cursor.line);
+        const selection = codeMirror.getSelection();
+
+        if (selection === '') {
+            /*
+             * If the list syntax being toggled exists on the current line,
+             * remove it. Otherwise, add the syntax to the current line. In
+             * both cases, preserve the relative cursor position if the line is
+             * not empty.
+             */
+            if (regex.test(line)) {
+                const newText = line.replace(regex, '');
+                codeMirror.replaceRange(
+                    newText,
+                    { ch: 0, line: cursor.line },
+                    { line: cursor.line });
+
+                if (line) {
+                    cursor.ch -= listSymbol.length + 1;
+                    codeMirror.setCursor(cursor);
+                }
+            } else {
+                codeMirror.replaceRange(
+                    `${listSymbol} ${line}`,
+                    { ch: 0, line: cursor.line },
+                    { line: cursor.line });
+
+                if (line) {
+                    cursor.ch += listSymbol.length + 1;
+                    codeMirror.setCursor(cursor);
+                }
+            }
+        } else {
+            if (regex.test(selection)) {
+                const newText = selection.replace(regex, '');
+                codeMirror.replaceSelection(newText, 'around');
+            } else {
+                const cursorStart = codeMirror.getCursor(true);
+                const cursorEnd = codeMirror.getCursor(false);
+                const precedingText = codeMirror.getLineTokens(cursor.line)
+                    .filter(t => t.start < cursorStart.ch)
+                    .reduce((acc, token) => acc + token.string, '');
+
+                if (regex.test(precedingText)) {
+                    /*
+                     * There may be markup before theselection that needs to be
+                     * removed, so extend the selection to be replaced if
+                     * necessary.
+                     */
+                    const newText = selection.replace(regex, '');
+                    codeMirror.setSelection({ ch: 0, line: cursor.line },
+                                            cursorEnd);
+                    codeMirror.replaceSelection(newText, 'around');
+                } else {
+                    /* The selection is not already formatted. Add syntax. */
+                    codeMirror.replaceSelection(`${listSymbol} ${selection}`,
+                                                'around');
+                }
+            }
+        }
+
+        codeMirror.focus();
+    }
+
+    /**
+     * Toggle link syntax for the current cursor/selection.
+     */
+    #toggleLinkSyntax() {
+        const regex = /\[(?<text>.*)\]\(.*\)/;
+        const codeMirror = this.#codeMirror;
+        const selection = codeMirror.getSelection();
+        let cursor = codeMirror.getCursor();
+
+        if (selection === '') {
+            /*
+             * If the group where the cursor is positioned is already a link,
+             * remove the syntax. Otherwise, insert the syntax and position the
+             * cursor where the text to be displayed will go.
+             */
+            const [groupStart, groupEnd] = this.#getCurrentTokenGroup();
+            const range = codeMirror.getRange(groupStart, groupEnd);
+
+            if (range === '') {
+                /*
+                 * If the group where the cursor is positioned is empty, insert
+                 * the syntax and position the cursor where the text to display
+                 * should go.
+                 */
+                codeMirror.replaceSelection(`[](url)`);
+                codeMirror.setCursor(
+                    CodeMirror.Pos(cursor.line, cursor.ch + 1));
+            } else {
+                const match = range.match(regex);
+
+                if (match && match.groups) {
+                    /*
+                     * If there is a non-empty token group that is a formatted
+                     * link, replace the syntax with the text.
+                     */
+                    const text = match.groups.text;
+                    codeMirror.replaceRange(text, groupStart, groupEnd);
+                } else {
+                    /*
+                     * Otherwise, insert the syntax using the token group as
+                     * the text to display and position the selection where the
+                     * URL will go.
+                     */
+                    codeMirror.replaceRange(`[${range}](url)`,
+                                            groupStart, groupEnd);
+
+                    cursor = codeMirror.getCursor();
+                    codeMirror.setSelection(
+                        CodeMirror.Pos(cursor.line, cursor.ch - 4),
+                        CodeMirror.Pos(cursor.line, cursor.ch - 1));
+                }
+            }
+        } else {
+            let match = selection.match(regex);
+
+            if (match && match.groups) {
+                /*
+                 * If the entire selection matches a formatted link, replace
+                 * the selection with the text.
+                 */
+                codeMirror.replaceSelection(match.groups.text);
+            } else {
+                /*
+                 * The selection may be part of a formatted link, so get the
+                 * current token group to test against the regex and remove the
+                 * syntax if it matches.
+                 */
+                const [groupStart, groupEnd] = this.#getCurrentTokenGroup();
+                const range = codeMirror.getRange(groupStart, groupEnd);
+
+                match = range.match(regex);
+
+                if (match && match.groups) {
+                    codeMirror.replaceRange(match.groups.text,
+                                            groupStart, groupEnd);
+                } else {
+                    /*
+                     * The selection is not already formatted, so insert the
+                     * syntax using the current selection as the text to
+                     * display, and position the selection where the URL will
+                     * go.
+                     */
+                    codeMirror.replaceSelection(`[${selection}](url)`);
+
+                    cursor = codeMirror.getCursor();
+                    codeMirror.setSelection(
+                        CodeMirror.Pos(cursor.line, cursor.ch - 4),
+                        CodeMirror.Pos(cursor.line, cursor.ch - 1));
+                }
+            }
+        }
+    }
+}
+
+
+/**
  * Options for the TextEditorView.
  *
  * Version Added:
@@ -483,6 +1029,9 @@ export class TextEditorView extends BaseView<
 
     /** Whether the editor is using rich text. */
     richText: boolean;
+
+    /** The markdown formatting toolbar view. */
+    #formattingToolbar: FormattingToolbarView = null;
 
     /** The saved previous height, used to trigger the resize event . */
     #prevClientHeight: number = null;
@@ -777,19 +1326,31 @@ export class TextEditorView extends BaseView<
      * will take control over all operations.
      */
     showEditor() {
-        const EditorCls = this.richText ? CodeMirrorWrapper : TextAreaWrapper;
-
         if (this.richText) {
             DnDUploader.instance.registerDropTarget(
                 this.$el, _`Drop to add an image`,
                 this._uploadImage.bind(this));
-        }
 
-        this._editor = new EditorCls({
-            autoSize: this.options.autoSize,
-            minHeight: this.options.minHeight,
-            parentEl: this.el,
-        });
+            this._editor = new CodeMirrorWrapper({
+                autoSize: this.options.autoSize,
+                minHeight: this.options.minHeight,
+                parentEl: this.el,
+            });
+
+            this.#formattingToolbar = new FormattingToolbarView({
+                editor: this._editor,
+            });
+
+            $('<div style="height: 3em;">')
+                .append(this.#formattingToolbar.render().$el)
+                .appendTo(this._editor.$el);
+        } else {
+            this._editor = new TextAreaWrapper({
+                autoSize: this.options.autoSize,
+                minHeight: this.options.minHeight,
+                parentEl: this.el,
+            });
+        }
 
         this._editor.setText(this.#value);
         this.#value = '';
@@ -838,6 +1399,11 @@ export class TextEditorView extends BaseView<
             this._editor = null;
 
             this.$el.empty();
+        }
+
+        if (this.#formattingToolbar) {
+            this.#formattingToolbar.remove();
+            this.#formattingToolbar = null;
         }
     }
 

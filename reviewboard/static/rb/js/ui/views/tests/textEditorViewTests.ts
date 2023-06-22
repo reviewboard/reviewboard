@@ -550,4 +550,591 @@ suite('rb/ui/views/TextEditorView', function() {
             });
         });
     });
+
+    describe('Markdown formatting toolbar', () => {
+        describe('Rich text', () => {
+            it('Enabled', () => {
+                view = new TextEditorView({
+                    richText: true,
+                });
+                view.show();
+
+                expect(view.$('.rb-c-formatting-toolbar').length)
+                    .toBe(1);
+            });
+
+            it('Disabled', () => {
+                view = new TextEditorView({
+                    richText: false,
+                });
+                view.show();
+
+                expect(view.$('.rb-c-formatting-toolbar').length)
+                    .toBe(0);
+            });
+        });
+
+        describe('Buttons', () => {
+            let codeMirror;
+
+            beforeEach(() => {
+                view = new TextEditorView({
+                    richText: true,
+                });
+                view.show();
+
+                codeMirror = view._editor._codeMirror;
+            });
+
+            describe('Bold', () => {
+                it('Empty selection with no text toggles syntax', () => {
+                    expect(codeMirror.getSelection()).toBe('');
+
+                    view.$('.rb-c-formatting-toolbar__btn-bold').click();
+
+                    expect(view.getText()).toBe('****');
+                    expect(codeMirror.getCursor().ch).toBe(2);
+
+                    view.$('.rb-c-formatting-toolbar__btn-bold').click();
+
+                    expect(view.getText()).toBe('');
+                    expect(codeMirror.getCursor().ch).toBe(0);
+                });
+
+                it('Empty selection with cursor in unformatted text inserts syntax around text', () => {
+                    view.setText('Test');
+
+                    expect(codeMirror.getSelection()).toBe('');
+
+                    view.$('.rb-c-formatting-toolbar__btn-bold').click();
+
+                    expect(view.getText()).toBe('**Test**');
+                    expect(codeMirror.getCursor().ch).toBe(6);
+                });
+
+                it('Empty selection with cursor in formatted text removes syntax around text', () => {
+                    view.setText('**Test**');
+                    codeMirror.setSelection({ch: 2, line: 0},
+                                            {ch: 6, line: 0});
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-bold').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Unformatted text selection inserts syntax around text', () => {
+                    view.setText('Test');
+                    codeMirror.execCommand('selectAll');
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-bold').click();
+
+                    expect(view.getText()).toBe('**Test**');
+                    expect(codeMirror.getCursor().ch).toBe(8);
+                })
+
+                it('Formatted text selection with only text removes syntax', () => {
+                    view.setText('**Test**');
+                    codeMirror.setSelection({ch: 2, line: 0},
+                                            {ch: 6, line: 0});
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-bold').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Formatted text selection including formatting removes syntax', () => {
+                    view.setText('**Test**');
+                    codeMirror.execCommand('selectAll');
+
+                    expect(codeMirror.getSelection()).toBe('**Test**');
+
+                    view.$('.rb-c-formatting-toolbar__btn-bold').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+            });
+
+            describe('Italic', () => {
+                it('Empty selection with no text toggles syntax', () => {
+                    expect(codeMirror.getSelection()).toBe('');
+
+                    view.$('.rb-c-formatting-toolbar__btn-italic').click();
+
+                    expect(view.getText()).toBe('__');
+                    expect(codeMirror.getCursor().ch).toBe(1);
+
+                    view.$('.rb-c-formatting-toolbar__btn-italic').click();
+
+                    expect(view.getText()).toBe('');
+                    expect(codeMirror.getCursor().ch).toBe(0);
+                });
+
+                it('Empty selection with cursor in unformatted text inserts syntax around text', () => {
+                    view.setText('Test');
+
+                    expect(codeMirror.getSelection()).toBe('');
+
+                    view.$('.rb-c-formatting-toolbar__btn-italic').click();
+
+                    expect(view.getText()).toBe('_Test_');
+                    expect(codeMirror.getCursor().ch).toBe(5);
+                });
+
+                it('Empty selection with cursor in formatted text removes syntax around text', () => {
+                    view.setText('_Test_');
+                    codeMirror.setSelection({ch: 1, line: 0},
+                                            {ch: 5, line: 0});
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-italic').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Unformatted text selection inserts syntax around text', () => {
+                    view.setText('Test');
+                    codeMirror.execCommand('selectAll');
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-italic').click();
+
+                    expect(view.getText()).toBe('_Test_');
+                    expect(codeMirror.getCursor().ch).toBe(6);
+                })
+
+                it('Formatted text selection with only text removes syntax', () => {
+                    view.setText('_Test_');
+                    codeMirror.setSelection({ch: 1, line: 0},
+                                            {ch: 5, line: 0});
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-italic').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Formatted text selection including formatting removes syntax', () => {
+                    view.setText('_Test_');
+                    codeMirror.execCommand('selectAll');
+
+                    expect(codeMirror.getSelection()).toBe('_Test_');
+
+                    view.$('.rb-c-formatting-toolbar__btn-italic').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+            });
+
+            describe('Strikethrough', () => {
+                it('Empty selection with no text toggles syntax', () => {
+                    expect(codeMirror.getSelection()).toBe('');
+
+                    view.$('.rb-c-formatting-toolbar__btn-strikethrough').click();
+
+                    expect(view.getText()).toBe('~~~~');
+                    expect(codeMirror.getCursor().ch).toBe(2);
+
+                    view.$('.rb-c-formatting-toolbar__btn-strikethrough').click();
+
+                    expect(view.getText()).toBe('');
+                    expect(codeMirror.getCursor().ch).toBe(0);
+                });
+
+                it('Empty selection with cursor in unformatted text inserts syntax around text', () => {
+                    view.setText('Test');
+
+                    expect(codeMirror.getSelection()).toBe('');
+
+                    view.$('.rb-c-formatting-toolbar__btn-strikethrough').click();
+
+                    expect(view.getText()).toBe('~~Test~~');
+                    expect(codeMirror.getCursor().ch).toBe(6);
+                });
+
+                it('Empty selection with cursor in formatted text removes syntax around text', () => {
+                    view.setText('~~Test~~');
+                    codeMirror.setSelection({ch: 2, line: 0},
+                                            {ch: 6, line: 0});
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-strikethrough').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Unformatted text selection inserts syntax around text', () => {
+                    view.setText('Test');
+                    codeMirror.execCommand('selectAll');
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-strikethrough').click();
+
+                    expect(view.getText()).toBe('~~Test~~');
+                    expect(codeMirror.getCursor().ch).toBe(8);
+                })
+
+                it('Formatted text selection with only text removes syntax', () => {
+                    view.setText('~~Test~~');
+                    codeMirror.setSelection({ch: 2, line: 0},
+                                            {ch: 6, line: 0});
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-strikethrough').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Formatted text selection including formatting removes syntax', () => {
+                    view.setText('~~Test~~');
+                    codeMirror.execCommand('selectAll');
+
+                    expect(codeMirror.getSelection()).toBe('~~Test~~');
+
+                    view.$('.rb-c-formatting-toolbar__btn-strikethrough').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+            });
+
+            describe('Code', () => {
+                it('Empty selection with no text toggles syntax', () => {
+                    expect(codeMirror.getSelection()).toBe('');
+
+                    view.$('.rb-c-formatting-toolbar__btn-code').click();
+
+                    expect(view.getText()).toBe('``');
+                    expect(codeMirror.getCursor().ch).toBe(1);
+
+                    view.$('.rb-c-formatting-toolbar__btn-code').click();
+
+                    expect(view.getText()).toBe('');
+                    expect(codeMirror.getCursor().ch).toBe(0);
+                });
+
+                it('Empty selection with cursor in unformatted text inserts syntax around text', () => {
+                    view.setText('Test');
+
+                    expect(codeMirror.getSelection()).toBe('');
+
+                    view.$('.rb-c-formatting-toolbar__btn-code').click();
+
+                    expect(view.getText()).toBe('`Test`');
+                    expect(codeMirror.getCursor().ch).toBe(5);
+                });
+
+                it('Empty selection with cursor in formatted text removes syntax around text', () => {
+                    view.setText('`Test`');
+                    codeMirror.setSelection({ch: 1, line: 0},
+                                            {ch: 5, line: 0});
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-code').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Unformatted text selection inserts syntax around text', () => {
+                    view.setText('Test');
+                    codeMirror.execCommand('selectAll');
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-code').click();
+
+                    expect(view.getText()).toBe('`Test`');
+                    expect(codeMirror.getCursor().ch).toBe(6);
+                })
+
+                it('Formatted text selection with only text removes syntax', () => {
+                    view.setText('`Test`');
+                    codeMirror.setSelection({ch: 1, line: 0},
+                                            {ch: 5, line: 0});
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-code').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Formatted text selection including formatting removes syntax', () => {
+                    view.setText('`Test`');
+                    codeMirror.execCommand('selectAll');
+
+                    expect(codeMirror.getSelection()).toBe('`Test`');
+
+                    view.$('.rb-c-formatting-toolbar__btn-code').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+            });
+
+            describe('Unordered list', () => {
+                it('Empty selection with no text toggles syntax', () => {
+                    expect(codeMirror.getSelection()).toBe('');
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ul').click();
+
+                    expect(view.getText()).toBe('- ');
+                    expect(codeMirror.getCursor().ch).toBe(2);
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ul').click();
+
+                    expect(view.getText()).toBe('');
+                    expect(codeMirror.getCursor().ch).toBe(0);
+                });
+
+                it('Empty selection with cursor in text toggles syntax', () => {
+                    view.setText('Test');
+                    codeMirror.setCursor({ch: 2, line: 0});
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ul').click();
+
+                    expect(view.getText()).toBe('- Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ul').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(2);
+                });
+
+                it('Unformatted text selection toggles syntax', () => {
+                    view.setText('Test');
+                    codeMirror.execCommand('selectAll');
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ul').click();
+
+                    expect(view.getText()).toBe('- Test');
+                    expect(codeMirror.getCursor().ch).toBe(6);
+
+                    codeMirror.execCommand('selectAll');
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ul').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Formatted text selection with only text removes syntax', () => {
+                    view.setText('- Test');
+                    codeMirror.setSelection({ch: 2, line: 0},
+                                            {ch: 6, line: 0});
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ul').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Formatted text selection including formatting removes syntax', () => {
+                    view.setText('- Test');
+                    codeMirror.execCommand('selectAll');
+
+                    expect(codeMirror.getSelection()).toBe('- Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ul').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getSelection()).toBe('Test');
+                });
+
+                it('Lines with multiple text groups get syntax added to beginning of the line', () => {
+                    view.setText('Test more text');
+                    codeMirror.setCursor({ch: 6, line: 0});
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ul').click();
+
+                    expect(view.getText()).toBe('- Test more text');
+                    expect(codeMirror.getCursor().ch).toBe(8);
+                });
+            });
+
+            describe('Ordered list', () => {
+                it('Empty selection with no text toggles syntax', () => {
+                    expect(codeMirror.getSelection()).toBe('');
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ol').click();
+
+                    expect(view.getText()).toBe('1. ');
+                    expect(codeMirror.getCursor().ch).toBe(3);
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ol').click();
+
+                    expect(view.getText()).toBe('');
+                    expect(codeMirror.getCursor().ch).toBe(0);
+                });
+
+                it('Empty selection with cursor in text toggles syntax', () => {
+                    view.setText('Test');
+                    codeMirror.setCursor({ch: 2, line: 0});
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ol').click();
+
+                    expect(view.getText()).toBe('1. Test');
+                    expect(codeMirror.getCursor().ch).toBe(5);
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ol').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(2);
+                });
+
+                it('Unformatted text selection toggles syntax', () => {
+                    view.setText('Test');
+                    codeMirror.execCommand('selectAll');
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ol').click();
+
+                    expect(view.getText()).toBe('1. Test');
+                    expect(codeMirror.getCursor().ch).toBe(7);
+
+                    codeMirror.execCommand('selectAll');
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ol').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Formatted text selection with only text removes syntax', () => {
+                    view.setText('1. Test');
+                    codeMirror.setSelection({ch: 3, line: 0},
+                                            {ch: 7, line: 0});
+
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ol').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Formatted text selection including formatting removes syntax', () => {
+                    view.setText('1. Test');
+                    codeMirror.execCommand('selectAll');
+
+                    expect(codeMirror.getSelection()).toBe('1. Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ol').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getSelection()).toBe('Test');
+                });
+
+                it('Lines with multiple text groups get syntax added to beginning of the line', () => {
+                    view.setText('Test more text');
+                    codeMirror.setCursor({ch: 6, line: 0});
+
+                    view.$('.rb-c-formatting-toolbar__btn-list-ol').click();
+
+                    expect(view.getText()).toBe('1. Test more text');
+                    expect(codeMirror.getCursor().ch).toBe(9);
+                });
+            });
+
+            describe('Link', () => {
+                it('Empty selection with no text toggles syntax', () => {
+                    expect(codeMirror.getSelection()).toBe('');
+
+                    view.$('.rb-c-formatting-toolbar__btn-link').click();
+
+                    expect(view.getText()).toBe('[](url)');
+                    expect(codeMirror.getCursor().ch).toBe(1);
+
+                    view.$('.rb-c-formatting-toolbar__btn-link').click();
+
+                    expect(view.getText()).toBe('');
+                    expect(codeMirror.getCursor().ch).toBe(0);
+                });
+
+                it('Empty selection with cursor in text toggles syntax', () => {
+                    view.setText('Test');
+                    codeMirror.setCursor({ch: 2, line: 0});
+
+                    view.$('.rb-c-formatting-toolbar__btn-link').click();
+
+                    expect(view.getText()).toBe('[Test](url)');
+                    expect(codeMirror.getSelection()).toBe('url');
+                    expect(codeMirror.getCursor().ch).toBe(10);
+
+                    view.$('.rb-c-formatting-toolbar__btn-link').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getSelection()).toBe('');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Unformatted text selection toggles syntax', () => {
+                    view.setText('Test');
+                    codeMirror.execCommand('selectAll');
+
+                    view.$('.rb-c-formatting-toolbar__btn-link').click();
+
+                    expect(view.getText()).toBe('[Test](url)');
+                    expect(codeMirror.getSelection()).toBe('url');
+                    expect(codeMirror.getCursor().ch).toBe(10);
+
+                    view.$('.rb-c-formatting-toolbar__btn-link').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getSelection()).toBe('');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Formatted text selection with only text removes syntax', () => {
+                    view.setText('[Test](example.com)');
+                    codeMirror.setSelection({ch: 1, line: 0},
+                                            {ch: 5, line: 0});
+                    expect(codeMirror.getSelection()).toBe('Test');
+
+                    view.$('.rb-c-formatting-toolbar__btn-link').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getSelection()).toBe('');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+
+                it('Formatted text selection including formatting removes syntax', () => {
+                    view.setText('[Test](example.com)');
+                    codeMirror.execCommand('selectAll');
+
+                    expect(codeMirror.getSelection()).toBe('[Test](example.com)');
+
+                    view.$('.rb-c-formatting-toolbar__btn-link').click();
+
+                    expect(view.getText()).toBe('Test');
+                    expect(codeMirror.getSelection()).toBe('');
+                    expect(codeMirror.getCursor().ch).toBe(4);
+                });
+            });
+        });
+    });
 });
