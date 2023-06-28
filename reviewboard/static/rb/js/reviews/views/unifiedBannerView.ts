@@ -9,7 +9,7 @@ import { MenuButtonView } from 'reviewboard/ui/views/menuButtonView';
 import { MenuType, MenuView } from 'reviewboard/ui/views/menuView';
 import { UserSession } from 'reviewboard/common/models/userSession';
 
-import { UnifiedBanner } from '../models/unifiedBanner';
+import { DraftMode, UnifiedBanner } from '../models/unifiedBanner';
 import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
 import { ReviewRequestEditorView } from './reviewRequestEditorView';
 
@@ -677,6 +677,10 @@ export class UnifiedBannerView extends FloatingBannerView<
         ClientCommChannel.getInstance().reload();
 
         try {
+            if (await this._confirmDiscard(draftMode) === false) {
+                return;
+            }
+
             if (draftMode.hasReview) {
                 const pendingReview = model.get('pendingReview');
                 await pendingReview.destroy();
@@ -703,6 +707,49 @@ export class UnifiedBannerView extends FloatingBannerView<
         } catch(err) {
             alert(err.xhr.errorText);
         }
+    }
+
+    /**
+     * Ask the user to confirm a discard operation.
+     *
+     * Args:
+     *     draftMode (DraftMode):
+     *         The current draft mode being discarded.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves to either ``true`` (proceed) or ``false``
+     *     (cancel).
+     */
+    private _confirmDiscard(
+        draftMode: DraftMode,
+    ): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            const text = draftMode.hasReview
+                ? _`If you discard this review, all unpublished comments will be deleted.`
+                : _`If you discard this review request draft, all unpublished data will be deleted.`;
+            const title = draftMode.hasReview
+                ? _`Are you sure you want to discard this review?`
+                : _`Are you sure you want to discard this review request draft?`;
+
+            const $dlg = $('<p>')
+                .text(text)
+                .modalBox({
+                    buttons: [
+                        $('<input type="button">')
+                            .val(_`Cancel`)
+                            .click(() => resolve(false)),
+                        $('<input type="button">')
+                            .val(_`Discard`)
+                            .click(() => resolve(true)),
+                    ],
+                    title: title,
+                })
+                .on('close', () => {
+                    $dlg.modalBox('destroy');
+                    resolve(false);
+                });
+        });
     }
 
     /**
