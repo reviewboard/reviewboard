@@ -211,7 +211,7 @@ class ReviewGroupResource(WebAPIResource):
                 'type': BooleanFieldType,
                 'description': (
                     'Whether to limit results to accessible invite-only '
-                    'review groups.',
+                    'review groups.'
                 ),
                 'added_in': '5.0.6',
             },
