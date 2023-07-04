@@ -6,11 +6,7 @@
 $(function() {
     var view = new RB.RelatedRepoSelectorView({
         $input: $('#{{input_id|escapejs}}'),
-        initialOptions: {{repos|json_dumps}},
-{% if local_site_name %}
-        localSitePrefix: 's/{{local_site_name|escapejs}}/',
-{% endif %}
-        multivalued: {{multivalued|yesno:'true,false'}}
+        {{js_view_data|json_dumps_items}}
     }).render();
 });
 </script>
