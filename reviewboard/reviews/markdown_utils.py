@@ -33,6 +33,7 @@ MARKDOWN_KWARGS = {
     'extension_configs': {
         'markdown.extensions.codehilite': {
             'guess_lang': False,
+            'linenums': False,
         },
         'pymdownx.emoji': {
             'emoji_index': pymdownx.emoji.gemoji,
