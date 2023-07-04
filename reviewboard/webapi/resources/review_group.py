@@ -1,3 +1,9 @@
+"""API resource for review groups."""
+
+from __future__ import annotations
+
+from typing import Optional, TYPE_CHECKING
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from djblets.util.decorators import augment_method_from
@@ -18,13 +24,23 @@ from reviewboard.webapi.errors import (GROUP_ALREADY_EXISTS,
                                        INVALID_USER)
 from reviewboard.webapi.resources import resources
 
+if TYPE_CHECKING:
+    from django.db import QuerySet
+    from django.http import HttpRequest
+
 
 class ReviewGroupResource(WebAPIResource):
     """Provides information on review groups.
 
     Review groups are groups of users that can be listed as an intended
     reviewer on a review request.
+
+    Version Changed:
+        5.0.6:
+        Added support for ``?invite-only`` and ``?show-invisible`` query
+        arguments for the list resource.
     """
+
     model = Group
     fields = {
         'id': {
@@ -98,16 +114,58 @@ class ReviewGroupResource(WebAPIResource):
     def has_modify_permissions(self, request, group):
         return group.is_mutable_by(request.user)
 
-    def get_queryset(self, request, is_list=False, local_site_name=None,
-                     *args, **kwargs):
+    def get_queryset(
+        self,
+        request: HttpRequest,
+        is_list: bool = False,
+        local_site_name: Optional[str] = None,
+        *args,
+        **kwargs,
+    ) -> QuerySet:
+        """Return a queryset for the review groups.
+
+        Version Changed:
+            5.0.6:
+            Added support for ``?invite-only`` and ``?show-invisible`` query
+            argument for the list resource..
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            is_list (bool, optional):
+                Whether this is fetching items for a list resource.
+
+            local_site_name (str, optional):
+                The optional Local Site to bound all review groups to.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Returns:
+            django.db.models.QuerySet:
+            The queryset containing matching review groups.
+        """
         search_q = request.GET.get('q', None)
         local_site = self._get_local_site(local_site_name)
+        queryset = self.model.objects
 
         if is_list:
-            query = self.model.objects.accessible(request.user,
-                                                  local_site=local_site)
+            show_invisible = kwargs.get('show-invisible', False)
+            invite_only = kwargs.get('invite-only', None)
+
+            queryset = queryset.accessible(
+                request.user,
+                visible_only=not show_invisible,
+                local_site=local_site)
+
+            if invite_only is not None:
+                queryset = queryset.filter(invite_only=invite_only)
         else:
-            query = self.model.objects.filter(local_site=local_site)
+            queryset = queryset.filter(local_site=local_site)
 
         if search_q:
             q = Q(name__istartswith=search_q)
@@ -115,9 +173,9 @@ class ReviewGroupResource(WebAPIResource):
             if request.GET.get('displayname', None):
                 q = q | Q(display_name__istartswith=search_q)
 
-            query = query.filter(q)
+            queryset = queryset.filter(q)
 
-        return query
+        return queryset
 
     def serialize_url_field(self, group, **kwargs):
         return group.get_absolute_url()
@@ -144,6 +202,19 @@ class ReviewGroupResource(WebAPIResource):
     @webapi_check_local_site
     @webapi_request_fields(
         optional={
+            'displayname': {
+                'type': BooleanFieldType,
+                'description': 'Specifies whether ``q`` should also match '
+                               'the beginning of the display name.',
+            },
+            'invite-only': {
+                'type': BooleanFieldType,
+                'description': (
+                    'Whether to limit results to accessible invite-only '
+                    'review groups.',
+                ),
+                'added_in': '5.0.6',
+            },
             'q': {
                 'type': StringFieldType,
                 'description': 'The string that the group name (or the  '
@@ -151,10 +222,13 @@ class ReviewGroupResource(WebAPIResource):
                                'must start with in order to be included in '
                                'the list. This is case-insensitive.',
             },
-            'displayname': {
+            'show-invisible': {
                 'type': BooleanFieldType,
-                'description': 'Specifies whether ``q`` should also match '
-                               'the beginning of the display name.',
+                'description': (
+                    'Whether to include accessible invisible review groups '
+                    'in the results.'
+                ),
+                'added_in': '5.0.6',
             },
         },
         allow_unknown=True

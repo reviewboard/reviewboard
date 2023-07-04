@@ -1,3 +1,8 @@
+"""Unit tests for ReviewGroupResource."""
+
+from __future__ import annotations
+
+from django.contrib.auth.models import Permission
 from djblets.db.query import get_object_or_none
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
@@ -67,6 +72,164 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
                 review_group_list_mimetype,
                 items)
 
+    def test_get_with_invite_only_false(self) -> None:
+        """Testing the GET groups/?invite-only=0 API"""
+        # This will match, due to being visible and public.
+        group1 = self.create_review_group(name='group1')
+
+        # This will not match, due to being invite-only.
+        group2 = self.create_review_group(name='group2', invite_only=True)
+        group2.users.add(self.user)
+
+        rsp = self.api_get(
+            get_review_group_list_url(),
+            {'invite-only': '0'},
+            expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        groups = rsp['groups']
+        self.assertEqual(len(groups), 1)
+        self.compare_item(groups[0], group1)
+
+    def test_get_with_invite_only_false_as_admin(self) -> None:
+        """Testing the GET groups/?invite-only=0 API as admin"""
+        self._login_user(admin=True)
+
+        # This will match, due to being visible and public.
+        group1 = self.create_review_group(name='group1')
+
+        # These will not match.
+        self.create_review_group(name='group2', visible=False)
+        self.create_review_group(name='group3', invite_only=True)
+
+        rsp = self.api_get(
+            get_review_group_list_url(),
+            {'invite-only': '0'},
+            expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        groups = rsp['groups']
+        self.assertEqual(len(groups), 1)
+        self.compare_item(groups[0], group1)
+
+    def test_get_with_invite_only_false_with_perm(self) -> None:
+        """Testing the GET groups/?invite-only=0 API with
+        can_view_invite_only_groups permission
+        """
+        self.user.user_permissions.add(Permission.objects.get(
+            codename='can_view_invite_only_groups'))
+
+        # This will match, due to being visible and public.
+        group1 = self.create_review_group(name='group1')
+
+        # These will not match.
+        self.create_review_group(name='group2', visible=False)
+        self.create_review_group(name='group3', invite_only=True)
+
+        rsp = self.api_get(
+            get_review_group_list_url(),
+            {'invite-only': '0'},
+            expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        groups = rsp['groups']
+        self.assertEqual(len(groups), 1)
+        self.compare_item(groups[0], group1)
+
+    def test_get_with_invite_only_true_as_non_member(self) -> None:
+        """Testing the GET groups/?invite-only=1 API as non-member of group"""
+        # These will not match.
+        self.create_review_group(name='group1')
+        self.create_review_group(name='group2', visible=False)
+        self.create_review_group(name='group3', invite_only=True)
+
+        rsp = self.api_get(
+            get_review_group_list_url(),
+            {'invite-only': '1'},
+            expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['groups']), 0)
+
+    def test_get_with_invite_only_true_as_member(self) -> None:
+        """Testing the GET groups/?invite-only=1 API as member of group"""
+        # This will match, due to membership.
+        group1 = self.create_review_group(name='group2', invite_only=True)
+        group1.users.add(self.user)
+
+        # These will not match.
+        self.create_review_group(name='group2')
+        self.create_review_group(name='group3',
+                                 visible=False)
+        self.create_review_group(name='group4',
+                                 invite_only=True)
+        self.create_review_group(name='group4',
+                                 visible=False,
+                                 invite_only=True)
+
+        rsp = self.api_get(
+            get_review_group_list_url(),
+            {'invite-only': '1'},
+            expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        groups = rsp['groups']
+        self.assertEqual(len(groups), 1)
+        self.compare_item(groups[0], group1)
+
+    def test_get_with_invite_only_true_as_admin(self) -> None:
+        """Testing the GET groups/?invite-only=1 API as admin"""
+        self._login_user(admin=True)
+
+        # This will match, due to the admin status.
+        group = self.create_review_group(name='group1',
+                                         invite_only=True)
+
+        # These will not match.
+        self.create_review_group(name='group2')
+        self.create_review_group(name='group3',
+                                 visible=False)
+        self.create_review_group(name='group4',
+                                 visible=False,
+                                 invite_only=False)
+
+        rsp = self.api_get(
+            get_review_group_list_url(),
+            {'invite-only': '1'},
+            expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        groups = rsp['groups']
+        self.assertEqual(len(groups), 1)
+        self.compare_item(groups[0], group)
+
+    def test_get_with_invite_only_true_with_perm(self) -> None:
+        """Testing the GET groups/?invite-only=1 API with
+        can_view_invite_only_groups permission
+        """
+        self.user.user_permissions.add(Permission.objects.get(
+            codename='can_view_invite_only_groups'))
+
+        # This will, due to the permission.
+        group1 = self.create_review_group(name='group1', invite_only=True)
+
+        # These will not match.
+        self.create_review_group(name='group2')
+        self.create_review_group(name='group2',
+                                 visible=False)
+        self.create_review_group(name='group2',
+                                 visible=False,
+                                 invite_only=False)
+
+        rsp = self.api_get(
+            get_review_group_list_url(),
+            {'invite-only': '1'},
+            expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        groups = rsp['groups']
+        self.assertEqual(len(groups), 1)
+        self.compare_item(groups[0], group1)
+
     def test_get_with_q(self):
         """Testing the GET groups/?q= API"""
         self.create_review_group(name='docgroup')
@@ -76,6 +239,199 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
                            expected_mimetype=review_group_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['groups']), 1)  # devgroup
+
+    def test_get_with_show_invisible_false(self) -> None:
+        """Testing the GET groups/?show-invisible=0 API"""
+        # These will match.
+        group1 = self.create_review_group(name='group1')
+
+        group2 = self.create_review_group(name='group2', visible=False)
+        group2.users.add(self.user)
+
+        # These will not match.
+        self.create_review_group(name='group3',
+                                 visible=False)
+        self.create_review_group(name='group4',
+                                 invite_only=True)
+        self.create_review_group(name='group5',
+                                 visible=False,
+                                 invite_only=True)
+
+        rsp = self.api_get(
+            get_review_group_list_url(),
+            {'show-invisible': '0'},
+            expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        groups = rsp['groups']
+        self.assertEqual(len(groups), 2)
+        self.compare_item(groups[0], group1)
+        self.compare_item(groups[1], group2)
+
+    def test_get_with_show_invisible_true(self) -> None:
+        """Testing the GET groups/?show-invisible=1 API"""
+        # These will match.
+        group1 = self.create_review_group(name='group1')
+        group2 = self.create_review_group(name='group2', visible=False)
+
+        group3 = self.create_review_group(name='group3', visible=False)
+        group3.users.add(self.user)
+
+        # These will not match.
+        self.create_review_group(name='group4',
+                                 invite_only=True)
+        self.create_review_group(name='group5',
+                                 visible=False,
+                                 invite_only=True)
+
+        rsp = self.api_get(
+            get_review_group_list_url(),
+            {'show-invisible': '1'},
+            expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        groups = rsp['groups']
+        self.assertEqual(len(groups), 3)
+        self.compare_item(groups[0], group1)
+        self.compare_item(groups[1], group2)
+        self.compare_item(groups[2], group3)
+
+    def test_get_with_show_invisible_true_invite_only_true(self) -> None:
+        """Testing the GET groups/?show-invisible=1&invite-only=1 API"""
+        user = self.user
+
+        # These will match.
+        group1 = self.create_review_group(name='group1',
+                                          invite_only=True)
+        group1.users.add(user)
+
+        group2 = self.create_review_group(name='group2',
+                                          visible=False,
+                                          invite_only=True)
+        group2.users.add(user)
+
+        # These will not match.
+        self.create_review_group(name='group3')
+        self.create_review_group(name='group4',
+                                 visible=False)
+        self.create_review_group(name='group5',
+                                 invite_only=True)
+        self.create_review_group(name='group6',
+                                 visible=False,
+                                 invite_only=True)
+
+        group7 = self.create_review_group(name='group7',
+                                          visible=False)
+        group7.users.add(user)
+
+        rsp = self.api_get(
+            get_review_group_list_url(),
+            {
+                'invite-only': '1',
+                'show-invisible': '1',
+            },
+            expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        groups = rsp['groups']
+        self.assertEqual(len(groups), 2)
+        self.compare_item(groups[0], group1)
+        self.compare_item(groups[1], group2)
+
+    def test_get_with_show_invisible_true_invite_only_true_as_admin(
+        self,
+    ) -> None:
+        """Testing the GET groups/?show-invisible=1&invite-only=1 API as
+        admin
+        """
+        self._login_user(admin=True)
+
+        # These will match.
+        group1 = self.create_review_group(name='group1',
+                                          invite_only=True)
+        group2 = self.create_review_group(name='group2',
+                                          visible=False,
+                                          invite_only=True)
+
+        group3 = self.create_review_group(name='group3',
+                                          invite_only=True)
+        group4 = self.create_review_group(name='group4',
+                                          visible=False,
+                                          invite_only=True)
+
+        # These will not match.
+        self.create_review_group(name='group1')
+        self.create_review_group(name='group2',
+                                 visible=False)
+        self.create_review_group(name='group3',
+                                 visible=False)
+
+        rsp = self.api_get(
+            get_review_group_list_url(),
+            {
+                'invite-only': '1',
+                'show-invisible': '1',
+            },
+            expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        groups = rsp['groups']
+        self.assertEqual(len(groups), 4)
+        self.compare_item(groups[0], group1)
+        self.compare_item(groups[1], group2)
+        self.compare_item(groups[2], group3)
+        self.compare_item(groups[3], group4)
+
+    def test_get_with_show_invisible_true_invite_only_true_with_perm(
+        self,
+    ) -> None:
+        """Testing the GET groups/?show-invisible=1&invite-only=1 API with
+        can_view_invite_only_groups permission
+        """
+        user = self.user
+        user.user_permissions.add(Permission.objects.get(
+            codename='can_view_invite_only_groups'))
+
+        # These will match.
+        group1 = self.create_review_group(name='group1',
+                                          invite_only=True)
+        group2 = self.create_review_group(name='group2',
+                                          visible=False,
+                                          invite_only=True)
+
+        group3 = self.create_review_group(name='group3',
+                                          invite_only=True)
+        group3.users.add(user)
+
+        group4 = self.create_review_group(name='group4',
+                                          visible=False,
+                                          invite_only=True)
+        group4.users.add(user)
+
+        # These will not match.
+        self.create_review_group(name='group5')
+        self.create_review_group(name='group6',
+                                 visible=False)
+
+        group7 = self.create_review_group(name='group7',
+                                          visible=False)
+        group7.users.add(user)
+
+        rsp = self.api_get(
+            get_review_group_list_url(),
+            {
+                'invite-only': '1',
+                'show-invisible': '1',
+            },
+            expected_mimetype=review_group_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        groups = rsp['groups']
+        self.assertEqual(len(groups), 4)
+        self.compare_item(groups[0], group1)
+        self.compare_item(groups[1], group2)
+        self.compare_item(groups[2], group3)
+        self.compare_item(groups[3], group4)
 
     #
     # HTTP POST tests
