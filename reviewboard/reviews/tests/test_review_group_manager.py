@@ -1,6 +1,6 @@
 """Unit tests for reviewboard.reviews.manager.ReviewGroupManager."""
 
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser, Permission
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.deprecation import RemovedInReviewBoard60Warning
@@ -158,6 +158,24 @@ class ReviewGroupManagerTests(TestCase):
         superuser
         """
         user = self.create_user(is_superuser=True)
+        group = self.create_review_group(invite_only=True,
+                                         visible=False)
+
+        self.assertNotIn(
+            group,
+            Group.objects.accessible(user, visible_only=True))
+        self.assertIn(
+            group,
+            Group.objects.accessible(user, visible_only=False))
+
+    def test_accessible_with_invite_only_hidden_and_perm(self):
+        """Testing Group.objects.accessible with invite-only hidden group and
+        special reviews.can_view_invite_only_groups permission
+        """
+        user = self.create_user()
+        user.user_permissions.add(Permission.objects.get(
+            codename='can_view_invite_only_groups'))
+
         group = self.create_review_group(invite_only=True,
                                          visible=False)
 
@@ -341,6 +359,24 @@ class ReviewGroupManagerTests(TestCase):
         and superuser
         """
         user = self.create_user(is_superuser=True)
+        group = self.create_review_group(invite_only=True,
+                                         visible=False)
+
+        self.assertNotIn(
+            group.pk,
+            Group.objects.accessible_ids(user, visible_only=True))
+        self.assertIn(
+            group.pk,
+            Group.objects.accessible_ids(user, visible_only=False))
+
+    def test_accessible_ids_with_invite_only_hidden_and_perm(self):
+        """Testing Group.objects.accessible_ids with invite-only hidden group
+        and special reviews.can_view_invite_only_groups permission
+        """
+        user = self.create_user()
+        user.user_permissions.add(Permission.objects.get(
+            codename='can_view_invite_only_groups'))
+
         group = self.create_review_group(invite_only=True,
                                          visible=False)
 
