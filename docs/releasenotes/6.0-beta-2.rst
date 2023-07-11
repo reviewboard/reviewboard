@@ -5,7 +5,7 @@
 Review Board 6.0 Beta 2 Release Notes
 =====================================
 
-**Release date**: TBD
+**Release date**: July 11, 2023
 
 This release contains all bug fixes and features from Review Board version
 :doc:`5.0.5 <5.0.5>` and :doc:`6.0 beta 1 <6.0-beta-1>`.
@@ -129,7 +129,8 @@ Extensions and Internal API Changes
 ===================================
 
 * The new :ref:`HideActionHook <hide-action-hook>` allows extension authors to
-  hide the built-in actions (such as "Ship It" or "Close").
+  hide the built-in actions (such as :guilabel:`Ship It!` or
+  :guilabel:`Close`).
 
   This can be used to either disable the functionality entirely, or replace it
   with your own action implementations.
@@ -140,17 +141,23 @@ Extensions and Internal API Changes
   attachments or otherwise manipulate the thumbnail.
 
 * Most code which had been marked for deprecation in previous versions has been
-  removed. All of these items had previously generated deprecation warnings.
+  removed.
 
-* More of the JavaScript codebase has been ported to ES6 classes with Spina.
+  All of these items had previously generated deprecation warnings.
+
+* More of the JavaScript codebase has been ported to ES6 classes with Spina_.
 
   The Spina library now allows these classes to be extended via the old
-  Backbone.js `.extend()` method, so this transition should now be seamless for
-  extension authors who are inheriting from Review Board JS objects.
+  Backbone.js :js:func:`extend()` method, so this transition should now be
+  seamless for extension authors who are inheriting from Review Board JS
+  objects.
 
 * :ref:`rbext-test` can now use ``pytest`` as the test runner with the
   ``--pytest`` argument. This behavior will become the default in Review Board
   7.
+
+
+.. _Spina: https://www.npmjs.com/package/@beanbag/spina
 
 
 Bug Fixes
@@ -202,8 +209,9 @@ Other
 * Closing the review dialog no longer triggers a page reload.
 
 * When redirected to the login page, logging in with SSO would end up loading
-  the dashboard instead of the intended page. The redirect URL is now properly
-  loaded after the SSO flow.
+  the dashboard instead of the intended page.
+
+  The redirect URL is now properly loaded after the SSO flow.
 
 * Fixed the sort order when selecting items in conditions for integrations.
 
