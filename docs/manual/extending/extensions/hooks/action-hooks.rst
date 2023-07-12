@@ -20,7 +20,7 @@ You can also create menu actions by subclassing
 
 
 Subclassing BaseAction
-----------------------
+======================
 
 :py:class:`~reviewboard.actions.base.BaseAction` includes a number of
 attributes which can be overridden:
@@ -102,7 +102,7 @@ There are also several methods which may be overridden:
 
 
 Example
-=======
+-------
 
 .. code-block:: python
 
@@ -174,7 +174,6 @@ For the JavaScript:
 
 .. _hide-action-hook:
 
-=======================
 Hiding Standard Actions
 =======================
 
@@ -188,7 +187,7 @@ you want to hide.
 
 
 Example
-=======
+-------
 
 .. code-block:: python
 
@@ -200,7 +199,6 @@ Example
             HideActionHook(self, action_ids=['support-menu'])
 
 
-===================
 Legacy Action Hooks
 ===================
 
