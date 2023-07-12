@@ -677,6 +677,7 @@ export class DeleteActionView extends Actions.MenuItemActionView {
                             .then(() => RB.navigateTo(SITE_ROOT))),
                 ],
                 title: _`Are you sure you want to delete this review request?`,
-            });
+            })
+            .on('close', () => $dlg.modalBox('destroy'));
     }
 }

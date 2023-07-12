@@ -187,12 +187,14 @@ const DashboardActionsView = Backbone.View.extend({
                     _`You may not have permission to close them.`));
         }
 
-        $dlg.modalBox({
-            title: _`Close review requests`,
-            buttons: [
-                $('<input type="button"/>').val(_`Close`),
-            ],
-        });
+        $dlg
+            .modalBox({
+                title: _`Close review requests`,
+                buttons: [
+                    $('<input type="button"/>').val(_`Close`),
+                ],
+            })
+            .on('close', () => $dlg.modalBox('destroy'));
     },
 
     /**
@@ -207,7 +209,7 @@ const DashboardActionsView = Backbone.View.extend({
      */
     _confirmClose: function() {
         return new Promise((resolve, reject) => {
-            $('<div/>')
+            const $dialog = $('<div/>')
                 .append($('<p/>')
                     .text(_`If these review requests have unpublished drafts, they will be discarded.`))
                 .append($('<p/>')
@@ -223,6 +225,10 @@ const DashboardActionsView = Backbone.View.extend({
                             .val(_`Close Review Requests`)
                             .click(() => resolve(true)),
                     ],
+                })
+                .on('close', () => {
+                    $dialog.modalBox('destroy');
+                    resolve(false);
                 });
         });
     },
@@ -269,7 +275,7 @@ const DashboardActionsView = Backbone.View.extend({
         ev.stopPropagation();
         ev.preventDefault();
 
-        $('<div/>')
+        const $dialog = $('<div/>')
             .append($('<p/>')
                 .text(_`Are you sure you want to mute these review requests?`))
             .modalBox({
@@ -282,7 +288,8 @@ const DashboardActionsView = Backbone.View.extend({
                         .val(_`Mute Review Requests`)
                         .click(() => this.model.updateVisibility('mute')),
                 ],
-            });
+            })
+            .on('close', () => $dialog.modalBox('destroy'));
     },
 
     /**

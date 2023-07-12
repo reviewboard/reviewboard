@@ -15,7 +15,7 @@ declare function ngettext(singular: string, plural: string, n: number): string;
  * Version Added:
  *     6.0
  */
-interface DraftMode {
+export interface DraftMode {
     /** The user-visible text to display. */
     text: string;
 

@@ -35,13 +35,13 @@ PYTHON_MIN_VERSION_STR = '%s.%s' % (PYTHON_MIN_VERSION)
 django_doc_major_version = '3.2'
 
 #: The major version of Djblets we're using for documentation.
-djblets_doc_major_version = '3.x'
+djblets_doc_major_version = 'dev'
 
 #: The version of Django required for the current version of Python.
 django_version = '~=3.2.17'
 
 #: The version range required for Djblets.
-djblets_version = '~=4.0a0.dev0'
+djblets_version = '~=4.0b2'
 
 
 ###########################################################################
@@ -54,7 +54,7 @@ package_dependencies = {
     'cryptography': '~=39.0.2',
     'Django': django_version,
     'django-cors-headers': '~=3.11.0',
-    'django_evolution': '~=2.2b1',
+    'django_evolution': '~=2.2',
     'django-haystack': '~=3.2.1',
     'django-multiselectfield': '~=0.1.12',
     'django_oauth_toolkit': '~=1.6.3',

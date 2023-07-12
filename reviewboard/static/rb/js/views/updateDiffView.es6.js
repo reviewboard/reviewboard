@@ -47,13 +47,15 @@ RB.UpdateDiffView = RB.UploadDiffView.extend({
     render() {
         RB.UploadDiffView.prototype.render.call(this);
 
-        this.$el.modalBox({
-            title: gettext('Update Diff'),
-            buttons: [
-                $('<input type="button" />')
-                    .val(gettext('Cancel')),
-            ],
-        });
+        this.$el
+            .modalBox({
+                title: gettext('Update Diff'),
+                buttons: [
+                    $('<input type="button" />')
+                        .val(gettext('Cancel')),
+                ],
+            })
+            .on('close', () => this.$el.modalBox('destroy'));
 
         return this;
     },

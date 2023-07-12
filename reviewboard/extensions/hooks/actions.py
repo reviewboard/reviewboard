@@ -7,6 +7,7 @@ import re
 from typing import List, Optional
 
 from djblets.extensions.hooks import ExtensionHook, ExtensionHookPoint
+from djblets.registries.errors import ItemLookupError
 
 from reviewboard.actions import (AttachmentPoint,
                                  BaseAction,
@@ -61,7 +62,10 @@ class ActionHook(ExtensionHook, metaclass=ExtensionHookPoint):
         super().shutdown()
 
         for action in self.actions:
-            actions_registry.unregister(action)
+            try:
+                actions_registry.unregister(action)
+            except ItemLookupError:
+                pass
 
     def get_actions(self, context):
         """Return the list of action information for this action hook.

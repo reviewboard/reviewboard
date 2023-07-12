@@ -1176,7 +1176,7 @@ RB.ReviewDialogView = Backbone.View.extend({
                 stretchY: true,
                 buttons: buttons,
             })
-            .keypress(e => e.stopPropagation())
+            .on('close', () => this._saveReview(false))
             .attr('scrollTop', 0)
             .trigger('ready');
 

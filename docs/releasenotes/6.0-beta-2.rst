@@ -1,0 +1,231 @@
+.. default-intersphinx:: djblets4.x rb6.x
+
+
+=====================================
+Review Board 6.0 Beta 2 Release Notes
+=====================================
+
+**Release date**: July 11, 2023
+
+This release contains all bug fixes and features from Review Board version
+:doc:`5.0.5 <5.0.5>` and :doc:`6.0 beta 1 <6.0-beta-1>`.
+
+
+Installation/Upgrade
+====================
+
+Review Board 6.0 Beta 2 is compatible with Python 3.7 - 3.11.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board to to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install \
+        -f https://downloads.reviewboard.org/betas/reviewboard/6.0-beta-2/ \
+        --pre -U ReviewBoard
+
+.. warning::
+
+   We **do not** recommend upgrading a production server with this version of
+   Review Board. It's best to install on a test server, with a copy of your
+   production database, in case there are any major problems.
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Upgrade Notes
+=============
+
+* This release contains database schema changes to the following tables:
+
+  * ``attachments_fileattachment``
+
+  This will take a small amount of time to migrate the database. Please test
+  the upgrade on a copy of your database first, to ensure the upgrade is smooth
+  and to time how long the upgrade takes.
+
+  .. important::
+
+     Do **not** cancel the upgrade on a production system for **any reason**.
+     Doing so will corrupt your database, requiring a backup or our repair
+     service.
+
+
+Packaging
+=========
+
+* Review Board 6.0 beta 2 supports Python 3.7 - 3.11.
+
+  Due to Python's end of life schedule, it's likely that 6.0 final will be
+  3.8 - 3.11.
+
+* :pypi:`Djblets` 4.0 beta 2 is required.
+
+
+New Features
+============
+
+* Review your own draft data (:bug:`831`).
+
+  Until now, Review Board has not allowed you to create comments on unpublished
+  diffs or file attachments, because updating that data would end up deleting
+  comments from the reviews.
+
+  This has now been changed so you can add review comments for drafts before
+  those drafts are published. The resulting review request and review can then
+  be published together using the unified review banner.
+
+* Extensions can hide built-in actions.
+
+  The new :ref:`HideActionHook <hide-action-hook>` allows extension authors to
+  hide built-in actions (such as "Ship It!"). With this, you can either disable
+  built-in functionality entirely, or replace it with your own custom
+  implementations.
+
+* Docking file list in the diff viewer (:bug:`2605`, :bug:`4059`)
+
+  As you start to scroll the page in the diff viewer, the file list will dock
+  into the unified review banner. The list will by default show the files which
+  are visible on the page, and will react as you continue to scroll. You can
+  also click a button to momentarily open up the entire file list, letting you
+  quickly switch between files without having to scroll back up to the top of
+  the page.
+
+* More configuration options for SAML 2.0 SSO.
+
+  Some SAML identity providers don't provide as much configurability as others.
+  Review Board admins can now configure the NameID format and user attribute
+  names to match their IdP.
+
+  Patches by Anes Mukhametov.
+
+
+Performance Improvements
+========================
+
+* Improved HTTP caching behavior for API resources.
+
+  HTTP caching for API resources was, in many cases, entirely disabled. These
+  limitations have been removed, and repeated fetching of API endpoints can now
+  take much better advantage of caching.
+
+
+Extensions and Internal API Changes
+===================================
+
+* The new :ref:`HideActionHook <hide-action-hook>` allows extension authors to
+  hide the built-in actions (such as :guilabel:`Ship It!` or
+  :guilabel:`Close`).
+
+  This can be used to either disable the functionality entirely, or replace it
+  with your own action implementations.
+
+* The new :ref:`FileAttachmentThumbnailContainerHook
+  <js-file-attachment-thumbnail-container-hook>` JavaScript extension hook
+  allows extension authors to add new items to the menu attached to file
+  attachments or otherwise manipulate the thumbnail.
+
+* Most code which had been marked for deprecation in previous versions has been
+  removed.
+
+  All of these items had previously generated deprecation warnings.
+
+* More of the JavaScript codebase has been ported to ES6 classes with Spina_.
+
+  The Spina library now allows these classes to be extended via the old
+  Backbone.js :js:func:`extend()` method, so this transition should now be
+  seamless for extension authors who are inheriting from Review Board JS
+  objects.
+
+* :ref:`rbext-test` can now use ``pytest`` as the test runner with the
+  ``--pytest`` argument. This behavior will become the default in Review Board
+  7.
+
+
+.. _Spina: https://www.npmjs.com/package/@beanbag/spina
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Opening and closing the editor for the change description field no longer
+  causes a visual jump in the page layout.
+
+* Fixed issues when interacting with a review request across multiple
+  browser/tab windows.
+
+  If a review was discarded from one tab, attempts to create or edit comments
+  from another tab would result in errors. This bug was technically present in
+  earlier versions, but became much easier to hit in 6.0 beta 1.
+
+  This has now been fixed such that discarding a review from one tab will force
+  other tabs to reload. This only works within a single browser session, not
+  across different devices.
+
+* Discarding review request drafts and review drafts now includes a
+  confirmation step.
+
+* Very long commit messages in the diff viewer commits table no longer affect
+  the width of the page. (:bug:`4891`).
+
+  Patch by Sandy Saji.
+
+
+Review Banner
+-------------
+
+* Fixed click target regions in the review menu.
+
+  The review menu items were incorrectly only allowing clicks on the text,
+  rather than on the entire size of the menu items. This has been fixed.
+
+* Publishing drafts from the new unified review banner will now save any open
+  editors before the publish occurs.
+
+
+Other
+-----
+
+* Fixed the appearance of the pencil icon for editing dashboard columns.
+
+* Closing the review dialog no longer triggers a page reload.
+
+* When redirected to the login page, logging in with SSO would end up loading
+  the dashboard instead of the intended page.
+
+  The redirect URL is now properly loaded after the SSO flow.
+
+* Fixed the sort order when selecting items in conditions for integrations.
+
+* Fixed issues interacting with drop-down menus on mobile/touch devices.
+
+* Most dialogs can now be closed or canceled via the keyboard using the Escape
+  key.
+
+
+Contributors
+============
+
+* Anes Mukhametov
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin
+* Sandy Saji

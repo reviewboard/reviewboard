@@ -3,6 +3,7 @@ import { EventsHash, spina } from '@beanbag/spina';
 import { MenuView } from 'reviewboard/ui/views/menuView';
 
 import { ActionView } from './actionView';
+import { MenuAction } from '../models/menuAction';
 
 
 /**
@@ -12,7 +13,11 @@ import { ActionView } from './actionView';
  *     6.0
  */
 @spina
-export class MenuActionView extends ActionView {
+export class MenuActionView<
+    TModel extends MenuAction = MenuAction,
+    TElement extends HTMLDivElement = HTMLDivElement,
+    TExtraViewOptions extends object = object
+> extends ActionView<TModel, TElement, TExtraViewOptions> {
     static events: EventsHash = {
         'focusout': 'onFocusOut',
         'keydown': 'onKeyDown',

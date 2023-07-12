@@ -259,7 +259,6 @@ intersphinx_mapping = {
     'rb4.0': ('%s/docs/manual/4.0/' % rbwebsite_url, None),
     'rb5.x': ('%s/docs/manual/5.0/' % rbwebsite_url, None),
     'rb6.x': ('%s/docs/manual/dev/' % rbwebsite_url, None),
-    'rb-dev': ('%s/docs/manual/dev/' % rbwebsite_url, None),
 }
 
 extlinks = {
