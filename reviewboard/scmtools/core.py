@@ -4,11 +4,11 @@ import base64
 import logging
 import os
 import subprocess
-from pkg_resources import iter_entry_points
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
 
+import importlib_metadata
 from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import gettext_lazy as _
 from djblets.util.properties import TypedProperty
@@ -511,9 +511,10 @@ class _SCMToolIDProperty(object):
                 by a known Python EntryPoint.
         """
         if not _SCMToolIDProperty._scmtool_ids_by_class_names:
+            eps = importlib_metadata.entry_points(group='reviewboard.scmtools')
             _SCMToolIDProperty._scmtool_ids_by_class_names = {
                 '%s.%s' % (ep.module_name, ep.attrs[0]): force_str(ep.name)
-                for ep in iter_entry_points('reviewboard.scmtools')
+                for ep in eps
             }
 
         if owner_cls is SCMTool:

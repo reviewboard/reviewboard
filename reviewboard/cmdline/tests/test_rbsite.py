@@ -667,6 +667,15 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             "from django.core.wsgi import get_wsgi_application\n"
             "application = get_wsgi_application()\n"))
 
+    def test_get_wsgi_upgrade_needed_with_pkg_resources(self):
+        """Testing Site.get_wsgi_upgrade_needed with pkg_resources imports"""
+        self.assertTrue(self._get_wsgi_upgrade_needed(
+            'import __main__\n'
+            '__main__.__requires__ = [\'ReviewBoard\']\n'
+            'import pkg_resources\n'
+            '\n'
+            'from reviewboard.wsgi import application\n'))
+
     def test_get_wsgi_upgrade_needed_with_rb4(self):
         """Testing Site.get_wsgi_upgrade_needed with RB4+ configuration"""
         self.assertFalse(self._get_wsgi_upgrade_needed(
@@ -916,7 +925,11 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
     def test_upgrade_wsgi_with_rb_pre_4(self):
         """Testing Site.upgrade_wsgi with pre-RB4 configuration"""
         self._check_upgrade_wsgi(
-            ("import os\n"
+            ("import __main__\n"
+             "__main__.__requires__ = ['ReviewBoard']\n"
+             "import pkg_resources\n"
+             "\n"
+             "import os\n"
              "import sys\n"
              "\n"
              "os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'\n"
@@ -946,7 +959,11 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
     def test_upgrade_wsgi_with_rb_4_beta(self):
         """Testing Site.upgrade_wsgi with RB4 beta configuration"""
         self._check_upgrade_wsgi(
-            ("import os\n"
+            ("import __main__\n"
+             "__main__.__requires__ = ['ReviewBoard']\n"
+             "import pkg_resources\n"
+             "\n"
+             "import os\n"
              "import sys\n"
              "\n"
              "os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'\n"
@@ -976,7 +993,11 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
     def test_upgrade_wsgi_with_custom_values(self):
         """Testing Site.upgrade_wsgi with custom setting values"""
         self._check_upgrade_wsgi(
-            ("import os, sys\n"
+            ("import __main__\n"
+             "__main__.__requires__ = ['ReviewBoard']\n"
+             "import pkg_resources\n"
+             "\n"
+             "import os, sys\n"
              "\n"
              "os.environ['DJANGO_SETTINGS_MODULE'] = 'special.settings'\n"
              "os.environ['PYTHON_EGG_CACHE'] = '/tmp/egg_cache\n"

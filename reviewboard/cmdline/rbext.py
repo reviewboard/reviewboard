@@ -24,8 +24,8 @@ os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
 rbext_dir = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(rbext_dir, 'conf', 'rbext'))
 
-import pkg_resources
 from django.utils.encoding import force_str
+from importlib_metadata import Prepared
 
 # Ensure we've patched Djblets for Python 3.10 + Django 1.11 compatibility
 # before performing any more imports.
@@ -550,7 +550,7 @@ class CreateCommand(BaseCommand):
             unicode:
             The normalized name.
         """
-        return pkg_resources.safe_name(name).replace('-', '_').lower()
+        return Prepared.normalize(name)
 
     def _normalize_class_name(self, name):
         """Normalize a class name.

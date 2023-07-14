@@ -7,7 +7,6 @@ import imp
 import json
 import logging
 import os
-import pkg_resources
 import platform
 import re
 import shutil
@@ -23,6 +22,8 @@ from random import choice as random_choice
 from typing import Dict, List, Optional
 from urllib.request import urlopen
 
+import importlib_metadata
+import importlib_resources
 from packaging.version import parse as parse_version
 from django.db.utils import OperationalError
 from django.dispatch import receiver
@@ -852,7 +853,8 @@ class Site(object):
         with open(filename, 'r') as fp:
             data = fp.read()
 
-        return 'from reviewboard.wsgi import application' not in data
+        return ('from reviewboard.wsgi import application' not in data or
+                'import pkg_resources' in data)
 
     def upgrade_settings(self):
         """Perform a settings upgrade."""
@@ -1058,6 +1060,12 @@ class Site(object):
             'import django.core.handlers.wsgi',
             'from django.core.wsgi import ',
             'application =',
+
+            # These are from an era of multi-versioned eggs. We don't need
+            # this or want this in modern installs.
+            'import __main__',
+            "__main__.__requires__ = ['ReviewBoard']",
+            'import pkg_resources',
         )
 
         # Filter out anything we don't want to keep.
@@ -1074,15 +1082,18 @@ class Site(object):
                 new_lines = new_lines[:len(new_lines) - i]
                 break
 
-        new_lines += [
-            '',
-            "os.environ['REVIEWBOARD_SITEDIR'] = '%s'" % self.abs_install_dir,
-            '',
-            'from reviewboard.wsgi import application',
-        ]
+        if 'from reviewboard.wsgi import application' not in new_lines:
+            new_lines += [
+                '',
+                "os.environ['REVIEWBOARD_SITEDIR'] = '%s'"
+                % self.abs_install_dir,
+
+                '',
+                'from reviewboard.wsgi import application',
+            ]
 
         with open(filename, 'w') as fp:
-            fp.write('%s\n' % '\n'.join(new_lines))
+            fp.write('%s\n' % '\n'.join(new_lines).lstrip())
 
     def create_admin_user(self):
         """Create an administrator user account."""
@@ -1321,7 +1332,7 @@ class Site(object):
                 Whether to replace the destination if it exists.
         """
         self.mirror_files(
-            source_path=pkg_resources.resource_filename(pkg_name, src_path),
+            source_path=str(importlib_resources.files(pkg_name) / src_path),
             dest_path=dest_dir,
             replace=replace)
 
@@ -1372,8 +1383,8 @@ class Site(object):
                 template = force_str(fp.read())
         else:
             template = (
-                pkg_resources.resource_string('reviewboard', template_path)
-                .decode('utf-8')
+                (importlib_resources.files('reviewboard') / template_path)
+                .read_text()
             )
 
         sitedir = os.path.abspath(self.install_dir).replace('\\', '/')
@@ -1941,10 +1952,13 @@ class InstallCommand(Command):
             '--settings-local-template',
             default=None,
             metavar='PATH',
-            help='a custom template used for the settings_local.py file '
-                 '(defaults to %s)'
-                 % pkg_resources.resource_filename(
-                     'reviewboard', 'cmdline/conf/settings_local.py.in'))
+            help=(
+                'a custom template used for the settings_local.py file '
+                '(defaults to %s)'
+                % str(
+                    importlib_resources.files('reviewboard') /
+                    'cmdline' / 'conf' / 'settings_local.py.in'
+                )))
         parser.add_argument(
             '--allow-non-empty-sitedir',
             default=False,

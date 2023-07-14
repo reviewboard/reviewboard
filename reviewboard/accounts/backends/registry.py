@@ -19,7 +19,7 @@ from reviewboard.accounts.backends.standard import StandardAuthBackend
 from reviewboard.registries.registry import EntryPointRegistry
 
 if TYPE_CHECKING:
-    from pkg_resources import EntryPoint
+    from importlib_metadata import EntryPoint
 
 
 #: A type alias for a Review Board auth backend class.
@@ -69,7 +69,7 @@ class AuthBackendRegistry(EntryPointRegistry[_BaseAuthBackendClass]):
         .backend_id`, it will be set as the entry point's name.
 
         Args:
-           entry_point (pkg_resources.EntryPoint):
+           entry_point (importlib_metadata.EntryPoint):
                 The entry point.
 
         Returns:
