@@ -1,25 +1,42 @@
 """Authentication backend registry."""
 
+from __future__ import annotations
+
 import logging
 from importlib import import_module
+from typing import (Iterable, List, Optional, Sequence, TYPE_CHECKING, Type,
+                    cast)
 
 from django.conf import settings
 from django.contrib.auth import get_backends
 from django.utils.translation import gettext_lazy as _
 from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
                                          NOT_REGISTERED, UNREGISTER)
+from typing_extensions import TypeAlias
 
+from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.backends.standard import StandardAuthBackend
 from reviewboard.registries.registry import EntryPointRegistry
+
+if TYPE_CHECKING:
+    from pkg_resources import EntryPoint
+
+
+#: A type alias for a Review Board auth backend class.
+#:
+#: Version Added:
+#:     6.0
+_BaseAuthBackendClass: TypeAlias = Type[BaseAuthBackend]
 
 
 logger = logging.getLogger(__name__)
 
-_enabled_auth_backends = []
-_auth_backend_setting = None
+
+_enabled_auth_backends: List[_BaseAuthBackendClass] = []
+_auth_backend_setting: Optional[str] = None
 
 
-class AuthBackendRegistry(EntryPointRegistry):
+class AuthBackendRegistry(EntryPointRegistry[_BaseAuthBackendClass]):
     """A registry for managing authentication backends."""
 
     entry_point = 'reviewboard.auth_backends'
@@ -41,7 +58,10 @@ class AuthBackendRegistry(EntryPointRegistry):
         ),
     }
 
-    def process_value_from_entry_point(self, entry_point):
+    def process_value_from_entry_point(
+        self,
+        entry_point: EntryPoint,
+    ) -> _BaseAuthBackendClass:
         """Load the class from the entry point.
 
         If the class lacks a value for
@@ -57,7 +77,6 @@ class AuthBackendRegistry(EntryPointRegistry):
             The :py:class:`~reviewboard.accounts.backends.base.BaseAuthBackend`
             subclass.
         """
-
         cls = entry_point.load()
 
         if not cls.backend_id:
@@ -70,7 +89,7 @@ class AuthBackendRegistry(EntryPointRegistry):
 
         return cls
 
-    def get_defaults(self):
+    def get_defaults(self) -> Iterable[_BaseAuthBackendClass]:
         """Yield the authentication backends.
 
         This will make sure the standard authentication backend is always
@@ -90,14 +109,15 @@ class AuthBackendRegistry(EntryPointRegistry):
                 ('nis', 'NISBackend'),
                 ('x509', 'X509Backend'),
             ):
-            mod = import_module('reviewboard.accounts.backends.%s'
-                                % _module)
+            mod = import_module(f'reviewboard.accounts.backends.{_module}')
             yield getattr(mod, _backend_cls_name)
 
-        for value in super(AuthBackendRegistry, self).get_defaults():
-            yield value
+        yield from super().get_defaults()
 
-    def unregister(self, backend_class):
+    def unregister(
+        self,
+        backend_class: _BaseAuthBackendClass,
+    ) -> None:
         """Unregister the requested authentication backend.
 
         Args:
@@ -113,18 +133,21 @@ class AuthBackendRegistry(EntryPointRegistry):
         self.populate()
 
         try:
-            super(AuthBackendRegistry, self).unregister(backend_class)
+            super().unregister(backend_class)
         except self.lookup_error_class as e:
             logger.error('Failed to unregister unknown authentication '
                          'backend "%s".',
                          backend_class.backend_id)
             raise e
 
-    def get_auth_backend(self, auth_backend_id):
+    def get_auth_backend(
+        self,
+        auth_backend_id: str,
+    ) -> Optional[_BaseAuthBackendClass]:
         """Return the requested authentication backend, if it exists.
 
         Args:
-            auth_backend_id (unicode):
+            auth_backend_id (str):
                 The unique ID of the
                 :py:class:`~reviewboard.accounts.backends.base.BaseAuthBackend`
                 class.
@@ -137,7 +160,7 @@ class AuthBackendRegistry(EntryPointRegistry):
         return self.get('backend_id', auth_backend_id)
 
 
-def get_enabled_auth_backends():
+def get_enabled_auth_backends() -> Sequence[_BaseAuthBackendClass]:
     """Return all authentication backends being used by Review Board.
 
     The returned list contains every authentication backend that Review Board
@@ -154,8 +177,12 @@ def get_enabled_auth_backends():
 
     if (not _enabled_auth_backends or
         _auth_backend_setting != settings.AUTHENTICATION_BACKENDS):
-        _enabled_auth_backends = list(get_backends())
         _auth_backend_setting = settings.AUTHENTICATION_BACKENDS
+
+        # We're casting because we control all the auth backends, and know
+        # they're all actually ours.
+        _enabled_auth_backends = cast(List[_BaseAuthBackendClass],
+                                      list(get_backends()))
 
     return _enabled_auth_backends
 

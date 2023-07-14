@@ -1,13 +1,18 @@
 """Active Directory authentication backend."""
 
+from __future__ import annotations
+
 import itertools
 import logging
+from typing import (Any, Dict, Iterator, List, Optional, Sequence, Set,
+                    TYPE_CHECKING, Tuple)
 
-import dns
+import dns.resolver
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
+from typing_extensions import TypeAlias
 
 try:
     import ldap
@@ -19,8 +24,26 @@ except ImportError:
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import ActiveDirectorySettingsForm
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+    from ldap.ldapobject import LDAPObject
+
 
 logger = logging.getLogger(__name__)
+
+
+#: Type alias for a list of domain controllers.
+#:
+#: Version Added:
+#:     6.0
+_DomainControllers: TypeAlias = List[Tuple[str, str]]
+
+
+#: Type alias for a list of LDAP search results.
+#:
+#: Version Added:
+#:     6.0
+_SearchResults: TypeAlias = List[Tuple[str, Dict[str, Any]]]
 
 
 class ActiveDirectoryBackend(BaseAuthBackend):
@@ -107,18 +130,21 @@ class ActiveDirectoryBackend(BaseAuthBackend):
     login_instructions = \
         _('Use your standard Active Directory username and password.')
 
-    def get_domain_name(self):
+    def get_domain_name(self) -> str:
         """Return the current Active Directory domain name.
 
         This returns the domain name as set in :setting:`AD_DOMAIN_NAME`.
 
         Returns:
-            unicode:
+            str:
             The Active Directory domain name.
         """
         return settings.AD_DOMAIN_NAME
 
-    def get_ldap_search_root(self, user_domain=None):
+    def get_ldap_search_root(
+        self,
+        user_domain: Optional[str] = None,
+    ) -> str:
         """Return the search root(s) for users in the LDAP server.
 
         If :setting:`AD_SEARCH_ROOT` is set, then it will be used. Otherwise,
@@ -128,43 +154,48 @@ class ActiveDirectoryBackend(BaseAuthBackend):
         name (:setting:`AD_OU_NAME`).
 
         Args:
-            user_domain (unicode, optional):
+            user_domain (str, optional):
                 An explicit Active Directory domain to use for the search root.
 
         Returns:
-            unicode:
+            str:
             The search root used to locate users.
         """
         if getattr(settings, 'AD_SEARCH_ROOT', None):
             return settings.AD_SEARCH_ROOT
 
-        dn = []
+        dn: List[Sequence[Tuple[str, str, int]]] = []
 
         if settings.AD_OU_NAME:
-            dn.append([('ou', settings.AD_OU_NAME, None)])
+            dn.append([('ou', settings.AD_OU_NAME, 0)])
 
         if user_domain is None:
             user_domain = self.get_domain_name()
 
         if user_domain:
             dn += [
-                [('dc', dc, None)]
+                [('dc', dc, 0)]
                 for dc in user_domain.split('.')
             ]
 
         return dn2str(dn)
 
-    def search_ad(self, con, filterstr, user_domain=None):
+    def search_ad(
+        self,
+        con: LDAPObject,
+        filterstr: str,
+        user_domain: Optional[str] = None,
+    ) -> _SearchResults:
         """Search the given LDAP server based on the provided filter.
 
         Args:
-            con (ldap.LDAPObject):
+            con (ldap.ldapobject.LDAPObject):
                 The LDAP connection to search.
 
-            filterstr (unicode):
+            filterstr (str):
                 The filter string used to locate objects in Active Directory.
 
-            user_domain (unicode, optional):
+            user_domain (str, optional):
                 An explicit domain used for the search. If not provided,
                 :py:meth:`get_domain_name` will be used.
 
@@ -174,6 +205,8 @@ class ActiveDirectoryBackend(BaseAuthBackend):
             of ``(dn, attrs)``, where ``dn`` is the Distinguished Name of the
             entry and ``attrs`` is a dictionary of attributes for that entry.
         """
+        assert ldap
+
         search_root = self.get_ldap_search_root(user_domain)
         logger.debug('Search root "%s" for filter "%s"',
                      search_root, filterstr)
@@ -182,17 +215,27 @@ class ActiveDirectoryBackend(BaseAuthBackend):
                             scope=ldap.SCOPE_SUBTREE,
                             filterstr=filterstr)
 
-    def find_domain_controllers_from_dns(self, user_domain=None):
+    def find_domain_controllers_from_dns(
+        self,
+        user_domain: Optional[str] = None,
+    ) -> _DomainControllers:
         """Find and return the active domain controllers using DNS.
 
         Args:
-            user_domain (unicode, optional):
+            user_domain (str, optional):
                 An explicit domain used for the search. If not provided,
                 :py:meth:`get_domain_name` will be used.
 
         Returns:
-            list of unicode:
-            The list of domain controllers.
+            list of tuple:
+            The list of domain controllers in the form of:
+
+            Tuple:
+                0 (int):
+                    The domain controller port.
+
+                1 (str):
+                    The domain controller host.
         """
         record_name = '_ldap._tcp.%s' % (user_domain or self.get_domain_name())
 
@@ -216,7 +259,10 @@ class ActiveDirectoryBackend(BaseAuthBackend):
 
         return []
 
-    def can_recurse(self, depth):
+    def can_recurse(
+        self,
+        depth: int,
+    ) -> bool:
         """Return whether the given recursion depth is too deep.
 
         Args:
@@ -231,7 +277,13 @@ class ActiveDirectoryBackend(BaseAuthBackend):
         return (settings.AD_RECURSION_DEPTH == -1 or
                 depth <= settings.AD_RECURSION_DEPTH)
 
-    def get_member_of(self, con, search_results, seen=None, depth=0):
+    def get_member_of(
+        self,
+        con: LDAPObject,
+        search_results: _SearchResults,
+        seen: Optional[Set[str]] = None,
+        depth: int = 0,
+    ) -> Set[str]:
         """Return the LDAP groups for the given users.
 
         This iterates over the users specified in ``search_results`` and
@@ -305,14 +357,18 @@ class ActiveDirectoryBackend(BaseAuthBackend):
 
         return seen
 
-    def get_ldap_connections(self, user_domain, request=None):
+    def get_ldap_connections(
+        self,
+        user_domain: str,
+        request: Optional[HttpRequest] = None,
+    ) -> Iterator[Tuple[str, LDAPObject]]:
         """Return all LDAP connections used for Active Directory.
 
         This returns an iterable of connections to the LDAP servers specified
         in :setting:`AD_DOMAIN_CONTROLLER`.
 
         Args:
-            user_domain (unicode, optional):
+            user_domain (str):
                 The domain for the user.
 
             request (django.http.HttpRequest, optional):
@@ -320,9 +376,13 @@ class ActiveDirectoryBackend(BaseAuthBackend):
                 purposes.
 
         Yields:
-            tuple of (unicode, ldap.LDAPObject):
+            tuple of (str, ldap.LDAPObject):
             The connections to the configured LDAP servers.
         """
+        dcs: _DomainControllers
+
+        assert ldap
+
         use_tls = settings.AD_USE_TLS
 
         if settings.AD_FIND_DC_FROM_DNS:
@@ -338,6 +398,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
                         logger.warning('Invalid LDAP domain controller "%s". '
                                        'Skipping.',
                                        dc_entry)
+                        continue
                 else:
                     host = dc_entry
 
@@ -365,12 +426,26 @@ class ActiveDirectoryBackend(BaseAuthBackend):
 
             yield ldap_uri, connection
 
-    def authenticate(self, request, username, password, **kwargs):
+    def authenticate(
+        self,
+        request: Optional[HttpRequest] = None,
+        *,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        **kwargs,
+    ) -> Optional[User]:
         """Authenticate a user against Active Directory.
 
         This will attempt to authenticate the user against Active Directory.
         If the username and password are valid, a user will be returned, and
         added to the database if it doesn't already exist.
+
+        Version Changed:
+            6.0:
+            * ``request`` is now optional.
+            * ``username`` and ``password`` are technically optional, to
+              aid in consistency for type hints, but will result in a ``None``
+              result.
 
         Version Changed:
             4.0:
@@ -381,10 +456,10 @@ class ActiveDirectoryBackend(BaseAuthBackend):
             request (django.http.HttpRequest):
                 The HTTP request from the caller. This may be ``None``.
 
-            username (unicode):
+            username (str):
                 The username to authenticate.
 
-            password (unicode):
+            password (str):
                 The user's password.
 
             **kwargs (dict, unused):
@@ -395,6 +470,13 @@ class ActiveDirectoryBackend(BaseAuthBackend):
             The authenticated user, or ``None`` if the user could not be
             authenticated for any reason.
         """
+        if not username or not password:
+            logger.error('Attempted to authenticate Active Directory user '
+                         'without supplying either a username or password '
+                         'parameter! This may be a bug in Review Board. '
+                         'Please report it.')
+            return None
+
         username = username.strip()
 
         if ldap is None:
@@ -488,7 +570,12 @@ class ActiveDirectoryBackend(BaseAuthBackend):
 
         return None
 
-    def get_or_create_user(self, username, request=None, ad_user_data=None):
+    def get_or_create_user(
+        self,
+        username: str,
+        request: Optional[HttpRequest] = None,
+        ad_user_data: Optional[_SearchResults] = None,
+    ) -> Optional[User]:
         """Return an existing user or create one if it doesn't exist.
 
         This does not authenticate the user.
@@ -498,7 +585,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
         lookup. However, this will only happen if ``ad_user_data`` is provided.
 
         Args:
-            username (unicode):
+            username (str):
                 The name of the user to look up or create.
 
             request (django.http.HttpRequest, unused):

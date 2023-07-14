@@ -5,18 +5,29 @@ from __future__ import annotations
 import logging
 from importlib import import_module
 from types import ModuleType
-from typing import Optional
+from typing import Optional, TYPE_CHECKING, Tuple
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+from typing_extensions import TypeAlias
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import NISSettingsForm
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+
 
 logger = logging.getLogger(__name__)
+
+
+#: A type alias for a NIS password entry.
+#:
+#: Version Added:
+#:     6.0
+_NISPasswdEntry: TypeAlias = Tuple[str, str, int, int, str, str, str]
 
 
 class NISBackend(BaseAuthBackend):
@@ -48,12 +59,26 @@ class NISBackend(BaseAuthBackend):
                          'of Python.')
             return None
 
-    def authenticate(self, request, username, password, **kwargs):
+    def authenticate(
+        self,
+        request: Optional[HttpRequest] = None,
+        *,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        **kwargs,
+    ) -> Optional[User]:
         """Authenticate the user.
 
         This will attempt to authenticate the user against NIS. If the
         username and password are valid, a user will be returned, and added
         to the database if it doesn't already exist.
+
+        Version Changed:
+            6.0:
+            * ``request`` is now optional.
+            * ``username`` and ``password`` are technically optional, to
+              aid in consistency for type hints, but will result in a ``None``
+              result.
 
         Version Changed:
             4.0:
@@ -64,10 +89,10 @@ class NISBackend(BaseAuthBackend):
             request (django.http.HttpRequest):
                 The HTTP request from the caller. This may be ``None``.
 
-            username (unicode):
+            username (str):
                 The username to authenticate.
 
-            password (unicode):
+            password (str):
                 The password to authenticate.
 
             **kwargs (dict, unused):
@@ -78,6 +103,13 @@ class NISBackend(BaseAuthBackend):
             The authenticated user, or ``None`` if the user could not be
             authenticated.
         """
+        if not username or not password:
+            logger.error('Attempted to authenticate NIS user without '
+                         'supplying either a username or password parameter! '
+                         'This may be a bug in Review Board. Please report '
+                         'it.')
+            return None
+
         nis = self.nis
 
         if nis is None:
@@ -104,11 +136,19 @@ class NISBackend(BaseAuthBackend):
 
         return None
 
-    def get_or_create_user(self, username, request=None, passwd=None):
+    def get_or_create_user(
+        self,
+        username: str,
+        request: Optional[HttpRequest] = None,
+        passwd: Optional[_NISPasswdEntry] = None,
+    ) -> Optional[User]:
         """Return an existing user, or create one if it does not exist.
 
+        If the user does not exist in the database, but does in the backend,
+        its information will be stored in the database for later lookup.
+
         Args:
-            username (unicode):
+            username (str):
                 The username of the user.
 
             request (django.http.HttpRequest, optional):
@@ -161,11 +201,14 @@ class NISBackend(BaseAuthBackend):
 
         return user
 
-    def _nis_get_passwd(self, username):
+    def _nis_get_passwd(
+        self,
+        username: str,
+    ) -> _NISPasswdEntry:
         """Return a passwd entry for a user.
 
         Args:
-            username (unicode):
+            username (str):
                 The username to fetch.
 
         Returns:
@@ -177,4 +220,7 @@ class NISBackend(BaseAuthBackend):
                 The user could not be found, or there was an error performing
                 the lookup.
         """
-        return self.nis.match(username, 'passwd').split(':')
+        nis = self.nis
+        assert nis
+
+        return nis.match(username, 'passwd').split(':')

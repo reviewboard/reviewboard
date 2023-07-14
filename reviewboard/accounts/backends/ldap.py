@@ -1,6 +1,9 @@
 """LDAP authentication backend."""
 
+from __future__ import annotations
+
 import logging
+from typing import Optional, TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -16,6 +19,10 @@ except ImportError:
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import LDAPSettingsForm
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+    from ldap.ldapobject import LDAPObject
 
 
 logger = logging.getLogger(__name__)
@@ -94,7 +101,14 @@ class LDAPBackend(BaseAuthBackend):
     login_instructions = \
         _('Use your standard LDAP username and password.')
 
-    def authenticate(self, request, username, password, **kwargs):
+    def authenticate(
+        self,
+        request: Optional[HttpRequest] = None,
+        *,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        **credentials,
+    ) -> Optional[User]:
         """Authenticate a user.
 
         This will attempt to authenticate the user against the LDAP server.
@@ -102,18 +116,25 @@ class LDAPBackend(BaseAuthBackend):
         added to the database if it doesn't already exist.
 
         Version Changed:
+            6.0:
+            * ``request`` is now optional.
+            * ``username`` and ``password`` are technically optional, to
+              aid in consistency for type hints, but will result in a ``None``
+              result.
+
+        Version Changed:
             4.0:
             The ``request`` argument is now mandatory as the first positional
             argument, as per requirements in Django.
 
         Args:
-            request (django.http.HttpRequest):
+            request (django.http.HttpRequest, optional):
                 The HTTP request from the caller. This may be ``None``.
 
-            username (unicode):
+            username (str):
                 The username used to authenticate.
 
-            password (unicode):
+            password (str):
                 The password used to authenticate.
 
             **kwargs (dict, unused):
@@ -124,6 +145,13 @@ class LDAPBackend(BaseAuthBackend):
             The authenticated user, or ``None`` if the user could not be
             authenticated for any reason.
         """
+        if not username or not password:
+            logger.error('Attempted to authenticate LDAP user without '
+                         'supplying either a username or password parameter! '
+                         'This may be a bug in Review Board. Please report '
+                         'it.')
+            return None
+
         username = username.strip()
 
         if not password:
@@ -146,6 +174,8 @@ class LDAPBackend(BaseAuthBackend):
 
         if not userdn:
             return None
+
+        assert ldap
 
         try:
             # Now that we have the user, attempt to bind to verify
@@ -176,8 +206,13 @@ class LDAPBackend(BaseAuthBackend):
 
         return None
 
-    def get_or_create_user(self, username, request=None, ldapo=None,
-                           userdn=None):
+    def get_or_create_user(
+        self,
+        username: str,
+        request: Optional[HttpRequest] = None,
+        ldapo: Optional[LDAPObject] = None,
+        userdn: Optional[str] = None,
+    ) -> Optional[User]:
         """Return a user account, importing from LDAP if necessary.
 
         If the user already exists in the database, it will be returned
@@ -185,17 +220,17 @@ class LDAPBackend(BaseAuthBackend):
         and create a local user account representing that user.
 
         Args:
-            username (unicode):
+            username (str):
                 The username to look up.
 
             request (django.http.HttpRequest, optional):
                 The optional HTTP request for this operation.
 
-            ldapo (ldap.LDAPObject, optional):
+            ldapo (ldap.ldapobject.LDAPObject, optional):
                 The existing LDAP connection, if the caller has one. If not
                 provided, a new connection will be created.
 
-            userdn (unicode, optional):
+            userdn (str, optional):
                 The DN for the user being looked up, if the caller knows it.
                 If not provided, the DN will be looked up.
 
@@ -316,7 +351,10 @@ class LDAPBackend(BaseAuthBackend):
 
         return None
 
-    def _connect(self, request=None):
+    def _connect(
+        self,
+        request: Optional[HttpRequest] = None,
+    ) -> Optional[LDAPObject]:
         """Connect to LDAP.
 
         This will attempt to connect and authenticate (if needed) to the
@@ -327,7 +365,7 @@ class LDAPBackend(BaseAuthBackend):
                 The optional HTTP request used for logging context.
 
         Returns:
-            ldap.LDAPObject:
+            ldap.ldapobject.LDAPObject:
             The resulting LDAP connection, if it could connect. If LDAP
             support isn't available, or there was an error, this will return
             ``None``.
@@ -375,7 +413,12 @@ class LDAPBackend(BaseAuthBackend):
 
         return None
 
-    def _get_user_dn(self, ldapo, username, request=None):
+    def _get_user_dn(
+        self,
+        ldapo: LDAPObject,
+        username: str,
+        request: Optional[HttpRequest] = None,
+    ) -> Optional[str]:
         """Return the DN for a given username.
 
         This will perform a lookup in LDAP to try to find a DN for a given
@@ -383,20 +426,22 @@ class LDAPBackend(BaseAuthBackend):
         authentication.
 
         Args:
-            ldapo (ldap.LDAPObject):
+            ldapo (ldap.ldapobject.LDAPObject):
                 The LDAP connection.
 
-            username (unicode):
+            username (str):
                 The username to look up in the directory.
 
             request (django.http.HttpRequest, optional):
                 The optional HTTP request used for logging context.
 
         Returns:
-            unicode:
+            str:
             The DN for the username, if found. If not found, this will return
             ``None``.
         """
+        assert filter_format is not None
+        assert ldap is not None
         assert ldapo is not None
 
         try:

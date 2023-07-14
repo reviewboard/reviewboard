@@ -1,53 +1,97 @@
 """Base class for authentication backends."""
 
+from __future__ import annotations
+
 import re
+from typing import Optional, TYPE_CHECKING, Type, Union
 
 from django.contrib.auth.models import User
 from djblets.db.query import get_object_or_none
 
+if TYPE_CHECKING:
+    from django.db.models import Q
+    from django.http import HttpRequest
+    from djblets.siteconfig.forms import SiteSettingsForm
+    from djblets.util.typing import StrOrPromise
 
-class BaseAuthBackend(object):
+
+class BaseAuthBackend:
     """Base class for a Review Board authentication backend."""
 
     #: The unique ID for the authentication backend.
-    backend_id = None
+    #:
+    #: Type:
+    #:     str
+    backend_id: Optional[str] = None
 
     #: The display name for the authentication backend.
     #:
     #: This will be shown in the list of backends in the administration UI.
-    name = None
+    #:
+    #: Type:
+    #:     str
+    name: Optional[StrOrPromise] = None
 
     #: The form class used for authentication settings.
     #:
     #: This must be a subclass of
     #: :py:class:`~djblets.siteconfig.forms.SiteSettingsForm`.
-    settings_form = None
+    #:
+    #: Type:
+    #:     type
+    settings_form: Optional[Type[SiteSettingsForm]] = None
 
     #: Whether this backend supports registering new users.
-    supports_registration = False
+    #:
+    #: Type:
+    #:     bool
+    supports_registration: bool = False
 
     #: Whether this backend supports changing the user's full name.
-    supports_change_name = False
+    #:
+    #: Type:
+    #:     bool
+    supports_change_name: bool = False
 
     #: Whether this backend supports changing the user's e-mail address.
-    supports_change_email = False
+    #:
+    #: Type:
+    #:     bool
+    supports_change_email: bool = False
 
     #: Whether this backend supports changing the user's password.
-    supports_change_password = False
+    #:
+    #: Type:
+    #:     bool
+    supports_change_password: bool = False
 
     #: Authentication instructions to display above the Login form.
-    login_instructions = None
+    #:
+    #: Type:
+    #:     str
+    login_instructions: Optional[StrOrPromise] = None
 
     #: A regex for matching invalid characters in usernames.
-    INVALID_USERNAME_CHAR_REGEX = re.compile(r'[^\w.@+-]')
+    #:
+    #: Type:
+    #:     re.Pattern
+    INVALID_USERNAME_CHAR_REGEX: re.Pattern = re.compile(r'[^\w.@+-]')
 
-    def authenticate(self, request, **credentials):
+    def authenticate(
+        self,
+        request: Optional[HttpRequest] = None,
+        **credentials,
+    ) -> Optional[User]:
         """Authenticate a user.
 
         This will authenticate a user identified by the provided credentials.
         object, or None.
 
         This must be implemented by subclasses.
+
+        Version Changed:
+            6.0:
+            ``request`` is now optional.
 
         Version Changed:
             4.0:
@@ -69,7 +113,11 @@ class BaseAuthBackend(object):
         """
         raise NotImplementedError
 
-    def get_or_create_user(self, username, request=None):
+    def get_or_create_user(
+        self,
+        username: str,
+        request: Optional[HttpRequest] = None,
+    ) -> Optional[User]:
         """Return an existing user or create one if it doesn't exist.
 
         This does not authenticate the user.
@@ -81,7 +129,7 @@ class BaseAuthBackend(object):
         This must be implemented by subclasses.
 
         Args:
-            username (unicode):
+            username (str):
                 The username to fetch or create.
 
             request (django.http.HttpRequest, optional):
@@ -93,11 +141,14 @@ class BaseAuthBackend(object):
         """
         raise NotImplementedError
 
-    def get_user(self, user_id):
+    def get_user(
+        self,
+        user_id: Union[int, str],
+    ) -> Optional[User]:
         """Return an existing user given a numeric user ID.
 
         Args:
-            user_id (int):
+            user_id (int or str):
                 The ID of the user to retrieve.
 
         Returns:
@@ -106,7 +157,11 @@ class BaseAuthBackend(object):
         """
         return get_object_or_none(User, pk=user_id)
 
-    def update_password(self, user, password):
+    def update_password(
+        self,
+        user: User,
+        password: str,
+    ) -> None:
         """Update a user's password on the backend.
 
         Authentication backends can override this to update the password
@@ -119,7 +174,7 @@ class BaseAuthBackend(object):
             user (django.contrib.auth.models.User):
                 The user whose password will be changed.
 
-            password (unicode):
+            password (str):
                 The new password.
 
         Raises:
@@ -128,7 +183,10 @@ class BaseAuthBackend(object):
         """
         raise NotImplementedError
 
-    def update_name(self, user):
+    def update_name(
+        self,
+        user: User,
+    ) -> None:
         """Update a user's full name on the backend.
 
         Authentication backends can override this to update the name on the
@@ -146,7 +204,10 @@ class BaseAuthBackend(object):
         """
         pass
 
-    def update_email(self, user):
+    def update_email(
+        self,
+        user: User,
+    ) -> None:
         """Update a user's e-mail address on the backend.
 
         Authentication backends can override this to update the e-mail
@@ -163,7 +224,12 @@ class BaseAuthBackend(object):
         """
         pass
 
-    def populate_users(self, query, request, **kwargs):
+    def populate_users(
+        self,
+        query: str,
+        request: Optional[HttpRequest] = None,
+        **kwargs,
+    ) -> None:
         """Populate users from the backend into the database based on a query.
 
         Authentication backends can override this to add users stored on the
@@ -179,8 +245,12 @@ class BaseAuthBackend(object):
 
         By default, this does nothing.
 
+        Version Changed:
+            6.0:
+            ``request`` is now optional.
+
         Args:
-            query (unicode):
+            query (str):
                 A search query for matching users. This will match the entirety
                 or prefix of a username. It's expected that the match will be
                 case-insensitive.
@@ -198,7 +268,12 @@ class BaseAuthBackend(object):
         """
         pass
 
-    def build_search_users_query(self, query, request, **kwargs):
+    def build_search_users_query(
+        self,
+        query: str,
+        request: Optional[HttpRequest] = None,
+        **kwargs,
+    ) -> Optional[Q]:
         """Build a query for searching users in the database.
 
         This allows backends to construct specialized search queries (
@@ -208,8 +283,12 @@ class BaseAuthBackend(object):
 
         By default, this will return ``None``.
 
+        Version Changed:
+            6.0:
+            ``request`` is now optional.
+
         Args:
-            query (unicode):
+            query (str):
                 A search query for matching users. This will match the entirety
                 or prefix of a username. It's expected that the match will be
                 case-insensitive.
