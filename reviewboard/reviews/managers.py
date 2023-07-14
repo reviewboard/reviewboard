@@ -331,8 +331,10 @@ class ReviewGroupManager(Manager):
             else:
                 perm_local_site = local_site
 
-            if not user.has_perm('reviews.can_view_invite_only_groups',
-                                 perm_local_site):
+            has_perm = user.has_perm('reviews.can_view_invite_only_groups',
+                                     perm_local_site)
+
+            if not has_perm:
                 q &= Q(invite_only=False)
 
             if visible_only:
@@ -340,7 +342,11 @@ class ReviewGroupManager(Manager):
                 # a member, so we must perform this check here.
                 q &= Q(visible=True)
 
-            if user.is_authenticated:
+            # Make sure we're only checking membership if we're checking
+            # either visible= or invite_only= above, or users with the
+            # special permission won't be able to look up repositories if
+            # visible_only=False.
+            if user.is_authenticated and (visible_only or not has_perm):
                 q |= Q(users=user.pk)
 
         if local_site is not LocalSite.ALL:

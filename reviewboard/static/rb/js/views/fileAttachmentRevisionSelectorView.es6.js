@@ -39,7 +39,7 @@ RB.FileAttachmentRevisionSelectorView = RB.RevisionSelectorView.extend({
         const diffRevision = this.model.get('diffRevision');
 
         if (diffRevision) {
-            this._values = [revision, diffRevision];
+            this._values = [diffRevision, revision];
         } else {
             this._values = [0, revision];
         }

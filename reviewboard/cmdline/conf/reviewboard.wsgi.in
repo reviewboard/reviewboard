@@ -1,5 +1,17 @@
 import os
+import sys
+
 
 os.environ['REVIEWBOARD_SITEDIR'] = '@sitedir@'
+
+sys.path.insert(0, os.path.join(
+    os.environ['REVIEWBOARD_SITEDIR'], 'venv', 'lib',
+    'python%s.%s' % sys.version_info[:2], 'site-packages'))
+
+
+# BEGIN CUSTOM SETTINGS
+@custom_settings@
+# END CUSTOM SETTINGS
+
 
 from reviewboard.wsgi import application

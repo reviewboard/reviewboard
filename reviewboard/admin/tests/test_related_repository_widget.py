@@ -60,9 +60,10 @@ class RelatedRepositoryWidgetTests(TestCase):
             $(function() {
                 var view = new RB.RelatedRepoSelectorView({
                     $input: $('#repositories'),
-                    initialOptions: [],
+                    "initialOptions": [],
 
-                    multivalued: true
+                    "multivalued": true,
+                    "showInvisible": true
                 }).render();
             });
             </script>""",
@@ -88,11 +89,12 @@ class RelatedRepositoryWidgetTests(TestCase):
             $(function() {
                 var view = new RB.RelatedRepoSelectorView({
                     $input: $('#repositories'),
-                    initialOptions: [{"id": 1, "name": "repo1"},
+                    "initialOptions": [{"id": 1, "name": "repo1"},
                     {"id": 2, "name": "repo2"},
                     {"id": 3, "name": "repo3"}],
 
-                    multivalued: true
+                    "multivalued": true,
+                    "showInvisible": true
                 }).render();
             });
             </script>""",
@@ -106,7 +108,7 @@ class RelatedRepositoryWidgetTests(TestCase):
             [],
             {'id': 'repositories'})
 
-        self.assertIn("localSitePrefix: 's/supertest/',", html)
+        self.assertIn('"localSitePrefix": "s/supertest/",', html)
 
     def test_value_from_datadict(self):
         """Testing RelatedRepositoryWidget.value_from_datadict"""

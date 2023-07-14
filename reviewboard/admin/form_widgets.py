@@ -1,6 +1,9 @@
 """Admin-specific form widgets."""
 
+from __future__ import annotations
+
 import logging
+from typing import Any, Dict, Iterable, Optional, TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.template.loader import render_to_string
@@ -14,6 +17,10 @@ from pygments.lexers import get_all_lexers
 from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools.models import Repository
+
+if TYPE_CHECKING:
+    from django.forms.renderers import BaseRenderer
+    from django.utils.safestring import SafeString
 
 
 logger = logging.getLogger(__name__)
@@ -29,8 +36,30 @@ class RelatedObjectWidget(DjbletsRelatedObjectWidget):
     a Backbone view to display data.
     """
 
-    def __init__(self, local_site_name=None, multivalued=True):
-        super(RelatedObjectWidget, self).__init__(multivalued)
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The optional Local Site to bound the API requests to.
+    local_site_name: Optional[str]
+
+    def __init__(
+        self,
+        local_site_name: Optional[str] = None,
+        multivalued: bool = True,
+        **kwargs,
+    ) -> None:
+        """Initialize the widget.
+
+        Args:
+            local_site_name (str, optional):
+                The optional Local Site to bound the API requests to.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the parent.
+        """
+        super().__init__(multivalued=multivalued,
+                         **kwargs)
 
         self.local_site_name = local_site_name
 
@@ -165,11 +194,59 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
     in the list, as well as interactive search and filtering.
     """
 
-    def render(self, name, value, attrs=None, renderer=None):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: Whether to include accessible invisible repositories in the results.
+    #:
+    #: Version Added:
+    #:     5.0.6
+    show_invisible: bool
+
+    def __init__(
+        self,
+        *args,
+        show_invisible: bool = True,
+        **kwargs,
+    ) -> None:
+        """Initialize the RelatedGroupWidget.
+
+        Version Changed:
+            5.0.6:
+            Added the ``show_invisible`` argument.
+
+        Args:
+            show_invisible (bool, optional):
+                Whether to include accessible invisible repositories in the
+                results.
+
+                This is the default.
+
+                Version Added:
+                    5.0.6
+
+            *args (tuple):
+                Positional arguments to pass to the handler.
+
+            **kwargs (dict):
+                Keyword arguments to pass to the handler.
+        """
+        super().__init__(*args, **kwargs)
+
+        self.show_invisible = show_invisible
+
+    def render(
+        self,
+        name: str,
+        value: Any,
+        attrs: Optional[Dict[str, Any]] = None,
+        renderer: Optional[BaseRenderer] = None,
+    ) -> SafeString:
         """Render the widget.
 
         Args:
-            name (unicode):
+            name (str):
                 The name of the field.
 
             value (list):
@@ -185,6 +262,9 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
             django.utils.safestring.SafeText:
             The rendered HTML.
         """
+        existing_repos: Iterable[Repository]
+        input_value: Optional[str]
+
         if value:
             if not self.multivalued:
                 value = [value]
@@ -200,11 +280,14 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
             input_value = None
             existing_repos = []
 
-        final_attrs = dict(self.attrs, **attrs)
+        if attrs:
+            final_attrs = dict(self.attrs, **attrs)
+        else:
+            final_attrs = self.attrs.copy()
+
         final_attrs['name'] = name
 
-        input_html = super(RelatedRepositoryWidget, self).render(
-            name, input_value, attrs, renderer)
+        input_html = super().render(name, input_value, attrs, renderer)
 
         repo_data = [
             {
@@ -214,14 +297,21 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
             for repo in existing_repos
         ]
 
+        js_view_data: Dict[str, Any] = {
+            'initialOptions': repo_data,
+            'multivalued': self.multivalued,
+            'showInvisible': self.show_invisible,
+        }
+
+        if self.local_site_name:
+            js_view_data['localSitePrefix'] = f's/{self.local_site_name}/'
+
         return render_to_string(
             template_name='admin/related_repo_widget.html',
             context={
                 'input_html': mark_safe(input_html),
                 'input_id': final_attrs['id'],
-                'local_site_name': self.local_site_name,
-                'multivalued': self.multivalued,
-                'repos': repo_data,
+                'js_view_data': js_view_data,
             })
 
     def value_from_datadict(self, data, files, name):
@@ -262,14 +352,52 @@ class RelatedGroupWidget(RelatedObjectWidget):
 
     This widget offers both the ability to see which groups are already in the
     list, as well as interactive search and filtering.
+
+    Version Changed:
+        5.0.6:
+        * Added an option for enabling specifying invisible review groups.
+        * Added support for Python type hints.
     """
 
-    def __init__(self, invite_only=False, *args, **kwargs):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: Whether or not to display review groups that are invite-only.
+    invite_only: bool
+
+    #: Whether or not to limit review groups to ones that are visible.
+    #:
+    #: Version Added:
+    #:     5.0.6
+    show_invisible: bool
+
+    def __init__(
+        self,
+        invite_only: bool = False,
+        *args,
+        show_invisible: bool = True,
+        **kwargs,
+    ) -> None:
         """Initialize the RelatedGroupWidget.
+
+        Version Changed:
+            5.0.6:
+            Added the ``show_invisible`` argument.
 
         Args:
             invite_only (bool, optional):
-                Whether or not to display groups that are invite-only.
+                Whether or not to limit results to accessible review groups
+                that are invite-only.
+
+            show_invisible (bool, optional):
+                Whether to include accessible invisible review groups in the
+                results.
+
+                This is the default.
+
+                Version Added:
+                    5.0.6
 
             *args (tuple):
                 Positional arguments to pass to the handler.
@@ -277,14 +405,22 @@ class RelatedGroupWidget(RelatedObjectWidget):
             **kwargs (dict):
                 Keyword arguments to pass to the handler.
         """
-        super(RelatedGroupWidget, self).__init__(*args, **kwargs)
-        self.invite_only = invite_only
+        super().__init__(*args, **kwargs)
 
-    def render(self, name, value, attrs=None, renderer=None):
+        self.invite_only = invite_only
+        self.show_invisible = show_invisible
+
+    def render(
+        self,
+        name: str,
+        value: Any,
+        attrs: Optional[Dict[str, Any]] = None,
+        renderer: Optional[BaseRenderer] = None,
+    ) -> SafeString:
         """Render the widget.
 
         Args:
-            name (unicode):
+            name (str):
                 The name of the field.
 
             value (list):
@@ -300,6 +436,9 @@ class RelatedGroupWidget(RelatedObjectWidget):
             django.utils.safestring.SafeText:
             The rendered HTML.
         """
+        existing_groups: Iterable[Group]
+        input_value: Optional[str]
+
         if value:
             if not self.multivalued:
                 value = [value]
@@ -315,11 +454,14 @@ class RelatedGroupWidget(RelatedObjectWidget):
             input_value = None
             existing_groups = []
 
-        final_attrs = dict(self.attrs, **attrs)
+        if attrs:
+            final_attrs = dict(self.attrs, **attrs)
+        else:
+            final_attrs = self.attrs.copy()
+
         final_attrs['name'] = name
 
-        input_html = super(RelatedGroupWidget, self).render(
-            name, input_value, attrs, renderer)
+        input_html = super().render(name, input_value, attrs, renderer)
 
         group_data = []
 
@@ -332,15 +474,22 @@ class RelatedGroupWidget(RelatedObjectWidget):
 
             group_data.append(data)
 
+        js_view_data: Dict[str, Any] = {
+            'initialOptions': group_data,
+            'inviteOnly': self.invite_only,
+            'multivalued': self.multivalued,
+            'showInvisible': self.show_invisible,
+        }
+
+        if self.local_site_name:
+            js_view_data['localSitePrefix'] = f's/{self.local_site_name}/'
+
         return render_to_string(
             template_name='admin/related_group_widget.html',
             context={
                 'input_html': mark_safe(input_html),
                 'input_id': final_attrs['id'],
-                'local_site_name': self.local_site_name,
-                'multivalued': self.multivalued,
-                'groups': group_data,
-                'invite_only': self.invite_only,
+                'js_view_data': js_view_data,
             })
 
     def value_from_datadict(self, data, files, name):
