@@ -1,7 +1,3 @@
-from __future__ import annotations
-
-from typing import Optional, TYPE_CHECKING
-
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import F
@@ -22,9 +18,6 @@ from reviewboard.reviews.models.review_request import ReviewRequest
 from reviewboard.reviews.models.screenshot import Screenshot
 from reviewboard.reviews.signals import review_request_published
 from reviewboard.scmtools.errors import InvalidChangeNumberError
-
-if TYPE_CHECKING:
-    from django.db.models.manager import RelatedManager
 
 
 class ReviewRequestDraft(BaseReviewRequestDetails):
@@ -341,20 +334,16 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         if not self.changedesc and review_request.public:
             self.changedesc = ChangeDescription()
 
-        changedesc = self.changedesc
-
         if not user:
-            if changedesc:
-                user = changedesc.get_user(self)
+            if self.changedesc:
+                user = self.changedesc.get_user(self)
             else:
                 user = review_request.submitter
 
         self.copy_fields_to_request(review_request)
 
-        diffset = self.diffset
-
         # If no changes were made, raise exception and do not save
-        if changedesc and not changedesc.has_modified_fields():
+        if self.changedesc and not self.changedesc.has_modified_fields():
             raise NotModifiedError()
 
         if validate_fields:
@@ -373,27 +362,27 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                     gettext('The draft must have a description.'))
 
             if (review_request.created_with_history and
-                diffset and
-                diffset.commit_count == 0):
+                self.diffset and
+                self.diffset.commit_count == 0):
                 raise PublishError(
                     gettext('There are no commits attached to the diff.'))
 
-        if diffset:
+        if self.diffset:
             if (review_request.created_with_history and not
-                diffset.is_commit_series_finalized):
+                self.diffset.is_commit_series_finalized):
                 raise PublishError(gettext(
                     'This commit series is not finalized.'))
 
-            diffset.history = review_request.diffset_history
-            diffset.timestamp = timestamp
-            diffset.save(update_fields=('history', 'timestamp'))
+            self.diffset.history = review_request.diffset_history
+            self.diffset.timestamp = timestamp
+            self.diffset.save(update_fields=('history', 'timestamp'))
 
-        if changedesc:
-            changedesc.user = user
-            changedesc.timestamp = timestamp
-            changedesc.public = True
-            changedesc.save()
-            review_request.changedescs.add(changedesc)
+        if self.changedesc:
+            self.changedesc.user = user
+            self.changedesc.timestamp = timestamp
+            self.changedesc.public = True
+            self.changedesc.save()
+            review_request.changedescs.add(self.changedesc)
 
         review_request.description_rich_text = self.description_rich_text
         review_request.testing_done_rich_text = self.testing_done_rich_text
@@ -405,7 +394,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                                           user=user,
                                           review_request=review_request,
                                           trivial=trivial,
-                                          changedesc=changedesc)
+                                          changedesc=self.changedesc)
 
         return self.changedesc
 
@@ -561,22 +550,22 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             'summary',
         ]
 
-    def copy_fields_to_request(
-        self,
-        review_request: ReviewRequest,
-    ) -> None:
-        """Copy draft fields to the review request.
-
-        This will loop through all fields on the review request, copying any
-        changes from the draft to the review request, in preparation for a
-        publish.
-
-        Args:
-            review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest):
-                The review request to copy the fields to.
+    def copy_fields_to_request(self, review_request):
+        """Copies the draft information to the review request and updates the
+        draft's change description.
         """
-        changedesc = self.changedesc
+        def update_list(a, b, name, record_changes=True, name_field=None):
+            aset = set([x.id for x in a.all()])
+            bset = set([x.id for x in b.all()])
+
+            if aset.symmetric_difference(bset):
+                if record_changes and self.changedesc:
+                    self.changedesc.record_field_change(name, a.all(), b.all(),
+                                                        name_field)
+
+                a.clear()
+                for item in b.all():
+                    a.add(item)
 
         for field_cls in get_review_request_fields():
             field = field_cls(review_request)
@@ -588,174 +577,91 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 if field.has_value_changed(old_value, new_value):
                     field.propagate_data(self)
 
-                    if changedesc:
-                        field.record_change_entry(changedesc,
+                    if self.changedesc:
+                        field.record_change_entry(self.changedesc,
                                                   old_value, new_value)
 
-        # Screenshots and file attachments are a bit special. The list of
-        # associated items can change, but so can captions within each.
-        #
-        # Fortunately, both of these types of models have near-identical
-        # signatures, so we can reuse the same code for both.
-        self._copy_attachments_to_review_request(
-            changedesc=changedesc,
-            changedesc_captions_field='screenshot_captions',
-            changedesc_items_field='screenshots',
-            changedesc_item_name_field='caption',
-            review_request_models_active=review_request.screenshots,
-            review_request_models_active_count=(
-                review_request.screenshots_count),
-            review_request_models_inactive=(
-                review_request.inactive_screenshots),
-            review_request_models_inactive_count=(
-                review_request.inactive_screenshots_count),
-            draft_models_active=self.screenshots,
-            draft_models_active_count=self.screenshots_count,
-            draft_models_inactive=self.inactive_screenshots,
-            draft_models_inactive_count=self.inactive_screenshots_count)
-
-        self._copy_attachments_to_review_request(
-            changedesc=changedesc,
-            changedesc_captions_field='file_captions',
-            changedesc_items_field='files',
-            changedesc_item_name_field='display_name',
-            review_request_models_active=review_request.file_attachments,
-            review_request_models_active_count=(
-                review_request.file_attachments_count),
-            review_request_models_inactive=(
-                review_request.inactive_file_attachments),
-            review_request_models_inactive_count=(
-                review_request.inactive_file_attachments_count),
-            draft_models_active=self.file_attachments,
-            draft_models_active_count=self.file_attachments_count,
-            draft_models_inactive=self.inactive_file_attachments,
-            draft_models_inactive_count=self.inactive_file_attachments_count)
-
-    def _copy_attachments_to_review_request(
-        self,
-        *,
-        changedesc: Optional[ChangeDescription],
-        changedesc_captions_field: str,
-        changedesc_items_field: str,
-        changedesc_item_name_field: str,
-        review_request_models_active: RelatedManager,
-        review_request_models_active_count: int,
-        review_request_models_inactive: RelatedManager,
-        review_request_models_inactive_count: int,
-        draft_models_active: RelatedManager,
-        draft_models_active_count: int,
-        draft_models_inactive: RelatedManager,
-        draft_models_inactive_count: int,
-    ) -> None:
-        """Copy over screenshots or file attachments to a review request.
-
-        This takes care to copy over any screenshots/file attachments (as
-        provided by the caller) from this draft to a review request. In the
-        process, any changes to captions will be recorded in the change
-        description.
-
-        The logic attempts to minimize the number of database queries
-        necessary to perform these updates.
-
-        Args:
-            changedesc (reviewboard.changedescs.models.ChangeDescription):
-                The change description to update.
-
-            changedesc_items_field (str):
-                The field to set in the change description for any item
-                changes.
-
-            changedesc_captions_field (str):
-                The field to set in the change description for any caption
-                chagnes.
-
-            changedesc_item_name_field (str):
-                The name of the field representing the name of an item.
-
-            review_request_models_active (django.db.models.manager.
-                                          RelatedManager):
-                The manager for the relation managing active items on the
-                draft.
-
-            review_request_models_active_count (int):
-                The number of active items on the draft.
-
-            review_request_models_inactive (django.db.models.manager.
-                                            RelatedManager):
-                The manager for the relation managing inactive items on the
-                draft.
-
-            review_request_models_inactive_count (int):
-                The number of inactive items on the draft.
-
-            draft_models_active (django.db.models.manager. RelatedManager):
-                The manager for the relation managing active items on the
-                draft.
-
-            draft_models_active_count (int):
-                The number of active items on the draft.
-
-            draft_models_inactive (django.db.models.manager. RelatedManager):
-                The manager for the relation managing inactive items on the
-                draft.
-
-            draft_models_inactive_count (int):
-                The number of inactive items on the draft.
-        """
-        if (review_request_models_active_count > 0 or
-            draft_models_active_count > 0):
-            old_ids = set(
-                review_request_models_active.values_list('pk', flat=True)
-            )
-            new_items = list(
-                draft_models_active
-                .only('pk', 'caption', 'draft_caption')
-            )
+        # Screenshots are a bit special.  The list of associated screenshots
+        # can change, but so can captions within each screenshot.
+        if (review_request.screenshots_count > 0 or
+            self.screenshots_count > 0):
+            screenshots = list(self.screenshots.all())
             caption_changes = {}
 
-            # Update the captions for each item. We won't be considering any
-            # that were removed from the review request.
-            for item in new_items:
-                if item.caption != item.draft_caption:
-                    if item.pk in old_ids:
-                        caption_changes[item.pk] = {
-                            'old': (item.caption,),
-                            'new': (item.draft_caption,),
-                        }
+            for s in review_request.screenshots.all():
+                if s in screenshots and s.caption != s.draft_caption:
+                    caption_changes[s.id] = {
+                        'old': (s.caption,),
+                        'new': (s.draft_caption,),
+                    }
 
-                    item.caption = item.draft_caption
-                    item.save(update_fields=['caption'])
+                    s.caption = s.draft_caption
+                    s.save(update_fields=['caption'])
 
-            if caption_changes and changedesc:
-                changedesc.fields_changed[changedesc_captions_field] = \
+            # Now scan through again and set the caption correctly for
+            # newly-added screenshots by copying the draft_caption over. We
+            # don't need to include this in the changedescs here because it's a
+            # new screenshot, and update_list will record the newly-added item.
+            for s in screenshots:
+                if s.caption != s.draft_caption:
+                    s.caption = s.draft_caption
+                    s.save(update_fields=['caption'])
+
+            if caption_changes and self.changedesc:
+                self.changedesc.fields_changed['screenshot_captions'] = \
                     caption_changes
 
-            # If the list of IDs have changed, record the old/new items in the
-            # change description, and then reset the list on the review request
-            # to match the draft.
-            new_ids = {
-                item.pk
-                for item in new_items
-            }
+            update_list(review_request.screenshots,
+                        self.screenshots,
+                        name='screenshots',
+                        name_field="caption")
 
-            if new_ids.symmetric_difference(old_ids):
-                if changedesc:
-                    changedesc.record_field_change(
-                        field=changedesc_items_field,
-                        old_value=review_request_models_active.all(),
-                        new_value=draft_models_active.all(),
-                        name_field=changedesc_item_name_field)
+        if (review_request.inactive_screenshots_count > 0 or
+            self.inactive_screenshots_count > 0):
+            # There's no change notification required for this field.
+            review_request.inactive_screenshots.set(
+                self.inactive_screenshots.all())
 
-                # Note that we explicitly want to clear this to preserve the
-                # insertion order.
-                review_request_models_active.set(draft_models_active.all(),
-                                                 clear=True)
+        # Files are treated like screenshots. The list of files can
+        # change, but so can captions within each file.
+        if (review_request.file_attachments_count > 0 or
+            self.file_attachments_count > 0):
+            files = list(self.file_attachments.all())
+            caption_changes = {}
 
-        if (review_request_models_inactive_count > 0 or
-            draft_models_inactive_count > 0):
-            # There's no change description entry required for this field.
-            # We can just copy them.
-            review_request_models_inactive.set(draft_models_inactive.all())
+            for f in review_request.file_attachments.all():
+                if f in files and f.caption != f.draft_caption:
+                    caption_changes[f.id] = {
+                        'old': (f.caption,),
+                        'new': (f.draft_caption,),
+                    }
+
+                    f.caption = f.draft_caption
+                    f.save(update_fields=['caption'])
+
+            # Now scan through again and set the caption correctly for
+            # newly-added files by copying the draft_caption over. We don't
+            # need to include this in the changedescs here because it's a new
+            # screenshot, and update_list will record the newly-added item.
+            for f in files:
+                if f.caption != f.draft_caption:
+                    f.caption = f.draft_caption
+                    f.save(update_fields=['caption'])
+
+            if caption_changes and self.changedesc:
+                self.changedesc.fields_changed['file_captions'] = \
+                    caption_changes
+
+            update_list(review_request.file_attachments,
+                        self.file_attachments,
+                        name='files',
+                        name_field="display_name")
+
+        if (review_request.inactive_file_attachments_count > 0 or
+            self.inactive_file_attachments_count > 0):
+            # There's no change notification required for this field.
+            review_request.inactive_file_attachments.set(
+                self.inactive_file_attachments.all())
 
     def get_review_request(self):
         """Returns the associated review request."""
