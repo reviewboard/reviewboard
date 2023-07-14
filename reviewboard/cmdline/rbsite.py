@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import imp
 import json
 import logging
 import os
@@ -852,7 +851,9 @@ class Site(object):
         with open(filename, 'r') as fp:
             data = fp.read()
 
-        return 'from reviewboard.wsgi import application' not in data
+        return ('from reviewboard.wsgi import application' not in data or
+                '# BEGIN CUSTOM SETTINGS' not in data or
+                '# END CUSTOM SETTINGS' not in data)
 
     def upgrade_settings(self):
         """Perform a settings upgrade."""
@@ -1029,7 +1030,7 @@ class Site(object):
                 assert hasattr(settings, '_wrapped')
                 settings._wrapped = empty
 
-    def upgrade_wsgi(self):
+    def upgrade_wsgi(self) -> None:
         """Upgrade the reviewboard.wsgi file.
 
         This will modify :file:`reviewboard.wsgi` to replace any old
@@ -1042,47 +1043,91 @@ class Site(object):
         with open(filename, 'r') as fp:
             lines = fp.readlines()
 
-        to_remove = (
-            # Skip these settings. They're re-defined in the reviewboard.wsgi
-            # module, and we have no need for the old settings, since we don't
-            # want to confuse anyone.
-            "os.environ['DJANGO_SETTINGS_MODULE']",
-            "os.environ['PYTHON_EGG_CACHE']",
-            "os.environ['HOME']",
-            "os.environ['PYTHONPATH'] = '%s:" % conf_dir,
-            "sys.path = ['%s'] + sys.path" % conf_dir,
+        # Check for a Review Board 5.0.6+ block of custom settings, used to
+        # allow some degree of user customization.
+        begin_custom_settings_i: Optional[int] = None
+        end_custom_settings_i: Optional[int] = None
 
-            # These are the variations on WSGI application initialization
-            # statements. We don't want them. We're going to append the new
-            # one after.
-            'import django.core.handlers.wsgi',
-            'from django.core.wsgi import ',
-            'application =',
-        )
+        for i, line in enumerate(lines):
+            if (begin_custom_settings_i is None and
+                line.startswith('# BEGIN CUSTOM SETTINGS')):
+                begin_custom_settings_i = i
+            elif (end_custom_settings_i is None and
+                  line.startswith('# END CUSTOM SETTINGS')):
+                end_custom_settings_i = i
 
-        # Filter out anything we don't want to keep.
-        new_lines = [
-            line.rstrip()
-            for line in lines
-            if not line.startswith(to_remove)
-        ]
-
-        # Remove any trailing blank lines.
-        for i, line in enumerate(reversed(new_lines)):
-            if line:
-                # We're done.
-                new_lines = new_lines[:len(new_lines) - i]
+            if (begin_custom_settings_i is not None and
+                end_custom_settings_i is not None):
                 break
 
-        new_lines += [
-            '',
-            "os.environ['REVIEWBOARD_SITEDIR'] = '%s'" % self.abs_install_dir,
-            '',
-            'from reviewboard.wsgi import application',
-        ]
+        custom_lines: List[str]
 
-        with open(filename, 'w') as fp:
-            fp.write('%s\n' % '\n'.join(new_lines))
+        if begin_custom_settings_i is None or end_custom_settings_i is None:
+            # We want to find anything that would have been injected from a
+            # previous version of this script and remove it, leaving only
+            # custom settings. Then we can build the final script.
+            to_remove = (
+                # Review Board <= 2.5
+                "os.environ['DJANGO_SETTINGS_MODULE']",
+                "os.environ['PYTHON_EGG_CACHE']",
+                "os.environ['HOME']",
+                "os.environ['PYTHONPATH'] = '%s:" % conf_dir,
+                "sys.path = ['%s'] + sys.path" % conf_dir,
+                'import django.core.handlers.wsgi',
+                'from django.core.wsgi import ',
+                'application =',
+
+                # Review Board >= 3.0, <= 5.0.5
+                'from reviewboard.wsgi import application',
+
+                # Review Board <= 5.0.5
+                'import __main__',
+                "__main__.__requires__ = ['ReviewBoard']",
+                'import pkg_resources',
+                "os.environ['REVIEWBOARD_SITEDIR']",
+
+                # Various forms of general imports.
+                'import os',
+                'import sys',
+                'import os, sys',
+            )
+
+            # Filter out anything we don't want to keep.
+            custom_lines = [
+                line.rstrip()
+                for line in lines
+                if not line.startswith(to_remove)
+            ]
+
+            # Remove any leading or trailing blank lines.
+            if custom_lines:
+                for i, line in enumerate(custom_lines):
+                    if line:
+                        # We're done.
+                        custom_lines = custom_lines[i:]
+                        break
+                else:
+                    custom_lines = []
+
+                if custom_lines:
+                    for i, line in enumerate(reversed(custom_lines)):
+                        if line:
+                            # We're done.
+                            custom_lines = custom_lines[:len(custom_lines) - i]
+                            break
+        else:
+            custom_lines = [
+                line.rstrip()
+                for line in lines[begin_custom_settings_i + 1:
+                                  end_custom_settings_i]
+            ]
+
+        self.process_template(
+            'cmdline/conf/reviewboard.wsgi.in',
+            filename,
+            extra_context={
+                'custom_settings': '\n'.join(custom_lines),
+            })
 
     def create_admin_user(self):
         """Create an administrator user account."""
@@ -1386,9 +1431,8 @@ class Site(object):
             site_root_noslash = ''
 
         # Check if this is a .exe.
-        if (hasattr(sys, 'frozen') or     # new py2exe
-            hasattr(sys, 'importers') or  # new py2exe
-            imp.is_frozen('__main__')):   # tools/freeze
+        if (hasattr(sys, 'frozen') or    # new py2exe
+            hasattr(sys, 'importers')):  # new py2exe
             rbsite_path = sys.executable
         else:
             venv_rbsite_path = os.path.join(self.venv_dir, 'bin', 'rb-site')
