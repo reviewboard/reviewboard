@@ -472,7 +472,6 @@ export class UnifiedBannerView extends FloatingBannerView<
         const numDrafts = model.get('numDrafts');
 
         const reviewRequest = model.get('reviewRequest');
-        const reviewRequestState = reviewRequest.get('state');
         const reviewRequestPublic = reviewRequest.get('public');
 
         this.#$discardButton.toggle(
@@ -499,7 +498,7 @@ export class UnifiedBannerView extends FloatingBannerView<
             .toggleClass('-has-draft',
                          (reviewRequestPublic === false || numDrafts > 0))
             .toggleClass('-has-multiple', numDrafts > 1)
-            .toggle(reviewRequestState === RB.ReviewRequest.PENDING);
+            .show();
     }
 
     /**
