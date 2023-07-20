@@ -15,9 +15,9 @@ import {
     CommentEditor,
 } from 'reviewboard/reviews/models/commentEditorModel';
 import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
-import { UserSession } from 'reviewboard/common/models/userSession';
+import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
-import { ReviewRequestEditor } from '../../models/reviewRequestEditor';
+import { ReviewRequestEditor } from '../../models/reviewRequestEditorModel';
 
 declare const $testsScratch: JQuery;
 

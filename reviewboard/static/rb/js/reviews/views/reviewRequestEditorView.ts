@@ -5,7 +5,7 @@ import { BaseView, spina } from '@beanbag/spina';
 
 import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
 import { EnabledFeatures } from 'reviewboard/common';
-import { UserSession } from 'reviewboard/common/models/userSession';
+import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
 import {
     BaseFieldView,
@@ -13,7 +13,7 @@ import {
     CloseDescriptionFieldView,
     TextFieldView,
 } from './reviewRequestFieldViews';
-import { ReviewRequestEditor } from '../models/reviewRequestEditor';
+import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 
 
 declare const dedent: (string) => string;

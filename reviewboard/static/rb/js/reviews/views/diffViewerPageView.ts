@@ -3,8 +3,7 @@
  */
 import { Router, spina } from '@beanbag/spina';
 
-import { EnabledFeatures } from 'reviewboard/common';
-import { UserSession } from 'reviewboard/common/models/userSession';
+import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
 import { DiffFileIndexView } from './diffFileIndexView';
 import { DiffViewerPage } from '../models/diffViewerPageModel';
@@ -12,7 +11,6 @@ import {
     ReviewablePageView,
     ReviewablePageViewOptions,
 } from './reviewablePageView';
-import { UnifiedBannerView } from './unifiedBannerView';
 
 
 /** Options for adding a toggle button to the diff view. */

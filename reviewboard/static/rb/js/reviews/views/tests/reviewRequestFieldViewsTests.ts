@@ -7,7 +7,7 @@ import {
     suite,
 } from 'jasmine-core';
 
-import { ReviewRequestEditor } from '../../models/reviewRequestEditor';
+import { ReviewRequestEditor } from '../../models/reviewRequestEditorModel';
 import { ReviewRequestEditorView } from '../reviewRequestEditorView';
 import {
     BaseFieldView,

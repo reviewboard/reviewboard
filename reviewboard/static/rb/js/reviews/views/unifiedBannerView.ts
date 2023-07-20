@@ -3,13 +3,13 @@
  */
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
-import { ClientCommChannel } from 'reviewboard/common/models/commChannel';
+import { ClientCommChannel } from 'reviewboard/common/models/commChannelModel';
 import { FloatingBannerView } from 'reviewboard/ui/views/floatingBannerView';
 import { MenuButtonView } from 'reviewboard/ui/views/menuButtonView';
 import { MenuType, MenuView } from 'reviewboard/ui/views/menuView';
-import { UserSession } from 'reviewboard/common/models/userSession';
+import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
-import { DraftMode, UnifiedBanner } from '../models/unifiedBanner';
+import { DraftMode, UnifiedBanner } from '../models/unifiedBannerModel';
 import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
 import { ReviewRequestEditorView } from './reviewRequestEditorView';
 

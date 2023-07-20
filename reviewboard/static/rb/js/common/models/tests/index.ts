@@ -1,3 +1,3 @@
-import './commChannelTests';
-import './extraDataTests';
-import './userSessionTests';
+import './commChannelModelTests';
+import './extraDataModelTests';
+import './userSessionModelTests';

@@ -19,7 +19,7 @@ import { EnabledFeatures } from 'reviewboard/common';
 import {
     UnifiedBannerView,
 } from 'reviewboard/reviews/views/unifiedBannerView';
-import { UserSession } from 'reviewboard/common/models/userSession';
+import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
 
 suite('rb/pages/views/DiffViewerPageView', function() {

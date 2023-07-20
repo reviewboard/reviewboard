@@ -7,9 +7,11 @@ import {
     suite,
 } from 'jasmine-core';
 
-import { UserSession } from 'reviewboard/common/models/userSession';
+import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
-import { BaseResource } from '../../../common/resources/models/baseResource';
+import {
+    BaseResource,
+} from 'reviewboard/common/resources/models/baseResourceModel';
 import { CommentEditor } from '../commentEditorModel';
 
 

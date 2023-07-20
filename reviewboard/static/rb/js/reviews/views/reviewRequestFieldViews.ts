@@ -8,7 +8,7 @@ import {
     GetDraftFieldOptions,
     ReviewRequestEditor,
     SetDraftFieldOptions,
-} from '../models/reviewRequestEditor';
+} from '../models/reviewRequestEditorModel';
 import { ReviewRequestEditorView } from '../views/reviewRequestEditorView';
 
 

@@ -97,9 +97,9 @@ export const Product: ProductInfo = {
 export * from './actions';
 export * from './resources';
 export { BaseCollection } from './collections/baseCollection';
-export { ClientCommChannel } from './models/commChannel';
-export { ExtraData } from './models/extraData';
+export { ClientCommChannel } from './models/commChannelModel';
+export { ExtraData } from './models/extraDataModel';
 export { ExtraDataMixin } from './models/extraDataMixin';
 export { Page } from './models/pageModel';
 export { PageView } from './views/pageView';
-export { UserSession } from './models/userSession';
+export { UserSession } from './models/userSessionModel';

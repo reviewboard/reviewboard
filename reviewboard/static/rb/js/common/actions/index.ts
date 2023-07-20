@@ -1,5 +1,5 @@
-import { Action } from './models/action';
-import { MenuAction } from './models/menuAction';
+import { Action } from './models/actionModel';
+import { MenuAction } from './models/menuActionModel';
 import { ActionView } from './views/actionView';
 import { MenuActionView, MenuItemActionView } from './views/menuActionView';
 

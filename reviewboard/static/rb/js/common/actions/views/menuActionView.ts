@@ -3,7 +3,7 @@ import { EventsHash, spina } from '@beanbag/spina';
 import { MenuView } from 'reviewboard/ui/views/menuView';
 
 import { ActionView } from './actionView';
-import { MenuAction } from '../models/menuAction';
+import { MenuAction } from '../models/menuActionModel';
 
 
 /**

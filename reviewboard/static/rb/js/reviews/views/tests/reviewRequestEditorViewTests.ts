@@ -12,9 +12,9 @@ import {
 import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
 import { EnabledFeatures } from 'reviewboard/common';
 
-import { ReviewRequestEditor } from '../../models/reviewRequestEditor';
+import { ReviewRequestEditor } from '../../models/reviewRequestEditorModel';
 import { ReviewRequestEditorView } from '../reviewRequestEditorView';
-import { UnifiedBanner } from '../../models/unifiedBanner';
+import { UnifiedBanner } from '../../models/unifiedBannerModel';
 import { UnifiedBannerView } from '../unifiedBannerView';
 import * as ReviewRequestFields from '../reviewRequestFieldViews';
 

@@ -3,9 +3,9 @@ import { EventsHash, spina } from '@beanbag/spina';
 import { Actions } from 'reviewboard/common/actions';
 import {
     BaseResource,
-} from 'reviewboard/common/resources/models/baseResource';
-import { UserSession } from 'reviewboard/common/models/userSession';
-import { Overlay } from 'reviewboard/ui/views/overlay';
+} from 'reviewboard/common/resources/models/baseResourceModel';
+import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import { OverlayView } from 'reviewboard/ui/views/overlayView';
 
 
 declare const SITE_ROOT: string;
@@ -489,7 +489,7 @@ export class ReviewMenuActionView extends Actions.MenuActionView {
      **********************/
 
     /** The event overlay when the menu is shown in mobile mode. */
-    #overlay: Overlay = null;
+    #overlay: OverlayView = null;
 
     /**
      * Close the menu.
@@ -514,7 +514,7 @@ export class ReviewMenuActionView extends Actions.MenuActionView {
         super.onTouchStart(e);
 
         if (this.menu.isOpen) {
-            this.#overlay = new Overlay();
+            this.#overlay = new OverlayView();
             this.#overlay.$el.appendTo('body');
 
             this.listenTo(this.#overlay, 'click', () => {

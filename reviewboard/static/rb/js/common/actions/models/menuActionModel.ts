@@ -1,6 +1,6 @@
 import { spina } from '@beanbag/spina';
 
-import { Action, ActionAttrs } from './action';
+import { Action, ActionAttrs } from './actionModel';
 
 
 /**

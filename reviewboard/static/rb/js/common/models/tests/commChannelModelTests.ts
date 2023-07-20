@@ -9,7 +9,7 @@ import {
     suite,
 } from 'jasmine-core';
 
-import { ClientCommChannel } from '../commChannel';
+import { ClientCommChannel } from '../commChannelModel';
 import { PageView } from '../../views/pageView';
 
 
