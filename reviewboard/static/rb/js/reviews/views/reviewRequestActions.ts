@@ -7,6 +7,8 @@ import {
 import { UserSession } from 'reviewboard/common/models/userSessionModel';
 import { OverlayView } from 'reviewboard/ui/views/overlayView';
 
+import { ReviewDialogView} from './reviewDialogView';
+
 
 declare const SITE_ROOT: string;
 
@@ -434,7 +436,7 @@ export class EditReviewActionView extends Actions.MenuItemActionView {
      * Handle the action activation.
      */
     activate() {
-        RB.ReviewDialogView.create({
+        ReviewDialogView.create({
             review: this.#pendingReview,
             reviewRequestEditor: this.#reviewRequestEditor,
         });

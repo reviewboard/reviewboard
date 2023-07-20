@@ -11,15 +11,11 @@ import {
 
 import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
 import { EnabledFeatures } from 'reviewboard/common';
-import {
-    ReviewablePage,
-} from 'reviewboard/reviews/models/reviewablePageModel';
-import {
-    ReviewablePageView,
-} from 'reviewboard/reviews/views/reviewablePageView';
-import {
-    UnifiedBannerView,
-} from 'reviewboard/reviews/views/unifiedBannerView';
+
+import { ReviewDialogView } from '../reviewDialogView';
+import { ReviewablePage } from '../../models/reviewablePageModel';
+import { ReviewablePageView } from '../reviewablePageView';
+import { UnifiedBannerView } from '../unifiedBannerView';
 
 
 suite('rb/pages/views/ReviewablePageView', function() {
@@ -131,13 +127,13 @@ suite('rb/pages/views/ReviewablePageView', function() {
                 return;
             }
 
-            spyOn(RB.ReviewDialogView, 'create');
+            spyOn(ReviewDialogView, 'create');
 
             $editReview.click();
 
-            expect(RB.ReviewDialogView.create).toHaveBeenCalled();
+            expect(ReviewDialogView.create).toHaveBeenCalled();
 
-            const options = RB.ReviewDialogView.create.calls.argsFor(0)[0];
+            const options = ReviewDialogView.create.calls.argsFor(0)[0];
             expect(options.review).toBe(page.get('pendingReview'));
             expect(options.reviewRequestEditor).toBe(page.reviewRequestEditor);
         });

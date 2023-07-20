@@ -11,13 +11,13 @@ import { BaseResource, ResourceLink } from '../models/baseResourceModel';
 /** Options for the ResourceCollection object. */
 export interface ResourceCollectionOptions {
     /** Extra data to send with the HTTP request. */
-    extraQueryData: JQuery.PlainObject;
+    extraQueryData?: JQuery.PlainObject;
 
     /** The parent resource of the collection. */
-    parentResource: BaseResource;
+    parentResource?: BaseResource;
 
     /** The number of results to fetch at a time. */
-    maxResults: number;
+    maxResults?: number;
 }
 
 

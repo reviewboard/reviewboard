@@ -8,6 +8,7 @@ import { EnabledFeatures } from 'reviewboard/common';
 import { PageView, PageViewOptions } from 'reviewboard/common/views/pageView';
 import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
+import { ReviewDialogView } from './reviewDialogView';
 import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 import { ReviewRequestEditorView } from './reviewRequestEditorView';
 import { ReviewablePage } from '../models/reviewablePageModel';
@@ -482,7 +483,7 @@ export class ReviewablePageView<
         e.preventDefault();
         e.stopPropagation();
 
-        RB.ReviewDialogView.create({
+        ReviewDialogView.create({
             review: this.model.get('pendingReview'),
             reviewRequestEditor: this.model.reviewRequestEditor,
         });

@@ -1,5 +1,6 @@
 import './commentDialogViewTests';
 import './diffViewerPageViewTests';
-import './reviewablePageViewTests';
+import './reviewDialogViewTests';
 import './reviewRequestEditorViewTests';
 import './reviewRequestFieldViewsTests';
+import './reviewablePageViewTests';
