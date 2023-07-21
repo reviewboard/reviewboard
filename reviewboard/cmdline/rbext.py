@@ -1116,6 +1116,10 @@ class RBExt(object):
 
         options = parser.parse_args(argv)
 
+        if not options.command:
+            parser.print_help()
+            sys.exit(1)
+
         return command_map[options.command], options
 
 
