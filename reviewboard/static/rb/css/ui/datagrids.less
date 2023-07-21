@@ -21,7 +21,7 @@
       @box-shadow: @_boxes-vars[@shadow];
       @text-color: #555555;
 
-      @padding: 8px;
+      @padding: 0.75em;
       @offset-left: 1em;
       @offset-top: 4em;
       @offset-bottom: 3.8em;
@@ -31,7 +31,7 @@
       /* Subclass the Djblets definitions. */
       #djblets-ns-ui.datagrids.cells();
 
-      @padding: 5px;
+      @padding: 0.75em;
 
       @even-bg: #FBFBFB;
       @row-divider-color: #F0F0F0;
@@ -42,6 +42,7 @@
       #djblets-ns-ui.datagrids.header();
 
       @bg: #rb-ns-ui.colors[@blue-70];
+      @padding: 0.5em 0.75em;
     }
 
     .filter-menu() {
@@ -59,6 +60,7 @@
 
       @bg: #EEEEEE;
       @border-color: #BBBBBB;
+      @item-padding: 0.75em;
     }
 
     .ship-it-indicator() {
@@ -126,7 +128,6 @@ body.datagrid-page {
 
   tbody {
     td, th {
-      border-bottom: 1px @_cells-vars[@row-divider-color] solid;
       padding: @_cells-vars[@padding];
       vertical-align: middle;
 
@@ -217,6 +218,9 @@ body.datagrid-page {
 
 .datagrid-header {
   @_datagrid-vars: #rb-ns-ui.datagrids();
+  @_header-vars: #rb-ns-ui.datagrids.header();
+
+  padding: @_header-vars[@padding];
 
   /* Add rounded corners to the top-left and top-right of the header. */
   &:first-child {
@@ -485,7 +489,7 @@ body.datagrid-page {
     a,
     .current-page,
     .page-count {
-      padding: 0.7em;
+      padding: @_paginator-vars[@item-padding];
     }
 
     .current-letter {
@@ -583,6 +587,12 @@ body.datagrid-page {
  * Column-specific styles
  ****************************************************************************/
 #page-container .datagrid {
+  .datagrid-body tr:first-child {
+    .age1, .age2, .age3, .age4, .age5 {
+      border-top: 0 !important;
+    }
+  }
+
   .age1 {
     background-color: #beedbc;
     border: 1px #8bbd5c solid !important;
