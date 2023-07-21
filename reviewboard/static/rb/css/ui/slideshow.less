@@ -1,0 +1,237 @@
+@import (reference) "rb/css/pages/base.less";
+@import (reference) "rb/css/ui/colors.less";
+
+
+#rb-ns-ui() {
+  .slideshow() {
+    @nav-item-color: #rb-ns-ui.colors()[@blue-20];
+    @nav-item-margin: 1em;
+    @nav-item-margin-mobile: 0.5em;
+    @nav-item-selector-margin: 3px;
+    @nav-item-selector-size: 2px;
+
+    @nav-font-size: 120%;
+    @nav-padding-top: 1em;
+    @nav-padding-bottom: 0.5em;
+
+    @slide-animation-time: 0.4s;
+  }
+}
+
+
+/**
+ * A slideshow for navigating and cycling between content.
+ *
+ * Slideshows can automatically cycle between content periodically, up to
+ * a maximum number of time. Users can choose to navigate to specific pages,
+ * which will turn off the automatic navigation.
+ *
+ * An animation will play when transitioning slides. This defaults to a
+ * sliding animation. If the user's system/browser preferences is set to
+ * prefer reduced motion, it will instead be a simple fade.
+ *
+ * This is meant to be used with the :js:class:`RBWS.UI.SlideshowView` view,
+ * for event handling and automatic cycling.
+ *
+ * DOM Attributes:
+ *     aria-label (string):
+ *         Set to a label describing this slideshow.
+ *
+ *     aria-roledescription (string):
+ *         Set to ``carousel``.
+ *
+ * Modifiers:
+ *     -is-auto-cycled:
+ *         If set, the slideshow will automatically cycle between content.
+ *
+ * Structure:
+ *     <div class="rb-c-slideshow"
+ *          aria-label="..."
+ *          aria-roledescription="carousel">
+ *      <nav class="rb-c-slideshow__nav">
+ *       ...
+ *      </nav>
+ *      <ul class="rb-c-slideshow__slides ..." ...>
+ *       ...
+ *      </ul>
+ *     </div>
+ */
+.rb-c-slideshow {
+  @_slideshow-vars: #rb-ns-ui.slideshow();
+  @_slide-animation-time: @_slideshow-vars[@slide-animation-time];
+
+  overflow-x: hidden;
+
+  /**
+   * The navigation links for the slideshow.
+   *
+   * Structure:
+   *     <nav class="rb-c-slideshow__nav">
+   *      <a class="rb-c-slideshow__nav-item" ...>...</a>
+   *      ...
+   *     </nav>
+   */
+  &__nav {
+    font-size: @_slideshow-vars[@nav-font-size];
+    margin: @_slideshow-vars[@nav-padding-top] 0
+            @_slideshow-vars[@nav-padding-bottom] 0;
+    text-align: center;
+  }
+
+  /**
+   * A navigation link pointing to a particular slide.
+   *
+   * DOM Attributes:
+   *     aria-controls (string):
+   *         The ID of the ``rb-c-slideshow__slides`` element.
+   *
+   *     aria-selected (boolean):
+   *         ``true`` for the current slide's navigation item and ``false``
+   *         for all others.
+   *
+   *     href (string):
+   *         The anchor name pointing to ID of the corresponding
+   *         ``rb-c-slideshow__slide`` element.
+   *
+   *     id (string):
+   *         A unique ID that can be referenced by the
+   *         ``rb-c-slideshow__slide`` element.
+   *
+   * Structure:
+   *     <a id="nav_id..."
+   *        class="rb-c-slideshow__nav-item"
+   *        href="#slide-id..."
+   *        aria-controls="slides_id..."
+   *        aria-selected="true|false">
+   *      title...
+   *     </a>
+   */
+  &__nav-item {
+    @_nav-item-color: @_slideshow-vars[@nav-item-color];
+
+    color: @_nav-item-color;
+    display: inline-block;
+    border-bottom: @_slideshow-vars[@nav-item-selector-size] transparent solid;
+    font-weight: normal;
+    margin: @_slideshow-vars[@nav-item-margin];
+    text-align: center;
+    padding-bottom: @_slideshow-vars[@nav-item-selector-margin];
+
+    &[aria-selected="true"] {
+      border-bottom-color: @_nav-item-color;
+    }
+
+    #rb-ns-pages.base.on-shell-mobile-mode({
+      margin: @_slideshow-vars[@nav-item-margin-mobile];
+    });
+  }
+
+  /**
+   * A slide.
+   *
+   * The content within the slide will be scrollable along the X axis, if it
+   * doesn't fit. Only one slide is ever shown at a time.
+   *
+   * DOM Attributes:
+   *     aria-hidden (boolean):
+   *         ``false`` for the current slide, and ``true`` for all others.
+   *
+   *     aria-labelledby (string):
+   *         The ID of the corresponding ``rb-c-slideshow__nav-item``
+   *         element.
+   *
+   *     aria-roledescription (string):
+   *         Set to ``slide``.
+   *
+   *     id (string):
+   *         A unique ID that can referenced by the
+   *         ``rb-c-slideshow__nav-item`` element.
+   *
+   *     role (string):
+   *         Set to ``group``.
+   *
+   *     data-last-animation (string, optional):
+   *         The name of the last animation that would play on a slide, if
+   *         the slide contains animations. Cycling will only occur after
+   *         the named animation has ended.
+   *
+   * Structure:
+   *     <li id="slide_id..."
+   *         class="rb-c-slideshow__slide"
+   *         role="group"
+   *         aria-hidden="true|false"
+   *         aria-roledescription="slide"
+   *         aria-labelledby="nav_id...">
+   *      <div class="rb-c-slideshow__slide-content">
+   *       ...
+   *      </div>
+   *     </li>
+   */
+  &__slide {
+    display: inline-block;
+    flex: 0 0 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: auto;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: @_slide-animation-time ease-in-out opacity;
+
+    &[aria-hidden="true"] {
+      opacity: 0;
+    }
+
+    &[aria-hidden="false"] {
+      opacity: 1;
+    }
+  }
+
+  /**
+   * The displayed content within a slide.
+   *
+   * Structure:
+   *     <div class="rb-c-slideshow__slide-content">
+   *      ...
+   *     </div>
+   */
+  &__slide-content {
+    display: inline-block;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /**
+   * The collection of slides.
+   *
+   * DOM Attributes:
+   *     aria-live (string):
+   *         Set to ``off``. This will then be managed automatically by
+   *         the JavaScript side.
+   *
+   *     id (string):
+   *         A unique ID that can be referenced by
+   *         ``rb-c-slideshow__nav-item``'s ``aria-controls=`` attribute.
+   *
+   * Structure:
+   *     <ul id="..."
+   *         class="rb-c-slideshow__slides ..."
+   *         aria-live="off">
+   *      <li class="rb-c-slideshow__slide ...">...</li>
+   *      ...
+   *     </ul>
+   */
+  &__slides {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    transition: @_slide-animation-time ease-in-out all;
+    will-change: transform;
+
+    @media (prefers-reduced-motion) {
+      transition: none;
+    }
+  }
+}

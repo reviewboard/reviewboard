@@ -435,6 +435,7 @@ PIPELINE_STYLESHEETS = {
             'rb/css/ui/page-sidebar.less',
             'rb/css/ui/search-field.less',
             'rb/css/ui/sidebars.less',
+            'rb/css/ui/slideshow.less',
             'rb/css/ui/tabs.less',
             'rb/css/common.less',
         ),
