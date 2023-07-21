@@ -50,6 +50,7 @@
       @bg: #FFFFE0;
       @border-color: darken(@bg, 65%);
       @border-radius: @_boxes-vars[@border-radius];
+      @spacing: 1em;
     }
 
     .paginator() {
@@ -375,8 +376,14 @@ body.datagrid-page {
 
     .datagrid-filters {
       list-style: none;
-      margin: 0;
+      margin: 0 0 0 0;
       padding: 0;
+
+      > li {
+        display: inline-block;
+        margin: 0 0 0 @_filter-menu-vars[@spacing];
+        padding: 0;
+      }
     }
 
     .datagrid-filters-menu {
