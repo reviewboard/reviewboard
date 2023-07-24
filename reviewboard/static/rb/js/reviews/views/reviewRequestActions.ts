@@ -539,7 +539,7 @@ export class AddFileActionView extends Actions.MenuItemActionView {
     activate() {
         const page = RB.PageManager.getPage();
         const uploadDialog = new RB.UploadAttachmentView({
-            model: page.reviewRequestEditorView.model,
+            reviewRequestEditor: page.reviewRequestEditorView.model,
         });
         uploadDialog.show();
     }
