@@ -80,7 +80,8 @@
     }
 
     .text-editor {
-      margin: -(@textarea-offset-vert - 10px) -@textarea-offset-horiz 0;
+      margin-top: -(@textarea-offset-vert - 10px);
+      //margin: -(@textarea-offset-vert - 10px) -@textarea-offset-horiz 0;
     }
   }
 }
@@ -1487,7 +1488,7 @@
 
   overflow: auto;
   margin: 0;
-  padding: @review-dialog-padding;;
+  padding: @review-dialog-padding;
 
   label[for="id_shipit"] {
     color: black;
@@ -1607,6 +1608,25 @@
 
     .editicon {
       margin-left: 0.5em;
+    }
+  }
+
+  .rb-c-slideshow__nav {
+    align-items: center;
+    display: flex;
+    gap: 0.5em;
+    margin: -3px 0 0 0;
+    text-align: left;
+
+    label {
+      font-weight: bold;
+      padding-right: 0.5em;
+    }
+
+    a, a:active, a:visited {
+      color: black;
+      text-decoration: none;
+      font-size: 140%;
     }
   }
 }

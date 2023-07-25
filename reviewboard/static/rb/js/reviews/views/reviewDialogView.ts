@@ -14,6 +14,7 @@ import {
 import {
     MenuButtonView,
     RichTextInlineEditorView,
+    SlideshowView,
     TextEditorView,
 } from 'reviewboard/ui';
 
@@ -882,6 +883,75 @@ class HeaderFooterCommentView extends BaseView<
 
 
 /**
+ * View to show tips to the user about creating reviews.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+class TipsSlideshowView extends SlideshowView {
+    static className = 'rb-c-alert -is-info';
+    static template = dedent`
+        <div class="rb-c-slideshow -is-auto-cycled">
+         <div class="rb-c-alert__content">
+          <div class="rb-c-alert__heading">
+           <nav class="rb-c-slideshow__nav">
+            <label for="">${gettext('Tip:')}</label>
+            <a class="rb-c-slideshow__nav-prev" href="#">
+             <span class="fa fa-caret-left"></span>
+            </a>
+            <a class="rb-c-slideshow__nav-next" href="#">
+             <span class="fa fa-caret-right"></span>
+            </a>
+           </nav>
+          </div>
+          <ul class="rb-c-slideshow__slides">
+          </ul>
+         </div>
+        </div>
+    `;
+
+    #tips = [
+        _`To add a comment to a code change, click on a line number in the
+          diff viewer.`,
+        _`To add a multi-line comment to a code change, click and drag over
+          multiple line numbers.`,
+        _`When reviewing image file attachments, add comments by clicking and
+          dragging out a region.`,
+        _`For more information on reviewing code and documents, visit our
+          <a href="${MANUAL_URL}users/#reviewing-code-and-documents">documentation</a>.`,
+    ];
+
+    /**
+     * Render the view.
+     */
+    onInitialRender() {
+        this.$el
+            .html(TipsSlideshowView.template)
+            .attr({
+                'aria-label': _`Tips`,
+                'aria-roledescription': 'carousel',
+            });
+
+        const $slides = this.$('.rb-c-slideshow__slides');
+        const li = dedent`
+            <li class="rb-c-slideshow__slide"
+                role="group"
+                aria-hidden="false"
+                aria-roledescription="slide">`;
+
+        for (const tip of this.#tips) {
+            $(li)
+                .html(tip)
+                .appendTo($slides);
+        }
+
+        super.onInitialRender();
+    }
+}
+
+
+/**
  * Options for the ReviewDialogView.
  *
  * Version Added:
@@ -1048,6 +1118,9 @@ export class ReviewDialogView extends BaseView<
     /** The collection of screenshot comments. */
     _screenshotCommentsCollection: ResourceCollection<RB.ScreenshotComment>;
 
+    /** The carousel showing tips for creating reviews. */
+    #tipsView: TipsSlideshowView = null;
+
     /**
      * Initialize the review dialog.
      *
@@ -1212,6 +1285,17 @@ export class ReviewDialogView extends BaseView<
 
         const $hooksContainer = this.$('.review-dialog-hooks-container');
 
+        /*
+         * The tips view will get shown in _handleEmptyReview.
+         */
+        this.#tipsView = new TipsSlideshowView({
+            autoCycleTimeMS: 5000,
+        });
+        this.#tipsView.render();
+        this.#tipsView.$el
+            .hide()
+            .appendTo(this.$el);
+
         RB.ReviewDialogHook.each(hook => {
             const HookView = hook.get('viewType');
             const hookView = new HookView({
@@ -1318,6 +1402,8 @@ export class ReviewDialogView extends BaseView<
         if (this._commentViews.length === 0 && !this.model.get('bodyBottom')) {
             this._bodyBottomView.$el.hide();
             this._bodyTopView.setLinkText(_`Add text`);
+
+            this.#tipsView.$el.show();
         }
     }
 
