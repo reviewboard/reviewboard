@@ -68,6 +68,8 @@ export class SlideshowView extends BaseView<
 > {
     static events = {
         'click .rb-c-slideshow__nav-item': '_onNavItemClick',
+        'click .rb-c-slideshow__nav-next': '_onNextClick',
+        'click .rb-c-slideshow__nav-prev': '_onPrevClick',
         'keydown': '_onKeyDown',
         'mouseenter .rb-c-slideshow__slide-content': '_onSlideMouseEnter',
         'mouseleave .rb-c-slideshow__slide-content': '_onSlideMouseLeave',
@@ -152,7 +154,7 @@ export class SlideshowView extends BaseView<
          */
         let slideIndex = 0;
 
-        if (window.location.hash) {
+        if (window.location.hash && this.#$navItems.length) {
             const $navItem =
                 this.#$navItems.filter(`[href="${window.location.hash}"]`);
 
@@ -256,17 +258,26 @@ export class SlideshowView extends BaseView<
      *         The index of the slide to switch to.
      */
     setSlide(index: number) {
-        const $newNavItem = this.#$navItems.eq(index);
-        const $oldNavItem = this.#$curNavItem;
-
-        if ($oldNavItem) {
-            $oldNavItem.attr('aria-selected', 'false');
-        }
-
-        $newNavItem.attr('aria-selected', 'true');
-
-        const $newSlide = this.#$slides.filter($newNavItem[0].hash);
         const $oldSlide = this.#$curSlide;
+        let $newNavItem: JQuery<HTMLAnchorElement> = null;
+        let $newSlide: JQuery = null;
+
+        if (this.#$navItems.length) {
+            /* We're navigating with a full TOC. */
+            $newNavItem = this.#$navItems.eq(index);
+            const $oldNavItem = this.#$curNavItem;
+
+            if ($oldNavItem) {
+                $oldNavItem.attr('aria-selected', 'false');
+            }
+
+            $newNavItem.attr('aria-selected', 'true');
+
+            $newSlide = this.#$slides.filter($newNavItem[0].hash);
+        } else {
+            /* We're navigating with next/prev buttons. */
+            $newSlide = this.#$slides.eq(index);
+        }
 
         $newSlide.css('display', 'block');
 
@@ -284,7 +295,10 @@ export class SlideshowView extends BaseView<
             .data('selected-index', index)
             .css('transform', `translate3d(-${index * 100}%, 0, 0)`);
 
-        this.#$curNavItem = $newNavItem;
+        if ($newNavItem) {
+            this.#$curNavItem = $newNavItem;
+        }
+
         this.#$curSlide = $newSlide;
         this.#curIndex = index;
 
@@ -398,6 +412,40 @@ export class SlideshowView extends BaseView<
             this.setAutomaticCyclingEnabled(false);
             this.setSlide(index);
         }
+    }
+
+    /**
+     * Handle a click on the "next" navigation item.
+     *
+     * This will switch to the next slide, and disable automatic cycling.
+     *
+     * Args:
+     *     e (jQuery.ClickEvent):
+     *         The click event.
+     */
+    private _onNextClick(e: JQuery.ClickEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        this.setAutomaticCyclingEnabled(false);
+        this.nextSlide();
+    }
+
+    /**
+     * Handle a click on the "previous" navigation item.
+     *
+     * This will switch to the previous slide, and disable automatic cycling.
+     *
+     * Args:
+     *     e (jQuery.ClickEvent):
+     *         The click event.
+     */
+    private _onPrevClick(e: JQuery.ClickEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        this.setAutomaticCyclingEnabled(false);
+        this.prevSlide();
     }
 
     /**
