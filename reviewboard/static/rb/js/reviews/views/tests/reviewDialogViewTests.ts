@@ -10,6 +10,7 @@ import {
 
 import { EnabledFeatures } from 'reviewboard/common';
 import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
+import { Review } from 'reviewboard/common/resources/models/reviewModel';
 import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
 import { ReviewDialogView } from '../reviewDialogView';
@@ -115,7 +116,7 @@ suite('rb/views/ReviewDialogView', function() {
             reviewRequest: reviewRequest,
         });
 
-        review = new RB.Review({
+        review = new Review({
             parentObject: reviewRequest,
         });
 

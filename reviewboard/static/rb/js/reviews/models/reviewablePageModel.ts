@@ -4,6 +4,7 @@
 import { ModelAttributes, spina } from '@beanbag/spina';
 
 import { Page } from 'reviewboard/common/models/pageModel';
+import { Review } from 'reviewboard/common/resources/models/reviewModel';
 
 import {
     ReviewRequestEditor,
@@ -37,7 +38,7 @@ export interface ReviewablePageAttrs extends ModelAttributes {
      *
      * This may or may not yet have a server-side representation.
      */
-    pendingReview?: RB.Review;
+    pendingReview?: Review;
 
     /**
      * The review request that this page is for.

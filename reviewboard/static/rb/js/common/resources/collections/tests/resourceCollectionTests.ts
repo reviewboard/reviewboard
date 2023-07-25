@@ -9,6 +9,7 @@ import {
 
 import { BaseCollection } from '../../../collections/baseCollection';
 import { ResourceCollection } from '../resourceCollection';
+import { Review } from '../../models/reviewModel';
 
 
 suite('rb/resources/collections/ResourceCollection', function() {
@@ -29,7 +30,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
         spyOn(reviewRequest, 'ready').and.resolveTo();
 
         collection = new ResourceCollection([], {
-            model: RB.Review,
+            model: Review,
             parentResource: reviewRequest,
         });
     });

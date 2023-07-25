@@ -1,8 +1,19 @@
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    suite,
+} from 'jasmine-core';
+
+import { Review } from '../reviewModel';
+
+
 suite('rb/resources/models/Review', function() {
     let model;
 
     beforeEach(function() {
-        model = new RB.Review({
+        model = new Review({
             parentObject: new RB.ReviewRequest(),
         });
     });
@@ -34,16 +45,16 @@ suite('rb/resources/models/Review', function() {
 
         it('Common API payloads', function() {
             const data = model.parse({
-                stat: 'ok',
                 my_review: {
-                    id: 42,
-                    body_top: 'my body top',
                     body_bottom: 'my body bottom',
-                    'public': false,
-                    body_top_text_type: 'markdown',
                     body_bottom_text_type: 'plain',
+                    body_top: 'my body top',
+                    body_top_text_type: 'markdown',
+                    id: 42,
+                    'public': false,
                     ship_it: false,
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);
@@ -58,19 +69,19 @@ suite('rb/resources/models/Review', function() {
 
         it('With raw_text_fields', function() {
             const data = model.parse({
-                stat: 'ok',
                 my_review: {
-                    body_top: 'my body top',
                     body_bottom: 'my body bottom',
-                    body_top_text_type: 'markdown',
                     body_bottom_text_type: 'plain',
+                    body_top: 'my body top',
+                    body_top_text_type: 'markdown',
                     raw_text_fields: {
-                        body_top: 'raw body top',
-                        body_top_text_type: 'raw',
                         body_bottom: 'raw body bottom',
                         body_bottom_text_type: 'raw',
+                        body_top: 'raw body top',
+                        body_top_text_type: 'raw',
                     },
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);
@@ -86,19 +97,19 @@ suite('rb/resources/models/Review', function() {
 
         it('With markdown_text_fields', function() {
             const data = model.parse({
-                stat: 'ok',
                 my_review: {
-                    body_top: 'my body top',
                     body_bottom: 'my body bottom',
-                    body_top_text_type: 'markdown',
                     body_bottom_text_type: 'plain',
+                    body_top: 'my body top',
+                    body_top_text_type: 'markdown',
                     markdown_text_fields: {
-                        body_top: 'Markdown body top',
-                        body_top_text_type: 'markdown',
                         body_bottom: 'Markdown body bottom',
                         body_bottom_text_type: 'markdown',
+                        body_top: 'Markdown body top',
+                        body_top_text_type: 'markdown',
                     },
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);
@@ -115,19 +126,19 @@ suite('rb/resources/models/Review', function() {
 
         it('With html_text_fields', function() {
             const data = model.parse({
-                stat: 'ok',
                 my_review: {
-                    body_top: 'my body top',
                     body_bottom: 'my body bottom',
-                    body_top_text_type: 'markdown',
                     body_bottom_text_type: 'plain',
+                    body_top: 'my body top',
+                    body_top_text_type: 'markdown',
                     html_text_fields: {
-                        body_top: 'HTML body top',
-                        body_top_text_type: 'html',
                         body_bottom: 'HTML body bottom',
                         body_bottom_text_type: 'html',
+                        body_top: 'HTML body top',
+                        body_top_text_type: 'html',
                     },
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);

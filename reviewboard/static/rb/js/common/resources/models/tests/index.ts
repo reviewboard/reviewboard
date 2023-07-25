@@ -1,1 +1,2 @@
 import './baseResourceModelTests';
+import './reviewModelTests';

@@ -6,6 +6,7 @@ import {
     suite,
 } from 'jasmine-core';
 
+import { Review } from 'reviewboard/common/resources/models/reviewModel';
 import {
     ReviewablePage,
 } from 'reviewboard/reviews/models/reviewablePageModel';
@@ -20,7 +21,7 @@ suite('rb/pages/models/ReviewablePage', function() {
                     hasDraft: true,
                     showSendEmail: false,
                 },
-                pendingReview: new RB.Review(),
+                pendingReview: new Review(),
                 reviewRequest: reviewRequest,
             });
 

@@ -3,6 +3,8 @@
  */
 import { BaseModel, spina } from '@beanbag/spina';
 
+import { Review } from 'reviewboard/common/resources/models/reviewModel';
+
 import { ReviewRequestEditor } from './reviewRequestEditorModel';
 
 
@@ -50,10 +52,10 @@ interface UnifiedBannerAttrs {
     numDrafts: number;
 
     /** The pending review, used for any new review content. */
-    pendingReview: RB.Review;
+    pendingReview: Review;
 
     /** The draft review replies. */
-    reviewReplyDrafts: RB.Review[];
+    reviewReplyDrafts: Review[];
 
     /** The current review request. */
     reviewRequest: RB.ReviewRequest;

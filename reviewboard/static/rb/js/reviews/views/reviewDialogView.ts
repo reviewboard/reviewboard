@@ -10,6 +10,7 @@ import { MenuButtonView } from 'reviewboard/ui/views/menuButtonView';
 import {
     ResourceCollection,
 } from 'reviewboard/common/resources/collections/resourceCollection';
+import { Review } from 'reviewboard/common/resources/models/reviewModel';
 import {
     RichTextInlineEditorView,
 } from 'reviewboard/ui/views/inlineEditorView';
@@ -612,7 +613,7 @@ interface HeaderFooterCommentViewOptions {
     prototypeAttrs: ['editorTemplate'],
 })
 class HeaderFooterCommentView extends BaseView<
-    RB.Review,
+    Review,
     HTMLDivElement,
     HeaderFooterCommentViewOptions
 > {
@@ -918,7 +919,7 @@ interface ReviewDialogViewCreationOptions extends ReviewDialogViewOptions {
     prototypeAttrs: ['template'],
 })
 export class ReviewDialogView extends BaseView<
-    RB.Review,
+    Review,
     HTMLDivElement,
     ReviewDialogViewOptions
 > {
