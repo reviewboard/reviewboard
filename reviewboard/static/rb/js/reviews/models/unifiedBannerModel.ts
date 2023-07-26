@@ -4,6 +4,9 @@
 import { BaseModel, spina } from '@beanbag/spina';
 
 import { Review } from 'reviewboard/common/resources/models/reviewModel';
+import {
+    ReviewReply,
+} from 'reviewboard/common/resources/models/reviewReplyModel';
 
 import { ReviewRequestEditor } from './reviewRequestEditorModel';
 
@@ -116,14 +119,14 @@ export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
      * Update the draft state for the given review reply.
      *
      * Args:
-     *     reviewReply (RB.ReviewReply):
+     *     reviewReply (ReviewReply):
      *         The review reply model.
      *
      *     hasReviewReplyDraft (boolean):
      *          Whether the reviewReply passed in has a draft.
      */
     updateReplyDraftState(
-        reviewReply: RB.ReviewReply,
+        reviewReply: ReviewReply,
         hasReviewReplyDraft: boolean,
     ) {
         const reviewReplyDrafts = this.get('reviewReplyDrafts');

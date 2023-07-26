@@ -1,25 +1,36 @@
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+    suite,
+} from 'jasmine-core';
+
+import { BaseResource } from '../baseResourceModel';
+import { ReviewReply } from '../reviewReplyModel';
+
+
 suite('rb/resources/models/ReviewReply', function() {
     let parentObject;
     let model;
 
     beforeEach(function() {
-        parentObject = new RB.BaseResource({
-            'public': true,
+        parentObject = new BaseResource({
             links: {
                 replies: {
                     href: '/api/foos/replies/',
                 },
             },
+            'public': true,
         });
 
-        model = new RB.ReviewReply({
+        model = new ReviewReply({
             parentObject: parentObject,
         });
     });
 
     describe('destroy', function() {
-        let callbacks;
-
         beforeEach(function() {
             spyOn(Backbone.Model.prototype, 'destroy')
                 .and.callFake(options => options.success());
@@ -92,16 +103,9 @@ suite('rb/resources/models/ReviewReply', function() {
                 commentsData = {};
                 model.set({
                     id: 123,
-                    loaded: true,
                     links: {
-                        self: {
-                            href: '/api/foos/replies/123/',
-                        },
                         diff_comments: {
                             href: '/api/diff-comments/',
-                        },
-                        screenshot_comments: {
-                            href: '/api/screenshot-comments/',
                         },
                         file_attachment_comments: {
                             href: '/api/file-attachment-comments/',
@@ -109,14 +113,21 @@ suite('rb/resources/models/ReviewReply', function() {
                         general_comments: {
                             href: '/api/general-comments/',
                         },
+                        screenshot_comments: {
+                            href: '/api/screenshot-comments/',
+                        },
+                        self: {
+                            href: '/api/foos/replies/123/',
+                        },
                     },
+                    loaded: true,
                 });
 
                 spyOn(RB, 'apiCall').and.callFake(options => {
                     const links = model.get('links');
                     const data = {};
                     const key = _.find(
-                        RB.ReviewReply.prototype.COMMENT_LINK_NAMES,
+                        ReviewReply.COMMENT_LINK_NAMES,
                         name => (options.url === links[name].href));
 
                     if (key) {
@@ -205,6 +216,7 @@ suite('rb/resources/models/ReviewReply', function() {
                 spyOn(console, 'warn');
 
                 model.discardIfEmpty({
+                    error: () => done.fail(),
                     success: discarded => {
                         expect(discarded).toBe(true);
                         expect(model.destroy).toHaveBeenCalled();
@@ -212,7 +224,6 @@ suite('rb/resources/models/ReviewReply', function() {
 
                         done();
                     },
-                    error: () => done.fail(),
                 });
             });
         });
@@ -320,6 +331,7 @@ suite('rb/resources/models/ReviewReply', function() {
             spyOn(console, 'warn');
 
             model.ready({
+                error: () => done.fail(),
                 success: () => {
                     expect(parentObject.ready).toHaveBeenCalled();
                     expect(model._retrieveDraft).toHaveBeenCalled();
@@ -327,7 +339,6 @@ suite('rb/resources/models/ReviewReply', function() {
 
                     done();
                 },
-                error: () => done.fail(),
             });
         });
     });
@@ -338,16 +349,16 @@ suite('rb/resources/models/ReviewReply', function() {
         });
 
         it('API payloads', function() {
-            var data = model.parse({
-                stat: 'ok',
+            const data = model.parse({
                 my_reply: {
-                    id: 42,
-                    body_top: 'foo',
                     body_bottom: 'bar',
-                    'public': false,
-                    body_top_text_type: 'markdown',
                     body_bottom_text_type: 'plain',
+                    body_top: 'foo',
+                    body_top_text_type: 'markdown',
+                    id: 42,
+                    'public': false,
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);

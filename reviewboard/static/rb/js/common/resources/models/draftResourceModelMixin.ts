@@ -1,5 +1,25 @@
 /**
  * Mixin for resources that have special "draft" URLs.
+ */
+
+import { UserSession } from 'reviewboard/common/models/userSessionModel';
+
+
+/**
+ * Options for the ready operation.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface ReadyOptions extends Backbone.PersistenceOptions {
+    ready?: ((modelOrCollection: unknown,
+              response: unknown,
+              options: unknown) => void) | undefined;
+}
+
+
+/**
+ * Mixin for resources that have special "draft" URLs.
  *
  * Some resources contain a "draft/" singleton URL that will either redirect to
  * the URL for an existing draft, or indicate there's no draft (and requiring
@@ -8,7 +28,7 @@
  * These resources need a little more logic to look up the draft state and
  * craft the proper URL. They can use this mixin to do that work for them.
  */
-RB.DraftResourceModelMixin = {
+export const DraftResourceModelMixin = {
     /**
      * Call a function when the object is ready to use.
      *
@@ -32,7 +52,10 @@ RB.DraftResourceModelMixin = {
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    async ready(options={}, context=undefined) {
+    async ready(
+        options: ReadyOptions = {},
+        context: unknown = undefined,
+    ): Promise<void> {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete) ||
@@ -40,6 +63,7 @@ RB.DraftResourceModelMixin = {
             console.warn('RB.DraftResourceModelMixin.ready was ' +
                          'called using callbacks. Callers should be updated ' +
                          'to use promises instead.');
+
             return RB.promiseToCallbacks(
                 options, context, newOptions => this.ready(newOptions));
         }
@@ -49,7 +73,7 @@ RB.DraftResourceModelMixin = {
             this._needDraft = true;
         }
 
-        await _super(this).ready.call(this);
+        await _super(this).ready.call(this, options);
 
         if (this._needDraft) {
             /*
@@ -82,13 +106,17 @@ RB.DraftResourceModelMixin = {
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    async destroy(options={}, context=undefined) {
+    async destroy(
+        options: Backbone.ModelDestroyOptions = {},
+        context: unknown = undefined,
+    ): Promise<void> {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
             console.warn('RB.DraftResourceModelMixin.destroy was ' +
                          'called using callbacks. Callers should be updated ' +
                          'to use promises instead.');
+
             return RB.promiseToCallbacks(
                 options, context, newOptions => this.destroy(newOptions));
         }
@@ -152,11 +180,13 @@ RB.DraftResourceModelMixin = {
      *     options (object):
      *         Options for the operation, including callbacks.
      */
-    _retrieveDraft(options) {
-        if (!RB.UserSession.instance.get('authenticated')) {
+    _retrieveDraft(
+        options: Backbone.PersistenceOptions,
+    ): Promise<void> {
+        if (!UserSession.instance.get('authenticated')) {
             return Promise.reject(new BackboneError(
                 this,
-                { errorText: gettext('You must be logged in to retrieve the draft.') },
+                { errorText: _`You must be logged in to retrieve the draft.` },
                 {}));
         }
 
@@ -167,31 +197,32 @@ RB.DraftResourceModelMixin = {
             data = _.extend({}, extraQueryArgs, data);
         }
 
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             Backbone.Model.prototype.fetch.call(this, {
                 data: data,
-                processData: true,
-                success: () => {
-                    /*
-                     * There was an existing draft, and we were redirected to it
-                     * and pulled data from it. We're done.
-                     */
-                    this._needDraft = false;
-
-                    resolve();
-                },
                 error: (model, xhr, options) => {
                     if (xhr.status === 404) {
                         /*
-                         * We now know we don't have an existing draft to work with,
-                         * and will eventually need to POST to create a new one.
+                         * We now know we don't have an existing draft to work
+                         * with, and will eventually need to POST to create a
+                         * new one.
                          */
                         this._needDraft = false;
                         resolve();
                     } else {
                         reject(new BackboneError(model, xhr, options));
                     }
-                }
+                },
+                processData: true,
+                success: () => {
+                    /*
+                     * There was an existing draft, and we were redirected to
+                     * it and pulled data from it. We're done.
+                     */
+                    this._needDraft = false;
+
+                    resolve();
+                },
             });
         });
     },

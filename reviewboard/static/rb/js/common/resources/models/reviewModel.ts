@@ -5,6 +5,7 @@
 import { spina } from '@beanbag/spina';
 
 import { BaseResource, BaseResourceAttrs } from './baseResourceModel';
+import { ReviewReply } from './reviewReplyModel';
 import * as JSONSerializers from '../utils/serializers';
 
 
@@ -31,7 +32,7 @@ interface ReviewAttrs extends BaseResourceAttrs {
     bodyTopRichText: boolean;
 
     /** The draft reply to this review, if any. */
-    draftReply: RB.ReviewReply;
+    draftReply: ReviewReply;
 
     /** The text format type to request for text fields in all responses. */
     forceTextType: string;
@@ -91,7 +92,9 @@ interface ReviewResourceData {
     body_bottom_text_type: string;
     body_top: string;
     body_top_text_type: string;
+    force_text_type: string;
     html_text_fields: { [key: string]: string };
+    include_text_types: string;
     markdown_text_fields: { [key: string]: string };
     public: boolean;
     raw_text_fields: { [key: string]: string };
@@ -141,7 +144,7 @@ interface CreateDiffCommentOptions {
  * A review.
  *
  * This corresponds to a top-level review. Replies are encapsulated in
- * RB.ReviewReply.
+ * ReviewReply.
  */
 @spina({
     prototypeAttrs: [
@@ -431,11 +434,11 @@ export class Review extends BaseResource<ReviewAttrs> {
      *     RB.ReviewReply:
      *     The new reply object.
      */
-    createReply(): RB.ReviewReply {
+    createReply(): ReviewReply {
         let draftReply = this.get('draftReply');
 
         if (draftReply === null) {
-            draftReply = new RB.ReviewReply({
+            draftReply = new ReviewReply({
                 parentObject: this,
             });
             this.set('draftReply', draftReply);

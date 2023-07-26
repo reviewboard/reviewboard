@@ -5,6 +5,9 @@ import {
     FloatingBannerViewOptions,
 } from 'reviewboard/ui/views/floatingBannerView';
 import {
+    ReviewReply,
+} from 'reviewboard/common/resources/models/reviewReplyModel';
+import {
     ReviewRequestEditor,
 } from 'reviewboard/reviews/models/reviewRequestEditorModel';
 
@@ -30,7 +33,7 @@ interface ReviewReplyDraftBannerOptions extends FloatingBannerViewOptions {
  */
 @spina
 export class ReviewReplyDraftBannerView extends FloatingBannerView<
-    RB.ReviewReply,
+    ReviewReply,
     HTMLDivElement,
     ReviewReplyDraftBannerOptions
 > {
