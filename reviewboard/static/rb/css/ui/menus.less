@@ -100,6 +100,7 @@
  *
  *     <div class="rb-c-menu" role="menu" tabindex="-1" aria-labelledby="...">
  *      <div class="rb-c-menu__item" role="menuitem">...</div>
+ *      <div class="rb-c-menu__separator" role="separator"></div>
  *      ...
  *     </div>
  *
@@ -195,6 +196,13 @@
         outline: 0;
       }
     }
+  }
+
+  /**
+   * A menu separator.
+   */
+  &__separator {
+    border-bottom: @_menu-vars[@border];
   }
 }
 
