@@ -9,8 +9,8 @@ import {
     suite,
 } from 'jasmine-core';
 
-import { ClientCommChannel } from '../commChannelModel';
 import { PageView } from '../../views/pageView';
+import { ClientCommChannel } from '../commChannelModel';
 
 
 declare const $testsScratch: JQuery;

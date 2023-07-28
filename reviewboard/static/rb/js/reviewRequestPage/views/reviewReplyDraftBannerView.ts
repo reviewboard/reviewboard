@@ -1,15 +1,11 @@
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
+import { ReviewReply } from 'reviewboard/common';
+import { ReviewRequestEditor } from 'reviewboard/reviews';
+import { FloatingBannerView } from 'reviewboard/ui';
 import {
-    FloatingBannerView,
     FloatingBannerViewOptions,
 } from 'reviewboard/ui/views/floatingBannerView';
-import {
-    ReviewReply,
-} from 'reviewboard/common/resources/models/reviewReplyModel';
-import {
-    ReviewRequestEditor,
-} from 'reviewboard/reviews/models/reviewRequestEditorModel';
 
 
 /**

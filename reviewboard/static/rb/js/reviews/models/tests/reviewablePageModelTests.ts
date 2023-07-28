@@ -6,10 +6,8 @@ import {
     suite,
 } from 'jasmine-core';
 
-import { Review } from 'reviewboard/common/resources/models/reviewModel';
-import {
-    ReviewablePage,
-} from 'reviewboard/reviews/models/reviewablePageModel';
+import { Review } from 'reviewboard/common';
+import { ReviewablePage } from '../reviewablePageModel';
 
 
 suite('rb/pages/models/ReviewablePage', function() {

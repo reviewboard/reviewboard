@@ -1,13 +1,13 @@
 import { EventsHash, spina } from '@beanbag/spina';
 
-import { Actions } from 'reviewboard/common/actions';
 import {
+    Actions,
     BaseResource,
-} from 'reviewboard/common/resources/models/baseResourceModel';
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
-import { OverlayView } from 'reviewboard/ui/views/overlayView';
+    UserSession,
+} from 'reviewboard/common';
+import { OverlayView } from 'reviewboard/ui';
 
-import { ReviewDialogView} from './reviewDialogView';
+import { ReviewDialogView } from './reviewDialogView';
 
 
 declare const SITE_ROOT: string;

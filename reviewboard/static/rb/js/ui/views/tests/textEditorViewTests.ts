@@ -8,7 +8,7 @@ import {
     suite,
 } from 'jasmine-core';
 
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import { UserSession } from 'reviewboard/common';
 
 import { DnDUploader } from '../dndUploaderView';
 import { TextEditorView } from '../textEditorView';

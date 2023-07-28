@@ -9,14 +9,14 @@ import {
     suite,
 } from 'jasmine-core';
 
-import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
 import { EnabledFeatures } from 'reviewboard/common';
+import { DnDUploader } from 'reviewboard/ui';
 
 import { ReviewRequestEditor } from '../../models/reviewRequestEditorModel';
-import { ReviewRequestEditorView } from '../reviewRequestEditorView';
 import { UnifiedBanner } from '../../models/unifiedBannerModel';
-import { UnifiedBannerView } from '../unifiedBannerView';
+import { ReviewRequestEditorView } from '../reviewRequestEditorView';
 import * as ReviewRequestFields from '../reviewRequestFieldViews';
+import { UnifiedBannerView } from '../unifiedBannerView';
 
 declare const $testsScratch: JQuery;
 declare const dedent: (string) => string;

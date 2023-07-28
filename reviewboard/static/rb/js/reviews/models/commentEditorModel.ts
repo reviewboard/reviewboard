@@ -1,8 +1,10 @@
 /** The state for editing a new or existing draft comment. */
 import { BaseModel, spina } from '@beanbag/spina';
 
-import { ExtraDataMixin } from 'reviewboard/common/models/extraDataMixin';
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import {
+    ExtraDataMixin,
+    UserSession,
+} from 'reviewboard/common';
 
 import { ReviewRequestEditor } from './reviewRequestEditorModel';
 

@@ -4,10 +4,10 @@
 
 import { spina } from '@beanbag/spina';
 
+import * as JSONSerializers from '../utils/serializers';
 import { BaseResource, BaseResourceAttrs} from './baseResourceModel';
 import { DraftResourceModelMixin } from './draftResourceModelMixin';
 import { Review } from './reviewModel';
-import * as JSONSerializers from '../utils/serializers';
 
 
 /**

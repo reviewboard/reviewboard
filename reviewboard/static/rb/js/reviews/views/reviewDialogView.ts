@@ -4,18 +4,18 @@
 
 import { BaseView, spina } from '@beanbag/spina';
 
-import { ClientCommChannel } from 'reviewboard/common/models/commChannelModel';
-import { EnabledFeatures } from 'reviewboard/common';
-import { MenuButtonView } from 'reviewboard/ui/views/menuButtonView';
 import {
+    ClientCommChannel,
+    EnabledFeatures,
     ResourceCollection,
-} from 'reviewboard/common/resources/collections/resourceCollection';
-import { Review } from 'reviewboard/common/resources/models/reviewModel';
+    Review,
+    UserSession,
+} from 'reviewboard/common';
 import {
+    MenuButtonView,
     RichTextInlineEditorView,
-} from 'reviewboard/ui/views/inlineEditorView';
-import { TextEditorView } from 'reviewboard/ui/views/textEditorView';
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+    TextEditorView,
+} from 'reviewboard/ui';
 
 import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 

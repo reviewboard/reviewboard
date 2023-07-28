@@ -3,16 +3,19 @@
  */
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
-import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
-import { EnabledFeatures } from 'reviewboard/common';
-import { PageView, PageViewOptions } from 'reviewboard/common/views/pageView';
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import {
+    EnabledFeatures,
+    PageView,
+    UserSession,
+} from 'reviewboard/common';
+import { PageViewOptions } from 'reviewboard/common/views/pageView';
+import { DnDUploader } from 'reviewboard/ui';
 
-import { ReviewDialogView } from './reviewDialogView';
 import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
-import { ReviewRequestEditorView } from './reviewRequestEditorView';
 import { ReviewablePage } from '../models/reviewablePageModel';
 import { UnifiedBanner } from '../models/unifiedBannerModel';
+import { ReviewDialogView } from './reviewDialogView';
+import { ReviewRequestEditorView } from './reviewRequestEditorView';
 import { UnifiedBannerView } from './unifiedBannerView';
 
 

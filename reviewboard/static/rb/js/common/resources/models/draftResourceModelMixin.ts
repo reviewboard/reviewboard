@@ -2,7 +2,7 @@
  * Mixin for resources that have special "draft" URLs.
  */
 
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import { UserSession } from 'reviewboard/common';
 
 
 /**

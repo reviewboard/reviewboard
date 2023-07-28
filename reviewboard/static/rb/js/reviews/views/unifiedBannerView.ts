@@ -3,15 +3,20 @@
  */
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
-import { ClientCommChannel } from 'reviewboard/common/models/commChannelModel';
-import { FloatingBannerView } from 'reviewboard/ui/views/floatingBannerView';
-import { MenuButtonView } from 'reviewboard/ui/views/menuButtonView';
-import { MenuType, MenuView } from 'reviewboard/ui/views/menuView';
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import {
+    ClientCommChannel,
+    UserSession,
+} from 'reviewboard/common';
+import {
+    FloatingBannerView,
+    MenuButtonView,
+    MenuView,
+} from 'reviewboard/ui';
+import { MenuType } from 'reviewboard/ui/views/menuView';
 
 import { DraftMode, UnifiedBanner } from '../models/unifiedBannerModel';
-import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
 import { ReviewRequestEditorView } from './reviewRequestEditorView';
+import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
 
 
 declare const dedent: (string, ...args) => string;

@@ -3,10 +3,10 @@
  */
 import { Router, spina } from '@beanbag/spina';
 
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import { UserSession } from 'reviewboard/common';
 
-import { DiffFileIndexView } from './diffFileIndexView';
 import { DiffViewerPage } from '../models/diffViewerPageModel';
+import { DiffFileIndexView } from './diffFileIndexView';
 import {
     ReviewablePageView,
     ReviewablePageViewOptions,

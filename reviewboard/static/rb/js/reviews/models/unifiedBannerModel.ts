@@ -3,10 +3,10 @@
  */
 import { BaseModel, spina } from '@beanbag/spina';
 
-import { Review } from 'reviewboard/common/resources/models/reviewModel';
 import {
+    Review,
     ReviewReply,
-} from 'reviewboard/common/resources/models/reviewReplyModel';
+} from 'reviewboard/common';
 
 import { ReviewRequestEditor } from './reviewRequestEditorModel';
 

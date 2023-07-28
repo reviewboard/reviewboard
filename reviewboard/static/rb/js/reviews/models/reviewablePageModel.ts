@@ -3,8 +3,10 @@
  */
 import { ModelAttributes, spina } from '@beanbag/spina';
 
-import { Page } from 'reviewboard/common/models/pageModel';
-import { Review } from 'reviewboard/common/resources/models/reviewModel';
+import {
+    Page,
+    Review,
+} from 'reviewboard/common';
 
 import {
     ReviewRequestEditor,

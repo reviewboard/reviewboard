@@ -7,7 +7,7 @@ import {
     suite,
 } from 'jasmine-core';
 
-import { UserSession } from '../userSessionModel';
+import { UserSession } from 'reviewboard/common';
 
 
 declare const SITE_ROOT: string;

@@ -3,17 +3,19 @@
  */
 import { BaseView, spina } from '@beanbag/spina';
 
-import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
-import { EnabledFeatures } from 'reviewboard/common';
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import {
+    EnabledFeatures,
+    UserSession,
+} from 'reviewboard/common';
+import { DnDUploader } from 'reviewboard/ui';
 
+import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 import {
     BaseFieldView,
     ChangeDescriptionFieldView,
     CloseDescriptionFieldView,
     TextFieldView,
 } from './reviewRequestFieldViews';
-import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 
 
 declare const dedent: (string) => string;

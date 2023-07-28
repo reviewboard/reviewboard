@@ -4,9 +4,9 @@
 
 import { spina } from '@beanbag/spina';
 
+import * as JSONSerializers from '../utils/serializers';
 import { BaseResource, BaseResourceAttrs } from './baseResourceModel';
 import { ReviewReply } from './reviewReplyModel';
-import * as JSONSerializers from '../utils/serializers';
 
 
 /**

@@ -8,8 +8,8 @@ import {
 } from 'jasmine-core';
 
 import { BaseCollection } from '../../../collections/baseCollection';
-import { ResourceCollection } from '../resourceCollection';
 import { Review } from '../../models/reviewModel';
+import { ResourceCollection } from '../resourceCollection';
 
 
 suite('rb/resources/collections/ResourceCollection', function() {

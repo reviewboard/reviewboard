@@ -7,9 +7,7 @@ import {
     suite,
 } from 'jasmine-core';
 
-import {
-    DiffViewerPage,
-} from 'reviewboard/reviews/models/diffViewerPageModel';
+import { DiffViewerPage } from '../diffViewerPageModel';
 
 
 suite('rb/pages/models/DiffViewerPage', function() {

@@ -1,7 +1,7 @@
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 import CodeMirror from 'codemirror';
 
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import { UserSession } from 'reviewboard/common';
 
 import { DnDUploader } from './dndUploaderView';
 
