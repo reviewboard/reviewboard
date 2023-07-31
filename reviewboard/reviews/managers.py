@@ -11,8 +11,8 @@ from django.db import connections, router, transaction, IntegrityError
 from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
 from django.utils.text import slugify
-from djblets.deprecation import deprecate_non_keyword_only_args
 from djblets.db.managers import ConcurrencyManager
+from housekeeping.functions import deprecate_non_keyword_only_args
 
 from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.diffviewer.models import DiffSetHistory

@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.translation import gettext as _, get_language
 from djblets.cache.backend import cache_memoize
-from djblets.deprecation import deprecate_non_keyword_only_args
+from housekeeping.functions import deprecate_non_keyword_only_args
 
 from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header

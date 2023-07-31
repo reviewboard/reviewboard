@@ -3,7 +3,7 @@ import logging
 import importlib_metadata
 from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
-from djblets.deprecation import deprecate_non_keyword_only_args
+from housekeeping.functions import deprecate_non_keyword_only_args
 
 from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.site.models import LocalSite
