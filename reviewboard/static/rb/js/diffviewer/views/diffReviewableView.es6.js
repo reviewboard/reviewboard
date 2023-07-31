@@ -583,14 +583,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     _onExpandChunkClicked(e) {
         e.preventDefault();
 
-        let $target = $(e.target);
-
-        if (!$target.hasClass('diff-expand-btn')) {
-            /* We clicked an image inside the link. Find the parent. */
-            $target = $target.closest('.diff-expand-btn');
-        }
-
-        this._expandOrCollapse($target, true);
+        this._expandOrCollapse($(e.currentTarget), true);
     },
 
     /**
@@ -606,14 +599,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     _onCollapseChunkClicked(e) {
         e.preventDefault();
 
-        let $target = $(e.target);
-
-        if (!$target.hasClass('diff-collapse-btn')) {
-            /* We clicked an image inside the link. Find the parent. */
-            $target = $target.closest('.diff-collapse-btn');
-        }
-
-        this._expandOrCollapse($target, false);
+        this._expandOrCollapse($(e.currentTarget), false);
     },
 
     /**

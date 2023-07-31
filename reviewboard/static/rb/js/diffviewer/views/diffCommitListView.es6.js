@@ -257,9 +257,7 @@ RB.DiffCommitListView = Backbone.View.extend({
         e.preventDefault();
         e.stopPropagation();
 
-        this._expandOrCollapse(
-            $(e.target).closest('.expand-commit-message'),
-            true);
+        this._expandOrCollapse($(e.currentTarget), true);
     },
 
     /**
@@ -273,9 +271,7 @@ RB.DiffCommitListView = Backbone.View.extend({
         e.preventDefault();
         e.stopPropagation();
 
-        this._expandOrCollapse(
-            $(e.target).closest('.collapse-commit-message'),
-            false);
+        this._expandOrCollapse($(e.currentTarget), true);
     },
 
     /**

@@ -277,7 +277,7 @@ RB.DiffFragmentView = Backbone.View.extend({
         e.preventDefault();
         e.stopPropagation();
 
-        this._expandOrCollapse($(e.target).closest('.diff-expand-btn'), e);
+        this._expandOrCollapse($(e.currentTarget), e);
     },
 
     /**
@@ -295,6 +295,6 @@ RB.DiffFragmentView = Backbone.View.extend({
         e.preventDefault();
         e.stopPropagation();
 
-        this._expandOrCollapse($(e.target).closest('.diff-collapse-btn'), e);
+        this._expandOrCollapse($(e.currentTarget), e);
     },
 });
