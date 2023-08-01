@@ -125,9 +125,18 @@ RB.RevisionSelectorView = Backbone.View.extend({
         const positions = this._positions;
         const values = this._mouseActive ? this._activeValues
                                          : this._values;
+        let handleOffset = null;
 
         this._$handles.children().each((i, el) => {
-            $(el).css('left', (positions[values[i]] - 4) + 'px');
+            const $el = $(el);
+
+            if (handleOffset === null) {
+                handleOffset = Math.floor($el.width() / 2);
+            }
+
+            const left = (positions[values[i]] - handleOffset);
+
+            $el.css('left', `${left}px`);
         });
 
         if (this._numHandles === 2) {

@@ -1,4 +1,4 @@
-import { ExtraData } from './extraData';
+import { ExtraData } from './extraDataModel';
 
 
 /**

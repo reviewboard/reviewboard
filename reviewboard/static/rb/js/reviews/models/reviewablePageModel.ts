@@ -8,7 +8,7 @@ import { Page } from 'reviewboard/common/models/pageModel';
 import {
     ReviewRequestEditor,
     ReviewRequestEditorAttrs,
-} from './reviewRequestEditor';
+} from './reviewRequestEditorModel';
 
 
 /** Attributes for the ReviewablePage model. */

@@ -1,9 +1,9 @@
 import logging
 
-import pkg_resources
+import importlib_metadata
 from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
-from djblets.deprecation import deprecate_non_keyword_only_args
+from housekeeping.functions import deprecate_non_keyword_only_args
 
 from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.site.models import LocalSite
@@ -120,7 +120,9 @@ class ToolManager(Manager):
         registered_tools = set(self.values_list('class_name', flat=True))
         new_tools = []
 
-        for entry in pkg_resources.iter_entry_points('reviewboard.scmtools'):
+        eps = importlib_metadata.entry_points(group='reviewboard.scmtools')
+
+        for entry in eps:
             try:
                 scmtool_class = entry.load()
             except Exception as e:

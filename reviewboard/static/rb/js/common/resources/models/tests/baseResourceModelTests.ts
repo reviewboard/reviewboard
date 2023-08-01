@@ -8,7 +8,7 @@ import {
     suite,
 } from 'jasmine-core';
 
-import { BaseResource } from '../baseResource';
+import { BaseResource } from '../baseResourceModel';
 
 
 suite('rb/resources/models/BaseResource', function() {

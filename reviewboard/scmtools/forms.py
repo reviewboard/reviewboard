@@ -735,7 +735,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         widget=RelatedUserWidget())
 
     review_groups = forms.ModelMultipleChoiceField(
-        queryset=Group.objects.filter(visible=True).order_by('name'),
+        queryset=Group.objects.order_by('name'),
         label=_('Groups with access'),
         required=False,
         widget=RelatedGroupWidget(invite_only=True))

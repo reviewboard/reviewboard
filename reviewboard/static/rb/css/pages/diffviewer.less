@@ -981,6 +981,8 @@ table.rb-c-diff-file-index {
 }
 
 .revision-selector {
+  @_colors-vars: #rb-ns-ui.colors();
+
   margin: 3em 1.5em 1.5em 1.5em;
   position: relative;
 
@@ -1015,7 +1017,8 @@ table.rb-c-diff-file-index {
 
   .revision-selector-range {
     position: absolute;
-    background-color: grey;
+    background-color: multiply(@_colors-vars[@blue-60],
+                               @_colors-vars[@grey-50]);
     top: -1px;
     height: 4px;
     z-index: 1;

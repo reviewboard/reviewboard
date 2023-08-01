@@ -3,13 +3,13 @@
  */
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
-import { ClientCommChannel } from 'reviewboard/common/models/commChannel';
+import { ClientCommChannel } from 'reviewboard/common/models/commChannelModel';
 import { FloatingBannerView } from 'reviewboard/ui/views/floatingBannerView';
 import { MenuButtonView } from 'reviewboard/ui/views/menuButtonView';
 import { MenuType, MenuView } from 'reviewboard/ui/views/menuView';
-import { UserSession } from 'reviewboard/common/models/userSession';
+import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
-import { DraftMode, UnifiedBanner } from '../models/unifiedBanner';
+import { DraftMode, UnifiedBanner } from '../models/unifiedBannerModel';
 import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
 import { ReviewRequestEditorView } from './reviewRequestEditorView';
 
@@ -472,7 +472,6 @@ export class UnifiedBannerView extends FloatingBannerView<
         const numDrafts = model.get('numDrafts');
 
         const reviewRequest = model.get('reviewRequest');
-        const reviewRequestState = reviewRequest.get('state');
         const reviewRequestPublic = reviewRequest.get('public');
 
         this.#$discardButton.toggle(
@@ -499,7 +498,7 @@ export class UnifiedBannerView extends FloatingBannerView<
             .toggleClass('-has-draft',
                          (reviewRequestPublic === false || numDrafts > 0))
             .toggleClass('-has-multiple', numDrafts > 1)
-            .toggle(reviewRequestState === RB.ReviewRequest.PENDING);
+            .show();
     }
 
     /**

@@ -8,17 +8,18 @@ import {
     suite,
 } from 'jasmine-core';
 
-import { EnabledFeatures } from 'reviewboard/common';
+import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
 import {
     DiffViewerPage,
 } from 'reviewboard/reviews/models/diffViewerPageModel';
 import {
     DiffViewerPageView,
 } from 'reviewboard/reviews/views/diffViewerPageView';
+import { EnabledFeatures } from 'reviewboard/common';
 import {
     UnifiedBannerView,
 } from 'reviewboard/reviews/views/unifiedBannerView';
-import { UserSession } from 'reviewboard/common/models/userSession';
+import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
 
 suite('rb/pages/views/DiffViewerPageView', function() {
@@ -167,7 +168,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
     });
 
     afterEach(function() {
-        RB.DnDUploader.instance = null;
+        DnDUploader.instance = null;
 
         if (EnabledFeatures.unifiedBanner) {
             UnifiedBannerView.resetInstance();

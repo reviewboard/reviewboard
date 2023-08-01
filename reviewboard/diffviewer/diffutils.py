@@ -11,11 +11,11 @@ from functools import cmp_to_key
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import force_str
 from django.utils.translation import gettext as _
-from djblets.deprecation import deprecate_non_keyword_only_args
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.compat.python.past import cmp
 from djblets.util.contextmanagers import controlled_subprocess
+from housekeeping.functions import deprecate_non_keyword_only_args
 
 from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs

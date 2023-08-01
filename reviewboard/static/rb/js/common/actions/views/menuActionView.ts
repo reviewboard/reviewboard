@@ -3,7 +3,7 @@ import { EventsHash, spina } from '@beanbag/spina';
 import { MenuView } from 'reviewboard/ui/views/menuView';
 
 import { ActionView } from './actionView';
-import { MenuAction } from '../models/menuAction';
+import { MenuAction } from '../models/menuActionModel';
 
 
 /**
@@ -46,18 +46,22 @@ export class MenuActionView<
         const page = RB.PageManager.getPage();
 
         for (const childId of this.model.get('children')) {
-            const childActionView = page.getActionView(childId);
-
-            if (childActionView) {
-                this.menu.addItem({
-                    $child: childActionView.$el,
-                });
-
-                if (childActionView.model.get('visible')) {
-                    childActionView.$el.show();
-                }
+            if (childId === '--') {
+                this.menu.addSeparator();
             } else {
-                console.error('Unable to find action for %s', childId);
+                const childActionView = page.getActionView(childId);
+
+                if (childActionView) {
+                    this.menu.addItem({
+                        $child: childActionView.$el,
+                    });
+
+                    if (childActionView.model.get('visible')) {
+                        childActionView.$el.show();
+                    }
+                } else {
+                    console.error('Unable to find action for %s', childId);
+                }
             }
         }
     }

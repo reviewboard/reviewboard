@@ -58,10 +58,11 @@ class RelatedGroupWidgetTests(TestCase):
             $(function() {
                 var view = new RB.RelatedGroupSelectorView({
                     $input: $('#groups'),
-                    initialOptions: [],
+                    "initialOptions": [],
 
-                    multivalued: true,
-                    inviteOnly: false
+                    "inviteOnly": false,
+                    "multivalued": true,
+                    "showInvisible": true
                 }).render();
             });
             </script>""",
@@ -87,13 +88,14 @@ class RelatedGroupWidgetTests(TestCase):
             $(function() {
                 var view = new RB.RelatedGroupSelectorView({
                     $input: $('#groups'),
-                    initialOptions:
+                    "initialOptions":
                     [{"display_name": "", "id": 1, "name": "group1"},
                     {"display_name": "", "id": 2, "name": "group2"},
                     {"display_name": "", "id": 3, "name": "group3"}],
 
-                    multivalued: true,
-                    inviteOnly: false
+                    "inviteOnly": false,
+                    "multivalued": true,
+                    "showInvisible": true
                 }).render();
             });
             </script>""",
@@ -107,7 +109,7 @@ class RelatedGroupWidgetTests(TestCase):
             [],
             {'id': 'groups'})
 
-        self.assertIn("localSitePrefix: 's/supertest/',", html)
+        self.assertIn('"localSitePrefix": "s/supertest/",', html)
 
     def test_value_from_datadict(self):
         """Testing RelatedGroupWidget.value_from_datadict"""

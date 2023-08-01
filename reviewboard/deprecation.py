@@ -7,11 +7,10 @@ stable.
 
 import warnings
 
-from djblets.deprecation import BaseRemovedInProductVersionWarning
+from housekeeping import BaseRemovedInWarning
 
 
-class BaseRemovedInReviewBoardVersionWarning(
-    BaseRemovedInProductVersionWarning):
+class BaseRemovedInReviewBoardVersionWarning(BaseRemovedInWarning):
     """Base class for a Review Board deprecation warning.
 
     All version-specific deprecation warnings inherit from this, allowing

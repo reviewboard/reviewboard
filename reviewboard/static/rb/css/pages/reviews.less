@@ -1227,12 +1227,30 @@
         white-space: pre-wrap;
 
         .codehilite {
+          background: rgba(255, 255, 255, 0.4);
           border-radius: 0;
           border-left: 0;
           border-right: 0;
 
           // Make this flush with the sides of the row.
           margin: 0 -4px;
+
+          /* Don't obscure the text or shift it to any side. Make it flush. */
+          .flush-codehilite();
+
+          &::before {
+            background: none;
+            border: 0;
+          }
+
+          &.codehilite-multiline-start {
+            border-top: @code-block-border-size @code-block-border-color solid;
+          }
+
+          &.codehilite-multiline-end {
+            border-bottom: @code-block-border-size @code-block-border-color
+                           solid;
+          }
 
           pre:empty {
             /* Give this a reasonable height so it's not just blank. */
@@ -1471,7 +1489,7 @@
   margin: 0;
   padding: @review-dialog-padding;;
 
-  label {
+  label[for="id_shipit"] {
     color: black;
     font-weight: bold;
     margin-top: 10px;
@@ -1493,7 +1511,7 @@
     color: #AB5603;
     font-size: 1.1em;
     font-weight: bold;
-    margin-bottom: 2em;
+    margin: 1em 0 2em 0;
     text-decoration: none;
 
     .inline-editor-label();

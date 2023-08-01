@@ -1,7 +1,7 @@
 /**
  * A view for the diff file index.
  */
-import { BaseView, EventsHash, spina } from '@beanbag/spina';
+import { BaseView, spina } from '@beanbag/spina';
 
 import { EnabledFeatures } from 'reviewboard/common';
 

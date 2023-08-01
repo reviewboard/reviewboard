@@ -167,7 +167,7 @@ class SCMToolRegistry(EntryPointRegistry):
         point's name.
 
         Args:
-            entry_point (pkg_resources.EntryPoint):
+            entry_point (importlib.metadata.EntryPoint):
                 The entry point.
 
         Returns:

@@ -150,6 +150,7 @@ const rbConfig = {
 
         '@beanbag/spina',
         'backbone',
+        'codemirror',
         'django',
         'djblets',
         'jasmine-core',

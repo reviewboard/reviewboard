@@ -4,10 +4,11 @@
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
 import { EnabledFeatures } from 'reviewboard/common';
-import { UserSession } from 'reviewboard/common/models/userSession';
+import { TextEditorView } from 'reviewboard/ui/views/textEditorView';
+import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
 import { CommentEditor } from '../models/commentEditorModel';
-import { ReviewRequestEditor } from '../models/reviewRequestEditor';
+import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 
 
 /**
@@ -444,7 +445,7 @@ export class CommentDialogView extends BaseView<
     _$issueVerificationField: JQuery;
     _$markdownOptions: JQuery;
     _$title: JQuery;
-    _textEditor: RB.TextEditorView;
+    _textEditor: TextEditorView;
     #$draftWarning;
 
     /**
@@ -566,7 +567,7 @@ export class CommentDialogView extends BaseView<
          * We need to handle keypress here, rather than in events above,
          * because jQuery will actually handle it. Backbone fails to.
          */
-        this._textEditor = new RB.TextEditorView({
+        this._textEditor = new TextEditorView({
             autoSize: false,
             bindRichText: {
                 attrName: 'richText',

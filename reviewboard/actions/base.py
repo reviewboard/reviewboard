@@ -441,6 +441,14 @@ class BaseMenuAction(BaseAction):
     js_model_class = 'RB.Actions.MenuAction'
     js_view_class = 'RB.Actions.MenuActionView'
 
+    #: An ordered list of child menu IDs.
+    #:
+    #: This can be used to specify a specific order for children to appear in.
+    #: The special string '--' can be used to add separators. Any children that
+    #: are registered with this menu as their parent but do not appear in this
+    #: list will be added at the end of the menu.
+    children: List[str] = []
+
     def get_extra_context(
         self,
         *,
@@ -493,10 +501,27 @@ class BaseMenuAction(BaseAction):
         """
         from reviewboard.actions import actions_registry
 
-        data = super().get_js_model_data(context=context)
-        data['children'] = [
+        rendered_child_ids = [
             child.action_id
             for child in actions_registry.get_children(self.action_id)
             if child.should_render(context=context)
         ]
+
+        children = []
+
+        # Add in any children with explicit ordering first.
+        for child_id in self.children:
+            if child_id == '--':
+                children.append(child_id)
+            elif child_id in rendered_child_ids:
+                children.append(child_id)
+                rendered_child_ids.remove(child_id)
+
+        # Now add any other actions that weren't in self.children.
+        for child_id in rendered_child_ids:
+            children.append(child_id)
+
+        data = super().get_js_model_data(context=context)
+        data['children'] = children
+
         return data

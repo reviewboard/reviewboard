@@ -23,32 +23,29 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+from __future__ import annotations
+
+from enum import Enum
+from typing import Optional, Union
+
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models.signals import m2m_changed
-from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
+from typing_extensions import Final, Literal, TypeAlias
 
 from reviewboard.site.managers import LocalSiteManager
-from reviewboard.site.signals import local_site_user_added
 
 
-class _LocalSiteALL:
-    """A sentinel indicating all LocalSites should be considered.
+class _LocalSiteConstants(Enum):
+    """Constants for special LocalSite queries.
 
     Version Added:
-        5.0
+        6.0:
+        This replaces an older ALL-specific object, to aid in typing.
     """
 
-    def __repr__(self):
-        """Return a string representation of the sentinel.
-
-        Returns:
-            str:
-            The string representation.
-        """
-        return '<LocalSite.ALL>'
+    ALL = '<ALL>'
 
 
 class LocalSite(models.Model):
@@ -75,9 +72,12 @@ class LocalSite(models.Model):
     #: Check the documentation for a function's argument to determine whether
     #: this is supported.
     #:
+    #: Note that the value is considered opaque. It can be compared directly
+    #: using ``is``.
+    #:
     #: Version Added:
     #:     5.0
-    ALL = _LocalSiteALL()
+    ALL: Final[_LocalSiteConstants] = _LocalSiteConstants.ALL
 
     name = models.SlugField(_('name'), max_length=32, blank=False, unique=True)
     public = models.BooleanField(
@@ -123,3 +123,11 @@ class LocalSite(models.Model):
         db_table = 'site_localsite'
         verbose_name = _('Local Site')
         verbose_name_plural = _('Local Sites')
+
+
+#: A filter value for matching a LocalSite, all LocalSites, or None.
+#:
+#: Version Added:
+#:     6.0
+AnyOrAllLocalSites: TypeAlias = Union[Optional[LocalSite],
+                                      Literal[_LocalSiteConstants.ALL]]

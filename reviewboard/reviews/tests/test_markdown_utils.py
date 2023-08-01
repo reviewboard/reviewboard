@@ -136,6 +136,22 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
             ),
             expected_html2)
 
+    def test_render_markdown_with_code_blocks_shebang(self):
+        """Testing render_markdown with code blocks and shebang"""
+        self.assertEqual(
+            render_markdown(
+                'test:\n'
+                '\n'
+                '    #!/bin/sh\n'
+                '    exit 0\n'
+            ),
+            '<p>test:</p>\n'
+            '<div class="codehilite"><pre><span></span>'
+            '<code><span class="ch">#!/bin/sh</span>\n'
+            '<span class="nb">exit</span><span class="w"> </span>'
+            '<span class="m">0</span>\n'
+            '</code></pre></div>')
+
     def test_render_markdown_with_emojis(self):
         """Testing render_markdown with emojis"""
         self.assertEqual(

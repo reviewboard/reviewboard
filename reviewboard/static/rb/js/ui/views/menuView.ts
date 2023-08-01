@@ -98,6 +98,14 @@ export interface MenuItemOptions {
     id?: string;
 
     /**
+     * Whether to insert the new action at the beginning rather than the end.
+     *
+     * Version Added:
+     *     6.0
+     */
+    prepend?: boolean;
+
+    /**
      * Explicit text to use for the menu item.
      */
     text?: string;
@@ -106,6 +114,20 @@ export interface MenuItemOptions {
      * A function to call when the menu item is clicked.
      */
     onClick?: { (eventObject: MouseEvent): void };
+}
+
+
+/**
+ * Options for adding separators.
+ *
+ * Version Added:
+ *     6.0
+ */
+export interface MenuSeparatorOptions {
+    /**
+     * Whether to add the separator at the beginning rather than the end.
+     */
+    prepend?: boolean;
 }
 
 
@@ -261,6 +283,7 @@ export class MenuView extends BaseView<
      *     6.0:
      *     * Added the $child option argument.
      *     * Added the ``id`` option arg.
+     *     * Added the ''prepend`` option arg.
      *
      * Args:
      *     options (MenuItemOptions, optional):
@@ -305,8 +328,37 @@ export class MenuView extends BaseView<
                 role: 'menuitem',
                 tabindex: '-1',
             })
-            .on('mousemove', e => this.#onMenuItemMouseMove(e))
-            .appendTo(this.el);
+            .on('mousemove', e => this.#onMenuItemMouseMove(e));
+
+        if (options.prepend) {
+            $el.prependTo(this.el);
+        } else {
+            $el.appendTo(this.el);
+        }
+
+        return $el;
+    }
+
+    /**
+     * Add a separator to the menu.
+     *
+     * Version Added:
+     *     6.0
+     *
+     * Returns:
+     *     jQuery:
+     *     The jQuery-wrapped element for the separator.
+     */
+    addSeparator(
+        options: MenuSeparatorOptions = {},
+    ): JQuery {
+        const $el = $('<div class="rb-c-menu__separator" role="separator">');
+
+        if (options.prepend) {
+            $el.prependTo(this.el);
+        } else {
+            $el.appendTo(this.el);
+        }
 
         return $el;
     }

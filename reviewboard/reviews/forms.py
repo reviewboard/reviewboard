@@ -54,7 +54,7 @@ class DefaultReviewerForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
     repository = forms.ModelMultipleChoiceField(
         label=_('Repositories'),
         required=False,
-        queryset=Repository.objects.filter(visible=True).order_by('name'),
+        queryset=Repository.objects.order_by('name'),
         help_text=_('The list of repositories to specifically match this '
                     'default reviewer for. If left empty, this will match '
                     'all repositories.'),
@@ -68,7 +68,7 @@ class DefaultReviewerForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
     groups = forms.ModelMultipleChoiceField(
         label=_('Default groups'),
         required=False,
-        queryset=Group.objects.filter(visible=True).order_by('name'),
+        queryset=Group.objects.order_by('name'),
         widget=RelatedGroupWidget())
 
     def clean(self):

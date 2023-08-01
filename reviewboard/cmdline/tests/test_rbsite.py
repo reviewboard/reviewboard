@@ -667,9 +667,18 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             "from django.core.wsgi import get_wsgi_application\n"
             "application = get_wsgi_application()\n"))
 
+    def test_get_wsgi_upgrade_needed_with_pkg_resources(self):
+        """Testing Site.get_wsgi_upgrade_needed with pkg_resources imports"""
+        self.assertTrue(self._get_wsgi_upgrade_needed(
+            'import __main__\n'
+            '__main__.__requires__ = [\'ReviewBoard\']\n'
+            'import pkg_resources\n'
+            '\n'
+            'from reviewboard.wsgi import application\n'))
+
     def test_get_wsgi_upgrade_needed_with_rb4(self):
         """Testing Site.get_wsgi_upgrade_needed with RB4+ configuration"""
-        self.assertFalse(self._get_wsgi_upgrade_needed(
+        self.assertTrue(self._get_wsgi_upgrade_needed(
             "import os\n"
             "import sys\n"
             "\n"
@@ -683,6 +692,38 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             " %% os.environ['PYTHONPATH']\n"
             "\n"
             "sys.path = ['%(sitedir)s/conf'] + sys.path\n"
+            "\n"
+            "from reviewboard.wsgi import application\n"))
+
+    def test_get_wsgi_upgrade_needed_with_rb505(self):
+        """Testing Site.get_wsgi_upgrade_needed with RB5 through 5.0.5
+        configuration
+        """
+        self.assertTrue(self._get_wsgi_upgrade_needed(
+            "import os\n"
+            "\n"
+            "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
+            "\n"
+            "from reviewboard.wsgi import application\n"))
+
+    def test_get_wsgi_upgrade_needed_with_rb506(self):
+        """Testing Site.get_wsgi_upgrade_needed with RB 5.0.6+ configuration"""
+        self.assertFalse(self._get_wsgi_upgrade_needed(
+            "import os\n"
+            "import sys\n"
+            "\n"
+            "\n"
+            "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
+            "\n"
+            "sys.path.insert(0, os.path.join(\n"
+            "    os.environ['REVIEWBOARD_SITEDIR'], 'venv', 'lib',\n"
+            "    'python%%s.%%s' %% sys.version_info[:2], 'site-packages'))\n"
+            "\n"
+            "\n"
+            "# BEGIN CUSTOM SETTINGS\n"
+            "\n"
+            "# END CUSTOM SETTINGS\n"
+            "\n"
             "\n"
             "from reviewboard.wsgi import application\n"))
 
@@ -916,7 +957,11 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
     def test_upgrade_wsgi_with_rb_pre_4(self):
         """Testing Site.upgrade_wsgi with pre-RB4 configuration"""
         self._check_upgrade_wsgi(
-            ("import os\n"
+            ("import __main__\n"
+             "__main__.__requires__ = ['ReviewBoard']\n"
+             "import pkg_resources\n"
+             "\n"
+             "import os\n"
              "import sys\n"
              "\n"
              "os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'\n"
@@ -935,18 +980,31 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             ("import os\n"
              "import sys\n"
              "\n"
+             "\n"
+             "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
+             "\n"
+             "sys.path.insert(0, os.path.join(\n"
+             "    os.environ['REVIEWBOARD_SITEDIR'], 'venv', 'lib',\n"
+             "    'python%%s.%%s' %% sys.version_info[:2], 'site-packages'))\n"
+             "\n"
+             "\n"
+             "# BEGIN CUSTOM SETTINGS\n"
              "os.environ['CUSTOM'] = 'abc123'\n"
              "os.environ['PATH'] = '/usr/local/bin:%%s'"
              " %% os.environ['PATH']\n"
+             "# END CUSTOM SETTINGS\n"
              "\n"
-             "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
              "\n"
              "from reviewboard.wsgi import application\n"))
 
     def test_upgrade_wsgi_with_rb_4_beta(self):
         """Testing Site.upgrade_wsgi with RB4 beta configuration"""
         self._check_upgrade_wsgi(
-            ("import os\n"
+            ("import __main__\n"
+             "__main__.__requires__ = ['ReviewBoard']\n"
+             "import pkg_resources\n"
+             "\n"
+             "import os\n"
              "import sys\n"
              "\n"
              "os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'\n"
@@ -965,37 +1023,128 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             ("import os\n"
              "import sys\n"
              "\n"
+             "\n"
+             "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
+             "\n"
+             "sys.path.insert(0, os.path.join(\n"
+             "    os.environ['REVIEWBOARD_SITEDIR'], 'venv', 'lib',\n"
+             "    'python%%s.%%s' %% sys.version_info[:2], 'site-packages'))\n"
+             "\n"
+             "\n"
+             "# BEGIN CUSTOM SETTINGS\n"
              "os.environ['CUSTOM'] = 'abc123'\n"
              "os.environ['PATH'] = '/usr/local/bin:%%s'"
              " %% os.environ['PATH']\n"
+             "# END CUSTOM SETTINGS\n"
              "\n"
-             "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
              "\n"
              "from reviewboard.wsgi import application\n"))
 
-    def test_upgrade_wsgi_with_custom_values(self):
-        """Testing Site.upgrade_wsgi with custom setting values"""
+    def test_upgrade_wsgi_with_rb_5_0_5(self):
+        """Testing Site.upgrade_wsgi with RB 5.0-5.0.5 configuration"""
         self._check_upgrade_wsgi(
-            ("import os, sys\n"
-             "\n"
-             "os.environ['DJANGO_SETTINGS_MODULE'] = 'special.settings'\n"
-             "os.environ['PYTHON_EGG_CACHE'] = '/tmp/egg_cache\n"
-             "os.environ['HOME'] = '/root'\n"
-             "os.environ['CUSTOM'] = 'abc123'\n"
-             "os.environ['PATH'] = '/usr/local/bin:%%s'"
-             " %% os.environ['PATH']\n"
-             "os.environ['PYTHONPATH'] = '/app/python'\n"
-             "\n"
-             "import django.core.handlers.wsgi\n"
-             "application = django.core.handlers.wsgi.WSGIHandler()\n"),
-            ("import os, sys\n"
-             "\n"
-             "os.environ['CUSTOM'] = 'abc123'\n"
-             "os.environ['PATH'] = '/usr/local/bin:%%s'"
-             " %% os.environ['PATH']\n"
-             "os.environ['PYTHONPATH'] = '/app/python'\n"
+            ("import os\n"
              "\n"
              "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
+             "\n"
+             "from reviewboard.wsgi import application\n"),
+            ("import os\n"
+             "import sys\n"
+             "\n"
+             "\n"
+             "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
+             "\n"
+             "sys.path.insert(0, os.path.join(\n"
+             "    os.environ['REVIEWBOARD_SITEDIR'], 'venv', 'lib',\n"
+             "    'python%%s.%%s' %% sys.version_info[:2], 'site-packages'))\n"
+             "\n"
+             "\n"
+             "# BEGIN CUSTOM SETTINGS\n"
+             "\n"
+             "# END CUSTOM SETTINGS\n"
+             "\n"
+             "\n"
+             "from reviewboard.wsgi import application\n"))
+
+    def test_upgrade_wsgi_with_rb_5_0_6(self):
+        """Testing Site.upgrade_wsgi with RB 5.0.6+ configuration"""
+        self._check_upgrade_wsgi(
+            ("import os\n"
+             "\n"
+             "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
+             "\n"
+             "sys.path.insert(0, os.path.join(\n"
+             "    os.environ['REVIEWBOARD_SITEDIR'], 'venv', 'lib',\n"
+             "    'python%%s.%%s' %% sys.version_info[:2], 'site-packages'))\n"
+             "\n"
+             "\n"
+             "# BEGIN CUSTOM SETTINGS\n"
+             "\n"
+             "# END CUSTOM SETTINGS\n"
+             "\n"
+             "\n"
+             "from reviewboard.wsgi import application\n"),
+            ("import os\n"
+             "import sys\n"
+             "\n"
+             "\n"
+             "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
+             "\n"
+             "sys.path.insert(0, os.path.join(\n"
+             "    os.environ['REVIEWBOARD_SITEDIR'], 'venv', 'lib',\n"
+             "    'python%%s.%%s' %% sys.version_info[:2], 'site-packages'))\n"
+             "\n"
+             "\n"
+             "# BEGIN CUSTOM SETTINGS\n"
+             "\n"
+             "# END CUSTOM SETTINGS\n"
+             "\n"
+             "\n"
+             "from reviewboard.wsgi import application\n"))
+
+    def test_upgrade_wsgi_with_rb_5_0_6_custom(self):
+        """Testing Site.upgrade_wsgi with RB 5.0.6+ configuration with
+        custom settings
+        """
+        self._check_upgrade_wsgi(
+            ("import os\n"
+             "\n"
+             "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
+             "\n"
+             "sys.path.insert(0, os.path.join(\n"
+             "    os.environ['REVIEWBOARD_SITEDIR'], 'venv', 'lib',\n"
+             "    'python%%s.%%s' %% sys.version_info[:2], 'site-packages'))\n"
+             "\n"
+             "\n"
+             "# BEGIN CUSTOM SETTINGS\n"
+             "\n"
+             "# Some comment.\n"
+             "import foo\n"
+             "os.environ['FOO'] = foo.get_bar()\n"
+             "\n"
+             "# END CUSTOM SETTINGS\n"
+             "\n"
+             "\n"
+             "from reviewboard.wsgi import application\n"),
+            ("import os\n"
+             "import sys\n"
+             "\n"
+             "\n"
+             "os.environ['REVIEWBOARD_SITEDIR'] = '%(sitedir)s'\n"
+             "\n"
+             "sys.path.insert(0, os.path.join(\n"
+             "    os.environ['REVIEWBOARD_SITEDIR'], 'venv', 'lib',\n"
+             "    'python%%s.%%s' %% sys.version_info[:2], 'site-packages'))\n"
+             "\n"
+             "\n"
+             "# BEGIN CUSTOM SETTINGS\n"
+             "\n"
+             "# Some comment.\n"
+             "import foo\n"
+             "os.environ['FOO'] = foo.get_bar()\n"
+             "\n"
+             "# END CUSTOM SETTINGS\n"
+             "\n"
              "\n"
              "from reviewboard.wsgi import application\n"))
 

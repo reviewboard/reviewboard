@@ -14,7 +14,7 @@ import { BaseView, spina } from '@beanbag/spina';
  *     6.0
  */
 @spina
-export class Overlay extends BaseView {
+export class OverlayView extends BaseView {
     static className = 'rb-c-event-overlay';
     static events = {
         'click': '_onClick',

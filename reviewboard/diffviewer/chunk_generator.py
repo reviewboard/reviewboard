@@ -11,8 +11,8 @@ from django.utils.html import escape
 from django.utils.translation import get_language, gettext as _
 from djblets.log import log_timed
 from djblets.cache.backend import cache_memoize
-from djblets.deprecation import deprecate_non_keyword_only_args
 from djblets.siteconfig.models import SiteConfiguration
+from housekeeping.functions import deprecate_non_keyword_only_args
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import (find_lexer_class,

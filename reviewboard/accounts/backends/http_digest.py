@@ -1,7 +1,10 @@
 """HTTP Digest authentication backend."""
 
+from __future__ import annotations
+
 import hashlib
 import logging
+from typing import Optional, TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -9,6 +12,9 @@ from django.utils.translation import gettext_lazy as _
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import HTTPBasicSettingsForm
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
 
 
 logger = logging.getLogger(__name__)
@@ -41,12 +47,26 @@ class HTTPDigestBackend(BaseAuthBackend):
     settings_form = HTTPBasicSettingsForm
     login_instructions = _('Use your standard username and password.')
 
-    def authenticate(self, request, username, password, **kwargs):
+    def authenticate(
+        self,
+        request: Optional[HttpRequest] = None,
+        *,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        **kwargs,
+    ) -> Optional[User]:
         """Authenticate a user against the HTTP password file.
 
         This will attempt to authenticate the user against the digest password
         file. If the username and password are valid, a user will be returned,
         and added to the database if it doesn't already exist.
+
+        Version Changed:
+            6.0:
+            * ``request`` is now optional.
+            * ``username`` and ``password`` are technically optional, to
+              aid in consistency for type hints, but will result in a ``None``
+              result.
 
         Version Changed:
             4.0:
@@ -57,10 +77,10 @@ class HTTPDigestBackend(BaseAuthBackend):
             request (django.http.HttpRequest):
                 The HTTP request from the caller. This may be ``None``.
 
-            username (unicode):
+            username (str):
                 The username to authenticate.
 
-            password (unicode):
+            password (str):
                 The user's password.
 
             **kwargs (dict, unused):
@@ -71,6 +91,13 @@ class HTTPDigestBackend(BaseAuthBackend):
             The authenticated user, or ``None`` if the user could not be
             authenticated for any reason.
         """
+        if not username or not password:
+            logger.error('Attempted to authenticate HTTP Digest user without '
+                         'supplying either a username or password parameter! '
+                         'This may be a bug in Review Board. Please report '
+                         'it.')
+            return None
+
         username = username.strip()
 
         filename = settings.DIGEST_FILE_LOCATION
@@ -100,7 +127,11 @@ class HTTPDigestBackend(BaseAuthBackend):
 
         return None
 
-    def get_or_create_user(self, username, request=None):
+    def get_or_create_user(
+        self,
+        username: str,
+        request: Optional[HttpRequest] = None,
+    ) -> Optional[User]:
         """Return an existing user or create one if it doesn't exist.
 
         This does not authenticate the user.
@@ -110,7 +141,7 @@ class HTTPDigestBackend(BaseAuthBackend):
         lookup.
 
         Args:
-            username (unicode):
+            username (str):
                 The name of the user to look up or create.
 
             request (django.http.HttpRequest, unused):

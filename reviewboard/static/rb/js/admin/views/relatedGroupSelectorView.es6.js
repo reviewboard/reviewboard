@@ -22,16 +22,23 @@ RB.RelatedGroupSelectorView = Djblets.RelatedObjectSelectorView.extend({
      *         Options for the view.
      *
      * Option Args:
-     *     localSitePrefix (string):
+     *     localSitePrefix (string, optional):
      *         The URL prefix for the local site, if any.
      *
-     *     multivalued (boolean):
+     *     multivalued (boolean, optional):
      *         Whether or not the widget should allow selecting multuple
      *         values.
      *
-     *     inviteOnly (boolean):
-     *         Whether or not we want to only search for inviteOnly review
-     *         groups.
+     *     inviteOnly (boolean, optional):
+     *         Whether or not to limit results to accessible review groups
+     *         that are invite-only.
+     *
+     *     showInvisible (boolean, optional):
+     *         Whether to include accessible invisible review groups in the
+     *         results.
+     *
+     *         Version Added:
+     *             5.0.6
      */
     initialize(options) {
         Djblets.RelatedObjectSelectorView.prototype.initialize.call(
@@ -49,6 +56,7 @@ RB.RelatedGroupSelectorView = Djblets.RelatedObjectSelectorView.extend({
 
         this._localSitePrefix = options.localSitePrefix || '';
         this._inviteOnly = options.inviteOnly;
+        this._showInvisible = options.showInvisible;
     },
 
     /**
@@ -88,18 +96,19 @@ RB.RelatedGroupSelectorView = Djblets.RelatedObjectSelectorView.extend({
             params.q = query;
         }
 
+        if (this._inviteOnly) {
+            params['invite-only'] = '1';
+        }
+
+        if (this._showInvisible) {
+            params['show-invisible'] = '1';
+        }
+
         $.ajax({
             type: 'GET',
             url: `${SITE_ROOT}${this._localSitePrefix}api/groups/`,
             data: params,
             success: results => {
-                /* This is done because we cannot filter using invite_only in
-                the groups api. */
-                if (this._inviteOnly === true) {
-                    results.groups = results.groups.filter(obj => {
-                        return obj.invite_only;
-                    });
-                }
                 callback(results.groups.map(u => ({
                     name: u.name,
                     display_name: u.display_name,

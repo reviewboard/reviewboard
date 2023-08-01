@@ -2,9 +2,9 @@
 import { BaseModel, spina } from '@beanbag/spina';
 
 import { ExtraDataMixin } from 'reviewboard/common/models/extraDataMixin';
-import { UserSession } from 'reviewboard/common/models/userSession';
+import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
-import { ReviewRequestEditor } from './reviewRequestEditor';
+import { ReviewRequestEditor } from './reviewRequestEditorModel';
 
 
 /**

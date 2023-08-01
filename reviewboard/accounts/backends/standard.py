@@ -1,6 +1,9 @@
 """Standard authentication backend."""
 
+from __future__ import annotations
+
 import logging
+from typing import Any, Dict, Optional, Set, TYPE_CHECKING, Union, cast
 
 from django.conf import settings
 from django.contrib.auth import hashers
@@ -13,6 +16,11 @@ from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import StandardAuthSettingsForm
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.site.models import LocalSite
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
+    from django.db.models import Model
+    from django.http import HttpRequest
 
 
 logger = logging.getLogger(__name__)
@@ -60,11 +68,25 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
         'scmtools.change_repository',
     ]
 
-    def authenticate(self, request, username, password, **kwargs):
+    def authenticate(
+        self,
+        request: Optional[HttpRequest] = None,
+        *,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        **kwargs,
+    ) -> Optional[User]:
         """Authenticate the user.
 
         This will attempt to authenticate the user against the database.
         If the username and password are valid, a user will be returned.
+
+        Version Changed:
+            6.0:
+            * ``request`` is now optional.
+            * ``username`` and ``password`` are technically optional, to
+              aid in consistency for type hints, but will result in a ``None``
+              result.
 
         Version Changed:
             4.0:
@@ -75,10 +97,10 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
             request (django.http.HttpRequest):
                 The HTTP request from the caller. This may be ``None``.
 
-            username (unicode):
+            username (str):
                 The username used for authentication.
 
-            password (unicode):
+            password (str):
                 The password used for authentication.
 
             **kwargs (dict, unused):
@@ -89,28 +111,82 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
             The authenticated user, or ``None`` if the user could not be
             authenticated for any reason.
         """
-        return ModelBackend.authenticate(self,
-                                         request,
-                                         username=username,
-                                         password=password,
-                                         **kwargs)
+        return cast(
+            User,
+            ModelBackend.authenticate(self,
+                                      request,
+                                      username=username,
+                                      password=password,
+                                      **kwargs))
 
-    def get_or_create_user(self, username, request):
-        """Get an existing user, or create one if it does not exist."""
+    def get_or_create_user(
+        self,
+        username: str,
+        request: Optional[HttpRequest] = None,
+    ) -> Optional[User]:
+        """Return an existing user or create one if it doesn't exist.
+
+        This does not authenticate the user.
+
+        Args:
+            username (str):
+                The username to fetch or create.
+
+            request (django.http.HttpRequest, optional):
+                The HTTP request from the client.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The resulting user, or ``None`` if one could not be found.
+        """
         return get_object_or_none(User, username=username)
 
-    def update_password(self, user, password):
-        """Update the given user's password."""
+    def update_password(
+        self,
+        user: User,
+        password: str,
+    ) -> None:
+        """Update a user's password on the backend.
+
+        This will update the user information, but will not save the user
+        instance. That must be saved manually.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whose password will be changed.
+
+            password (str):
+                The new password.
+        """
         user.password = hashers.make_password(password)
 
-    def get_all_permissions(self, user, obj=None):
-        """Get a list of all permissions for a user.
+    def get_all_permissions(
+        self,
+        user: Union[AbstractBaseUser, AnonymousUser],
+        obj: Optional[Model] = None,
+    ) -> Set[str]:
+        """Return a list of all permissions for a user.
 
         If a LocalSite instance is passed as ``obj``, then the permissions
         returned will be those that the user has on that LocalSite. Otherwise,
         they will be their global permissions.
 
         It is not legal to pass any other object.
+
+        Args:
+            user (django.contrib.auth.models.AnonymousUser or
+                  django.contrib.auth.models.User):
+                The user to retrieve permission for.
+
+            obj (django.db.models.Model, optional):
+                A model used as context.
+
+                If provided, this must be a
+                :py:class:`~reviewboard.site.models.LocalSite`.
+
+        Returns:
+            set of str:
+            A set of all permission codes.
         """
         if obj is not None and not isinstance(obj, LocalSite):
             logger.error('Unexpected object %r passed to '
@@ -136,11 +212,16 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
         if obj is not None:
             # We know now that this is a LocalSite, due to the assertion
             # above.
-            if not hasattr(user, '_local_site_perm_cache'):
-                user._local_site_perm_cache = {}
+            local_site_perm_cache: Dict[str, Set[str]]
 
-            if obj.pk not in user._local_site_perm_cache:
-                perm_cache = set()
+            try:
+                local_site_perm_cache = getattr(user, '_local_site_perm_cache')
+            except AttributeError:
+                local_site_perm_cache = {}
+                setattr(user, '_local_site_perm_cache', local_site_perm_cache)
+
+            if obj.pk not in local_site_perm_cache:
+                perm_cache: Set[str] = set()
 
                 try:
                     site_profile = user.get_site_profile(
@@ -157,21 +238,44 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
                 except LocalSiteProfile.DoesNotExist:
                     pass
 
-                user._local_site_perm_cache[obj.pk] = perm_cache
+                local_site_perm_cache[obj.pk] = perm_cache
 
             permissions = permissions.copy()
-            permissions.update(user._local_site_perm_cache[obj.pk])
+            permissions.update(local_site_perm_cache[obj.pk])
 
         return permissions
 
-    def has_perm(self, user, perm, obj=None):
-        """Get whether or not a user has the given permission.
+    def has_perm(
+        self,
+        user: Union[AbstractBaseUser, AnonymousUser],
+        perm: str,
+        obj: Any = None,
+    ) -> bool:
+        """Return whether or not a user has the given permission.
 
         If a LocalSite instance is passed as ``obj``, then the permissions
         checked will be those that the user has on that LocalSite. Otherwise,
         they will be their global permissions.
 
         It is not legal to pass any other object.
+
+        Args:
+            user (django.contrib.auth.models.AnonymousUser or
+                  django.contrib.auth.models.User):
+                The user to retrieve permission for.
+
+            perm (str):
+                The permission code to check for.
+
+            obj (django.db.models.Model, optional):
+                A model used as context.
+
+                If provided, this must be a
+                :py:class:`~reviewboard.site.models.LocalSite`.
+
+        Returns:
+            bool:
+            ``True`` if the user has the permission. ``False`` if it does not.
         """
         if obj is not None and not isinstance(obj, LocalSite):
             logger.error('Unexpected object %r passed to has_perm. '
@@ -186,13 +290,21 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
             return False
 
         if obj is not None:
-            if not hasattr(user, '_local_site_admin_for'):
-                user._local_site_admin_for = {}
+            local_site_admin_for: Dict[str, bool]
 
-            if obj.pk not in user._local_site_admin_for:
-                user._local_site_admin_for[obj.pk] = obj.is_mutable_by(user)
+            try:
+                local_site_admin_for = getattr(user, '_local_site_admin_for')
+            except AttributeError:
+                local_site_admin_for = {}
+                setattr(user, '_local_site_admin_for', local_site_admin_for)
 
-            if user._local_site_admin_for[obj.pk]:
+            try:
+                is_mutable = local_site_admin_for[obj.pk]
+            except KeyError:
+                is_mutable = obj.is_mutable_by(user)
+                local_site_admin_for[obj.pk] = is_mutable
+
+            if is_mutable:
                 return perm in self._VALID_LOCAL_SITE_PERMISSIONS
 
-        return super(StandardAuthBackend, self).has_perm(user, perm, obj)
+        return super().has_perm(user, perm, obj)

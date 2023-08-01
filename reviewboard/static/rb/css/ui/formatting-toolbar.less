@@ -1,0 +1,88 @@
+/**
+ * Styles for the rich text formatting toolbar.
+ */
+@import (reference) "lib/css/fontawesome.less";
+@import (reference) "rb/css/ui/colors.less";
+
+
+/**
+ * The rich text formatting toolbar.
+ */
+ .rb-c-formatting-toolbar {
+  bottom: 0px;
+  display: flex;
+  margin: 0.5em;
+  position: absolute;
+
+  a, label {
+    color: #rb-ns-ui.colors[@black];
+  }
+
+  &__btn-group {
+    display: flex;
+    margin: 0.75em 0;
+
+    &:not(:last-child) {
+      border-right: 1px solid #rb-ns-ui.colors[@grey-70];
+    }
+  }
+
+  &__btn {
+    border-radius: 2px;
+    margin: 0 0.25em;
+    min-width: 14px;
+    padding: 0.25em 0.25em;
+    text-align: center;
+
+    &:hover, &:focus {
+      background-color: #rb-ns-ui.colors[@grey-80];
+      color: #rb-ns-ui.colors[@black];
+    }
+
+    &-bold:before {
+      .fa-icon();
+      content: @fa-var-bold;
+    }
+
+    &-code:before {
+      .fa-icon();
+      content: @fa-var-code;
+    }
+
+    &-image {
+      &:hover {
+        cursor: pointer;
+      }
+
+      &:before {
+        .fa-icon();
+        content: @fa-var-image;
+      }
+    }
+
+    &-italic:before {
+      .fa-icon();
+      content: @fa-var-italic;
+    }
+
+    &-link:before {
+      .fa-icon();
+      content: @fa-var-link;
+    }
+
+    &-list-ol:before {
+      .fa-icon();
+      content: @fa-var-list-ol;
+    }
+
+    &-list-ul:before {
+      .fa-icon();
+      content: @fa-var-list-ul;
+    }
+
+    &-strikethrough:before {
+      .fa-icon();
+      content: @fa-var-strikethrough;
+    }
+  }
+}

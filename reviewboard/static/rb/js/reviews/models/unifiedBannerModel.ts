@@ -3,7 +3,7 @@
  */
 import { BaseModel, spina } from '@beanbag/spina';
 
-import { ReviewRequestEditor } from './reviewRequestEditor';
+import { ReviewRequestEditor } from './reviewRequestEditorModel';
 
 
 declare function ngettext(singular: string, plural: string, n: number): string;

@@ -45,7 +45,8 @@ class LoggedInUserMixin(MixinParent):
             ``True`` if the action should render.
         """
         request = context['request']
-        return request.user.is_authenticated
+        return (super().should_render(context=context) and
+                request.user.is_authenticated)
 
 
 class AccountMenuAction(LoggedInUserMixin, BaseMenuAction):
@@ -104,7 +105,8 @@ class LoginAction(BaseAction):
             ``True`` if the action should render.
         """
         request = context['request']
-        return not request.user.is_authenticated
+        return (super().should_render(context=context) and
+                not request.user.is_authenticated)
 
 
 class LogoutAction(LoggedInUserMixin, BaseAction):
@@ -149,7 +151,8 @@ class AdminAction(BaseAction):
             ``True`` if the action should render.
         """
         request = context['request']
-        return request.user.is_staff
+        return (super().should_render(context=context) and
+                request.user.is_staff)
 
 
 class MyAccountAction(LoggedInUserMixin, BaseAction):
@@ -246,7 +249,8 @@ class FollowMenuAction(BaseMenuAction):
             bool:
             ``True`` if the action should render.
         """
-        return not getattr(settings, 'DISABLE_FOLLOW_MENU', False)
+        return (super().should_render(context=context) and
+                not getattr(settings, 'DISABLE_FOLLOW_MENU', False))
 
 
 class FollowNewsAction(BaseAction):

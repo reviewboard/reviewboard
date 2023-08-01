@@ -6,7 +6,7 @@ import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
 import {
     BaseResource,
     BaseResourceAttrs,
-} from '../resources/models/baseResource';
+} from '../resources/models/baseResourceModel';
 
 
 /** Attributes for the StoredItems model. */

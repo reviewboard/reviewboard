@@ -8,7 +8,7 @@ import {
     suite,
 } from 'jasmine-core';
 
-import { ReviewRequestEditor } from '../reviewRequestEditor';
+import { ReviewRequestEditor } from '../reviewRequestEditorModel';
 
 
 suite('rb/models/ReviewRequestEditor', function() {

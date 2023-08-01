@@ -3,14 +3,15 @@
  */
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
+import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
 import { EnabledFeatures } from 'reviewboard/common';
 import { PageView, PageViewOptions } from 'reviewboard/common/views/pageView';
-import { UserSession } from 'reviewboard/common/models/userSession';
+import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
-import { ReviewRequestEditor } from '../models/reviewRequestEditor';
+import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 import { ReviewRequestEditorView } from './reviewRequestEditorView';
 import { ReviewablePage } from '../models/reviewablePageModel';
-import { UnifiedBanner } from '../models/unifiedBanner';
+import { UnifiedBanner } from '../models/unifiedBannerModel';
 import { UnifiedBannerView } from './unifiedBannerView';
 
 
@@ -237,7 +238,7 @@ export class ReviewablePageView<
 
         this.options = options;
 
-        RB.DnDUploader.create();
+        DnDUploader.create();
 
         this.reviewRequestEditorView = new ReviewRequestEditorView({
             el: $('#review-request'),
