@@ -15,7 +15,7 @@ import { ReviewReply } from './reviewReplyModel';
  * Version Added:
  *     6.0
  */
-interface ReviewAttrs extends BaseResourceAttrs {
+export interface ReviewAttrs extends BaseResourceAttrs {
     /** The name of the review author. */
     authorName: string;
 
@@ -156,7 +156,9 @@ interface CreateDiffCommentOptions {
         'supportsExtraData',
     ],
 })
-export class Review extends BaseResource<ReviewAttrs> {
+export class Review<
+    TAttributes extends ReviewAttrs = ReviewAttrs
+> extends BaseResource<TAttributes> {
     /**
      * Return default values for the model attributes.
      *
@@ -164,7 +166,7 @@ export class Review extends BaseResource<ReviewAttrs> {
      *     ReviewAttrs:
      *     The attribute defaults.
      */
-    defaults(): ReviewAttrs {
+    defaults(): TAttributes {
         return _.defaults({
             'authorName': null,
             'bodyBottom': null,
@@ -237,9 +239,9 @@ export class Review extends BaseResource<ReviewAttrs> {
      */
     parseResourceData(
         rsp: ReviewResourceData,
-    ): Partial<ReviewAttrs> {
+    ): Partial<TAttributes> {
         const rawTextFields = rsp.raw_text_fields || rsp;
-        const data = super.parseResourceData(rsp) as Partial<ReviewAttrs>;
+        const data = super.parseResourceData(rsp) as Partial<TAttributes>;
 
         data.bodyTopRichText =
             (rawTextFields.body_top_text_type === 'markdown');

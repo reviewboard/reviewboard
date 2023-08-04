@@ -1,17 +1,29 @@
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+} from 'jasmine-core';
+
+import { BaseResource } from '../baseResourceModel';
+import { DraftReview } from '../draftReviewModel';
+
+
 suite('rb/resources/models/DraftReview', function() {
     let model;
     let parentObject;
 
     beforeEach(function() {
-        parentObject = new RB.BaseResource({
+        parentObject = new BaseResource({
             links: {
                 reviews: {
-                    href: '/api/foos/'
+                    href: '/api/foos/',
                 },
             },
         });
 
-        model = new RB.DraftReview({
+        model = new DraftReview({
             parentObject: parentObject,
         });
         model.rspNamespace = 'foo';
@@ -58,6 +70,7 @@ suite('rb/resources/models/DraftReview', function() {
                 spyOn(console, 'warn');
 
                 model.ready({
+                    error: () => done.fail(),
                     success: () => {
                         expect(parentObject.ready).toHaveBeenCalled();
                         expect(model._retrieveDraft).toHaveBeenCalled();
@@ -65,7 +78,6 @@ suite('rb/resources/models/DraftReview', function() {
 
                         done();
                     },
-                    error: () => done.fail(),
                 });
             });
         });

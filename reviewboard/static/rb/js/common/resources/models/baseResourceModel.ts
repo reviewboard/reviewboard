@@ -20,7 +20,12 @@ export interface ResourceLink {
 }
 
 
-/** Attributes for the BaseResource model. */
+/**
+ * Attributes for the BaseResource model.
+ *
+ * Version Added:
+ *     6.0
+ */
 export interface BaseResourceAttrs extends ModelAttributes {
     /** Extra data storage. */
     extraData: object;
@@ -38,6 +43,12 @@ export interface BaseResourceAttrs extends ModelAttributes {
 }
 
 
+/**
+ * Options for the ready operation.
+ *
+ * Version Added:
+ *     6.0
+ */
 interface ReadyOptions extends Backbone.PersistenceOptions {
     /** Data to send when fetching the object from the server. */
     data?: object;
@@ -52,12 +63,27 @@ interface ReadyOptions extends Backbone.PersistenceOptions {
 }
 
 
-interface SaveWithFilesOptions extends Backbone.ModelSaveOptions {
+/**
+ * Options for the save operation.
+ *
+ * Version Added:
+ *     6.0
+ */
+export interface SaveOptions extends Backbone.ModelSaveOptions {
     /** Additional attributes to include in the payload. */
-    attrs: {
+    attrs?: {
         [key: string]: unknown;
     };
+}
 
+
+/**
+ * Options for saving the resource with files.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface SaveWithFilesOptions extends SaveOptions {
     /** The boundary to use when formatting multipart payloads. */
     boundary?: string;
 }
@@ -452,7 +478,7 @@ export class BaseResource<
      *     A promise which resolves when the operation is complete.
      */
     async save(
-        options: Backbone.ModelSaveOptions = {},
+        options: SaveOptions = {},
         context: object = undefined,
     ): Promise<JQuery.jqXHR> {
         if (_.isFunction(options.success) ||

@@ -1,32 +1,68 @@
 /**
  * A draft review.
+ */
+
+import { spina } from '@beanbag/spina';
+
+import * as JSONSerializers from '../utils/serializers';
+import { SaveOptions } from './baseResourceModel';
+import { DraftResourceModelMixin } from './draftResourceModelMixin';
+import { Review, ReviewAttrs } from './reviewModel';
+
+
+/**
+ * Attributes for the DraftReview model.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface DraftReviewAttrs extends ReviewAttrs {
+    /** Whether to archive the review request after publishing the review. */
+    publishAndArchive: boolean;
+
+    /** Whether to limit e-mails to only the owner of the review request. */
+    publishToOwnerOnly: boolean;
+}
+
+
+/**
+ * A draft review.
  *
  * Draft reviews are more complicated than most objects. A draft may already
  * exist on the server, in which case we need to be able to get its ID. A
  * special resource exists at /reviews/draft/ which will redirect to the
  * existing draft if one exists, and return 404 if not.
  */
-RB.DraftReview = RB.Review.extend(_.extend({
-    defaults: _.defaults({
-        publishAndArchive: false,
-        publishToOwnerOnly: false,
-    }, RB.Review.prototype.defaults()),
+@spina({
+    mixins: [DraftResourceModelMixin],
+    prototypeAttrs: [
+        'attrToJsonMap',
+        'serializedAttrs',
+        'serializers',
+    ],
+})
+export class DraftReview extends Review {
+    defaults(): DraftReviewAttrs {
+        return _.defaults({
+            publishAndArchive: false,
+            publishToOwnerOnly: false,
+        }, super.defaults());
+    }
 
-    attrToJsonMap: _.defaults({
+    static attrToJsonMap = _.defaults({
         publishAndArchive: 'publish_and_archive',
         publishToOwnerOnly: 'publish_to_owner_only',
-    }, RB.Review.prototype.attrToJsonMap),
+    }, Review.attrToJsonMap);
 
-    serializedAttrs: [
+    static serializedAttrs = [
         'publishAndArchive',
         'publishToOwnerOnly',
-    ].concat(RB.Review.prototype.serializedAttrs),
+    ].concat(Review.serializedAttrs);
 
-    serializers: _.defaults({
-        publishAndArchive: RB.JSONSerializers.onlyIfValue,
-        publishToOwnerOnly: RB.JSONSerializers.onlyIfValue,
-    }, RB.Review.prototype.serializers),
-
+    static serializers = _.defaults({
+        publishAndArchive: JSONSerializers.onlyIfValue,
+        publishToOwnerOnly: JSONSerializers.onlyIfValue,
+    }, Review.serializers);
 
     /**
      * Publish the review.
@@ -51,12 +87,16 @@ RB.DraftReview = RB.Review.extend(_.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    async publish(options={}, context=undefined) {
+    async publish(
+        options: SaveOptions = {},
+        context: object = undefined,
+    ) {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
-            console.warn('RB.DraftReview.publish was called using callbacks. ' +
-                         'Callers should be updated to use promises instead.');
+            console.warn(`RB.DraftReview.publish was called using callbacks.
+                          Callers should be updated to use promises instead.`);
+
             return RB.promiseToCallbacks(
                 options, context, newOptions => this.publish(newOptions));
         }
@@ -76,4 +116,4 @@ RB.DraftReview = RB.Review.extend(_.extend({
 
         this.trigger('published');
     }
-}, RB.DraftResourceModelMixin));
+}
