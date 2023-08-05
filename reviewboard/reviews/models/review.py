@@ -407,6 +407,9 @@ class Review(models.Model):
         trivial: bool = False,
         to_owner_only: bool = False,
         request: Optional[HttpRequest] = None,
+        review_request_will_publish: bool = False,
+        *args,
+        **kwargs,
     ) -> None:
         """Publish this review.
 
@@ -426,8 +429,21 @@ class Review(models.Model):
 
             request (djang.http.HttpRequest, optional):
                 The HTTP request.
+
+            review_request_will_publish (bool, optional):
+                Whether the review request is also being published.
+
+                Version Added:
+                    6.0
+
+            *args (tuple):
+                Positional arguments for future expansion.
+
+            **kwargs (dict):
+                Keyword arguments for future expansion.
         """
-        can_publish, err = self.can_publish()
+        can_publish, err = self.can_publish(
+            review_request_will_publish=review_request_will_publish)
 
         if not can_publish:
             raise PublishError(err)

@@ -364,7 +364,9 @@ class BatchOperationView(CheckRequestMethodViewMixin,
                     },
                     status=404)
 
-            can_publish, err = review.can_publish()
+            can_publish, err = review.can_publish(
+                review_request_will_publish=(review.review_request in
+                                             review_requests))
 
             if not can_publish:
                 return JsonResponse(
@@ -428,7 +430,11 @@ class BatchOperationView(CheckRequestMethodViewMixin,
 
         for i, review in enumerate(reviews):
             try:
-                review.publish(user=user, trivial=suppress_notifications)
+                review.publish(
+                    user=user,
+                    trivial=suppress_notifications,
+                    review_request_will_publish=(review.review_request in
+                                                 review_requests))
 
                 review_request_id = review.review_request.pk
 
