@@ -22,13 +22,14 @@ PIPELINE_JAVASCRIPT = {
     'js-test-libs': {
         'source_filenames': (
             # The order matters for the Jasmine modules.
-            'lib/js/js-test-libs/jasmine-3.8.0.js',
-            'lib/js/js-test-libs/jasmine-html-3.8.0.js',
-            'lib/js/js-test-libs/jasmine-boot-3.8.0.js',
-            'lib/js/js-test-libs/jasmine.suites-1.0.js',
+            'lib/js/js-test-libs/jasmine-5.1.0.js',
+            'lib/js/js-test-libs/jasmine-html-5.1.0.js',
+            'lib/js/js-test-libs/jasmine-boot0-5.1.0.js',
+            'lib/js/js-test-libs/jasmine-boot1-5.1.0.js',
             'lib/js/js-test-libs/jasmine.hide-filtered-1.0.js',
             'lib/js/js-test-libs/jasmine.sourcemaps-1.0.js',
             'lib/js/js-test-libs/sourcemapped-stacktrace.js',
+            'lib/js/js-test-libs/index.ts',
         ),
         'output_filename': 'rb/js/js-test-libs.min.js',
     },
@@ -410,7 +411,7 @@ PIPELINE_STYLESHEETS = {
     },
     'js-tests': {
         'source_filenames': (
-            'lib/css/jasmine-3.5.0.css',
+            'lib/css/jasmine-5.1.0.css',
             'rb/css/pages/js-tests.less',
         ),
         'output_filename': 'rb/css/js-tests.min.css',

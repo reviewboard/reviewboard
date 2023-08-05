@@ -1,10 +1,10 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     beforeEach,
     describe,
     expect,
     it,
     spyOn,
-    suite,
 } from 'jasmine-core';
 
 import { UserSession } from 'reviewboard/common';

@@ -1,9 +1,9 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     beforeEach,
     describe,
     expect,
     it,
-    suite,
 } from 'jasmine-core';
 
 import { Review } from '../reviewModel';

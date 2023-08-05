@@ -1,3 +1,4 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     afterEach,
     beforeEach,
@@ -5,7 +6,6 @@ import {
     expect,
     it,
     spyOn,
-    suite,
 } from 'jasmine-core';
 
 import {

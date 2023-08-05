@@ -1,3 +1,4 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     afterEach,
     beforeEach,
@@ -6,7 +7,6 @@ import {
     fail,
     it,
     spyOn,
-    suite,
 } from 'jasmine-core';
 
 import { PageView } from '../../views/pageView';

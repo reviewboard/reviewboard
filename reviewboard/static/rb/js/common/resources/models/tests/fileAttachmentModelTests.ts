@@ -1,3 +1,4 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     beforeEach,
     describe,

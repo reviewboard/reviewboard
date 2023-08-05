@@ -1,9 +1,9 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     describe,
     expect,
     it,
     spyOn,
-    suite,
 } from 'jasmine-core';
 
 import { Review } from 'reviewboard/common';
