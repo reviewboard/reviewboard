@@ -302,26 +302,20 @@ suite('rb/views/ReviewRequestEditorView', function() {
         });
 
         describe('Draft banner', function() {
+            beforeEach(() => {
+                if (EnabledFeatures.unifiedBanner) {
+                    pending();
+                }
+            })
+
             describe('Visibility', function() {
                 it('Hidden when saving', function() {
-                    if (EnabledFeatures.unifiedBanner) {
-                        pending();
-
-                        return;
-                    }
-
                     expect(view.banner).toBe(null);
                     editor.trigger('saving');
                     expect(view.banner).toBe(null);
                 });
 
                 it('Show when saved', function(done) {
-                    if (EnabledFeatures.unifiedBanner) {
-                        pending();
-
-                        return;
-                    }
-
                     const summaryField = view.getFieldView('summary');
                     const summaryEditor = summaryField.inlineEditorView;
 
@@ -356,12 +350,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 it('Discard Draft', function() {
-                    if (EnabledFeatures.unifiedBanner) {
-                        pending();
-
-                        return;
-                    }
-
                     view.model.set('hasDraft', true);
                     view.showBanner();
 
@@ -373,12 +361,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 it('Discard Review Request', function() {
-                    if (EnabledFeatures.unifiedBanner) {
-                        pending();
-
-                        return;
-                    }
-
                     reviewRequest.set('public', false);
                     view.model.set('hasDraft', true);
                     view.showBanner();
@@ -421,12 +403,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     });
 
                     it('Basic publishing', async function() {
-                        if (EnabledFeatures.unifiedBanner) {
-                            pending();
-
-                            return;
-                        }
-
                         view.showBanner();
 
                         reviewRequest.draft.publish.and.callFake(() => {
@@ -438,12 +414,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     });
 
                     it('With submitter changed', async function() {
-                        if (EnabledFeatures.unifiedBanner) {
-                            pending();
-
-                            return;
-                        }
-
                         reviewRequest.draft.set({
                             links: {
                                 submitter: {
@@ -465,12 +435,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     });
 
                     it('With Send E-Mail turned on', async function() {
-                        if (EnabledFeatures.unifiedBanner) {
-                            pending();
-
-                            return;
-                        }
-
                         view.model.set('showSendEmail', true);
                         view.showBanner();
 
@@ -484,12 +448,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     });
 
                     it('With Send E-Mail turned off', async function() {
-                        if (EnabledFeatures.unifiedBanner) {
-                            pending();
-
-                            return;
-                        }
-
                         view.model.set('showSendEmail', true);
                         view.showBanner();
 
@@ -517,34 +475,16 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 it('Enabled by default', function() {
-                    if (EnabledFeatures.unifiedBanner) {
-                        pending();
-
-                        return;
-                    }
-
                     expect($buttons.prop('disabled')).toBe(false);
                 });
 
                 it('Disabled when saving', function() {
-                    if (EnabledFeatures.unifiedBanner) {
-                        pending();
-
-                        return;
-                    }
-
                     expect($buttons.prop('disabled')).toBe(false);
                     editor.trigger('saving');
                     expect($buttons.prop('disabled')).toBe(true);
                 });
 
                 it('Enabled when saved', function() {
-                    if (EnabledFeatures.unifiedBanner) {
-                        pending();
-
-                        return;
-                    }
-
                     expect($buttons.prop('disabled')).toBe(false);
                     editor.trigger('saving');
                     expect($buttons.prop('disabled')).toBe(true);
