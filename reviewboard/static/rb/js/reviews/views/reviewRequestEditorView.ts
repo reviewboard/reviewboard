@@ -5,6 +5,8 @@ import { BaseView, spina } from '@beanbag/spina';
 
 import {
     EnabledFeatures,
+    FileAttachment,
+    ResourceCollection,
     UserSession,
 } from 'reviewboard/common';
 import { DnDUploader } from 'reviewboard/ui';
@@ -827,7 +829,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      * from the rendered page.
      *
      * Args:
-     *     fileAttachment (RB.FileAttachment):
+     *     fileAttachment (FileAttachment):
      *         The file attachment.
      *
      *     collection (Backbone.Collection):
@@ -844,8 +846,8 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      *         Whether to disable animation.
      */
     buildFileAttachmentThumbnail(
-        fileAttachment: RB.FileAttachment,
-        collection: Backbone.Collection<RB.FileAttachment>,
+        fileAttachment: FileAttachment,
+        collection: ResourceCollection<FileAttachment>,
         options: {
             $el?: JQuery;
             noAnimation?: boolean;

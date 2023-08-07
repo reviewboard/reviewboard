@@ -1,10 +1,15 @@
+/** Mixin for resources that are children of a draft resource. */
+
+import { ReadyOptions } from './baseResourceModel';
+
+
 /**
  * Mixin for resources that are children of a draft resource.
  *
  * This will ensure that the draft is in a proper state before operating
  * on the resource.
  */
-RB.DraftResourceChildModelMixin = {
+export const DraftResourceChildModelMixin = {
     /**
      * Delete the object's resource on the server.
      *
@@ -22,7 +27,10 @@ RB.DraftResourceChildModelMixin = {
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    async destroy(options={}, context=undefined) {
+    async destroy(
+        options: Backbone.ModelDestroyOptions = {},
+        context: object = undefined,
+    ): Promise<void> {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
@@ -58,7 +66,10 @@ RB.DraftResourceChildModelMixin = {
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    async ready(options={}, context=undefined) {
+    async ready(
+        options: ReadyOptions = {},
+        context: object = undefined,
+    ): Promise<void> {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete) ||
@@ -72,5 +83,5 @@ RB.DraftResourceChildModelMixin = {
 
         await this.get('parentObject').ensureCreated();
         await _super(this).ready.call(this);
-    },
+    }
 };

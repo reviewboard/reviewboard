@@ -49,7 +49,7 @@ export interface BaseResourceAttrs extends ModelAttributes {
  * Version Added:
  *     6.0
  */
-interface ReadyOptions extends Backbone.PersistenceOptions {
+export interface ReadyOptions extends Backbone.PersistenceOptions {
     /** Data to send when fetching the object from the server. */
     data?: object;
 

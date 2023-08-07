@@ -1,11 +1,25 @@
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { BaseResource } from '../baseResourceModel';
+import { FileAttachment } from '../fileAttachmentModel';
+
+
 suite('rb/resources/models/FileAttachment', function() {
     let model;
+    let parentObject;
 
     beforeEach(function() {
-        model = new RB.FileAttachment({
-            parentObject: new RB.BaseResource({
-                'public': true,
-            }),
+        parentObject = new BaseResource({
+            public: true,
+        });
+
+        model = new FileAttachment({
+            parentObject: parentObject,
         });
     });
 
@@ -44,21 +58,23 @@ suite('rb/resources/models/FileAttachment', function() {
             const data = model.parse({
                 stat: 'ok',
                 file_attachment: {
-                    id: 42,
+                    attachment_history_id: 1,
                     caption: 'caption',
-                    url: 'downloadURL',
                     filename: 'filename',
+                    id: 42,
                     review_url: 'reviewURL',
                     revision: 123,
                     thumbnail: 'thumbnailHTML',
+                    url: 'downloadURL',
                 },
             });
 
             expect(data).not.toBe(undefined);
-            expect(data.id).toBe(42);
+            expect(data.attachmentHistoryID).toBe(1);
             expect(data.caption).toBe('caption');
             expect(data.downloadURL).toBe('downloadURL');
             expect(data.filename).toBe('filename');
+            expect(data.id).toBe(42);
             expect(data.reviewURL).toBe('reviewURL');
             expect(data.revision).toBe(123);
             expect(data.thumbnailHTML).toBe('thumbnailHTML');

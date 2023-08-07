@@ -4,7 +4,9 @@
 import { ModelAttributes, spina } from '@beanbag/spina';
 
 import {
+    FileAttachment,
     Page,
+    ResourceCollection,
     Review,
 } from 'reviewboard/common';
 
@@ -133,13 +135,16 @@ export class ReviewablePage<
         });
 
         const editorData = attributes.editorData || {};
-        const fileAttachments = new Backbone.Collection(
+        const fileAttachments = new ResourceCollection<FileAttachment>(
             _.map(editorData.fileAttachments,
                   (editorData.mutableByUser
                    ? attrs => reviewRequest.draft.createFileAttachment(attrs)
                    : attrs => reviewRequest.createFileAttachment(attrs))),
             {
-                model: RB.FileAttachment,
+                model: FileAttachment,
+                parentResource: (editorData.mutableByUser
+                                 ? reviewRequest.draft
+                                 : reviewRequest),
             });
 
         this.reviewRequestEditor = new ReviewRequestEditor(

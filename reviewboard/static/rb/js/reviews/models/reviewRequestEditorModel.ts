@@ -4,6 +4,14 @@
 
 import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
 
+import {
+    ResourceCollection,
+    FileAttachment,
+} from 'reviewboard/common';
+import {
+    FileAttachmentAttrs,
+} from 'reviewboard/common/resources/models/fileAttachmentModel';
+
 
 /** Attributes for the ReviewRequestEditor model. */
 export interface ReviewRequestEditorAttrs extends ModelAttributes {
@@ -34,7 +42,7 @@ export interface ReviewRequestEditorAttrs extends ModelAttributes {
     hasDraft: boolean;
 
     /** The files attached to this review request. */
-    fileAttachments: Backbone.Collection<RB.FileAttachment>;
+    fileAttachments: ResourceCollection<FileAttachment>;
 
     /** A mapping of file attachment IDs to their comments. */
     fileAttachmentComments: {
@@ -168,8 +176,9 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
         let fileAttachments = this.get('fileAttachments');
 
         if (fileAttachments === null) {
-            fileAttachments = new Backbone.Collection([], {
-                model: RB.FileAttachment,
+            fileAttachments = new ResourceCollection<FileAttachment>([], {
+                model: FileAttachment,
+                parentResource: reviewRequest.draft,
             });
             this.set('fileAttachments', fileAttachments);
         }
@@ -236,16 +245,16 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
      * uploaded file attachments.
      *
      * Args:
-     *     attributes (object, optional):
+     *     attributes (FileAttachmentAttrs, optional):
      *         Model attributes for the new file attachment.
      *
      * Returns:
-     *     RB.FileAttachment:
+     *     FileAttachment:
      *     The new file attachment model.
      */
     createFileAttachment(
-        attributes={}, // TODO: Add typing once RB.FileAttachment is TS
-    ): RB.FileAttachment {
+        attributes: Partial<FileAttachmentAttrs> = {},
+    ): FileAttachment {
         const draft = this.get('reviewRequest').draft;
         const fileAttachment = draft.createFileAttachment(attributes);
 
@@ -587,11 +596,11 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
      * them to the editor.
      *
      * Args:
-     *     attachment (RB.FileAttachment or RB.Screenshot):
+     *     attachment (FileAttachment or RB.Screenshot):
      *         The new file attachment or screenshot.
      */
     _onFileAttachmentOrScreenshotAdded(
-        attachment: RB.FileAttachment | RB.Screenshot,
+        attachment: FileAttachment | RB.Screenshot,
     ) {
         this.listenTo(attachment, 'saving',
                       () => this.trigger('saving'));
