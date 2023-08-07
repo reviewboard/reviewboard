@@ -1,16 +1,21 @@
-"""Representations of remote repositories."""
+"""Representations of remote repositories.
+
+Version Added:
+    6.0
+    This replaces the old :py:mod:`reviewboard.hostingsvcs.repository` module.
+"""
 
 from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from djblets.db.fields.json_field import JSONDict
+    from djblets.util.typing import JSONDict
+    from reviewboard.hostingsvcs.base import BaseHostingService
     from reviewboard.hostingsvcs.models import HostingServiceAccount
-    from reviewboard.hostingsvcs.service import HostingService
 
 
-class RemoteRepository(object):
+class RemoteRepository:
     """A representation of a remote repository.
 
     This is used to represent the configuration for a repository that already
@@ -28,35 +33,62 @@ class RemoteRepository(object):
     ######################
 
     #: Extra data about the repository.
+    #:
+    #: Type:
+    #:     dict
     extra_data: JSONDict
 
     #: The hosting service that owns the repository.
-    hosting_service: HostingService
+    #:
+    #: Type:
+    #:     reviewboard.hostingsvcs.base.hosting_service.BaseHostingService
+    hosting_service: BaseHostingService
 
     #: The account used for the hosting service.
+    #:
+    #: Type:
+    #:     reviewboard.hostingsvcs.models.HostingServiceAccount
     hosting_service_account: HostingServiceAccount
 
     #: The service-specific ID of the repository.
+    #:
+    #: Type:
+    #:     str
     id: str
 
     #: The mirror (alternate) path of the repository.
+    #:
+    #: Type:
+    #:     str
     mirror_path: Optional[str]
 
     #: The displayed name of the repository.
+    #:
+    #: Type:
+    #:     str
     name: str
 
     #: The identifier of the owner of the repository.
+    #:
+    #: Type:
+    #:     str
     owner: str
 
     #: The repository path.
+    #:
+    #: Type:
+    #:     str
     path: str
 
     #: The service-specific identifier for the type of repository.
+    #:
+    #: Type:
+    #:     str
     scm_type: str
 
     def __init__(
         self,
-        hosting_service: HostingService,
+        hosting_service: BaseHostingService,
         repository_id: str,
         name: str,
         owner: str,
@@ -68,7 +100,8 @@ class RemoteRepository(object):
         """Initialize the remote repository representation.
 
         Args:
-            hosting_service (reviewboard.hostingsvcs.service.HostingService):
+            hosting_service (reviewboard.hostingsvcs.base.hosting_service.
+                             BaseHostingService):
                 The hosting service that owns the repository.
 
             repository_id (str):
