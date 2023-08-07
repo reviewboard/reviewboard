@@ -4,10 +4,10 @@ This is pending deprecation. Consumers should update their imports to use
 the classes in :py:mod:`reviewboard.hostingsvcs.base`.
 """
 
-import logging
+from __future__ import annotations
 
-from django.dispatch import receiver
-from djblets.registries.errors import ItemLookupError
+import logging
+from typing import List, Optional, Type
 
 from reviewboard.hostingsvcs.base import (
     BaseHostingService as HostingService,
@@ -16,13 +16,12 @@ from reviewboard.hostingsvcs.base import (
     HostingServiceHTTPResponse,
     hosting_service_registry)
 from reviewboard.hostingsvcs.base.registry import HostingServiceRegistry
-from reviewboard.signals import initializing
 
 
 logger = logging.getLogger(__name__)
 
 
-def get_hosting_services():
+def get_hosting_services() -> List[Type[HostingService]]:
     """Return the list of hosting services.
 
     Returns:
@@ -33,30 +32,41 @@ def get_hosting_services():
     return list(hosting_service_registry)
 
 
-def get_hosting_service(name):
+def get_hosting_service(
+    name: str,
+) -> Optional[Type[HostingService]]:
     """Return the hosting service with the given name.
 
     If the hosting service is not found, None will be returned.
+
+    Args:
+        name (str):
+            The ID of the hosting service.
+
+    Returns:
+        type:
+        The hosting service class, or ``None`` if not found.
     """
-    try:
-        return hosting_service_registry.get('hosting_service_id', name)
-    except ItemLookupError:
-        return None
+    return hosting_service_registry.get_hosting_service(name)
 
 
-def register_hosting_service(name, cls):
+def register_hosting_service(
+    name: str,
+    cls: Type[HostingService],
+) -> None:
     """Register a custom hosting service class.
 
     A name can only be registered once. A KeyError will be thrown if attempting
     to register a second time.
 
     Args:
-        name (unicode):
-            The name of the hosting service. If the hosting service already
-            has an ID assigned as
-            :py:attr:`~HostingService.hosting_service_id`, that value should
-            be passed. Note that this will also override any existing
-            ID on the service.
+        name (str):
+            The name of the hosting service.
+
+            If the hosting service already has an ID assigned as
+            :py:attr:`~HostingService.hosting_service_id`, that value should be
+            passed. Note that this will also override any existing ID on the
+            service.
 
         cls (type):
             The hosting service class. This should be a subclass of
@@ -66,25 +76,16 @@ def register_hosting_service(name, cls):
     hosting_service_registry.register(cls)
 
 
-def unregister_hosting_service(name):
+def unregister_hosting_service(
+    name: str,
+) -> None:
     """Unregister a previously registered hosting service.
 
     Args:
-        name (unicode):
+        name (str):
             The name of the hosting service.
     """
-    try:
-        hosting_service_registry.unregister_by_attr('hosting_service_id',
-                                                    name)
-    except ItemLookupError as e:
-        logger.error('Failed to unregister unknown hosting service "%s"',
-                     name)
-        raise e
-
-
-@receiver(initializing, dispatch_uid='populate_hosting_services')
-def _on_initializing(**kwargs):
-    hosting_service_registry.populate()
+    hosting_service_registry.unregister_by_id(name)
 
 
 #: Legacy name for HostingServiceHTTPRequest

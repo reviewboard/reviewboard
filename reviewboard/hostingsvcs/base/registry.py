@@ -6,20 +6,39 @@ Version Added:
     :py:mod:`reviewboard.hostingsvcs.service` module.
 """
 
+from __future__ import annotations
+
+import inspect
+import logging
 import re
 from importlib import import_module
+from typing import Dict, Iterator, Optional, Sequence, TYPE_CHECKING, Type
 
 from django.urls import include, re_path
 from django.utils.translation import gettext_lazy as _
+from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
                                          NOT_REGISTERED)
 
-import reviewboard.hostingsvcs.urls as hostingsvcs_urls
+from reviewboard.hostingsvcs.urls import dynamic_urls as hostingsvcs_urls
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.registries.registry import EntryPointRegistry
 
+if TYPE_CHECKING:
+    from django.urls import _AnyURL
 
-class HostingServiceRegistry(EntryPointRegistry):
-    """A registry for managing hosting services."""
+
+logger = logging.getLogger(__name__)
+
+
+class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
+    """A registry for managing hosting services.
+
+    Version Changed:
+        6.0:
+        * Moved from :py:mod:`reviewboard.hostingsvcs.service` to
+          :py:mod:`reviewboard.hostingsvcs.base.registry`.
+    """
 
     entry_point = 'reviewboard.hosting_services'
     lookup_attrs = ['hosting_service_id']
@@ -37,11 +56,23 @@ class HostingServiceRegistry(EntryPointRegistry):
         ),
     }
 
+    ######################
+    # Instance variables #
+    ######################
+
+    #: A mapping of hosting service IDs to URL patterns/resolvers.
+    #:
+    #: Type:
+    #:     dict
+    _url_patterns: Dict[str, Sequence[_AnyURL]]
+
     def __init__(self):
-        super(HostingServiceRegistry, self).__init__()
+        """Initialize the registry."""
+        super().__init__()
+
         self._url_patterns = {}
 
-    def get_defaults(self):
+    def get_defaults(self) -> Iterator[Type[BaseHostingService]]:
         """Yield the built-in hosting services.
 
         This will make sure the standard hosting services are always present in
@@ -78,13 +109,34 @@ class HostingServiceRegistry(EntryPointRegistry):
             mod = import_module('reviewboard.hostingsvcs.%s' % _module)
             yield getattr(mod, _service_cls_name)
 
-        for value in super(HostingServiceRegistry, self).get_defaults():
-            yield value
+        yield from super().get_defaults()
 
-    def unregister(self, service):
+    def get_hosting_service(
+        self,
+        hosting_service_id: str,
+    ) -> Optional[Type[BaseHostingService]]:
+        """Return a hosting service with the given ID.
+
+        Args:
+            hosting_service_id (str):
+                The hosting service ID to return.
+
+        Returns:
+            type:
+            The hosting service class, or ``None`` if not found.
+        """
+        try:
+            return self.get('hosting_service_id', hosting_service_id)
+        except ItemLookupError:
+            return None
+
+    def unregister(
+        self,
+        service: Type[BaseHostingService],
+    ) -> None:
         """Unregister a hosting service.
 
-        This will remove all registered URLs that the hosting service has
+        This will also remove all registered URLs that the hosting service has
         defined.
 
         Args:
@@ -93,18 +145,46 @@ class HostingServiceRegistry(EntryPointRegistry):
                 :py:class:`~reviewboard.hostingsvcs.service.HostingService`
                 subclass.
         """
-        super(HostingServiceRegistry, self).unregister(service)
+        hosting_service_id = service.hosting_service_id
 
-        if service.hosting_service_id in self._url_patterns:
-            cls_urlpatterns = self._url_patterns[service.hosting_service_id]
-            hostingsvcs_urls.dynamic_urls.remove_patterns(cls_urlpatterns)
-            del self._url_patterns[service.hosting_service_id]
+        super().unregister(service)
 
-    def process_value_from_entry_point(self, entry_point):
+        if hosting_service_id and hosting_service_id in self._url_patterns:
+            cls_urlpatterns = self._url_patterns[hosting_service_id]
+            hostingsvcs_urls.remove_patterns(cls_urlpatterns)
+            del self._url_patterns[hosting_service_id]
+
+    def unregister_by_id(
+        self,
+        hosting_service_id: str,
+    ) -> None:
+        """Unregister a hosting service by ID.
+
+        This will also remove all registered URLs that the hosting service has
+        defined.
+
+        Args:
+            service (type):
+                The
+                :py:class:`~reviewboard.hostingsvcs.service.HostingService`
+                subclass.
+        """
+        try:
+            self.unregister_by_attr('hosting_service_id', hosting_service_id)
+        except ItemLookupError:
+            logger.error('Failed to unregister unknown hosting service "%s"',
+                         hosting_service_id)
+
+            raise
+
+    def process_value_from_entry_point(
+        self,
+        entry_point,
+    ) -> Type[BaseHostingService]:
         """Load the class from the entry point.
 
-        The ``id`` attribute will be set on the class from the entry point's
-        name.
+        The ``hosting_service_id`` attribute will be set on the class from the
+        entry point's name.
 
         Args:
             entry_point (importlib.metadata.EntryPoint):
@@ -115,10 +195,16 @@ class HostingServiceRegistry(EntryPointRegistry):
             The :py:class:`HostingService` subclass.
         """
         cls = entry_point.load()
+        assert inspect.isclass(cls)
+        assert issubclass(cls, BaseHostingService)
+
         cls.hosting_service_id = entry_point.name
         return cls
 
-    def register(self, service):
+    def register(
+        self,
+        service: Type[BaseHostingService],
+    ) -> None:
         """Register a hosting service.
 
         This also adds the URL patterns defined by the hosting service. If the
@@ -129,9 +215,11 @@ class HostingServiceRegistry(EntryPointRegistry):
             service (type):
                 The :py:class:`HostingService` subclass.
         """
-        super(HostingServiceRegistry, self).register(service)
+        super().register(service)
 
         if service.repository_url_patterns:
+            assert service.hosting_service_id
+
             cls_urlpatterns = [
                 re_path(r'^(?P<hosting_service_id>%s)/'
                         % re.escape(service.hosting_service_id),
@@ -139,7 +227,14 @@ class HostingServiceRegistry(EntryPointRegistry):
             ]
 
             self._url_patterns[service.hosting_service_id] = cls_urlpatterns
-            hostingsvcs_urls.dynamic_urls.add_patterns(cls_urlpatterns)
+            hostingsvcs_urls.add_patterns(cls_urlpatterns)
 
 
+#: The main registry of hosting services.
+#:
+#: Version Added:
+#:     6.0
+#:
+#: Type:
+#:     HostingServiceRegistry
 hosting_service_registry = HostingServiceRegistry()
