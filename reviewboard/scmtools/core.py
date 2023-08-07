@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
     from django.http import HttpRequest
     from django.utils.functional import _StrOrPromise
-    from djblets.db.fields.json_field import JSONDict
+    from djblets.util.typing import JSONDict
     from reviewboard.diffviewer.parser import BaseDiffParser
     from reviewboard.scmtools.certs import Certificate
     from reviewboard.scmtools.forms import (BaseSCMToolAuthForm,
@@ -106,6 +106,14 @@ class ChangeSet:
     #:     str
     description: _StrProperty = TypedProperty(str)
 
+    #: Extra data to store in the draft.
+    #:
+    #: These may map to custom fields.
+    #:
+    #: Version Added:
+    #:     5.0.5
+    extra_data: JSONDict
+
     #: A list of filenames added/modified/deleted by the change.
     #:
     #: Type:
@@ -142,6 +150,7 @@ class ChangeSet:
         self.bugs_closed = []
         self.changenum = None
         self.description = ''
+        self.extra_data = {}
         self.files = []
         self.pending = False
         self.summary = ''
