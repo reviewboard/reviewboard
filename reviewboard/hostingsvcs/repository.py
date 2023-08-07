@@ -10,3 +10,6 @@ from reviewboard.hostingsvcs.base.repository import RemoteRepository
 __all__ = [
     'RemoteRepository',
 ]
+
+
+__autodoc_excludes__ = __all__

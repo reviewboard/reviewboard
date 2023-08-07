@@ -80,8 +80,8 @@ class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
 
         Yields:
             type:
-            The :py:class:`~reviewboard.hostingsvcs.service.HostingService`
-            subclasses.
+            The :py:class:`~reviewboard.hostingsvcs.base.hosting_service.
+            BaseHostingService` subclasses.
         """
         for _module, _service_cls_name in (
                 ('assembla', 'Assembla'),
@@ -142,8 +142,8 @@ class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
         Args:
             service (type):
                 The
-                :py:class:`~reviewboard.hostingsvcs.service.HostingService`
-                subclass.
+                :py:class:`~reviewboard.hostingsvcs.base.hosting_service.
+                BaseHostingService` subclass.
         """
         hosting_service_id = service.hosting_service_id
 
@@ -166,8 +166,8 @@ class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
         Args:
             service (type):
                 The
-                :py:class:`~reviewboard.hostingsvcs.service.HostingService`
-                subclass.
+                :py:class:`~reviewboard.hostingsvcs.base.hosting_service.
+                BaseHostingService` subclass.
         """
         try:
             self.unregister_by_attr('hosting_service_id', hosting_service_id)

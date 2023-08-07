@@ -282,10 +282,10 @@ class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
         account, and should be provided for most standard hosting services.
 
         All values will be provided to
-        :py:attr:`HostingService.authenticate
-        <reviewboard.hostingsvcs.service.HostingService.authenticate>`, which
-        will be responsible for making use of these values and storing them
-        on the account.
+        :py:attr:`BaseHostingService.authenticate <reviewboard.hostingsvcs.
+        base.hosting_service.HostingService.authenticate>`, which will be
+        responsible for making use of these values and storing them on the
+        account.
 
         Subclasses should call the parent method and use their results as
         a base, if they reuse any of the built-in fields.
@@ -533,8 +533,9 @@ class BaseHostingServiceRepositoryForm(_HostingServiceSubFormMixin,
     This is responsible for providing fields used to communicate with a
     particular hosting service, such as a registered organization name or ID
     on the service. There may be one global form (set in
-    :py:attr:`HostingService.form
-    <reviewboard.hostingsvcs.service.HostingService.form>` or one per plan.
+    :py:attr:`BaseHostingService.form
+    <reviewboard.hostingsvcs.base.hosting_service.BaseHostingService.form>` or
+    one per plan.
 
     Each field will be stored directly in :py:attr:`Repository.extra_data
     <reviewboard.scmtools.models.Repository.extra_data>`, using the field's

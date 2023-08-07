@@ -30,3 +30,5 @@ __all__ = [
     'hosting_service_registry',
     'RemoteRepository',
 ]
+
+__autodoc_excludes__ = __all__

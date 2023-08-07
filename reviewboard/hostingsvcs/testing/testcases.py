@@ -26,14 +26,15 @@ class HttpTestContext(object):
         3.0.4
 
     Attributes:
-        client (reviewboard.hostingsvcs.service.HostingServiceClient):
+        client (reviewboard.hostingsvcs.base.ciient.HostingServiceClient):
             The hosting service client used to perform HTTP requests for
             this test.
 
         hosting_account (reviewboard.hostingsvcs.models.HostingServiceAccount):
             The hosting account used for the test.
 
-        service (reviewboard.hostingsvcs.service.HostingService):
+        service (reviewboard.hostingsvcs.base.hosting_service.
+                 BaseHostingService):
             The hosting service instance used for the test.
     """
 
@@ -98,8 +99,8 @@ class HttpTestContext(object):
 
         Any keyword argument accepted by
         :py:meth:`HostingServiceClient.http_request()
-        <reviewboard.hostingsvcs.service.HostingServiceClient.http_request>`
-        can be provided.
+        <reviewboard.hostingsvcs.base.client.HostingServiceClient.
+        http_request>` can be provided.
 
         If ``username`` or ``password`` are not explicitly provided, the
         values from :py:attr:`HostingServiceTestCase.default_username` or
@@ -258,8 +259,8 @@ class HostingServiceTestCase(SpyAgency, TestCase):
             http_request_func (callable, optional):
                 An explicit HTTP request function to call when performing an
                 HTTP request. This will override
-                :py:meth:`reviewboard.hostingsvcs.service.HostingServiceClient
-                .http_request`.
+                :py:meth:`reviewboard.hostingsvcs.base.client.
+                HostingServiceClient.http_request`.
 
             payload (bytes, optional):
                 An explicit payload to return to the client.

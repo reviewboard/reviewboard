@@ -2,6 +2,17 @@
 
 This is pending deprecation. Consumers should update their imports to use
 the classes in :py:mod:`reviewboard.hostingsvcs.base`.
+
+It includes compatibility imports for:
+
+.. autosummary::
+   :nosignatures:
+
+   ~reviewboard.hostingsvcs.base.client.HostingServiceClient
+   ~reviewboard.hostingsvcs.base.hosting_service.BaseHostingService
+   ~reviewboard.hostingsvcs.base.http.HostingServiceHTTPRequest
+   ~reviewboard.hostingsvcs.base.http.HostingServiceHTTPResponse
+   ~reviewboard.hostingsvcs.base.repository.RemoteRepository
 """
 
 from __future__ import annotations
@@ -26,7 +37,7 @@ def get_hosting_services() -> List[Type[HostingService]]:
 
     Returns:
         list:
-        The :py:class:`~reviewboard.hostingsvcs.service.HostingService`
+        The :py:class:`~reviewboard.hostingsvcs.base.BaseHostingService`
         subclasses.
     """
     return list(hosting_service_registry)
@@ -64,13 +75,16 @@ def register_hosting_service(
             The name of the hosting service.
 
             If the hosting service already has an ID assigned as
-            :py:attr:`~HostingService.hosting_service_id`, that value should be
-            passed. Note that this will also override any existing ID on the
-            service.
+            :py:attr:`BaseHostingService.hosting_service_id
+            <reviewboard.hostingsvcs.base.BaseHostingService.
+            hosting_service_id>`, that value should be passed. Note that this
+            will also override any existing ID on the service.
 
         cls (type):
-            The hosting service class. This should be a subclass of
-            :py:class:`~HostingService`.
+            The hosting service class.
+
+            This must be a subclass of
+            :py:class:`~reviewboard.hostingsvcs.base.BaseHostingService`.
     """
     cls.hosting_service_id = name
     hosting_service_registry.register(cls)
@@ -92,7 +106,8 @@ def unregister_hosting_service(
 #:
 #: Deprecated:
 #:     4.0:
-#:     This has been replaced by :py:class:`HostingServiceHTTPRequest`.
+#:     This has been replaced by :py:class:`~reviewboard.hostingsvcs.
+#:     base.http.HostingServiceHTTPRequest`.
 URLRequest = HostingServiceHTTPRequest
 
 
@@ -107,4 +122,12 @@ __all__ = [
     'get_hosting_services',
     'register_hosting_service',
     'unregister_hosting_service',
+]
+
+__autodoc_excludes__ = [
+    'HostingService',
+    'HostingServiceClient',
+    'HostingServiceHTTPRequest',
+    'HostingServiceHTTPResponse',
+    'HostingServiceRegistry',
 ]

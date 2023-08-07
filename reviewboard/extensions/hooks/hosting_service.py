@@ -19,13 +19,14 @@ class HostingServiceHook(ExtensionHook, metaclass=ExtensionHookPoint):
         Args:
             service_cls (type):
                 The hosting service class to register. This must be a
-                subclass of
-                :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+                subclass of :py:class:`~reviewboard.hostingsvcs.base.
+                hosting_service.BaseHostingService`.
 
         Raises:
             ValueError:
-                The service's :py:attr:`~reviewboard.hostingsvcs.service
-                .HostingService.hosting_service_id` attribute was not set.
+                The service's :py:attr:`~reviewboard.hostingsvcs.base.
+                .hosting_service.BaseHostingService.hosting_service_id`
+                attribute was not set.
         """
         hosting_service_id = service_cls.hosting_service_id
 

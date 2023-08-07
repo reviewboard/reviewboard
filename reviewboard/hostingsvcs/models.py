@@ -54,7 +54,7 @@ class HostingServiceAccount(models.Model):
         """The hosting service associated with this account.
 
         Type:
-            reviewboard.hostingsvcs.service.HostingService
+            reviewboard.hostingsvcs.base.hosting_service.BaseHostingService
 
         Raises:
             reviewboard.hostingsvcs.errors.MissingHostingServiceError:

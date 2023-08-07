@@ -16,3 +16,5 @@ __all__ = [
     'InvalidPageError',
     'ProxyPaginator',
 ]
+
+__autodoc_excludes__ = __all__

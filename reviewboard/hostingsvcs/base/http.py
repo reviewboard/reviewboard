@@ -219,8 +219,8 @@ class HostingServiceHTTPRequest:
                 The request method. If not provided, it defaults to a ``GET``
                 request.
 
-            hosting_service (reviewboard.hostingsvcs.service.HostingService,
-                             optional):
+            hosting_service (reviewboard.hostingsvcs.base.hosting_service.
+                             BaseHostingService, optional):
                 The hosting service this request is associated with.
 
             **kwargs (dict, unused):

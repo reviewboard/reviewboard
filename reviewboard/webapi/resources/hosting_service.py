@@ -110,13 +110,15 @@ class HostingServiceResource(WebAPIResource):
     def serialize_plans_field(self, hosting_service, *args, **kwargs):
         """Serialize the plans field.
 
-        This will convert the existing :py:attr:`HostingService.plans
-        <reviewboard.hostingsvcs.service.HostingService.plans>` field (or
-        create a new one if the service doesn't support multiple plans) into
-        a more slimmed-down payload that can be transmitted via the API.
+        This will convert the existing :py:attr:`BaseHostingService.plans
+        <reviewboard.hostingsvcs.base.hosting_service.BaseHostingService.
+        plans>` field (or create a new one if the service doesn't support
+        multiple plans) into a more slimmed-down payload that can be
+        transmitted via the API.
 
         Args:
-            hosting_service (reviewboard.hostingsvcs.service.HostingService):
+            hosting_service (reviewboard.hostingsvcs.base.hosting_service.
+                             BaseHostingService):
                 The hosting service being serialized.
 
             *args (tuple, unused):
@@ -161,7 +163,8 @@ class HostingServiceResource(WebAPIResource):
         """Serialize the visible_scmtools field on the hosting service.
 
         Args:
-            hosting_service (reviewboard.hostingsvcs.service.HostingService):
+            hosting_service (reviewboard.hostingsvcs.base.hosting_service.
+                             BaseHostingService):
                 The hosting service being serialized.
 
             *args (tuple, unused):

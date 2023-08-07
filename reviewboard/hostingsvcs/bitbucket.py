@@ -688,7 +688,7 @@ class BitbucketClient(HostingServiceClient):
                 Additional keyword arguments used to build the request.
 
         Returns:
-            reviewboard.hostingsvcs.service.HostingServiceHTTPRequest:
+            reviewboard.hostingsvcs.base.http.HostingServiceHTTPRequest:
             The resulting request object for use in the HTTP request.
         """
         if only_fields:
@@ -707,8 +707,8 @@ class BitbucketClient(HostingServiceClient):
         in its place.
 
         Args:
-            request (reviewboard.hostingsvcs.service.HostingServiceHTTPRequest,
-                     unused):
+            request (reviewboard.hostingsvcs.base.http.
+                     HostingServiceHTTPRequest, unused):
                 The request that resulted in an error.
 
             e (urllib2.URLError):

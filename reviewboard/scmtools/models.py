@@ -369,7 +369,7 @@ class Repository(models.Model):
         This will be ``None`` if this is a standalone repository.
 
         Type:
-            reviewboard.hostingsvcs.service.HostingService
+            reviewboard.hostingsvcs.base.hosting_service.BaseHostingService
 
         Raises:
             reviewboard.hostingsvcs.errors.MissingHostingServiceError:
@@ -392,7 +392,7 @@ class Repository(models.Model):
         tracker.
 
         Type:
-            reviewboard.hostingsvcs.service.HostingService
+            reviewboard.hostingsvcs.base.hosting_service.BaseHostingService
 
         Raises:
             reviewboard.hostingsvcs.errors.MissingHostingServiceError:

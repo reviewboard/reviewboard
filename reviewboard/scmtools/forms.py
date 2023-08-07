@@ -83,9 +83,9 @@ class BaseRepositorySubForm(forms.Form):
     This provides some standard functionality for collecting information
     needed to configure a specific type of repository (one backed by a
     particular :py:class:`~reviewboard.scmtools.core.SCMTool` or
-    :py:class:`~reviewboard.hostingsvcs.service.HostingService`). It takes
-    care of basic form customization and loading, and must be subclassed for
-    other operations.
+    :py:class:`~reviewboard.hostingsvcs.base.hosting_service.
+    BaseHostingService`). It takes care of basic form customization and
+    loading, and must be subclassed for other operations.
 
     Third-parties will never need to subclass this directly. Instead, subclass
     one of:
@@ -1163,8 +1163,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         Args:
             hosting_service (type):
-                The hosting service class, which should be a subclass of
-                :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+                The hosting service class.
+
+                This must be a subclass of
+                :py:class:`~reviewboard.hostingsvcs.base.hosting_service.
+                BaseHostingService`.
 
             hosting_accounts (list of reviewboard.hostingsvcs.models.
                               HostingServiceAccount, optional):
@@ -1305,8 +1308,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 The ID of the hosting service to load.
 
             hosting_service (type):
-                The hosting service class. This will be a subclass of
-                :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+                The hosting service class.
+
+                This will be a subclass of
+                :py:class:`~reviewboard.hostingsvcs.base.hosting_service.
+                BaseHostingService`.
 
             plan_type_id (unicode):
                 The ID of the hosting plan pertaining to the forms to load.
