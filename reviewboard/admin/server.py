@@ -1,10 +1,22 @@
+"""Functions for retrieving server information."""
+
+from __future__ import annotations
+
+import os
 import socket
+from typing import Optional
 from urllib.parse import urljoin
 
 from django.contrib.sites.models import Site
+from django.core.exceptions import ImproperlyConfigured
+from django.utils.translation import gettext as _
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.site.urlresolvers import local_site_reverse
+
+
+#: A cached path containing the site's data directory.
+_data_dir: Optional[str] = None
 
 
 def get_server_url(local_site_name=None, local_site=None, request=None):
@@ -55,3 +67,42 @@ def get_hostname():
         The hostname for the server.
     """
     return str(socket.gethostname())
+
+
+def get_data_dir() -> str:
+    """Return the path to the site's data directory.
+
+    This is always based on :envvar:`$HOME`. If this variable is not set,
+    or the path does not exist, then an exception will be raised.
+
+    Version Added:
+        6.0
+
+    Returns:
+        str:
+        The path to the data directory.
+
+    Raises:
+        django.core.exceptions.ImproperlyConfigured:
+            The data directory path could not be found or does not exist.
+
+            Details are in the error message.
+    """
+    global _data_dir
+
+    if _data_dir is None:
+        _data_dir = os.environ.get('HOME')
+
+        if not _data_dir:
+            raise ImproperlyConfigured(
+                _('The site data directory could not be determined. '
+                  'Please make sure your web server is using our '
+                  'provided reviewboard.wsgi module for WSGI.'))
+
+        if not os.path.exists(_data_dir):
+            raise ImproperlyConfigured(
+                _('The site data directory (%s) does not exist. Please '
+                  'make sure you are running in the right environment with a '
+                  'working site directory.'))
+
+    return _data_dir
