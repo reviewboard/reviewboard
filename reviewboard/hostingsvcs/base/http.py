@@ -6,11 +6,14 @@ Version Added:
     :py:mod:`reviewboard.hostingsvcs.service` module.
 """
 
+from __future__ import annotations
+
 import base64
 import json
 import logging
 import ssl
 from collections import OrderedDict
+from typing import Any, Dict, List, NoReturn, Optional, TYPE_CHECKING, Union
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 from urllib.request import (
     Request as BaseURLRequest,
@@ -22,21 +25,77 @@ from urllib.request import (
 
 from django.utils.encoding import force_str
 from djblets.util.decorators import cached_property
+from typing_extensions import TypeAlias, TypedDict
+
+from reviewboard.deprecation import RemovedInReviewBoard70Warning
+
+if TYPE_CHECKING:
+    from djblets.util.typing import JSONValue
+    from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
+    from urllib.request import BaseHandler
 
 
 logger = logging.getLogger(__name__)
 
 
-def _log_and_raise(request, msg, **fmt_dict):
+class UploadedFileInfo(TypedDict):
+    """Information on an uploaded file.
+
+    Version Added:
+        6.0
+    """
+
+    #: The content of the file.
+    #:
+    #: Type:
+    #:      bytes
+    content: Union[bytes, str]
+
+    #: The base name of the file.
+    #:
+    #: Type:
+    #:      bytes
+    filename: Union[bytes, str]
+
+
+#: Form field data to set when performing a POST or PUT.
+#:
+#: Version Added:
+#:     6.0
+FormFields: TypeAlias = Dict[Union[bytes, str],
+                             Union[bytes, str]]
+
+
+#: Type for a mapping of HTTP headers for a request or response.
+#:
+#: Version Added:
+#:     6.0
+HTTPHeaders: TypeAlias = Dict[str, str]
+
+
+#: Query arguments for a HTTP request.
+#:
+#: Version Added:
+#:     6.0
+QueryArgs: TypeAlias = Dict[str, Any]
+
+
+#: Form field data to set when performing a POST or PUT.
+#:
+#: Version Added:
+#:     6.0
+UploadedFiles: TypeAlias = Dict[Union[bytes, str], UploadedFileInfo]
+
+
+def _log_and_raise(
+    request: HostingServiceHTTPRequest,
+    msg: str,
+    **fmt_dict,
+) -> NoReturn:
     """Log and raise an exception with the given message.
 
     This is used when validating data going into the request, and is
     intended to help with debugging bad calls to the HTTP code.
-
-    Version Changed:
-        6.0:
-        * Moved from :py:mod:`reviewboard.hostingsvcs.service` to
-          :py:mod:`reviewboard.hostingsvcs.base.http`.
 
     Version Added:
         4.0
@@ -45,7 +104,7 @@ def _log_and_raise(request, msg, **fmt_dict):
         request (HostingServiceHTTPRequest):
             The HTTP request.
 
-        msg (unicode):
+        msg (str):
             The error message as a format string.
 
         **fmt_dict (dict):
@@ -61,15 +120,15 @@ def _log_and_raise(request, msg, **fmt_dict):
     }, **fmt_dict)
 
     logger.error(msg)
+
     raise TypeError(msg)
 
 
-class HostingServiceHTTPRequest(object):
+class HostingServiceHTTPRequest:
     """A request that can use any HTTP method.
 
-    By default, the :py:class:`urllib2.Request` class only supports HTTP GET
-    and HTTP POST methods. This subclass allows for any HTTP method to be
-    specified for the request.
+    This provides some additional type checking and utilities for working
+    with HTTP requests, headers, URL openers, and SSL certification management.
 
     Version Changed:
         6.0:
@@ -78,46 +137,85 @@ class HostingServiceHTTPRequest(object):
 
     Version Added:
         4.0
-
-    Attributes:
-        body (str):
-            The request payload body.
-
-        headers (dict):
-            The headers to send in the request. Each key and value is a native
-            string.
-
-        hosting_service (reviewboard.hostingsvcs.service.HostingService):
-            The hosting service this request is associated with.
-
-        method (unicode):
-            The HTTP method to perform.
-
-        url (unicode):
-            The URL the request is being made on.
     """
 
-    def __init__(self, url, query=None, body=None, headers=None, method='GET',
-                 hosting_service=None, **kwargs):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The request payload body, if any.
+    #:
+    #: Type:
+    #:     bytes
+    body: Optional[bytes]
+
+    #: The headers to send in the request.
+    #:
+    #: Type:
+    #:     dict
+    headers: HTTPHeaders
+
+    #: The hosting service this request is associated with.
+    #:
+    #: Type:
+    #:     HostingService
+    hosting_service: Optional[BaseHostingService]
+
+    #: The HTTP method to perform.
+    #:
+    #: Type:
+    #:     str
+    method: str
+
+    #: Query arguments added to the URL.
+    #:
+    #: Type:
+    #:     dict
+    query: Optional[QueryArgs]
+
+    #: The URL the request is being made to.
+    #:
+    #: Type:
+    #:     str
+    url: str
+
+    #: The list of handlers to use when making a HTTP(S) request.
+    #:
+    #: Type:
+    #:     list
+    _urlopen_handlers: List[BaseHandler]
+
+    def __init__(
+        self,
+        url: str,
+        query: Optional[QueryArgs] = None,
+        body: Optional[bytes] = None,
+        headers: Optional[HTTPHeaders] = None,
+        method: str = 'GET',
+        hosting_service: Optional[BaseHostingService] = None,
+        **kwargs,
+    ) -> None:
         """Initialize the request.
 
         Args:
-            url (unicode):
+            url (str):
                 The URL to make the request against.
 
             query (dict, optional):
-                Query arguments to add onto the URL. These will be mixed with
-                any query arguments already in the URL, and the result will
-                be applied in sorted order, for cross-Python compatibility.
+                Query arguments to add onto the URL.
 
-            body (unicode or bytes, optional):
+                These will be mixed with any query arguments already in the
+                URL, and the result will be applied in sorted order, for
+                cross-Python compatibility.
+
+            body (bytes, optional):
                 The payload body for the request, if using a ``POST`` or
                 ``PUT`` request.
 
             headers (dict, optional):
                 Additional headers to attach to the request.
 
-            method (unicode, optional):
+            method (str, optional):
                 The request method. If not provided, it defaults to a ``GET``
                 request.
 
@@ -169,23 +267,34 @@ class HostingServiceHTTPRequest(object):
         self._urlopen_handlers = []
 
     @property
-    def data(self):
+    def data(self) -> Optional[bytes]:
         """The payload data for the request.
 
         Deprecated:
             4.0:
             This is deprecated in favor of the :py:attr:`body` attribute.
         """
+        RemovedInReviewBoard70Warning.warn(
+            '%(class_name)s.data is deprecated in favor of '
+            '%(class_name)s.body. This will be removed in Review Board 7.'
+            % {
+                'class_name': type(self).__name__,
+            })
+
         return self.body
 
-    def add_header(self, name, value):
+    def add_header(
+        self,
+        name: str,
+        value: str,
+    ) -> None:
         """Add a header to the request.
 
         Args:
-            name (unicode or bytes):
+            name (str):
                 The header name.
 
-            value (unicode or bytes):
+            value (str):
                 The header value.
         """
         if (not isinstance(name, str) or
@@ -199,36 +308,44 @@ class HostingServiceHTTPRequest(object):
                 header=name,
                 value=value)
 
-        self.headers[force_str(name).capitalize()] = force_str(value)
+        self.headers[name.capitalize()] = value
 
-    def get_header(self, name, default=None):
+    def get_header(
+        self,
+        name: str,
+        default: Optional[str] = None,
+    ) -> Optional[str]:
         """Return a header from the request.
 
         Args:
-            name (unicode):
+            name (str):
                 The header name.
 
-            default (unicode, optional):
+            default (str, optional):
                 The default value if the header was not found.
 
         Returns:
-            unicode:
+            str:
             The header value.
         """
         assert isinstance(name, str), (
             '%s.get_header() requires a Unicode header name'
-            % self.__name__)
+            % type(self).__name__)
 
-        return self.headers.get(force_str(name).capitalize(), default)
+        return self.headers.get(name.capitalize(), default)
 
-    def add_basic_auth(self, username, password):
+    def add_basic_auth(
+        self,
+        username: Union[bytes, str],
+        password: Union[bytes, str],
+    ) -> None:
         """Add HTTP Basic Authentication headers to the request.
 
         Args:
-            username (unicode or bytes):
+            username (str or bytes):
                 The username.
 
-            password (unicode or bytes):
+            password (str or bytes):
                 The password.
         """
         if isinstance(username, str):
@@ -238,17 +355,21 @@ class HostingServiceHTTPRequest(object):
             password = password.encode('utf-8')
 
         auth = b'%s:%s' % (username, password)
-        self.add_header(force_str(HTTPBasicAuthHandler.auth_header),
+        self.add_header(HTTPBasicAuthHandler.auth_header,
                         'Basic %s' % force_str(base64.b64encode(auth)))
 
-    def add_digest_auth(self, username, password):
+    def add_digest_auth(
+        self,
+        username: str,
+        password: str,
+    ) -> None:
         """Add HTTP Digest Authentication support to the request.
 
         Args:
-            username (unicode):
+            username (str):
                 The username.
 
-            password (unicode):
+            password (str):
                 The password.
         """
         result = urlparse(self.url)
@@ -259,22 +380,25 @@ class HostingServiceHTTPRequest(object):
 
         self.add_urlopen_handler(HTTPDigestAuthHandler(password_mgr))
 
-    def add_urlopen_handler(self, handler):
+    def add_urlopen_handler(
+        self,
+        handler: BaseHandler,
+    ) -> None:
         """Add a handler to invoke for the urlopen call.
 
         Note:
-            This is dependent on a :py:mod:`urllib2`-backed request. While
+            This is dependent on a :py:mod:`urllib`-backed request. While
             that is the default today, it may not be in the future. This
             method should be used with the knowledge that it may someday be
             deprecated, or may not work at all with special subclasses.
 
         Args:
-            handler (urllib2.BaseHandler):
+            handler (urllib.request.AbstractHTTPHandler):
                 The handler to add.
         """
         self._urlopen_handlers.append(handler)
 
-    def open(self):
+    def open(self) -> HostingServiceHTTPResponse:
         """Open the request to the server, returning the response.
 
         Returns:
@@ -282,12 +406,14 @@ class HostingServiceHTTPRequest(object):
             The response information from the server.
 
         Raises:
-            urllib2.URLError:
+            urllib.error.URLError:
                 An error occurred talking to the server, or an HTTP error
                 (400+) was returned.
         """
-        request = BaseURLRequest(self.url, self.body, self.headers)
-        request.get_method = lambda: self.method
+        request = BaseURLRequest(url=self.url,
+                                 data=self.body,
+                                 headers=self.headers,
+                                 method=self.method)
 
         hosting_service = self.hosting_service
 
@@ -319,53 +445,74 @@ class HostingServiceHTTPRequest(object):
                             status_code=response.getcode())
 
 
-class HostingServiceHTTPResponse(object):
+class HostingServiceHTTPResponse:
     """An HTTP response from the server.
 
     This stores the URL, payload data, headers, and status code from an
     HTTP response.
 
-    It also emulates a 2-tuple, for compatibility with legacy
-    (pre-Review Board 4.0) calls, when HTTP methods returned tuples of data
-    and headers.
-
     Version Changed:
         6.0:
         * Moved from :py:mod:`reviewboard.hostingsvcs.service` to
           :py:mod:`reviewboard.hostingsvcs.base.http`.
+        * Deprecated legacy tuple representations of this class now emit
+          deprecation warnings and will be removed in Review Board 7.
 
     Version Added:
         4.0
-
-    Attributes:
-        data (bytes):
-            The response data.
-
-        headers (dict):
-            The response headers. Keys and values will be native strings.
-
-            It's recommended to call :py:meth:`get_header` to request a header.
-
-        request (HostingServiceHTTPRequest):
-            The HTTP request this is in response to.
-
-        status_code (int):
-            The HTTP status code for the response.
-
-        url (unicode):
-            The URL providing the response.
     """
 
-    def __init__(self, request, url, data, headers, status_code):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The response data.
+    #:
+    #: Type:
+    #:     bytes
+    data: bytes
+
+    #: The HTTP response headers.
+    #:
+    #: It's recommended to call :py:meth:`get_header` to request a header.
+    #:
+    #: Type:
+    #:     dict
+    headers: HTTPHeaders
+
+    #: The HTTP request this is in response to.
+    #:
+    #: Type:
+    #:     HostingServiceHTTPRequest
+    request: HostingServiceHTTPRequest
+
+    #: The HTTP status code for the response.
+    #:
+    #: Type:
+    #:     int
+    status_code: int
+
+    #: The URL providing the response.
+    url: str
+
+    def __init__(
+        self,
+        request: HostingServiceHTTPRequest,
+        url: str,
+        data: bytes,
+        headers: HTTPHeaders,
+        status_code: int,
+    ) -> None:
         """Initialize the response.
 
         Args:
             request (HostingServiceHTTPRequest):
                 The request this is in response to.
 
-            url (unicode):
-                The URL serving the response. If redirected, this may differ
-                from the request URL.
+            url (str):
+                The URL serving the response.
+
+                If redirected, this may differ from the request URL.
 
             data (bytes):
                 The response payload.
@@ -398,7 +545,7 @@ class HostingServiceHTTPResponse(object):
                 'problem in a unit test. Please make sure a dictionary '
                 'is returned.')
 
-        new_headers = {}
+        new_headers: HTTPHeaders = {}
 
         for key, value in headers.items():
             if not isinstance(key, str) or not isinstance(value, str):
@@ -418,7 +565,7 @@ class HostingServiceHTTPResponse(object):
         self.status_code = status_code
 
     @cached_property
-    def json(self):
+    def json(self) -> JSONValue:
         """A JSON representation of the payload data.
 
         Raises:
@@ -434,31 +581,42 @@ class HostingServiceHTTPResponse(object):
         # Return whatever falsey value we received.
         return data
 
-    def get_header(self, name, default=None):
+    def get_header(
+        self,
+        name: str,
+        default: Optional[str] = None,
+    ) -> Optional[str]:
         """Return the value of a header as a Unicode string.
 
         This accepts a header name with any form of capitalization. The header
         name will be normalized.
 
         Args:
-            name (unicode):
+            name (str):
                 The header name.
 
-            default (unicode, optional):
+            default (str, optional):
                 The default value if the header is not set.
 
         Returns:
-            unicode:
+            str:
             The resulting header value.
         """
-        return force_str(self.headers.get(force_str(name.capitalize()),
-                                          default))
+        return self.headers.get(name.capitalize(), default)
 
-    def __getitem__(self, i):
+    def __getitem__(
+        self,
+        i: int,
+    ) -> Any:
         """Return an indexed item from the response.
 
         This is used to emulate the older 2-tuple response returned by hosting
         service HTTP request methods.
+
+        Deprecated:
+            6.0:
+            Callers should instead access :py:attr:`data` or :py:attr:`headers`
+            on this object.
 
         Args:
             i (int):
@@ -476,6 +634,14 @@ class HostingServiceHTTPResponse(object):
             IndexError:
                 An index other than 0 or 1 was requested.
         """
+        RemovedInReviewBoard70Warning.warn(
+            'Accessing %(class_name)sby index is deprecated. Please use '
+            '%(class_name)s.data or %(class_name)s.headers instead. This '
+            'will be removed in Review Board 7.'
+            % {
+                'class_name': type(self).__name__,
+            })
+
         if i == 0:
             return self.data
         elif i == 1:
