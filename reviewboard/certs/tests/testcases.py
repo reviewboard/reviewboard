@@ -6,6 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta
 
 from cryptography import x509
@@ -13,6 +14,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
+from typing_extensions import Final
 
 from reviewboard.testing import TestCase
 
@@ -208,6 +210,10 @@ class CertificateTestCase(TestCase):
     Version Aded:
         6.0
     """
+
+    #: Path to the base cert testdata directory.
+    base_testdata_dir: Final[str] = os.path.abspath(
+        os.path.join(__file__, '..', 'testdata'))
 
     def build_x509_cert(
         self,
