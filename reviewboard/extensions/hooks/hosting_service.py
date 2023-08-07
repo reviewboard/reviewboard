@@ -5,8 +5,7 @@ from __future__ import annotations
 from django.utils.translation import gettext as _
 from djblets.extensions.hooks import ExtensionHook, ExtensionHookPoint
 
-from reviewboard.hostingsvcs.service import (register_hosting_service,
-                                             unregister_hosting_service)
+from reviewboard.hostingsvcs.base import hosting_service_registry
 
 
 class HostingServiceHook(ExtensionHook, metaclass=ExtensionHookPoint):
@@ -35,11 +34,11 @@ class HostingServiceHook(ExtensionHook, metaclass=ExtensionHookPoint):
                              % (service_cls.__name__))
 
         self.hosting_service_id = hosting_service_id
-        register_hosting_service(hosting_service_id, service_cls)
+        hosting_service_registry.register(service_cls)
 
     def shutdown(self):
         """Shut down the hook.
 
         This will unregister the hosting service.
         """
-        unregister_hosting_service(self.hosting_service_id)
+        hosting_service_registry.unregister_by_id(self.hosting_service_id)

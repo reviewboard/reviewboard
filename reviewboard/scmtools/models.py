@@ -1,6 +1,5 @@
 import logging
 import uuid
-from functools import wraps
 from importlib import import_module
 from time import time
 from urllib.parse import quote
@@ -17,9 +16,9 @@ from djblets.db.fields import JSONField
 from djblets.log import log_timed
 from djblets.util.decorators import cached_property
 
+from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
@@ -405,7 +404,8 @@ class Repository(models.Model):
         bug_tracker_type = self.extra_data.get('bug_tracker_type')
 
         if bug_tracker_type:
-            bug_tracker_cls = get_hosting_service(bug_tracker_type)
+            bug_tracker_cls = \
+                hosting_service_registry.get_hosting_service(bug_tracker_type)
 
             # TODO: we need to figure out some way of storing a second
             # hosting service account for bug trackers.

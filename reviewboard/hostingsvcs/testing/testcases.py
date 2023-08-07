@@ -8,9 +8,9 @@ from urllib.parse import urlparse
 
 from kgb import SpyAgency
 
+from reviewboard.hostingsvcs.base import (HostingServiceHTTPResponse,
+                                          hosting_service_registry)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import (HostingServiceHTTPResponse,
-                                             get_hosting_service)
 from reviewboard.testing import TestCase
 
 
@@ -225,7 +225,8 @@ class HostingServiceTestCase(SpyAgency, TestCase):
         super(HostingServiceTestCase, cls).setUpClass()
 
         if cls.service_name:
-            cls.service_class = get_hosting_service(cls.service_name)
+            cls.service_class = \
+                hosting_service_registry.get_hosting_service(cls.service_name)
         else:
             cls.service_class = None
 

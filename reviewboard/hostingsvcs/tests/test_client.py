@@ -8,11 +8,11 @@ from djblets.testing.testcases import ExpectedWarning
 from kgb import SpyAgency
 
 from reviewboard.deprecation import RemovedInReviewBoard70Warning
+from reviewboard.hostingsvcs.base import (HostingServiceClient,
+                                          HostingServiceHTTPRequest,
+                                          HostingServiceHTTPResponse)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import (HostingService,
-                                             HostingServiceClient,
-                                             HostingServiceHTTPRequest,
-                                             HostingServiceHTTPResponse)
+from reviewboard.testing.hosting_services import TestService
 from reviewboard.testing.testcase import TestCase
 
 
@@ -64,13 +64,13 @@ class HostingServiceHTTPRequestTests(TestCase):
         """Testing HostingServiceHTTPRequest construction with non-bytes body
         """
         account = HostingServiceAccount()
-        service = HostingService(account)
+        service = TestService(account)
 
         expected_message = (
             'Received non-bytes body for the HTTP request for %r. This is '
             'likely an implementation problem. Please make sure only byte '
             'strings are sent for the request body.'
-            % HostingService
+            % TestService
         )
 
         with self.assertRaisesMessage(TypeError, expected_message):
@@ -85,13 +85,13 @@ class HostingServiceHTTPRequestTests(TestCase):
         header key
         """
         account = HostingServiceAccount()
-        service = HostingService(account)
+        service = TestService(account)
 
         expected_message = (
             'Received non-Unicode header %r (value=%r) for the HTTP request '
             'for %r. This is likely an implementation problem. Please make '
             'sure only Unicode strings are sent in request headers.'
-            % (b'My-Header', 'abc', HostingService)
+            % (b'My-Header', 'abc', TestService)
         )
 
         with self.assertRaisesMessage(TypeError, expected_message):
@@ -108,13 +108,13 @@ class HostingServiceHTTPRequestTests(TestCase):
         header value
         """
         account = HostingServiceAccount()
-        service = HostingService(account)
+        service = TestService(account)
 
         expected_message = (
             'Received non-Unicode header %r (value=%r) for the HTTP request '
             'for %r. This is likely an implementation problem. Please make '
             'sure only Unicode strings are sent in request headers.'
-            % ('My-Header', b'abc', HostingService)
+            % ('My-Header', b'abc', TestService)
         )
 
         with self.assertRaisesMessage(TypeError, expected_message):
@@ -220,7 +220,7 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         super().setUp()
 
         account = HostingServiceAccount()
-        service = HostingService(account)
+        service = TestService(account)
 
         self.client = HostingServiceClient(service)
         self.client.http_request_cls = DummyHTTPRequest

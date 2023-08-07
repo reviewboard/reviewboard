@@ -1,5 +1,4 @@
-from reviewboard.hostingsvcs.service import (get_hosting_services,
-                                             get_hosting_service)
+from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (hosting_service_item_mimetype,
@@ -87,7 +86,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                              populate_items):
         return (get_hosting_service_list_url(local_site_name),
                 hosting_service_list_mimetype,
-                get_hosting_services())
+                list(hosting_service_registry))
 
 
 class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
@@ -99,7 +98,8 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     compare_item = _compare_item
 
     def setup_http_not_allowed_item_test(self, user):
-        hosting_service = get_hosting_service('github')
+        hosting_service = \
+            hosting_service_registry.get_hosting_service('github')
 
         return get_hosting_service_item_url(hosting_service)
 
@@ -108,7 +108,8 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     #
 
     def setup_basic_get_test(self, user, with_local_site, local_site_name):
-        hosting_service = get_hosting_service('github')
+        hosting_service = \
+            hosting_service_registry.get_hosting_service('github')
 
         return (get_hosting_service_item_url(hosting_service, local_site_name),
                 hosting_service_item_mimetype,

@@ -1,9 +1,8 @@
+from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import (register_hosting_service,
-                                             unregister_hosting_service)
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 from reviewboard.testing.hosting_services import (SelfHostedTestService,
@@ -18,15 +17,14 @@ class HostingServiceAuthFormTests(TestCase):
     def setUp(self):
         super(HostingServiceAuthFormTests, self).setUp()
 
-        register_hosting_service(TestService.hosting_service_id, TestService)
-        register_hosting_service(SelfHostedTestService.hosting_service_id,
-                                 SelfHostedTestService)
+        hosting_service_registry.register(TestService)
+        hosting_service_registry.register(SelfHostedTestService)
 
     def tearDown(self):
         super(HostingServiceAuthFormTests, self).tearDown()
 
-        unregister_hosting_service(SelfHostedTestService.hosting_service_id)
-        unregister_hosting_service(TestService.hosting_service_id)
+        hosting_service_registry.unregister(SelfHostedTestService)
+        hosting_service_registry.unregister(TestService)
 
     def test_override_help_texts(self):
         """Testing HostingServiceAuthForm subclasses overriding help texts"""

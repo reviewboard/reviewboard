@@ -2,8 +2,8 @@ from django.http import HttpResponse
 from django.urls import NoReverseMatch, path
 from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
 
-from reviewboard.hostingsvcs.service import (HostingService,
-                                             register_hosting_service,
+from reviewboard.hostingsvcs.base import BaseHostingService
+from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
@@ -17,10 +17,10 @@ def hosting_service_url_test_view(request, repo_id):
 class HostingServiceRegistrationTests(TestCase):
     """Unit tests for Hosting Service registration."""
 
-    class DummyService(HostingService):
+    class DummyService(BaseHostingService):
         name = 'DummyService'
 
-    class DummyServiceWithURLs(HostingService):
+    class DummyServiceWithURLs(BaseHostingService):
         name = 'DummyServiceWithURLs'
 
         repository_url_patterns = [

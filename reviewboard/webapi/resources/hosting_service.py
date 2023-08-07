@@ -6,8 +6,8 @@ from djblets.webapi.fields import (BooleanFieldType,
                                    ListFieldType,
                                    StringFieldType)
 
-from reviewboard.hostingsvcs.service import (get_hosting_services,
-                                             HostingService)
+from reviewboard.hostingsvcs.base import (BaseHostingService,
+                                          hosting_service_registry)
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.resources import resources
 
@@ -27,7 +27,7 @@ class HostingServiceResource(WebAPIResource):
 
     name = 'hosting_service'
     model_object_key = 'hosting_service_id'
-    model = HostingService
+    model = BaseHostingService
     uri_object_key = 'hosting_service_id'
     uri_object_key_regex = r'[a-z0-9_-]+'
 
@@ -190,10 +190,10 @@ class HostingServiceResource(WebAPIResource):
         return True
 
     def get_queryset(self, request, *args, **kwargs):
-        return LocalDataQuerySet(get_hosting_services())
+        return LocalDataQuerySet(list(hosting_service_registry))
 
     def get_serializer_for_object(self, obj):
-        if inspect.isclass(obj) and issubclass(obj, HostingService):
+        if inspect.isclass(obj) and issubclass(obj, BaseHostingService):
             return self
 
         return super(HostingServiceResource, self).get_serializer_for_object(
