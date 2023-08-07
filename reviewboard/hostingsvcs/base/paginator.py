@@ -6,6 +6,80 @@ Version Added:
     :py:mod:`reviewboard.hostingsvcs.utils.paginator` module.
 """
 
+from __future__ import annotations
+
+from typing import (Any, Callable, Generic, Iterator, Optional, Sequence,
+                    TYPE_CHECKING, TypeVar)
+
+from typing_extensions import NotRequired, TypeAlias, TypedDict
+
+if TYPE_CHECKING:
+    from djblets.util.typing import KwargsDict
+    from reviewboard.hostingsvcs.base import HostingServiceClient
+    from reviewboard.hostingsvcs.base.http import HTTPHeaders, QueryArgs
+
+
+_PageDataItemT = TypeVar('_PageDataItemT')
+_PageDataT = TypeVar('_PageDataT')
+
+
+#: Type alias for a normalize function for ProxyPaginator.
+#:
+#: Version Added:
+#:     6.0
+_ProxyNormalizePageDataFunc: TypeAlias = Callable[[Optional[Any]],
+                                                  Optional[_PageDataT]]
+
+
+class APIPaginatorPageData(TypedDict):
+    """Data that can be returned from an APIPaginator.
+
+    Version Added:
+        6.0
+    """
+
+    #: The data from the page (generally as a list).
+    #:
+    #: Type:
+    #:     object
+    data: NotRequired[Any]
+
+    #: The HTTP headers from the page response.
+    #:
+    #: Type:
+    #:     dict
+    headers: NotRequired[HTTPHeaders]
+
+    #: The optional URL to the next page.
+    #:
+    #: Type:
+    #:     str
+    next_url: NotRequired[Optional[str]]
+
+    #: The optional limit on the number of items fetched on each page.
+    #:
+    #: Type:
+    #:     int
+    per_page: NotRequired[Optional[int]]
+
+    #: The optional URL to the previous page.
+    #:
+    #: Type:
+    #:     str
+    prev_url: NotRequired[Optional[str]]
+
+    #: The API response data.
+    #:
+    #: Type:
+    #:     object
+    response: NotRequired[object]
+
+    #: The optional total number of items across all pages.
+    #:
+    #: Type:
+    #:     int
+    total_count: NotRequired[Optional[int]]
+
 
 class InvalidPageError(Exception):
     """An error representing an invalid page access.
@@ -17,7 +91,7 @@ class InvalidPageError(Exception):
     """
 
 
-class BasePaginator(object):
+class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
     """Base class for a paginator used in the hosting services code.
 
     This provides the basic state and stubbed functions for a simple
@@ -29,33 +103,64 @@ class BasePaginator(object):
         * Moved from :py:mod:`reviewboard.hostingsvcs.utils.paginator` to
           :py:mod:`reviewboard.hostingsvcs.base.paginator`.
 
-    Attributes:
-        page_data (object):
-            The data for the current page. This is implementation-dependent,
-            but will usually be a list.
-
-        per_page (int):
-            The number of items to fetch per page.
-
-        request_kwargs (dict):
-            Keyword arguments to pass when making HTTP requests.
-
-        start (int):
-            The starting page. Whether this is 0-based or 1-based depends
-            on the hosting service.
-
-        total_count (int):
-            The total number of results across all pages. This will be ``None``
-            if the value isn't known.
+        * This is now a generic, supporting typing for page data and items.
     """
 
-    def __init__(self, start=None, per_page=None, request_kwargs=None):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The data for the current page.
+    #:
+    #: This is implementation-dependent, but will usually be a list. It must
+    #: operate as a sequence of some kind.
+    #:
+    #: Type:
+    #:     object
+    page_data: Optional[_PageDataT]
+
+    #: The number of items to fetch per page.
+    #:
+    #: Type:
+    #:     int
+    per_page: Optional[int]
+
+    #: Keyword arguments to pass when making HTTP requests.
+    #:
+    #: Type:
+    #:     dict
+    request_kwargs: KwargsDict
+
+    #: The starting page.
+    #:
+    #: Whether this is 0-based or 1-based depends on the hosting service.
+    #:
+    #: Type:
+    #:     int
+    start: Optional[int]
+
+    #: The total number of results across all pages.
+    #:
+    #: This will be ``None`` if the value isn't known.
+    #:
+    #: Type:
+    #:     int
+    total_count: Optional[int]
+
+    def __init__(
+        self,
+        start: Optional[int] = None,
+        per_page: Optional[int] = None,
+        request_kwargs: Optional[KwargsDict] = None,
+    ) -> None:
         """Initialize the paginator.
 
         Args:
             start (int, optional):
-                The starting page. Whether this is 0-based or 1-based depends
-                on the hosting service.
+                The starting page.
+
+                Whether this is 0-based or 1-based depends on the hosting
+                service.
 
             per_page (int, optional):
                 The number of items per page.
@@ -70,30 +175,38 @@ class BasePaginator(object):
         self.request_kwargs = request_kwargs or {}
 
     @property
-    def has_prev(self):
+    def has_prev(self) -> bool:
         """Whether there's a previous page available.
 
         Subclasses must override this to provide a meaningful value.
+
+        Type:
+            bool
         """
         raise NotImplementedError
 
     @property
-    def has_next(self):
+    def has_next(self) -> bool:
         """Whether there's a next page available.
 
         Subclasses must override this to provide a meaningful value.
+
+        Type:
+            bool
         """
         raise NotImplementedError
 
-    def prev(self):
+    def prev(self) -> Optional[_PageDataT]:
         """Fetch the previous page, returning the page data.
 
         Subclasses must override this to provide the logic for fetching pages.
 
         Returns:
             object:
-            The resulting page data. This will usually be a :py:class:`list`,
-            but is implementation-dependent.
+            The resulting page data.
+
+            This will usually be a :py:class:`list`, but is
+            implementation-dependent.
 
         Raises:
             InvalidPageError:
@@ -101,15 +214,17 @@ class BasePaginator(object):
         """
         raise NotImplementedError
 
-    def next(self):
+    def next(self) -> Optional[_PageDataT]:
         """Fetch the next page, returning the page data.
 
         Subclasses must override this to provide the logic for fetching pages.
 
         Returns:
             object:
-            The resulting page data. This will usually be a :py:class:`list`,
-            but is implementation-dependent.
+            The resulting page data.
+
+            This will usually be a :py:class:`list`, but is
+            implementation-dependent.
 
         Raises:
             InvalidPageError:
@@ -117,7 +232,10 @@ class BasePaginator(object):
         """
         raise NotImplementedError
 
-    def iter_items(self, max_pages=None):
+    def iter_items(
+        self,
+        max_pages: Optional[int] = None,
+    ) -> Iterator[_PageDataItemT]:
         """Iterate through all items across pages.
 
         This will repeatedly fetch pages, iterating through all items and
@@ -135,10 +253,20 @@ class BasePaginator(object):
             Each item from each page's payload.
         """
         for page in self.iter_pages(max_pages=max_pages):
-            for data in self.page_data:
-                yield data
+            if page:
+                assert isinstance(page, Sequence), (
+                    "page_data is not a sequence (it's a %s). This is "
+                    "either an unexpected result, or %s.iter_items() needs "
+                    "to be overridden."
+                    % (type(page), type(self).__name__)
+                )
 
-    def iter_pages(self, max_pages=None):
+                yield from page
+
+    def iter_pages(
+        self,
+        max_pages: Optional[int] = None,
+    ) -> Iterator[Optional[_PageDataT]]:
         """Iterate through pages of results.
 
         This will repeatedly fetch pages, providing each parsed page payload
@@ -169,7 +297,7 @@ class BasePaginator(object):
         except InvalidPageError:
             pass
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Optional[_PageDataT]]:
         """Iterate through pages of results.
 
         This is a simple wrapper for :py:meth:`iter_pages`.
@@ -178,11 +306,10 @@ class BasePaginator(object):
             object:
             The parsed payload for each page.
         """
-        for page in self.iter_pages():
-            yield page
+        yield from self.iter_pages()
 
 
-class APIPaginator(BasePaginator):
+class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
     """Handles pagination for API requests to a hosting service.
 
     Hosting services may provide subclasses of ``APIPaginator`` that can handle
@@ -191,62 +318,96 @@ class APIPaginator(BasePaginator):
     resources.
 
     All ``APIPaginators`` are expected to take an instance of a
-    :py:class:`~reviewboard.hostingsvcs.service.HostingServiceClient` subclass,
-    and the starting URL (without any arguments for pagination).
+    :py:class:`~reviewboard.hostingsvcs.base.client.HostingServiceClient`
+    subclass, and the starting URL (without any arguments for pagination).
 
     Subclasses can access the
-    :py:class:`~reviewboard.hostingsvcs.service.HostingServiceClient` through
-    the :py:attr:`client` member of the paginator in order to perform requests
-    against the hosting service.
+    :py:class:`~reviewboard.hostingsvcs.base.client.HostingServiceClient`
+    through the :py:attr:`client` member of the paginator in order to perform
+    requests against the hosting service.
 
     Version Changed:
         6.0:
         * Moved from :py:mod:`reviewboard.hostingsvcs.utils.paginator` to
           :py:mod:`reviewboard.hostingsvcs.base.paginator`.
 
-    Attributes:
-        client (reviewboard.hostingsvcs.service.HostingServiceClient):
-            The hosting service client used to make requests.
-
-        next_url (unicode):
-            The URL for the next set of results in the page.
-
-        page_headers (dict):
-            HTTP headers returned for the current page.
-
-        prev_url (unicode):
-            The URL for the previous set of results in the page.
-
-        url (unicode):
-            The URL used to fetch the current page of data.
+        * This is now a generic, supporting typing for page data and items.
     """
 
     #: Query parameter name for the start page in a request.
     #:
     #: This is optional. Clients can specify this to provide this as part
     #: of pagination queries.
-    start_query_param = None
+    #:
+    #: Type:
+    #:     str
+    start_query_param: Optional[str] = None
 
     #: Query parameter name for the requested number of results per page.
     #:
     #: This is optional. Clients can specify this to provide this as part
     #: of pagination queries.
-    per_page_query_param = None
+    #:
+    #: Type:
+    #:     str
+    per_page_query_param: Optional[str] = None
 
-    def __init__(self, client, url, query_params={}, *args, **kwargs):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The hosting service client used to make requests.
+    #:
+    #: Type:
+    #:     reviewboard.hostingsvcs.base.client.HostingServiceClient
+    client: HostingServiceClient
+
+    #: The URL for the next set of results in the page.
+    #:
+    #: Type:
+    #:     str
+    next_url: Optional[str]
+
+    #: HTTP headers returned for the current page.
+    #:
+    #: Type:
+    #:     dict
+    page_headers: Optional[HTTPHeaders]
+
+    #: The URL for the previous set of results in the page.
+    #:
+    #: Type:
+    #:     str
+    prev_url: Optional[str]
+
+    #: The URL used to fetch the current page of data.
+    #:
+    #: Type:
+    #:     str
+    url: Optional[str]
+
+    def __init__(
+        self,
+        client: HostingServiceClient,
+        url: str,
+        query_params: QueryArgs = {},
+        *args,
+        **kwargs,
+    ) -> None:
         """Initialize the paginator.
 
         Once initialized, the first page will be fetched automatically.
 
         Args:
-            client (reviewboard.hostingsvcs.service.HostingServiceClient):
+            client (reviewboard.hostingsvcs.base.client.HostingServiceClient):
                 The hosting service client used to make requests.
 
-            url (unicode):
+            url (str):
                 The URL used to make requests.
 
             query_params (dict):
                 The query parameters to append to the URL for requests.
+
                 This will be updated with :py:attr:`start_query_param`
                 and :py:attr:`per_page_query_param`, if set.
 
@@ -256,7 +417,7 @@ class APIPaginator(BasePaginator):
             **kwargs (dict):
                 Keyword arguments for the parent constructor.
         """
-        super(APIPaginator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.client = client
         self.url = url
@@ -278,22 +439,32 @@ class APIPaginator(BasePaginator):
         self._fetch_page()
 
     @property
-    def has_prev(self):
-        """Whether there's a previous page available."""
+    def has_prev(self) -> bool:
+        """Whether there's a previous page available.
+
+        Type:
+            bool
+        """
         return self.prev_url is not None
 
     @property
-    def has_next(self):
-        """Whether there's a next page available."""
+    def has_next(self) -> bool:
+        """Whether there's a next page available.
+
+        Type:
+            bool
+        """
         return self.next_url is not None
 
-    def prev(self):
+    def prev(self) -> Optional[_PageDataT]:
         """Fetch the previous page, returning the page data.
 
         Returns:
             object:
-            The resulting page data. This will usually be a :py:class:`list`,
-            but is implementation-dependent.
+            The resulting page data.
+
+            This will usually be a :py:class:`list`, but is
+            implementation-dependent.
 
         Raises:
             InvalidPageError:
@@ -305,13 +476,15 @@ class APIPaginator(BasePaginator):
         self.url = self.prev_url
         return self._fetch_page()
 
-    def next(self):
+    def next(self) -> Optional[_PageDataT]:
         """Fetch the next page, returning the page data.
 
         Returns:
             object:
-            The resulting page data. This will usually be a :py:class:`list`,
-            but is implementation-dependent.
+            The resulting page data.
+
+            This will usually be a :py:class:`list`, but is
+            implementation-dependent.
 
         Raises:
             InvalidPageError:
@@ -323,48 +496,37 @@ class APIPaginator(BasePaginator):
         self.url = self.next_url
         return self._fetch_page()
 
-    def fetch_url(self, url):
+    def fetch_url(
+        self,
+        url: str,
+    ) -> APIPaginatorPageData:
         """Fetch the URL, returning information on the page.
 
-        This must be implemented by subclasses. It must return a dictionary
-        with the following fields:
-
-        ``data`` (:py:class:`object`)
-            The data from the page (generally as a list).
-
-        ``headers`` (:py:class:`dict`)
-            The headers from the page response.
-
-        ``total_count`` (:py:class:`int`, optional)
-            The optional total number of items across all pages.
-
-        ``per_page`` (:py:class:`int`, optional)
-            The optional limit on the number of items fetched on each page.
-
-        ``prev_url`` (:py:class:`unicode`, optional)
-            The optional URL to the previous page.
-
-        ``next_url`` (:py:class:`unicode`, optional)
-            The optional URL to the next page.
+        This must be implemented by subclasses.
 
         Args:
-            url (unicode):
+            url (str):
                 The URL to fetch.
 
         Returns:
             dict:
             The pagination information with the above fields.
+
+            See :py:class:`APIPaginatorPageData` for the supported fields.
         """
         raise NotImplementedError
 
-    def _fetch_page(self):
+    def _fetch_page(self) -> Optional[_PageDataT]:
         """Fetch a page and extracts the information from it.
 
         Returns:
             object:
-            The resulting page data. This will usually be a :py:class:`list`,
-            but is implementation-dependent.
+            The resulting page data.
+
+            This will usually be a :py:class:`list`, but is
+            implementation-dependent.
         """
+        assert self.url is not None
         page_info = self.fetch_url(self.url)
 
         self.prev_url = page_info.get('prev_url')
@@ -402,7 +564,10 @@ class APIPaginator(BasePaginator):
         return self.page_data
 
 
-class ProxyPaginator(BasePaginator):
+_ProxiedPaginatorT = TypeVar('_ProxiedPaginatorT', bound=BasePaginator)
+
+
+class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
     """A paginator that proxies to another paginator, transforming data.
 
     This attaches to another paginator, forwarding all requests and proxying
@@ -412,24 +577,40 @@ class ProxyPaginator(BasePaginator):
     normalize it, transforming it into a new form.
 
     This is useful when a
-    :py:class:`~reviewboard.hostingsvcs.service.HostingService` wants to return
-    a paginator to callers that represents data in a structured way, using an
-    :py:class:`APIPaginator`'s raw payloads as a backing.
+    :py:class:`~reviewboard.hostingsvcs.base.hosting_service.
+    BaseHostingService` wants to return a paginator to callers that represents
+    data in a structured way, using an :py:class:`APIPaginator`'s raw payloads
+    as a backing.
 
     Version Changed:
         6.0:
         * Moved from :py:mod:`reviewboard.hostingsvcs.utils.paginator` to
           :py:mod:`reviewboard.hostingsvcs.base.paginator`.
 
-    Attributes:
-        paginator (BasePaginator):
-            The paginator that this is a proxy for.
-
-        normalize_page_data_func (callable):
-            A function used to normalize a page of results from the paginator.
+        * This is now a generic, supporting typing for page data and items.
     """
 
-    def __init__(self, paginator, normalize_page_data_func=None):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The paginator that this is a proxy for.
+    #:
+    #: Type:
+    #:     BasePaginator
+    paginator: BasePaginator[Any, Any]
+
+    #: A function used to normalize a page of results from the paginator.
+    #:
+    #: Type:
+    #:     callable
+    normalize_page_data_func: Optional[_ProxyNormalizePageDataFunc]
+
+    def __init__(
+        self,
+        paginator: BasePaginator[Any, Any],
+        normalize_page_data_func: Optional[_ProxyNormalizePageDataFunc] = None,
+    ) -> None:
         """Initialize the paginator.
 
         Args:
@@ -447,32 +628,50 @@ class ProxyPaginator(BasePaginator):
         self.page_data = self.normalize_page_data(self.paginator.page_data)
 
     @property
-    def has_prev(self):
-        """Whether there's a previous page available."""
+    def has_prev(self) -> bool:
+        """Whether there's a previous page available.
+
+        Type:
+            bool
+        """
         return self.paginator.has_prev
 
     @property
-    def has_next(self):
-        """Whether there's a next page available."""
+    def has_next(self) -> bool:
+        """Whether there's a next page available.
+
+        Type:
+            bool
+        """
         return self.paginator.has_next
 
     @property
-    def per_page(self):
-        """The number of items requested per page."""
+    def per_page(self) -> Optional[int]:  # type: ignore
+        """The number of items requested per page.
+
+        Type:
+            int
+        """
         return self.paginator.per_page
 
     @property
-    def total_count(self):
-        """The number of items across all pages, if known."""
+    def total_count(self) -> Optional[int]:  # type: ignore
+        """The number of items across all pages, if known.
+
+        Type:
+            int
+        """
         return self.paginator.total_count
 
-    def prev(self):
+    def prev(self) -> Optional[_PageDataT]:
         """Fetch the previous page, returning the page data.
 
         Returns:
             object:
-            The resulting page data. This will usually be a :py:class:`list`,
-            but is implementation-dependent.
+            The resulting page data.
+
+            This will usually be a :py:class:`list`, but is
+            implementation-dependent.
 
         Raises:
             InvalidPageError:
@@ -480,13 +679,15 @@ class ProxyPaginator(BasePaginator):
         """
         return self._process_page(self.paginator.prev())
 
-    def next(self):
+    def next(self) -> Optional[_PageDataT]:
         """Fetch the next page, returning the page data.
 
         Returns:
             object:
-            The resulting page data. This will usually be a :py:class:`list`,
-            but is implementation-dependent.
+            The resulting page data.
+
+            This will usually be a :py:class:`list`, but is
+            implementation-dependent.
 
         Raises:
             InvalidPageError:
@@ -494,7 +695,10 @@ class ProxyPaginator(BasePaginator):
         """
         return self._process_page(self.paginator.next())
 
-    def normalize_page_data(self, data):
+    def normalize_page_data(
+        self,
+        data: Optional[Any],
+    ) -> Optional[_PageDataT]:
         """Normalize a page of data.
 
         If :py:attr:`normalize_page_data_func` was passed on construction, this
@@ -517,7 +721,10 @@ class ProxyPaginator(BasePaginator):
 
         return data
 
-    def _process_page(self, page_data):
+    def _process_page(
+        self,
+        page_data: Optional[Any],
+    ) -> Optional[_PageDataT]:
         """Process a page of data.
 
         This will normalize the page data, store it, and return it.
