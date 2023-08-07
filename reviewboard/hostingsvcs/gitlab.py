@@ -1252,9 +1252,12 @@ class GitLab(HostingService):
         }
 
         try:
-            data, rsp_headers = self.client.http_request(
-                url, body=b'', headers=headers, method='HEAD')
-            return rsp_headers
+            return (
+                self.client.http_head(url=url,
+                                      body=b'',
+                                      headers=headers)
+                .headers
+            )
         except HTTPError as e:
             if e.code == 401:
                 raise AuthorizationError(
@@ -1440,11 +1443,7 @@ class GitLab(HostingService):
                 The API version could be determined.
         """
         http_method = http_method.lower()
-
-        if use_json:
-            method = getattr(self.client, 'json_%s' % http_method)
-        else:
-            method = getattr(self.client, 'http_%s' % http_method)
+        method = getattr(self.client, f'http_{http_method}')
 
         errors = []
 
@@ -1453,7 +1452,7 @@ class GitLab(HostingService):
                                       api_version=api_version)
 
             try:
-                rsp, headers = method(url, **request_kwargs)
+                response = method(url, **request_kwargs)
             except HTTPError as e:
                 if e.code == 401:
                     raise AuthorizationError('The API token is invalid.')
@@ -1462,7 +1461,12 @@ class GitLab(HostingService):
             except Exception as e:
                 errors.append(e)
             else:
-                return api_version, rsp, headers
+                if use_json:
+                    rsp = response.json
+                else:
+                    rsp = response.data
+
+                return api_version, rsp, response.headers
 
         # Note that we're only going to list the error found in the first
         # HTTP GET attempt. It's more than likely that if we're unable to

@@ -635,7 +635,7 @@ class HostingServiceHTTPResponse:
                 An index other than 0 or 1 was requested.
         """
         RemovedInReviewBoard70Warning.warn(
-            'Accessing %(class_name)sby index is deprecated. Please use '
+            'Accessing %(class_name)s by index is deprecated. Please use '
             '%(class_name)s.data or %(class_name)s.headers instead. This '
             'will be removed in Review Board 7.'
             % {
