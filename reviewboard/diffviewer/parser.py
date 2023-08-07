@@ -1,20 +1,47 @@
+"""Diff parsing support."""
+
+from __future__ import annotations
+
 import io
 import logging
 import re
 import weakref
 from copy import deepcopy
+from typing import Optional, Union
 
-from django.utils.encoding import force_bytes
 from django.utils.translation import gettext as _
-from djblets.util.properties import AliasProperty, TypedProperty
+from djblets.util.properties import TypedProperty
 from pydiffx import DiffType, DiffX
 from pydiffx.errors import DiffXParseError
+from typing_extensions import TypeAlias
 
 from reviewboard.diffviewer.errors import DiffParserError
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, Revision, UNKNOWN
 
 
 logger = logging.getLogger(__name__)
+
+
+#: An alias for a TypedProperty taking a bytes value or None.
+#:
+#: Version Added:
+#:     6.0
+_BytesProperty: TypeAlias = TypedProperty[Optional[bytes], Optional[bytes]]
+
+#: An alias for a TypedProperty taking a bytes value, Revision, or None.
+#:
+#: Version Added:
+#:     6.0
+_RevisionProperty: TypeAlias = TypedProperty[
+    Optional[Union[bytes, Revision]],
+    Optional[Union[bytes, Revision]]
+]
+
+#: An alias for a TypedProperty taking a str value or None.
+#:
+#: Version Added:
+#:     6.0
+_StrProperty: TypeAlias = TypedProperty[Optional[str], Optional[str]]
 
 
 class ParsedDiff(object):
@@ -107,16 +134,16 @@ class ParsedDiffChange(object):
     #: This may be ``None``.
     #:
     #: Type:
-    #:     unicode
-    commit_id = TypedProperty(bytes)
+    #:     bytes
+    commit_id: _BytesProperty = TypedProperty(bytes)
 
     #: The ID of the primary parent commit, parsed from the diff.
     #:
     #: This may be ``None``.
     #:
     #: Type:
-    #:     unicode
-    parent_commit_id = TypedProperty(bytes)
+    #:     bytes
+    parent_commit_id: _BytesProperty = TypedProperty(bytes)
 
     def __init__(self, parsed_diff):
         """Initialize the parsed diff information.
@@ -208,7 +235,7 @@ class ParsedDiffFile(object):
     #:
     #: Type:
     #:     bytes
-    orig_filename = TypedProperty(bytes)
+    orig_filename: _BytesProperty = TypedProperty(bytes)
 
     #: The parsed file details of the original file.
     #:
@@ -216,7 +243,7 @@ class ParsedDiffFile(object):
     #:
     #: Type:
     #:     bytes or reviewboard.scmtools.core.Revision
-    orig_file_details = TypedProperty((bytes, Revision))
+    orig_file_details: _RevisionProperty = TypedProperty((bytes, Revision))
 
     #: The parsed modified name of the file.
     #:
@@ -224,7 +251,7 @@ class ParsedDiffFile(object):
     #:
     #: Type:
     #:     bytes
-    modified_filename = TypedProperty(bytes)
+    modified_filename: _BytesProperty = TypedProperty(bytes)
 
     #: The parsed file details of the modified file.
     #:
@@ -232,7 +259,8 @@ class ParsedDiffFile(object):
     #:
     #: Type:
     #:     bytes or reviewboard.scmtools.core.Revision
-    modified_file_details = TypedProperty((bytes, Revision))
+    modified_file_details: _RevisionProperty = TypedProperty((bytes,
+                                                              Revision))
 
     #: The parsed value for an Index header.
     #:
@@ -242,7 +270,7 @@ class ParsedDiffFile(object):
     #:
     #: Type:
     #:     bytes
-    index_header_value = TypedProperty(bytes)
+    index_header_value: _BytesProperty = TypedProperty(bytes)
 
     #: The old target for a symlink.
     #:
@@ -251,7 +279,7 @@ class ParsedDiffFile(object):
     #:
     #: Type:
     #:     bytes
-    old_symlink_target = TypedProperty(bytes)
+    old_symlink_target: _BytesProperty = TypedProperty(bytes)
 
     #: The new target for a symlink.
     #:
@@ -260,7 +288,7 @@ class ParsedDiffFile(object):
     #:
     #: Type:
     #:     bytes
-    new_symlink_target = TypedProperty(bytes)
+    new_symlink_target: _BytesProperty = TypedProperty(bytes)
 
     #: The old UNIX mode for the file.
     #:
@@ -268,8 +296,8 @@ class ParsedDiffFile(object):
     #:     4.0.6
     #:
     #: Type:
-    #:     int
-    old_unix_mode = TypedProperty(str)
+    #:     str
+    old_unix_mode: _StrProperty = TypedProperty(str)
 
     #: The new UNIX mode for the file.
     #:
@@ -277,8 +305,8 @@ class ParsedDiffFile(object):
     #:     4.0.6
     #:
     #: Type:
-    #:     int
-    new_unix_mode = TypedProperty(str)
+    #:     str
+    new_unix_mode: _StrProperty = TypedProperty(str)
 
     def __init__(self, parser=None, parsed_diff_change=None, **kwargs):
         """Initialize the parsed file information.

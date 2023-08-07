@@ -1,5 +1,7 @@
 """Data structures and classes for defining and using SCMTools."""
 
+from __future__ import annotations
+
 import base64
 import logging
 import os
@@ -7,11 +9,13 @@ import subprocess
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
+from typing import List, Optional
 
 import importlib_metadata
 from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import gettext_lazy as _
 from djblets.util.properties import TypedProperty
+from typing_extensions import TypeAlias
 
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
@@ -23,6 +27,34 @@ from reviewboard.ssh.errors import SSHAuthenticationError
 logger = logging.getLogger(__name__)
 
 
+#: An alias for a TypedProperty taking a bytes value or None.
+#:
+#: Version Added:
+#:     6.0
+_BytesProperty: TypeAlias = TypedProperty[Optional[bytes], Optional[bytes]]
+
+
+#: An alias for a TypedProperty taking an int value or None.
+#:
+#: Version Added:
+#:     6.0
+_IntProperty: TypeAlias = TypedProperty[Optional[int], Optional[int]]
+
+
+#: An alias for a TypedProperty taking a str value or None.
+#:
+#: Version Added:
+#:     6.0
+_StrProperty: TypeAlias = TypedProperty[Optional[str], Optional[str]]
+
+
+#: An alias for a TypedProperty taking a str value.
+#:
+#: Version Added:
+#:     6.0
+_StrRequiredProperty: TypeAlias = TypedProperty[str, str]
+
+
 class ChangeSet(object):
     """A server-side changeset.
 
@@ -31,47 +63,77 @@ class ChangeSet(object):
     repositories (such as Perforce).
 
     Not all data may be provided by the server.
-
-    Attributes:
-        bugs_closed (list of unicode):
-            A list of bug IDs that were closed by this change.
-
-        files (list of unicode):
-            A list of filenames added/modified/deleted by the change.
-
-        pending (bool):
-            Whether or not the change is pending (not yet committed).
     """
 
-    #: The changeset number/ID.
-    changenum = TypedProperty(int)
-
-    #: The summary of the change.
-    summary = TypedProperty(str)
-
-    #: The description of the change.
-    description = TypedProperty(str)
-
-    #: Testing information for the change.
-    testing_done = TypedProperty(str)
+    ######################
+    # Instance variables #
+    ######################
 
     #: The destination branch.
-    branch = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    branch: _StrProperty = TypedProperty(str)
+
+    #: A list of bug IDs that were closed by this change.
+    #:
+    #: Type:
+    #:     list of str
+    bugs_closed: List[str]
+
+    #: The changeset number/ID.
+    #:
+    #: Type:
+    #:     int
+    changenum: _IntProperty = TypedProperty(int)
+
+    #: The description of the change.
+    #:
+    #: Type:
+    #:     str
+    description: _StrProperty = TypedProperty(str)
+
+    #: A list of filenames added/modified/deleted by the change.
+    #:
+    #: Type:
+    #:     list of str
+    files: List[str]
+
+    #: Whether or not the change is pending (not yet committed).
+    #:
+    #: Type:
+    #:     bool
+    pending: bool
+
+    #: The summary of the change.
+    #:
+    #: Type:
+    #:     str
+    summary: _StrProperty = TypedProperty(str)
+
+    #: Testing information for the change.
+    #:
+    #: Type:
+    #:     str
+    testing_done: _StrProperty = TypedProperty(str)
 
     #: The username of the user who made the change.
-    username = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    username: _StrProperty = TypedProperty(str)
 
     def __init__(self):
         """Initialize the changeset."""
-        self.changenum = None
-        self.summary = ''
-        self.description = ''
-        self.testing_done = ''
         self.branch = ''
         self.bugs_closed = []
+        self.changenum = None
+        self.description = ''
         self.files = []
-        self.username = ''
         self.pending = False
+        self.summary = ''
+        self.testing_done = ''
+        self.username = ''
 
 
 class Revision(object):
@@ -81,8 +143,15 @@ class Revision(object):
     that can have special meaning.
     """
 
+    ######################
+    # Instance variables #
+    ######################
+
     #: The name/ID of the revision.
-    name = TypedProperty(str, allow_none=False)
+    #:
+    #: Type:
+    #:     str
+    name: _StrRequiredProperty = TypedProperty(str, allow_none=False)
 
     def __init__(self, name):
         """Initialize the Revision.
@@ -158,25 +227,39 @@ class Revision(object):
         return '<Revision: %s>' % self.name
 
 
-class Branch(object):
-    """A branch in a repository.
+class Branch:
+    """A branch in a repository."""
 
-    Attributes:
-        default (bool):
-            Whether or not this is the default branch for the repository.
-
-            One (and only one) branch in a list of returned branches should
-            have this set to ``True``.
-    """
-
-    #: The ID of the branch.
-    id = TypedProperty(str, allow_none=False)
+    ######################
+    # Instance variables #
+    ######################
 
     #: The latest commit ID on the branch.
-    commit = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    commit: _StrProperty = TypedProperty(str)
+
+    #: Whether or not this is the default branch for the repository.
+    #:
+    #: One (and only one) branch in a list of returned branches should
+    #: have this set to ``True``.
+    #:
+    #: Type:
+    #:     bool
+    default: bool
+
+    #: The ID of the branch.
+    #:
+    #: Type:
+    #:     str
+    id: _StrRequiredProperty = TypedProperty(str, allow_none=False)
 
     #: The name of the branch.
-    name = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    name: _StrProperty = TypedProperty(str)
 
     def __init__(self, id, name=None, commit='', default=False):
         """Initialize the branch.
@@ -227,33 +310,52 @@ class Branch(object):
                 % (self.id, self.name, self.commit, self.default))
 
 
-class Commit(object):
+class Commit:
     """A commit in a repository."""
 
-    #: The ID of the commit.
-    #:
-    #: This should be its SHA/revision.
-    id = TypedProperty(str)
+    ######################
+    # Instance variables #
+    ######################
 
     #: The name or username of the author who made the commit.
-    author_name = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    author_name: _StrProperty = TypedProperty(str)
 
     #: The timestamp of the commit as a string in ISO 8601 format.
-    date = TypedProperty(str)
-
-    #: The commit message.
-    message = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    date: _StrProperty = TypedProperty(str)
 
     #: The contents of the commit's diff.
     #:
     #: This may be ``None``, depending on how the commit is fetched.
-    diff = TypedProperty(bytes)
+    diff: _BytesProperty = TypedProperty(bytes)
+
+    #: The ID of the commit.
+    #:
+    #: This should be its SHA/revision.
+    #:
+    #: Type:
+    #:     str
+    id: _StrProperty = TypedProperty(str)
+
+    #: The commit message.
+    #:
+    #: Type:
+    #:     str
+    message: _StrProperty = TypedProperty(str)
 
     #: The ID of the commit's parent.
     #:
     #: This should be its SHA/revision. If this is the first commit, this
     #: should be ``None`` or an empty string.
-    parent = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    parent: _StrProperty = TypedProperty(str)
 
     def __init__(self, author_name='', id='', date='', message='', parent='',
                  diff=None):
