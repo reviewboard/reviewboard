@@ -178,6 +178,15 @@ Glossary
        This contains Review Board configuration, data files, logs, uploaded
        file attachments, and static media files (CSS, JavaScript, images).
 
+   Slug
+   Slug Format
+       A format for a name or identifier, converted to lowercase and allowing
+       the following characters:
+
+       * a-z
+       * 0-9
+       * ``-``
+
    Status Update
    Status Updates
        Status updates track the progess or results of an :ref:`automated

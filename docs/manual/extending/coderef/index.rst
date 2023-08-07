@@ -168,6 +168,17 @@ Diff Viewer
    reviewboard.diffviewer.smdiff
 
 
+SSL/TLS Certificates
+====================
+
+.. autosummary::
+   :toctree: python
+
+   reviewboard.certs
+   reviewboard.certs.cert
+   reviewboard.certs.errors
+
+
 Extensions
 ==========
 
