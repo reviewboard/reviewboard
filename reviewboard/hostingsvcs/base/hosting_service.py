@@ -17,7 +17,7 @@ from reviewboard.hostingsvcs.base.client import HostingServiceClient
 logger = logging.getLogger(__name__)
 
 
-class HostingService(object):
+class BaseHostingService(object):
     """An interface to a hosting service for repositories and bug trackers.
 
     HostingService subclasses are used to more easily configure repositories
@@ -35,7 +35,8 @@ class HostingService(object):
     Version Changed:
         6.0:
         * Moved from :py:mod:`reviewboard.hostingsvcs.service` to
-          :py:mod:`reviewboard.hostingsvcs.base.hosting_service`.
+          :py:mod:`reviewboard.hostingsvcs.base.hosting_service` and
+          renamed from ``HostingService`` to ``BaseHostingService``.
     """
 
     #: The unique ID of the hosting service.

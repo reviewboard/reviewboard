@@ -4,7 +4,7 @@
    :nosignatures:
 
    ~reviewboard.hostingsvcs.base.client.HostingServiceClient
-   ~reviewboard.hostingsvcs.base.hosting_service.HostingService
+   ~reviewboard.hostingsvcs.base.hosting_service.BaseHostingService
    ~reviewboard.hostingsvcs.base.http.HostingServiceHTTPRequest
    ~reviewboard.hostingsvcs.base.http.HostingServiceHTTPResponse
    ~reviewboard.hostingsvcs.base.registry.hosting_service_registry
@@ -15,7 +15,7 @@ Version Added:
 """
 
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
-from reviewboard.hostingsvcs.base.hosting_service import HostingService
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.base.http import (HostingServiceHTTPRequest,
                                                HostingServiceHTTPResponse)
 from reviewboard.hostingsvcs.base.registry import hosting_service_registry
@@ -23,7 +23,7 @@ from reviewboard.hostingsvcs.base.repository import RemoteRepository
 
 
 __all__ = [
-    'HostingService',
+    'BaseHostingService',
     'HostingServiceClient',
     'HostingServiceHTTPRequest',
     'HostingServiceHTTPResponse',

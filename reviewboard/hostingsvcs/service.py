@@ -9,11 +9,12 @@ import logging
 from django.dispatch import receiver
 from djblets.registries.errors import ItemLookupError
 
-from reviewboard.hostingsvcs.base import (HostingService,
-                                          HostingServiceClient,
-                                          HostingServiceHTTPRequest,
-                                          HostingServiceHTTPResponse,
-                                          hosting_service_registry)
+from reviewboard.hostingsvcs.base import (
+    BaseHostingService as HostingService,
+    HostingServiceClient,
+    HostingServiceHTTPRequest,
+    HostingServiceHTTPResponse,
+    hosting_service_registry)
 from reviewboard.hostingsvcs.base.registry import HostingServiceRegistry
 from reviewboard.signals import initializing
 

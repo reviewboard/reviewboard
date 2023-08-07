@@ -78,8 +78,8 @@ class _HostingServiceSubFormMixin(object):
         super(_HostingServiceSubFormMixin, self).__init__(*args, **kwargs)
 
 
-class HostingServiceAuthForm(_HostingServiceSubFormMixin,
-                             BaseRepositoryAuthSubForm):
+class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
+                                 BaseRepositoryAuthSubForm):
     """Base form for handling authentication information for a hosting account.
 
     This takes care of collecting additional details needed for authenticating
@@ -128,7 +128,8 @@ class HostingServiceAuthForm(_HostingServiceSubFormMixin,
     Version Changed:
         6.0:
         * Moved from :py:mod:`reviewboard.hostingsvcs.forms` to
-          :py:mod:`reviewboard.hostingsvcs.base.forms`.
+          :py:mod:`reviewboard.hostingsvcs.base.forms` and renamed from
+          ``HostingServiceAuthForm`` to ``BaseHostingServiceAuthForm``.
     """
 
     hosting_url = forms.CharField(
@@ -189,7 +190,7 @@ class HostingServiceAuthForm(_HostingServiceSubFormMixin,
         hosting_account = kwargs.pop('hosting_account', None)
         self.hosting_account = hosting_account
 
-        super(HostingServiceAuthForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         hosting_service_cls = self.hosting_service_cls
         hosting_service_id = hosting_service_cls.hosting_service_id
@@ -482,8 +483,8 @@ class HostingServiceAuthForm(_HostingServiceSubFormMixin,
         return self.cleaned_data['hosting_url'] or None
 
 
-class HostingServiceForm(_HostingServiceSubFormMixin,
-                         BaseRepositoryInfoSubForm):
+class BaseHostingServiceRepositoryForm(_HostingServiceSubFormMixin,
+                                       BaseRepositoryInfoSubForm):
     """Base form for collecting information for a hosting service repository.
 
     This is responsible for providing fields used to communicate with a
@@ -544,7 +545,8 @@ class HostingServiceForm(_HostingServiceSubFormMixin,
     Version Changed:
         6.0:
         * Moved from :py:mod:`reviewboard.hostingsvcs.forms` to
-          :py:mod:`reviewboard.hostingsvcs.base.forms`.
+          :py:mod:`reviewboard.hostingsvcs.base.forms` and renamed from
+          ``HostingServiceForm`` to ``BaseHostingServiceRepositoryForm``.
     """
 
     def get_initial_data(self):
@@ -573,7 +575,7 @@ class HostingServiceForm(_HostingServiceSubFormMixin,
                 deprecated. Subclasses should use the :py:attr:`repository`
                 attribute instead.
         """
-        super(HostingServiceForm, self).load()
+        super().load()
 
     def save(self, repository=None, **kwargs):
         """Save information from the form back to the repository.
