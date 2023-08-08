@@ -9,6 +9,9 @@ import {
 } from '../resources/models/baseResourceModel';
 
 
+declare const SITE_ROOT: string;
+
+
 /** Attributes for the StoredItems model. */
 interface StoredItemsAttrs extends BaseResourceAttrs {
     /** The root of the URL for the resource list. */
@@ -263,6 +266,9 @@ interface UserSessionAttrs extends ModelAttributes {
     /** The URL to the session API resource. */
     sessionURL: string;
 
+    /** Whether to show the "Tips" box in the review dialog. */
+    showReviewDialogTips: boolean;
+
     /**
      * The user's offset from UTC.
      *
@@ -337,6 +343,7 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
         mutedReviewRequestsURL: null,
         readOnly: false,
         sessionURL: null,
+        showReviewDialogTips: true,
         timezoneOffset: '0',
         userFileAttachmentsURL: null,
         userPageURL: null,
@@ -392,6 +399,12 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
         this._bindCookie({
             attr: 'diffsShowExtraWhitespace',
             cookieName: 'show_ew',
+            deserialize: value => (value !== 'false'),
+        });
+
+        this._bindCookie({
+            attr: 'showReviewDialogTips',
+            cookieName: 'show_review_dialog_tips',
             deserialize: value => (value !== 'false'),
         });
     }
@@ -460,8 +473,8 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
     _bindCookie(options: {
         attr: string;
         cookieName: string;
-        deserialize: (string) => unknown;
-        serialize: (unknown) => string;
+        deserialize?: (string) => unknown;
+        serialize?: (unknown) => string;
     }) {
         const deserialize = options.deserialize || _.identity;
         const serialize = (options.serialize ||
