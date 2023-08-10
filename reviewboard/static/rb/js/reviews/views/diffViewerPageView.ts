@@ -598,17 +598,31 @@ export class DiffViewerPageView extends ReviewablePageView<
             return;
         }
 
+        /* Check if we're replacing a diff or adding a new one. */
+        let isReplacing = true;
+        let index = this._diffReviewableViews.findIndex(
+            view => (view.model === diffReviewable));
+
+        if (index === -1) {
+            index = this._diffReviewableViews.length;
+            isReplacing = false;
+        }
+
         const diffReviewableView = new RB.DiffReviewableView({
             el: $el,
             model: diffReviewable,
         });
 
-        this.#diffFileIndexView.addDiff(this._diffReviewableViews.length,
-                                        diffReviewableView);
+        if (isReplacing) {
+            this._diffReviewableViews.splice(index, 1, diffReviewableView);
+        } else {
+            this._diffReviewableViews.push(diffReviewableView);
+        }
 
-        this._diffReviewableViews.push(diffReviewableView);
         diffReviewableView.render();
         diffReviewableView.$el.parent().show();
+
+        this.#diffFileIndexView.addDiff(index, diffReviewableView);
 
         this.listenTo(diffReviewableView, 'fileClicked', () => {
             this.selectAnchorByName(diffReviewable.get('file').get('index'));
