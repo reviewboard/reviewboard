@@ -12,8 +12,9 @@ from datetime import datetime, timedelta
 
 import kgb
 from cryptography.x509.oid import NameOID
+from django.utils import timezone
 
-from reviewboard.certs.cert import Certificate
+from reviewboard.certs.cert import Certificate, CertificateFingerprints
 from reviewboard.certs.errors import (CertificateNotFoundError,
                                       CertificateStorageError,
                                       InvalidCertificateFormatError)
@@ -181,25 +182,33 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         self.assertEqual(ctx.exception.data, b'XXX')
         self.assertEqual(ctx.exception.path, key_path)
 
-    def test_fingerprints(self) -> None:
-        """Testing Certificate.fingerprints"""
-        cert = Certificate(hostname='example.com',
-                           port=443,
-                           cert_data=TEST_CERT_PEM)
-        fingerprints = cert.fingerprints
+    def test_init_with_valid_from_naive(self) -> None:
+        """Testing Certificate.__init__ with valid_from as naive datetime"""
+        message = 'valid_from must contain a timezone.'
 
-        self.assertEqual(fingerprints.sha1, TEST_SHA1)
-        self.assertEqual(fingerprints.sha256, TEST_SHA256)
+        with self.assertRaisesMessage(ValueError, message):
+            Certificate(hostname='example.com',
+                        port=443,
+                        valid_from=datetime(2023, 7, 14, 7, 50, 30))
 
-        # This should be cached.
-        self.assertIs(cert.fingerprints, fingerprints)
+    def test_init_with_valid_through_naive(self) -> None:
+        """Testing Certificate.__init__ with valid_through as naive datetime"""
+        message = 'valid_through must contain a timezone.'
+
+        with self.assertRaisesMessage(ValueError, message):
+            Certificate(hostname='example.com',
+                        port=443,
+                        valid_through=datetime(2023, 7, 14, 7, 50, 30))
 
     def test_x509_cert(self) -> None:
         """Testing Certificate.x509_cert"""
         cert = Certificate(hostname='example.com',
                            port=443,
                            cert_data=TEST_CERT_PEM)
+
         x509_cert = cert.x509_cert
+        assert x509_cert is not None
+
         name = (
             x509_cert.subject
             .get_attributes_for_oid(NameOID.COMMON_NAME)[0]
@@ -211,8 +220,54 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         # This should be cached.
         self.assertIs(cert.x509_cert, x509_cert)
 
-    def test_attrs(self) -> None:
-        """Testing Certificate certificate attributes"""
+    def test_x509_cert_without_cert_data(self) -> None:
+        """Testing Certificate.x509_cert without cert_data"""
+        cert = Certificate(hostname='example.com',
+                           port=443)
+
+        self.assertIsNone(cert.x509_cert)
+
+    def test_attrs_default(self) -> None:
+        """Testing Certificate certificate attribute defaults"""
+        cert = Certificate(hostname='example.com',
+                           port=443)
+
+        self.assertIsNone(cert.fingerprints)
+        self.assertIsNone(cert.issuer)
+        self.assertIsNone(cert.subject)
+        self.assertIsNone(cert.valid_from)
+        self.assertIsNone(cert.valid_through)
+
+    def test_attrs_with_provided(self) -> None:
+        """Testing Certificate certificate attributes provided during
+        construction
+        """
+        cert = Certificate(
+            hostname='example.com',
+            port=443,
+            subject='Subject',
+            issuer='Issuer',
+            fingerprints=CertificateFingerprints(sha1=TEST_SHA1,
+                                                 sha256=TEST_SHA256),
+            valid_from=datetime(2023, 7, 14, 7, 50, 30, tzinfo=timezone.utc),
+            valid_through=datetime(2024, 7, 13, 7, 50, 30,
+                                   tzinfo=timezone.utc))
+
+        self.assertEqual(cert.subject, 'Subject')
+        self.assertEqual(cert.issuer, 'Issuer')
+        self.assertEqual(cert.valid_from,
+                         datetime(2023, 7, 14, 7, 50, 30, tzinfo=timezone.utc))
+        self.assertEqual(cert.valid_through,
+                         datetime(2024, 7, 13, 7, 50, 30, tzinfo=timezone.utc))
+
+        fingerprints = cert.fingerprints
+        assert fingerprints is not None
+
+        self.assertEqual(fingerprints.sha1, TEST_SHA1)
+        self.assertEqual(fingerprints.sha256, TEST_SHA256)
+
+    def test_attrs_with_x509(self) -> None:
+        """Testing Certificate certificate attributes with cert data"""
         cert = Certificate(hostname='example.com',
                            port=443,
                            cert_data=TEST_CERT_PEM)
@@ -220,9 +275,18 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         self.assertEqual(cert.subject, 'example.com')
         self.assertEqual(cert.issuer, 'example.com')
         self.assertEqual(cert.valid_from,
-                         datetime(2023, 7, 14, 7, 50, 30))
+                         datetime(2023, 7, 14, 7, 50, 30, tzinfo=timezone.utc))
         self.assertEqual(cert.valid_through,
-                         datetime(2024, 7, 13, 7, 50, 30))
+                         datetime(2024, 7, 13, 7, 50, 30, tzinfo=timezone.utc))
+
+        fingerprints = cert.fingerprints
+        assert fingerprints is not None
+
+        self.assertEqual(fingerprints.sha1, TEST_SHA1)
+        self.assertEqual(fingerprints.sha256, TEST_SHA256)
+
+        # This should be cached.
+        self.assertIs(cert.fingerprints, fingerprints)
 
     def test_is_valid_with_not_expired(self) -> None:
         """Testing Certificate.is_valid with not expired"""
@@ -257,6 +321,20 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
                            cert_data=cert_data)
 
         self.assertFalse(cert.is_valid)
+
+    def test_is_wildcard_with_true(self) -> None:
+        """Testing Certificate.is_wildcard with wildcard domain"""
+        cert = Certificate(hostname='w*.example.com',
+                           port=443)
+
+        self.assertTrue(cert.is_wildcard)
+
+    def test_is_wildcard_with_false(self) -> None:
+        """Testing Certificate.is_wildcard with non-wildcard domain"""
+        cert = Certificate(hostname='www.example.com',
+                           port=443)
+
+        self.assertFalse(cert.is_wildcard)
 
     def test_write_cert_file(self) -> None:
         """Testing Certificate.write_cert_file"""
@@ -323,3 +401,27 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
 
         with self.assertRaisesRegex(CertificateStorageError, message):
             cert.write_key_file('/rb-tests-xxx/bad/')
+
+    def test_repr(self) -> None:
+        """Testing Certificate.__repr__"""
+        cert = Certificate(hostname='example.com',
+                           port=443)
+
+        self.assertEqual(
+            repr(cert),
+            "<Certificate(hostname='example.com', port=443, "
+            "fingerprints=None)>")
+
+    def test_repr_with_fingerprints(self) -> None:
+        """Testing Certificate.__repr__ with fingerprints"""
+        cert = Certificate(
+            hostname='example.com',
+            port=443,
+            fingerprints=CertificateFingerprints(sha1=TEST_SHA1))
+
+        self.assertEqual(
+            repr(cert),
+            "<Certificate(hostname='example.com', port=443, "
+            "fingerprints=<CertificateFingerprints("
+            "sha1='F2:35:0F:BB:34:40:84:78:8B:20:1D:40:B1:4A:17:0C:DE:36:2F:"
+            "D5', sha256=None)>)>")

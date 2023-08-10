@@ -135,6 +135,16 @@ class CertificateFingerprintTests(CertificateTestCase):
         self.assertFalse(fingerprints1.matches(fingerprints2))
         self.assertFalse(fingerprints2.matches(fingerprints1))
 
+    def test_matches_with_sha_type_mismatch(self) -> None:
+        """Testing CertificateFingerprints.matches with mismatch in available
+        fingerprint types
+        """
+        fingerprints1 = CertificateFingerprints(sha1=TEST_SHA1)
+        fingerprints2 = CertificateFingerprints(sha256=TEST_SHA256)
+
+        self.assertFalse(fingerprints1.matches(fingerprints2))
+        self.assertFalse(fingerprints2.matches(fingerprints1))
+
     def test_matches_with_match(self) -> None:
         """Testing CertificateFingerprints.matches with match"""
         fingerprints1 = CertificateFingerprints(sha1=TEST_SHA1,

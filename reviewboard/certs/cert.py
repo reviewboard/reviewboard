@@ -12,22 +12,26 @@ import re
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, TYPE_CHECKING, Type, TypeVar
 from uuid import uuid4
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.x509.oid import NameOID
+from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.functional import cached_property
+from djblets.util.symbols import UNSET, Unsettable
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
-from djblets.util.typing import JSONDict
 from typing_extensions import Self
 
 from reviewboard.certs.errors import (CertificateNotFoundError,
                                       CertificateStorageError,
                                       InvalidCertificateFormatError)
+
+if TYPE_CHECKING:
+    from djblets.util.typing import JSONDict
 
 
 logger = logging.getLogger(__name__)
@@ -42,6 +46,9 @@ _PRIVATE_KEY_PEM_RE = re.compile(
     br'-----BEGIN PRIVATE KEY-----[\r\n]+'
     br'[A-Za-z0-9+/\r\n]+=*[\r\n]+'
     br'-----END PRIVATE KEY-----')
+
+
+_T = TypeVar('_T')
 
 
 def _format_fingerprint(
@@ -251,6 +258,21 @@ class CertificateFingerprints:
 
         return sha1_match and sha256_match
 
+    def __repr__(self) -> str:
+        """Return a string representation of the instance.
+
+        Returns:
+            str:
+            The string representation.
+        """
+        return (
+            '<CertificateFingerprints(sha1=%(sha1)r, sha256=%(sha256)r)>'
+            % {
+                'sha1': self.sha1,
+                'sha256': self.sha256,
+            }
+        )
+
 
 class Certificate:
     """A representation of a SSL/TLS certificate.
@@ -275,12 +297,15 @@ class Certificate:
 
     #: The loaded certificate data.
     #:
-    #: This will always be available. It will match the format specified in
+    #: This will always be available for stored certificates, but may not be
+    #: available as part of error responses.
+    #:
+    #: If available, it will match the format specified in
     #: :py:attr:`data_format`.
     #:
     #: Type:
     #:     bytes
-    cert_data: bytes
+    cert_data: Optional[bytes]
 
     #: The format for the loaded certificate and private key data.
     #:
@@ -289,6 +314,8 @@ class Certificate:
     data_format: CertDataFormat
 
     #: The hostname that would serve this certificate.
+    #:
+    #: Note that this may be a wildcard domain (e.g., ``*.example.com``).
     #:
     #: Type:
     #:     str
@@ -307,6 +334,56 @@ class Certificate:
     #: Type:
     #:     int
     port: int
+
+    #: Fingerprints for the certificate.
+    #:
+    #: If not provided during construction, this will be loaded from
+    #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
+    #: provided).
+    #:
+    #: Type:
+    #:     CertificateFingerprints
+    _fingerprints: Unsettable[Optional[CertificateFingerprints]]
+
+    #: The issuer (usually the hostname) of the certificate.
+    #:
+    #: If not provided during construction, this will be loaded from
+    #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
+    #: provided).
+    #:
+    #: Type:
+    #:     str
+    _issuer: Unsettable[Optional[str]]
+
+    #: The subject (usually the hostname) of the certificate.
+    #:
+    #: If not provided during construction, this will be loaded from
+    #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
+    #: provided).
+    #:
+    #: Type:
+    #:     str
+    _subject: Unsettable[Optional[str]]
+
+    #: The first date/time in which the certificate is valid.
+    #:
+    #: If not provided during construction, this will be loaded from
+    #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
+    #: provided).
+    #:
+    #: Type:
+    #:     datetime
+    _valid_from: Unsettable[Optional[datetime]]
+
+    #: The last date/time in which the certificate is valid.
+    #:
+    #: If not provided during construction, this will be loaded from
+    #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
+    #: provided).
+    #:
+    #: Type:
+    #:     datetime
+    _valid_through: Unsettable[Optional[datetime]]
 
     @classmethod
     def create_from_files(
@@ -400,9 +477,14 @@ class Certificate:
         *,
         hostname: str,
         port: int,
-        cert_data: bytes,
+        cert_data: Optional[bytes] = None,
         key_data: Optional[bytes] = None,
         data_format: CertDataFormat = CertDataFormat.PEM,
+        fingerprints: Unsettable[CertificateFingerprints] = UNSET,
+        issuer: Unsettable[str] = UNSET,
+        subject: Unsettable[str] = UNSET,
+        valid_from: Unsettable[datetime] = UNSET,
+        valid_through: Unsettable[datetime] = UNSET,
     ) -> None:
         """Initialize the certificate.
 
@@ -427,33 +509,96 @@ class Certificate:
                 The format used for ``cert_data`` and ``key_data``.
 
                 This currently only accepts PEM-encoded data.
+
+            subject (str, optional):
+                The subject (usually the hostname) of the certificate.
+
+                If not provided, this will be loaded from ``cert_data`` when
+                needed (and if ``cert_data`` is provided).
+
+            issuer (str, optional):
+                The issuer of the certificate.
+
+                If not provided, this will be loaded from ``cert_data`` when
+                needed (and if ``cert_data`` is provided).
+
+            valid_from (datetime, optional):
+                The first date/time in which the certificate is valid.
+
+                This must have a timezone associated with it.
+
+                If not provided, this will be loaded from ``cert_data`` when
+                needed (and if ``cert_data`` is provided).
+
+            valid_through (datetime, optional):
+                The last date/time in which the certificate is valid.
+
+                This must have a timezone associated with it.
+
+                If not provided, this will be loaded from ``cert_data`` when
+                needed (and if ``cert_data`` is provided).
+
+            fingerprints (CertificateFingerprints, optional):
+                Fingerprints to set for the certificate.
+
+                If not provided, this will be loaded from ``cert_data`` when
+                needed (and if ``cert_data`` is provided).
         """
+        if valid_from is not UNSET and timezone.is_naive(valid_from):
+            raise ValueError('valid_from must contain a timezone.')
+
+        if valid_through is not UNSET and timezone.is_naive(valid_through):
+            raise ValueError('valid_through must contain a timezone.')
+
         self.cert_data = cert_data
         self.data_format = data_format
         self.hostname = hostname
         self.key_data = key_data
         self.port = port
+        self._fingerprints = fingerprints
+        self._issuer = issuer
+        self._subject = subject
+        self._valid_from = valid_from
+        self._valid_through = valid_through
 
-    @cached_property
-    def fingerprints(self) -> CertificateFingerprints:
+    @property
+    def fingerprints(self) -> Optional[CertificateFingerprints]:
         """Fingerprints for the certificate.
 
         Type:
             CertificateFingerprints
         """
-        return CertificateFingerprints.from_x509_cert(self.x509_cert)
+        fingerprints = self._fingerprints
+
+        if fingerprints is UNSET:
+            x509_cert = self.x509_cert
+
+            if x509_cert is None:
+                fingerprints = None
+            else:
+                fingerprints = CertificateFingerprints.from_x509_cert(
+                    x509_cert)
+
+            self._fingerprints = fingerprints
+
+        return fingerprints
 
     @cached_property
-    def x509_cert(self) -> x509.Certificate:
+    def x509_cert(self) -> Optional[x509.Certificate]:
         """A Cryptography X509 Certificate representing this certificate.
 
         This will be created from the loaded from the certificate data stored
         in :py:attr:`cert_data`. The created instance will be locally cached
         for future lookups.
 
+        If certificate data is not available, this will be ``None``.
+
         Type:
             cryptography.x509.Certificate
         """
+        if self.cert_data is None:
+            return None
+
         assert self.data_format == CertDataFormat.PEM, (
             'Certificate must use PEM format.'
         )
@@ -463,41 +608,65 @@ class Certificate:
 
         return x509.load_pem_x509_certificate(self.cert_data)
 
-    @cached_property
-    def subject(self) -> str:
+    @property
+    def subject(self) -> Optional[str]:
         """The subject of the certificate.
 
         Type:
             str
         """
-        return self._parse_name(self.x509_cert.subject)
+        subject = self._subject
 
-    @cached_property
-    def issuer(self) -> str:
+        if subject is UNSET:
+            subject = self._get_x509_attr(str, 'subject')
+            self._subject = subject
+
+        return subject
+
+    @property
+    def issuer(self) -> Optional[str]:
         """The issuer of the certificate.
 
         Type:
             str
         """
-        return self._parse_name(self.x509_cert.issuer)
+        issuer = self._issuer
+
+        if issuer is UNSET:
+            issuer = self._get_x509_attr(str, 'issuer')
+            self._issuer = issuer
+
+        return issuer
 
     @property
-    def valid_from(self) -> datetime:
+    def valid_from(self) -> Optional[datetime]:
         """The date/time in which the certificate is first valid.
 
         Type:
             datetime.datetime
         """
-        return self.x509_cert.not_valid_before
+        valid_from = self._valid_from
+
+        if valid_from is UNSET:
+            valid_from = self._get_x509_attr(datetime, 'not_valid_before')
+            self._valid_from = valid_from
+
+        return valid_from
 
     @property
-    def valid_through(self) -> datetime:
+    def valid_through(self) -> Optional[datetime]:
         """The last date/time in which the certificate is valid.
 
         Type:
             datetime.datetime
         """
-        return self.x509_cert.not_valid_after
+        valid_through = self._valid_through
+
+        if valid_through is UNSET:
+            valid_through = self._get_x509_attr(datetime, 'not_valid_after')
+            self._valid_through = valid_through
+
+        return valid_through
 
     @property
     def is_valid(self) -> bool:
@@ -509,10 +678,24 @@ class Certificate:
         Type:
             bool
         """
-        # NOTE: We do want utcnow(), as it will give us a naive datetime, and
-        #       the validity dates are also naive. We don't want to create a
-        #       datetime with a tzinfo=utc set.
-        return self.valid_from <= datetime.utcnow() <= self.valid_through
+        valid_from = self.valid_from
+        valid_through = self.valid_through
+
+        return (valid_from is not None and
+                valid_through is not None and
+                valid_from <= timezone.now() <= valid_through)
+
+    @property
+    def is_wildcard(self) -> bool:
+        """Whether this is a wildcard certificate.
+
+        Wildcard certificates pertain to multiple domains (e.g.,
+        ``*.example.com``, ``*a.example.com``, or ``b*.example.com``).
+
+        Type:
+            bool
+        """
+        return '*' in self.hostname
 
     def write_cert_file(
         self,
@@ -529,6 +712,8 @@ class Certificate:
                 There was an error writing the file.
         """
         cert_data = self.cert_data
+
+        assert cert_data, 'Cannot write empty certificate data to file.'
 
         try:
             with open(path, 'wb') as fp:
@@ -582,6 +767,51 @@ class Certificate:
                     'error_id': error_id,
                 })
 
+    def _get_x509_attr(
+        self,
+        attr_type: Type[_T],
+        field_name: str,
+    ) -> Optional[_T]:
+        """Return a normalized value for an X509.Certificate attribute.
+
+        Any "Name" fields will be converted to a string.
+
+        Any datetime fields will be made aware, using UTC.
+
+        If the certificate could not be loaded, this will always return
+        ``None``.
+
+        Args:
+            field_name (str):
+                The name of the field on the certificate.
+
+        Returns:
+            object:
+            The resulting value, or ``None``.
+        """
+        value: Optional[_T] = None
+        x509_cert = self.x509_cert
+
+        if x509_cert is not None:
+            x509_value = getattr(x509_cert, field_name)
+
+            if isinstance(x509_value, x509.Name):
+                x509_value = force_str(
+                    x509_value
+                    .get_attributes_for_oid(NameOID.COMMON_NAME)[0]
+                    .value
+                )
+            elif (isinstance(x509_value, datetime) and
+                  timezone.is_naive(x509_value)):
+                x509_value = timezone.make_aware(x509_value,
+                                                 timezone=timezone.utc)
+
+            assert isinstance(x509_value, attr_type)
+
+            value = x509_value
+
+        return value
+
     def __repr__(self) -> str:
         """Return a string representation of the instance.
 
@@ -592,27 +822,11 @@ class Certificate:
         return (
             '<Certificate(hostname=%(hostname)r, port=%(port)r,'
             ' fingerprints=%(fingerprints)r)>'
-            % self.__dict__
-        )
-
-    def _parse_name(
-        self,
-        name: x509.Name,
-    ) -> str:
-        """Parse and return a string for a certificate.
-
-        Args:
-            name (cryptography.x509.Name):
-                The name object to parse.
-
-        Returns:
-            str:
-            The parsed name.
-        """
-        return force_str(
-            name
-            .get_attributes_for_oid(NameOID.COMMON_NAME)[0]
-            .value
+            % {
+                'fingerprints': self.fingerprints,
+                'hostname': self.hostname,
+                'port': self.port,
+            }
         )
 
 
