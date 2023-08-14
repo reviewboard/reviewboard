@@ -13,7 +13,7 @@
 @default-text-color: #rb-ns-ui.colors[@black];
 @draft-color: #rb-ns-ui.colors[@green-80];
 @draft-hover-color: darken(@draft-color, 15%);
-@draft-border-color: darken(@draft-color, 50%);
+@draft-border-color: #rb-ns-ui.colors[@green-50];
 @link-color: #rb-ns-ui.colors[@blue-20];
 @alert-color: #rb-ns-ui.colors[@yellow-70];
 
@@ -76,15 +76,15 @@
 @review-request-bg: #FEFADF;
 @review-request-bg-gradient-start: lighten(@review-request-bg, 4%);
 @review-request-bg-gradient-end: @review-request-bg;
-@review-request-border-color: #9E9A7F;
+@review-request-border-color: #rb-ns-ui.colors[@mustard-40];
 
-@review-request-section-label-font-size: 13px;
-@review-request-summary-font-size: 14px;
+@review-request-section-label-font-size: 12px;
+@review-request-summary-font-size: 13px;
 
 @review-request-action-bg: #E5D7A8;
-@review-request-action-border-color: darken(@review-request-action-bg, 35%);
+@review-request-action-border-color: #rb-ns-ui.colors[@mustard-40];
 @review-request-action-active-bg: darken(@review-request-action-bg, 20%);
-@review-request-action-hover-bg: darken(@review-request-action-bg, 12%);
+@review-request-action-hover-bg: darken(@review-request-action-bg, 10%);
 
 @review-request-action-primary-bg: @review-request-action-bg;
 @review-request-action-primary-active-bg: @review-request-action-active-bg;
@@ -107,14 +107,16 @@
 @review-request-commit-list-link-color: #000000;
 @review-request-commit-list-table-border: 1px #CCCCCC solid;
 
-@review-request-label-color: #575012;
+@review-request-label-color: #rb-ns-ui.colors[@mustard-10];
 
 @review-request-warning-bg: #F5A9A9;
 @review-request-warning-border-color: #FF0000;
 
 // Review request entries
 @review-request-entry-base-bg: #FFFFFF;
+@review-request-entry-base-border-color: #rb-ns-ui.colors[@grey-60];
 @review-request-entry-collapsed-bg: #ECECEE;
+@review-request-entry-collapsed-border-color: #rb-ns-ui.colors[@grey-55];
 @review-request-entry-padding: 12px;
 @review-request-entry-new-border-color: #2278FC;
 @review-request-entry-link-offset: -1em;
@@ -142,7 +144,7 @@
 @admin-msg-banner-border-color: darken(@admin-msg-banner-bg, 50%);
 
 @issue-opened-bg: @alert-color;
-@issue-opened-border-color: darken(@issue-opened-bg, 40%);
+@issue-opened-border-color: #rb-ns-ui.colors[@mustard-60];
 @issue-opened-hover-bg: desaturate(darken(@issue-opened-bg, 10%), 20%);
 @issue-opened-link-color: darken(@issue-opened-bg, 60%);
 @issue-discarded-bg: #ECECEC;
@@ -189,10 +191,12 @@
 @rb-icon-edit-height: 16px;
 
 // Comment flags
-@comment-flag-color: #a1c0e3;
-@comment-flag-hover-color: #a5caf3;
-@comment-flag-border-color: #204a87;
-@comment-flag-border-radius: 4px;
+@comment-flag-color: #rb-ns-ui.colors[@blue-60];
+@comment-flag-hover-color: lighten(@comment-flag-color, 10%);
+@comment-flag-border-color: #rb-ns-ui.colors[@blue-30];
+@comment-flag-width: 1.6em;
+@comment-flag-border-radius: @comment-flag-width;
+@comment-flag-text-color: rgba(0, 0, 0, 0.7);
 
 @comment-flag-draft-color: @draft-color;
 @comment-flag-draft-hover-color: lighten(@draft-color, 10%);
@@ -214,15 +218,15 @@
 @comment-dlg-other-comments-bg: #A1C0E3;
 
 /* Diff styles */
-@diff-file-color: #F0F0F0;
-@diff-border-color: #A0A0A0;
-@diff-file-border-color: darken(@diff-file-color, 15%);
-@diff-line-border-color: #D0D0D0;
+@diff-file-color: #rb-ns-ui.colors[@grey-80];
+@diff-border-color: @box-border-color;
+@diff-file-border-color: #rb-ns-ui.colors[@grey-55];
+@diff-line-border-color: #rb-ns-ui.colors[@grey-70];
 @diff-error-color: @alert-color;
 @diff-error-border-color: darken(@diff-error-color, 35%);
 
 // Diff headers
-@diff-header-color: #e4d9cb;
+@diff-header-color: #rb-ns-ui.colors[@blue-80];
 
 // Moved line information
 @diff-moved-from-bg-color: #b0d0ff;
@@ -235,8 +239,8 @@
 @diff-selected-color: #E2E2E2;
 
 // Delete lines
-@diff-delete-color: #ffe0e5;
-@diff-delete-border-color: desaturate(darken(@diff-delete-color, 7%), 55%);
+@diff-delete-color: #FDE9ED;
+@diff-delete-border-color: desaturate(darken(@diff-delete-color, 9%), 55%);
 @diff-delete-linenum-color: desaturate(darken(@diff-delete-color, 5%), 35%);
 @diff-delete-linenum-border-color:
   desaturate(darken(@diff-delete-linenum-color, 7%), 55%);
@@ -244,8 +248,8 @@
 @diff-delete-dot-color: desaturate(darken(@diff-delete-color, 30%), 35%);
 
 // Insert lines
-@diff-insert-color: #dfffd7;
-@diff-insert-border-color: desaturate(darken(@diff-insert-color, 7%), 55%);
+@diff-insert-color: #E7FFE1;
+@diff-insert-border-color: desaturate(darken(@diff-insert-color, 5%), 55%);
 @diff-insert-linenum-color: desaturate(darken(@diff-insert-color, 7%), 35%);
 @diff-insert-linenum-border-color:
   desaturate(darken(@diff-insert-linenum-color, 7%), 35%);

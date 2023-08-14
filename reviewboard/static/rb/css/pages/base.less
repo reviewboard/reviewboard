@@ -740,9 +740,11 @@ textarea {
  * Default color scheme, used for the dashboard, My Account page, and others
  * featuring largely blue-ish colors.
  */
-.page-colors(@topbar-bg: #rb-ns-ui.colors[@blue-80]);
+.page-colors(@topbar-bg: #rb-ns-ui.colors[@blue-80],
+             @topbar-border-color: #rb-ns-ui.colors[@cool-grey-70]);
 
 /* Reviewable pages (review request, diff, file attachment, etc.) are brown. */
 .reviewable-page {
-  .page-colors(@topbar-bg: @review-request-action-bg);
+  .page-colors(@topbar-bg: @review-request-action-bg;
+               @topbar-border-color: @review-request-action-border-color);
 }

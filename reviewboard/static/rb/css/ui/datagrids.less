@@ -223,15 +223,6 @@ body.datagrid-page {
 
   padding: @_header-vars[@padding];
 
-  /* Add rounded corners to the top-left and top-right of the header. */
-  &:first-child {
-    border-top-left-radius: @_datagrid-vars[@border-radius];
-  }
-
-  &:last-child {
-    border-top-right-radius: @_datagrid-vars[@border-radius];
-  }
-
   a {
     color: inherit;
   }
@@ -464,9 +455,6 @@ body.datagrid-page {
 
   .paginator {
     background: @_paginator-vars[@bg];
-    border-radius: 0 0
-                   @_datagrid-vars[@border-radius]
-                   @_datagrid-vars[@border-radius];
     border-top: 1px @_paginator-vars[@border-color] solid;
     padding: 0 0 0 1em;
 

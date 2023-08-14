@@ -153,7 +153,7 @@
   }
 
   pre {
-    font-size: 8pt;
+    font-size: 11px;
     line-height: 140%;
     margin: 0;
     padding-left: @linenum-padding-left;
@@ -344,10 +344,18 @@
       }
     }
 
-    &.whitespace-file td {
-      background: @diff-replace-color;
-      border-bottom: 1px @diff-file-border-color solid;
-      padding: 1em;
+    &.whitespace-file {
+      td {
+        background: @diff-replace-color;
+        border-bottom: 1px @diff-file-border-color solid;
+        padding: 1em;
+      }
+
+      + .diff-header tr:first-child {
+        td, th {
+          border-top: 0;
+        }
+      }
     }
 
     &.deleted td {
@@ -556,7 +564,7 @@
         th { background: #F0F0F0; }
       }
 
-      .hl { background: #eff23d; }
+      .hl { background: #ffef6b; }
     }
 
     &.diff-header {
@@ -573,6 +581,8 @@
 
       code {
         margin: 0 2px;
+        font-size: 12px;
+        vertical-align: middle;
       }
 
       img {
@@ -580,14 +590,11 @@
         padding: 1px;
       }
 
-      td {
+      td, th {
         background: @diff-header-color;
-        font-size: x-small;
+        font-size: 10px;
         text-align: center;
-      }
-
-      th {
-        background: @diff-header-color;
+        padding: 0.5em;
       }
 
       tr {
@@ -635,7 +642,8 @@
       overflow: hidden;
       padding: 8px;
 
-      #gradient > .vertical-three-colors(#FFFFFF, @diff-file-color, 50%, @diff-file-color);
+      #gradient > .vertical-three-colors(#FFFFFF, @diff-file-color,
+                                         70%, @diff-file-color);
     }
 
     .revision-row th {
@@ -686,10 +694,10 @@
 
   .commentflag-inner {
     border-radius: @comment-flag-border-radius;
-    opacity: 0.95;
     background-color: @comment-flag-color;
     border: 1px solid @comment-flag-border-color;
     bottom: 0.2em;
+    color: @comment-flag-text-color;
     cursor: pointer;
     font-size: 90%;
     font-weight: normal;
@@ -756,7 +764,7 @@
   }
 
   .diff-container {
-    margin-bottom: 1em;
+    margin-bottom: (@page-container-padding * 2);
     position: relative;
 
     &:last-child {
