@@ -77,14 +77,12 @@ def check_dependencies(settings):
     # The following checks are non-fatal warnings, since these dependencies
     # are merely recommended, not required. These are primarily for SCM
     # support.
-    if not has_module('pysvn') and not has_module('subvertpy'):
-        dependency_warning('Neither the subvertpy nor pysvn Python modules '
-                           'were found. Subversion integration will not work. '
-                           'For pysvn, see your package manager for the '
-                           'module or download from '
-                           'http://pysvn.tigris.org/project_downloads.html. '
-                           'For subvertpy, run `pip install subvertpy`. We '
-                           'recommend pysvn for better compatibility.')
+    if not has_module('pysvn'):
+        dependency_warning(
+            'PySVN was not found. Subversion integration will not work. '
+            'To install, run `curl https://pysvn.reviewboard.org | '
+            'python%s.%s`'
+            % pyver)
 
     if has_module('P4'):
         try:

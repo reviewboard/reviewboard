@@ -10,6 +10,7 @@ from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import gettext as _
 
+from reviewboard import get_manual_url
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.core import (Branch, Commit, SCMTool, HEAD,
@@ -519,8 +520,16 @@ class SVNTool(SCMTool):
     def build_client(cls, repopath, username=None, password=None,
                      local_site_name=None):
         if not has_svn_backend:
-            raise ImportError(_(
-                'SVN integration requires either subvertpy or pysvn'))
+            raise ImportError(
+                _('SVN integration requires PySVN. See %(url)s for '
+                  'installation instructions.')
+                % {
+                    'url': (
+                        '%sadmin/installation/linux/#subversion'
+                        % get_manual_url()
+                    ),
+                })
+
         config_dir = os.path.join(os.path.expanduser('~'), '.subversion')
 
         if local_site_name:
@@ -786,12 +795,11 @@ def recompute_svn_backend():
 
             if has_svn_backend:
                 # We found a suitable backend.
-                logger.info('Using %s backend for SVN', backend_path)
+                logger.debug('Using %s backend for SVN', backend_path)
                 Client = mod.Client
                 break
         except ImportError:
-            logger.error('Unable to load SVN backend %s',
-                         backend_path, exc_info=True)
+            logger.exception('Unable to load SVN backend %s', backend_path)
 
 
 recompute_svn_backend()

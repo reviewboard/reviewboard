@@ -368,7 +368,6 @@ HOSTINGSVCS_HOOK_REGEX_FLAGS = re.IGNORECASE
 # of a specific one.
 SVNTOOL_BACKENDS = [
     'reviewboard.scmtools.svn.pysvn',
-    'reviewboard.scmtools.svn.subvertpy',
 ]
 
 # Gravatar configuration.

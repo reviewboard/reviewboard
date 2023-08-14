@@ -565,8 +565,7 @@ instructions there.
    Subvertpy. We've decided to drop Subvertpy support after many reports
    of compatibility issues.
 
-   Subvertpy will continue to work through Review Board 5. However, we
-   recommend uninstalling and upgrading to PySVN instead.
+   If you previously used Subvertpy, you will need to install PySVN instead.
 
 
 .. _PySVN installer: https://github.com/reviewboard/pysvn-installer

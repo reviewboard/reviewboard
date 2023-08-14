@@ -945,13 +945,6 @@ class PySVNTests(_CommonSVNTestCase):
     __test__ = True
 
 
-class SubvertpyTests(_CommonSVNTestCase):
-    backend = 'reviewboard.scmtools.svn.subvertpy'
-    backend_name = 'subvertpy'
-
-    __test__ = True
-
-
 class UtilsTests(SCMTestCase):
     """Unit tests for reviewboard.scmtools.svn.utils."""
 
