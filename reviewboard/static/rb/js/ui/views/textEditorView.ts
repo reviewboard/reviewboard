@@ -144,6 +144,36 @@ class CodeMirrorWrapper extends BaseView<
     }
 
     /**
+     * Set the cursor position within the editor.
+     *
+     * This uses client coordinates (which are relative to the viewport).
+     *
+     * Version Added:
+     *     6.0
+     *
+     * Args:
+     *     x (number):
+     *         The client X coordinate to set.
+     *
+     *     y (number):
+     *         The client Y coordinate to set.
+     */
+    setCursorPosition(
+        x: number,
+        y: number,
+    ) {
+        const codeMirror = this._codeMirror;
+
+        codeMirror.setCursor(
+            codeMirror.coordsChar(
+                {
+                    left: x,
+                    top: y,
+                },
+                'window'));
+    }
+
+    /**
      * Set the text in the editor.
      *
      * Args:
@@ -307,6 +337,113 @@ class TextAreaWrapper extends BaseView<
 
         return value.length !== initialValue.length ||
                value !== initialValue;
+    }
+
+    /**
+     * Set the cursor position within the editor.
+     *
+     * This uses client coordinates (which are relative to the viewport).
+     *
+     * Setting the cursor position works in Firefox and WebKit/Blink-based
+     * browsers. Not all browsers support the required APIs.
+     *
+     * Version Added:
+     *     6.0
+     *
+     * Args:
+     *     x (number):
+     *         The client X coordinate to set.
+     *
+     *     y (number):
+     *         The client Y coordinate to set.
+     */
+    setCursorPosition(
+        x: number,
+        y: number,
+    ) {
+        if (!document.caretPositionFromPoint &&
+            !document.caretRangeFromPoint) {
+            /*
+             * We don't have what need to reliably return a caret position for
+             * the text.
+             *
+             * There are tricks we can try in order to attempt to compute the
+             * right position, based on line heights and character sizes, but
+             * it gets more difficult with wrapping.
+             *
+             * In reality, both of the above methods are widespread enough to
+             * rely upon, and if they don't exist, we just won't set the
+             * cursor position.
+             */
+            return;
+        }
+
+        const $el = this.$el;
+        const el = this.el;
+
+        /*
+         * We need a proxy element for both the Firefox and WebKit/Blink
+         * implementations, because neither version works quite right with
+         * a <textarea>.
+         *
+         * On Firefox, Document.caretPositionFromPoint will generally work
+         * with a <textarea>, so long as you're clicking within a line. If
+         * you click past the end of a line, however, you get a caret position
+         * at the end of the <textarea>. Not ideal. This behavior doesn't
+         * manifest for standard DOM nodes, so we can use a proxy here.
+         *
+         * On WebKit/Blink, Document.caretRangeFromPoint doesn't even work
+         * with a <textarea> at all, so we're forced to use a proxy element
+         * (See https://bugs.webkit.org/show_bug.cgi?id=30604).
+         *
+         * A second caveat here is that, in either case, we can't get a
+         * position for off-screen elements (apparently). So we have to overlay
+         * this exactly. We carefully align it and then use an opacity of 0 to
+         * hide it,
+         */
+        const offset = $el.offset();
+        const bounds = el.getBoundingClientRect();
+        const $proxy = $('<pre>')
+            .move(offset.left, offset.top, 'absolute')
+            .css({
+                'border': 0,
+                'font': $el.css('font'),
+                'height': `${bounds.height}px`,
+                'line-height': $el.css('line-height'),
+                'margin': 0,
+                'opacity': 0,
+                'padding': $el.css('padding'),
+                'white-space': 'pre-wrap',
+                'width': `${bounds.width}px`,
+                'word-wrap': 'break-word',
+                'z-index': 10000,
+            })
+            .text(this.el.value)
+            .appendTo(document.body);
+
+        let pos = null;
+
+        if (document.caretPositionFromPoint) {
+            /* Firefox */
+            const caret = document.caretPositionFromPoint(x, y);
+
+            if (caret) {
+                pos = caret.offset;
+            }
+        } else if (document.caretRangeFromPoint) {
+            /* Webkit/Blink. */
+            const caret = document.caretRangeFromPoint(x, y);
+
+            if (caret) {
+                pos = caret.startOffset;
+            }
+        }
+
+        $proxy.remove();
+
+        if (pos !== null) {
+            el.setSelectionRange(pos, pos);
+        }
     }
 
     /**
@@ -1039,6 +1176,14 @@ export class TextEditorView extends BaseView<
     /** Whether the rich text state is unsaved. */
     #richTextDirty = false;
 
+    /**
+     * The cursor position to set when starting edit mode.
+     *
+     * Version Added:
+     *     6.0
+     */
+    #startCursorPos: [number, number] = null;
+
     /** The current value of the editor. */
     #value: string;
 
@@ -1204,6 +1349,32 @@ export class TextEditorView extends BaseView<
     }
 
     /**
+     * Set the cursor position within the editor.
+     *
+     * This uses client coordinates (which are relative to the viewport).
+     *
+     * Version Added:
+     *     6.0
+     *
+     * Args:
+     *     x (number):
+     *         The client X coordinate to set.
+     *
+     *     y (number):
+     *         The client Y coordinate to set.
+     */
+    setCursorPosition(
+        x: number,
+        y: number,
+    ) {
+        if (this._editor) {
+            this._editor.setCursorPosition(x, y);
+        } else {
+            this.#startCursorPos = [x, y];
+        }
+    }
+
+    /**
      * Set the text in the editor.
      *
      * Args:
@@ -1353,6 +1524,14 @@ export class TextEditorView extends BaseView<
         }
 
         this._editor.setText(this.#value);
+
+        const startCursorPos = this.#startCursorPos;
+
+        if (startCursorPos !== null) {
+            this._editor.setCursorPosition(startCursorPos[0],
+                                           startCursorPos[1]);
+        }
+
         this.#value = '';
         this.#richTextDirty = false;
         this.#prevClientHeight = null;

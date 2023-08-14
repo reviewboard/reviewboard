@@ -135,6 +135,22 @@ interface InlineEditorViewOptions {
 interface EditOptions {
     /** Whether to suppress animation. */
     preventAnimation?: boolean;
+
+    /**
+     * The client X coordinate of a mouse click triggering edit mode.
+     *
+     * Version Added:
+     *     6.0
+     */
+    clickX?: number;
+
+    /**
+     * The client Y coordinate of a mouse click triggering edit mode.
+     *
+     * Version Added:
+     *     6.0
+     */
+    clickY?: number;
 }
 
 
@@ -399,7 +415,10 @@ export class InlineEditorView<
                     e.preventDefault();
 
                     if (!isDragging) {
-                        this.startEdit();
+                        this.startEdit({
+                            clickX: e.clientX,
+                            clickY: e.clientY,
+                        });
                     }
 
                     isDragging = true;
@@ -453,9 +472,9 @@ export class InlineEditorView<
         this._editing = true;
         this.options.setFieldValue(this, value);
 
-        this.trigger('beginEditPreShow');
+        this.trigger('beginEditPreShow', options);
         this.showEditor(options);
-        this.trigger('beginEdit');
+        this.trigger('beginEdit', options);
     }
 
     /**
@@ -930,8 +949,14 @@ export class RichTextInlineEditorView<
             this.textEditor.bindRichTextVisibility($markdownRef);
         });
 
-        this.listenTo(this, 'beginEdit', () => {
+        this.listenTo(this, 'beginEdit', options => {
+            if (options.clickX !== undefined && options.clickY !== undefined) {
+                this.textEditor.setCursorPosition(options.clickX,
+                                                  options.clickY);
+            }
+
             this.textEditor.showEditor();
+
             origRichText = this.textEditor.richText;
         });
 
