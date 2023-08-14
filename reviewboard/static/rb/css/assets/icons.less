@@ -1,8 +1,7 @@
 @import (reference) "djblets/css/mixins/retina.less";
 @import (reference) "../defs.less";
 
-
-@img_base: '../../images';
+@import (reference) "rb/css/assets/paths.less";
 
 
 .rb-icon {
@@ -12,7 +11,7 @@
   text-indent: -99999px;
   vertical-align: middle;
 
-  .retina('@{img_base}/icons.png', 155px 150px, @has-svg: true);
+  .retina('@{rb-images-root}/icons.png', 155px 150px, @has-svg: true);
 }
 
 

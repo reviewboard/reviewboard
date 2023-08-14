@@ -1,11 +1,10 @@
-@import (reference) "../defs.less";
-@import (reference) "../mixins/upload-diff.less";
 @import (reference) "djblets/css/mixins/markdown.less";
+
+@import (reference) "rb/css/assets/paths.less";
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/mixins/upload-diff.less";
 @import (reference) "rb/css/ui/colors.less";
 
-
-@img_base: '../../images';
-@djblets_img_base: '../../../djblets/images';
 
 @changedesc-bg: lighten(@review-request-bg, 5%);
 @floating-anchor-width: 8em;
@@ -2199,7 +2198,7 @@
   }
 
   .ui-icon-gripsmall-diagonal-se {
-    background: url('@{img_base}/resize-grip.png') no-repeat top left;
+    background: url('@{rb-images-root}/resize-grip.png') no-repeat top left;
   }
 }
 
