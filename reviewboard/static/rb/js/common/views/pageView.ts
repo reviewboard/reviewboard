@@ -187,15 +187,10 @@ export class PageView<
 
         this.renderPage();
 
-        if (this.isFullPage) {
-            /*
-             * On full-size pages, we hide the content and sidebar initially
-             * (via CSS), so that we can properly position them before they're
-             * first shown. Now that we've done that, make them visible.
-             */
-            this._$mainSidebarPane.show();
-            this.$pageContainer.show();
-        }
+        /*
+         * Now that we've rendered the elements, we can show the page.
+         */
+        $body.addClass('-is-loaded');
 
         this.$window.on('resize.rbPageView',
                         _.throttle(() => this._updateSize(),

@@ -229,12 +229,20 @@ html {
   });
 
   /*
-   * Hide both the page sidebar panes and page container by default, so we
-   * can display them initially at the correct height.
+   * Hide the page sidebar panes, so we can display them initially at the
+   * correct height.
    */
-  #page-container,
   #page-sidebar-main-pane {
-    display: none;
+    visibility: hidden;
+  }
+
+  &.-is-loaded #page-sidebar-main-pane {
+    /*
+     * On full-size pages, we hide the content and sidebar initially
+     * (via CSS), so that we can properly position them before they're
+     * first shown. Now that we've done that, make them visible.
+    */
+    visibility: visible;
   }
 });
 
@@ -693,6 +701,11 @@ textarea {
 #page-container {
   padding: 0 @page-container-padding @page-container-padding
            @page-container-padding;
+  visibility: hidden;
+
+  body.-is-loaded & {
+    visibility: visible;
+  }
 
   #rb-ns-pages.base.on-shell-mobile-mode({
     position: relative;
