@@ -654,7 +654,7 @@ PRE_CREATION = Revision('PRE-CREATION')
 RevisionID: TypeAlias = Union[Revision, str]
 
 
-class _SCMToolIDProperty:
+class _SCMToolIDProperty(str):
     """A property that automatically determines the ID for an SCMTool.
 
     This is used for SCMTools that don't explicitly specify a
@@ -730,7 +730,7 @@ class SCMTool:
     #:
     #: Version Added:
     #:     3.0.16
-    scmtool_id = _SCMToolIDProperty()
+    scmtool_id: str = _SCMToolIDProperty()
 
     #: The human-readable name of the SCMTool.
     #:
