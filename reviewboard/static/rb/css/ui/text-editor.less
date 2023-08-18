@@ -1,0 +1,95 @@
+@import (reference) "rb/css/ui/forms.less";
+
+
+#rb-ns-ui() {
+  .text-editor() {
+    @_form-field-vars: #rb-ns-ui.form-field();
+
+    @bg: @_form-field-vars[@textarea-editor-background];
+    @border: @_form-field-vars[@textarea-border];
+    @margin: @_form-field-vars[@textarea-editor-margin];
+    @padding: @_form-field-vars[@textarea-editor-padding];
+    @toolbar-spacing: 2em;
+  }
+}
+
+
+/**
+ * A text editor for plain and Markdown text input.
+ *
+ * Text editors (backed by :js:class:`RB.TextEditorView`) can contain a plain
+ * ``<textarea>`` for plain text input or a CodeMirror widget and formatting
+ * toolbar for rich text input.
+ *
+ * The ``.rb-c-text-editor__textarea`` and ``.rb-c-formatting-toolbar`` should
+ * be managed and added/removed as necessary when changing edit modes.
+ *
+ * Structure:
+ *     <div class="rb-c-text-editor">
+ *      <textarea class="rb-c-text-editor__textarea -is-plain">...</textarea>
+ *     </div>
+ *
+ *     <div class="rb-c-text-editor">
+ *      <div class="rb-c-text-editor__textarea -is-rich CodeMirror">...</div>
+ *      <div class="rb-c-formatting-toolbar" ...>...</div>
+ *     </div>
+ */
+.rb-c-text-editor {
+  @_text-editor-vars: #rb-ns-ui.text-editor();
+
+  background: @_text-editor-vars[@bg];
+  border: @_text-editor-vars[@border];
+  margin: @_text-editor-vars[@margin];;
+  position: relative;
+
+  /**
+   * The text area in the editor.
+   *
+   * The type of text area is designated by the ``.-is-plain`` or ``.-is-rich``
+   * modifiers.
+   *
+   * Modifiers:
+   *     -is-plain:
+   *         This is a plain text area, using a ``<textarea>`` widget.
+   *
+   *     -is-rich:
+   *         This is a rich text area, using CodeMirror.
+   *
+   *         When set, there should be a ``.rb-c-formatting-toolbar``
+   *         component added below this.
+   *
+   * Structure:
+   *     <textarea class="rb-c-text-editor__textarea -is-plain">...</textarea>
+   *
+   *     <div class="rb-c-text-editor__textarea -is-rich CodeMirror">...</div>
+   */
+  &__textarea {
+    /* Make sure we override any default rules for .CodeMirror here. */
+    textarea&,
+    &.CodeMirror {
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      margin: 0;
+    }
+
+    &.-is-plain {
+      box-sizing: border-box;
+      margin: 0;
+      outline: none;
+      padding: @_text-editor-vars[@padding];
+
+      /*
+       * This prevents extra spacing below a text area in different browsers.
+       * See http://stackoverflow.com/questions/7144843/extra-space-under-textarea-differs-along-browsers
+       */
+      vertical-align: top;
+    }
+
+    &.-is-rich {
+      .CodeMirror-scroll {
+        margin-bottom: -@_text-editor-vars[@toolbar-spacing] !important;
+      }
+    }
+  }
+}

@@ -59,6 +59,8 @@ class CodeMirrorWrapper extends BaseView<
     HTMLDivElement,
     EditorWrapperOptions
 > {
+    static className = 'rb-c-text-editor__textarea -is-rich';
+
     /**********************
      * Instance variables *
      **********************/
@@ -109,7 +111,9 @@ class CodeMirrorWrapper extends BaseView<
         this._codeMirror = new CodeMirror(options.parentEl,
                                           codeMirrorOptions);
 
-        this.setElement(this._codeMirror.getWrapperElement());
+        const wrapperEl = this._codeMirror.getWrapperElement();
+        wrapperEl.classList.add('rb-c-text-editor__textarea', '-is-rich');
+        this.setElement(wrapperEl);
 
         if (options.minHeight !== undefined) {
             this.$el.css('min-height', options.minHeight);
@@ -279,6 +283,7 @@ class TextAreaWrapper extends BaseView<
     HTMLTextAreaElement,
     EditorWrapperOptions
 > {
+    static className = 'rb-c-text-editor__textarea -is-plain';
     static tagName = 'textarea';
 
     /**********************
@@ -1145,7 +1150,7 @@ export class TextEditorView extends BaseView<
     HTMLDivElement,
     TextEditorViewOptions
 > {
-    static className = 'text-editor';
+    static className = 'rb-c-text-editor';
 
     static defaultOptions: Partial<TextEditorViewOptions> = {
         autoSize: true,
@@ -1440,6 +1445,10 @@ export class TextEditorView extends BaseView<
         height: number,
     ) {
         if (this._editor) {
+            if (this.#formattingToolbar !== null) {
+                height -= this.#formattingToolbar.$el.outerHeight(true);
+            }
+
             this._editor.setSize(width, height);
         }
     }
@@ -1511,10 +1520,7 @@ export class TextEditorView extends BaseView<
             this.#formattingToolbar = new FormattingToolbarView({
                 editor: this._editor,
             });
-
-            $('<div style="height: 3em;">')
-                .append(this.#formattingToolbar.render().$el)
-                .appendTo(this._editor.$el);
+            this.#formattingToolbar.renderInto(this.$el);
         } else {
             this._editor = new TextAreaWrapper({
                 autoSize: this.options.autoSize,
