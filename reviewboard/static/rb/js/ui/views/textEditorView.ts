@@ -562,21 +562,113 @@ interface FormattingToolbarViewOptions {
 }
 
 
-interface FormattingToolbarButton {
+/**
+ * Options for a group on the formatting toolbar.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface FormattingToolbarGroupOptions {
     /**
-     * The class to apply to the element.
+     * The unique ID of the group.
      */
-    className: string;
+    id: string;
 
     /**
-     * The name of a callback function when the button is clicked.
+     * The ARIA label to set for the group.
      */
-    onClick?: string;
+    ariaLabel: string;
 
     /**
-     * HTML contet to use instead of creating a new button.
+     * An optional list of item options to add to the group.
      */
-    $content?: JQuery;
+    items?: FormattingToolbarItemOptions[];
+}
+
+
+/**
+ * Options for an item on the formatting toolbar.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface FormattingToolbarItemOptions {
+    /**
+     * The unique ID of the item.
+     */
+    id: string;
+
+    /**
+     * An optional element to use instead of the default one.
+     *
+     * Callers should take care to ensure their elements are accessible.
+     *
+     * ``ariaLabel``, ``className``, and ``onClick`` are still applicable to
+     * custom elements.
+     */
+    $el?: JQuery;
+
+    /**
+     * An optional ARIA label to set for the item.
+     *
+     * This is recommended.
+     */
+    ariaLabel?: string;
+
+    /**
+     * An extra CSS class name (or space-separated list of class names) to set.
+     */
+    className?: string;
+
+    /**
+     * Handler for when the button is clicked.
+     */
+    onClick?: (e: MouseEvent | JQuery.ClickEvent) => void;
+}
+
+
+/**
+ * Information on an item group in the formatting toolbar.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface FormattingToolbarGroup {
+    /**
+     * The element for the group.
+     */
+    $el: JQuery;
+
+    /**
+     * The unique ID of the group.
+     */
+    id: string;
+
+    /**
+     * The mapping of item IDs to information in the group.
+     */
+    items: {
+        [key: string]: FormattingToolbarItem
+    };
+}
+
+
+/**
+ * Information on an item in the formatting toolbar.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface FormattingToolbarItem {
+    /**
+     * The element for the item.
+     */
+    $el: JQuery;
+
+    /**
+     * The unique ID of the item.
+     */
+    id: string;
 }
 
 
@@ -594,45 +686,26 @@ class FormattingToolbarView extends BaseView<
 > {
     static className = 'rb-c-formatting-toolbar';
 
-    static template = dedent`
-        <div class="rb-c-formatting-toolbar__btn-group">
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-bold"></a>
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-italic"></a>
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-strikethrough"></a>
-        </div>
-        <div class="rb-c-formatting-toolbar__btn-group">
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-link"></a>
-         <label class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-image"
-                aria-role="button" tabindex="0">
-          <input type="file" style="display: none;">
-         </label>
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-code"></a>
-        </div>
-        <div class="rb-c-formatting-toolbar__btn-group">
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-list-ul"></a>
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-list-ol"></a>
-        </div>
-    `;
-
-    static events: EventsHash = {
-        'click .rb-c-formatting-toolbar__btn-bold': '_onBoldBtnClick',
-        'click .rb-c-formatting-toolbar__btn-code': '_onCodeBtnClick',
-        'click .rb-c-formatting-toolbar__btn-italic': '_onItalicBtnClick',
-        'click .rb-c-formatting-toolbar__btn-link': '_onLinkBtnClick',
-        'click .rb-c-formatting-toolbar__btn-list-ol': '_onOListBtnClick',
-        'click .rb-c-formatting-toolbar__btn-list-ul': '_onUListBtnClick',
-        'click .rb-c-formatting-toolbar__btn-strikethrough':
-            '_onStrikethroughBtnClick',
-    };
-
     /**********************
      * Instance variables *
      **********************/
 
     /**
+     * A mapping of button group IDs to information.
+     */
+    buttonGroups: {
+        [key: string]: FormattingToolbarGroup
+    } = {};
+
+    /**
      * The CodeMirror instance.
      */
     #codeMirror: CodeMirror;
+
+    /**
+     * The ID of the editor being managed.
+     */
+    #editorID: string;
 
     /**
      * Initialize the view.
@@ -642,14 +715,181 @@ class FormattingToolbarView extends BaseView<
      *         Options for the view.
      */
     initialize(options: FormattingToolbarViewOptions) {
-        this.#codeMirror = options.editor._codeMirror;
+        const editor = options.editor;
+        const editorID = editor.el.id;
+
+        console.assert(!!editorID);
+
+        this.#codeMirror = editor._codeMirror;
+        this.#editorID = editorID;
+
+        this.addGroup({
+            ariaLabel: _`Text formatting`,
+            id: 'text',
+            items: [
+                {
+                    ariaLabel: _`Bold`,
+                    className: 'rb-c-formatting-toolbar__btn-bold',
+                    id: 'bold',
+                    onClick: this.#onBoldBtnClick.bind(this),
+                },
+                {
+                    ariaLabel: _`Italic`,
+                    className: 'rb-c-formatting-toolbar__btn-italic',
+                    id: 'italic',
+                    onClick: this.#onItalicBtnClick.bind(this),
+                },
+                {
+                    ariaLabel: _`Strikethrough`,
+                    className: 'rb-c-formatting-toolbar__btn-strikethrough',
+                    id: 'strikethrough',
+                    onClick: this.#onStrikethroughBtnClick.bind(this),
+                },
+                {
+                    ariaLabel: _`Code literal`,
+                    className: 'rb-c-formatting-toolbar__btn-code',
+                    id: 'code',
+                    onClick: this.#onCodeBtnClick.bind(this),
+                },
+            ],
+        });
+
+        this.addGroup({
+            ariaLabel: _`Special formatting and media`,
+            id: 'media',
+            items: [
+                {
+                    ariaLabel: _`Insert link`,
+                    className: 'rb-c-formatting-toolbar__btn-link',
+                    id: 'link',
+                    onClick: this.#onLinkBtnClick.bind(this),
+                },
+                {
+                    $el: $(dedent`
+                        <label class="rb-c-formatting-toolbar__btn"
+                               aria-role="button" tabindex="0">
+                        `)
+                        .append(
+                            $('<input type="file" style="display: none;">')),
+                    ariaLabel: _`Upload image`,
+                    className: 'rb-c-formatting-toolbar__btn-image',
+                    id: 'upload-image',
+                },
+            ],
+        });
+
+        this.addGroup({
+            ariaLabel: _`Lists`,
+            id: 'lists',
+            items: [
+                {
+                    ariaLabel: _`Insert unordered list`,
+                    className: 'rb-c-formatting-toolbar__btn-list-ul',
+                    id: 'list-ul',
+                    onClick: this.#onUListBtnClick.bind(this),
+                },
+                {
+                    ariaLabel: _`Insert ordered list`,
+                    className: 'rb-c-formatting-toolbar__btn-list-ol',
+                    id: 'list-ol',
+                    onClick: this.#onOListBtnClick.bind(this),
+                },
+            ],
+        });
     }
 
     /**
      * Render the view.
      */
     onInitialRender() {
-        this.$el.html(FormattingToolbarView.template);
+        this.$el.attr({
+            'aria-controls': this.#editorID,
+            'aria-label': _`Text formatting toolbar`,
+            'role': 'toolbar',
+        });
+    }
+
+    /**
+     * Add a group on the toolbar for placing items.
+     *
+     * This may optionally take items to add to the group.
+     *
+     * Args:
+     *     options (FormattingToolbarGroupOptions):
+     *         Options for the group.
+     */
+    addGroup(options: FormattingToolbarGroupOptions) {
+        const id = options.id;
+
+        console.assert(!this.buttonGroups.hasOwnProperty(id),
+                       `Toolbar group "${id}" was already registered.`);
+
+        const $buttonGroup = $('<div>')
+            .addClass('rb-c-formatting-toolbar__btn-group')
+            .attr('aria-label', options.ariaLabel);
+
+        const group: FormattingToolbarGroup = {
+            $el: $buttonGroup,
+            id: id,
+            items: {},
+        };
+
+        this.buttonGroups[id] = group;
+
+        if (options.items) {
+            for (const item of options.items) {
+                this.addItem(id, item);
+            }
+        }
+
+        $buttonGroup.appendTo(this.$el);
+    }
+
+    /**
+     * Add an item to a group.
+     *
+     * Args:
+     *     groupID (string):
+     *         The ID of the group to add to.
+     *
+     *     options (FormattingToolbarItemOptions):
+     *         Options for the item to add.
+     */
+    addItem(
+        groupID: string,
+        options: FormattingToolbarItemOptions,
+    ) {
+        const group = this.buttonGroups[groupID];
+        console.assert(!!group, `Toolbar group "${groupID}" does not exist.`);
+
+        let $el = options.$el;
+
+        if ($el === undefined) {
+            $el = $('<button>')
+                .attr({
+                    'aria-pressed': 'false',
+                    'class': 'rb-c-formatting-toolbar__btn',
+                    'tabindex': '0',
+                    'type': 'button',
+                });
+        }
+
+        if (options.ariaLabel) {
+            $el.attr({
+                'aria-label': options.ariaLabel,
+                'title': options.ariaLabel,
+            });
+        }
+
+        if (options.className) {
+            $el.addClass(options.className);
+        }
+
+        if (options.onClick) {
+            $el.on('click', options.onClick);
+        }
+
+        $el.appendTo(group.$el);
     }
 
     /**
@@ -659,7 +899,7 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onBoldBtnClick(e: JQuery.ClickEvent) {
+    #onBoldBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -673,7 +913,7 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onCodeBtnClick(e: JQuery.ClickEvent) {
+    #onCodeBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -687,7 +927,7 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onItalicBtnClick(e: JQuery.ClickEvent) {
+    #onItalicBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -701,7 +941,7 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onLinkBtnClick(e: JQuery.ClickEvent) {
+    #onLinkBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -715,7 +955,7 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onOListBtnClick(e: JQuery.ClickEvent) {
+    #onOListBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -729,7 +969,7 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onStrikethroughBtnClick(e: JQuery.ClickEvent) {
+    #onStrikethroughBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -743,7 +983,7 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onUListBtnClick(e: JQuery.ClickEvent) {
+    #onUListBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -1172,7 +1412,12 @@ export class TextEditorView extends BaseView<
     /** Whether the editor is using rich text. */
     richText: boolean;
 
-    /** The markdown formatting toolbar view. */
+    /**
+     * The markdown formatting toolbar view.
+     *
+     * Version Added:
+     *     6.0
+     */
     #formattingToolbar: FormattingToolbarView = null;
 
     /** The saved previous height, used to trigger the resize event . */
@@ -1516,6 +1761,7 @@ export class TextEditorView extends BaseView<
                 minHeight: this.options.minHeight,
                 parentEl: this.el,
             });
+            this._editor.el.id = _.uniqueId('rb-c-text-editor_');
 
             this.#formattingToolbar = new FormattingToolbarView({
                 editor: this._editor,
