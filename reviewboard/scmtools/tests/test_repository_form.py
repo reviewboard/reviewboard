@@ -1042,6 +1042,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
             'mirror_path': 'git@localhost:test.git',
             'username': 'myuser',
             'password': 'mypass',
+            'raw_file_url': 'http://example.com/<revision>',
         })
 
         self.assertFalse(form.is_valid())
@@ -1080,6 +1081,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
             'mirror_path': 'git@localhost:test.git',
             'username': 'myuser',
             'password': 'mypass',
+            'raw_file_url': 'http://example.com/<revision>',
             'trust_host': 'true',
         })
 

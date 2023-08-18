@@ -398,6 +398,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
             {
                 'name': 'Test Repository',
                 'path': self.sample_repo_path,
+                'raw_file_url': 'http://example.com/<filename>/<version>',
                 'tool': 'Test',
             },
             [])
@@ -884,6 +885,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
 
         if 'hosting_type' not in data:
             post_data['path'] = self.sample_repo_path
+            post_data['raw_file_url'] = 'http://example.com/<version>'
 
         post_data.update(data)
 
@@ -981,7 +983,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
             with_local_site=with_local_site,
             tool_name='Git',
             path=self.sample_repo_path,
-            mirror_path='git@localhost:test.git')
+            mirror_path='git@localhost:test.git',
+            raw_file_url='http://example.org/<filename>/<version>')
 
         return (
             get_repository_item_url(repository, local_site_name),
@@ -1168,6 +1171,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
                 'name': 'New Repository',
                 'tool': 'Git',
                 'path': self.sample_repo_path,
+                'raw_file_url': 'http://example.com/<filename>/<version>',
             })
 
         self._verify_repository_info(
@@ -1179,6 +1183,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
                 'mirror_path': '',
                 'name': 'New Repository',
                 'path': self.sample_repo_path,
+                'raw_file_url': 'http://example.com/<filename>/<version>',
             })
 
     @webapi_test_template

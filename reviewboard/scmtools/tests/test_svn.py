@@ -1028,7 +1028,7 @@ class SVNAuthFormTests(TestCase):
 class SVNRepositoryFormTests(TestCase):
     """Unit tests for SVNTool's repository form."""
 
-    def test_fields(self):
+    def test_fields(self) -> None:
         """Testing SVNTool repository form fields"""
         form = SVNTool.create_repository_form()
 
@@ -1041,7 +1041,7 @@ class SVNRepositoryFormTests(TestCase):
         self.assertEqual(form['mirror_path'].label, 'Mirror Path')
 
     @add_fixtures(['test_scmtools'])
-    def test_load(self):
+    def test_load(self) -> None:
         """Tetting SVNTool repository form load"""
         repository = self.create_repository(
             tool_name='Subversion',
@@ -1056,7 +1056,7 @@ class SVNRepositoryFormTests(TestCase):
                          'https://svn.mirror.example.com')
 
     @add_fixtures(['test_scmtools'])
-    def test_save(self):
+    def test_save(self) -> None:
         """Tetting SVNTool repository form save"""
         repository = self.create_repository(tool_name='Subversion')
 
@@ -1072,3 +1072,39 @@ class SVNRepositoryFormTests(TestCase):
         self.assertEqual(repository.path, 'https://svn.example.com/')
         self.assertEqual(repository.mirror_path,
                          'https://svn.mirror.example.com')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save_with_file_url(self) -> None:
+        """Tetting SVNTool repository form save with file:// URL"""
+        repository = self.create_repository(tool_name='Subversion')
+
+        form = SVNTool.create_repository_form(
+            repository=repository,
+            data={
+                'path': 'file:///opt/svnrepo/',
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.path, 'file:///opt/svnrepo/')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save_with_bare_file_path(self) -> None:
+        """Testing SVNTool repository form save with raw path instead of
+        URL
+        """
+        repository = self.create_repository(tool_name='Subversion')
+
+        form = SVNTool.create_repository_form(
+            repository=repository,
+            data={
+                'path': '/opt/svnrepo/',
+            })
+        self.assertFalse(form.is_valid())
+        form.full_clean()
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors['path'], [
+            'The path to the SVN repository must be a URL. To specify a local '
+            'repository, use a file:// URL.',
+        ])

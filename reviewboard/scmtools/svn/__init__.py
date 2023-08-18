@@ -5,6 +5,8 @@ import os
 import re
 import weakref
 from importlib import import_module
+from typing import Any, Dict
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
@@ -19,6 +21,7 @@ from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
                                          SCMError,
                                          UnverifiedCertificateError)
+from reviewboard.scmtools.forms import StandardSCMToolRepositoryForm
 from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
 from reviewboard.ssh import utils as sshutils
@@ -38,6 +41,36 @@ sshutils.ssh_uri_schemes.append('svn+ssh')
 sshutils.register_rbssh('SVN_SSH')
 
 
+class SVNRepositoryForm(StandardSCMToolRepositoryForm):
+    """Form for editing SVN repositories.
+
+    Version Added:
+        6.0
+    """
+
+    def clean(self) -> Dict[str, Any]:
+        """Perform validation on the form.
+
+        Returns:
+            dict:
+            The cleaned form data.
+        """
+        cleaned_data = super().clean()
+        assert cleaned_data is not None
+
+        path = cleaned_data.get('path', '')
+
+        if path:
+            url_parts = urlparse(path)
+
+            if not url_parts.scheme:
+                self.add_error('path', _(
+                    'The path to the SVN repository must be a URL. To specify '
+                    'a local repository, use a file:// URL.'))
+
+        return cleaned_data
+
+
 class SVNCertificateFailures:
     """SVN HTTPS certificate failure codes.
 
@@ -51,12 +84,13 @@ class SVNCertificateFailures:
 
 class SVNTool(SCMTool):
     scmtool_id = 'subversion'
-    name = "Subversion"
+    name = 'Subversion'
     supports_post_commit = True
     dependencies = {
         'modules': [],  # This will get filled in later in
                         # recompute_svn_backend()
     }
+    repository_form = SVNRepositoryForm
 
     COMMITS_PAGE_LIMIT = 31
 
