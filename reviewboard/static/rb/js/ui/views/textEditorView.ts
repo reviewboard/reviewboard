@@ -770,7 +770,8 @@ class FormattingToolbarView extends BaseView<
                                aria-role="button" tabindex="0">
                         `)
                         .append(
-                            $('<input type="file" style="display: none;">')),
+                            $('<input type="file" style="display: none;">')
+                                .on('change', this.#onImageUpload.bind(this))),
                     ariaLabel: _`Upload image`,
                     className: 'rb-c-formatting-toolbar__btn-image',
                     id: 'upload-image',
@@ -946,6 +947,28 @@ class FormattingToolbarView extends BaseView<
         e.preventDefault();
 
         this.#toggleLinkSyntax();
+    }
+
+    /**
+     * Handle an image upload from clicking the "image" button.
+     *
+     * Args:
+     *     e (JQuery.ClickEvent):
+     *         The event object.
+     */
+    #onImageUpload(e: JQuery.ClickEvent) {
+        const files = e.target.files;
+        const token = this.#getCurrentTokenGroup()[0];
+
+        this.#codeMirror.focus();
+        this.#codeMirror.setCursor(token);
+
+        if (files) {
+            this.trigger('uploadImage', files[0]);
+        }
+
+        e.stopPropagation();
+        e.preventDefault();
     }
 
     /**
@@ -1764,9 +1787,13 @@ export class TextEditorView extends BaseView<
             this._editor.el.id = _.uniqueId('rb-c-text-editor_');
 
             this.#formattingToolbar = new FormattingToolbarView({
+                _uploadImage: this._uploadImage.bind(this),
                 editor: this._editor,
             });
             this.#formattingToolbar.renderInto(this.$el);
+            this.listenTo(this.#formattingToolbar, 'uploadImage',
+                          this._uploadImage);
+
         } else {
             this._editor = new TextAreaWrapper({
                 autoSize: this.options.autoSize,
