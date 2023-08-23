@@ -23,6 +23,8 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
         this.entries = new Backbone.Collection([], {
             model: RB.ReviewRequestPage.Entry,
         });
+
+        this._updateTimestamps = {};
     },
 
     /**
@@ -287,7 +289,19 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
             if (metadata.type === 'entry') {
                 this._processEntryUpdate(metadata, html);
             } else {
-                this._reloadFromUpdate(null, metadata, html);
+                if (metadata.updatedTimestamp) {
+                    const newTimestamp =
+                        moment.utc(metadata.updatedTimestamp).toDate();
+                    const oldTimestamp = this._updateTimestamps[metadata.type];
+
+                    if (oldTimestamp === undefined ||
+                        newTimestamp > oldTimestamp) {
+                        this._updateTimestamps[metadata.type] = newTimestamp;
+                        this._reloadFromUpdate(null, metadata, html);
+                    }
+                } else {
+                    this._reloadFromUpdate(null, metadata, html);
+                }
             }
 
             totalApplied++;

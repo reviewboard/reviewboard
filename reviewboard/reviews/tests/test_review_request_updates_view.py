@@ -32,7 +32,8 @@ class ReviewRequestUpdatesViewTests(TestCase):
             publish=True)
         self.general_comment = self.create_general_comment(
             self.review1,
-            issue_opened=True)
+            issue_opened=True,
+            timestamp=self.review1.timestamp)
 
         # Create the second review (10 days later).
         self.review2 = self.create_review(
@@ -126,6 +127,7 @@ class ReviewRequestUpdatesViewTests(TestCase):
             metadata,
             {
                 'type': 'issue-summary-table',
+                'updatedTimestamp': '2017-09-17T17:00:00Z',
             })
         self.assertTrue(html.startswith('<div id="issue-summary"'))
         self.assertTrue(html.endswith('\n</div>'))
@@ -220,6 +222,8 @@ class ReviewRequestUpdatesViewTests(TestCase):
             metadata,
             {
                 'type': 'issue-summary-table',
+                'updatedTimestamp': self.general_comment.timestamp.strftime(
+                    '%Y-%m-%dT%H:%M:%SZ'),
             })
         self.assertTrue(html.startswith('<div id="issue-summary"'))
         self.assertTrue(html.endswith('\n</div>'))
@@ -281,6 +285,8 @@ class ReviewRequestUpdatesViewTests(TestCase):
             metadata,
             {
                 'type': 'issue-summary-table',
+                'updatedTimestamp': self.general_comment.timestamp.strftime(
+                    '%Y-%m-%dT%H:%M:%SZ'),
             })
         self.assertTrue(html.startswith('<div id="issue-summary"'))
         self.assertTrue(html.endswith('\n</div>'))
@@ -324,6 +330,8 @@ class ReviewRequestUpdatesViewTests(TestCase):
             metadata,
             {
                 'type': 'issue-summary-table',
+                'updatedTimestamp': self.general_comment.timestamp.strftime(
+                    '%Y-%m-%dT%H:%M:%SZ'),
             })
         self.assertTrue(html.startswith('<div id="issue-summary"'))
         self.assertTrue(html.endswith('\n</div>'))
@@ -375,6 +383,8 @@ class ReviewRequestUpdatesViewTests(TestCase):
             metadata,
             {
                 'type': 'issue-summary-table',
+                'updatedTimestamp': self.general_comment.timestamp.strftime(
+                    '%Y-%m-%dT%H:%M:%SZ'),
             })
         self.assertTrue(html.startswith('<div id="issue-summary"'))
         self.assertTrue(html.endswith('\n</div>'))
