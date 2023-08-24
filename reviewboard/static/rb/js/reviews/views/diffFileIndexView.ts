@@ -111,6 +111,24 @@ export class DiffFileIndexView extends BaseView<
     #diffExtents = new Map<number, ScrollExtents>();
 
     /**
+     * An ID for the queued updateLayout call.
+     *
+     * This is used to manage and re-schedule :js:meth:`updateLayout` calls.
+     *
+     * Version Added:
+     *     6.0
+     */
+    #queueLayoutID: number = null;
+
+    /**
+     * The resize observer tracking changes to diff extents.
+     *
+     * Version Added:
+     *     6.0
+     */
+    #resizeObserver: ResizeObserver = null;
+
+    /**
      * Initialize the view.
      *
      * Args:
@@ -142,6 +160,16 @@ export class DiffFileIndexView extends BaseView<
             this.#$dockContainer = null;
         }
 
+        if (this.#resizeObserver !== null) {
+            this.#resizeObserver.disconnect();
+            this.#resizeObserver = null;
+        }
+
+        if (this.#queueLayoutID !== null) {
+            cancelAnimationFrame(this.#queueLayoutID);
+            this.#queueLayoutID = null;
+        }
+
         this.#$bannerDock = null;
         this.#$dockTable = null;
         this.#$items = null;
@@ -165,6 +193,15 @@ export class DiffFileIndexView extends BaseView<
         this.#$items = this.$('tr');
 
         this.#unifiedBannerView = UnifiedBannerView.getInstance();
+
+        /*
+         * Listen for any resizes on the diffs we're tracking.
+         *
+         * We'll recalculate all extents any time a diff resizes (due to a
+         * window resize or an expand/collapse.
+         */
+        this.#resizeObserver = new ResizeObserver(
+            () => this.queueUpdateLayout());
 
         /*
          * Check both the feature and whether the banner exists, because it's
@@ -228,15 +265,17 @@ export class DiffFileIndexView extends BaseView<
             this.#renderDiffEntry($item, diffReviewableView);
         }
 
-        this.#diffFiles.set(index, $(diffReviewableView.el));
+        this.#diffFiles.set(index, diffReviewableView.$el);
 
         if (this.#unifiedBannerView !== null) {
-            this.updateLayout();
+            this.queueUpdateLayout();
         }
 
         if (this.#isDocked) {
             this.#updateItemVisibility();
         }
+
+        this.#resizeObserver.observe(diffReviewableView.el);
     }
 
     /**
@@ -429,7 +468,7 @@ export class DiffFileIndexView extends BaseView<
             this.#$dockContainer.appendTo(this.#$bannerDock);
             this.#$dockTable.append(this.#$itemsTable);
 
-            this.updateLayout();
+            this.queueUpdateLayout();
             this.#updateItemVisibility();
         } else if (this.#isDocked &&
                    topOffset + indexHeight - lastRowHeight >= 0) {
@@ -450,7 +489,7 @@ export class DiffFileIndexView extends BaseView<
     }
 
     /**
-     * Update the stored sizes for the file index and diff entries.
+     * Immediately update the stored sizes for the file index and diff entries.
      */
     updateLayout() {
         this.#indexExtents.clear();
@@ -489,6 +528,27 @@ export class DiffFileIndexView extends BaseView<
 
         if (this.#isDocked) {
             this.#updateItemVisibility();
+        }
+
+        this.#queueLayoutID = null;
+    }
+
+    /**
+     * Queue updating the stored sizes for the file index and diff entries.
+     *
+     * This will update the stored sizes at the next repaint opportunity. if
+     * this is called more than once in-between updates, only one attempt
+     * will be made, to avoid unnecessary calculations.
+     *
+     * This is recommended over calling :js:meth:`updateLayout` directly.
+     *
+     * Version Added:
+     *     6.0
+     */
+    queueUpdateLayout() {
+        if (this.#queueLayoutID === null) {
+            this.#queueLayoutID = requestAnimationFrame(
+                () => this.updateLayout());
         }
     }
 

@@ -1229,7 +1229,7 @@ export class DiffViewerPageView extends ReviewablePageView<
         this.#chunkHighlighter.updateLayout();
 
         if (this.unifiedBanner) {
-            this.#diffFileIndexView.updateLayout();
+            this.#diffFileIndexView.queueUpdateLayout();
         }
     }
 
