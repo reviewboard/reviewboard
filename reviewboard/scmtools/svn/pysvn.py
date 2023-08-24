@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+"""PySVN client backend for Subversion."""
 
 import logging
 import os
@@ -31,9 +31,30 @@ logger = logging.getLogger(__name__)
 
 
 class Client(base.Client):
+    """PySVN-based Subversion client backend.
+
+    This provides Subversion compatibility through the well-maintained
+    `PySVN <https://pysvn.sourceforge.io/>`_ library.
+    """
+
     required_module = 'pysvn'
 
     def __init__(self, config_dir, repopath, username=None, password=None):
+        """Initialize the client.
+
+        Args:
+            config_dir (str):
+                The path to the Subversion configuration directory.
+
+            repopath (str):
+                The path to the repository.
+
+            username (str, optional):
+                The username for the repository.
+
+            password (str, optional):
+                The password for the repository.
+        """
         super(Client, self).__init__(config_dir, repopath, username, password)
         self.client = pysvn.Client(config_dir)
 
@@ -44,6 +65,12 @@ class Client(base.Client):
             self.client.set_default_password(password)
 
     def set_ssl_server_trust_prompt(self, cb):
+        """Set a function for verifying a SSL certificate.
+
+        Args:
+            cb (callable):
+                The function to call for verifying SSL certificates.
+        """
         self.client.callback_ssl_server_trust_prompt = cb
 
     def ssl_trust_prompt(self, trust_dict):
@@ -51,6 +78,39 @@ class Client(base.Client):
             return self.callback_ssl_server_trust_prompt(trust_dict)
 
     def _do_on_path(self, cb, path, revision=HEAD):
+        """Perform an operation on a given path.
+
+        This will normalize the provided path and revision and then call the
+        given function with those normalized values. The error will be
+        normalized and any errors converted into useful exceptions.
+
+        Args:
+            cb (callable):
+                The function to call.
+
+            path (str):
+                The repository path to provide to the callback.
+
+            revision (str):
+                The revision to provide to the callback.
+
+        Returns:
+            object:
+            The value from the callback.
+
+        Raises:
+            reviewboard.scmtools.errors.AuthenticationError:
+                There was an error authenticating with the repository.
+
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The path was empty or could not be found in the repository.
+
+            reviewboard.scmtools.errors.InvalidRevisionFormatError:
+                The ``revision`` argument was in an invalid format.
+
+            reviewboard.scmtools.errors.SCMError:
+                There was an error communicating with the repository.
+        """
         if not path:
             raise FileNotFoundError(path, revision)
 
@@ -74,6 +134,21 @@ class Client(base.Client):
                 raise SVNTool.normalize_error(e)
 
     def _get_file_data(self, normpath, normrev):
+        """Return the contents of a file from the server.
+
+        If the contents have expanded keywords, they'll be collapsed.
+
+        Args:
+            normpath (str):
+                The normalized path in the repository.
+
+            normrev (str):
+                The normalized revision in the repository.
+
+        Returns:
+            bytes:
+            The contents of the file.
+        """
         data = self.client.cat(normpath, normrev)
 
         if has_expanded_svn_keywords(data):
@@ -90,19 +165,86 @@ class Client(base.Client):
         return data
 
     def get_file(self, path, revision=HEAD):
-        """Returns the contents of a given file at the given revision."""
+        """Return the contents of a file from the repository.
+
+        This attempts to return the raw binary contents of a file from the
+        repository, given a file path and revision.
+
+        Args:
+            path (str):
+                The path to the file in the repository.
+
+            revision (reviewboard.scmtools.core.Revision, optional):
+                The revision to fetch. Subclasses should default this to
+                :py:data:`HEAD`.
+
+            *args (tuple, unused):
+                Additional unused positional arguments.
+
+            **kwargs (dict, unused):
+                Additional unused keyword arguments.
+
+        Returns:
+            bytes:
+            The returned file contents.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file could not be found in the repository.
+
+            reviewboard.scmtools.errors.InvalidRevisionFormatError:
+                The ``revision`` argument was in an invalid format.
+
+            reviewboard.scmtools.errors.SCMError:
+                An unexpected error was encountered with the repository.
+        """
         return self._do_on_path(self._get_file_data, path, revision)
 
     def _get_file_keywords(self, normpath, normrev):
+        """Return the space-separated list of keywords for a file path.
+
+        Args:
+            normpath (str):
+                The normalized path within the repository.
+
+            normrev (str):
+                The normalized path within the repository.
+
+        Returns:
+            str:
+            The keywords for the file path.
+        """
         keywords = self.client.propget("svn:keywords", normpath, normrev,
                                        recurse=True)
         return keywords.get(normpath)
 
     def get_keywords(self, path, revision=HEAD):
-        """Returns a list of SVN keywords for a given path."""
+        """Return a space-separated list of SVN keywords for a given path.
+
+        Args:
+            path (str):
+                The path to the file or directory.
+
+            revision (str):
+                The revision containing the keywords.
+
+        Returns:
+            str:
+            The resulting keywords.
+        """
         return self._do_on_path(self._get_file_keywords, path, revision)
 
     def _normalize_revision(self, revision):
+        """Return a normalized revision for PySVN.
+
+        Args:
+            revision (str or reviewboard.scmtools.core.Revision):
+                The revision to normalize.
+
+        Returns:
+            pysvn.Revision:
+            The normalized revision.
+        """
         if revision == HEAD:
             r = Revision(opt_revision_kind.head)
         elif revision == PRE_CREATION:
@@ -118,14 +260,18 @@ class Client(base.Client):
 
         This is a dictionary containing the following keys:
 
-        ``uuid`` (:py:class:`unicode`):
-            The UUID of the repository.
+        Keys:
+            uuid (str):
+                The UUID of the repository.
 
-        ``root_url`` (:py:class:`unicode`):
-            The root URL of the configured repository.
+            root_url (str):
+                The root URL of the configured repository.
 
-        ``url`` (:py:class:`unicoe`):
-            The full URL of the configured repository.
+            url (str):
+                The full URL of the configured repository.
+
+        Type:
+            dict
         """
         try:
             info = self.client.info2(self.repopath, recurse=False)
@@ -139,15 +285,28 @@ class Client(base.Client):
         }
 
     def accept_ssl_certificate(self, path, on_failure=None):
-        """If the repository uses SSL, this method is used to determine whether
+        """Attempt to accept a SSL certificate.
+
+        If the repository uses SSL, this method is used to determine whether
         the SSL certificate can be automatically accepted.
 
         If the cert cannot be accepted, the ``on_failure`` callback
         is executed.
 
-        ``on_failure`` signature::
+        Args:
+            path (str):
+                The repository path.
 
-            void on_failure(e:Exception, path:str, cert:dict)
+            on_failure (callable, optional):
+                A function to call if the certificate could not be accepted.
+
+        Returns:
+            dict:
+            Serialized information on the certificate.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                There was an error accepting the certificate.
         """
         cert = {}
 
@@ -174,16 +333,39 @@ class Client(base.Client):
 
     def get_log(self, path, start=None, end=None, limit=None,
                 discover_changed_paths=False, limit_to_path=False):
-        """Returns log entries at the specified path.
+        """Return log entries at the specified path.
 
         The log entries will appear ordered from most recent to least,
-        with 'start' being the most recent commit in the range.
+        with ``start`` being the most recent commit in the range.
 
-        If 'start' is not specified, then it will default to 'HEAD'. If
-        'end' is not specified, it will default to '1'.
+        Args:
+            path (str):
+                The path to limit log entries to.
 
-        To limit the commits to the given path, not factoring in history
-        from any branch operations, set 'limit_to_path' to True.
+            start (str, optional):
+                The start revision for the log.
+
+                If not specified, clients must default this to "HEAD".
+
+            end (str, optional):
+                The end revision for the log.
+
+                If not specified, clients must default this to "1".
+
+            limit (int, optional):
+                The maximum number of entries to return.
+
+            discover_changed_paths (bool, optional):
+                Whether to include information on changed paths in the
+                results.
+
+            limit_to_path (bool, optional):
+                Limits results to ``path`` without factoring in history from
+                any branch operations.
+
+        Returns:
+            list of SVNLogEntry:
+            The list of resulting log entries.
         """
         if start is None:
             start = self.LOG_DEFAULT_START
@@ -208,14 +390,19 @@ class Client(base.Client):
         return commits
 
     def list_dir(self, path):
-        """Lists the contents of the specified path.
+        """Return the directory contents of the specified path.
 
         The result will be an ordered dictionary of contents, mapping
-        filenames or directory names with a dictionary containing:
+        filenames or directory names with directory information.
 
-        * ``path``        - The full path of the file or directory.
-        * ``created_rev`` - The revision where the file or directory was
-                            created.
+        Args:
+            path (str):
+                The directory path.
+
+        Returns:
+            collections.OrderedDict:
+            A dictionary mapping directory names as strings to
+            :py:class:`SVNDirEntry` information.
         """
         result = OrderedDict()
         norm_path = self.normalize_path(path)
@@ -234,12 +421,30 @@ class Client(base.Client):
         return result
 
     def diff(self, revision1, revision2, path=None):
-        """Returns a diff between two revisions.
+        """Return a diff between two revisions.
 
         The diff will contain the differences between the two revisions,
         and may optionally be limited to a specific path.
 
-        The returned diff will be returned as a Unicode object.
+        Args:
+            revision1 (str):
+                The first revision in the range.
+
+            revision2 (str):
+                The second revision in the range.
+
+            path (str, optional):
+                An optional path to limit the diff to.
+
+        Returns:
+            bytes:
+            The resulting diff contents.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error was encountered with the repository.
+
+                This may be a more specific subclass.
         """
         if path:
             path = self.normalize_path(path)

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+"""Base backend support for Subversion clients."""
 
 from urllib.parse import quote
 
@@ -9,59 +9,185 @@ from reviewboard.scmtools.errors import SCMError
 
 
 class Client(object):
-    """Base SVN client."""
+    """Base class for a Subversion client."""
 
+    #: The default start revision for log entries.
     LOG_DEFAULT_START = 'HEAD'
+
+    #: The default end revision for log entries.
     LOG_DEFAULT_END = '1'
 
     def __init__(self, config_dir, repopath, username=None, password=None):
+        """Initialize the client.
+
+        Args:
+            config_dir (str):
+                The path to the Subversion configuration directory.
+
+            repopath (str):
+                The path to the repository.
+
+            username (str, optional):
+                The username for the repository.
+
+            password (str, optional):
+                The password for the repository.
+        """
         self.repopath = repopath
 
     def set_ssl_server_trust_prompt(self, cb):
+        """Set a function for verifying a SSL certificate.
+
+        Args:
+            cb (callable):
+                The function to call for verifying SSL certificates.
+        """
         raise NotImplementedError
 
     def get_file(self, path, revision=HEAD):
-        """Returns the contents of a given file at the given revision."""
+        """Return the contents of a file from the repository.
+
+        This attempts to return the raw binary contents of a file from the
+        repository, given a file path and revision.
+
+        Args:
+            path (str):
+                The path to the file in the repository.
+
+            revision (reviewboard.scmtools.core.Revision, optional):
+                The revision to fetch. Subclasses should default this to
+                :py:data:`HEAD`.
+
+            *args (tuple, unused):
+                Additional unused positional arguments.
+
+            **kwargs (dict, unused):
+                Additional unused keyword arguments.
+
+        Returns:
+            bytes:
+            The returned file contents.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file could not be found in the repository.
+
+            reviewboard.scmtools.errors.InvalidRevisionFormatError:
+                The ``revision`` argument was in an invalid format.
+
+            reviewboard.scmtools.errors.SCMError:
+                An unexpected error was encountered with the repository.
+        """
         raise NotImplementedError
 
     def get_keywords(self, path, revision=HEAD):
-        """Returns a list of SVN keywords for a given path."""
+        """Return a space-separated list of SVN keywords for a given path.
+
+        Args:
+            path (str):
+                The path to the file or directory.
+
+            revision (str):
+                The revision containing the keywords.
+
+        Returns:
+            str:
+            The resulting keywords.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error was encountered with the repository.
+
+                This may be a more specific subclass.
+        """
         raise NotImplementedError
 
     def get_log(self, path, start=None, end=None, limit=None,
                 discover_changed_paths=False, limit_to_path=False):
-        """Returns log entries at the specified path.
+        """Return log entries at the specified path.
 
         The log entries will appear ordered from most recent to least,
-        with 'start' being the most recent commit in the range.
+        with ``start`` being the most recent commit in the range.
 
-        If 'start' is not specified, then it will default to 'HEAD'. If
-        'end' is not specified, it will default to '1'.
+        Args:
+            path (str):
+                The path to limit log entries to.
 
-        To limit the commits to the given path, not factoring in history
-        from any branch operations, set 'limit_to_path' to True.
+            start (str, optional):
+                The start revision for the log.
+
+                If not specified, clients must default this to "HEAD".
+
+            end (str, optional):
+                The end revision for the log.
+
+                If not specified, clients must default this to "1".
+
+            limit (int, optional):
+                The maximum number of entries to return.
+
+            discover_changed_paths (bool, optional):
+                Whether to include information on changed paths in the
+                results.
+
+            limit_to_path (bool, optional):
+                Limits results to ``path`` without factoring in history from
+                any branch operations.
+
+        Returns:
+            list of SVNLogEntry:
+            The list of resulting log entries.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error was encountered with the repository.
+
+                This may be a more specific subclass.
         """
         raise NotImplementedError
 
     def list_dir(self, path):
-        """Lists the contents of the specified path.
+        """Return the directory contents of the specified path.
 
         The result will be an ordered dictionary of contents, mapping
-        filenames or directory names with a dictionary containing:
+        filenames or directory names with directory information.
 
-        * ``path``        - The full path of the file or directory.
-        * ``created_rev`` - The revision where the file or directory was
-                            created.
+        Args:
+            path (str):
+                The directory path.
+
+        Returns:
+            collections.OrderedDict:
+            A dictionary mapping directory names as strings to
+            :py:class:`SVNDirEntry` information.
         """
         raise NotImplementedError
 
     def diff(self, revision1, revision2, path=None):
-        """Returns a diff between two revisions.
+        """Return a diff between two revisions.
 
         The diff will contain the differences between the two revisions,
         and may optionally be limited to a specific path.
 
-        The returned diff will be returned as a Unicode object.
+        Args:
+            revision1 (str):
+                The first revision in the range.
+
+            revision2 (str):
+                The second revision in the range.
+
+            path (str, optional):
+                An optional path to limit the diff to.
+
+        Returns:
+            bytes:
+            The resulting diff contents.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error was encountered with the repository.
+
+                This may be a more specific subclass.
         """
         raise NotImplementedError
 
@@ -79,6 +205,12 @@ class Client(object):
 
         ``url`` (:py:class:`unicoe`):
             The full URL of the configured repository.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error was encountered with the repository.
+
+                This may be a more specific subclass.
         """
         raise NotImplementedError
 
@@ -162,14 +294,27 @@ class Client(object):
         return norm_path.rstrip('/')
 
     def accept_ssl_certificate(self, path, on_failure=None):
-        """If the repository uses SSL, this method is used to determine whether
+        """Attempt to accept a SSL certificate.
+
+        If the repository uses SSL, this method is used to determine whether
         the SSL certificate can be automatically accepted.
 
         If the cert cannot be accepted, the ``on_failure`` callback
         is executed.
 
-        ``on_failure`` signature::
+        Args:
+            path (str):
+                The repository path.
 
-            void on_failure(e:Exception, path:str, cert:dict)
+            on_failure (callable, optional):
+                A function to call if the certificate could not be accepted.
+
+        Returns:
+            dict:
+            Serialized information on the certificate.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                There was an error accepting the certificate.
         """
         raise NotImplementedError

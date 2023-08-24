@@ -1084,12 +1084,11 @@ class SCMTool:
             A tuple containing two items:
 
             Tuple:
+                0 (bytes):
+                    The normalized filename.
 
-            0 (bytes):
-                The normalized filename.
-
-            1 (bytes or reviewboard.scmtools.core.Revision):
-                The normalized revision.
+                1 (bytes or Revision):
+                    The normalized revision.
 
         Raises:
             reviewboard.scmtools.errors.InvalidRevisionFormatError:
