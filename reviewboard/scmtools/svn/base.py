@@ -1,23 +1,162 @@
 """Base backend support for Subversion clients."""
 
+from __future__ import annotations
+
+from abc import ABC, abstractmethod, abstractproperty
+from typing import (Any, Callable, Dict, Optional, Sequence, TYPE_CHECKING,
+                    Tuple)
 from urllib.parse import quote
 
 from django.utils.translation import gettext as _
+from typing_extensions import Final, NotRequired, TypeAlias, TypedDict
 
 from reviewboard.scmtools.core import HEAD
 from reviewboard.scmtools.errors import SCMError
+from reviewboard.scmtools.svn import RawSSLTrustDict
+
+if TYPE_CHECKING:
+    from collections import OrderedDict
+    from datetime import datetime
+    from reviewboard.scmtools.core import RevisionID
 
 
-class Client(object):
+#: Type for a callback handle for accepting SSL certificates.
+#:
+#: Version Added:
+#:     6.0
+AcceptCertificateFunc: TypeAlias = Callable[
+    [Exception, str, Dict[str, Any]],
+    None,
+]
+
+
+#: Type for a callback handle for prompting for SSL trust information.
+#:
+#: Version Added:
+#:     6.0
+SSLServerTrustPromptFunc: TypeAlias = Callable[
+    [RawSSLTrustDict],
+    Tuple[bool, int, bool],
+]
+
+
+class SVNDirEntry(TypedDict):
+    """Information on an entry in a directory.
+
+    Version Added:
+        6.0
+    """
+
+    #: The path to the entry.
+    #:
+    #: Type:
+    #:     str
+    path: str
+
+    #: The revision when this was created.
+    #:
+    #: Type:
+    #:     str
+    created_rev: str
+
+
+class SVNLogEntry(TypedDict):
+    """Information on a log entry from Subversion.
+
+    The log entry can cover a file, directory, or property.
+
+    Version Added:
+        6.0
+    """
+
+    #: The revision of the entry.
+    #:
+    #: Type:
+    #:     bytes or str
+    revision: str
+
+    #: The author of the entry.
+    #:
+    #: Type:
+    #:     bytes or str
+    author: str
+
+    #: The date of the entry.
+    #:
+    #: Type:
+    #:     datetime.datetime
+    date: NotRequired[datetime]
+
+    #: The commit message.
+    #:
+    #: Type:
+    #:     bytes or str
+    message: str
+
+
+class SVNRepositoryInfoDict(TypedDict):
+    """Information about a Subversion repository.
+
+    This provides information available to consumers of the API.
+
+    Version Added:
+        6.0
+    """
+
+    #: The root URL of the configured repository.
+    #:
+    #: Type:
+    #:     str
+    root_url: str
+
+    #: The full URL of the configured repository.
+    #:
+    #: Type:
+    #:     str
+    url: str
+
+    #: The UUID of the repository.
+    #:
+    #: Type:
+    #:     str
+    uuid: str
+
+
+class Client(ABC):
     """Base class for a Subversion client."""
 
     #: The default start revision for log entries.
-    LOG_DEFAULT_START = 'HEAD'
+    LOG_DEFAULT_START: Final[str] = 'HEAD'
 
     #: The default end revision for log entries.
-    LOG_DEFAULT_END = '1'
+    LOG_DEFAULT_END: Final[str] = '1'
 
-    def __init__(self, config_dir, repopath, username=None, password=None):
+    #: An optional Python module required for Subversion support.
+    required_module: Optional[str] = None
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The path to the Subversion configuration directory.
+    #:
+    #: Type:
+    #:     str
+    config_dir: str
+
+    #: The path to the repository.
+    #:
+    #: Type:
+    #:     str
+    repopath: str
+
+    def __init__(
+        self,
+        config_dir: str,
+        repopath: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> None:
         """Initialize the client.
 
         Args:
@@ -33,9 +172,14 @@ class Client(object):
             password (str, optional):
                 The password for the repository.
         """
+        self.config_dir = config_dir
         self.repopath = repopath
 
-    def set_ssl_server_trust_prompt(self, cb):
+    @abstractmethod
+    def set_ssl_server_trust_prompt(
+        self,
+        cb: SSLServerTrustPromptFunc,
+    ) -> None:
         """Set a function for verifying a SSL certificate.
 
         Args:
@@ -44,7 +188,12 @@ class Client(object):
         """
         raise NotImplementedError
 
-    def get_file(self, path, revision=HEAD):
+    @abstractmethod
+    def get_file(
+        self,
+        path: str,
+        revision: RevisionID = HEAD,
+    ) -> bytes:
         """Return the contents of a file from the repository.
 
         This attempts to return the raw binary contents of a file from the
@@ -80,7 +229,12 @@ class Client(object):
         """
         raise NotImplementedError
 
-    def get_keywords(self, path, revision=HEAD):
+    @abstractmethod
+    def get_keywords(
+        self,
+        path: str,
+        revision: RevisionID = HEAD,
+    ) -> str:
         """Return a space-separated list of SVN keywords for a given path.
 
         Args:
@@ -102,8 +256,17 @@ class Client(object):
         """
         raise NotImplementedError
 
-    def get_log(self, path, start=None, end=None, limit=None,
-                discover_changed_paths=False, limit_to_path=False):
+    @abstractmethod
+    def get_log(
+        self,
+        path: str,
+        *,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+        limit: Optional[int] = None,
+        discover_changed_paths: bool = False,
+        limit_to_path: bool = False,
+    ) -> Sequence[SVNLogEntry]:
         """Return log entries at the specified path.
 
         The log entries will appear ordered from most recent to least,
@@ -146,7 +309,11 @@ class Client(object):
         """
         raise NotImplementedError
 
-    def list_dir(self, path):
+    @abstractmethod
+    def list_dir(
+        self,
+        path: str,
+    ) -> OrderedDict[str, SVNDirEntry]:
         """Return the directory contents of the specified path.
 
         The result will be an ordered dictionary of contents, mapping
@@ -163,7 +330,13 @@ class Client(object):
         """
         raise NotImplementedError
 
-    def diff(self, revision1, revision2, path=None):
+    @abstractmethod
+    def diff(
+        self,
+        revision1: str,
+        revision2: str,
+        path: Optional[str] = None,
+    ) -> bytes:
         """Return a diff between two revisions.
 
         The diff will contain the differences between the two revisions,
@@ -191,20 +364,11 @@ class Client(object):
         """
         raise NotImplementedError
 
-    @property
-    def repository_info(self):
+    @abstractproperty
+    def repository_info(self) -> SVNRepositoryInfoDict:
         """Metadata about the repository.
 
-        This is a dictionary containing the following keys:
-
-        ``uuid`` (:py:class:`unicode`):
-            The UUID of the repository.
-
-        ``root_url`` (:py:class:`unicode`):
-            The root URL of the configured repository.
-
-        ``url`` (:py:class:`unicoe`):
-            The full URL of the configured repository.
+        See :py:class:`SVNRepositoryInfoDict` for contents.
 
         Raises:
             reviewboard.scmtools.errors.SCMError:
@@ -214,7 +378,10 @@ class Client(object):
         """
         raise NotImplementedError
 
-    def normalize_path(self, path):
+    def normalize_path(
+        self,
+        path: str,
+    ) -> str:
         """Normalize a path to a file/directory for a request to Subversion.
 
         If the path is an absolute path beginning at the base of the
@@ -230,11 +397,11 @@ class Client(object):
         All trailing ``/`` characters will also be removed.
 
         Args:
-            path (unicode):
+            path (str):
                 The path to normalize.
 
         Returns:
-            unicode:
+            str:
             The normalized path.
         """
         if path.startswith(self.repopath):
@@ -293,7 +460,12 @@ class Client(object):
 
         return norm_path.rstrip('/')
 
-    def accept_ssl_certificate(self, path, on_failure=None):
+    @abstractmethod
+    def accept_ssl_certificate(
+        self,
+        path: str,
+        on_failure: Optional[AcceptCertificateFunc] = None,
+    ) -> Dict[str, Any]:
         """Attempt to accept a SSL certificate.
 
         If the repository uses SSL, this method is used to determine whether

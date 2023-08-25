@@ -6,11 +6,11 @@ import base64
 import logging
 import os
 import subprocess
+from typing import (Any, Dict, List, Mapping, Optional, Sequence,
+                    TYPE_CHECKING, Type, Tuple, Union)
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
-from typing import (Any, Dict, List, Optional, Sequence, TYPE_CHECKING, Type,
-                    Tuple, Union)
 
 import importlib_metadata
 from django.utils.encoding import force_bytes, force_str
@@ -1050,8 +1050,8 @@ class SCMTool:
 
     def parse_diff_revision(
         self,
-        file_str: bytes,
-        revision_str: bytes,
+        filename: bytes,
+        revision: bytes,
         moved: bool = False,
         copied: bool = False,
         **kwargs,
@@ -1062,11 +1062,18 @@ class SCMTool:
         function will be responsible for converting this to something
         Review Board can understand.
 
+        Version Changed:
+            6.0:
+            The first two parameters are now named ``filename`` and
+            ``revision``, instead of ``file_str`` and ``revision_str``,
+            for consistency with built-in tools. These names will be required
+            in a future version.
+
         Args:
-            file_str (bytes):
+            filename (bytes):
                 The filename as represented in the diff.
 
-            revision_str (bytes):
+            revision (bytes):
                 The revision as represented in the diff.
 
             moved (bool, optional):
@@ -1629,7 +1636,7 @@ class SCMTool:
         password: Optional[str] = None,
         local_site_name: Optional[str] = None,
         certificate: Optional[Certificate] = None,
-    ) -> Dict[str, Any]:
+    ) -> Mapping[str, Any]:
         """Accept the HTTPS certificate for the given repository path.
 
         This is needed for repositories that support HTTPS-backed

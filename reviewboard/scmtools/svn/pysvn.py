@@ -1,11 +1,14 @@
 """PySVN client backend for Subversion."""
 
+from __future__ import annotations
+
 import logging
 import os
 from collections import OrderedDict
 from datetime import datetime
 from shutil import rmtree
 from tempfile import mkdtemp
+from typing import Any, Callable, Dict, Optional, Sequence, TYPE_CHECKING
 
 try:
     import pysvn
@@ -26,6 +29,14 @@ from reviewboard.scmtools.svn import base, SVNTool
 from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
 
+if TYPE_CHECKING:
+    from reviewboard.scmtools.core import RevisionID
+    from reviewboard.scmtools.svn.base import (AcceptCertificateFunc,
+                                               SVNDirEntry,
+                                               SVNLogEntry,
+                                               SVNRepositoryInfoDict,
+                                               SSLServerTrustPromptFunc)
+
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +50,23 @@ class Client(base.Client):
 
     required_module = 'pysvn'
 
-    def __init__(self, config_dir, repopath, username=None, password=None):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The PySVN client used for communication.
+    #:
+    #: Type:
+    #:     pysvn.Client
+    client: pysvn.Client
+
+    def __init__(
+        self,
+        config_dir: str,
+        repopath: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> None:
         """Initialize the client.
 
         Args:
@@ -55,16 +82,25 @@ class Client(base.Client):
             password (str, optional):
                 The password for the repository.
         """
-        super(Client, self).__init__(config_dir, repopath, username, password)
-        self.client = pysvn.Client(config_dir)
+        super().__init__(config_dir=config_dir,
+                         repopath=repopath,
+                         username=username,
+                         password=password)
+
+        client = pysvn.Client(config_dir)
 
         if username:
-            self.client.set_default_username(str(username))
+            client.set_default_username(username)
 
         if password:
-            self.client.set_default_password(password)
+            client.set_default_password(password)
 
-    def set_ssl_server_trust_prompt(self, cb):
+        self.client = client
+
+    def set_ssl_server_trust_prompt(
+        self,
+        cb: SSLServerTrustPromptFunc,
+    ) -> None:
         """Set a function for verifying a SSL certificate.
 
         Args:
@@ -73,11 +109,12 @@ class Client(base.Client):
         """
         self.client.callback_ssl_server_trust_prompt = cb
 
-    def ssl_trust_prompt(self, trust_dict):
-        if hasattr(self, 'callback_ssl_server_trust_prompt'):
-            return self.callback_ssl_server_trust_prompt(trust_dict)
-
-    def _do_on_path(self, cb, path, revision=HEAD):
+    def _do_on_path(
+        self,
+        cb: Callable[[str, str], Any],
+        path: str,
+        revision: RevisionID = HEAD,
+    ) -> Any:
         """Perform an operation on a given path.
 
         This will normalize the provided path and revision and then call the
@@ -133,7 +170,11 @@ class Client(base.Client):
             else:
                 raise SVNTool.normalize_error(e)
 
-    def _get_file_data(self, normpath, normrev):
+    def _get_file_data(
+        self,
+        normpath: str,
+        normrev: str,
+    ) -> bytes:
         """Return the contents of a file from the server.
 
         If the contents have expanded keywords, they'll be collapsed.
@@ -164,7 +205,11 @@ class Client(base.Client):
 
         return data
 
-    def get_file(self, path, revision=HEAD):
+    def get_file(
+        self,
+        path: str,
+        revision: RevisionID = HEAD,
+    ) -> bytes:
         """Return the contents of a file from the repository.
 
         This attempts to return the raw binary contents of a file from the
@@ -200,7 +245,11 @@ class Client(base.Client):
         """
         return self._do_on_path(self._get_file_data, path, revision)
 
-    def _get_file_keywords(self, normpath, normrev):
+    def _get_file_keywords(
+        self,
+        normpath: str,
+        normrev: str,
+    ) -> str:
         """Return the space-separated list of keywords for a file path.
 
         Args:
@@ -214,11 +263,15 @@ class Client(base.Client):
             str:
             The keywords for the file path.
         """
-        keywords = self.client.propget("svn:keywords", normpath, normrev,
+        keywords = self.client.propget('svn:keywords', normpath, normrev,
                                        recurse=True)
         return keywords.get(normpath)
 
-    def get_keywords(self, path, revision=HEAD):
+    def get_keywords(
+        self,
+        path: str,
+        revision: RevisionID = HEAD,
+    ) -> str:
         """Return a space-separated list of SVN keywords for a given path.
 
         Args:
@@ -234,7 +287,10 @@ class Client(base.Client):
         """
         return self._do_on_path(self._get_file_keywords, path, revision)
 
-    def _normalize_revision(self, revision):
+    def _normalize_revision(
+        self,
+        revision: RevisionID,
+    ) -> Revision:
         """Return a normalized revision for PySVN.
 
         Args:
@@ -255,20 +311,11 @@ class Client(base.Client):
         return r
 
     @property
-    def repository_info(self):
+    def repository_info(self) -> SVNRepositoryInfoDict:
         """Metadata about the repository.
 
-        This is a dictionary containing the following keys:
-
-        Keys:
-            uuid (str):
-                The UUID of the repository.
-
-            root_url (str):
-                The root URL of the configured repository.
-
-            url (str):
-                The full URL of the configured repository.
+        See :py:class:`reviewboard.scmtools.svn.base.SVNRepositoryInfoDict`
+        for contents.
 
         Type:
             dict
@@ -284,7 +331,11 @@ class Client(base.Client):
             'url': info[0][1].URL
         }
 
-    def accept_ssl_certificate(self, path, on_failure=None):
+    def accept_ssl_certificate(
+        self,
+        path: str,
+        on_failure: Optional[AcceptCertificateFunc] = None,
+    ) -> Dict[str, Any]:
         """Attempt to accept a SSL certificate.
 
         If the repository uses SSL, this method is used to determine whether
@@ -308,7 +359,7 @@ class Client(base.Client):
             reviewboard.scmtools.errors.SCMError:
                 There was an error accepting the certificate.
         """
-        cert = {}
+        cert: Dict[str, Any] = {}
 
         def ssl_server_trust_prompt(trust_dict):
             cert.update(trust_dict.copy())
@@ -331,8 +382,16 @@ class Client(base.Client):
 
         return cert
 
-    def get_log(self, path, start=None, end=None, limit=None,
-                discover_changed_paths=False, limit_to_path=False):
+    def get_log(
+        self,
+        path: str,
+        *,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+        limit: Optional[int] = None,
+        discover_changed_paths: bool = False,
+        limit_to_path: bool = False,
+    ) -> Sequence[SVNLogEntry]:
         """Return log entries at the specified path.
 
         The log entries will appear ordered from most recent to least,
@@ -389,7 +448,10 @@ class Client(base.Client):
 
         return commits
 
-    def list_dir(self, path):
+    def list_dir(
+        self,
+        path: str,
+    ) -> OrderedDict[str, SVNDirEntry]:
         """Return the directory contents of the specified path.
 
         The result will be an ordered dictionary of contents, mapping
@@ -404,7 +466,7 @@ class Client(base.Client):
             A dictionary mapping directory names as strings to
             :py:class:`SVNDirEntry` information.
         """
-        result = OrderedDict()
+        result: OrderedDict[str, SVNDirEntry] = OrderedDict()
         norm_path = self.normalize_path(path)
         dirents = self.client.list(norm_path, recurse=False)[1:]
 
@@ -420,7 +482,12 @@ class Client(base.Client):
 
         return result
 
-    def diff(self, revision1, revision2, path=None):
+    def diff(
+        self,
+        revision1: str,
+        revision2: str,
+        path: Optional[str] = None,
+    ) -> bytes:
         """Return a diff between two revisions.
 
         The diff will contain the differences between the two revisions,
