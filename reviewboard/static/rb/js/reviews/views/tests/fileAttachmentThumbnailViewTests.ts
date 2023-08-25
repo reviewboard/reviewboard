@@ -1,11 +1,28 @@
-suite('rb/views/FileAttachmentThumbnail', function() {
-    let reviewRequest;
-    let model;
-    let view;
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+} from 'jasmine-core';
+
+import { FileAttachment } from 'reviewboard/common';
+
+import { FileAttachmentThumbnailView } from '../fileAttachmentThumbnailView';
+
+
+declare const $testsScratch: JQuery;
+
+
+suite('rb/views/FileAttachmentThumbnailView', function() {
+    let reviewRequest: RB.ReviewRequest;
+    let model: FileAttachment;
+    let view: FileAttachmentThumbnailView;
 
     beforeEach(function() {
         reviewRequest = new RB.ReviewRequest();
-        model = new RB.FileAttachment({
+        model = new FileAttachment({
             downloadURL: 'http://example.com/file.png',
             filename: 'file.png',
         });
@@ -33,8 +50,8 @@ suite('rb/views/FileAttachmentThumbnail', function() {
 
         it('Using existing elements', function() {
             const $el = $('<div/>')
-                .addClass(RB.FileAttachmentThumbnail.prototype.className)
-                .html(RB.FileAttachmentThumbnail.prototype.template(
+                .addClass(FileAttachmentThumbnailView.prototype.className)
+                .html(FileAttachmentThumbnailView.prototype.template(
                     _.defaults({
                         caption: 'No caption',
                         captionClass: 'edit empty-caption',
@@ -42,7 +59,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
 
             model.set('loaded', true);
 
-            view = new RB.FileAttachmentThumbnail({
+            view = new FileAttachmentThumbnailView({
                 el: $el,
                 model: model,
                 renderThumbnail: true,
@@ -58,7 +75,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
         });
 
         it('Rendered thumbnail with unloaded model', function() {
-            view = new RB.FileAttachmentThumbnail({
+            view = new FileAttachmentThumbnailView({
                 model: model,
                 renderThumbnail: true,
                 reviewRequest: reviewRequest,
@@ -84,7 +101,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             it('With review UI', function() {
                 model.set('reviewURL', '/review/');
 
-                view = new RB.FileAttachmentThumbnail({
+                view = new FileAttachmentThumbnailView({
                     model: model,
                     renderThumbnail: true,
                     reviewRequest: reviewRequest,
@@ -102,7 +119,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             });
 
             it('No review UI', function() {
-                view = new RB.FileAttachmentThumbnail({
+                view = new FileAttachmentThumbnailView({
                     model: model,
                     renderThumbnail: true,
                     reviewRequest: reviewRequest,
@@ -128,7 +145,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             model.set('loaded', true);
             model.url = '/api/file-attachments/123/';
 
-            view = new RB.FileAttachmentThumbnail({
+            view = new FileAttachmentThumbnailView({
                 canEdit: true,
                 model: model,
                 renderThumbnail: true,
@@ -196,7 +213,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             model.set('loaded', true);
             model.url = '/api/file-attachments/123/';
 
-            view = new RB.FileAttachmentThumbnail({
+            view = new FileAttachmentThumbnailView({
                 canEdit: true,
                 model: model,
                 renderThumbnail: true,
@@ -299,9 +316,8 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             expect(newAction.prev().attr('class')).toEqual('file-delete');
         });
 
-        it('When another thumbnail for the same file exists',
-           function() {
-            const view2 = new RB.FileAttachmentThumbnail({
+        it('When another thumbnail for the same file exists', function() {
+            const view2 = new FileAttachmentThumbnailView({
                 canEdit: false,
                 model: model,
                 renderThumbnail: true,

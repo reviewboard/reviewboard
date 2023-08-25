@@ -12,6 +12,7 @@ import {
 import { DnDUploader } from 'reviewboard/ui';
 
 import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { FileAttachmentThumbnailView } from './fileAttachmentThumbnailView';
 import {
     BaseFieldView,
     ChangeDescriptionFieldView,
@@ -490,7 +491,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
     } = {};
 
     /** The views for all of the file attachment thumbnails. */
-    #fileAttachmentThumbnailViews: RB.FileAttachmentThumbnailView[] = [];
+    #fileAttachmentThumbnailViews: FileAttachmentThumbnailView[] = [];
 
     /** The views for all of the review reply editors. */
     #reviewReplyEditorViews: RB.ReviewReplyEditorView[] = [];
@@ -857,7 +858,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
             this.model.get('fileAttachmentComments');
         const $thumbnail = options.$el;
 
-        const view = new RB.FileAttachmentThumbnail({
+        const view = new FileAttachmentThumbnailView({
             canEdit: (this.model.get('editable') === true),
             comments: fileAttachmentComments[fileAttachment.id],
             el: $thumbnail,

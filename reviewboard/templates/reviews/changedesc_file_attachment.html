@@ -5,12 +5,12 @@
 <script charset="utf-8">
 $(document).ready(function() {
     RB.PageManager.ready(function(page) {
-        var thumbnail = new RB.FileAttachmentThumbnail({
-            model: new RB.FileAttachment({{model_attrs|json_dumps}}),
+        const thumbnail = new RB.FileAttachmentThumbnailView({
+            canEdit: false,
             comments: [],
+            model: new RB.FileAttachment({{model_attrs|json_dumps}}),
             renderThumbnail: true,
             reviewRequest: page.model.get('reviewRequest'),
-            canEdit: false
         });
 
         thumbnail.render().$el

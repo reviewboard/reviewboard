@@ -14,6 +14,7 @@ import { DnDUploader } from 'reviewboard/ui';
 
 import { ReviewRequestEditor } from '../../models/reviewRequestEditorModel';
 import { UnifiedBanner } from '../../models/unifiedBannerModel';
+import { FileAttachmentThumbnailView } from '../fileAttachmentThumbnailView';
 import { ReviewRequestEditorView } from '../reviewRequestEditorView';
 import * as ReviewRequestFields from '../reviewRequestFieldViews';
 import { UnifiedBannerView } from '../unifiedBannerView';
@@ -1358,7 +1359,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
     describe('File attachments', function() {
         it('Rendering when added', function() {
-            spyOn(RB.FileAttachmentThumbnail.prototype, 'render')
+            spyOn(FileAttachmentThumbnailView.prototype, 'render')
                 .and.callThrough();
 
             expect($filesContainer.find('.file-container').length).toBe(0);
@@ -1366,7 +1367,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             view.render();
             editor.createFileAttachment();
 
-            expect(RB.FileAttachmentThumbnail.prototype.render)
+            expect(FileAttachmentThumbnailView.prototype.render)
                 .toHaveBeenCalled();
             expect($filesContainer.find('.file-container').length).toBe(1);
         });

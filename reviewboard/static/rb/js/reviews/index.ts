@@ -6,6 +6,10 @@ export { DiffComplexityIconView } from './views/diffComplexityIconView';
 export { DiffFileIndexView } from './views/diffFileIndexView';
 export { DiffViewerPage } from './models/diffViewerPageModel';
 export { DiffViewerPageView } from './views/diffViewerPageView';
+export {
+    FileAttachmentThumbnail,
+    FileAttachmentThumbnailView,
+} from './views/fileAttachmentThumbnailView';
 export { ReviewDialogView } from './views/reviewDialogView';
 export { ReviewRequestEditor } from './models/reviewRequestEditorModel';
 export { ReviewRequestEditorView } from './views/reviewRequestEditorView';
