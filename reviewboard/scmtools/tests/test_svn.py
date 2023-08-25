@@ -4,9 +4,9 @@ import os
 import unittest
 from hashlib import md5
 
+import kgb
 from django.conf import settings
 from djblets.testing.decorators import add_fixtures
-from kgb import SpyAgency
 
 from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
@@ -21,7 +21,7 @@ from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing.testcase import TestCase
 
 
-class _CommonSVNTestCase(DiffParserTestingMixin, SpyAgency, SCMTestCase):
+class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
     """Common unit tests for Subversion.
 
     This is meant to be subclassed for each backend that wants to run
@@ -815,16 +815,13 @@ class _CommonSVNTestCase(DiffParserTestingMixin, SpyAgency, SCMTestCase):
 
     def test_get_commits_with_no_date(self):
         """Testing SVN (<backend>) get_commits with no date in commit"""
-        def _get_log(*args, **kwargs):
-            return [
-                {
-                    'author': 'chipx86',
-                    'revision': '5',
-                    'message': 'Commit 1',
-                },
-            ]
-
-        self.spy_on(self.tool.client.get_log, _get_log)
+        self.spy_on(self.tool.client.get_log, op=kgb.SpyOpReturn([
+            {
+                'author': 'chipx86',
+                'message': 'Commit 1',
+                'revision': '5',
+            },
+        ]))
 
         commits = self.tool.get_commits(start='5')
 
@@ -838,10 +835,8 @@ class _CommonSVNTestCase(DiffParserTestingMixin, SpyAgency, SCMTestCase):
 
     def test_get_commits_with_exception(self):
         """Testing SVN (<backend>) get_commits with exception"""
-        def _get_log(*args, **kwargs):
-            raise Exception('Bad things happened')
-
-        self.spy_on(self.tool.client.get_log, _get_log)
+        self.spy_on(self.tool.client.communicate_hook,
+                    op=kgb.SpyOpRaise(Exception('Bad things happened')))
 
         with self.assertRaisesMessage(SCMError, 'Bad things happened'):
             self.tool.get_commits(start='5')

@@ -364,11 +364,7 @@ class SVNTool(SCMTool):
         """
         results: List[Branch] = []
 
-        try:
-            root_dirents = self.client.list_dir('/')
-        except Exception as e:
-            raise self.normalize_error(e)
-
+        root_dirents = self.client.list_dir('/')
         default = True
 
         if 'trunk' in root_dirents:
@@ -381,16 +377,12 @@ class SVNTool(SCMTool):
             default = False
 
         if 'branches' in root_dirents:
-            try:
-                dirents = self.client.list_dir('branches')
-
-                results += [
-                    self._create_branch_from_dirent(name=name,
-                                                    dirent=dirents[name])
-                    for name in sorted(dirents.keys())
-                ]
-            except Exception as e:
-                raise self.normalize_error(e)
+            dirents = self.client.list_dir('branches')
+            results += [
+                self._create_branch_from_dirent(name=name,
+                                                dirent=dirents[name])
+                for name in sorted(dirents.keys())
+            ]
 
         # Add anything else from the root of the repository. This is a
         # catch-all for repositories which do not use the standard layout, and
@@ -446,13 +438,10 @@ class SVNTool(SCMTool):
             NotImplementedError:
                 Commits retrieval is not available for this type of repository.
         """
-        try:
-            commits = self.client.get_log(branch or '/',
-                                          start=start,
-                                          limit=self.COMMITS_PAGE_LIMIT,
-                                          limit_to_path=False)
-        except Exception as e:
-            raise self.normalize_error(e)
+        commits = self.client.get_log(branch or '/',
+                                      start=start,
+                                      limit=self.COMMITS_PAGE_LIMIT,
+                                      limit_to_path=False)
 
         results: List[Commit] = []
 
@@ -501,10 +490,7 @@ class SVNTool(SCMTool):
         else:
             base_revision = '0'
 
-        try:
-            diff = self.client.diff(base_revision, revision)
-        except Exception as e:
-            raise self.normalize_error(e)
+        diff = self.client.diff(base_revision, revision)
 
         commit = self._build_commit(data=commits[0],
                                     parent=base_revision)
@@ -731,30 +717,6 @@ class SVNTool(SCMTool):
             parent=force_str(parent))
 
     @classmethod
-    def normalize_error(
-        cls,
-        e: Exception,
-    ) -> SCMError:
-        """Return a normalized version of an exception.
-
-        The exception will be based on the contents of the error message.
-
-        Args:
-            e (Exception):
-                The exception to normalize.
-
-        Returns:
-            reviewboard.scmtools.errors.SCMError:
-            The normalized exception.
-        """
-        if 'callback_get_login required' in str(e):
-            return AuthenticationError(
-                msg='Authentication failed when talking to the Subversion '
-                    'repository')
-        else:
-            return SCMError(e)
-
-    @classmethod
     def _ssl_server_trust_prompt(
         cls,
         trust_data: RawSSLTrustDict,
@@ -801,6 +763,7 @@ class SVNTool(SCMTool):
 
     @staticmethod
     def on_ssl_failure(
+        client: Client,
         e: Exception,
         path: str,
         cert_data: Dict[str, Any],
@@ -812,6 +775,9 @@ class SVNTool(SCMTool):
         will be generated and raised.
 
         Args:
+            client (reviewboard.scmtools.svn.base.Client):
+                The client talking to Subversion.
+
             e (Exception):
                 The raw exception found during SSL communication.
 
@@ -838,7 +804,7 @@ class SVNTool(SCMTool):
         logger.error('SVN: Failed to get repository information for %s: %s',
                      path, e)
 
-        error = SVNTool.normalize_error(e)
+        error = client.normalize_error(e)
 
         if isinstance(error, AuthenticationError):
             raise error

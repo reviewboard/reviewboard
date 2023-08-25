@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod, abstractproperty
-from typing import (Any, Callable, Dict, Optional, Sequence, TYPE_CHECKING,
-                    Tuple)
+from contextlib import contextmanager
+from typing import (Any, Callable, Dict, Iterator, Optional, Sequence,
+                    TYPE_CHECKING, Tuple)
 from urllib.parse import quote
 
 from django.utils.translation import gettext as _
@@ -18,26 +19,6 @@ if TYPE_CHECKING:
     from collections import OrderedDict
     from datetime import datetime
     from reviewboard.scmtools.core import RevisionID
-
-
-#: Type for a callback handle for accepting SSL certificates.
-#:
-#: Version Added:
-#:     6.0
-AcceptCertificateFunc: TypeAlias = Callable[
-    [Exception, str, Dict[str, Any]],
-    None,
-]
-
-
-#: Type for a callback handle for prompting for SSL trust information.
-#:
-#: Version Added:
-#:     6.0
-SSLServerTrustPromptFunc: TypeAlias = Callable[
-    [RawSSLTrustDict],
-    Tuple[bool, int, bool],
-]
 
 
 class SVNDirEntry(TypedDict):
@@ -174,6 +155,76 @@ class Client(ABC):
         """
         self.config_dir = config_dir
         self.repopath = repopath
+
+    @contextmanager
+    def communicate(self) -> Iterator[None]:
+        """Context manager for any code communicating with Subversion.
+
+        This should be used any time code is ready to perform an operation
+        on a Subversion repository. It will catch any errors from the client
+        that need to be processed and allow the client to normalize them.
+
+        Version Added:
+            6.0
+
+        Yields:
+            The communication operation will run in this context.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error communicating with Subversion.
+        """
+        try:
+            with self.communicate_hook():
+                yield
+        except SCMError:
+            # This is already an explicit error. Raise this as normal.
+            raise
+        except Exception as e:
+            # Allow the client to convert the error to a normalized form.
+            raise self.normalize_error(e) from e
+
+    @contextmanager
+    def communicate_hook(self) -> Iterator[None]:
+        """Hook for running a communication task.
+
+        This is intended for unit tests only. All exceptions are
+        pass-through.
+
+        Version Added:
+            6.0
+
+        Yields:
+            The communication operation will run in this context.
+        """
+        yield
+
+    @abstractmethod
+    def normalize_error(
+        self,
+        e: Exception,
+    ) -> Exception:
+        """Normalize an exception from the client.
+
+        This will process the exception information and return an exception
+        suitable for forwarding to the backend, as documented below.
+
+        Args:
+            e (Exception):
+                The exception to normalize.
+
+        Returns:
+            Exception:
+            The normalized exception.
+
+        Raises:
+            reviewboard.scmtools.errors.AuthenticationError:
+                An authentication error communicating with the repository.
+
+            reviewboard.scmtools.errors.SCMError:
+                A general error communicating with the repository.
+        """
+        raise NotImplementedError
 
     @abstractmethod
     def set_ssl_server_trust_prompt(
@@ -490,3 +541,23 @@ class Client(ABC):
                 There was an error accepting the certificate.
         """
         raise NotImplementedError
+
+
+#: Type for a callback handle for accepting SSL certificates.
+#:
+#: Version Added:
+#:     6.0
+AcceptCertificateFunc: TypeAlias = Callable[
+    [Client, Exception, str, Dict[str, Any]],
+    None,
+]
+
+
+#: Type for a callback handle for prompting for SSL trust information.
+#:
+#: Version Added:
+#:     6.0
+SSLServerTrustPromptFunc: TypeAlias = Callable[
+    [RawSSLTrustDict],
+    Tuple[bool, int, bool],
+]

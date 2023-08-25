@@ -5,10 +5,12 @@ from __future__ import annotations
 import logging
 import os
 from collections import OrderedDict
+from contextlib import contextmanager
 from datetime import datetime
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import Any, Callable, Dict, Optional, Sequence, TYPE_CHECKING
+from typing import (Any, Dict, Iterator, Optional, Sequence, TYPE_CHECKING,
+                    Tuple)
 
 try:
     import pysvn
@@ -24,8 +26,10 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import gettext as _
 
 from reviewboard.scmtools.core import HEAD, PRE_CREATION
-from reviewboard.scmtools.errors import FileNotFoundError, SCMError
-from reviewboard.scmtools.svn import base, SVNTool
+from reviewboard.scmtools.errors import (AuthenticationError,
+                                         FileNotFoundError,
+                                         SCMError)
+from reviewboard.scmtools.svn import base
 from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
 
@@ -97,6 +101,52 @@ class Client(base.Client):
 
         self.client = client
 
+    def normalize_error(
+        self,
+        e: Exception,
+        *,
+        default_msg: Optional[str] = None,
+    ) -> Exception:
+        """Normalize an exception from the client.
+
+        This will process the exception information and return an exception
+        suitable for forwarding to the backend, as documented below.
+
+        Args:
+            e (Exception):
+                The exception to normalize.
+
+            default_msg (str, optional):
+                An optional default message to use for a default exception.
+
+        Returns:
+            Exception:
+            The normalized exception.
+
+        Raises:
+            reviewboard.scmtools.errors.AuthenticationError:
+                An authentication error communicating with the repository.
+
+            reviewboard.scmtools.errors.SCMError:
+                A general error communicating with the repository.
+        """
+        if isinstance(e, ClientError):
+            msg = str(e)
+
+            if 'callback_get_login required' in msg:
+                return AuthenticationError(_(
+                    'Authentication failed when talking to the Subversion '
+                    'repository.'
+                ))
+            elif 'callback_ssl_server_trust_prompt required' in msg:
+                return SCMError(
+                    _('HTTPS certificate not accepted. Please ensure that '
+                      'the proper certificate exists in %s '
+                      'for the user that Review Board is running as.')
+                    % os.path.join(self.config_dir, 'auth'))
+
+        return SCMError(default_msg or str(e))
+
     def set_ssl_server_trust_prompt(
         self,
         cb: SSLServerTrustPromptFunc,
@@ -109,12 +159,12 @@ class Client(base.Client):
         """
         self.client.callback_ssl_server_trust_prompt = cb
 
+    @contextmanager
     def _do_on_path(
         self,
-        cb: Callable[[str, str], Any],
         path: str,
         revision: RevisionID = HEAD,
-    ) -> Any:
+    ) -> Iterator[Tuple[str, str]]:
         """Perform an operation on a given path.
 
         This will normalize the provided path and revision and then call the
@@ -151,59 +201,17 @@ class Client(base.Client):
         if not path:
             raise FileNotFoundError(path, revision)
 
-        try:
-            normpath = self.normalize_path(path)
-            normrev = self._normalize_revision(revision)
-            return cb(normpath, normrev)
+        with self.communicate():
+            try:
+                yield (self.normalize_path(path),
+                       self._normalize_revision(revision))
+            except ClientError as e:
+                msg = force_str(e)
 
-        except ClientError as e:
-            exc = force_str(e)
+                if 'File not found' in msg or 'path not found' in msg:
+                    raise FileNotFoundError(path, revision, detail=msg)
 
-            if 'File not found' in exc or 'path not found' in exc:
-                raise FileNotFoundError(path, revision, detail=exc)
-            elif 'callback_ssl_server_trust_prompt required' in exc:
-                raise SCMError(
-                    _('HTTPS certificate not accepted.  Please ensure that '
-                      'the proper certificate exists in %s '
-                      'for the user that reviewboard is running as.')
-                    % os.path.join(self.config_dir, 'auth'))
-            else:
-                raise SVNTool.normalize_error(e)
-
-    def _get_file_data(
-        self,
-        normpath: str,
-        normrev: str,
-    ) -> bytes:
-        """Return the contents of a file from the server.
-
-        If the contents have expanded keywords, they'll be collapsed.
-
-        Args:
-            normpath (str):
-                The normalized path in the repository.
-
-            normrev (str):
-                The normalized revision in the repository.
-
-        Returns:
-            bytes:
-            The contents of the file.
-        """
-        data = self.client.cat(normpath, normrev)
-
-        if has_expanded_svn_keywords(data):
-            # Find out if this file has any keyword expansion set.
-            # If it does, collapse these keywords. This is because SVN
-            # will return the file expanded to us, which would break patching.
-            keywords = self.client.propget('svn:keywords', normpath, normrev,
-                                           recurse=True)
-
-            if normpath in keywords:
-                data = collapse_svn_keywords(data,
-                                             force_bytes(keywords[normpath]))
-
-        return data
+                raise
 
     def get_file(
         self,
@@ -214,6 +222,8 @@ class Client(base.Client):
 
         This attempts to return the raw binary contents of a file from the
         repository, given a file path and revision.
+
+        If the contents have expanded keywords, they'll be collapsed.
 
         Args:
             path (str):
@@ -243,29 +253,23 @@ class Client(base.Client):
             reviewboard.scmtools.errors.SCMError:
                 An unexpected error was encountered with the repository.
         """
-        return self._do_on_path(self._get_file_data, path, revision)
+        client = self.client
 
-    def _get_file_keywords(
-        self,
-        normpath: str,
-        normrev: str,
-    ) -> str:
-        """Return the space-separated list of keywords for a file path.
+        with self._do_on_path(path, revision) as (path, revision):
+            data = client.cat(path, revision)
 
-        Args:
-            normpath (str):
-                The normalized path within the repository.
+            if has_expanded_svn_keywords(data):
+                # Find out if this file has any keyword expansion set. If it
+                # does, collapse these keywords. This is because SVN will
+                # return the file expanded to us, which would break patching.
+                keywords = client.propget('svn:keywords', path, revision,
+                                          recurse=True)
 
-            normrev (str):
-                The normalized path within the repository.
+                if path in keywords:
+                    data = collapse_svn_keywords(data,
+                                                 force_bytes(keywords[path]))
 
-        Returns:
-            str:
-            The keywords for the file path.
-        """
-        keywords = self.client.propget('svn:keywords', normpath, normrev,
-                                       recurse=True)
-        return keywords.get(normpath)
+        return data
 
     def get_keywords(
         self,
@@ -285,7 +289,12 @@ class Client(base.Client):
             str:
             The resulting keywords.
         """
-        return self._do_on_path(self._get_file_keywords, path, revision)
+        with self._do_on_path(path, revision) as (path, revision):
+            return (
+                self.client.propget('svn:keywords', path, revision,
+                                    recurse=True)
+                .get(path)
+            )
 
     def _normalize_revision(
         self,
@@ -320,10 +329,8 @@ class Client(base.Client):
         Type:
             dict
         """
-        try:
+        with self.communicate():
             info = self.client.info2(self.repopath, recurse=False)
-        except ClientError as e:
-            raise SVNTool.normalize_error(e)
 
         return {
             'uuid': info[0][1].repos_UUID,
@@ -376,9 +383,9 @@ class Client(base.Client):
             info = self.client.info2(path, recurse=False)
             logger.debug('SVN: Got repository information for %s: %s',
                          path, info)
-        except ClientError as e:
+        except Exception as e:
             if on_failure:
-                on_failure(e, path, cert)
+                on_failure(self, e, path, cert)
 
         return cert
 
@@ -432,13 +439,14 @@ class Client(base.Client):
         if end is None:
             end = self.LOG_DEFAULT_END
 
-        commits = self.client.log(
-            self.normalize_path(path),
-            limit=limit,
-            revision_start=self._normalize_revision(start),
-            revision_end=self._normalize_revision(end),
-            discover_changed_paths=discover_changed_paths,
-            strict_node_history=limit_to_path)
+        with self.communicate():
+            commits = self.client.log(
+                self.normalize_path(path),
+                limit=limit,
+                revision_start=self._normalize_revision(start),
+                revision_end=self._normalize_revision(end),
+                discover_changed_paths=discover_changed_paths,
+                strict_node_history=limit_to_path)
 
         for commit in commits:
             commit['revision'] = str(commit['revision'].number)
@@ -468,7 +476,9 @@ class Client(base.Client):
         """
         result: OrderedDict[str, SVNDirEntry] = OrderedDict()
         norm_path = self.normalize_path(path)
-        dirents = self.client.list(norm_path, recurse=False)[1:]
+
+        with self.communicate():
+            dirents = self.client.list(norm_path, recurse=False)[1:]
 
         repo_path_len = len(self.repopath)
 
@@ -518,24 +528,34 @@ class Client(base.Client):
         else:
             path = self.repopath
 
-        tmpdir = mkdtemp(prefix='reviewboard-svn.')
+        with self.communicate():
+            tmpdir = mkdtemp(prefix='reviewboard-svn.')
 
-        try:
-            diff = force_bytes(self.client.diff(
-                tmpdir,
-                path,
-                revision1=self._normalize_revision(revision1),
-                revision2=self._normalize_revision(revision2),
-                header_encoding='UTF-8',
-                diff_options=['-u']))
-        except Exception as e:
-            logger.error('Failed to generate diff using pysvn for revisions '
-                         '%s:%s for path %s: %s',
-                         revision1, revision2, path, e, exc_info=True)
-            raise SCMError(
-                _('Unable to get diff revisions %s through %s: %s')
-                % (revision1, revision2, e))
-        finally:
-            rmtree(tmpdir)
+            try:
+                diff = force_bytes(self.client.diff(
+                    tmpdir,
+                    path,
+                    revision1=self._normalize_revision(revision1),
+                    revision2=self._normalize_revision(revision2),
+                    header_encoding='UTF-8',
+                    diff_options=['-u']))
+            except Exception as e:
+                logger.exception('Failed to generate diff using pysvn for '
+                                 'revisions "%s:%s" for path "%s": %s',
+                                 revision1, revision2, path, e)
+
+                raise self.normalize_error(
+                    e,
+                    default_msg=(
+                        _('Unable to get diff revisions %(revision1)s '
+                          'through %(revision2)s: %(detail)s')
+                        % {
+                            'detail': e,
+                            'revision1': revision1,
+                            'revision2': revision1,
+                        }
+                    ))
+            finally:
+                rmtree(tmpdir)
 
         return diff
