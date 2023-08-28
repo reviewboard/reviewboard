@@ -7,9 +7,9 @@
  */
 RB.NewReviewRequest = RB.Page.extend({
     defaults() {
-        return _.defaults(_.result(RB.Page.prototype.defaults), {
+        return _.defaults({
             repositories: null,
-        });
+        }, _.result(RB.Page.prototype.defaults));
     },
 
     /**

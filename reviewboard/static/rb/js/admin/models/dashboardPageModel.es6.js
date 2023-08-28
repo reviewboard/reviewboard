@@ -44,10 +44,10 @@ RB.Admin.DashboardPage = RB.Page.extend({
      *     The default attribute values.
      */
     defaults() {
-        return _.defaults(_.result(RB.Page.prototype.defaults), {
+        return _.defaults({
             supportData: null,
             widgetsData: [],
-        });
+        }, _.result(RB.Page.prototype.defaults));
     },
 
     /**
