@@ -11,6 +11,7 @@ import {
     FloatingBannerView,
     MenuButtonView,
     MenuView,
+    contentViewport,
 } from 'reviewboard/ui';
 import { MenuType } from 'reviewboard/ui/views/menuView';
 
@@ -401,6 +402,22 @@ export class UnifiedBannerView extends FloatingBannerView<
     }
 
     /**
+     * Remove the banner from the DOM.
+     *
+     * This will stop tracking for the content viewport and then remove
+     * the element.
+     *
+     * Returns:
+     *     UnifiedBannerView:
+     *     This instance, for chaining.
+     */
+    remove(): this {
+        contentViewport.untrackElement(this.el);
+
+        return super.remove();
+    }
+
+    /**
      * Render the banner.
      */
     onInitialRender() {
@@ -454,6 +471,11 @@ export class UnifiedBannerView extends FloatingBannerView<
                 fieldID: 'change_description',
                 model: reviewRequestEditor,
             }));
+
+        contentViewport.trackElement({
+            el: this.el,
+            side: 'top',
+        });
     }
 
     /**
