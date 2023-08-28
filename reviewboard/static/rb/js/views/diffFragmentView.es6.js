@@ -7,7 +7,7 @@
 RB.DiffFragmentView = Backbone.View.extend({
     events: {
         'click .diff-expand-btn': '_onExpandButtonClicked',
-        'click .diff-collapse-btn': '_onCollapseButtonClicked',
+        'click .rb-c-diff-collapse-button': '_onCollapseButtonClicked',
         'mouseenter': '_tryShowControlsDelayed',
         'mouseleave': '_tryHideControlsDelayed',
     },
@@ -226,7 +226,7 @@ RB.DiffFragmentView = Backbone.View.extend({
             this._centeredMgr = null;
         }
 
-        const $collapseButtons = this.$('.diff-collapse-btn');
+        const $collapseButtons = this.$('.rb-c-diff-collapse-button');
 
         /*
          * Check if we have any collapse buttons. If so, we'll need to track
@@ -295,6 +295,8 @@ RB.DiffFragmentView = Backbone.View.extend({
         e.preventDefault();
         e.stopPropagation();
 
-        this._expandOrCollapse($(e.target).closest('.diff-collapse-btn'), e);
+        this._expandOrCollapse(
+            $(e.target).closest('.rb-c-diff-collapse-button'),
+            e);
     },
 });

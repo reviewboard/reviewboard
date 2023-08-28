@@ -1,4 +1,5 @@
 @import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/ui/colors.less";
 
 
 /*
@@ -95,9 +96,22 @@
         width: 100%;
       }
     }
+  }
 
-    td .diff-collapse-btn {
+  &.deleted,
+  &.newfile {
+    /*
+     * NOTE: This only applies to expanded regions in diff fragments in
+     *       reviews.
+     */
+    .rb-c-diff-collapse-button {
+      /*
+       * This will position it dead-center. The `right: 50%` will align the
+       * right edge with the middle, and then we shift over by half the
+       * button width.
+       */
       right: 50%;
+      transform: translateX(50%);
     }
   }
 
@@ -269,12 +283,10 @@
   tbody {
     tr {
       &.selected {
-        * {
+        > td,
+        > th,
+        > td > pre {
           background: @diff-selected-color;
-        }
-
-        td .diff-collapse-btn {
-          background: #E4D9CB;
         }
       }
 
@@ -299,23 +311,15 @@
           position: relative;
         }
 
-        .diff-collapse-btn {
-          @image-size: 14px;
-
-          background: #E4D9CB;
-          border: 1px black solid;
-          padding: 5px;
-          cursor: pointer;
+        .rb-c-diff-collapse-button {
+          /*
+           * This positions it fairly center over the middle line numbers.
+           * We'd normally shift over 50% of the element width, but the 70%
+           * nicely covers the left and middle * line numbers.
+           */
           position: absolute;
-          right: -8px;
-          z-index: @z-index-diff-collapse-btn;
-          opacity: 0.8;
-          width: @image-size;
-          height: @image-size;
-
-          &:hover {
-            opacity: 1.0;
-          }
+          right: 0;
+          transform: translateX(70%);
         }
       }
 

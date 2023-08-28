@@ -17,7 +17,8 @@ suite('rb/views/DiffFragmentView', function() {
          <tbody class="insert">
           <tr>
            <td>
-            <div class="diff-collapse-btn" data-lines-of-context="0,0"></div>
+            <div class="rb-c-diff-collapse-button" role="button" tabindex="0"
+                 data-lines-of-context="0,0"></div>
            </td>
           </tr>
          </tbody>
@@ -125,7 +126,7 @@ suite('rb/views/DiffFragmentView', function() {
 
         it('click collapse button', function() {
             view.render();
-            view.$('.diff-collapse-btn').eq(0).click();
+            view.$('.rb-c-diff-collapse-button').eq(0).click();
 
             expect(loadDiff).toHaveBeenCalled();
             expect(loadDiff.calls.mostRecent().args[0].linesOfContext)

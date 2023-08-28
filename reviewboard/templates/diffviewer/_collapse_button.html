@@ -1,0 +1,19 @@
+{% load i18n %}
+{% spaceless %}
+
+<div class="rb-c-diff-collapse-button" role="button" tabindex="0"
+     title="{% trans "Collapse lines" %}"
+     aria-label="{% trans "Collapse lines" %}"
+{% if comment %}
+     data-comment-id="{{comment.pk}}"
+{% endif %}
+{% if chunk_index %}
+     data-chunk-index="{{chunk_index}}"
+{% endif %}
+     data-lines-of-context="0">
+ <span class="rb-c-diff-collapse-button__icon" aria-hidden="true"></span>
+ <label class="rb-c-diff-collapse-button__label" aria-hidden="true">
+  {% trans "Collapse" %}
+ </label>
+</div>
+{% endspaceless %}

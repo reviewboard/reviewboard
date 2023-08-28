@@ -15,7 +15,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         'click .download-link': '_onDownloadLinkClicked',
         'click thead tr': '_onFileHeaderClicked',
         'click .moved-to, .moved-from': '_onMovedLineClicked',
-        'click .diff-collapse-btn': '_onCollapseChunkClicked',
+        'click .rb-c-diff-collapse-button': '_onCollapseChunkClicked',
         'click .diff-expand-btn': '_onExpandChunkClicked',
         'click .show-deleted-content-action': '_onShowDeletedClicked',
         'click .rb-o-toggle-ducs': '_onToggleUnicodeCharsClicked',
@@ -354,7 +354,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         /* Recompute the set of buttons for later use. */
         this._centered.setElements(new Map(
             Array.prototype.map.call(
-                this.$('.diff-collapse-btn'),
+                this.$('.rb-c-diff-collapse-button'),
                 el => [el, {
                     $top: $(el).closest('tbody'),
                 }])
@@ -608,9 +608,9 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         let $target = $(e.target);
 
-        if (!$target.hasClass('diff-collapse-btn')) {
+        if (!$target.hasClass('rb-c-diff-collapse-button')) {
             /* We clicked an image inside the link. Find the parent. */
-            $target = $target.closest('.diff-collapse-btn');
+            $target = $target.closest('.rb-c-diff-collapse-button');
         }
 
         this._expandOrCollapse($target, false);
