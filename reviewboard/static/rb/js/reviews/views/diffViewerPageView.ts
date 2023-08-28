@@ -68,7 +68,7 @@ export class DiffViewerPageView extends ReviewablePageView<
            <thead>
             <tr class="filename-row">
              <th>
-              <span class="fa fa-spinner fa-pulse"></span>
+              <span class="djblets-o-spinner"></span>
               <%- filename %>
              </th>
             </tr>

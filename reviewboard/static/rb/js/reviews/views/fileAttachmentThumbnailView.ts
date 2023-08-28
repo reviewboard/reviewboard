@@ -148,7 +148,7 @@ export class FileAttachmentThumbnailView extends BaseView<
 
     static thumbnailContainerTemplate = _.template(dedent`
         <% if (!loaded) { %>
-        <span class="fa fa-spinner fa-pulse"></span>
+        <span class="djblets-o-spinner"></span>
         <% } else { %>
         <%     if (reviewURL) { %>
         <a href="<%- reviewURL %>" class="file-thumbnail-overlay"></a>

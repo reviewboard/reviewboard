@@ -13,7 +13,7 @@ RB.CommitView = Backbone.View.extend({
      */
     template: _.template(dedent`
         <div class="progress">
-         <span class="fa fa-spinner fa-pulse"></span>
+         <span class="djblets-o-spinner"></span>
         </div>
         <% if (accessible) { %>
          <div class="summary">

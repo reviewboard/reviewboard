@@ -1049,7 +1049,7 @@ export class ReviewDialogView extends BaseView<
         <ol id="review-dialog-file-attachment-comments" class="review-comments"></ol>
         <ol id="review-dialog-diff-comments" class="review-comments"></ol>
         <ol id="review-dialog-body-bottom-comments" class="review-comments"></ol>
-        <div class="spinner"><span class="fa fa-spinner fa-pulse"></span></div>
+        <div class="spinner"><span class="djblets-o-spinner"></span></div>
         <div class="edit-field body-bottom"></div>
     `);
 

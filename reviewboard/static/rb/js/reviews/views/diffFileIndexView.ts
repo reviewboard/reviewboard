@@ -61,7 +61,7 @@ export class DiffFileIndexView extends BaseView<
          <% if (destFilename !== depotFilename) { %>renamed-file<% } %>
          ">
          <td class="diff-file-icon">
-          <span class="fa fa-spinner fa-pulse"></span>
+          <span class="djblets-o-spinner"></span>
          </td>
          <td class="diff-file-info">
           <a href="#<%- index %>"><%- destFilename %></a>

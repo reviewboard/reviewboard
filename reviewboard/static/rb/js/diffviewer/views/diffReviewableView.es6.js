@@ -635,7 +635,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
          * once loaded from the server.
          */
         $(e.target).parent()
-            .html('<span class="fa fa-spinner fa-pulse"></span>');
+            .html('<span class="djblets-o-spinner"></span>');
 
         this.trigger('showDeletedClicked');
     },

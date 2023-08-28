@@ -247,7 +247,7 @@ RB.DatagridPageView = RB.PageView.extend({
 
         $editCols
             .width($editCols.width() - $editCols.getExtents('b', 'lr'))
-            .html('<span class="fa fa-spinner fa-pulse"></span>');
+            .html('<span class="djblets-o-spinner"></span>');
 
         this._$wrapper.load(window.location + ' #content_container', () => {
             this.$('.datagrid-wrapper').datagrid();

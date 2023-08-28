@@ -71,7 +71,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
             expectElements();
 
             expect(view.$('.file-actions').is(':visible')).toBe(true);
-            expect(view.$('.fa-spinner').length).toBe(0);
+            expect(view.$('.djblets-o-spinner').length).toBe(0);
         });
 
         it('Rendered thumbnail with unloaded model', function() {
@@ -86,7 +86,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
             expectElements();
 
             expect(view.$('.file-actions').children().length).toBe(0);
-            expect(view.$('.fa-spinner').length).toBe(1);
+            expect(view.$('.djblets-o-spinner').length).toBe(1);
         });
 
         describe('Rendered thumbnail with loaded model', function() {
@@ -113,7 +113,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                 expectAttributeMatches();
 
                 expect(view.$('.file-actions').children().length).toBe(2);
-                expect(view.$('.fa-spinner').length).toBe(0);
+                expect(view.$('.djblets-o-spinner').length).toBe(0);
                 expect(view.$('.file-review').length).toBe(1);
                 expect(view.$('.file-add-comment').length).toBe(0);
             });
@@ -131,7 +131,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                 expectAttributeMatches();
 
                 expect(view.$('.file-actions').children().length).toBe(2);
-                expect(view.$('.fa-spinner').length).toBe(0);
+                expect(view.$('.djblets-o-spinner').length).toBe(0);
                 expect(view.$('.file-review').length).toBe(0);
                 expect(view.$('.file-add-comment').length).toBe(1);
             });
