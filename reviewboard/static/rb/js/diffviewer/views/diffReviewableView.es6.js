@@ -355,9 +355,29 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         this._centered.setElements(new Map(
             Array.prototype.map.call(
                 this.$('.rb-c-diff-collapse-button'),
-                el => [el, {
-                    $top: $(el).closest('tbody'),
-                }])
+                el => {
+                    const $tbody = $(el).closest('tbody');
+                    const $prev = $tbody.prev();
+                    const $next = $tbody.next();
+
+                    return [el, {
+                        $parent: $tbody,
+
+                        /*
+                         * Try to map the previous equals block, if available.
+                         */
+                        $top:
+                            ($prev.length === 1 && $prev.hasClass('equal'))
+                            ? $prev
+                            : $tbody,
+
+                        /* And now the next one. */
+                        $bottom:
+                            ($next.length === 1 && $next.hasClass('equal'))
+                            ? $next
+                            : $tbody,
+                    }];
+                })
         ));
         this._updateCollapseButtonPos();
 
