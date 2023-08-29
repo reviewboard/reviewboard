@@ -86,6 +86,34 @@
   }
 
   /**
+   * Next and previous buttons for the slideshow.
+   *
+   * DOM Attributes:
+   *     aria-label (string):
+   *          The accessibility label for the button.
+   *
+   *     role (string):
+   *         This must be set to ``button``.
+   *
+   *     title (string):
+   *          The tooltip label for the button.
+   *
+   * Structure:
+   *     <a class="rb-c-slideshow__nav-prev"
+   *        aria-label="Previous"
+   *        href="#"
+   *        role="button"
+   *        title="Previous">
+   *      <span class="fa fa-caret-left"></span>
+   *     </a>
+   */
+  &__nav-next, &__nav-prev {
+    display: block;
+    padding: 0.5em 0.25em;
+    margin: -0.5em 0;
+  }
+
+  /**
    * A navigation link pointing to a particular slide.
    *
    * DOM Attributes:

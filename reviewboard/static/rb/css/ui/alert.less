@@ -161,14 +161,21 @@
    *     tabindex (number):
    *         The tab index. This should be set to ``0`` in most cases.
    *
+   *     title (string):
+   *          The tooltip label for the button.
+   *
    * Structure:
-   *     <span class="rb-c-alert__close" role="button"
-   *           aria-label="Close" tabindex="0"></span>
+   *     <span class="rb-c-alert__close"
+   *           aria-label="Close"
+   *           role="button"
+   *           tabindex="0"
+   *           title="Close"></span>
    */
   &__close {
     cursor: pointer;
     float: right;
-    margin-top: -4px;
+    padding: 6px;
+    margin: -10px -6px -6px -6px;
 
     &:before {
       .fa-icon();

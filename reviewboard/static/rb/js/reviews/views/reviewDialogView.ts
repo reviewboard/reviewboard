@@ -894,16 +894,27 @@ class TipsSlideshowView extends SlideshowView {
     static className = 'rb-c-alert -is-info';
     static template = dedent`
         <div class="rb-c-slideshow -is-auto-cycled">
-         <span class="rb-c-alert__close" role="button"
-               aria-label="${gettext('Close')}" tabindex="0"></span>
+         <span class="rb-c-alert__close"
+               role="button"
+               aria-label="${gettext('Close')}"
+               title="${gettext('Close')}"
+               tabindex="0"></span>
          <div class="rb-c-alert__content">
           <div class="rb-c-alert__heading">
            <nav class="rb-c-slideshow__nav">
             <label for="">${gettext('Tip:')}</label>
-            <a class="rb-c-slideshow__nav-prev" href="#">
+            <a class="rb-c-slideshow__nav-prev"
+               href="#"
+               role="button"
+               aria-label="${gettext('Previous')}"
+               title="${gettext('Previous')}">
              <span class="fa fa-caret-left"></span>
             </a>
-            <a class="rb-c-slideshow__nav-next" href="#">
+            <a class="rb-c-slideshow__nav-next"
+               href="#"
+               role="button"
+               aria-label="${gettext('Next')}"
+               title="${gettext('Next')}">
              <span class="fa fa-caret-right"></span>
             </a>
            </nav>
