@@ -960,7 +960,7 @@ class SVNTool(SCMTool):
         client = cls.build_client(repo_path=path,
                                   username=username,
                                   password=password,
-                                  local_site_name=local_site_name)[1]
+                                  local_site_name=local_site_name)
 
         return client.accept_ssl_certificate(path)
 
