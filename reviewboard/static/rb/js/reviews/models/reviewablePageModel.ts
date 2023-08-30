@@ -3,7 +3,12 @@
  */
 import { ModelAttributes, spina } from '@beanbag/spina';
 
-import { Page } from 'reviewboard/common/models/pageModel';
+import {
+    FileAttachment,
+    Page,
+    ResourceCollection,
+    Review,
+} from 'reviewboard/common';
 
 import {
     ReviewRequestEditor,
@@ -37,7 +42,7 @@ export interface ReviewablePageAttrs extends ModelAttributes {
      *
      * This may or may not yet have a server-side representation.
      */
-    pendingReview?: RB.Review;
+    pendingReview?: Review;
 
     /**
      * The review request that this page is for.
@@ -130,13 +135,16 @@ export class ReviewablePage<
         });
 
         const editorData = attributes.editorData || {};
-        const fileAttachments = new Backbone.Collection(
+        const fileAttachments = new ResourceCollection<FileAttachment>(
             _.map(editorData.fileAttachments,
                   (editorData.mutableByUser
                    ? attrs => reviewRequest.draft.createFileAttachment(attrs)
                    : attrs => reviewRequest.createFileAttachment(attrs))),
             {
-                model: RB.FileAttachment,
+                model: FileAttachment,
+                parentResource: (editorData.mutableByUser
+                                 ? reviewRequest.draft
+                                 : reviewRequest),
             });
 
         this.reviewRequestEditor = new ReviewRequestEditor(

@@ -297,6 +297,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         if needs_issue_summary_table:
             metadata = {
                 'type': 'issue-summary-table',
+                'updatedTimestamp': data.latest_issue_timestamp,
             }
 
             html = render_to_string(

@@ -1,9 +1,13 @@
 """Data structures and classes for defining and using SCMTools."""
 
+from __future__ import annotations
+
 import base64
 import logging
 import os
 import subprocess
+from typing import (Any, Dict, List, Mapping, Optional, Sequence,
+                    TYPE_CHECKING, Type, Tuple, Union)
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
@@ -12,6 +16,7 @@ import importlib_metadata
 from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import gettext_lazy as _
 from djblets.util.properties import TypedProperty
+from typing_extensions import TypeAlias
 
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
@@ -19,11 +24,51 @@ from reviewboard.scmtools.errors import (AuthenticationError,
 from reviewboard.ssh import utils as sshutils
 from reviewboard.ssh.errors import SSHAuthenticationError
 
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
+    from django.http import HttpRequest
+    from django.utils.functional import _StrOrPromise
+    from djblets.util.typing import JSONDict
+    from reviewboard.diffviewer.parser import BaseDiffParser
+    from reviewboard.scmtools.certs import Certificate
+    from reviewboard.scmtools.forms import (BaseSCMToolAuthForm,
+                                            BaseSCMToolRepositoryForm)
+    from reviewboard.scmtools.models import Repository
+    from reviewboard.site.models import LocalSite
+
 
 logger = logging.getLogger(__name__)
 
 
-class ChangeSet(object):
+#: An alias for a TypedProperty taking a bytes value or None.
+#:
+#: Version Added:
+#:     6.0
+_BytesProperty: TypeAlias = TypedProperty[Optional[bytes], Optional[bytes]]
+
+
+#: An alias for a TypedProperty taking an int value or None.
+#:
+#: Version Added:
+#:     6.0
+_IntProperty: TypeAlias = TypedProperty[Optional[int], Optional[int]]
+
+
+#: An alias for a TypedProperty taking a str value or None.
+#:
+#: Version Added:
+#:     6.0
+_StrProperty: TypeAlias = TypedProperty[Optional[str], Optional[str]]
+
+
+#: An alias for a TypedProperty taking a str value.
+#:
+#: Version Added:
+#:     6.0
+_StrRequiredProperty: TypeAlias = TypedProperty[str, str]
+
+
+class ChangeSet:
     """A server-side changeset.
 
     This represents information on a server-side changeset, which tracks
@@ -31,64 +76,113 @@ class ChangeSet(object):
     repositories (such as Perforce).
 
     Not all data may be provided by the server.
-
-    Attributes:
-        bugs_closed (list of unicode):
-            A list of bug IDs that were closed by this change.
-
-        files (list of unicode):
-            A list of filenames added/modified/deleted by the change.
-
-        pending (bool):
-            Whether or not the change is pending (not yet committed).
     """
 
-    #: The changeset number/ID.
-    changenum = TypedProperty(int)
-
-    #: The summary of the change.
-    summary = TypedProperty(str)
-
-    #: The description of the change.
-    description = TypedProperty(str)
-
-    #: Testing information for the change.
-    testing_done = TypedProperty(str)
+    ######################
+    # Instance variables #
+    ######################
 
     #: The destination branch.
-    branch = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    branch: _StrProperty = TypedProperty(str)
+
+    #: A list of bug IDs that were closed by this change.
+    #:
+    #: Type:
+    #:     list of str
+    bugs_closed: List[str]
+
+    #: The changeset number/ID.
+    #:
+    #: Type:
+    #:     int
+    changenum: _IntProperty = TypedProperty(int)
+
+    #: The description of the change.
+    #:
+    #: Type:
+    #:     str
+    description: _StrProperty = TypedProperty(str)
+
+    #: Extra data to store in the draft.
+    #:
+    #: These may map to custom fields.
+    #:
+    #: Version Added:
+    #:     5.0.5
+    extra_data: JSONDict
+
+    #: A list of filenames added/modified/deleted by the change.
+    #:
+    #: Type:
+    #:     list of str
+    files: List[str]
+
+    #: Whether or not the change is pending (not yet committed).
+    #:
+    #: Type:
+    #:     bool
+    pending: bool
+
+    #: The summary of the change.
+    #:
+    #: Type:
+    #:     str
+    summary: _StrProperty = TypedProperty(str)
+
+    #: Testing information for the change.
+    #:
+    #: Type:
+    #:     str
+    testing_done: _StrProperty = TypedProperty(str)
 
     #: The username of the user who made the change.
-    username = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    username: _StrProperty = TypedProperty(str)
 
     def __init__(self):
         """Initialize the changeset."""
-        self.changenum = None
-        self.summary = ''
-        self.description = ''
-        self.testing_done = ''
         self.branch = ''
         self.bugs_closed = []
+        self.changenum = None
+        self.description = ''
+        self.extra_data = {}
         self.files = []
-        self.username = ''
         self.pending = False
+        self.summary = ''
+        self.testing_done = ''
+        self.username = ''
 
 
-class Revision(object):
+class Revision:
     """A revision in a diff or repository.
 
     This represents a specific revision in a tree, or a specialized indicator
     that can have special meaning.
     """
 
-    #: The name/ID of the revision.
-    name = TypedProperty(str, allow_none=False)
+    ######################
+    # Instance variables #
+    ######################
 
-    def __init__(self, name):
+    #: The name/ID of the revision.
+    #:
+    #: Type:
+    #:     str
+    name: _StrRequiredProperty = TypedProperty(str, allow_none=False)
+
+    def __init__(
+        self,
+        name: str,
+    ) -> None:
         """Initialize the Revision.
 
         Args:
-            name (unicode):
+            name (str):
                 The name of the revision. This may be a special name (which
                 should be in all-uppercase) or a revision ID.
 
@@ -98,7 +192,7 @@ class Revision(object):
         """
         self.name = name
 
-    def __bytes__(self):
+    def __bytes__(self) -> bytes:
         """Return a byte string representation of the revision.
 
         This is equivalent to fetching :py:attr:`name` and encoding to UTF-8.
@@ -109,18 +203,21 @@ class Revision(object):
         """
         return self.name.encode('utf-8')
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return a Unicode string representation of the revision.
 
         This is equivalent to fetching :py:attr:`name`.
 
         Returns:
-            unicode:
+            str:
             The name/ID of the revision.
         """
         return self.name
 
-    def __eq__(self, other):
+    def __eq__(
+        self,
+        other: Any,
+    ) -> bool:
         """Return whether this revision equals another.
 
         Args:
@@ -134,7 +231,10 @@ class Revision(object):
         """
         return self.name == force_str(other)
 
-    def __ne__(self, other):
+    def __ne__(
+        self,
+        other: Any,
+    ) -> bool:
         """Return whether this revision is not equal to another.
 
         Args:
@@ -148,48 +248,68 @@ class Revision(object):
         """
         return self.name != force_str(other)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation of this revision.
 
         Returns:
-            unicode:
+            str:
             The string representation.
         """
         return '<Revision: %s>' % self.name
 
 
-class Branch(object):
-    """A branch in a repository.
+class Branch:
+    """A branch in a repository."""
 
-    Attributes:
-        default (bool):
-            Whether or not this is the default branch for the repository.
-
-            One (and only one) branch in a list of returned branches should
-            have this set to ``True``.
-    """
-
-    #: The ID of the branch.
-    id = TypedProperty(str, allow_none=False)
+    ######################
+    # Instance variables #
+    ######################
 
     #: The latest commit ID on the branch.
-    commit = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    commit: _StrProperty = TypedProperty(str)
+
+    #: Whether or not this is the default branch for the repository.
+    #:
+    #: One (and only one) branch in a list of returned branches should
+    #: have this set to ``True``.
+    #:
+    #: Type:
+    #:     bool
+    default: bool
+
+    #: The ID of the branch.
+    #:
+    #: Type:
+    #:     str
+    id: _StrRequiredProperty = TypedProperty(str, allow_none=False)
 
     #: The name of the branch.
-    name = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    name: _StrProperty = TypedProperty(str)
 
-    def __init__(self, id, name=None, commit='', default=False):
+    def __init__(
+        self,
+        id: str,
+        name: Optional[str] = None,
+        commit: str = '',
+        default: bool = False,
+    ) -> None:
         """Initialize the branch.
 
         Args:
-            id (unicode):
+            id (str):
                 The ID of the branch.
 
-            name (unicode, optional):
+            name (str, optional):
                 The name of the branch. If not specified, this will default
                 to the ID.
 
-            commit (unicode, optional):
+            commit (str, optional):
                 The latest commit ID on the branch.
 
             default (bool, optional):
@@ -200,7 +320,10 @@ class Branch(object):
         self.commit = commit
         self.default = default
 
-    def __eq__(self, other):
+    def __eq__(
+        self,
+        other: Any,
+    ) -> bool:
         """Return whether this branch is equal to another branch.
 
         Args:
@@ -211,72 +334,99 @@ class Branch(object):
             bool:
             ``True`` if the two branches are equal. ``False`` if they are not.
         """
-        return (self.id == other.id and
+        return (isinstance(other, Branch) and
+                self.id == other.id and
                 self.name == other.name and
                 self.commit == other.commit and
                 self.default == other.default)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation of this branch.
 
         Returns:
-            unicode:
+            str:
             The string representation.
         """
         return ('<Branch %s (name=%s; commit=%s: default=%r)>'
                 % (self.id, self.name, self.commit, self.default))
 
 
-class Commit(object):
+class Commit:
     """A commit in a repository."""
 
-    #: The ID of the commit.
-    #:
-    #: This should be its SHA/revision.
-    id = TypedProperty(str)
+    ######################
+    # Instance variables #
+    ######################
 
     #: The name or username of the author who made the commit.
-    author_name = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    author_name: _StrProperty = TypedProperty(str)
 
     #: The timestamp of the commit as a string in ISO 8601 format.
-    date = TypedProperty(str)
-
-    #: The commit message.
-    message = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    date: _StrProperty = TypedProperty(str)
 
     #: The contents of the commit's diff.
     #:
     #: This may be ``None``, depending on how the commit is fetched.
-    diff = TypedProperty(bytes)
+    diff: _BytesProperty = TypedProperty(bytes)
+
+    #: The ID of the commit.
+    #:
+    #: This should be its SHA/revision.
+    #:
+    #: Type:
+    #:     str
+    id: _StrProperty = TypedProperty(str)
+
+    #: The commit message.
+    #:
+    #: Type:
+    #:     str
+    message: _StrProperty = TypedProperty(str)
 
     #: The ID of the commit's parent.
     #:
     #: This should be its SHA/revision. If this is the first commit, this
     #: should be ``None`` or an empty string.
-    parent = TypedProperty(str)
+    #:
+    #: Type:
+    #:     str
+    parent: _StrProperty = TypedProperty(str)
 
-    def __init__(self, author_name='', id='', date='', message='', parent='',
-                 diff=None):
+    def __init__(
+        self,
+        author_name: str = '',
+        id: str = '',
+        date: str = '',
+        message: str = '',
+        parent: str = '',
+        diff: Optional[bytes] = None,
+    ) -> None:
         """Initialize the commit.
 
         All arguments are optional, and can be set later.
 
         Args:
-            author_name (unicode, optional):
+            author_name (str, optional):
                 The name of the author who made this commit. This should be
                 the full name, if available, but can be the username or other
                 identifier.
 
-            id (unicode, optional):
+            id (str, optional):
                 The ID of the commit. This should be its SHA/revision.
 
-            date (unicode, optional):
+            date (str, optional):
                 The timestamp of the commit as a string in ISO 8601 format.
 
-            message (unicode, optional):
+            message (str, optional):
                 The commit message.
 
-            parent (unicode, optional):
+            parent (str, optional):
                 The ID of the commit's parent. This should be its SHA/revision.
 
             diff (bytes, optional):
@@ -293,7 +443,10 @@ class Commit(object):
         # equality test.
         self.diff = diff
 
-    def __eq__(self, other):
+    def __eq__(
+        self,
+        other: Any,
+    ) -> bool:
         """Return whether this commit is equal to another commit.
 
         Args:
@@ -304,23 +457,24 @@ class Commit(object):
             bool:
             ``True`` if the two commits are equal. ``False`` if they are not.
         """
-        return (self.author_name == other.author_name and
+        return (isinstance(other, Commit) and
+                self.author_name == other.author_name and
                 self.id == other.id and
                 self.date == other.date and
                 self.message == other.message and
                 self.parent == other.parent)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation of this commit.
 
         Returns:
-            unicode:
+            str:
             The string representation.
         """
         return ('<Commit %r (author=%s; date=%s; parent=%r)>'
                 % (self.id, self.author_name, self.date, self.parent))
 
-    def split_message(self):
+    def split_message(self) -> Tuple[str, str]:
         """Return a split version of the commit message.
 
         This will separate the commit message into a summary and body, if
@@ -328,13 +482,19 @@ class Commit(object):
 
         Returns:
             tuple:
-            A tuple containing two string items: The summary and the commit
-            message.
+            A 2-tuple containing:
+
+            Tuple:
+                0 (str):
+                    The summary of the commit.
+
+                1 (str):
+                    The commit message.
 
             If the commit message is only a single line, both items in the
             tuple will be that line.
         """
-        message = self.message
+        message = self.message or ''
         parts = message.split('\n', 1)
         summary = parts[0]
 
@@ -349,7 +509,7 @@ class Commit(object):
         return summary, message
 
 
-class FileLookupContext(object):
+class FileLookupContext:
     """Information available to aid in looking up files from a repository.
 
     This is a container for several pieces of data that a SCM may need in
@@ -357,50 +517,61 @@ class FileLookupContext(object):
 
     Version Added:
         4.0.5
-
-    Attributes:
-        base_commit_id (unicode):
-            The ID of the commit that the file was changed in. This may
-            be ``None``. The contents and interpretation are dependent on the
-            type of the repository.
-
-        commit_extra_data (dict):
-            Metadata stored about the parsed commit from the diff.
-
-            This is generally the data in :py:attr:`DiffCommit.extra_data
-            <reviewboard.diffviewer.models.diffcommit.DiffCommit.extra_data>`
-            or :py:attr:`ParsedDiffChange.extra_data
-            <reviewboard.diffviewer.parser.ParsedDiffChange.extra_data>`.
-
-        diff_extra_data (dict):
-            General metadata stored about the parsed diff.
-
-            This is generally the data in :py:attr:`DiffSet.extra_data
-            <reviewboard.diffviewer.models.diffset.DiffSet.extra_data>`
-            or :py:attr:`ParsedDiff.extra_data
-            <reviewboard.diffviewer.parser.ParsedDiff.extra_data>`.
-
-        file_extra_data (dict):
-            General metadata stored about the parsed file from the diff.
-
-            This is generally the data in :py:attr:`FileDiff.extra_data
-            <reviewboard.diffviewer.models.filediff.FileDiff.extra_data>`
-            or :py:attr:`ParsedDiffFile.extra_data
-            <reviewboard.diffviewer.parser.ParsedDiffFile.extra_data>`.
-
-        request (django.http.HttpRequest):
-            The HTTP request from the client that triggered the file lookup.
-            This may be ``None``.
-
-        user (django.contrib.auth.models.User):
-            The user triggering the repository lookup.
-
-            This is **not** the user that's communicating with the repository.
     """
 
-    def __init__(self, request=None, user=None, base_commit_id=None,
-                 diff_extra_data={}, commit_extra_data={},
-                 file_extra_data={}):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The ID of the commit that the file was changed in.
+    #:
+    #: This may be ``None``. The contents and interpretation are dependent on
+    #: the of the repository.
+    base_commit_id: Optional[str]
+
+    #: Metadata stored about the parsed commit from the diff.
+    #:
+    #: This is generally the data in :py:attr:`DiffCommit.extra_data
+    #: <reviewboard.diffviewer.models.diffcommit.DiffCommit.extra_data>`
+    #: or :py:attr:`ParsedDiffChange.extra_data
+    #: <reviewboard.diffviewer.parser.ParsedDiffChange.extra_data>`.
+    commit_extra_data: JSONDict
+
+    #: General metadata stored about the parsed diff.
+    #:
+    #: This is generally the data in :py:attr:`DiffSet.extra_data
+    #: <reviewboard.diffviewer.models.diffset.DiffSet.extra_data>`
+    #: or :py:attr:`ParsedDiff.extra_data
+    #: <reviewboard.diffviewer.parser.ParsedDiff.extra_data>`.
+    diff_extra_data: JSONDict
+
+    #: General metadata stored about the parsed file from the diff.
+    #:
+    #: This is generally the data in :py:attr:`FileDiff.extra_data
+    #: <reviewboard.diffviewer.models.filediff.FileDiff.extra_data>`
+    #: or :py:attr:`ParsedDiffFile.extra_data
+    #: <reviewboard.diffviewer.parser.ParsedDiffFile.extra_data>`.
+    file_extra_data: JSONDict
+
+    #: The HTTP request from the client that triggered the file lookup.
+    #:
+    #: This may be ``None``.
+    request: Optional[HttpRequest]
+
+    #: The user triggering the repository lookup.
+    #:
+    #: This is **not** the user that's communicating with the repository.
+    user: Optional[Union[AbstractBaseUser, AnonymousUser]]
+
+    def __init__(
+        self,
+        request: Optional[HttpRequest] = None,
+        user: Optional[Union[AbstractBaseUser, AnonymousUser]] = None,
+        base_commit_id: Optional[str] = None,
+        diff_extra_data: JSONDict = {},
+        commit_extra_data: JSONDict = {},
+        file_extra_data: JSONDict = {},
+    ) -> None:
         """Initialize the context.
 
         Args:
@@ -415,7 +586,7 @@ class FileLookupContext(object):
                 This is **not** the user that's communicating with the
                 repository.
 
-            base_commit_id (unicode, optional):
+            base_commit_id (str, optional):
                 The ID of the commit that the file was changed in. This may be
                 ``None``. The contents and interpretation are dependent on the
                 type of the repository.
@@ -454,8 +625,8 @@ class FileLookupContext(object):
                 '"base_commit_id" must be a Unicode string, not %s'
                 % type(base_commit_id))
 
-        if user is None and request is not None and hasattr(request, 'user'):
-            user = request.user
+        if user is None and request is not None:
+            user = getattr(request, 'user', None)
 
         self.base_commit_id = base_commit_id
         self.commit_extra_data = commit_extra_data
@@ -476,8 +647,14 @@ UNKNOWN = Revision('UNKNOWN')
 #: Revision representing a new file (prior to entering the repository).
 PRE_CREATION = Revision('PRE-CREATION')
 
+#: A type indicating either a revision constant or repository-specific ID.
+#:
+#: Version Added:
+#:     5.0.5
+RevisionID: TypeAlias = Union[Revision, str]
 
-class _SCMToolIDProperty(object):
+
+class _SCMToolIDProperty(str):
     """A property that automatically determines the ID for an SCMTool.
 
     This is used for SCMTools that don't explicitly specify a
@@ -488,9 +665,13 @@ class _SCMToolIDProperty(object):
         3.0.16
     """
 
-    _scmtool_ids_by_class_names = {}
+    _scmtool_ids_by_class_names: Dict[str, str] = {}
 
-    def __get__(self, owner_self, owner_cls):
+    def __get__(
+        self,
+        owner_self,
+        owner_cls,
+    ) -> Optional[str]:
         """Return the ID for the SCMTool.
 
         Args:
@@ -502,7 +683,7 @@ class _SCMToolIDProperty(object):
                 The subclass of :py:class:`SCMTool`.
 
         Returns:
-            unicode:
+            str:
             The resulting SCMTool ID.
 
         Raises:
@@ -531,7 +712,7 @@ class _SCMToolIDProperty(object):
                 % (owner_cls, owner_cls.__name__))
 
 
-class SCMTool(object):
+class SCMTool:
     """A backend for talking to a source code repository.
 
     This is responsible for handling all the communication with a repository
@@ -539,10 +720,6 @@ class SCMTool(object):
     repository configuration, fetching file contents, returning log information
     for browsing commits, constructing a diff parser for the repository's
     supported diff format(s), and more.
-
-    Attributes:
-        repository (reviewboard.scmtools.models.Repository):
-            The repository owning an instance of this SCMTool.
     """
 
     #: A unique identifier for the SCMTool.
@@ -553,19 +730,19 @@ class SCMTool(object):
     #:
     #: Version Added:
     #:     3.0.16
-    scmtool_id = _SCMToolIDProperty()
+    scmtool_id: str = _SCMToolIDProperty()
 
     #: The human-readable name of the SCMTool.
     #:
     #: Users will see this when they go to select a repository type. Some
     #: examples would be "Subversion" or "Perforce".
-    name = None
+    name: Optional[str] = None
 
     #: Whether or not the SCMTool supports review requests with history.
-    supports_history = False
+    supports_history: bool = False
 
     #: Whether or not commits in this SCMTool require the committer fields.
-    commits_have_committer = False
+    commits_have_committer: bool = False
 
     #: Whether server-side pending changesets are supported.
     #:
@@ -577,13 +754,13 @@ class SCMTool(object):
     #: If ``True``, Review Board will allow updating the review request's
     #: information from the pending changeset, and will indicate in the UI
     #: if it's pending or submitted.
-    supports_pending_changesets = False
+    supports_pending_changesets: bool = False
 
     #: Whether existing commits can be browsed and posted for review.
     #:
     #: If ``True``, the New Review Request page and API will allow for
     #: browsing and posting existing commits and their diffs for review.
-    supports_post_commit = False
+    supports_post_commit: bool = False
 
     #: Whether custom URL masks can be defined to fetching file contents.
     #:
@@ -596,7 +773,7 @@ class SCMTool(object):
     #:
     #: If ``True``, this field will be shown in the repository configuration.
     #: It's up to the SCMTool to handle and parse the value.
-    supports_raw_file_urls = False
+    supports_raw_file_urls: bool = False
 
     #: Whether ticket-based authentication is supported.
     #:
@@ -608,7 +785,7 @@ class SCMTool(object):
     #:
     #: If ``True``, an option will be shown for enabling this when configuring
     #: the repository. It's up to the SCMTool to make use of it.
-    supports_ticket_auth = False
+    supports_ticket_auth: bool = False
 
     #: Whether filenames in diffs are stored using absolute paths.
     #:
@@ -619,7 +796,7 @@ class SCMTool(object):
     #:
     #: By default, this is ``False``. Subclasses must override this if their
     #: diff formats list absolute paths.
-    diffs_use_absolute_paths = False
+    diffs_use_absolute_paths: bool = False
 
     #: Whether diff files use a defined commit ID as file revisions.
     #:
@@ -640,7 +817,7 @@ class SCMTool(object):
     #:
     #: Version Added:
     #:     4.0.5
-    diffs_use_commit_ids_as_revisions = False
+    diffs_use_commit_ids_as_revisions: bool = False
 
     #: Whether this prefers the Mirror Path value for communication.
     #:
@@ -652,13 +829,13 @@ class SCMTool(object):
     #:
     #: Version Added:
     #:     3.0.18
-    prefers_mirror_path = False
+    prefers_mirror_path: bool = False
 
     #: Overridden help text for the configuration form fields.
     #:
     #: This allows the form fields to have custom help text for the SCMTool,
     #: providing better guidance for configuration.
-    field_help_text = {
+    field_help_text: Dict[str, _StrOrPromise] = {
         'path': _('The path to the repository. This will generally be the URL '
                   'you would use to check out the repository.'),
     }
@@ -676,7 +853,7 @@ class SCMTool(object):
     #: The list of executables shouldn't contain a file extensions (e.g.,
     #: ``.exe``), as Review Board will automatically attempt to use the
     #: right extension for the platform.
-    dependencies = {
+    dependencies: Dict[str, List[str]] = {
         'executables': [],
         'modules': [],
     }
@@ -688,7 +865,7 @@ class SCMTool(object):
     #:
     #: Version Added:
     #:     3.0.16
-    auth_form = None
+    auth_form: Optional[Type[BaseSCMToolAuthForm]] = None
 
     #: A custom form used to collect repository details.
     #:
@@ -698,9 +875,19 @@ class SCMTool(object):
     #:
     #: Version Added:
     #:     3.0.16
-    repository_form = None
+    repository_form: Optional[Type[BaseSCMToolRepositoryForm]] = None
 
-    def __init__(self, repository):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The repository owning an instance of this SCMTool.
+    repository: Repository
+
+    def __init__(
+        self,
+        repository: Repository,
+    ) -> None:
         """Initialize the SCMTool.
 
         This will be initialized on demand, when first needed by a client
@@ -713,8 +900,14 @@ class SCMTool(object):
         """
         self.repository = repository
 
-    def get_file(self, path, revision=HEAD, base_commit_id=None,
-                 context=None, **kwargs):
+    def get_file(
+        self,
+        path: str,
+        revision: RevisionID = HEAD,
+        base_commit_id: Optional[str] = None,
+        context: Optional[FileLookupContext] = None,
+        **kwargs,
+    ) -> bytes:
         """Return the contents of a file from a repository.
 
         This attempts to return the raw binary contents of a file from the
@@ -733,14 +926,14 @@ class SCMTool(object):
             new capabilities for file lookups.
 
         Args:
-            path (unicode):
+            path (str):
                 The path to the file in the repository.
 
             revision (Revision, optional):
                 The revision to fetch. Subclasses should default this to
                 :py:data:`HEAD`.
 
-            base_commit_id (unicode, optional):
+            base_commit_id (str, optional):
                 The ID of the commit that the file was changed in. This may
                 not be provided, and is dependent on the type of repository.
 
@@ -782,8 +975,14 @@ class SCMTool(object):
         """
         raise NotImplementedError
 
-    def file_exists(self, path, revision=HEAD, base_commit_id=None,
-                    context=None, **kwargs):
+    def file_exists(
+        self,
+        path: str,
+        revision: RevisionID = HEAD,
+        base_commit_id: Optional[str] = None,
+        context: Optional[FileLookupContext] = None,
+        **kwargs,
+    ) -> bool:
         """Return whether a particular file exists in a repository.
 
         Like :py:meth:`get_file`, this may take a base commit ID, which is the
@@ -799,14 +998,14 @@ class SCMTool(object):
             new capabilities for file lookups.
 
         Args:
-            path (unicode):
+            path (str):
                 The path to the file in the repository.
 
             revision (Revision, optional):
                 The revision to fetch. Subclasses should default this to
                 :py:data:`HEAD`.
 
-            base_commit_id (unicode, optional):
+            base_commit_id (str, optional):
                 The ID of the commit that the file was changed in. This may
                 not be provided, and is dependent on the type of repository.
 
@@ -849,19 +1048,32 @@ class SCMTool(object):
         except FileNotFoundError:
             return False
 
-    def parse_diff_revision(self, file_str, revision_str, moved=False,
-                            copied=False, **kwargs):
+    def parse_diff_revision(
+        self,
+        filename: bytes,
+        revision: bytes,
+        moved: bool = False,
+        copied: bool = False,
+        **kwargs,
+    ) -> Tuple[bytes, Union[bytes, Revision]]:
         """Return a parsed filename and revision as represented in a diff.
 
         A diff may use strings like ``(working copy)`` as a revision. This
         function will be responsible for converting this to something
         Review Board can understand.
 
+        Version Changed:
+            6.0:
+            The first two parameters are now named ``filename`` and
+            ``revision``, instead of ``file_str`` and ``revision_str``,
+            for consistency with built-in tools. These names will be required
+            in a future version.
+
         Args:
-            file_str (bytes):
+            filename (bytes):
                 The filename as represented in the diff.
 
-            revision_str (bytes):
+            revision (bytes):
                 The revision as represented in the diff.
 
             moved (bool, optional):
@@ -878,9 +1090,12 @@ class SCMTool(object):
             tuple:
             A tuple containing two items:
 
-            1. The normalized filename as a byte string.
-            2. The normalized revision as a byte string or a
-               :py:class:`~reviewboard.scmtools.core.Revision`.
+            Tuple:
+                0 (bytes):
+                    The normalized filename.
+
+                1 (bytes or Revision):
+                    The normalized revision.
 
         Raises:
             reviewboard.scmtools.errors.InvalidRevisionFormatError:
@@ -889,14 +1104,18 @@ class SCMTool(object):
         """
         raise NotImplementedError
 
-    def get_changeset(self, changesetid, allow_empty=False):
+    def get_changeset(
+        self,
+        changesetid: str,
+        allow_empty: bool = False,
+    ) -> ChangeSet:
         """Return information on a server-side changeset with the given ID.
 
         This only needs to be implemented if
         :py:attr:`supports_pending_changesets` is ``True``.
 
         Args:
-            changesetid (unicode):
+            changesetid (str):
                 The server-side changeset ID.
 
             allow_empty (bool, optional):
@@ -926,7 +1145,7 @@ class SCMTool(object):
         """
         raise NotImplementedError
 
-    def get_repository_info(self):
+    def get_repository_info(self) -> Dict[str, Any]:
         """Return information on the repository.
 
         The information will vary based on the repository. This data will be
@@ -950,7 +1169,7 @@ class SCMTool(object):
         """
         raise NotImplementedError
 
-    def get_branches(self):
+    def get_branches(self) -> Sequence[Branch]:
         """Return a list of all branches on the repository.
 
         This will fetch a list of all known branches for use in the API and
@@ -976,7 +1195,11 @@ class SCMTool(object):
         """
         raise NotImplementedError
 
-    def get_commits(self, branch=None, start=None):
+    def get_commits(
+        self,
+        branch: Optional[str] = None,
+        start: Optional[str] = None,
+    ) -> Sequence[Commit]:
         """Return a list of commits backward in history from a given point.
 
         This will fetch a batch of commits from the repository for use in the
@@ -996,11 +1219,11 @@ class SCMTool(object):
         this.
 
         Args:
-            branch (unicode, optional):
+            branch (str, optional):
                 The branch to limit commits to. This may not be supported by
                 all repositories.
 
-            start (unicode, optional):
+            start (str, optional):
                 The commit to start at. If not provided, this will fetch the
                 first commit in the repository.
 
@@ -1017,7 +1240,10 @@ class SCMTool(object):
         """
         raise NotImplementedError
 
-    def get_change(self, revision):
+    def get_change(
+        self,
+        revision: str,
+    ) -> Commit:
         """Return an individual change/commit with the given revision.
 
         This will fetch information on the given commit, if found, including
@@ -1027,7 +1253,7 @@ class SCMTool(object):
         this.
 
         Args:
-            revision (unicode):
+            revision (str):
                 The revision/ID of the commit.
 
         Returns:
@@ -1043,7 +1269,10 @@ class SCMTool(object):
         """
         raise NotImplementedError
 
-    def get_parser(self, data):
+    def get_parser(
+        self,
+        data: bytes,
+    ) -> BaseDiffParser:
         """Return a diff parser used to parse diff data.
 
         The diff parser will be responsible for parsing the contents of the
@@ -1065,7 +1294,12 @@ class SCMTool(object):
 
         return DiffParser(data)
 
-    def normalize_path_for_display(self, filename, extra_data=None, **kwargs):
+    def normalize_path_for_display(
+        self,
+        filename: str,
+        extra_data: Optional[JSONDict] = None,
+        **kwargs,
+    ) -> str:
         """Normalize a path from a diff for display to the user.
 
         This can take a path/filename found in a diff and normalize it,
@@ -1081,7 +1315,7 @@ class SCMTool(object):
             warning.
 
         Args:
-            filename (unicode):
+            filename (str):
                 The filename/path to normalize.
 
             extra_data (dict, optional):
@@ -1093,12 +1327,17 @@ class SCMTool(object):
                 Additional keyword arguments.
 
         Returns:
-            unicode:
+            str:
             The resulting filename/path.
         """
         return filename
 
-    def normalize_patch(self, patch, filename, revision):
+    def normalize_patch(
+        self,
+        patch: bytes,
+        filename: str,
+        revision: str,
+    ) -> bytes:
         """Normalize a diff/patch file before it's applied.
 
         This can be used to take an uploaded diff file and modify it so that
@@ -1111,10 +1350,10 @@ class SCMTool(object):
             patch (bytes):
                 The diff/patch file to normalize.
 
-            filename (unicode):
+            filename (str):
                 The name of the file being changed in the diff.
 
-            revision (unicode):
+            revision (str):
                 The revision of the file being changed in the diff.
 
         Returns:
@@ -1124,7 +1363,13 @@ class SCMTool(object):
         return patch
 
     @classmethod
-    def popen(cls, command, local_site_name=None, env={}, **kwargs):
+    def popen(
+        cls,
+        command: List[str],
+        local_site_name: Optional[str] = None,
+        env: Dict[str, str] = {},
+        **kwargs,
+    ) -> subprocess.Popen:
         """Launch an application and return its output.
 
         This wraps :py:func:`subprocess.Popen` to provide some common
@@ -1136,10 +1381,10 @@ class SCMTool(object):
             Added ``**kwargs``.
 
         Args:
-            command (list of unicode):
+            command (list of str):
                 The command to execute.
 
-            local_site_name (unicode, optional):
+            local_site_name (str, optional):
                 The name of the Local Site being used, if any.
 
             env (dict, optional):
@@ -1157,8 +1402,8 @@ class SCMTool(object):
                     4.0.5
 
         Returns:
-            bytes:
-            The combined output (stdout and stderr) from the command.
+            subprocess.Popen:
+            The resulting process handle.
 
         Raises:
             OSError:
@@ -1171,7 +1416,7 @@ class SCMTool(object):
         }
 
         if local_site_name:
-            new_env[str('RB_LOCAL_SITE')] = force_bytes(local_site_name)
+            new_env['RB_LOCAL_SITE'] = local_site_name
 
         kwargs.setdefault('stderr', subprocess.PIPE)
         kwargs.setdefault('stdout', subprocess.PIPE)
@@ -1182,8 +1427,15 @@ class SCMTool(object):
                                 **kwargs)
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None,
-                         local_site_name=None, local_site=None, **kwargs):
+    def check_repository(
+        cls,
+        path: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        local_site_name: Optional[str] = None,
+        local_site: Optional[LocalSite] = None,
+        **kwargs,
+    ) -> None:
         """Check a repository configuration for validity.
 
         This should check if a repository exists and can be connected to.
@@ -1202,16 +1454,16 @@ class SCMTool(object):
         logic.
 
         Args:
-            path (unicode):
+            path (str):
                 The repository path.
 
-            username (unicode, optional):
+            username (str, optional):
                 The optional username for the repository.
 
-            password (unicode, optional):
+            password (str, optional):
                 The optional password for the repository.
 
-            local_site_name (unicode, optional):
+            local_site_name (str, optional):
                 The name of the Local Site that owns this repository. This is
                 optional.
 
@@ -1276,7 +1528,11 @@ class SCMTool(object):
                 raise
 
     @classmethod
-    def get_auth_from_uri(cls, path, username):
+    def get_auth_from_uri(
+        cls,
+        path: str,
+        username: str,
+    ) -> Tuple[str, str]:
         """Return the username and hostname from the given repository path.
 
         This is used to separate out a username and a hostname from a path,
@@ -1288,15 +1544,22 @@ class SCMTool(object):
         in that method.
 
         Args:
-            path (unicode):
+            path (str):
                 The repository path to parse.
 
-            username (unicode):
+            username (str):
                 The existing username provided in the repository configuration.
 
         Returns:
             tuple:
-            A tuple containing 2 string items: The username, and the hostname.
+            A 2-tuple containing:
+
+            Tuple:
+                0 (str):
+                    The username.
+
+                1 (str):
+                    The hostname.
         """
         url = urlparse(path)
 
@@ -1312,7 +1575,10 @@ class SCMTool(object):
             return username, hostname
 
     @classmethod
-    def create_auth_form(cls, **kwargs):
+    def create_auth_form(
+        cls,
+        **kwargs,
+    ) -> BaseSCMToolAuthForm:
         """Return a form for configuring repository authentication details.
 
         This defaults to returning an instance of :py:attr:`auth_form`
@@ -1336,7 +1602,10 @@ class SCMTool(object):
         return form_cls(scmtool_cls=cls, **kwargs)
 
     @classmethod
-    def create_repository_form(cls, **kwargs):
+    def create_repository_form(
+        cls,
+        **kwargs,
+    ) -> BaseSCMToolRepositoryForm:
         """Return a form for configuring repository information.
 
         This defaults to returning an instance of :py:attr:`repository_form`
@@ -1360,8 +1629,14 @@ class SCMTool(object):
         return form_cls(scmtool_cls=cls, **kwargs)
 
     @classmethod
-    def accept_certificate(cls, path, username=None, password=None,
-                           local_site_name=None, certificate=None):
+    def accept_certificate(
+        cls,
+        path: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        local_site_name: Optional[str] = None,
+        certificate: Optional[Certificate] = None,
+    ) -> Mapping[str, Any]:
         """Accept the HTTPS certificate for the given repository path.
 
         This is needed for repositories that support HTTPS-backed
@@ -1375,16 +1650,16 @@ class SCMTool(object):
         repositories and can offer certificate verification and approval.
 
         Args:
-            path (unicode):
+            path (str):
                 The repository path.
 
-            username (unicode, optional):
+            username (str, optional):
                 The username provided for the repository.
 
-            password (unicode, optional):
+            password (str, optional):
                 The password provided for the repository.
 
-            local_site_name (unicode, optional):
+            local_site_name (str, optional):
                 The name of the Local Site used for the repository, if any.
 
             certificate (reviewboard.scmtools.certs.Certificate):
@@ -1401,7 +1676,7 @@ class SCMTool(object):
         raise NotImplementedError
 
 
-class SCMClient(object):
+class SCMClient:
     """Base class for client classes that interface with an SCM.
 
     Some SCMTools, rather than calling out to a third-party library, provide
@@ -1411,36 +1686,50 @@ class SCMClient(object):
     While not required, this class contains functionality that may be useful to
     such client classes. In particular, it makes it easier to fetch files from
     an HTTP-backed repository, handling authentication and errors.
-
-    Attributes:
-        path (unicode):
-            The repository path.
-
-        username (unicode, optional):
-            The username used for the repository.
-
-        password (unicode, optional):
-            The password used for the repository.
     """
 
-    def __init__(self, path, username=None, password=None):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The password used for communicating with the repository.
+    password: Optional[str]
+
+    #: The repository path.
+    path: str
+
+    #: The username used for communicating with the repository.
+    username: Optional[str]
+
+    def __init__(
+        self,
+        path: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> None:
         """Initialize the client.
 
         Args:
-            path (unicode):
+            path (str):
                 The repository path.
 
-            username (unicode, optional):
+            username (str, optional):
                 The username used for the repository.
 
-            password (unicode, optional):
+            password (str, optional):
                 The password used for the repository.
         """
         self.path = path
         self.username = username
         self.password = password
 
-    def get_file_http(self, url, path, revision, mime_type=None):
+    def get_file_http(
+        self,
+        url: str,
+        path: str,
+        revision: RevisionID,
+        mime_type: Optional[str] = None,
+    ) -> Optional[bytes]:
         """Return the contents of a file from an HTTP(S) URL.
 
         This is a convenience for looking up the contents of files that are
@@ -1450,16 +1739,16 @@ class SCMClient(object):
         (if any).
 
         Args:
-            url (unicode):
+            url (str):
                 The URL to fetch the file contents from.
 
-            path (unicode):
+            path (str):
                 The path of the file, as referenced in the diff.
 
             revision (Revision):
                 The revision of the file, as referenced in the diff.
 
-            mime_type (unicode):
+            mime_type (str):
                 The expected content type of the file. If not specified,
                 this will default to accept everything.
 

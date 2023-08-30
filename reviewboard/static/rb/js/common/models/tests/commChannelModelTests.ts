@@ -1,3 +1,4 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     afterEach,
     beforeEach,
@@ -6,11 +7,10 @@ import {
     fail,
     it,
     spyOn,
-    suite,
 } from 'jasmine-core';
 
-import { ClientCommChannel } from '../commChannelModel';
 import { PageView } from '../../views/pageView';
+import { ClientCommChannel } from '../commChannelModel';
 
 
 declare const $testsScratch: JQuery;

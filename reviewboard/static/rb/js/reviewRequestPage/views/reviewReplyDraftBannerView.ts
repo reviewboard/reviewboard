@@ -1,12 +1,11 @@
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
+import { ReviewReply } from 'reviewboard/common';
+import { ReviewRequestEditor } from 'reviewboard/reviews';
+import { FloatingBannerView } from 'reviewboard/ui';
 import {
-    FloatingBannerView,
     FloatingBannerViewOptions,
 } from 'reviewboard/ui/views/floatingBannerView';
-import {
-    ReviewRequestEditor,
-} from 'reviewboard/reviews/models/reviewRequestEditorModel';
 
 
 /**
@@ -30,7 +29,7 @@ interface ReviewReplyDraftBannerOptions extends FloatingBannerViewOptions {
  */
 @spina
 export class ReviewReplyDraftBannerView extends FloatingBannerView<
-    RB.ReviewReply,
+    ReviewReply,
     HTMLDivElement,
     ReviewReplyDraftBannerOptions
 > {

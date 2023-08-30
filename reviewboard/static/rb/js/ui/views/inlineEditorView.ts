@@ -18,6 +18,22 @@ interface InlineEditorViewOptions {
     deferEventSetup: boolean;
 
     /**
+     * The maximum mouse pixel movement allowed before going into edit mode.
+     *
+     * This is the most the mouse cursor can move in any direction between a
+     * mousedown and a mouseup event while still enabling going into edit
+     * mode. Any more movement may indicate an attempt to select text or drag
+     * a link/image, and should not trigger edit mode.
+     *
+     * We default this to 3, which allows for a little bit of movement from the
+     * action of pressing down on a mouse or trackpad.
+     *
+     * Version Added:
+     *     6.0
+     */
+    editDragThreshold: number;
+
+    /**
      * The class name to use for the edit icon.
      *
      * This is only used if ``editIconPath`` is unspecified.
@@ -119,6 +135,22 @@ interface InlineEditorViewOptions {
 interface EditOptions {
     /** Whether to suppress animation. */
     preventAnimation?: boolean;
+
+    /**
+     * The client X coordinate of a mouse click triggering edit mode.
+     *
+     * Version Added:
+     *     6.0
+     */
+    clickX?: number;
+
+    /**
+     * The client Y coordinate of a mouse click triggering edit mode.
+     *
+     * Version Added:
+     *     6.0
+     */
+    clickY?: number;
 }
 
 
@@ -149,6 +181,7 @@ export class InlineEditorView<
     static defaultOptions: Partial<InlineEditorViewOptions> = {
         animationSpeedMS: 200,
         deferEventSetup: false,
+        editDragThreshold: 3,
         editIconClass: null,
         editIconPath: null,
         enabled: true,
@@ -334,16 +367,18 @@ export class InlineEditorView<
      * Connect events.
      */
     setupEvents() {
+        const options = this.options;
+
         this.$field
             .keydown(e => {
                 e.stopPropagation();
 
                 if (e.key === 'Enter') {
-                    if (!this.options.multiline || e.ctrlKey) {
+                    if (!options.multiline || e.ctrlKey) {
                         this.submit();
                     }
 
-                    if (!this.options.multiline) {
+                    if (!options.multiline) {
                         e.preventDefault();
                     }
                 } else if (e.key === 'Escape') {
@@ -362,13 +397,15 @@ export class InlineEditorView<
 
                 this._scheduleUpdateDirtyState();
             })
-            .on('cut paste', () => this._scheduleUpdateDirtyState())
+            .on('cut paste', () => this._scheduleUpdateDirtyState());
 
-        if (!this.options.useEditIconOnly) {
+        if (!options.useEditIconOnly) {
             /*
              * Check if the mouse was dragging, so that the editor isn't opened
              * when text is selected.
              */
+            let lastX: number = null;
+            let lastY: number = null;
             let isDragging = true;
 
             this.$el
@@ -378,19 +415,32 @@ export class InlineEditorView<
                     e.preventDefault();
 
                     if (!isDragging) {
-                        this.startEdit();
+                        this.startEdit({
+                            clickX: e.clientX,
+                            clickY: e.clientY,
+                        });
                     }
 
                     isDragging = true;
                 })
-                .mousedown(() => {
+                .mousedown(e => {
                     isDragging = false;
-                    this.$el.one('mousemove', () => {
-                        isDragging = true;
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+
+                    this.$el.on('mousemove', e2 => {
+                        const threshold = options.editDragThreshold;
+
+                        isDragging = isDragging || (
+                            Math.abs(e2.clientX - lastX) > threshold ||
+                            Math.abs(e2.clientY - lastY) > threshold);
                     });
                 })
                 .mouseup(() => {
-                    this.$el.unbind('mousemove');
+                    this.$el.off('mousemove');
+
+                    lastX = null;
+                    lastY = null;
                 });
         }
 
@@ -422,9 +472,9 @@ export class InlineEditorView<
         this._editing = true;
         this.options.setFieldValue(this, value);
 
-        this.trigger('beginEditPreShow');
+        this.trigger('beginEditPreShow', options);
         this.showEditor(options);
-        this.trigger('beginEdit');
+        this.trigger('beginEdit', options);
     }
 
     /**
@@ -435,10 +485,17 @@ export class InlineEditorView<
      *         Options for the operation.
      */
     showEditor(options: EditOptions = {}) {
+        const $editIcon = this._$editIcon;
+
         if (this.options.multiline && !options.preventAnimation) {
-            this._$editIcon.fadeOut(this.options.animationSpeedMS);
+            $editIcon.fadeOut(
+                this.options.animationSpeedMS,
+                () => $editIcon.css({
+                    display: '',
+                    visibility: 'hidden',
+                }));
         } else {
-            this._$editIcon.hide();
+            $editIcon.css('visibility', 'hidden');
         }
 
         this.$el.hide();
@@ -507,13 +564,17 @@ export class InlineEditorView<
      * Hide the inline editor.
      */
     hideEditor() {
+        const $editIcon = this._$editIcon;
+
         this.$field.blur();
         this.$buttons.hide();
 
         if (this.options.multiline) {
-            this._$editIcon.fadeIn(this.options.animationSpeedMS);
+            $editIcon.fadeIn(
+                this.options.animationSpeedMS,
+                () => $editIcon.css('visibility', 'visible'));
         } else {
-            this._$editIcon.show();
+            $editIcon.css('visibility', 'visible');
         }
 
         if (this.options.multiline &&
@@ -652,7 +713,7 @@ export class InlineEditorView<
             this.showEditor();
         }
 
-        this._$editIcon.show();
+        this._$editIcon.css('visibility', 'visible');
         this.options.enabled = true;
     }
 
@@ -664,7 +725,7 @@ export class InlineEditorView<
             this.hideEditor();
         }
 
-        this._$editIcon.hide();
+        this._$editIcon.css('visibility', 'hidden');
         this.options.enabled = false;
     }
 
@@ -888,8 +949,14 @@ export class RichTextInlineEditorView<
             this.textEditor.bindRichTextVisibility($markdownRef);
         });
 
-        this.listenTo(this, 'beginEdit', () => {
+        this.listenTo(this, 'beginEdit', options => {
+            if (options.clickX !== undefined && options.clickY !== undefined) {
+                this.textEditor.setCursorPosition(options.clickX,
+                                                  options.clickY);
+            }
+
             this.textEditor.showEditor();
+
             origRichText = this.textEditor.richText;
         });
 

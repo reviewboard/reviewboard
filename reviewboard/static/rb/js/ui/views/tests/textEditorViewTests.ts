@@ -1,3 +1,4 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     afterEach,
     beforeEach,
@@ -5,10 +6,9 @@ import {
     expect,
     it,
     spyOn,
-    suite,
 } from 'jasmine-core';
 
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import { UserSession } from 'reviewboard/common';
 
 import { DnDUploader } from '../dndUploaderView';
 import { TextEditorView } from '../textEditorView';

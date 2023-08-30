@@ -174,31 +174,35 @@
 }
 
 /* Adds a left-facing arrow to the left-hand side of a box. */
-.left-arrow-callout(@color) {
+.left-arrow-callout(@color;
+                    @border-color: @box-border-color;
+                    @size: 20px;
+                    @border-size: 1px;
+                    @offset-top: 12px) {
   position: relative;
 
   &:before, &:after {
-    border: 1px transparent solid;
+    border: @border-size transparent solid;
     content: " ";
     display: block;
     height: 0;
-    left: -20px;
+    left: -@size;
     position: absolute;
     right: 100%;
-    top: 12px;
+    top: @offset-top;
     width: 0;
   }
 
   &:before {
-    border-right-color: @box-border-color;
-    border-width: 10px;
+    border-right-color: @border-color;
+    border-width: (@size / 2);
   }
 
   &:after {
     border-right-color: @color;
-    border-width: 9px;
-    margin-left: 2px;
-    margin-top: 1px;
+    border-width: (@size / 2 - @border-size);
+    margin-left: (@border-size * 2);
+    margin-top: @border-size;
   }
 }
 

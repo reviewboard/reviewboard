@@ -23,10 +23,9 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             SSHKeyAssociationError,
                                             TwoFactorAuthCodeRequiredError)
+from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.fake import FAKE_HOSTING_SERVICES
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import (get_hosting_services,
-                                             get_hosting_service)
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.errors import (AuthenticationError,
@@ -84,9 +83,9 @@ class BaseRepositorySubForm(forms.Form):
     This provides some standard functionality for collecting information
     needed to configure a specific type of repository (one backed by a
     particular :py:class:`~reviewboard.scmtools.core.SCMTool` or
-    :py:class:`~reviewboard.hostingsvcs.service.HostingService`). It takes
-    care of basic form customization and loading, and must be subclassed for
-    other operations.
+    :py:class:`~reviewboard.hostingsvcs.base.hosting_service.
+    BaseHostingService`). It takes care of basic form customization and
+    loading, and must be subclassed for other operations.
 
     Third-parties will never need to subclass this directly. Instead, subclass
     one of:
@@ -856,7 +855,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         hosting_services = set()
 
-        for hosting_service in get_hosting_services():
+        for hosting_service in hosting_service_registry:
             if (not hosting_service.visible and
                 hosting_service is not cur_hosting_service_cls):
                 # We don't want to show this service as an option.
@@ -1164,8 +1163,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         Args:
             hosting_service (type):
-                The hosting service class, which should be a subclass of
-                :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+                The hosting service class.
+
+                This must be a subclass of
+                :py:class:`~reviewboard.hostingsvcs.base.hosting_service.
+                BaseHostingService`.
 
             hosting_accounts (list of reviewboard.hostingsvcs.models.
                               HostingServiceAccount, optional):
@@ -1306,8 +1308,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 The ID of the hosting service to load.
 
             hosting_service (type):
-                The hosting service class. This will be a subclass of
-                :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+                The hosting service class.
+
+                This will be a subclass of
+                :py:class:`~reviewboard.hostingsvcs.base.hosting_service.
+                BaseHostingService`.
 
             plan_type_id (unicode):
                 The ID of the hosting plan pertaining to the forms to load.
@@ -1429,7 +1434,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         elif (bug_tracker_type is not None and
               bug_tracker_type != self.CUSTOM_BUG_TRACKER_ID):
             # A bug tracker service or custom bug tracker was chosen.
-            service = get_hosting_service(bug_tracker_type)
+            service = \
+                hosting_service_registry.get_hosting_service(bug_tracker_type)
 
             if not service:
                 return
@@ -1477,7 +1483,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         # This should have been caught during validation, so we can assume
         # it's fine.
-        hosting_service_cls = get_hosting_service(hosting_type)
+        hosting_service_cls = \
+            hosting_service_registry.get_hosting_service(hosting_type)
         assert hosting_service_cls
 
         # Validate that the provided tool is valid for the hosting service.
@@ -1632,7 +1639,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 return
 
             plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
-            hosting_service_cls = get_hosting_service(hosting_type)
+            hosting_service_cls = \
+                hosting_service_registry.get_hosting_service(hosting_type)
 
             # We already validated server-side that the hosting service
             # exists.
@@ -1670,7 +1678,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             # We're using a bug tracker of a certain type. We need to
             # get the right data, strip the prefix on the forms, and
             # build the bug tracker URL from that.
-            hosting_service_cls = get_hosting_service(bug_tracker_type)
+            hosting_service_cls = \
+                hosting_service_registry.get_hosting_service(bug_tracker_type)
 
             if not hosting_service_cls:
                 self.errors['bug_tracker_type'] = self.error_class([
@@ -1715,7 +1724,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         if self.data:
             hosting_type = self._get_field_data('hosting_type')
-            hosting_service = get_hosting_service(hosting_type)
+            hosting_service = \
+                hosting_service_registry.get_hosting_service(hosting_type)
             repository_plan = (self._get_field_data('repository_plan') or
                                self.DEFAULT_PLAN_ID)
             with_auth_forms = (hosting_type == self.NO_HOSTING_SERVICE_ID)
@@ -1732,7 +1742,9 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 bug_tracker_plan = repository_plan
             else:
                 bug_tracker_type = self._get_field_data('bug_tracker_type')
-                bug_tracker_service = get_hosting_service(bug_tracker_type)
+                bug_tracker_service = \
+                    hosting_service_registry.get_hosting_service(
+                        bug_tracker_type)
                 bug_tracker_plan = (self._get_field_data('bug_tracker_plan') or
                                     self.DEFAULT_PLAN_ID)
 
@@ -1899,7 +1911,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             not hosting_account):
             return
 
-        hosting_service_cls = get_hosting_service(hosting_type)
+        hosting_service_cls = \
+            hosting_service_registry.get_hosting_service(hosting_type)
         hosting_service = hosting_service_cls(hosting_account)
 
         # Check the requirements for SSH key association. If the requirements
@@ -1955,7 +1968,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         hosting_type = self.cleaned_data['hosting_type']
 
         if hosting_type != self.NO_HOSTING_SERVICE_ID:
-            hosting_service = get_hosting_service(hosting_type)
+            hosting_service = \
+                hosting_service_registry.get_hosting_service(hosting_type)
 
             if not hosting_service:
                 raise ValidationError([_('Not a valid hosting service')])
@@ -1972,7 +1986,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                             self.NO_BUG_TRACKER_ID)
 
         if bug_tracker_type not in self.IGNORED_SERVICE_IDS:
-            hosting_service = get_hosting_service(bug_tracker_type)
+            hosting_service = \
+                hosting_service_registry.get_hosting_service(bug_tracker_type)
 
             if (not hosting_service or
                 not hosting_service.supports_bug_trackers):
@@ -2149,7 +2164,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         if hosting_type == self.NO_HOSTING_SERVICE_NAME:
             service = None
         else:
-            service = get_hosting_service(hosting_type)
+            service = \
+                hosting_service_registry.get_hosting_service(hosting_type)
 
         if service is not None:
             repository.username = ''
@@ -2187,7 +2203,9 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     'bug_tracker_plan': plan,
                 })
 
-                bug_tracker_service = get_hosting_service(bug_tracker_type)
+                bug_tracker_service = \
+                    hosting_service_registry.get_hosting_service(
+                        bug_tracker_type)
                 assert bug_tracker_service
 
                 if bug_tracker_service.self_hosted:
@@ -2230,7 +2248,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         username = subforms_cleaned_data.get('username')
         password = subforms_cleaned_data.get('password')
         hosting_type = self.cleaned_data['hosting_type']
-        hosting_service_cls = get_hosting_service(hosting_type)
+        hosting_service_cls = \
+            hosting_service_registry.get_hosting_service(hosting_type)
         hosting_service = None
         plan = None
 

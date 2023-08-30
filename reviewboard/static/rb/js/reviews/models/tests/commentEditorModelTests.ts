@@ -1,17 +1,17 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     beforeEach,
     describe,
     expect,
     it,
     spyOn,
-    suite,
 } from 'jasmine-core';
-
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
 
 import {
     BaseResource,
-} from 'reviewboard/common/resources/models/baseResourceModel';
+    UserSession,
+} from 'reviewboard/common';
+
 import { CommentEditor } from '../commentEditorModel';
 
 

@@ -3,9 +3,11 @@
  */
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
-import { EnabledFeatures } from 'reviewboard/common';
-import { TextEditorView } from 'reviewboard/ui/views/textEditorView';
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import {
+    EnabledFeatures,
+    UserSession,
+} from 'reviewboard/common';
+import { TextEditorView } from 'reviewboard/ui';
 
 import { CommentEditor } from '../models/commentEditorModel';
 import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';

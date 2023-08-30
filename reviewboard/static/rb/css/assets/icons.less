@@ -1,8 +1,7 @@
 @import (reference) "djblets/css/mixins/retina.less";
 @import (reference) "../defs.less";
 
-
-@img_base: '../../images';
+@import (reference) "rb/css/assets/paths.less";
 
 
 .rb-icon {
@@ -12,65 +11,63 @@
   text-indent: -99999px;
   vertical-align: middle;
 
-  .retina('@{img_base}/icons.png', 155px 150px, @has-svg: true);
+  .retina('@{rb-images-root}/icons.png', 155px 150px, @has-svg: true);
 }
 
 
-& {
-  .rb-icon(@name, @x, @y, @width: 16px, @height: 16px) {
-    .rb-icon-@{name} {
-      background-position: -@x -@y;
-      width: @width;
-      height: @height;
-    }
+.make-rb-icon(@name, @x, @y, @width: 16px, @height: 16px) {
+  .rb-icon-@{name} {
+    background-position: -@x -@y;
+    width: @width;
+    height: @height;
   }
-
-  /*
-   * NOTE: Keep these in the same order as found in the spritesheet.
-   */
-  .rb-icon(issue-dropped, 5px, 5px);
-  .rb-icon(issue-open, 26px, 5px);
-  .rb-icon(issue-resolved, 47px, 5px);
-  .rb-icon(collapse-review, 68px, 5px, 18px, 18px);
-  .rb-icon(expand-review, 91px, 5px, 18px, 18px);
-  .rb-icon(collapse, 114px, 5px, 14px, 14px);
-  .rb-icon(expand, 135px, 5px, 14px, 14px);
-  .rb-icon(dropdown-arrow, 8px, 33px, 8px, 8px);
-  .rb-icon(datagrid-comment-draft, 24px, 28px);
-  .rb-icon(datagrid-comment-shipit, 45px, 28px);
-  .rb-icon(datagrid-comment, 66px, 28px);
-  .rb-icon(datagrid-shipit, 87px, 28px, 10px, 12px);
-  .rb-icon(new-updates, 102px, 29px, 15px, 15px);
-  .rb-icon(edit, 124px, 28px, @rb-icon-edit-width, @rb-icon-edit-height);
-  .rb-icon(delete, 5px, 49px, 12px, 12px);
-  .rb-icon(diff-collapse-chunk, 22px, 49px, 14px, 14px);
-  .rb-icon(diff-expand-above, 41px, 49px, 28px, 14px);
-  .rb-icon(diff-expand-all, 74px, 49px, 14px, 14px);
-  .rb-icon(diff-expand-below, 93px, 49px, 28px, 14px);
-  .rb-icon(diff-expand-header, 126px, 49px, 14px, 14px);
-  .rb-icon(admin-enabled, 5px, 68px);
-  .rb-icon(admin-disabled, 26px, 68px);
-  .rb-icon(admin-add, 47px, 68px);
-  .rb-icon(star-off, 68px, 68px);
-  .rb-icon(star-on, 89px, 68px);
-  .rb-icon(warning, 110px, 68px);
-  .rb-icon(search, 129px, 66px, 20px, 20px);
-  .rb-icon(search-dark, 3px, 86px, 20px, 20px);
-  .rb-icon(admin-collapse, 25px, 89px, 20px, 13px);
-  .rb-icon(admin-expand, 50px, 89px, 20px, 13px);
-  .rb-icon(jump-to, 76px, 86px, 21px, 18px);
-  .rb-icon(range-slider, 99px, 87px, 11px, 18px);
-  .rb-icon(download, 114px, 90px, 14px, 14px);
-  .rb-icon(remove-widget, 130px, 89px, 13px, 13px);
-  .rb-icon(archive-off, 6px, 106px);
-  .rb-icon(archive-on, 26px, 106px);
-  .rb-icon(datagrid-open-issues, 47px, 108px, 8px, 11px);
-  .rb-icon(datagrid-column-shipits-issues, 59px, 107px, 35px, 16px);
-  .rb-icon(shipit, 99px, 107px, 12px, 15px);
-  .rb-icon(issue-verifying, 117px, 107px);
-  .rb-icon(datagrid-issue-verifying, 139px, 108px, 11px, 14px);
-  .rb-icon(compose-review, 6px, 126px, 17px, 16px);
-  .rb-icon(edit-review, 26px, 126px);
-  .rb-icon(create-review, 46px, 124px, 18px, 18px);
-  .rb-icon(review-num-files, 64px, 126px);
 }
+
+/*
+ * NOTE: Keep these in the same order as found in the spritesheet.
+ */
+.make-rb-icon(issue-dropped, 5px, 5px);
+.make-rb-icon(issue-open, 26px, 5px);
+.make-rb-icon(issue-resolved, 47px, 5px);
+.make-rb-icon(collapse-review, 68px, 5px, 18px, 18px);
+.make-rb-icon(expand-review, 91px, 5px, 18px, 18px);
+.make-rb-icon(collapse, 114px, 5px, 14px, 14px);
+.make-rb-icon(expand, 135px, 5px, 14px, 14px);
+.make-rb-icon(dropdown-arrow, 8px, 33px, 8px, 8px);
+.make-rb-icon(datagrid-comment-draft, 24px, 28px);
+.make-rb-icon(datagrid-comment-shipit, 45px, 28px);
+.make-rb-icon(datagrid-comment, 66px, 28px);
+.make-rb-icon(datagrid-shipit, 87px, 28px, 10px, 12px);
+.make-rb-icon(new-updates, 102px, 29px, 15px, 15px);
+.make-rb-icon(edit, 124px, 28px, @rb-icon-edit-width, @rb-icon-edit-height);
+.make-rb-icon(delete, 5px, 49px, 12px, 12px);
+.make-rb-icon(diff-collapse-chunk, 22px, 49px, 14px, 14px);
+.make-rb-icon(diff-expand-above, 41px, 49px, 28px, 14px);
+.make-rb-icon(diff-expand-all, 74px, 49px, 14px, 14px);
+.make-rb-icon(diff-expand-below, 93px, 49px, 28px, 14px);
+.make-rb-icon(diff-expand-header, 126px, 49px, 14px, 14px);
+.make-rb-icon(admin-enabled, 5px, 68px);
+.make-rb-icon(admin-disabled, 26px, 68px);
+.make-rb-icon(admin-add, 47px, 68px);
+.make-rb-icon(star-off, 68px, 68px);
+.make-rb-icon(star-on, 89px, 68px);
+.make-rb-icon(warning, 110px, 68px);
+.make-rb-icon(search, 129px, 66px, 20px, 20px);
+.make-rb-icon(search-dark, 3px, 86px, 20px, 20px);
+.make-rb-icon(admin-collapse, 25px, 89px, 20px, 13px);
+.make-rb-icon(admin-expand, 50px, 89px, 20px, 13px);
+.make-rb-icon(jump-to, 76px, 86px, 21px, 18px);
+.make-rb-icon(range-slider, 99px, 87px, 11px, 18px);
+.make-rb-icon(download, 114px, 90px, 14px, 14px);
+.make-rb-icon(remove-widget, 130px, 89px, 13px, 13px);
+.make-rb-icon(archive-off, 6px, 106px);
+.make-rb-icon(archive-on, 26px, 106px);
+.make-rb-icon(datagrid-open-issues, 47px, 108px, 8px, 11px);
+.make-rb-icon(datagrid-column-shipits-issues, 59px, 107px, 35px, 16px);
+.make-rb-icon(shipit, 99px, 107px, 12px, 15px);
+.make-rb-icon(issue-verifying, 117px, 107px);
+.make-rb-icon(datagrid-issue-verifying, 139px, 108px, 11px, 14px);
+.make-rb-icon(compose-review, 6px, 126px, 17px, 16px);
+.make-rb-icon(edit-review, 26px, 126px);
+.make-rb-icon(create-review, 46px, 124px, 18px, 18px);
+.make-rb-icon(review-num-files, 64px, 126px);

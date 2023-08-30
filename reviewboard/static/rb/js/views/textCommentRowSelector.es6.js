@@ -583,7 +583,8 @@ RB.TextCommentRowSelector = Backbone.View.extend({
                             $(node).hasClass(tdClass)) &&
                            (node.tagName !== 'TBODY' ||
                             !$(node).hasClass(excludeTBodyClass))) {
-                    findPreTags(result, node, tdClass, excludeTBodyClass);
+                    this._findPreTags(result, node, tdClass,
+                                      excludeTBodyClass);
                 }
             }
         }
@@ -647,7 +648,7 @@ RB.TextCommentRowSelector = Backbone.View.extend({
 
             const nodes = [];
             const doc = range.cloneContents();
-            findPreTags(nodes, doc, tdClass, excludeTBodyClass);
+            this._findPreTags(nodes, doc, tdClass, excludeTBodyClass);
 
             if (nodes.length > 0) {
                 /*

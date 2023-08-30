@@ -42,10 +42,10 @@ RB.PreCommitView = RB.UploadDiffView.extend({
          <a href="#" class="startover"><%- startOver %></a>
         </div>
         <div class="input" id="processing-diff">
-         <div class="spinner"><span class="fa fa-spinner fa-pulse"></div>
+         <div class="spinner"><span class="djblets-o-spinner"></div>
         </div>
         <div class="input" id="uploading-diffs">
-         <div><span class="fa fa-spinner fa-pulse"></div>
+         <div><span class="djblets-o-spinner"></div>
         </div>
         <div class="input" id="error-indicator">
          <div id="error-contents" />

@@ -1,13 +1,14 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     beforeEach,
     describe,
     expect,
     it,
     spyOn,
-    suite,
 } from 'jasmine-core';
 
 import { BaseCollection } from '../../../collections/baseCollection';
+import { Review } from '../../models/reviewModel';
 import { ResourceCollection } from '../resourceCollection';
 
 
@@ -29,7 +30,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
         spyOn(reviewRequest, 'ready').and.resolveTo();
 
         collection = new ResourceCollection([], {
-            model: RB.Review,
+            model: Review,
             parentResource: reviewRequest,
         });
     });

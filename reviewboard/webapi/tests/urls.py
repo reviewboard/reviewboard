@@ -1,5 +1,5 @@
+from reviewboard.hostingsvcs.base import BaseHostingService
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -345,7 +345,7 @@ def get_hosting_service_list_url(local_site_name=None):
 
 def get_hosting_service_item_url(hosting_service_or_id, local_site_name=None):
     hosting_service_id = _normalize_id(hosting_service_or_id,
-                                       HostingService,
+                                       BaseHostingService,
                                        id_field='hosting_service_id',
                                        ischecker=issubclass)
 

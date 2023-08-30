@@ -1,7 +1,7 @@
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 import CodeMirror from 'codemirror';
 
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import { UserSession } from 'reviewboard/common';
 
 import { DnDUploader } from './dndUploaderView';
 
@@ -59,6 +59,8 @@ class CodeMirrorWrapper extends BaseView<
     HTMLDivElement,
     EditorWrapperOptions
 > {
+    static className = 'rb-c-text-editor__textarea -is-rich';
+
     /**********************
      * Instance variables *
      **********************/
@@ -109,7 +111,9 @@ class CodeMirrorWrapper extends BaseView<
         this._codeMirror = new CodeMirror(options.parentEl,
                                           codeMirrorOptions);
 
-        this.setElement(this._codeMirror.getWrapperElement());
+        const wrapperEl = this._codeMirror.getWrapperElement();
+        wrapperEl.classList.add('rb-c-text-editor__textarea', '-is-rich');
+        this.setElement(wrapperEl);
 
         if (options.minHeight !== undefined) {
             this.$el.css('min-height', options.minHeight);
@@ -141,6 +145,36 @@ class CodeMirrorWrapper extends BaseView<
          * empty string in that case instead.
          */
         return (initialValue || '') !== this.getText();
+    }
+
+    /**
+     * Set the cursor position within the editor.
+     *
+     * This uses client coordinates (which are relative to the viewport).
+     *
+     * Version Added:
+     *     6.0
+     *
+     * Args:
+     *     x (number):
+     *         The client X coordinate to set.
+     *
+     *     y (number):
+     *         The client Y coordinate to set.
+     */
+    setCursorPosition(
+        x: number,
+        y: number,
+    ) {
+        const codeMirror = this._codeMirror;
+
+        codeMirror.setCursor(
+            codeMirror.coordsChar(
+                {
+                    left: x,
+                    top: y,
+                },
+                'window'));
     }
 
     /**
@@ -249,6 +283,7 @@ class TextAreaWrapper extends BaseView<
     HTMLTextAreaElement,
     EditorWrapperOptions
 > {
+    static className = 'rb-c-text-editor__textarea -is-plain';
     static tagName = 'textarea';
 
     /**********************
@@ -307,6 +342,113 @@ class TextAreaWrapper extends BaseView<
 
         return value.length !== initialValue.length ||
                value !== initialValue;
+    }
+
+    /**
+     * Set the cursor position within the editor.
+     *
+     * This uses client coordinates (which are relative to the viewport).
+     *
+     * Setting the cursor position works in Firefox and WebKit/Blink-based
+     * browsers. Not all browsers support the required APIs.
+     *
+     * Version Added:
+     *     6.0
+     *
+     * Args:
+     *     x (number):
+     *         The client X coordinate to set.
+     *
+     *     y (number):
+     *         The client Y coordinate to set.
+     */
+    setCursorPosition(
+        x: number,
+        y: number,
+    ) {
+        if (!document.caretPositionFromPoint &&
+            !document.caretRangeFromPoint) {
+            /*
+             * We don't have what need to reliably return a caret position for
+             * the text.
+             *
+             * There are tricks we can try in order to attempt to compute the
+             * right position, based on line heights and character sizes, but
+             * it gets more difficult with wrapping.
+             *
+             * In reality, both of the above methods are widespread enough to
+             * rely upon, and if they don't exist, we just won't set the
+             * cursor position.
+             */
+            return;
+        }
+
+        const $el = this.$el;
+        const el = this.el;
+
+        /*
+         * We need a proxy element for both the Firefox and WebKit/Blink
+         * implementations, because neither version works quite right with
+         * a <textarea>.
+         *
+         * On Firefox, Document.caretPositionFromPoint will generally work
+         * with a <textarea>, so long as you're clicking within a line. If
+         * you click past the end of a line, however, you get a caret position
+         * at the end of the <textarea>. Not ideal. This behavior doesn't
+         * manifest for standard DOM nodes, so we can use a proxy here.
+         *
+         * On WebKit/Blink, Document.caretRangeFromPoint doesn't even work
+         * with a <textarea> at all, so we're forced to use a proxy element
+         * (See https://bugs.webkit.org/show_bug.cgi?id=30604).
+         *
+         * A second caveat here is that, in either case, we can't get a
+         * position for off-screen elements (apparently). So we have to overlay
+         * this exactly. We carefully align it and then use an opacity of 0 to
+         * hide it,
+         */
+        const offset = $el.offset();
+        const bounds = el.getBoundingClientRect();
+        const $proxy = $('<pre>')
+            .move(offset.left, offset.top, 'absolute')
+            .css({
+                'border': 0,
+                'font': $el.css('font'),
+                'height': `${bounds.height}px`,
+                'line-height': $el.css('line-height'),
+                'margin': 0,
+                'opacity': 0,
+                'padding': $el.css('padding'),
+                'white-space': 'pre-wrap',
+                'width': `${bounds.width}px`,
+                'word-wrap': 'break-word',
+                'z-index': 10000,
+            })
+            .text(this.el.value)
+            .appendTo(document.body);
+
+        let pos = null;
+
+        if (document.caretPositionFromPoint) {
+            /* Firefox */
+            const caret = document.caretPositionFromPoint(x, y);
+
+            if (caret) {
+                pos = caret.offset;
+            }
+        } else if (document.caretRangeFromPoint) {
+            /* Webkit/Blink. */
+            const caret = document.caretRangeFromPoint(x, y);
+
+            if (caret) {
+                pos = caret.startOffset;
+            }
+        }
+
+        $proxy.remove();
+
+        if (pos !== null) {
+            el.setSelectionRange(pos, pos);
+        }
     }
 
     /**
@@ -420,21 +562,113 @@ interface FormattingToolbarViewOptions {
 }
 
 
-interface FormattingToolbarButton {
+/**
+ * Options for a group on the formatting toolbar.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface FormattingToolbarGroupOptions {
     /**
-     * The class to apply to the element.
+     * The unique ID of the group.
      */
-    className: string;
+    id: string;
 
     /**
-     * The name of a callback function when the button is clicked.
+     * The ARIA label to set for the group.
      */
-    onClick?: string;
+    ariaLabel: string;
 
     /**
-     * HTML contet to use instead of creating a new button.
+     * An optional list of item options to add to the group.
      */
-    $content?: JQuery;
+    items?: FormattingToolbarItemOptions[];
+}
+
+
+/**
+ * Options for an item on the formatting toolbar.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface FormattingToolbarItemOptions {
+    /**
+     * The unique ID of the item.
+     */
+    id: string;
+
+    /**
+     * An optional element to use instead of the default one.
+     *
+     * Callers should take care to ensure their elements are accessible.
+     *
+     * ``ariaLabel``, ``className``, and ``onClick`` are still applicable to
+     * custom elements.
+     */
+    $el?: JQuery;
+
+    /**
+     * An optional ARIA label to set for the item.
+     *
+     * This is recommended.
+     */
+    ariaLabel?: string;
+
+    /**
+     * An extra CSS class name (or space-separated list of class names) to set.
+     */
+    className?: string;
+
+    /**
+     * Handler for when the button is clicked.
+     */
+    onClick?: (e: MouseEvent | JQuery.ClickEvent) => void;
+}
+
+
+/**
+ * Information on an item group in the formatting toolbar.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface FormattingToolbarGroup {
+    /**
+     * The element for the group.
+     */
+    $el: JQuery;
+
+    /**
+     * The unique ID of the group.
+     */
+    id: string;
+
+    /**
+     * The mapping of item IDs to information in the group.
+     */
+    items: {
+        [key: string]: FormattingToolbarItem
+    };
+}
+
+
+/**
+ * Information on an item in the formatting toolbar.
+ *
+ * Version Added:
+ *     6.0
+ */
+interface FormattingToolbarItem {
+    /**
+     * The element for the item.
+     */
+    $el: JQuery;
+
+    /**
+     * The unique ID of the item.
+     */
+    id: string;
 }
 
 
@@ -452,45 +686,26 @@ class FormattingToolbarView extends BaseView<
 > {
     static className = 'rb-c-formatting-toolbar';
 
-    static template = dedent`
-        <div class="rb-c-formatting-toolbar__btn-group">
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-bold"></a>
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-italic"></a>
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-strikethrough"></a>
-        </div>
-        <div class="rb-c-formatting-toolbar__btn-group">
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-link"></a>
-         <label class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-image"
-                aria-role="button" tabindex="0">
-          <input type="file" style="display: none;">
-         </label>
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-code"></a>
-        </div>
-        <div class="rb-c-formatting-toolbar__btn-group">
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-list-ul"></a>
-         <a href="#" class="rb-c-formatting-toolbar__btn rb-c-formatting-toolbar__btn-list-ol"></a>
-        </div>
-    `;
-
-    static events: EventsHash = {
-        'click .rb-c-formatting-toolbar__btn-bold': '_onBoldBtnClick',
-        'click .rb-c-formatting-toolbar__btn-code': '_onCodeBtnClick',
-        'click .rb-c-formatting-toolbar__btn-italic': '_onItalicBtnClick',
-        'click .rb-c-formatting-toolbar__btn-link': '_onLinkBtnClick',
-        'click .rb-c-formatting-toolbar__btn-list-ol': '_onOListBtnClick',
-        'click .rb-c-formatting-toolbar__btn-list-ul': '_onUListBtnClick',
-        'click .rb-c-formatting-toolbar__btn-strikethrough':
-            '_onStrikethroughBtnClick',
-    };
-
     /**********************
      * Instance variables *
      **********************/
 
     /**
+     * A mapping of button group IDs to information.
+     */
+    buttonGroups: {
+        [key: string]: FormattingToolbarGroup
+    } = {};
+
+    /**
      * The CodeMirror instance.
      */
     #codeMirror: CodeMirror;
+
+    /**
+     * The ID of the editor being managed.
+     */
+    #editorID: string;
 
     /**
      * Initialize the view.
@@ -500,14 +715,182 @@ class FormattingToolbarView extends BaseView<
      *         Options for the view.
      */
     initialize(options: FormattingToolbarViewOptions) {
-        this.#codeMirror = options.editor._codeMirror;
+        const editor = options.editor;
+        const editorID = editor.el.id;
+
+        console.assert(!!editorID);
+
+        this.#codeMirror = editor._codeMirror;
+        this.#editorID = editorID;
+
+        this.addGroup({
+            ariaLabel: _`Text formatting`,
+            id: 'text',
+            items: [
+                {
+                    ariaLabel: _`Bold`,
+                    className: 'rb-c-formatting-toolbar__btn-bold',
+                    id: 'bold',
+                    onClick: this.#onBoldBtnClick.bind(this),
+                },
+                {
+                    ariaLabel: _`Italic`,
+                    className: 'rb-c-formatting-toolbar__btn-italic',
+                    id: 'italic',
+                    onClick: this.#onItalicBtnClick.bind(this),
+                },
+                {
+                    ariaLabel: _`Strikethrough`,
+                    className: 'rb-c-formatting-toolbar__btn-strikethrough',
+                    id: 'strikethrough',
+                    onClick: this.#onStrikethroughBtnClick.bind(this),
+                },
+                {
+                    ariaLabel: _`Code literal`,
+                    className: 'rb-c-formatting-toolbar__btn-code',
+                    id: 'code',
+                    onClick: this.#onCodeBtnClick.bind(this),
+                },
+            ],
+        });
+
+        this.addGroup({
+            ariaLabel: _`Special formatting and media`,
+            id: 'media',
+            items: [
+                {
+                    ariaLabel: _`Insert link`,
+                    className: 'rb-c-formatting-toolbar__btn-link',
+                    id: 'link',
+                    onClick: this.#onLinkBtnClick.bind(this),
+                },
+                {
+                    $el: $(dedent`
+                        <label class="rb-c-formatting-toolbar__btn"
+                               aria-role="button" tabindex="0">
+                        `)
+                        .append(
+                            $('<input type="file" style="display: none;">')
+                                .on('change', this.#onImageUpload.bind(this))),
+                    ariaLabel: _`Upload image`,
+                    className: 'rb-c-formatting-toolbar__btn-image',
+                    id: 'upload-image',
+                },
+            ],
+        });
+
+        this.addGroup({
+            ariaLabel: _`Lists`,
+            id: 'lists',
+            items: [
+                {
+                    ariaLabel: _`Insert unordered list`,
+                    className: 'rb-c-formatting-toolbar__btn-list-ul',
+                    id: 'list-ul',
+                    onClick: this.#onUListBtnClick.bind(this),
+                },
+                {
+                    ariaLabel: _`Insert ordered list`,
+                    className: 'rb-c-formatting-toolbar__btn-list-ol',
+                    id: 'list-ol',
+                    onClick: this.#onOListBtnClick.bind(this),
+                },
+            ],
+        });
     }
 
     /**
      * Render the view.
      */
     onInitialRender() {
-        this.$el.html(FormattingToolbarView.template);
+        this.$el.attr({
+            'aria-controls': this.#editorID,
+            'aria-label': _`Text formatting toolbar`,
+            'role': 'toolbar',
+        });
+    }
+
+    /**
+     * Add a group on the toolbar for placing items.
+     *
+     * This may optionally take items to add to the group.
+     *
+     * Args:
+     *     options (FormattingToolbarGroupOptions):
+     *         Options for the group.
+     */
+    addGroup(options: FormattingToolbarGroupOptions) {
+        const id = options.id;
+
+        console.assert(!this.buttonGroups.hasOwnProperty(id),
+                       `Toolbar group "${id}" was already registered.`);
+
+        const $buttonGroup = $('<div>')
+            .addClass('rb-c-formatting-toolbar__btn-group')
+            .attr('aria-label', options.ariaLabel);
+
+        const group: FormattingToolbarGroup = {
+            $el: $buttonGroup,
+            id: id,
+            items: {},
+        };
+
+        this.buttonGroups[id] = group;
+
+        if (options.items) {
+            for (const item of options.items) {
+                this.addItem(id, item);
+            }
+        }
+
+        $buttonGroup.appendTo(this.$el);
+    }
+
+    /**
+     * Add an item to a group.
+     *
+     * Args:
+     *     groupID (string):
+     *         The ID of the group to add to.
+     *
+     *     options (FormattingToolbarItemOptions):
+     *         Options for the item to add.
+     */
+    addItem(
+        groupID: string,
+        options: FormattingToolbarItemOptions,
+    ) {
+        const group = this.buttonGroups[groupID];
+        console.assert(!!group, `Toolbar group "${groupID}" does not exist.`);
+
+        let $el = options.$el;
+
+        if ($el === undefined) {
+            $el = $('<button>')
+                .attr({
+                    'aria-pressed': 'false',
+                    'class': 'rb-c-formatting-toolbar__btn',
+                    'tabindex': '0',
+                    'type': 'button',
+                });
+        }
+
+        if (options.ariaLabel) {
+            $el.attr({
+                'aria-label': options.ariaLabel,
+                'title': options.ariaLabel,
+            });
+        }
+
+        if (options.className) {
+            $el.addClass(options.className);
+        }
+
+        if (options.onClick) {
+            $el.on('click', options.onClick);
+        }
+
+        $el.appendTo(group.$el);
     }
 
     /**
@@ -517,7 +900,7 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onBoldBtnClick(e: JQuery.ClickEvent) {
+    #onBoldBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -531,7 +914,7 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onCodeBtnClick(e: JQuery.ClickEvent) {
+    #onCodeBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -545,7 +928,7 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onItalicBtnClick(e: JQuery.ClickEvent) {
+    #onItalicBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -559,11 +942,33 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onLinkBtnClick(e: JQuery.ClickEvent) {
+    #onLinkBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
         this.#toggleLinkSyntax();
+    }
+
+    /**
+     * Handle an image upload from clicking the "image" button.
+     *
+     * Args:
+     *     e (JQuery.ClickEvent):
+     *         The event object.
+     */
+    #onImageUpload(e: JQuery.ClickEvent) {
+        const files = e.target.files;
+        const token = this.#getCurrentTokenGroup()[0];
+
+        this.#codeMirror.focus();
+        this.#codeMirror.setCursor(token);
+
+        if (files) {
+            this.trigger('uploadImage', files[0]);
+        }
+
+        e.stopPropagation();
+        e.preventDefault();
     }
 
     /**
@@ -573,7 +978,7 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onOListBtnClick(e: JQuery.ClickEvent) {
+    #onOListBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -587,7 +992,7 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onStrikethroughBtnClick(e: JQuery.ClickEvent) {
+    #onStrikethroughBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -601,7 +1006,7 @@ class FormattingToolbarView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event object.
      */
-    private _onUListBtnClick(e: JQuery.ClickEvent) {
+    #onUListBtnClick(e: JQuery.ClickEvent) {
         e.stopPropagation();
         e.preventDefault();
 
@@ -1008,7 +1413,7 @@ export class TextEditorView extends BaseView<
     HTMLDivElement,
     TextEditorViewOptions
 > {
-    static className = 'text-editor';
+    static className = 'rb-c-text-editor';
 
     static defaultOptions: Partial<TextEditorViewOptions> = {
         autoSize: true,
@@ -1030,7 +1435,12 @@ export class TextEditorView extends BaseView<
     /** Whether the editor is using rich text. */
     richText: boolean;
 
-    /** The markdown formatting toolbar view. */
+    /**
+     * The markdown formatting toolbar view.
+     *
+     * Version Added:
+     *     6.0
+     */
     #formattingToolbar: FormattingToolbarView = null;
 
     /** The saved previous height, used to trigger the resize event . */
@@ -1038,6 +1448,14 @@ export class TextEditorView extends BaseView<
 
     /** Whether the rich text state is unsaved. */
     #richTextDirty = false;
+
+    /**
+     * The cursor position to set when starting edit mode.
+     *
+     * Version Added:
+     *     6.0
+     */
+    #startCursorPos: [number, number] = null;
 
     /** The current value of the editor. */
     #value: string;
@@ -1204,6 +1622,32 @@ export class TextEditorView extends BaseView<
     }
 
     /**
+     * Set the cursor position within the editor.
+     *
+     * This uses client coordinates (which are relative to the viewport).
+     *
+     * Version Added:
+     *     6.0
+     *
+     * Args:
+     *     x (number):
+     *         The client X coordinate to set.
+     *
+     *     y (number):
+     *         The client Y coordinate to set.
+     */
+    setCursorPosition(
+        x: number,
+        y: number,
+    ) {
+        if (this._editor) {
+            this._editor.setCursorPosition(x, y);
+        } else {
+            this.#startCursorPos = [x, y];
+        }
+    }
+
+    /**
      * Set the text in the editor.
      *
      * Args:
@@ -1269,6 +1713,10 @@ export class TextEditorView extends BaseView<
         height: number,
     ) {
         if (this._editor) {
+            if (this.#formattingToolbar !== null) {
+                height -= this.#formattingToolbar.$el.outerHeight(true);
+            }
+
             this._editor.setSize(width, height);
         }
     }
@@ -1336,14 +1784,16 @@ export class TextEditorView extends BaseView<
                 minHeight: this.options.minHeight,
                 parentEl: this.el,
             });
+            this._editor.el.id = _.uniqueId('rb-c-text-editor_');
 
             this.#formattingToolbar = new FormattingToolbarView({
+                _uploadImage: this._uploadImage.bind(this),
                 editor: this._editor,
             });
+            this.#formattingToolbar.renderInto(this.$el);
+            this.listenTo(this.#formattingToolbar, 'uploadImage',
+                          this._uploadImage);
 
-            $('<div style="height: 3em;">')
-                .append(this.#formattingToolbar.render().$el)
-                .appendTo(this._editor.$el);
         } else {
             this._editor = new TextAreaWrapper({
                 autoSize: this.options.autoSize,
@@ -1353,6 +1803,14 @@ export class TextEditorView extends BaseView<
         }
 
         this._editor.setText(this.#value);
+
+        const startCursorPos = this.#startCursorPos;
+
+        if (startCursorPos !== null) {
+            this._editor.setCursorPosition(startCursorPos[0],
+                                           startCursorPos[1]);
+        }
+
         this.#value = '';
         this.#richTextDirty = false;
         this.#prevClientHeight = null;

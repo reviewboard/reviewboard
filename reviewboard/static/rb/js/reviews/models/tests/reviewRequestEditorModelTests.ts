@@ -1,3 +1,4 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     beforeEach,
     describe,
@@ -5,7 +6,6 @@ import {
     expectAsync,
     it,
     spyOn,
-    suite,
 } from 'jasmine-core';
 
 import { ReviewRequestEditor } from '../reviewRequestEditorModel';

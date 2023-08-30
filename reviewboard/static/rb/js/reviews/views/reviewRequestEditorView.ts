@@ -3,17 +3,22 @@
  */
 import { BaseView, spina } from '@beanbag/spina';
 
-import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
-import { EnabledFeatures } from 'reviewboard/common';
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import {
+    EnabledFeatures,
+    FileAttachment,
+    ResourceCollection,
+    UserSession,
+} from 'reviewboard/common';
+import { DnDUploader } from 'reviewboard/ui';
 
+import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { FileAttachmentThumbnailView } from './fileAttachmentThumbnailView';
 import {
     BaseFieldView,
     ChangeDescriptionFieldView,
     CloseDescriptionFieldView,
     TextFieldView,
 } from './reviewRequestFieldViews';
-import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 
 
 declare const dedent: (string) => string;
@@ -486,7 +491,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
     } = {};
 
     /** The views for all of the file attachment thumbnails. */
-    #fileAttachmentThumbnailViews: RB.FileAttachmentThumbnailView[] = [];
+    #fileAttachmentThumbnailViews: FileAttachmentThumbnailView[] = [];
 
     /** The views for all of the review reply editors. */
     #reviewReplyEditorViews: RB.ReviewReplyEditorView[] = [];
@@ -825,7 +830,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      * from the rendered page.
      *
      * Args:
-     *     fileAttachment (RB.FileAttachment):
+     *     fileAttachment (FileAttachment):
      *         The file attachment.
      *
      *     collection (Backbone.Collection):
@@ -842,8 +847,8 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      *         Whether to disable animation.
      */
     buildFileAttachmentThumbnail(
-        fileAttachment: RB.FileAttachment,
-        collection: Backbone.Collection<RB.FileAttachment>,
+        fileAttachment: FileAttachment,
+        collection: ResourceCollection<FileAttachment>,
         options: {
             $el?: JQuery;
             noAnimation?: boolean;
@@ -853,7 +858,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
             this.model.get('fileAttachmentComments');
         const $thumbnail = options.$el;
 
-        const view = new RB.FileAttachmentThumbnail({
+        const view = new FileAttachmentThumbnailView({
             canEdit: (this.model.get('editable') === true),
             comments: fileAttachmentComments[fileAttachment.id],
             el: $thumbnail,

@@ -1,6 +1,9 @@
 """Common utility functions for working with Subversion."""
 
+from __future__ import annotations
+
 import re
+from typing import List
 
 
 AUTHOR_KEYWORDS = [b'author', b'lastchangedby']
@@ -30,7 +33,9 @@ keyword_aliases = {
 }
 
 
-def has_expanded_svn_keywords(data):
+def has_expanded_svn_keywords(
+    data: bytes,
+) -> bool:
     """Return whether file data appears to have expanded SVN keywords.
 
     This can be used to determine whether it's worth fetching information from
@@ -52,7 +57,10 @@ def has_expanded_svn_keywords(data):
                           data))
 
 
-def collapse_svn_keywords(data, keyword_str):
+def collapse_svn_keywords(
+    data: bytes,
+    keyword_str: bytes,
+) -> bytes:
     """Collapse SVN keywords in string.
 
     SVN allows for several keywords (such as ``$Id$`` and ``$Revision$``) to be
@@ -89,7 +97,7 @@ def collapse_svn_keywords(data, keyword_str):
         'keyword_str must be a byte string, not %s' % type(keyword_str))
 
     # Get any aliased keywords
-    keywords = [
+    keywords: List[bytes] = [
         re.escape(keyword)
         for name in re.split(br'\W+', keyword_str)
         for keyword in keyword_aliases.get(name.lower(), [])

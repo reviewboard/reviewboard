@@ -16,6 +16,7 @@ const commonConfigs = {
     external: [
         '$',
         'jQuery',
+        'jasmine',
         'jquery',
     ],
     globals: {
@@ -148,6 +149,7 @@ const rbConfig = {
     external: [
         ...commonConfigs.external,
 
+        '@beanbag/jasmine-suites',
         '@beanbag/spina',
         'backbone',
         'codemirror',
@@ -176,6 +178,7 @@ const rbConfig = {
         globals: {
             ...commonConfigs.globals,
 
+            '@beanbag/jasmine-suites': 'window',
             '@beanbag/spina': 'Spina',
             RB: 'RB',
             backbone: 'Backbone',

@@ -475,6 +475,8 @@ class BZRClient(SCMClient):
                     'Traceback (most recent call last):')[0].strip()
 
             raise SCMError(errmsg)
+        elif 'Unable to import' in errmsg:
+            raise SCMError(errmsg)
 
     def _build_repo_path(self, path):
         """Return a path for a repository or file within a repository.

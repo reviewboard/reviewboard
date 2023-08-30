@@ -6,8 +6,8 @@ from djblets.webapi.fields import (BooleanFieldType,
                                    ListFieldType,
                                    StringFieldType)
 
-from reviewboard.hostingsvcs.service import (get_hosting_services,
-                                             HostingService)
+from reviewboard.hostingsvcs.base import (BaseHostingService,
+                                          hosting_service_registry)
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.resources import resources
 
@@ -27,7 +27,7 @@ class HostingServiceResource(WebAPIResource):
 
     name = 'hosting_service'
     model_object_key = 'hosting_service_id'
-    model = HostingService
+    model = BaseHostingService
     uri_object_key = 'hosting_service_id'
     uri_object_key_regex = r'[a-z0-9_-]+'
 
@@ -110,13 +110,15 @@ class HostingServiceResource(WebAPIResource):
     def serialize_plans_field(self, hosting_service, *args, **kwargs):
         """Serialize the plans field.
 
-        This will convert the existing :py:attr:`HostingService.plans
-        <reviewboard.hostingsvcs.service.HostingService.plans>` field (or
-        create a new one if the service doesn't support multiple plans) into
-        a more slimmed-down payload that can be transmitted via the API.
+        This will convert the existing :py:attr:`BaseHostingService.plans
+        <reviewboard.hostingsvcs.base.hosting_service.BaseHostingService.
+        plans>` field (or create a new one if the service doesn't support
+        multiple plans) into a more slimmed-down payload that can be
+        transmitted via the API.
 
         Args:
-            hosting_service (reviewboard.hostingsvcs.service.HostingService):
+            hosting_service (reviewboard.hostingsvcs.base.hosting_service.
+                             BaseHostingService):
                 The hosting service being serialized.
 
             *args (tuple, unused):
@@ -161,7 +163,8 @@ class HostingServiceResource(WebAPIResource):
         """Serialize the visible_scmtools field on the hosting service.
 
         Args:
-            hosting_service (reviewboard.hostingsvcs.service.HostingService):
+            hosting_service (reviewboard.hostingsvcs.base.hosting_service.
+                             BaseHostingService):
                 The hosting service being serialized.
 
             *args (tuple, unused):
@@ -190,10 +193,10 @@ class HostingServiceResource(WebAPIResource):
         return True
 
     def get_queryset(self, request, *args, **kwargs):
-        return LocalDataQuerySet(get_hosting_services())
+        return LocalDataQuerySet(list(hosting_service_registry))
 
     def get_serializer_for_object(self, obj):
-        if inspect.isclass(obj) and issubclass(obj, HostingService):
+        if inspect.isclass(obj) and issubclass(obj, BaseHostingService):
             return self
 
         return super(HostingServiceResource, self).get_serializer_for_object(

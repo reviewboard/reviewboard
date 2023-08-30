@@ -1,88 +1,438 @@
-# -*- coding: utf-8 -*-
+"""Base backend support for Subversion clients."""
 
+from __future__ import annotations
+
+from abc import ABC, abstractmethod, abstractproperty
+from contextlib import contextmanager
+from typing import (Any, Callable, Dict, Iterator, Optional, Sequence,
+                    TYPE_CHECKING, Tuple)
 from urllib.parse import quote
 
 from django.utils.translation import gettext as _
+from typing_extensions import Final, NotRequired, TypeAlias, TypedDict
 
 from reviewboard.scmtools.core import HEAD
 from reviewboard.scmtools.errors import SCMError
+from reviewboard.scmtools.svn import RawSSLTrustDict
+
+if TYPE_CHECKING:
+    from collections import OrderedDict
+    from datetime import datetime
+    from reviewboard.scmtools.core import RevisionID
 
 
-class Client(object):
-    """Base SVN client."""
+class SVNDirEntry(TypedDict):
+    """Information on an entry in a directory.
 
-    LOG_DEFAULT_START = 'HEAD'
-    LOG_DEFAULT_END = '1'
+    Version Added:
+        6.0
+    """
 
-    def __init__(self, config_dir, repopath, username=None, password=None):
+    #: The path to the entry.
+    #:
+    #: Type:
+    #:     str
+    path: str
+
+    #: The revision when this was created.
+    #:
+    #: Type:
+    #:     str
+    created_rev: str
+
+
+class SVNLogEntry(TypedDict):
+    """Information on a log entry from Subversion.
+
+    The log entry can cover a file, directory, or property.
+
+    Version Added:
+        6.0
+    """
+
+    #: The revision of the entry.
+    #:
+    #: Type:
+    #:     bytes or str
+    revision: str
+
+    #: The author of the entry.
+    #:
+    #: Type:
+    #:     bytes or str
+    author: str
+
+    #: The date of the entry.
+    #:
+    #: Type:
+    #:     datetime.datetime
+    date: NotRequired[datetime]
+
+    #: The commit message.
+    #:
+    #: Type:
+    #:     bytes or str
+    message: str
+
+
+class SVNRepositoryInfoDict(TypedDict):
+    """Information about a Subversion repository.
+
+    This provides information available to consumers of the API.
+
+    Version Added:
+        6.0
+    """
+
+    #: The root URL of the configured repository.
+    #:
+    #: Type:
+    #:     str
+    root_url: str
+
+    #: The full URL of the configured repository.
+    #:
+    #: Type:
+    #:     str
+    url: str
+
+    #: The UUID of the repository.
+    #:
+    #: Type:
+    #:     str
+    uuid: str
+
+
+class Client(ABC):
+    """Base class for a Subversion client."""
+
+    #: The default start revision for log entries.
+    LOG_DEFAULT_START: Final[str] = 'HEAD'
+
+    #: The default end revision for log entries.
+    LOG_DEFAULT_END: Final[str] = '1'
+
+    #: An optional Python module required for Subversion support.
+    required_module: Optional[str] = None
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The path to the Subversion configuration directory.
+    #:
+    #: Type:
+    #:     str
+    config_dir: str
+
+    #: The path to the repository.
+    #:
+    #: Type:
+    #:     str
+    repopath: str
+
+    def __init__(
+        self,
+        config_dir: str,
+        repopath: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+    ) -> None:
+        """Initialize the client.
+
+        Args:
+            config_dir (str):
+                The path to the Subversion configuration directory.
+
+            repopath (str):
+                The path to the repository.
+
+            username (str, optional):
+                The username for the repository.
+
+            password (str, optional):
+                The password for the repository.
+        """
+        self.config_dir = config_dir
         self.repopath = repopath
 
-    def set_ssl_server_trust_prompt(self, cb):
+    @contextmanager
+    def communicate(self) -> Iterator[None]:
+        """Context manager for any code communicating with Subversion.
+
+        This should be used any time code is ready to perform an operation
+        on a Subversion repository. It will catch any errors from the client
+        that need to be processed and allow the client to normalize them.
+
+        Version Added:
+            6.0
+
+        Yields:
+            The communication operation will run in this context.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error communicating with Subversion.
+        """
+        try:
+            with self.communicate_hook():
+                yield
+        except SCMError:
+            # This is already an explicit error. Raise this as normal.
+            raise
+        except Exception as e:
+            # Allow the client to convert the error to a normalized form.
+            raise self.normalize_error(e) from e
+
+    @contextmanager
+    def communicate_hook(self) -> Iterator[None]:
+        """Hook for running a communication task.
+
+        This is intended for unit tests only. All exceptions are
+        pass-through.
+
+        Version Added:
+            6.0
+
+        Yields:
+            The communication operation will run in this context.
+        """
+        yield
+
+    @abstractmethod
+    def normalize_error(
+        self,
+        e: Exception,
+    ) -> Exception:
+        """Normalize an exception from the client.
+
+        This will process the exception information and return an exception
+        suitable for forwarding to the backend, as documented below.
+
+        Args:
+            e (Exception):
+                The exception to normalize.
+
+        Returns:
+            Exception:
+            The normalized exception.
+
+        Raises:
+            reviewboard.scmtools.errors.AuthenticationError:
+                An authentication error communicating with the repository.
+
+            reviewboard.scmtools.errors.SCMError:
+                A general error communicating with the repository.
+        """
         raise NotImplementedError
 
-    def get_file(self, path, revision=HEAD):
-        """Returns the contents of a given file at the given revision."""
+    @abstractmethod
+    def set_ssl_server_trust_prompt(
+        self,
+        cb: SSLServerTrustPromptFunc,
+    ) -> None:
+        """Set a function for verifying a SSL certificate.
+
+        Args:
+            cb (callable):
+                The function to call for verifying SSL certificates.
+        """
         raise NotImplementedError
 
-    def get_keywords(self, path, revision=HEAD):
-        """Returns a list of SVN keywords for a given path."""
+    @abstractmethod
+    def get_file(
+        self,
+        path: str,
+        revision: RevisionID = HEAD,
+    ) -> bytes:
+        """Return the contents of a file from the repository.
+
+        This attempts to return the raw binary contents of a file from the
+        repository, given a file path and revision.
+
+        Args:
+            path (str):
+                The path to the file in the repository.
+
+            revision (reviewboard.scmtools.core.Revision, optional):
+                The revision to fetch. Subclasses should default this to
+                :py:data:`HEAD`.
+
+            *args (tuple, unused):
+                Additional unused positional arguments.
+
+            **kwargs (dict, unused):
+                Additional unused keyword arguments.
+
+        Returns:
+            bytes:
+            The returned file contents.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file could not be found in the repository.
+
+            reviewboard.scmtools.errors.InvalidRevisionFormatError:
+                The ``revision`` argument was in an invalid format.
+
+            reviewboard.scmtools.errors.SCMError:
+                An unexpected error was encountered with the repository.
+        """
         raise NotImplementedError
 
-    def get_log(self, path, start=None, end=None, limit=None,
-                discover_changed_paths=False, limit_to_path=False):
-        """Returns log entries at the specified path.
+    @abstractmethod
+    def get_keywords(
+        self,
+        path: str,
+        revision: RevisionID = HEAD,
+    ) -> str:
+        """Return a space-separated list of SVN keywords for a given path.
+
+        Args:
+            path (str):
+                The path to the file or directory.
+
+            revision (str):
+                The revision containing the keywords.
+
+        Returns:
+            str:
+            The resulting keywords.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error was encountered with the repository.
+
+                This may be a more specific subclass.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_log(
+        self,
+        path: str,
+        *,
+        start: Optional[str] = None,
+        end: Optional[str] = None,
+        limit: Optional[int] = None,
+        discover_changed_paths: bool = False,
+        limit_to_path: bool = False,
+    ) -> Sequence[SVNLogEntry]:
+        """Return log entries at the specified path.
 
         The log entries will appear ordered from most recent to least,
-        with 'start' being the most recent commit in the range.
+        with ``start`` being the most recent commit in the range.
 
-        If 'start' is not specified, then it will default to 'HEAD'. If
-        'end' is not specified, it will default to '1'.
+        Args:
+            path (str):
+                The path to limit log entries to.
 
-        To limit the commits to the given path, not factoring in history
-        from any branch operations, set 'limit_to_path' to True.
+            start (str, optional):
+                The start revision for the log.
+
+                If not specified, clients must default this to "HEAD".
+
+            end (str, optional):
+                The end revision for the log.
+
+                If not specified, clients must default this to "1".
+
+            limit (int, optional):
+                The maximum number of entries to return.
+
+            discover_changed_paths (bool, optional):
+                Whether to include information on changed paths in the
+                results.
+
+            limit_to_path (bool, optional):
+                Limits results to ``path`` without factoring in history from
+                any branch operations.
+
+        Returns:
+            list of SVNLogEntry:
+            The list of resulting log entries.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error was encountered with the repository.
+
+                This may be a more specific subclass.
         """
         raise NotImplementedError
 
-    def list_dir(self, path):
-        """Lists the contents of the specified path.
+    @abstractmethod
+    def list_dir(
+        self,
+        path: str,
+    ) -> OrderedDict[str, SVNDirEntry]:
+        """Return the directory contents of the specified path.
 
         The result will be an ordered dictionary of contents, mapping
-        filenames or directory names with a dictionary containing:
+        filenames or directory names with directory information.
 
-        * ``path``        - The full path of the file or directory.
-        * ``created_rev`` - The revision where the file or directory was
-                            created.
+        Args:
+            path (str):
+                The directory path.
+
+        Returns:
+            collections.OrderedDict:
+            A dictionary mapping directory names as strings to
+            :py:class:`SVNDirEntry` information.
         """
         raise NotImplementedError
 
-    def diff(self, revision1, revision2, path=None):
-        """Returns a diff between two revisions.
+    @abstractmethod
+    def diff(
+        self,
+        revision1: str,
+        revision2: str,
+        path: Optional[str] = None,
+    ) -> bytes:
+        """Return a diff between two revisions.
 
         The diff will contain the differences between the two revisions,
         and may optionally be limited to a specific path.
 
-        The returned diff will be returned as a Unicode object.
+        Args:
+            revision1 (str):
+                The first revision in the range.
+
+            revision2 (str):
+                The second revision in the range.
+
+            path (str, optional):
+                An optional path to limit the diff to.
+
+        Returns:
+            bytes:
+            The resulting diff contents.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error was encountered with the repository.
+
+                This may be a more specific subclass.
         """
         raise NotImplementedError
 
-    @property
-    def repository_info(self):
+    @abstractproperty
+    def repository_info(self) -> SVNRepositoryInfoDict:
         """Metadata about the repository.
 
-        This is a dictionary containing the following keys:
+        See :py:class:`SVNRepositoryInfoDict` for contents.
 
-        ``uuid`` (:py:class:`unicode`):
-            The UUID of the repository.
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                An error was encountered with the repository.
 
-        ``root_url`` (:py:class:`unicode`):
-            The root URL of the configured repository.
-
-        ``url`` (:py:class:`unicoe`):
-            The full URL of the configured repository.
+                This may be a more specific subclass.
         """
         raise NotImplementedError
 
-    def normalize_path(self, path):
+    def normalize_path(
+        self,
+        path: str,
+    ) -> str:
         """Normalize a path to a file/directory for a request to Subversion.
 
         If the path is an absolute path beginning at the base of the
@@ -98,11 +448,11 @@ class Client(object):
         All trailing ``/`` characters will also be removed.
 
         Args:
-            path (unicode):
+            path (str):
                 The path to normalize.
 
         Returns:
-            unicode:
+            str:
             The normalized path.
         """
         if path.startswith(self.repopath):
@@ -161,15 +511,53 @@ class Client(object):
 
         return norm_path.rstrip('/')
 
-    def accept_ssl_certificate(self, path, on_failure=None):
-        """If the repository uses SSL, this method is used to determine whether
+    @abstractmethod
+    def accept_ssl_certificate(
+        self,
+        path: str,
+        on_failure: Optional[AcceptCertificateFunc] = None,
+    ) -> Dict[str, Any]:
+        """Attempt to accept a SSL certificate.
+
+        If the repository uses SSL, this method is used to determine whether
         the SSL certificate can be automatically accepted.
 
         If the cert cannot be accepted, the ``on_failure`` callback
         is executed.
 
-        ``on_failure`` signature::
+        Args:
+            path (str):
+                The repository path.
 
-            void on_failure(e:Exception, path:str, cert:dict)
+            on_failure (callable, optional):
+                A function to call if the certificate could not be accepted.
+
+        Returns:
+            dict:
+            Serialized information on the certificate.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                There was an error accepting the certificate.
         """
         raise NotImplementedError
+
+
+#: Type for a callback handle for accepting SSL certificates.
+#:
+#: Version Added:
+#:     6.0
+AcceptCertificateFunc: TypeAlias = Callable[
+    [Client, Exception, str, Dict[str, Any]],
+    None,
+]
+
+
+#: Type for a callback handle for prompting for SSL trust information.
+#:
+#: Version Added:
+#:     6.0
+SSLServerTrustPromptFunc: TypeAlias = Callable[
+    [RawSSLTrustDict],
+    Tuple[bool, int, bool],
+]

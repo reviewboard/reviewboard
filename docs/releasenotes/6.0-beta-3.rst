@@ -1,0 +1,315 @@
+.. default-intersphinx:: djblets4.x rb6.x
+
+
+=====================================
+Review Board 6.0 Beta 3 Release Notes
+=====================================
+
+**Release date**: August 30, 2023
+
+This release contains all bug fixes and features from Review Board version
+:doc:`5.0.5 <5.0.5>` and :doc:`6.0 beta 2 <6.0-beta-2>`.
+
+
+Installation/Upgrade
+====================
+
+Review Board 6.0 Beta 3 is compatible with Python 3.8 - 3.11.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board to to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install \
+        -f https://downloads.reviewboard.org/betas/reviewboard/6.0-beta-3/ \
+        --pre -U ReviewBoard
+
+.. warning::
+
+   We **do not** recommend upgrading a production server with this version of
+   Review Board. It's best to install on a test server, with a copy of your
+   production database, in case there are any major problems.
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Packaging
+=========
+
+* Review Board 6.0 beta 3 supports Python 3.8 - 3.11.
+
+  Support for Python 3.7 has been dropped in this beta.
+
+* :pypi:`Djblets` 4.0 beta 3 is required.
+
+
+New Features
+============
+
+A more polished look
+--------------------
+
+.. image:: _static/images/6.0/6.0-new-diff-visuals.png
+   :width: 1149
+   :alt: An example of the new visuals seen in the diff viewer, with softer
+         colors and better interaction controls.
+   :sources: 2x _static/images/6.0/6.0-new-diff-visuals@2x.png
+
+We've been improving the look and feel of the product, softening the
+visuals, giving content some breathing room, sanding rough edges, and
+reworking the color palette and font size to make diffs easier to review.
+
+Further improvements are still coming for Review Board 6, and are a step
+toward a larger UI refresh planned for Review Board 7.
+
+
+Markdown formatting toolbar
+---------------------------
+
+.. image:: _static/images/6.0/6.0-formatting-toolbar.png
+   :width: 662
+   :alt: The new Markdown formatting toolbar at the bottom of a text field
+         with buttons for Bold, Italic, Strike-through, Code Literal, Insert
+         Link, Insert Image, Insert Bullet List, Insert Numeric List.
+   :sources: 2x _static/images/6.0/6.0-formatting-toolbar@2x.png
+
+The new toolbar can help you format your text (bold, italic, strike-through,
+or code literals), create lists (numeric or bullet point), insert links, or
+upload images.
+
+It's shown any time you're writing Markdown content, such as when leaving
+a comment, replying to a review, or filling out a review request field.
+
+
+Helpful tips for composing reviews
+----------------------------------
+
+.. image:: _static/images/6.0/6.0-review-tips.png
+   :width: 555
+   :alt: A sample tip in the Review Dialog, stating: "To add a comment
+         to a code change or text file attachment, click on a line number or
+         click and drag over multiple line numbers in the diff viewer. You'll
+         be able to see and edit the comment from both the diff viewer and
+         here in the review dialog."
+   :sources: 2x _static/images/6.0/6.0-review-tips@2x.png
+
+Now, when creating or editing a review, the Review Dialog will show a
+slideshow of useful tips on reviewing in Review Board. This will teach you
+how to leave multi-line comments, comment on regions of images, publish
+drafts, and more.
+
+
+Future-proofed upgrades
+-----------------------
+
+Upgrading a Review Board site now carefully updates the
+:file:`reviewboard.wsgi` file to remove any legacy settings, add modern
+settings, and preserve custom settings. The new versions include improved
+support for Python virtual environments (which are now recommended for all
+new installs).
+
+We've also bullet-proofed virtual environment management to avoid replacing
+an existing virtual environment if not managed by Review Board.
+
+
+Removed Features
+================
+
+* Dropped support for :pypi:`subvertpy` for Subversion repositories.
+
+  Subvertpy hasn't been maintained in a long time, and suffered from many
+  compatibility and installation issues.
+
+  We now require PySVN for Subversion. See the :ref:`installation instructions
+  <installing-svn>` for details on installing PySVN.
+
+
+Usability Improvements
+======================
+
+* Clicking a text field on a review request now positions the cursor where
+  you click.
+
+  Previously, it would position the cursor at the start of the field.
+
+* The new Unified Review Banner will now pop up the Review Dialog when
+  creating a new review.
+
+* The diff revision slider now uses a splash of color to show it can be
+  interacted with.
+
+* When expanding parts of a diff, the collapse button is now better
+  positioned and labeled.
+
+
+Performance Improvements
+========================
+
+* Publishing review requests is now faster.
+
+
+Web API
+=======
+
+* :ref:`webapi2.0-review-group-list-resource`:
+
+  * Added a ``?show-invisible=true`` query argument to include hidden
+    accessible review groups.
+
+  * Added a ``?invite-only=<true|false>`` query argument to filter review
+    groups based on the ``invite_only`` value.
+
+  * Fixed including hidden invite-only review groups when the special
+    ``reviews.can_view_invite_only_groups`` user permission is set.
+
+
+Extensions and Internal Changes
+===============================
+
+* Custom :py:class:`menu actions <reviewboard.actions.base.BaseMenuAction>`:
+
+  * Added support for choosing menu item orders.
+
+    The order can be controlled by setting
+    :py:attr:`~reviewboard.actions.base.BaseMenuAction.children` to the
+    ordered list of IDs.
+
+  * Added support for adding separators.
+
+    To include a separator, include the special ID ``'--'`` in
+    :py:attr:`~reviewboard.actions.base.BaseMenuAction.children`.
+
+* Fixed using the new :ref:`HideActionHook <hide-action-hook>` with the
+  :guilabel:`Log in`, :guilabel:`Log out`, :guilabel:`My account`,
+  :guilabel:`Admin`, and :guilabel:`Follow` actions.
+
+* Custom :py:class:`SCMTools <reviewboard.scmtools.core.SCMTool>` (repository
+  implementations) can now store ``extra_data`` on a draft review request when
+  parsing a changeset.
+
+  This allows additional data about a changeset to be stored for later use.
+
+* Running :ref:`rbext <rbext>` without any parameters will now output helpful
+  instructions.
+
+* Improved Python type hints throughout more of the product.
+
+* Switched our extension support to use modern Python packaging support.
+
+  Tools for working with Python packages have changed significantly in the
+  past few years. We've updated all of Review Board to move from the legacy
+  tooling to modern tooling.
+
+  This is a large behind-the-scenes change, but it shouldn't have any
+  noticeable change in functionality. If your extension package no longer
+  works, please `reach out to support <Review Board Support_>`_.
+
+* Ported more of the JavaScript codebase to ES6 classes with Spina_.
+
+  Extension authors can use Spina to write better JavaScript/TypeScript
+  extensions, using Spina for cleaner code and better typing.
+
+
+.. _Spina: https://www.npmjs.com/package/@beanbag/spina
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Fixed a crash when clicking :guilabel:`Add File`.
+
+  This broke in 6.0 beta 2.
+
+* Fixed a display bug with Markdown code blocks that could occur when showing
+  content starting with a ``#!``.
+
+* Fixed a display bug with the file attachment diff revision slider.
+
+* Fixed an issue where a click could sometimes be ignored on a review request
+  text field.
+
+  This could happen if the mouse cursor position moves slightly when clicking,
+  indicating a possible drag.
+
+* Fixed repeated reloads of the Issue Summary Table while automated code
+  reviews are running.
+
+
+Diff Viewer
+-----------
+
+* Fixed showing the content of deleted files in diffs.
+
+* Fixed a bug copying content from diffs to the clipboard.
+
+
+Review Banner
+-------------
+
+* Fixed publishing review requests and reviews at the same time.
+
+* Fixed updating the diff file list when diffs are expanded or collapsed.
+
+* The new Unified Review Banner is now shown on closed review requests.
+
+  This ensures that pending reviews can be edited and published even after
+  a review request is closed.
+
+
+Repositories
+------------
+
+* Remote Git repositories can no longer be configured without a Raw File URL
+  for accessing file contents.
+
+  Git doesn't provide any way to remotely fetch the contents of files across a
+  network, meaning we require a hosting service (such as GitHub, GitLab, or
+  `RB Gateway`_). We work around that with a "Raw File URL", which
+  is a URL to a GitWeb-like service for fetching the contents of a file.
+
+  We now require the Raw File URL for all remote Git repositories.
+
+* Subversion repositories configured with a filesystem path are no longer
+  allowed.
+
+  URLs are required for Subversion. We now require ``file://`` if using a
+  filesystem path.
+
+* Fixed reporting errors with Bazaar/Breezy when Python modules are missing.
+
+
+.. _RB Gateway: https://www.reviewboard.org/downloads/rbgateway/
+
+
+Administration
+--------------
+
+* Configurable lists of review groups now include hidden accessible review
+  groups and repositories.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Hannah Lin
+* Michelle Aubin

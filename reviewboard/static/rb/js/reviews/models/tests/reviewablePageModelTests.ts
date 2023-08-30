@@ -1,14 +1,13 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     describe,
     expect,
     it,
     spyOn,
-    suite,
 } from 'jasmine-core';
 
-import {
-    ReviewablePage,
-} from 'reviewboard/reviews/models/reviewablePageModel';
+import { Review } from 'reviewboard/common';
+import { ReviewablePage } from '../reviewablePageModel';
 
 
 suite('rb/pages/models/ReviewablePage', function() {
@@ -20,7 +19,7 @@ suite('rb/pages/models/ReviewablePage', function() {
                     hasDraft: true,
                     showSendEmail: false,
                 },
-                pendingReview: new RB.Review(),
+                pendingReview: new Review(),
                 reviewRequest: reviewRequest,
             });
 

@@ -1,7 +1,5 @@
-@import (reference) "../defs.less";
-
-
-@img_base: '../../images';
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/ui/colors.less";
 
 
 /*
@@ -98,9 +96,22 @@
         width: 100%;
       }
     }
+  }
 
-    td .diff-collapse-btn {
+  &.deleted,
+  &.newfile {
+    /*
+     * NOTE: This only applies to expanded regions in diff fragments in
+     *       reviews.
+     */
+    .rb-c-diff-collapse-button {
+      /*
+       * This will position it dead-center. The `right: 50%` will align the
+       * right edge with the middle, and then we shift over by half the
+       * button width.
+       */
       right: 50%;
+      transform: translateX(50%);
     }
   }
 
@@ -156,7 +167,7 @@
   }
 
   pre {
-    font-size: 8pt;
+    font-size: 11px;
     line-height: 140%;
     margin: 0;
     padding-left: @linenum-padding-left;
@@ -272,12 +283,10 @@
   tbody {
     tr {
       &.selected {
-        * {
+        > td,
+        > th,
+        > td > pre {
           background: @diff-selected-color;
-        }
-
-        td .diff-collapse-btn {
-          background: #E4D9CB;
         }
       }
 
@@ -302,23 +311,15 @@
           position: relative;
         }
 
-        .diff-collapse-btn {
-          @image-size: 14px;
-
-          background: #E4D9CB;
-          border: 1px black solid;
-          padding: 5px;
-          cursor: pointer;
+        .rb-c-diff-collapse-button {
+          /*
+           * This positions it fairly center over the middle line numbers.
+           * We'd normally shift over 50% of the element width, but the 70%
+           * nicely covers the left and middle * line numbers.
+           */
           position: absolute;
-          right: -8px;
-          z-index: @z-index-diff-collapse-btn;
-          opacity: 0.8;
-          width: @image-size;
-          height: @image-size;
-
-          &:hover {
-            opacity: 1.0;
-          }
+          right: 0;
+          transform: translateX(70%);
         }
       }
 
@@ -347,10 +348,18 @@
       }
     }
 
-    &.whitespace-file td {
-      background: @diff-replace-color;
-      border-bottom: 1px @diff-file-border-color solid;
-      padding: 1em;
+    &.whitespace-file {
+      td {
+        background: @diff-replace-color;
+        border-bottom: 1px @diff-file-border-color solid;
+        padding: 1em;
+      }
+
+      + .diff-header tr:first-child {
+        td, th {
+          border-top: 0;
+        }
+      }
     }
 
     &.deleted td {
@@ -559,7 +568,7 @@
         th { background: #F0F0F0; }
       }
 
-      .hl { background: #eff23d; }
+      .hl { background: #ffef6b; }
     }
 
     &.diff-header {
@@ -576,6 +585,8 @@
 
       code {
         margin: 0 2px;
+        font-size: 12px;
+        vertical-align: middle;
       }
 
       img {
@@ -583,14 +594,11 @@
         padding: 1px;
       }
 
-      td {
+      td, th {
         background: @diff-header-color;
-        font-size: x-small;
+        font-size: 10px;
         text-align: center;
-      }
-
-      th {
-        background: @diff-header-color;
+        padding: 0.5em;
       }
 
       tr {
@@ -638,7 +646,8 @@
       overflow: hidden;
       padding: 8px;
 
-      #gradient > .vertical-three-colors(#FFFFFF, @diff-file-color, 50%, @diff-file-color);
+      #gradient > .vertical-three-colors(#FFFFFF, @diff-file-color,
+                                         70%, @diff-file-color);
     }
 
     .revision-row th {
@@ -689,10 +698,10 @@
 
   .commentflag-inner {
     border-radius: @comment-flag-border-radius;
-    opacity: 0.95;
     background-color: @comment-flag-color;
     border: 1px solid @comment-flag-border-color;
     bottom: 0.2em;
+    color: @comment-flag-text-color;
     cursor: pointer;
     font-size: 90%;
     font-weight: normal;
@@ -759,7 +768,7 @@
   }
 
   .diff-container {
-    margin-bottom: 1em;
+    margin-bottom: (@page-container-padding * 2);
     position: relative;
 
     &:last-child {
@@ -826,9 +835,9 @@ table.rb-c-diff-file-index {
         height: @icon-size;
       }
 
-      .fa-spinner {
-        font-size: @icon-size - 4px;
-        margin: 2px;
+      .djblets-o-spinner {
+        font-size: @icon-size - 6px;
+        margin: 3px;
       }
     }
 

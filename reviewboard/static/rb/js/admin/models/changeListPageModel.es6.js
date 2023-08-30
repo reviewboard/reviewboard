@@ -20,10 +20,10 @@
  *             The human-readable label.
  */
 RB.Admin.ChangeListPage = RB.Page.extend({
-    defaults: _.defaults(RB.Page.prototype.defaults, {
+    defaults: _.defaults({
         actions: [],
         selectionCount: 0,
-    }),
+    }, _.result(RB.Page.prototype.defaults)),
 
     /**
      * Initialize the page model.

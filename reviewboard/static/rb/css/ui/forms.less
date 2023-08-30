@@ -2,13 +2,14 @@
  * Styles for forms and form fields.
  */
 
+@import (reference) "djblets/css/config-forms.less";
+
 @import (reference) "rb/css/layout/helpers.less";
 @import (reference) "rb/css/ui/alert.less";
 @import (reference) "rb/css/ui/buttons.less";
 @import (reference) "rb/css/ui/boxes.less";
 @import (reference) "rb/css/ui/colors.less";
 @import (reference) "rb/css/ui/content-header.less";
-@import (reference) "djblets/css/config-forms.less";
 
 
 #rb-ns-ui() {
@@ -83,7 +84,7 @@
     @help-icon-margin: 4px;
 
     @input-border-size: @config-forms-text-field-border-size;
-    @input-border-color: @_color-vars[@grey-50];
+    @input-border-color: @_color-vars[@grey-60];
     @input-border-radius: @config-forms-text-field-border-radius;
     @input-border: @input-border-size @input-border-color solid;
     @input-padding-vert: @config-forms-text-field-padding-vert;
@@ -152,7 +153,7 @@ textarea {
   border: @_form-field-vars[@textarea-border];
   border-radius: @_form-field-vars[@textarea-border-radius];
   box-sizing: border-box;
-  font-size: inherit;
+  font-size: @_form-field-vars[@textarea-font-size];
 }
 
 .CodeMirror {

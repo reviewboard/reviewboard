@@ -787,7 +787,7 @@ class PostCommitTests(SpyAgency, TestCase):
 
         self.repository = self.create_repository(tool_name='Test')
 
-    def test_update_from_committed_change(self):
+    def test_update_from_commit_id(self):
         """Testing ReviewRequestDraft.update_from_commit_id with committed
         change
         """
@@ -826,7 +826,7 @@ class PostCommitTests(SpyAgency, TestCase):
         self.assertEqual(filediff.source_file, 'readme')
         self.assertEqual(filediff.source_revision, 'd6613f5')
 
-    def test_update_from_committed_change_with_rich_text_reset(self):
+    def test_update_from_commit_id_with_rich_text_reset(self):
         """Testing ReviewRequestDraft.update_from_commit_id resets rich text
         fields
         """
@@ -853,6 +853,57 @@ class PostCommitTests(SpyAgency, TestCase):
         self.assertFalse(draft.description_rich_text)
         self.assertFalse(review_request.description_rich_text)
 
+    def test_update_from_commit_id_without_repository_support(self):
+        """Testing ReviewRequestDraft.update_from_commit_id without
+        supports_post_commmit for repository
+        """
+        scmtool_cls = type(self.repository.get_scmtool())
+
+        old_supports_post_commit = scmtool_cls.supports_post_commit
+        scmtool_cls.supports_post_commit = False
+
+        try:
+            review_request = ReviewRequest.objects.create(self.user,
+                                                          self.repository)
+            draft = ReviewRequestDraft.create(review_request)
+
+            with self.assertRaises(NotImplementedError):
+                draft.update_from_commit_id('4')
+        finally:
+            scmtool_cls.supports_post_commit = old_supports_post_commit
+
+    def test_update_from_pending_change(self):
+        """Testing ReviewRequestDraft.update_from_pending_change"""
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+        draft = ReviewRequestDraft.create(review_request)
+
+        draft.description_rich_text = True
+        draft.testing_done_rich_text = True
+
+        changeset = ChangeSet()
+        changeset.branch = 'my-branch'
+        changeset.bugs_closed = ['123', '456', 'BUG-789']
+        changeset.changenum = 4
+        changeset.summary = '* This is a summary'
+        changeset.description = '* This is a description.'
+        changeset.testing_done = '* This is some testing.'
+        changeset.extra_data = {
+            'key1': 'value1',
+            'key2': 123,
+        }
+        draft.update_from_pending_change(4, changeset)
+
+        self.assertEqual(draft.branch, 'my-branch')
+        self.assertEqual(draft.bugs_closed, '123,456,BUG-789')
+        self.assertEqual(draft.description, '* This is a description.')
+        self.assertFalse(draft.description_rich_text)
+        self.assertEqual(draft.extra_data.get('key1'), 'value1')
+        self.assertEqual(draft.extra_data.get('key2'), 123)
+        self.assertEqual(draft.summary, '* This is a summary')
+        self.assertEqual(draft.testing_done, '* This is some testing.')
+        self.assertFalse(draft.testing_done_rich_text)
+
     def test_update_from_pending_change_with_rich_text_reset(self):
         """Testing ReviewRequestDraft.update_from_pending_change resets rich
         text fields
@@ -876,22 +927,3 @@ class PostCommitTests(SpyAgency, TestCase):
         self.assertFalse(draft.description_rich_text)
         self.assertEqual(draft.testing_done, '* This is some testing.')
         self.assertFalse(draft.testing_done_rich_text)
-
-    def test_update_from_committed_change_without_repository_support(self):
-        """Testing ReviewRequestDraft.update_from_commit_id without
-        supports_post_commmit for repository
-        """
-        scmtool_cls = type(self.repository.get_scmtool())
-
-        old_supports_post_commit = scmtool_cls.supports_post_commit
-        scmtool_cls.supports_post_commit = False
-
-        try:
-            review_request = ReviewRequest.objects.create(self.user,
-                                                          self.repository)
-            draft = ReviewRequestDraft.create(review_request)
-
-            with self.assertRaises(NotImplementedError):
-                draft.update_from_commit_id('4')
-        finally:
-            scmtool_cls.supports_post_commit = old_supports_post_commit

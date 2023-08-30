@@ -52,9 +52,9 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
               <td>
                <% if (chunk.expanded && i === 0) { %>
                 <div class="collapse-floater">
-                 <img class="diff-collapse-btn"
+                 <div class="rb-c-diff-collapse-button"
                       data-chunk-index="<%= index %>"
-                      data-lines-of-context="0" />
+                      data-lines-of-context="0"></div>
                 </div>
                <% } %>
               </td>
@@ -685,9 +685,9 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                             '  <th></th>',
                             '  <td>',
                             '   <div class="collapse-floater">',
-                            '    <img class="diff-collapse-btn"',
+                            '    <div class="rb-c-diff-collapse-button"',
                             '         data-chunk-index="1"',
-                            '         data-lines-of-context="0" />',
+                            '         data-lines-of-context="0"></div>',
                             '   </div>',
                             '  </td>',
                             '  <th></th>',
@@ -721,9 +721,9 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                             '  <th></th>',
                             '  <td>',
                             '   <div class="collapse-floater">',
-                            '    <img class="diff-collapse-btn"',
+                            '    <div class="rb-c-diff-collapse-button"',
                             '         data-chunk-index="1"',
-                            '         data-lines-of-context="0" />',
+                            '         data-lines-of-context="0"></div>',
                             '   </div>',
                             '  </td>',
                             '  <th></th>',
@@ -752,7 +752,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                      * expanding the chunk.
                      */
                     $('<tbody class="equal loaded"/>')
-                        .append($('<img class="diff-collapse-btn" />'))
+                        .append($('<div class="rb-c-diff-collapse-button"/>'))
                         .insertAfter(view.$('tbody')[1])
                         .clone().insertBefore(view.$('tbody')[1]);
 
@@ -792,7 +792,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 });
                 view.render().$el.appendTo($container);
 
-                $collapseButton = view.$('.diff-collapse-btn');
+                $collapseButton = view.$('.rb-c-diff-collapse-button');
             });
 
             it('Fetching fragment', function(done) {
@@ -881,7 +881,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                      * expanding the chunk.
                      */
                     $('<tbody class="equal loaded"/>')
-                        .append($('<img class="diff-collapse-btn" />'))
+                        .append($('<div class="rb-c-diff-collapse-button" />'))
                         .insertAfter(view.$('tbody')[1])
                         .clone().insertBefore(view.$('tbody')[1]);
 
@@ -899,9 +899,9 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                   <th></th>
                   <td>
                    <div class="collapse-floater">
-                    <img class="diff-collapse-btn"
+                    <div class="rb-c-diff-collapse-button"
                          data-chunk-index="1"
-                         data-lines-of-context="0" />
+                         data-lines-of-context="0"></div>
                    </div>
                   </td>
                   <th></th>
@@ -1056,7 +1056,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
                         diffFragmentHTML = collapsedDiffFragmentHTML;
 
-                        view.$('.diff-collapse-btn').click();
+                        view.$('.rb-c-diff-collapse-button').click();
                     } else if (n === 2) {
                         view.$('.tests-expand-chunk').click();
                         expect(view.$('.commentflag').length).toBe(2);

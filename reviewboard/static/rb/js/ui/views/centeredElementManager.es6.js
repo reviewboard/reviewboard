@@ -14,14 +14,13 @@ RB.CenteredElementManager = Backbone.View.extend({
      *         An initial array of elements to center.
      */
     initialize(options={}) {
-        this._elements = options.elements || new Map();
         this._$window = $(window);
 
-        this._updatePositionThrottled = _.throttle(() => this.updatePosition(),
-                                                   10);
+        this._updatePositionThrottled = () => {
+            requestAnimationFrame(() => this.updatePosition());
+        };
 
-        this._$window.on('resize', this._updatePositionThrottled);
-        this._$window.on('scroll', this._updatePositionThrottled);
+        this.setElements(options.elements || new Map());
     },
 
     /**
@@ -32,8 +31,7 @@ RB.CenteredElementManager = Backbone.View.extend({
     remove() {
         Backbone.View.prototype.remove.call(this);
 
-        this._$window.off('resize', this._updatePositionThrottled);
-        this._$window.off('scroll', this._updatePositionThrottled);
+        this.setElements(new Map());
     },
 
     /**
@@ -44,7 +42,15 @@ RB.CenteredElementManager = Backbone.View.extend({
      *         The elements to center within their respective containers.
      */
     setElements(elements) {
+        const $window = this._$window;
+
         this._elements = elements;
+
+        if (elements.size > 0) {
+            $window.on('resize scroll', this._updatePositionThrottled);
+        } else {
+            $window.off('resize scroll', this._updatePositionThrottled);
+        }
     },
 
     /**
@@ -58,50 +64,114 @@ RB.CenteredElementManager = Backbone.View.extend({
             return;
         }
 
-        const windowTop = this._$window.scrollTop();
-        const windowHeight = this._$window.height();
-        const windowBottom = windowTop + windowHeight;
+        const viewportTop = RB.contentViewport.get('top');
+        const viewportBottom = RB.contentViewport.get('bottom');
+        let windowTop = window.scrollY;
+        const windowHeight = window.innerHeight;
+        const windowBottom = windowTop + windowHeight - viewportBottom;
+
+        windowTop += viewportTop;
 
         this._elements.forEach((containers, el) => {
             const $el = $(el);
             const $topContainer = containers.$top;
-            const $bottomContainer = containers.$bottom || $topContainer;
+            const $parentContainer = containers.$parent || $topContainer;
+            const $bottomContainer = containers.$bottom || $parentContainer;
             const containerTop = $topContainer.offset().top;
-            const containerBottom = $bottomContainer.offset().top +
-                                    $bottomContainer.height();
+            const containerBottom =
+                $bottomContainer.height() +
+                ($bottomContainer === $topContainer
+                 ? containerTop
+                 : $bottomContainer.offset().top);
+
+            /*
+             * If the top container is above the element's parent container,
+             * we'll need to offset the position later.
+             */
+            const topOffset =
+                $parentContainer === $topContainer
+                ? 0
+                : $parentContainer.offset().top - containerTop;
 
             /*
              * We don't have to vertically center the element when its
              * container is not on screen.
              */
-            if (containerTop < windowBottom && containerBottom > windowTop) {
-                /*
-                 * When a container takes up the entire viewport, we can switch
-                 * the CSS to use position: fixed. This way, we do not have to
-                 * re-compute its position.
-                 */
-                if (windowTop >= containerTop &&
-                    windowBottom <= containerBottom) {
-                    if ($el.css('position') !== 'fixed') {
-                        $el.css({
-                            position: 'fixed',
-                            left: $el.offset().left,
-                            top: Math.round(
-                                (windowHeight - $el.outerHeight()) / 2),
-                        });
-                    }
-                } else {
-                    const top = Math.max(windowTop, containerTop);
-                    const bottom = Math.min(windowBottom, containerBottom);
-                    const elTop = top - containerTop + Math.round(
-                        (bottom - top - $el.outerHeight()) / 2);
+            if (containerTop >= windowBottom && containerBottom <= windowTop) {
+                return;
+            }
 
-                    $el.css({
-                        position: 'absolute',
-                        left: '',
-                        top: elTop,
-                    });
+            const elStyle = getComputedStyle(el);
+            const elHeight = el.offsetHeight;
+            const posType = elStyle.position;
+            let newCSS = null;
+            let newTop = null;
+
+            /*
+             * When a container takes up the entire viewport, we can switch
+             * the CSS to use position: fixed. This way, we do not have to
+             * re-compute its position.
+             */
+            if (windowTop >= containerTop &&
+                windowBottom <= containerBottom) {
+                newTop =
+                    viewportTop +
+                    (windowHeight - viewportTop - viewportBottom -
+                     elHeight) / 2;
+
+                if (posType !== 'fixed') {
+                    newCSS = {
+                        left: $el.offset().left,
+
+                        /* Ensure we're in control of placement. */
+                        position: 'fixed',
+                        right: 'auto',
+                        transform: 'none',
+                    };
                 }
+            } else {
+                const top = Math.max(windowTop, containerTop);
+                const bottom = Math.min(windowBottom, containerBottom);
+                const availHeight = bottom - top - elHeight;
+                const relTop = top - containerTop;
+
+                /*
+                 * Make sure the top and bottom never exceeds the
+                 * calculated boundaries.
+                 *
+                 * We'll always position at least at 0, the top of the
+                 * boundary.
+                 *
+                 * We'll cap at availHeight, the bottom of the boundary
+                 * minus the element height.
+                 *
+                 * Optimistically, we'll position half-way through the
+                 * boundary.
+                 */
+                newTop =
+                    Math.max(
+                        0,
+                        relTop + Math.min(availHeight, availHeight / 2)) -
+                    topOffset;
+
+                if (posType === 'fixed') {
+                    newCSS = {
+                        position: 'absolute',
+
+                        /* Clear these settings to restore defaults. */
+                        left: '',
+                        right: '',
+                        transform: '',
+                    };
+                }
+            }
+
+            if (newCSS) {
+                $el.css(newCSS);
+            }
+
+            if (Math.round(parseInt(elStyle.top)) !== Math.round(newTop)) {
+                el.style.top = newTop + 'px';
             }
         });
     },

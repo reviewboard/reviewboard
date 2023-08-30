@@ -15,7 +15,7 @@
     @margin-bottom: 1em;
     @padding: 1em;
 
-    @error-bg: @_color-vars[@red-80];
+    @error-bg: @_color-vars[@red-90];
     @error-border-color: darken(@error-bg, 15%);
 
     @info-bg: @_color-vars[@blue-80];
@@ -24,7 +24,7 @@
     @success-bg: @_color-vars[@green-80];
     @success-border-color: darken(@success-bg, 40%);
 
-    @warning-bg: @_color-vars[@yellow-80];
+    @warning-bg: @_color-vars[@yellow-70];
     @warning-border-color: darken(@warning-bg, 45%);
   }
 }
@@ -54,6 +54,8 @@
  *
  * Structure:
  *     <div class="rb-c-alert -is-[type]">
+ *      <span class="rb-c-alert__close" role="button"
+ *            aria-label="Close" tabindex="0"></span>
  *      <p class="rb-c-alert__content">...</p>
  *     </div>
  */
@@ -143,6 +145,41 @@
     > :last-child {
       margin-bottom: 0;
       padding-bottom: 0;
+    }
+  }
+
+  /**
+   * A close button for the alert.
+   *
+   * DOM Attributes:
+   *     aria-label (string):
+   *          The accessibility label for the button.
+   *
+   *     role (string):
+   *         This must be set to ``button``.
+   *
+   *     tabindex (number):
+   *         The tab index. This should be set to ``0`` in most cases.
+   *
+   *     title (string):
+   *          The tooltip label for the button.
+   *
+   * Structure:
+   *     <span class="rb-c-alert__close"
+   *           aria-label="Close"
+   *           role="button"
+   *           tabindex="0"
+   *           title="Close"></span>
+   */
+  &__close {
+    cursor: pointer;
+    float: right;
+    padding: 6px;
+    margin: -10px -6px -6px -6px;
+
+    &:before {
+      .fa-icon();
+      content: @fa-var-close;
     }
   }
 

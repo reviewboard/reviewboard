@@ -15,7 +15,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         'click .download-link': '_onDownloadLinkClicked',
         'click thead tr': '_onFileHeaderClicked',
         'click .moved-to, .moved-from': '_onMovedLineClicked',
-        'click .diff-collapse-btn': '_onCollapseChunkClicked',
+        'click .rb-c-diff-collapse-button': '_onCollapseChunkClicked',
         'click .diff-expand-btn': '_onExpandChunkClicked',
         'click .show-deleted-content-action': '_onShowDeletedClicked',
         'click .rb-o-toggle-ducs': '_onToggleUnicodeCharsClicked',
@@ -354,10 +354,30 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         /* Recompute the set of buttons for later use. */
         this._centered.setElements(new Map(
             Array.prototype.map.call(
-                this.$('.diff-collapse-btn'),
-                el => [el, {
-                    $top: $(el).closest('tbody'),
-                }])
+                this.$('.rb-c-diff-collapse-button'),
+                el => {
+                    const $tbody = $(el).closest('tbody');
+                    const $prev = $tbody.prev();
+                    const $next = $tbody.next();
+
+                    return [el, {
+                        $parent: $tbody,
+
+                        /*
+                         * Try to map the previous equals block, if available.
+                         */
+                        $top:
+                            ($prev.length === 1 && $prev.hasClass('equal'))
+                            ? $prev
+                            : $tbody,
+
+                        /* And now the next one. */
+                        $bottom:
+                            ($next.length === 1 && $next.hasClass('equal'))
+                            ? $next
+                            : $tbody,
+                    }];
+                })
         ));
         this._updateCollapseButtonPos();
 
@@ -608,9 +628,9 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         let $target = $(e.target);
 
-        if (!$target.hasClass('diff-collapse-btn')) {
+        if (!$target.hasClass('rb-c-diff-collapse-button')) {
             /* We clicked an image inside the link. Find the parent. */
-            $target = $target.closest('.diff-collapse-btn');
+            $target = $target.closest('.rb-c-diff-collapse-button');
         }
 
         this._expandOrCollapse($target, false);
@@ -635,7 +655,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
          * once loaded from the server.
          */
         $(e.target).parent()
-            .html('<span class="fa fa-spinner fa-pulse"></span>');
+            .html('<span class="djblets-o-spinner"></span>');
 
         this.trigger('showDeletedClicked');
     },

@@ -19,7 +19,7 @@ from djblets.dependencies import npm_dependencies as djblets_npm_dependencies
 ###########################################################################
 
 #: The minimum supported version of Python.
-PYTHON_MIN_VERSION = (3, 7)
+PYTHON_MIN_VERSION = (3, 8)
 
 #: A string representation of the minimum supported version of Python.
 PYTHON_MIN_VERSION_STR = '%s.%s' % (PYTHON_MIN_VERSION)
@@ -41,7 +41,7 @@ djblets_doc_major_version = 'dev'
 django_version = '~=3.2.17'
 
 #: The version range required for Djblets.
-djblets_version = '~=4.0b2'
+djblets_version = '~=4.0b3'
 
 
 ###########################################################################
@@ -118,11 +118,12 @@ package_only_dependencies = {
 #: Dependencies required for runtime or static media building.
 runtime_npm_dependencies: Dict[str, str] = {
     '@babel/plugin-external-helpers': '^7.18.6',
+    '@beanbag/jasmine-suites': '~2.0.0',
     '@prantlf/jsonlint': '^11.7.0',
     '@rollup/plugin-commonjs': '^24.0.1',
     'babel-polyfill': '^6.26.0',
     'codemirror': '^5.65.11',
-    'jasmine-core': '~3.8.0',
+    'jasmine-core': '~5.1.0',
     'jquery': '^3.3.1',
     'jquery-flot': '^0.8.3',
     'jquery-form': '^4.2.2',

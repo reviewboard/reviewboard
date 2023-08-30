@@ -1,13 +1,15 @@
 import { EventsHash, spina } from '@beanbag/spina';
 
-import { Actions } from 'reviewboard/common/actions';
 import {
+    Actions,
     BaseResource,
-} from 'reviewboard/common/resources/models/baseResourceModel';
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
-import { OverlayView } from 'reviewboard/ui/views/overlayView';
+    Review,
+    UserSession,
+} from 'reviewboard/common';
+import { OverlayView } from 'reviewboard/ui';
 
-import { ReviewDialogView} from './reviewDialogView';
+import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { ReviewDialogView } from './reviewDialogView';
 
 
 declare const SITE_ROOT: string;
@@ -341,7 +343,8 @@ export class CreateReviewActionView extends Actions.MenuItemActionView {
      * Instance variables *
      **********************/
 
-    #pendingReview;
+    #pendingReview: Review;
+    #reviewRequestEditor: ReviewRequestEditor;
 
     /**
      * Initialize the view.
@@ -355,6 +358,7 @@ export class CreateReviewActionView extends Actions.MenuItemActionView {
 
         const page = RB.PageManager.getPage();
         this.#pendingReview = page.pendingReview;
+        this.#reviewRequestEditor = page.reviewRequestEditorView.model;
     }
 
     /**
@@ -382,7 +386,13 @@ export class CreateReviewActionView extends Actions.MenuItemActionView {
      * Handle activation of the action.
      */
     activate() {
-        this.#pendingReview.save();
+        this.#pendingReview.save()
+            .then(() => {
+                ReviewDialogView.create({
+                    review: this.#pendingReview,
+                    reviewRequestEditor: this.#reviewRequestEditor,
+                });
+            });
     }
 }
 
@@ -399,8 +409,8 @@ export class EditReviewActionView extends Actions.MenuItemActionView {
      * Instance variables *
      **********************/
 
-    #pendingReview;
-    #reviewRequestEditor;
+    #pendingReview: Review;
+    #reviewRequestEditor: ReviewRequestEditor;
 
     /**
      * Create the view.

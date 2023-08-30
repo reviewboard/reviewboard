@@ -85,13 +85,11 @@
     <td>
 {%   if collapsible and forloop.parentloop.first and forloop.first %}
      <div class="collapse-floater">
-      <div class="diff-collapse-btn" title="Collapse lines" data-comment-id="{{ comment.id }}" data-lines-of-context="0,0">
-       <div class="rb-icon rb-icon-diff-collapse-chunk"></div>
-       </div>
+{%    include "diffviewer/_collapse_button.html" with comment=comment %}
 {%   endif %}
-        <pre>{{line.2|highlightregion:line.3|showextrawhitespace}}</pre>
+     <pre>{{line.2|highlightregion:line.3|showextrawhitespace}}</pre>
 {%   if collapsible and forloop.parentloop.first and forloop.first %}
-       </div>
+     </div>
 {%   endif %}
     </td>
 {%  endif %}
@@ -99,11 +97,9 @@
     <td>
 {%  if collapsible and comment.filediff.is_new and forloop.parentloop.first and forloop.first %}
      <div class="collapse-floater">
-      <div class="diff-collapse-btn" title="Collapse lines" data-comment-id="{{ comment.id }}" data-lines-of-context="0,0">
-       <div class="rb-icon rb-icon-diff-collapse-chunk"></div>
-       </div>
+{%    include "diffviewer/_collapse_button.html" with comment=comment %}
 {%  endif %}
-        <pre>{{line.5|highlightregion:line.6|showextrawhitespace}}</pre>
+     <pre>{{line.5|highlightregion:line.6|showextrawhitespace}}</pre>
 {% if collapsible and comment.filediff.is_new and forloop.parentloop.first and forloop.first %}
      </div>
 {%  endif %}

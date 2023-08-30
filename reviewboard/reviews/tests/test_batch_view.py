@@ -965,6 +965,62 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
         self.assertEqual(mail.outbox[0].subject,
                          'Review Request 1: Test Summary')
 
+    def test_publish_review_request_and_review(self) -> None:
+        """Testing BatchOperationView publish op with a new review request and
+        review
+        """
+        self.client.login(username='doc', password='doc')
+        grumpy = User.objects.get(username='grumpy')
+
+        rr1 = self.create_review_request(target_people=[grumpy])
+        self.create_review_request_draft(rr1)
+        r1 = self.create_review(rr1, user='doc')
+
+        response = self.client.post(self.url, data={
+            'batch': json.dumps({
+                'op': 'publish',
+                'review_requests': [rr1.pk],
+                'reviews': [r1.pk],
+            }),
+        })
+        self.assertEqual(response.status_code, 200)
+
+        rr1.refresh_from_db()
+        r1.refresh_from_db()
+
+        self.assertTrue(rr1.public)
+        self.assertTrue(r1.public)
+
+    def test_publish_review_on_unpublished_review_request(self) -> None:
+        """Testing BatchOperationView publish op with a review on an
+        unpublished review request
+        """
+        self.client.login(username='doc', password='doc')
+        grumpy = User.objects.get(username='grumpy')
+
+        rr1 = self.create_review_request(target_people=[grumpy])
+        self.create_review_request_draft(rr1)
+        r1 = self.create_review(rr1, user='doc')
+
+        response = self.client.post(self.url, data={
+            'batch': json.dumps({
+                'op': 'publish',
+                'review_requests': [],
+                'reviews': [r1.pk],
+            }),
+        })
+        self.assertResponse(response, 403, {
+            'stat': 'fail',
+            'error': 'This review cannot be published until the review '
+                     'request is published.',
+        })
+
+        rr1.refresh_from_db()
+        r1.refresh_from_db()
+
+        self.assertFalse(rr1.public)
+        self.assertFalse(r1.public)
+
     def test_publish_notifications(self) -> None:
         """Testing BatchOperationView publish op with multiple published items
         """

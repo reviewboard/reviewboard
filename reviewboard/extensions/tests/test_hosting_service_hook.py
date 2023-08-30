@@ -2,12 +2,12 @@
 
 from reviewboard.extensions.hooks import HostingServiceHook
 from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
-from reviewboard.hostingsvcs.service import (get_hosting_service,
-                                             HostingService)
+from reviewboard.hostingsvcs.base import (BaseHostingService,
+                                          hosting_service_registry)
 from reviewboard.scmtools.errors import FileNotFoundError
 
 
-class TestService(HostingService):
+class TestService(BaseHostingService):
     hosting_service_id = 'test-service'
     name = 'Test Service'
 
@@ -86,8 +86,9 @@ class HostingServiceHookTests(BaseExtensionHookTestCase):
         """Testing HostingServiceHook initializing"""
         HostingServiceHook(self.extension, TestService)
 
-        self.assertEqual(get_hosting_service('test-service'),
-                         TestService)
+        self.assertEqual(
+            hosting_service_registry.get_hosting_service('test-service'),
+            TestService)
 
     def test_register_without_hosting_service_id(self):
         """Testing HostingServiceHook initializing without hosting_service_id
@@ -105,4 +106,5 @@ class HostingServiceHookTests(BaseExtensionHookTestCase):
         hook = HostingServiceHook(self.extension, TestService)
         hook.disable_hook()
 
-        self.assertIsNone(get_hosting_service('test-service'))
+        self.assertIsNone(
+            hosting_service_registry.get_hosting_service('test-service'))

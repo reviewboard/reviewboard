@@ -3,15 +3,21 @@
  */
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
-import { ClientCommChannel } from 'reviewboard/common/models/commChannelModel';
-import { FloatingBannerView } from 'reviewboard/ui/views/floatingBannerView';
-import { MenuButtonView } from 'reviewboard/ui/views/menuButtonView';
-import { MenuType, MenuView } from 'reviewboard/ui/views/menuView';
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import {
+    ClientCommChannel,
+    UserSession,
+} from 'reviewboard/common';
+import {
+    FloatingBannerView,
+    MenuButtonView,
+    MenuView,
+    contentViewport,
+} from 'reviewboard/ui';
+import { MenuType } from 'reviewboard/ui/views/menuView';
 
 import { DraftMode, UnifiedBanner } from '../models/unifiedBannerModel';
-import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
 import { ReviewRequestEditorView } from './reviewRequestEditorView';
+import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
 
 
 declare const dedent: (string, ...args) => string;
@@ -396,6 +402,22 @@ export class UnifiedBannerView extends FloatingBannerView<
     }
 
     /**
+     * Remove the banner from the DOM.
+     *
+     * This will stop tracking for the content viewport and then remove
+     * the element.
+     *
+     * Returns:
+     *     UnifiedBannerView:
+     *     This instance, for chaining.
+     */
+    remove(): this {
+        contentViewport.untrackElement(this.el);
+
+        return super.remove();
+    }
+
+    /**
      * Render the banner.
      */
     onInitialRender() {
@@ -449,6 +471,11 @@ export class UnifiedBannerView extends FloatingBannerView<
                 fieldID: 'change_description',
                 model: reviewRequestEditor,
             }));
+
+        contentViewport.trackElement({
+            el: this.el,
+            side: 'top',
+        });
     }
 
     /**

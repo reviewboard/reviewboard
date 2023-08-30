@@ -7,11 +7,9 @@ from django.contrib.auth.models import User
 from django.http import QueryDict
 from kgb import SpyAgency
 
+from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.github import GitHub
-from reviewboard.hostingsvcs.service import (get_hosting_service,
-                                             register_hosting_service,
-                                             unregister_hosting_service)
 from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.errors import UnverifiedCertificateError
@@ -46,16 +44,16 @@ class RepositoryFormTests(SpyAgency, TestCase):
     def setUp(self):
         super(RepositoryFormTests, self).setUp()
 
-        register_hosting_service('test', TestService)
-        register_hosting_service('self_hosted_test', SelfHostedTestService)
-        register_hosting_service('hidden-test', HiddenTestService)
+        hosting_service_registry.register(TestService)
+        hosting_service_registry.register(SelfHostedTestService)
+        hosting_service_registry.register(HiddenTestService)
 
     def tearDown(self):
         super(RepositoryFormTests, self).tearDown()
 
-        unregister_hosting_service('self_hosted_test')
-        unregister_hosting_service('test')
-        unregister_hosting_service('hidden-test')
+        hosting_service_registry.unregister(TestService)
+        hosting_service_registry.unregister(SelfHostedTestService)
+        hosting_service_registry.unregister(HiddenTestService)
 
     def test_without_localsite(self):
         """Testing RepositoryForm without a LocalSite"""
@@ -1044,6 +1042,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
             'mirror_path': 'git@localhost:test.git',
             'username': 'myuser',
             'password': 'mypass',
+            'raw_file_url': 'http://example.com/<revision>',
         })
 
         self.assertFalse(form.is_valid())
@@ -1082,6 +1081,7 @@ class RepositoryFormTests(SpyAgency, TestCase):
             'mirror_path': 'git@localhost:test.git',
             'username': 'myuser',
             'password': 'mypass',
+            'raw_file_url': 'http://example.com/<revision>',
             'trust_host': 'true',
         })
 
@@ -2504,7 +2504,8 @@ class RepositoryFormTests(SpyAgency, TestCase):
             tool_id = post_data['tool']
 
             if hosting_type != 'custom':
-                hosting_service = get_hosting_service(hosting_type)
+                hosting_service = \
+                    hosting_service_registry.get_hosting_service(hosting_type)
 
                 if not hasattr(hosting_service.check_repository, 'spy'):
                     self.spy_on(hosting_service.check_repository,

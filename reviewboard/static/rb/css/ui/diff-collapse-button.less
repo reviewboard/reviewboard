@@ -1,0 +1,114 @@
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/assets/icons.less";
+@import (reference) "rb/css/ui/colors.less";
+
+
+#rb-ns-ui() {
+  .diff-collapse-button {
+    @bg-color: @diff-header-color;
+    @hover-bg-color: lighten(@bg-color, 3%);
+
+    @border-color: #rb-ns-ui.colors()[@cool-grey-40];
+    @border-radius: 4px;
+    @shadow: @box-shadow;
+
+    @padding: 0.5em;
+    @icon-size: 14px;
+
+    @z-index: @z-index-diff-collapse-btn;
+  }
+}
+
+
+/**
+ * A button used to collapse expanded regions of diffs.
+ *
+ * This is designed to float over an expanded section of a diff. Pressing the
+ * button will collapse the expanded lines.
+ *
+ * It's up to the consumer to handle positioning of the button. This component
+ * only handles styling.
+ *
+ * Version Added:
+ *     6.0
+ *
+ * DOM Attributes:
+ *     aria-label (string):
+ *         A description of the button.
+ *
+ *     data-lines-of-context (string, optional):
+ *         A chunk line range to collapse to.
+ *
+ *         This should be ``0`` or ``0,0``.
+ *
+ *     role (string):
+ *         ``button``, always.
+ *
+ *     tabindex (number):
+ *         ``0``, always.
+ *
+ *     title (string):
+ *         A tooltip for the button.
+ *
+ *     data-chunk-index (number, optional):
+ *         The index of the chunk that was expanded.
+ *
+ *     data-comment-id (number, optional):
+ *         An ID of a comment associated with the expanded diff.
+ *
+ * Structure:
+ *     <div class="rb-c-diff-collapse-button"
+ *          role="button"
+ *          tabindex="0"
+ *          aria-label="..."
+ *          title="..."
+ *          data-lines-of-context="..."
+ *          [data-chunk-index="..."]
+ *          [data-comment-id="..."]>
+ *     <span class="rb-c-diff-collapse-button__icon" ...></span>
+ *     <label class="rb-c-diff-collapse-button__label" ...>...</label>
+ *    </div>
+ */
+.rb-c-diff-collapse-button {
+  @_button-vars: #rb-ns-ui.diff-collapse-button();
+
+  background: @_button-vars[@bg-color];
+  border: 1px @_button-vars[@border-color] solid;
+  border-radius: @_button-vars[@border-radius];
+  box-shadow: @_button-vars[@shadow];
+  padding: @_button-vars[@padding];;
+  cursor: pointer;
+  user-select: none;
+  z-index: @_button-vars[@z-index];
+
+  &:hover {
+    background: @_button-vars[@hover-bg-color];
+  }
+
+  /**
+   * The icon for the collapse button.
+   *
+   * Structure:
+   *     <span class="rb-c-diff-collapse-button__icon" aria-hidden="true">
+   *     </span>
+   */
+  &__icon {
+    .rb-icon();
+    .rb-icon-diff-collapse-chunk();
+
+    cursor: inherit;
+    vertical-align: top;
+  }
+
+  /**
+   * The label for the collapse button.
+   *
+   * Structure:
+   *     <label class="rb-c-diff-collapse-button__label" aria-hidden="true">
+   *      text...
+   *     </label>
+   */
+  &__label {
+    cursor: inherit;
+  }
+}

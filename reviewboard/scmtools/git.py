@@ -1,9 +1,12 @@
+"""SCMTool implementation for Git."""
+
 import io
 import logging
 import os
 import platform
 import re
 import stat
+from typing import Any, Dict
 from urllib.parse import (quote as urlquote,
                           urlparse,
                           urlsplit as urlsplit,
@@ -11,9 +14,11 @@ from urllib.parse import (quote as urlquote,
                           uses_netloc)
 
 from django.utils.encoding import force_bytes
-from django.utils.translation import gettext_lazy as _
+from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _, gettext
 from djblets.util.filesystem import is_exe_in_path
 
+from reviewboard import get_manual_url
 from reviewboard.diffviewer.parser import (DiffParser, DiffParserError,
                                            ParsedDiffFile)
 from reviewboard.scmtools.core import SCMClient, SCMTool, HEAD, PRE_CREATION
@@ -21,6 +26,7 @@ from reviewboard.scmtools.errors import (FileNotFoundError,
                                          InvalidRevisionFormatError,
                                          RepositoryNotFoundError,
                                          SCMError)
+from reviewboard.scmtools.forms import StandardSCMToolRepositoryForm
 from reviewboard.ssh import utils as sshutils
 
 
@@ -35,6 +41,43 @@ uses_netloc.append('git')
 
 
 sshutils.register_rbssh('GIT_SSH')
+
+
+class GitRepositoryForm(StandardSCMToolRepositoryForm):
+    """Form for editing git repositories.
+
+    Version Added:
+        6.0
+    """
+
+    def clean(self) -> Dict[str, Any]:
+        """Perform validation on the form.
+
+        Returns:
+            dict:
+            The cleaned form data.
+        """
+        cleaned_data = super().clean()
+        assert cleaned_data is not None
+
+        path = cleaned_data.get('path', '')
+
+        if path:
+            url_parts = urlparse(cleaned_data['path'])
+
+            if (url_parts.scheme not in ('', 'file') and
+                not cleaned_data.get('raw_file_url', '')):
+                docs_url = ('%sadmin/configuration/repositories/git/' %
+                            get_manual_url())
+
+                self.add_error('path', mark_safe(
+                    gettext(
+                        'Remote Git repositories cannot be accessed without a '
+                        'Raw File URL Mask. See the <a href="%s">'
+                        'documentation</a> for more details.')
+                    % docs_url))
+
+        return cleaned_data
 
 
 class ShortSHA1Error(InvalidRevisionFormatError):
@@ -56,7 +99,7 @@ class GitTool(SCMTool):
     """
 
     scmtool_id = 'git'
-    name = "Git"
+    name = 'Git'
     diffs_use_absolute_paths = True
     supports_history = True
     commits_have_committer = True
@@ -66,6 +109,7 @@ class GitTool(SCMTool):
                   '.git directory that Review Board can read from. For remote '
                   'Git repositories, it should be the clone URL.'),
     }
+    repository_form = GitRepositoryForm
     dependencies = {
         'executables': ['git']
     }

@@ -5,6 +5,7 @@ import logging
 from collections import Counter, defaultdict
 from datetime import datetime
 from itertools import chain
+from typing import Optional
 
 from django.db.models import Q
 from django.utils.timezone import utc
@@ -181,6 +182,16 @@ class ReviewRequestPageData(object):
             status updates on the review request.
     """
 
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The timestamp of the most recent comment, for the issue summary table.
+    #:
+    #: Version Added:
+    #:     6.0
+    latest_issue_timestamp: Optional[datetime]
+
     def __init__(self, review_request, request, last_visited=None,
                  entry_classes=None):
         """Initialize the data object.
@@ -221,6 +232,7 @@ class ReviewRequestPageData(object):
         self.change_status_updates = {}
         self.reviews_by_id = {}
         self.latest_timestamps_by_review_id = {}
+        self.latest_issue_timestamp = None
         self.body_top_replies = defaultdict(list)
         self.body_bottom_replies = defaultdict(list)
         self.review_request_details = None
@@ -541,6 +553,13 @@ class ReviewRequestPageData(object):
                         self.issue_counts[status_key] += 1
                         self.issue_counts['total'] += 1
                         self.issues.append(comment)
+
+        if self.all_comments:
+            self.latest_issue_timestamp = max(
+                comment.timestamp
+                for comment in self.all_comments)
+        else:
+            self.latest_issue_timestamp = datetime.fromtimestamp(0, utc)
 
         if self.review_request.created_with_history:
             pks = [diffset.pk for diffset in self.diffsets]

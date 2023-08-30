@@ -72,13 +72,6 @@ class HostingServiceAPIError(HostingServiceError):
 
     HostingServiceAPIError instances can be further turned into other error
     types, or raised directly, if the error message is suitable for display.
-
-    Attributes:
-        http_code (int):
-            The HTTP code for the error.
-
-        rsp (object):
-            The parsed payload for the error, if available.
     """
 
     ######################

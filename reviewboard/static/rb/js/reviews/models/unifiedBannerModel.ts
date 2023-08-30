@@ -3,6 +3,11 @@
  */
 import { BaseModel, spina } from '@beanbag/spina';
 
+import {
+    Review,
+    ReviewReply,
+} from 'reviewboard/common';
+
 import { ReviewRequestEditor } from './reviewRequestEditorModel';
 
 
@@ -50,10 +55,10 @@ interface UnifiedBannerAttrs {
     numDrafts: number;
 
     /** The pending review, used for any new review content. */
-    pendingReview: RB.Review;
+    pendingReview: Review;
 
     /** The draft review replies. */
-    reviewReplyDrafts: RB.Review[];
+    reviewReplyDrafts: Review[];
 
     /** The current review request. */
     reviewRequest: RB.ReviewRequest;
@@ -114,14 +119,14 @@ export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
      * Update the draft state for the given review reply.
      *
      * Args:
-     *     reviewReply (RB.ReviewReply):
+     *     reviewReply (ReviewReply):
      *         The review reply model.
      *
      *     hasReviewReplyDraft (boolean):
      *          Whether the reviewReply passed in has a draft.
      */
     updateReplyDraftState(
-        reviewReply: RB.ReviewReply,
+        reviewReply: ReviewReply,
         hasReviewReplyDraft: boolean,
     ) {
         const reviewReplyDrafts = this.get('reviewReplyDrafts');

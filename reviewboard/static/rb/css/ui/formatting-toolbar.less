@@ -5,14 +5,27 @@
 @import (reference) "rb/css/ui/colors.less";
 
 
+#rb-ns-ui() {
+  .formatting-toolbar() {
+    @bg: #rb-ns-ui.colors[@grey-90];
+
+    @button-color: #rb-ns-ui.colors[@black];
+    @button-hover-bg: #rb-ns-ui.colors[@grey-80];
+  }
+}
+
+
 /**
  * The rich text formatting toolbar.
  */
- .rb-c-formatting-toolbar {
+.rb-c-formatting-toolbar {
+  @_formatting-toolbar-vars: #rb-ns-ui.formatting-toolbar();
+
+  background: @_formatting-toolbar-vars[@bg];
   bottom: 0px;
   display: flex;
-  margin: 0.5em;
-  position: absolute;
+  margin: 0;
+  padding: 0;
 
   a, label {
     color: #rb-ns-ui.colors[@black];
@@ -20,23 +33,28 @@
 
   &__btn-group {
     display: flex;
-    margin: 0.75em 0;
-
-    &:not(:last-child) {
-      border-right: 1px solid #rb-ns-ui.colors[@grey-70];
-    }
+    margin: 0.5em;
   }
 
   &__btn {
+    background: none;
+    border: 0;
     border-radius: 2px;
-    margin: 0 0.25em;
-    min-width: 14px;
-    padding: 0.25em 0.25em;
+    box-sizing: content-box;
+    font-size: 120%;
+    margin: 0 0.1em;
+    width: 14px;
+    height: 14px;
+    padding: 0.5em;
     text-align: center;
 
+    &::before {
+      vertical-align: top;
+    }
+
     &:hover, &:focus {
-      background-color: #rb-ns-ui.colors[@grey-80];
-      color: #rb-ns-ui.colors[@black];
+      background-color: @_formatting-toolbar-vars[@button-hover-bg];
+      color: @_formatting-toolbar-vars[@button-color];
     }
 
     &-bold:before {

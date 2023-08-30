@@ -1,7 +1,9 @@
+"""Model for a review request draft."""
+
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -26,6 +28,7 @@ from reviewboard.scmtools.errors import InvalidChangeNumberError
 
 if TYPE_CHECKING:
     from django.db.models.manager import RelatedManager
+    from reviewboard.scmtools.core import ChangeSet
 
 
 class ReviewRequestDraft(BaseReviewRequestDetails):
@@ -470,22 +473,34 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             else:
                 raise NotImplementedError()
 
-    def update_from_pending_change(self, commit_id, changeset):
+    def update_from_pending_change(
+        self,
+        commit_id: str,
+        changeset: ChangeSet,
+    ) -> List[str]:
         """Update the data from a server-side pending changeset.
 
         This will fetch the metadata from the server and update the fields on
         the draft.
 
+        Version Changed:
+            6.0:
+            Added support for setting ``extra_data``.
+
         Args:
-            commit_id (unicode):
+            commit_id (str):
                 The changeset ID that the draft will update from.
 
             changeset (reviewboard.scmtools.core.ChangeSet):
                 The changeset information to update from.
 
         Returns:
-            list of unicode:
+            list of str:
             The list of draft fields that have been updated from the change.
+
+        Raises:
+            reviewboard.scmtools.errors.InvalidChangeNumberError:
+                A changeset could not be found.
         """
         if not changeset:
             raise InvalidChangeNumberError()
@@ -518,6 +533,13 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         if changeset.bugs_closed:
             self.bugs_closed = ','.join(changeset.bugs_closed)
             modified_fields.append('bugs_closed')
+
+        if changeset.extra_data:
+            if self.extra_data is None:
+                self.extra_data = {}
+
+            self.extra_data.update(changeset.extra_data)
+            modified_fields.append('extra_data')
 
         return modified_fields
 

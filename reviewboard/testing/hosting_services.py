@@ -1,20 +1,21 @@
 from django import forms
 
+from reviewboard.hostingsvcs.base import BaseHostingService
+from reviewboard.hostingsvcs.base.forms import \
+    BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError,
                                             TwoFactorAuthCodeRequiredError)
-from reviewboard.hostingsvcs.forms import HostingServiceForm
-from reviewboard.hostingsvcs.service import HostingService
 
 
-class TestServiceForm(HostingServiceForm):
+class TestServiceForm(BaseHostingServiceRepositoryForm):
     test_repo_name = forms.CharField(
         label='Repository name',
         max_length=64,
         required=True)
 
 
-class TestService(HostingService):
+class TestService(BaseHostingService):
     hosting_service_id = 'test'
     name = 'Test Service'
     form = TestServiceForm

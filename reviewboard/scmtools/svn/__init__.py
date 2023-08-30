@@ -1,15 +1,24 @@
-# -*- coding: utf-8 -*-
+"""Support for Subversion repositories."""
+
+from __future__ import annotations
 
 import logging
 import os
 import re
 import weakref
+from enum import IntEnum
 from importlib import import_module
+from typing import (Any, Dict, List, Mapping, Optional, Sequence, Tuple,
+                    TYPE_CHECKING, Type, Union, cast)
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import gettext as _
+from typing_extensions import Final, TypedDict
 
+from reviewboard import get_manual_url
+from reviewboard.admin.server import get_data_dir
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.core import (Branch, Commit, SCMTool, HEAD,
@@ -18,17 +27,25 @@ from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
                                          SCMError,
                                          UnverifiedCertificateError)
+from reviewboard.scmtools.forms import StandardSCMToolRepositoryForm
 from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
 from reviewboard.ssh import utils as sshutils
+
+if TYPE_CHECKING:
+    from reviewboard.scmtools.core import Revision, RevisionID
+    from reviewboard.scmtools.models import Repository
+    from reviewboard.scmtools.svn.base import (Client,
+                                               SVNDirEntry,
+                                               SVNLogEntry)
 
 
 logger = logging.getLogger(__name__)
 
 
 # These will be set later in recompute_svn_backend().
-Client = None
-has_svn_backend = False
+_SVNClientBackend: Optional[Type[Client]] = None
+has_svn_backend: bool = False
 
 
 # Register these URI schemes so we can handle them properly.
@@ -37,34 +54,160 @@ sshutils.ssh_uri_schemes.append('svn+ssh')
 sshutils.register_rbssh('SVN_SSH')
 
 
-class SVNCertificateFailures:
+class SVNCertificateFailures(IntEnum):
     """SVN HTTPS certificate failure codes.
 
     These map to the various SVN HTTPS certificate failures in libsvn.
     """
+
+    #: The certificate is not yet valid.
     NOT_YET_VALID = 1 << 0
+
+    #: The certificate has expired.
     EXPIRED = 1 << 1
+
+    #: The certificate does not match the hostname.
     CN_MISMATCH = 1 << 2
+
+    #: The certificate is self-signed or signed by an untrusted authority.
     UNKNOWN_CA = 1 << 3
 
 
+class RawSSLTrustDict(TypedDict):
+    """A dictionary of SSL trust data to verify.
+
+    For details, see
+    https://pysvn.sourceforge.io/Docs/pysvn_prog_ref.html#pysvn_client_callback_ssl_server_trust_prompt
+
+    Version Added:
+        6.0
+    """
+
+    #: The bitmask of failures:
+    #:
+    #: Type:
+    #:     int
+    failures: int
+
+    #: The SSL certificate fingerprint.
+    finger_print: str
+
+    #: The hostname that served the certificate.
+    #:
+    #: Type:
+    #:     str
+    hostname: str
+
+    #: The issuer of the certificate.
+    #:
+    #: Type:
+    #:     str
+    issuer_dname: str
+
+    #: The realm serving the certificate.
+    #:
+    #: Type:
+    #:     str
+    realm: str
+
+    #: The start of the certificate validity period.
+    #:
+    #: This is in :term:`ISO8601 format`.
+    #:
+    #: Type:
+    #:     str
+    valid_from: str
+
+    #: The end of the certificate validity period.
+    #:
+    #: This is in :term:`ISO8601 format`.
+    #:
+    #: Type:
+    #:     str
+    valid_until: str
+
+
+class SVNRepositoryForm(StandardSCMToolRepositoryForm):
+    """Form for editing SVN repositories.
+
+    Version Added:
+        6.0
+    """
+
+    def clean(self) -> Dict[str, Any]:
+        """Perform validation on the form.
+
+        Returns:
+            dict:
+            The cleaned form data.
+        """
+        cleaned_data = super().clean()
+        assert cleaned_data is not None
+
+        path = cleaned_data.get('path', '')
+
+        if path:
+            url_parts = urlparse(path)
+
+            if not url_parts.scheme:
+                self.add_error('path', _(
+                    'The path to the SVN repository must be a URL. To specify '
+                    'a local repository, use a file:// URL.'))
+
+        return cleaned_data
+
+
 class SVNTool(SCMTool):
+    """Repository support for Subversion.
+
+    Subversion is an open source centralized source code management system
+    maintained by the Apache Software Foundation. It supports tagging and
+    branching, atomic commits, full remote communication, file/directory-level
+    metadata, large binary files, and more.
+
+    Review Board uses Subversion's native diff format. This has had some
+    changes and inconsistencies over time, but is otherwise a fairly
+    comprehensive diff format.
+    """
+
     scmtool_id = 'subversion'
-    name = "Subversion"
+    name = 'Subversion'
     supports_post_commit = True
     dependencies = {
-        'modules': [],  # This will get filled in later in
-                        # recompute_svn_backend()
+        # This will get filled in later in recompute_svn_backend()
+        'modules': [],
     }
+    repository_form = SVNRepositoryForm
 
-    COMMITS_PAGE_LIMIT = 31
+    #: The number of commits to retrieve per page.
+    COMMITS_PAGE_LIMIT: Final[int] = 31
 
-    def __init__(self, repository):
-        self.repopath = repository.path
-        if self.repopath[-1] == '/':
-            self.repopath = self.repopath[:-1]
+    ######################
+    # Instance variables #
+    ######################
 
-        super(SVNTool, self).__init__(repository)
+    #: The configured Subversion client backend.
+    #:
+    #: Type:
+    #:     reviewboard.scmtools.svn.base.Client
+    client: Client
+
+    def __init__(
+        self,
+        repository: Repository,
+    ) -> None:
+        """Initialize the Subversion support.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The Subversion repository that this tool will communicate with.
+        """
+        repopath = repository.path
+
+        if repopath.endswith('/'):
+            repopath = repopath.rstrip('/')
+
+        super().__init__(repository=repository)
 
         if repository.local_site:
             local_site_name = repository.local_site.name
@@ -73,10 +216,11 @@ class SVNTool(SCMTool):
 
         credentials = repository.get_credentials()
 
-        self.config_dir, self.client = \
-            self.build_client(self.repopath,
-                              credentials['username'], credentials['password'],
-                              local_site_name)
+        client = self.build_client(repo_path=repopath,
+                                   username=credentials['username'],
+                                   password=credentials['password'],
+                                   local_site_name=local_site_name)
+        self.client = client
 
         # If we assign a function to the pysvn Client that accesses anything
         # bound to SVNClient, it'll end up keeping a reference and a copy of
@@ -87,7 +231,7 @@ class SVNTool(SCMTool):
         # reference the repository, but it will safely go away when needed.
         # The function we pass can access that without causing the leaks
         repository_ref = weakref.ref(repository)
-        self.client.set_ssl_server_trust_prompt(
+        client.set_ssl_server_trust_prompt(
             lambda trust_dict:
             SVNTool._ssl_server_trust_prompt(trust_dict, repository_ref()))
 
@@ -159,39 +303,86 @@ class SVNTool(SCMTool):
             )\)$
         '''.encode('utf-8'), re.VERBOSE)
 
-    def get_file(self, path, revision=HEAD, **kwargs):
+    def get_file(
+        self,
+        path: str,
+        revision: RevisionID = HEAD,
+        *args,
+        **kwargs,
+    ) -> bytes:
+        """Return the contents of a file from a repository.
+
+        This attempts to return the raw binary contents of a file from the
+        repository, given a file path and revision.
+
+        Args:
+            path (str):
+                The path to the file in the repository.
+
+            revision (reviewboard.scmtools.core.Revision, optional):
+                The revision to fetch. Subclasses should default this to
+                :py:data:`HEAD`.
+
+            *args (tuple, unused):
+                Additional unused positional arguments.
+
+            **kwargs (dict, unused):
+                Additional unused keyword arguments.
+
+        Returns:
+            bytes:
+            The returned file contents.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file could not be found in the repository.
+
+            reviewboard.scmtools.errors.InvalidRevisionFormatError:
+                The ``revision`` argument was in an invalid format.
+
+            reviewboard.scmtools.errors.SCMError:
+                An unexpected error was encountered with the repository.
+        """
         return self.client.get_file(path, revision)
 
-    def get_branches(self):
-        """Returns a list of branches.
+    def get_branches(self) -> Sequence[Branch]:
+        """Return a list of all branches on the repository.
+
+        This will fetch a list of all known branches for use in the API and
+        New Review Request page.
 
         This assumes the standard layout in the repository.
+
+        Returns:
+            list of reviewboard.scmtools.core.Branch:
+            The list of branches in the repository. One (and only one) will
+            be marked as the default branch.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                The repository tool encountered an error.
         """
-        results = []
+        results: List[Branch] = []
 
-        try:
-            root_dirents = self.client.list_dir('/')
-        except Exception as e:
-            raise self.normalize_error(e)
-
+        root_dirents = self.client.list_dir('/')
         default = True
+
         if 'trunk' in root_dirents:
             # Looks like the standard layout. Adds trunk and any branches.
             trunk = root_dirents['trunk']
             results.append(self._create_branch_from_dirent(
-                'trunk', trunk, default=True))
+                name='trunk',
+                dirent=trunk,
+                default=True))
             default = False
 
         if 'branches' in root_dirents:
-            try:
-                dirents = self.client.list_dir('branches')
-
-                results += [
-                    self._create_branch_from_dirent(name, dirents[name])
-                    for name in sorted(dirents.keys())
-                ]
-            except Exception as e:
-                raise self.normalize_error(e)
+            dirents = self.client.list_dir('branches')
+            results += [
+                self._create_branch_from_dirent(name=name,
+                                                dirent=dirents[name])
+                for name in sorted(dirents.keys())
+            ]
 
         # Add anything else from the root of the repository. This is a
         # catch-all for repositories which do not use the standard layout, and
@@ -200,46 +391,98 @@ class SVNTool(SCMTool):
         for name in sorted(root_dirents.keys()):
             if name not in ('trunk', 'branches'):
                 results.append(self._create_branch_from_dirent(
-                    name, root_dirents[name], default))
+                    name=name,
+                    dirent=root_dirents[name],
+                    default=default))
                 default = False
 
         return results
 
-    def get_commits(self, branch=None, start=None):
-        """Return a list of commits."""
-        try:
-            commits = self.client.get_log(branch or '/',
-                                          start=start,
-                                          limit=self.COMMITS_PAGE_LIMIT,
-                                          limit_to_path=False)
-        except Exception as e:
-            raise self.normalize_error(e)
+    def get_commits(
+        self,
+        branch: Optional[str] = None,
+        start: Optional[str] = None,
+    ) -> Sequence[Commit]:
+        """Return a list of commits backward in history from a given point.
 
-        results = []
+        This will fetch a batch of commits from the repository for use in the
+        API and New Review Request page.
+
+        The resulting commits will be in order from newest to oldest, and
+        should return up to a fixed number of commits (usually 30, but this
+        depends on the type of repository and its limitations). It may also be
+        limited to commits that exist on a given branch (if supported by the
+        repository).
+
+        This can be called multiple times in succession using the
+        :py:attr:`Commit.parent` of the last entry as the ``start`` parameter
+        in order to paginate through the history of commits in the repository.
+
+        Args:
+            branch (str, optional):
+                The branch to limit commits to. This may not be supported by
+                all repositories.
+
+            start (str, optional):
+                The commit to start at. If not provided, this will fetch the
+                first commit in the repository.
+
+        Returns:
+            list of reviewboard.scmtools.core.Commit:
+            The list of commits, in order from newest to oldest.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                The repository tool encountered an error.
+
+            NotImplementedError:
+                Commits retrieval is not available for this type of repository.
+        """
+        commits = self.client.get_log(branch or '/',
+                                      start=start,
+                                      limit=self.COMMITS_PAGE_LIMIT,
+                                      limit_to_path=False)
+
+        results: List[Commit] = []
 
         # We fetch one more commit than we care about, because the entries in
         # the svn log doesn't include the parent revision.
         for i in range(len(commits) - 1):
             commit = commits[i]
             parent = commits[i + 1]
-            results.append(self._build_commit(commit, parent['revision']))
+            results.append(self._build_commit(data=commit,
+                                              parent=parent['revision']))
 
         # If there were fewer than the requested number of commits fetched,
         # also include the last one in the list so we don't leave off the
         # initial revision.
         if len(commits) < self.COMMITS_PAGE_LIMIT:
             commit = commits[-1]
-            results.append(self._build_commit(commit))
+            results.append(self._build_commit(data=commit))
 
         return results
 
-    def get_change(self, revision):
-        """Get an individual change.
+    def get_change(
+        self,
+        revision: str,
+    ) -> Commit:
+        """Return an individual commit with the given revision.
 
-        This returns a Commit object containing the details of the commit.
+        This will fetch information on the given commit, if found, including
+        its commit message and list of modified files.
+
+        Args:
+            revision (str):
+                The revision of the commit.
+
+        Returns:
+            Commit:
+            The resulting commit with the given revision.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                Error retrieving information on this commit.
         """
-        revision = int(revision)
-
         commits = self.client.get_log('/', start=revision, limit=2)
 
         if len(commits) > 1:
@@ -247,23 +490,40 @@ class SVNTool(SCMTool):
         else:
             base_revision = '0'
 
-        try:
-            diff = self.client.diff(base_revision, revision)
-        except Exception as e:
-            raise self.normalize_error(e)
+        diff = self.client.diff(base_revision, revision)
 
-        commit = self._build_commit(commits[0], parent=base_revision)
+        commit = self._build_commit(data=commits[0],
+                                    parent=base_revision)
         commit.diff = diff
 
         return commit
 
-    def normalize_patch(self, patch, filename, revision=HEAD):
-        """
-        If using Subversion, we need not only contract keywords in file, but
-        also in the patch. Otherwise, if a file with expanded keyword somehow
-        ends up in the repository (e.g. by first checking in a file without
-        svn:keywords and then setting svn:keywords in the repository), RB
-        won't be able to apply a patch to such file.
+    def normalize_patch(
+        self,
+        patch: bytes,
+        filename: str,
+        revision: str,
+    ) -> bytes:
+        """Normalize a diff/patch file before it's applied.
+
+        This will check the patch for any ``$...$`` keywords. If found, the
+        repository will be queried for matches, and those will be collapsed
+        in the diff. This ensures that the file can be applied on top of a
+        normalized source file, and compared to other normalized patches.
+
+        Args:
+            patch (bytes):
+                The diff/patch file to normalize.
+
+            filename (str):
+                The name of the file being changed in the diff.
+
+            revision (str):
+                The revision of the file being changed in the diff.
+
+        Returns:
+            bytes:
+            The resulting diff/patch file.
         """
         if revision != PRE_CREATION and has_expanded_svn_keywords(patch):
             keywords = self.client.get_keywords(filename, revision)
@@ -273,7 +533,13 @@ class SVNTool(SCMTool):
 
         return patch
 
-    def parse_diff_revision(self, filename, revision, *args, **kwargs):
+    def parse_diff_revision(
+        self,
+        filename: bytes,
+        revision: bytes,
+        *args,
+        **kwargs,
+    ) -> Tuple[bytes, Union[bytes, Revision]]:
         """Parse and return a filename and revision from a diff.
 
         Args:
@@ -293,13 +559,16 @@ class SVNTool(SCMTool):
             tuple:
             A tuple containing two items:
 
-            1. The normalized filename as a byte string.
-            2. The normalized revision as a byte string or a
-               :py:class:`~reviewboard.scmtools.core.Revision`.
+            Tuple:
+                0 (bytes):
+                    The normalized filename.
+
+                1 (bytes or reviewboard.scmtools.core.Revision):
+                    The normalized revision.
         """
         assert isinstance(filename, bytes), (
             'filename must be a byte string, not %s' % type(filename))
-        assert isinstance(revision, bytes), (
+        assert isinstance(filename, bytes), (
             'revision must be a byte string, not %s' % type(revision))
 
         # Some diffs have additional tabs between the parts of the file
@@ -329,13 +598,13 @@ class SVNTool(SCMTool):
                            % revision.decode('utf-8'))
 
         relocated_file = m.group(2)
-        revision = m.group(4)
+        norm_revision: Union[bytes, Revision] = m.group(4)
 
         # group(3) holds the revision string in braces, like '(revision 4)'
         # group(4) only matches the revision number, which might by None when
         # 'nonexistent' is given as the revision string
-        if revision in (None, b'0'):
-            revision = PRE_CREATION
+        if norm_revision in (None, b'0'):
+            norm_revision = PRE_CREATION
 
         if relocated_file:
             if not relocated_file.startswith(b'...'):
@@ -344,63 +613,198 @@ class SVNTool(SCMTool):
 
             filename = b'%s/%s' % (relocated_file[4:], filename)
 
-        return filename, revision
+        return filename, norm_revision
 
-    def get_repository_info(self):
+    def get_repository_info(self) -> Dict[str, Any]:
+        """Return information on the repository.
+
+        Returns:
+            dict:
+            A dictionary containing information on the repository.
+
+            See :py:class:`reviewboard.scmtools.svn.base.SVNRepositoryInfoDict`
+            for contents.
+
+        Raises:
+            NotImplementedError:
+                Repository information retrieval is not implemented by this
+                type of repository. Callers should specifically check for this,
+                as it's considered a valid result.
+        """
         return self.client.repository_info
 
-    def get_parser(self, data):
+    def get_parser(
+        self,
+        data: bytes,
+    ) -> SVNDiffParser:
+        """Return a diff parser used to parse diff data.
+
+        The diff parser will be responsible for parsing the contents of the
+        diff, and should expect (but validate) that the diff content is
+        appropriate for the type of repository.
+
+        Subclasses should override this.
+
+        Args:
+            data (bytes):
+                The diff data to parse.
+
+        Returns:
+            SVNDiffParser:
+            The diff parser used to parse this data.
+        """
         return SVNDiffParser(data)
 
-    def _create_branch_from_dirent(self, name, dirent, default=False):
+    def _create_branch_from_dirent(
+        self,
+        *,
+        name: str,
+        dirent: SVNDirEntry,
+        default=False,
+    ) -> Branch:
+        """Return a Branch object from a Subversion directory entry.
+
+        Args:
+            name (str):
+                The name of the directory entry.
+
+            dirent (reviewboard.scmtools.svn.base.SVNDirEntry):
+                The directory entry to parse.
+
+            default (bool, optional):
+                Whether this is the default branch.
+
+        Returns:
+            reviewboard.scmtools.core.Branch:
+            The resulting branch.
+        """
         return Branch(
             id=dirent['path'].strip('/'),
             name=name,
             commit=dirent['created_rev'],
             default=default)
 
-    def _build_commit(self, data, parent=''):
-        date = data.get('date', '')
+    def _build_commit(
+        self,
+        *,
+        data: SVNLogEntry,
+        parent: Union[bytes, str] = '',
+    ) -> Commit:
+        """Return a Commit object from the provided data.
+
+        Args:
+            data (reviewboard.scmtools.svn.base.SVNLogEntry):
+                The log entry to build the data from.
+
+            parent (bytes or str, optional):
+                The parent commit revision.
+
+        Returns:
+            reviewboard.scmtools.core.Commit:
+            The resulting commit.
+        """
+        date = data.get('date')
+        norm_date: str = ''
 
         if date:
-            date = date.isoformat()
+            norm_date = str(date.isoformat())
 
         return Commit(
             author_name=force_str(data.get('author', ''), errors='replace'),
             id=force_str(data['revision']),
-            date=force_str(date),
+            date=norm_date,
             message=force_str(data.get('message', ''), errors='replace'),
             parent=force_str(parent))
 
     @classmethod
-    def normalize_error(cls, e):
-        if 'callback_get_login required' in str(e):
-            return AuthenticationError(
-                msg='Authentication failed when talking to the Subversion '
-                    'repository')
-        else:
-            return SCMError(e)
-
-    @classmethod
-    def _ssl_server_trust_prompt(cls, trust_dict, repository):
+    def _ssl_server_trust_prompt(
+        cls,
+        trust_data: RawSSLTrustDict,
+        repository: Optional[Repository],
+    ) -> Tuple[bool, int, bool]:
         """Callback for SSL cert verification.
 
         This will be called when accessing a repository with an SSL cert.
         We will look up a matching cert in the database and see if it's
         accepted.
+
+        Args:
+            trust_data (RawSSLTrustDict):
+                The Subversion SSL trust data.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository triggering the SSL cert verification.
+
+        Returns:
+            tuple:
+            A 3-tuple containing:
+
+            Tuple:
+                0 (bool):
+                    Whether the certificate is verified.
+
+                1 (int):
+                    A bitmask of Subversion SSL trust failure codes.
+
+                2 (bool):
+                    Whether to store the trust info within the filesystem.
+
+                    This is always ``False``, since we want to handle this
+                    on our end.
         """
+        if repository is None:
+            return False, 0, False
+
         saved_cert = repository.extra_data.get('cert', {})
-        cert = trust_dict.copy()
+        cert: Dict[str, Any] = cast(Dict[str, Any], trust_data.copy())
         del cert['failures']
 
-        return saved_cert == cert, trust_dict['failures'], False
+        return saved_cert == cert, trust_data['failures'], False
 
     @staticmethod
-    def on_ssl_failure(e, path, cert_data):
+    def on_ssl_failure(
+        client: Client,
+        e: Exception,
+        path: str,
+        cert_data: Dict[str, Any],
+    ) -> None:
+        """Handle a SSL certificate failure.
+
+        This will determine if the error contains unverified SSL certificate
+        information that needs to be returned. If found, a suitable error
+        will be generated and raised.
+
+        Args:
+            client (reviewboard.scmtools.svn.base.Client):
+                The client talking to Subversion.
+
+            e (Exception):
+                The raw exception found during SSL communication.
+
+            path (str):
+                The repository path.
+
+            cert_data (RawSSLTrustDict):
+                The dictionary containing Subversion SSL certificate
+                information.
+
+        Raises:
+            reviewboard.scmtools.errors.AuthenticationError:
+                There was an error authenticating, rather than an issue with
+                the SSL certificate.
+
+            reviewboard.scmtools.errors.RepositoryNotFoundError:
+                The repository was not found.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The certificate was not verified.
+
+                Details are in the error message and associated certificate.
+        """
         logger.error('SVN: Failed to get repository information for %s: %s',
                      path, e)
 
-        error = SVNTool.normalize_error(e)
+        error = client.normalize_error(e)
 
         if isinstance(error, AuthenticationError):
             raise error
@@ -408,7 +812,7 @@ class SVNTool(SCMTool):
         if cert_data:
             failures = cert_data['failures']
 
-            reasons = []
+            reasons: List[str] = []
 
             if failures & SVNCertificateFailures.NOT_YET_VALID:
                 reasons.append(_('The certificate is not yet valid.'))
@@ -437,8 +841,15 @@ class SVNTool(SCMTool):
         raise RepositoryNotFoundError()
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None,
-                         local_site_name=None, **kwargs):
+    def check_repository(
+        cls,
+        path: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        local_site_name: Optional[str] = None,
+        *args,
+        **kwargs,
+    ) -> None:
         """Check a repository configuration for validity.
 
         This should check if a repository exists and can be connected to.
@@ -450,21 +861,23 @@ class SVNTool(SCMTool):
         be thrown.
 
         Args:
-            path (unicode):
+            path (str):
                 The repository path.
 
-            username (unicode, optional):
+            username (str, optional):
                 The optional username for the repository.
 
-            password (unicode, optional):
+            password (str, optional):
                 The optional password for the repository.
 
-            local_site_name (unicode, optional):
-                The name of the Local Site that owns this repository. This is
-                optional.
+            local_site_name (str, optional):
+                The name of the Local Site that owns this repository.
+
+            *args (tuple, unused):
+                Additional unused positional arguments.
 
             **kwargs (dict, unused):
-                Additional settings for the repository.
+                Additional unused keyword arguments.
 
         Raises:
             reviewboard.scmtools.errors.AuthenticationError:
@@ -491,10 +904,10 @@ class SVNTool(SCMTool):
                 valid number.
 
             Exception:
-                An unexpected exception has ocurred. Callers should check
+                An unexpected exception has occurred. Callers should check
                 for this and handle it.
         """
-        super(SVNTool, cls).check_repository(
+        super().check_repository(
             path=path,
             username=username,
             password=password,
@@ -502,26 +915,105 @@ class SVNTool(SCMTool):
             **kwargs)
 
         if path.startswith('https://'):
-            client = cls.build_client(path, username, password,
-                                      local_site_name=local_site_name)[1]
-            client.accept_ssl_certificate(path, cls.on_ssl_failure)
+            client = cls.build_client(repo_path=path,
+                                      username=username,
+                                      password=password,
+                                      local_site_name=local_site_name)
+            client.accept_ssl_certificate(path,
+                                          on_failure=cls.on_ssl_failure)
 
     @classmethod
-    def accept_certificate(cls, path, username=None, password=None,
-                           local_site_name=None, certificate=None):
-        """Accepts the certificate for the given repository path."""
-        client = cls.build_client(path, username, password,
-                                  local_site_name=local_site_name)[1]
+    def accept_certificate(
+        cls,
+        path: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        local_site_name: Optional[str] = None,
+        certificate: Optional[Certificate] = None,
+    ) -> Mapping[str, Any]:
+        """Accept the HTTPS certificate for the given repository path.
+
+        Args:
+            path (str):
+                The repository path.
+
+            username (str, optional):
+                The username provided for the repository.
+
+            password (str, optional):
+                The password provided for the repository.
+
+            local_site_name (str, optional):
+                The name of the Local Site used for the repository, if any.
+
+            certificate (reviewboard.scmtools.certs.Certificate):
+                The certificate to accept.
+
+        Returns:
+            dict:
+            Serialized information on the certificate.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                There was an error accepting the certificate.
+        """
+        client = cls.build_client(repo_path=path,
+                                  username=username,
+                                  password=password,
+                                  local_site_name=local_site_name)
 
         return client.accept_ssl_certificate(path)
 
     @classmethod
-    def build_client(cls, repopath, username=None, password=None,
-                     local_site_name=None):
+    def build_client(
+        cls,
+        *,
+        repo_path: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        local_site_name: Optional[str] = None,
+    ) -> Client:
+        """Return a new Subversion client.
+
+        This will determine and create a Subversion directory for the global
+        site or Local Site, and then return a configured client.
+
+        Args:
+            repo_path (str):
+                The URI to the Subversion repository.
+
+            username (str, optional):
+                The username used to authenticate with the repository.
+
+            password (str, optional):
+                The password used to authenticate with the repository.
+
+            local_site_name (str, optional):
+                The name of the Local Site that owns the repository.
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            Tuple:
+                0 (str):
+                    The Subversion configuration directory.
+
+                1 (reviewboard.scmtools.svn.base.Client):
+                    The resulting client instance.
+        """
         if not has_svn_backend:
-            raise ImportError(_(
-                'SVN integration requires either subvertpy or pysvn'))
-        config_dir = os.path.join(os.path.expanduser('~'), '.subversion')
+            raise ImportError(
+                _('SVN integration requires PySVN. See %(url)s for '
+                  'installation instructions.')
+                % {
+                    'url': (
+                        '%sadmin/installation/linux/#subversion'
+                        % get_manual_url()
+                    ),
+                })
+
+        config_dir = os.path.join(get_data_dir(), '.subversion')
 
         if local_site_name:
             # LocalSites can have their own Subversion config, used for
@@ -530,12 +1022,29 @@ class SVNTool(SCMTool):
         elif not os.path.exists(config_dir):
             cls._create_subversion_dir(config_dir)
 
-        client = Client(config_dir, repopath, username, password)
-
-        return config_dir, client
+        assert _SVNClientBackend is not None
+        return _SVNClientBackend(config_dir=config_dir,
+                                 repopath=repo_path,
+                                 username=username,
+                                 password=password)
 
     @classmethod
-    def _create_subversion_dir(cls, config_dir):
+    def _create_subversion_dir(
+        cls,
+        config_dir: str,
+    ) -> None:
+        """Create a local Subversion directory for data storage.
+
+        Args:
+            config_dir (str):
+                The absolute path to the new Subversion directory.
+
+        Raises:
+            IOError:
+                There was an error creating the directory.
+
+                Details are in the error message.
+        """
         try:
             os.mkdir(config_dir, 0o700)
         except OSError:
@@ -546,8 +1055,25 @@ class SVNTool(SCMTool):
                 % {'dirname': config_dir})
 
     @classmethod
-    def _prepare_local_site_config_dir(cls, local_site_name):
-        config_dir = os.path.join(os.path.expanduser('~'), '.subversion')
+    def _prepare_local_site_config_dir(
+        cls,
+        local_site_name: str,
+    ) -> str:
+        """Prepare a Subversion configuration for a Local Site.
+
+        This will create the directory if it doesn't exist, and then
+        prepare a Subversion configuration for linking Review Board up with
+        RBSSH.
+
+        Args:
+            local_site_name (str):
+                The name of the Local Site.
+
+        Returns:
+            str:
+            The resulting configuration directory.
+        """
+        config_dir = os.path.join(get_data_dir(), '.subversion')
 
         if not os.path.exists(config_dir):
             cls._create_subversion_dir(config_dir)
@@ -753,18 +1279,17 @@ class SVNDiffParser(DiffParser):
         return linenum
 
 
-def recompute_svn_backend():
-    """Recomputes the SVNTool client backend to use.
+def recompute_svn_backend() -> None:
+    """Recompute the SVNTool client backend to use.
 
     Normally, this is only called once, but it may be used to reset the
     backend for use in testing.
     """
-    global Client
+    global _SVNClientBackend
     global has_svn_backend
 
-    Client = None
+    _SVNClientBackend = None
     has_svn_backend = False
-    required_module = None
 
     for backend_path in settings.SVNTOOL_BACKENDS:
         try:
@@ -781,17 +1306,16 @@ def recompute_svn_backend():
 
             # We want either the winning SVN backend or the first one to show
             # up in the required module dependencies list.
-            if has_svn_backend or not required_module:
+            if has_svn_backend:
                 SVNTool.dependencies['modules'] = [mod.Client.required_module]
 
             if has_svn_backend:
                 # We found a suitable backend.
-                logger.info('Using %s backend for SVN', backend_path)
-                Client = mod.Client
+                logger.debug('Using %s backend for SVN', backend_path)
+                _SVNClientBackend = mod.Client
                 break
         except ImportError:
-            logger.error('Unable to load SVN backend %s',
-                         backend_path, exc_info=True)
+            logger.exception('Unable to load SVN backend %s', backend_path)
 
 
 recompute_svn_backend()

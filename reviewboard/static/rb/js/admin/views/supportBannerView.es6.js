@@ -4,7 +4,7 @@
 RB.SupportBannerView = Backbone.View.extend({
     _loadingHTML: _.template(dedent`
         <h2><%- titleText %></h2>
-        <p><span class="fa fa-spin fa-spinner"></span></p>
+        <p><span class="djblets-o-spinner"></span></p>
     `)({
         titleText: gettext('Retrieving support information...'),
     }),

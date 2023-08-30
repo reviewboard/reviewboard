@@ -4,9 +4,9 @@ import os
 import unittest
 from hashlib import md5
 
+import kgb
 from django.conf import settings
 from djblets.testing.decorators import add_fixtures
-from kgb import SpyAgency
 
 from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
@@ -21,7 +21,7 @@ from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing.testcase import TestCase
 
 
-class _CommonSVNTestCase(DiffParserTestingMixin, SpyAgency, SCMTestCase):
+class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
     """Common unit tests for Subversion.
 
     This is meant to be subclassed for each backend that wants to run
@@ -815,16 +815,13 @@ class _CommonSVNTestCase(DiffParserTestingMixin, SpyAgency, SCMTestCase):
 
     def test_get_commits_with_no_date(self):
         """Testing SVN (<backend>) get_commits with no date in commit"""
-        def _get_log(*args, **kwargs):
-            return [
-                {
-                    'author': 'chipx86',
-                    'revision': '5',
-                    'message': 'Commit 1',
-                },
-            ]
-
-        self.spy_on(self.tool.client.get_log, _get_log)
+        self.spy_on(self.tool.client.get_log, op=kgb.SpyOpReturn([
+            {
+                'author': 'chipx86',
+                'message': 'Commit 1',
+                'revision': '5',
+            },
+        ]))
 
         commits = self.tool.get_commits(start='5')
 
@@ -838,10 +835,8 @@ class _CommonSVNTestCase(DiffParserTestingMixin, SpyAgency, SCMTestCase):
 
     def test_get_commits_with_exception(self):
         """Testing SVN (<backend>) get_commits with exception"""
-        def _get_log(*args, **kwargs):
-            raise Exception('Bad things happened')
-
-        self.spy_on(self.tool.client.get_log, _get_log)
+        self.spy_on(self.tool.client.communicate_hook,
+                    op=kgb.SpyOpRaise(Exception('Bad things happened')))
 
         with self.assertRaisesMessage(SCMError, 'Bad things happened'):
             self.tool.get_commits(start='5')
@@ -945,13 +940,6 @@ class PySVNTests(_CommonSVNTestCase):
     __test__ = True
 
 
-class SubvertpyTests(_CommonSVNTestCase):
-    backend = 'reviewboard.scmtools.svn.subvertpy'
-    backend_name = 'subvertpy'
-
-    __test__ = True
-
-
 class UtilsTests(SCMTestCase):
     """Unit tests for reviewboard.scmtools.svn.utils."""
 
@@ -1035,7 +1023,7 @@ class SVNAuthFormTests(TestCase):
 class SVNRepositoryFormTests(TestCase):
     """Unit tests for SVNTool's repository form."""
 
-    def test_fields(self):
+    def test_fields(self) -> None:
         """Testing SVNTool repository form fields"""
         form = SVNTool.create_repository_form()
 
@@ -1048,7 +1036,7 @@ class SVNRepositoryFormTests(TestCase):
         self.assertEqual(form['mirror_path'].label, 'Mirror Path')
 
     @add_fixtures(['test_scmtools'])
-    def test_load(self):
+    def test_load(self) -> None:
         """Tetting SVNTool repository form load"""
         repository = self.create_repository(
             tool_name='Subversion',
@@ -1063,7 +1051,7 @@ class SVNRepositoryFormTests(TestCase):
                          'https://svn.mirror.example.com')
 
     @add_fixtures(['test_scmtools'])
-    def test_save(self):
+    def test_save(self) -> None:
         """Tetting SVNTool repository form save"""
         repository = self.create_repository(tool_name='Subversion')
 
@@ -1079,3 +1067,39 @@ class SVNRepositoryFormTests(TestCase):
         self.assertEqual(repository.path, 'https://svn.example.com/')
         self.assertEqual(repository.mirror_path,
                          'https://svn.mirror.example.com')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save_with_file_url(self) -> None:
+        """Tetting SVNTool repository form save with file:// URL"""
+        repository = self.create_repository(tool_name='Subversion')
+
+        form = SVNTool.create_repository_form(
+            repository=repository,
+            data={
+                'path': 'file:///opt/svnrepo/',
+            })
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(repository.path, 'file:///opt/svnrepo/')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save_with_bare_file_path(self) -> None:
+        """Testing SVNTool repository form save with raw path instead of
+        URL
+        """
+        repository = self.create_repository(tool_name='Subversion')
+
+        form = SVNTool.create_repository_form(
+            repository=repository,
+            data={
+                'path': '/opt/svnrepo/',
+            })
+        self.assertFalse(form.is_valid())
+        form.full_clean()
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors['path'], [
+            'The path to the SVN repository must be a URL. To specify a local '
+            'repository, use a file:// URL.',
+        ])

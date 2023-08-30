@@ -1,40 +1,38 @@
 @import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/assets/paths.less";
 @import (reference) "rb/css/ui/colors.less";
 @import (reference) "rb/css/ui/responsive.less";
 
 
-@img_base: '../../images';
-
-
 #rb-ns-ui() {
   .boxes() {
-    @bg: #FFFFFF;
-    @border-color: #888A85;
+    @bg: #FEFEFE;
+    @border-color: #AAAEA1;
     @border-radius: 6px;
     @inner-border-radius: @border-radius - 1px;
 
-    @shadow-radius: 2px;
-    @shadow-offset-x: 1px;
-    @shadow-offset-y: 1px;
-    @shadow-color: rgba(0, 0, 0, 0.15);
+    @shadow-radius: 4px;
+    @shadow-offset-x: 0px;
+    @shadow-offset-y: 2px;
+    @shadow-color: rgba(0, 0, 0, 0.1);
     @shadow: @shadow-offset-x @shadow-offset-y @shadow-radius @shadow-color;
 
     @padding: 1em;
     @main-padding: 1em;
 
     @title-bg: #rb-ns-ui.colors[@blue-70];
-    @title-border-color: #728EAC;
+    @title-border-color: #A5B9D0;
     @title-padding: 0.4em 0.6em;
 
     .important() {
       @bg: #FDF2A0;
-      @bg-image: "@{img_base}/gold_box_top_bg.png";
+      @bg-image: "@{rb-images-root}/gold_box_top_bg.png";
       @border-color: #B7A93E;
     }
 
     .tip() {
       @bg: #FDF2A0;
-      @bg-image: "@{img_base}/gold_box_top_bg.png";
+      @bg-image: "@{rb-images-root}/gold_box_top_bg.png";
       @border-color: #B7A93E;
     }
 
@@ -117,7 +115,7 @@
     padding: 0 10px;
 
     .box-inner {
-      background: url("@{img_base}/important.png") no-repeat top left;
+      background: url("@{rb-images-root}/important.png") no-repeat top left;
       padding: 0 0 0 50px;
     }
   }
@@ -139,7 +137,7 @@
 
   &.trophies {
     background-color: @trophy-banner-bg-color;
-    background-image: url('@{img_base}/gold_box_top_bg.png');
+    background-image: url('@{rb-images-root}/gold_box_top_bg.png');
     border: 1px #b7a93e solid;
     padding: 0 5px;
 
@@ -204,7 +202,7 @@
 
 .box-inner,
 .modalbox-inner {
-  background-image: url('@{img_base}/box_bottom_bg.png');
+  background-image: url('@{rb-images-root}/box_bottom_bg.png');
   background-position: bottom left;
   background-repeat: repeat-x;
   border-radius: #rb-ns-ui.boxes[@border-radius];

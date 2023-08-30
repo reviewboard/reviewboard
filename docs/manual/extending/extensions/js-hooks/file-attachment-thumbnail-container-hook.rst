@@ -16,7 +16,7 @@ The view should inherit from :backbonejs:`View` (or a subclass of this), and
 will take the following options:
 
 ``thumbnailView``:
-    The instance of the :js:class:`RB.FileAttachmentThumbnail` view, which
+    The instance of the :js:class:`RB.FileAttachmentThumbnailView` view, which
     manages the UI of the file attachment thumbnail.
 
 ``fileAttachment``:

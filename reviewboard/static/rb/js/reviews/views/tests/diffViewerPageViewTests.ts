@@ -1,3 +1,4 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     afterEach,
     beforeEach,
@@ -5,21 +6,17 @@ import {
     expect,
     it,
     spyOn,
-    suite,
 } from 'jasmine-core';
 
-import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
 import {
-    DiffViewerPage,
-} from 'reviewboard/reviews/models/diffViewerPageModel';
-import {
-    DiffViewerPageView,
-} from 'reviewboard/reviews/views/diffViewerPageView';
-import { EnabledFeatures } from 'reviewboard/common';
-import {
-    UnifiedBannerView,
-} from 'reviewboard/reviews/views/unifiedBannerView';
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+    EnabledFeatures,
+    UserSession,
+} from 'reviewboard/common';
+import { DnDUploader } from 'reviewboard/ui';
+
+import { DiffViewerPage } from '../../models/diffViewerPageModel';
+import { DiffViewerPageView } from '../diffViewerPageView';
+import { UnifiedBannerView } from '../unifiedBannerView';
 
 
 suite('rb/pages/views/DiffViewerPageView', function() {

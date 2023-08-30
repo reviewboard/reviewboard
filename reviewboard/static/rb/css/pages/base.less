@@ -4,9 +4,6 @@
 @import (reference) "rb/css/ui/responsive.less";
 
 
-@img_base: '../../images';
-
-
 #rb-ns-pages() {
   .base() {
     /** The max screen width allowed for mobile mode. */
@@ -232,12 +229,20 @@ html {
   });
 
   /*
-   * Hide both the page sidebar panes and page container by default, so we
-   * can display them initially at the correct height.
+   * Hide the page sidebar panes, so we can display them initially at the
+   * correct height.
    */
-  #page-container,
   #page-sidebar-main-pane {
-    display: none;
+    visibility: hidden;
+  }
+
+  &.-is-loaded #page-sidebar-main-pane {
+    /*
+     * On full-size pages, we hide the content and sidebar initially
+     * (via CSS), so that we can properly position them before they're
+     * first shown. Now that we've done that, make them visible.
+    */
+    visibility: visible;
   }
 });
 
@@ -400,10 +405,6 @@ textarea {
   span {
     vertical-align: middle;
     line-height: 16px;
-  }
-
-  .fa-spinner {
-    font-size: 16px;
   }
 
   &.error {
@@ -696,6 +697,11 @@ textarea {
 #page-container {
   padding: 0 @page-container-padding @page-container-padding
            @page-container-padding;
+  visibility: hidden;
+
+  body.-is-loaded & {
+    visibility: visible;
+  }
 
   #rb-ns-pages.base.on-shell-mobile-mode({
     position: relative;
@@ -743,9 +749,11 @@ textarea {
  * Default color scheme, used for the dashboard, My Account page, and others
  * featuring largely blue-ish colors.
  */
-.page-colors(@topbar-bg: #rb-ns-ui.colors[@blue-80]);
+.page-colors(@topbar-bg: #rb-ns-ui.colors[@blue-80],
+             @topbar-border-color: #rb-ns-ui.colors[@cool-grey-70]);
 
 /* Reviewable pages (review request, diff, file attachment, etc.) are brown. */
 .reviewable-page {
-  .page-colors(@topbar-bg: #rb-ns-ui.colors[@brown-80]);
+  .page-colors(@topbar-bg: @review-request-action-bg;
+               @topbar-border-color: @review-request-action-border-color);
 }

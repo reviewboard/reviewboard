@@ -27,9 +27,12 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+from __future__ import annotations
+
 import getpass
 import os
 import sys
+from typing import Optional
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -41,6 +44,7 @@ from djblets.siteconfig.models import SiteConfiguration
 import reviewboard
 from reviewboard import get_version_string
 from reviewboard.admin.import_utils import has_module
+from reviewboard.admin.server import get_data_dir
 
 
 _install_fine = False
@@ -150,11 +154,18 @@ def check_updates_required():
             username = "<server username>"
 
         # Check if the data directory (should be $HOME) is writable by us.
-        data_dir = os.environ.get(str('HOME'), str(''))
+        data_dir: Optional[str] = None
+        data_dir_writable: bool = False
+
+        try:
+            data_dir = get_data_dir()
+            data_dir_writable = os.access(data_dir, os.W_OK)
+        except ImproperlyConfigured:
+            pass
 
         if (not data_dir or
-                not os.path.isdir(data_dir) or
-                not os.access(data_dir, os.W_OK)):
+            not data_dir_writable or
+            not os.path.isdir(data_dir)):
             try:
                 username = getpass.getuser()
             except ImportError:
@@ -166,7 +177,7 @@ def check_updates_required():
             updates_required.append((
                 'admin/manual-updates/data-dir.html', {
                     'data_dir': data_dir,
-                    'writable': os.access(data_dir, os.W_OK),
+                    'writable': data_dir_writable,
                     'server_user': username,
                     'expected_data_dir': os.path.join(site_dir, 'data'),
                 }

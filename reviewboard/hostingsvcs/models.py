@@ -2,9 +2,9 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
 
+from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.managers import HostingServiceAccountManager
-from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.site.models import LocalSite
 
 
@@ -54,14 +54,15 @@ class HostingServiceAccount(models.Model):
         """The hosting service associated with this account.
 
         Type:
-            reviewboard.hostingsvcs.service.HostingService
+            reviewboard.hostingsvcs.base.hosting_service.BaseHostingService
 
         Raises:
             reviewboard.hostingsvcs.errors.MissingHostingServiceError:
                 The hosting service could not be loaded from the registry.
         """
         if not hasattr(self, '_service'):
-            cls = get_hosting_service(self.service_name)
+            cls = hosting_service_registry.get_hosting_service(
+                self.service_name)
 
             if cls:
                 self._service = cls(self)

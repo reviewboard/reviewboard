@@ -1,15 +1,13 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     beforeEach,
     describe,
     expect,
     it,
     spyOn,
-    suite,
 } from 'jasmine-core';
 
-import {
-    DiffViewerPage,
-} from 'reviewboard/reviews/models/diffViewerPageModel';
+import { DiffViewerPage } from '../diffViewerPageModel';
 
 
 suite('rb/pages/models/DiffViewerPage', function() {

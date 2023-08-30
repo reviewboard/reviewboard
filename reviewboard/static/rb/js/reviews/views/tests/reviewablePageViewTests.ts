@@ -1,3 +1,4 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     afterEach,
     beforeEach,
@@ -6,14 +7,13 @@ import {
     it,
     pending,
     spyOn,
-    suite,
 } from 'jasmine-core';
 
-import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
 import { EnabledFeatures } from 'reviewboard/common';
+import { DnDUploader } from 'reviewboard/ui';
 
-import { ReviewDialogView } from '../reviewDialogView';
 import { ReviewablePage } from '../../models/reviewablePageModel';
+import { ReviewDialogView } from '../reviewDialogView';
 import { ReviewablePageView } from '../reviewablePageView';
 import { UnifiedBannerView } from '../unifiedBannerView';
 

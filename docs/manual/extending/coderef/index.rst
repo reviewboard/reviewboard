@@ -168,6 +168,17 @@ Diff Viewer
    reviewboard.diffviewer.smdiff
 
 
+SSL/TLS Certificates
+====================
+
+.. autosummary::
+   :toctree: python
+
+   reviewboard.certs
+   reviewboard.certs.cert
+   reviewboard.certs.errors
+
+
 Extensions
 ==========
 
@@ -192,6 +203,14 @@ Hosting Service Integration
 .. autosummary::
    :toctree: python
 
+   reviewboard.hostingsvcs.base
+   reviewboard.hostingsvcs.base.client
+   reviewboard.hostingsvcs.base.forms
+   reviewboard.hostingsvcs.base.hosting_service
+   reviewboard.hostingsvcs.base.http
+   reviewboard.hostingsvcs.base.paginator
+   reviewboard.hostingsvcs.base.registry
+   reviewboard.hostingsvcs.base.repository
    reviewboard.hostingsvcs.errors
    reviewboard.hostingsvcs.forms
    reviewboard.hostingsvcs.hook_utils

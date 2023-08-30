@@ -28,11 +28,8 @@
 {% enddefinevar %}
 
 {% definevar 'begin_collapse_fmt' %}
- <div class="collapse-floater">
-  <div class="diff-collapse-btn" title="{% trans "Collapse lines" %}"
-       data-chunk-index="%(chunk_index)s" data-lines-of-context="0">
-   <div class="rb-icon rb-icon-diff-collapse-chunk"></div>
-  </div>
+<div class="collapse-floater">
+{%  include "diffviewer/_collapse_button.html" with chunk_index="%(chunk_index)s" %}
 {% enddefinevar %}
 
 {% definevar 'end_collapse_fmt' %}

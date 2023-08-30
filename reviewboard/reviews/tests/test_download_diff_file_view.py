@@ -1,8 +1,7 @@
 """Unit tests for reviewboard.reviews.views.DownloadDiffFileView."""
 
+from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import (register_hosting_service,
-                                             unregister_hosting_service)
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 from reviewboard.testing.hosting_services import TestService
@@ -17,13 +16,13 @@ class DownloadDiffFileViewTests(TestCase):
     def setUpClass(cls):
         super(DownloadDiffFileViewTests, cls).setUpClass()
 
-        register_hosting_service(TestService.hosting_service_id, TestService)
+        hosting_service_registry.register(TestService)
 
     @classmethod
     def tearDownClass(cls):
         super(DownloadDiffFileViewTests, cls).tearDownClass()
 
-        unregister_hosting_service(TestService.hosting_service_id)
+        hosting_service_registry.unregister(TestService)
 
     def setUp(self):
         super(DownloadDiffFileViewTests, self).setUp()

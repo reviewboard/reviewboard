@@ -1,13 +1,15 @@
-@import (reference) "../defs.less";
-@import (reference) "../mixins/upload-diff.less";
 @import (reference) "djblets/css/mixins/markdown.less";
+
+@import (reference) "lib/css/fontawesome.less";
+
+@import (reference) "rb/css/assets/paths.less";
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/mixins/upload-diff.less";
 @import (reference) "rb/css/ui/colors.less";
 
 
-@img_base: '../../images';
-@djblets_img_base: '../../../djblets/images';
-
 @changedesc-bg: lighten(@review-request-bg, 5%);
+@changedesc-border-color: #CABF71;
 @floating-anchor-width: 8em;
 
 
@@ -79,8 +81,8 @@
       }
     }
 
-    .text-editor {
-      margin: -(@textarea-offset-vert - 10px) -@textarea-offset-horiz 0;
+    .rb-c-text-editor {
+      margin-top: -(@textarea-offset-vert - 10px);
     }
   }
 }
@@ -371,13 +373,18 @@
 
 .review-request-page-entry-contents {
   background-color: @review-request-entry-base-bg;
-  border: 1px @box-border-color solid;
+  border: 1px @review-request-entry-base-border-color solid;
   border-radius: @box-border-radius;
   box-shadow: @box-shadow;
 
   &.collapsed {
+    /*
+     * Note that we use !important to ensure a consistent look for all
+     * collapsed entries, regardless of their open state's styling.
+     */
     background-color: @review-request-entry-collapsed-bg !important;
     background-image: none !important; // Override any gradients used.
+    border-color: @review-request-entry-collapsed-border-color !important;
 
     .body,
     .banners {
@@ -393,7 +400,8 @@
     margin-left: 80px;
     width: auto;
 
-    .left-arrow-callout(@review-request-entry-base-bg);
+    .left-arrow-callout(@review-request-entry-base-bg,
+                        @review-request-entry-base-border-color);
 
     .on-mobile-medium-screen-720({
       margin-left: 0;
@@ -406,6 +414,8 @@
 
     &.collapsed {
       .left-arrow-callout-color(@review-request-entry-collapsed-bg);
+      .left-arrow-callout-border-color(
+          @review-request-entry-collapsed-border-color);
     }
   }
 
@@ -477,24 +487,26 @@
  * Reviews
  ****************************************************************************/
 
-.review.has-draft {
-  // Reviews with draft replies have a green header.
-  .review-request-page-entry-contents {
-    .left-arrow-callout-color(@draft-color);
-  }
+.review {
+  &.has-draft {
+    // Reviews with draft replies have a green header.
+    .review-request-page-entry-contents {
+      .left-arrow-callout-color(@draft-color);
+    }
 
-  .header {
-    background: @draft-color;
-  }
+    .header {
+      background: @draft-color;
+    }
 
-  .review-request-page-entry-contents:not(.collapsed) .header {
-    /*
-     * When the box is expanded, there's @review-request-entry-padding space
-     * between the header and the banner. We take that space out of the header
-     * instead of the banner to ensure that nothing jumps when the banner is
-     * switching between fixed and floating modes.
-     */
-    padding-bottom: 0;
+    .review-request-page-entry-contents:not(.collapsed) .header {
+      /*
+       * When the box is expanded, there's @review-request-entry-padding space
+       * between the header and the banner. We take that space out of the header
+       * instead of the banner to ensure that nothing jumps when the banner is
+       * switching between fixed and floating modes.
+       */
+      padding-bottom: 0;
+    }
   }
 }
 
@@ -1043,11 +1055,12 @@
 
 .changedesc {
   .review-request-page-entry-contents {
-
     background-color: @changedesc-bg;
+    border-color: @changedesc-border-color;
     #gradient > .vertical(@changedesc-bg, @review-request-bg);
 
     .left-arrow-callout-color(@changedesc-bg);
+    .left-arrow-callout-border-color(@changedesc-border-color);
   }
 
   .changed-fields {
@@ -1352,8 +1365,6 @@
 
     /* Styles for the file listing for the "Diff" field. */
     .diff-index {
-      background-color: #rb-ns-ui.colors[@white];
-      border: @review-request-field-border;
       margin-bottom: 0;
 
       .diff-file-icon {
@@ -1487,7 +1498,7 @@
 
   overflow: auto;
   margin: 0;
-  padding: @review-dialog-padding;;
+  padding: @review-dialog-padding;
 
   label[for="id_shipit"] {
     color: black;
@@ -1523,10 +1534,6 @@
 
   .rich-text {
     margin-bottom: 2em;
-  }
-
-  .text-editor {
-    width: inherit;
   }
 
   #review-form-comments {
@@ -1609,6 +1616,28 @@
       margin-left: 0.5em;
     }
   }
+
+  #show-review-tips {
+    float: right;
+  }
+
+  .rb-c-slideshow__nav {
+    align-items: center;
+    display: flex;
+    margin: -3px 0 0 0;
+    text-align: left;
+
+    label {
+      font-weight: bold;
+      padding-right: 0.5em;
+    }
+
+    a, a:active, a:visited {
+      color: black;
+      text-decoration: none;
+      font-size: 140%;
+    }
+  }
 }
 
 #review-form-modalbox {
@@ -1680,11 +1709,10 @@
       margin: 1.5em 0 0 0;
     });
 
-    .fa-spinner {
+    .djblets-o-spinner {
       font-size: (@file-attachment-height / 4);
-      line-height: @file-attachment-height;
-      vertical-align: middle;
-      text-align: center;
+      margin-top: 1em;
+      opacity: 0.5;
     }
 
     /*
@@ -2169,17 +2197,12 @@
     }
   }
 
-  .text-editor {
-    border: @textarea-border;
+  .rb-c-text-editor {
     margin: 0;
-
-    .CodeMirror, textarea {
-      border: 0;
-    }
   }
 
   .ui-icon-gripsmall-diagonal-se {
-    background: url('@{img_base}/resize-grip.png') no-repeat top left;
+    background: url('@{rb-images-root}/resize-grip.png') no-repeat top left;
   }
 }
 
@@ -2457,6 +2480,34 @@
  * Status Updates
  ****************************************************************************/
 
+#rb-ns-ui() {
+  .status-updates() {
+    @_color-vars: #rb-ns-ui.colors();
+
+    @icon-size: 20px;
+
+    @failure-header-bg-color: @_color-vars[@red-90];
+    @failure-header-border-color: @_color-vars[@red-70];
+    @failure-color: @_color-vars[@red-40];
+    @failure-icon: @fa-var-times-circle;
+
+    @pending-header-bg-color: @_color-vars[@yellow-80];
+    @pending-header-border-color: @_color-vars[@yellow-30];
+    @pending-color: @_color-vars[@brown-60];
+    @pending-icon: @fa-var-refresh;
+
+    @not-yet-run-header-bg-color: @pending-header-bg-color;
+    @not-yet-run-header-border-color: @pending-header-border-color;
+    @not-yet-run-color: @_color-vars[@cyan-30];
+    @not-yet-run-icon: @fa-var-pause;
+
+    @success-header-bg-color: @_color-vars[@green-80];
+    @success-header-border-color: @_color-vars[@green-70];
+    @success-color: @_color-vars[@green-30];
+    @success-icon: @fa-var-check-circle;
+  }
+}
+
 .status-update-header(@color, @border-color) {
   background-color: @color;
   border-color: @border-color;
@@ -2466,19 +2517,6 @@
 #initial-status-updates {
   .header {
     border-width: 0 0 1px 0;
-
-    &.status-update-state-failure {
-      .status-update-header(@diff-delete-color, @diff-delete-border-color);
-    }
-
-    &.status-update-state-pending,
-    &.status-update-state-not-yet-run {
-      .status-update-header(@diff-replace-color, @diff-replace-border-color);
-    }
-
-    &.status-update-state-success {
-      .status-update-header(@diff-insert-color, @diff-insert-border-color);
-    }
   }
 
   .review-request-page-entry-contents {
@@ -2495,18 +2533,31 @@
   border-width: 1px 0;
   margin: 0.75rem 0 -1px;
   padding: (@review-request-entry-padding / 2) @review-request-entry-padding;
+}
+
+#initial-status-updates .header,
+.status-update-review-header {
+  @_status-update-vars: #rb-ns-ui.status-updates();
 
   &.status-update-state-failure {
-    .status-update-header(@diff-delete-color, @diff-delete-border-color);
+    .status-update-header(@_status-update-vars[@failure-header-bg-color],
+                          @_status-update-vars[@failure-header-border-color]);
   }
 
-  &.status-update-state-pending,
+  &.status-update-state-pending {
+    .status-update-header(@_status-update-vars[@pending-header-bg-color],
+                          @_status-update-vars[@pending-header-border-color]);
+  }
+
   &.status-update-state-not-yet-run {
-    .status-update-header(@diff-replace-color, @diff-replace-border-color);
+    .status-update-header(
+      @_status-update-vars[@not-yet-run-header-bg-color],
+      @_status-update-vars[@not-yet-run-header-border-color]);
   }
 
   &.status-update-state-success {
-    .status-update-header(@diff-insert-color, @diff-insert-border-color);
+    .status-update-header(@_status-update-vars[@success-header-bg-color],
+                          @_status-update-vars[@success-header-border-color]);
   }
 }
 
@@ -2520,11 +2571,14 @@
 }
 
 .status-update-summary-entry {
-  line-height: 14px;
+  @_status-update-vars: #rb-ns-ui.status-updates();
+  @_icon-size: @_status-update-vars[@icon-size];
+
+  line-height: @_icon-size;
   vertical-align: middle;
 
   &::before {
-    font-size: 14px/1;
+    font-size: @_icon-size;
     font-family: FontAwesome;
 
     /* Set this up to allow for animations. We need position: absolute. */
@@ -2541,37 +2595,43 @@
   }
 
   &.status-update-state-failure {
-    .status-update-state(darkred);
+    .status-update-state(@_status-update-vars[@failure-color]);
 
     &::before {
-      content: '\f00d';
+      content: @_status-update-vars[@failure-icon];
     }
   }
 
   &.status-update-state-pending {
-    .status-update-state(goldenrod);
+    .status-update-state(@_status-update-vars[@pending-color]);
 
     &::before {
-      animation: fa-spin 2s infinite linear;
-      content: '\f021';
-      width: 11px;
-      height: 14px;
+      animation: fa-spin 1.5s infinite linear;
+      content: @_status-update-vars[@pending-icon];
+
+      /*
+       * NOTE: We're trying to get the center point of this character,
+       *       but realistically this is a flawed approach. We should move
+       *       to a SVG.
+       */
+      width: (@_icon-size - 3px);
+      height: @_icon-size;
     }
   }
 
   &.status-update-state-not-yet-run {
-    .status-update-state(darkcyan);
+    .status-update-state(@_status-update-vars[@not-yet-run-color]);
 
     &::before {
-      content: '\f04c';
+      content: @_status-update-vars[@not-yet-run-icon];
     }
   }
 
   &.status-update-state-success {
-    .status-update-state(darkgreen);
+    .status-update-state(@_status-update-vars[@success-color]);
 
     &::before {
-      content: '\f00c';
+      content: @_status-update-vars[@success-icon];
     }
   }
 
@@ -2584,7 +2644,7 @@
     font-weight: bold;
 
     /* This will cover the icon with spacing after. */
-    margin-left: 2em;
+    margin-left: (@_icon-size * 1.25);
   }
 
   a {

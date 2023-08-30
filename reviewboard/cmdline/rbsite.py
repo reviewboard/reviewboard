@@ -296,7 +296,12 @@ class Site(object):
 
         # If rb-site is running in a virtualenv, reuse it for the site
         # directory.
-        if is_virtualenv:
+        #
+        # If the venv/ path already exists (it's a directory or a
+        # non-dangling symlink), then we'll skip this so that we don't
+        # accidentally erase the environment, even if it's not the
+        # current environment.
+        if is_virtualenv and not os.path.exists(self.venv_dir):
             self.mirror_files(source_path=sys.prefix,
                               dest_path=self.venv_dir,
                               use_symlink=True)

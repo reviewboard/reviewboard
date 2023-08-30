@@ -4,22 +4,25 @@
 
 import { BaseView, spina } from '@beanbag/spina';
 
-import { ClientCommChannel } from 'reviewboard/common/models/commChannelModel';
-import { EnabledFeatures } from 'reviewboard/common';
-import { MenuButtonView } from 'reviewboard/ui/views/menuButtonView';
 import {
+    ClientCommChannel,
+    EnabledFeatures,
     ResourceCollection,
-} from 'reviewboard/common/resources/collections/resourceCollection';
+    Review,
+    UserSession,
+} from 'reviewboard/common';
 import {
+    MenuButtonView,
     RichTextInlineEditorView,
-} from 'reviewboard/ui/views/inlineEditorView';
-import { TextEditorView } from 'reviewboard/ui/views/textEditorView';
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+    SlideshowView,
+    TextEditorView,
+} from 'reviewboard/ui';
 
 import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 
 
 declare const MANUAL_URL: string;
+const REVIEW_DOCS_URL = `${MANUAL_URL}users/#reviewing-code-and-documents`;
 
 
 /**
@@ -612,7 +615,7 @@ interface HeaderFooterCommentViewOptions {
     prototypeAttrs: ['editorTemplate'],
 })
 class HeaderFooterCommentView extends BaseView<
-    RB.Review,
+    Review,
     HTMLDivElement,
     HeaderFooterCommentViewOptions
 > {
@@ -881,6 +884,125 @@ class HeaderFooterCommentView extends BaseView<
 
 
 /**
+ * View to show tips to the user about creating reviews.
+ *
+ * Version Added:
+ *     6.0
+ */
+@spina
+class TipsSlideshowView extends SlideshowView {
+    static className = 'rb-c-alert -is-info';
+    static template = dedent`
+        <div class="rb-c-slideshow -is-auto-cycled">
+         <span class="rb-c-alert__close"
+               role="button"
+               aria-label="${gettext('Close')}"
+               title="${gettext('Close')}"
+               tabindex="0"></span>
+         <div class="rb-c-alert__content">
+          <div class="rb-c-alert__heading">
+           <nav class="rb-c-slideshow__nav">
+            <label for="">${gettext('Tip:')}</label>
+            <a class="rb-c-slideshow__nav-prev"
+               href="#"
+               role="button"
+               aria-label="${gettext('Previous')}"
+               title="${gettext('Previous')}">
+             <span class="fa fa-caret-left"></span>
+            </a>
+            <a class="rb-c-slideshow__nav-next"
+               href="#"
+               role="button"
+               aria-label="${gettext('Next')}"
+               title="${gettext('Next')}">
+             <span class="fa fa-caret-right"></span>
+            </a>
+           </nav>
+          </div>
+          <ul class="rb-c-slideshow__slides">
+          </ul>
+         </div>
+        </div>
+    `;
+
+    #tips: string[] = [
+        _`To add a comment to a code change or text file attachment, click on
+          a line number or click and drag over multiple line numbers in the
+          diff viewer. You'll be able to see and edit the comment from both
+          the diff viewer and here in the review dialog.`,
+        _`When reviewing image file attachments, add comments by clicking and
+          dragging out a region.`,
+        _`To add comments that aren't tied to a specific code change or file
+          attachment, click on the "Add General Comment" button at the bottom
+          of the review dialog or in the Review menu. This is useful for
+          comments that apply to the review request as a whole or for ones
+          that don't refer to any specific areas.`,
+        _`For file attachments that don't have a review interface, you can
+          add a comment through the "Add Comment" button when hovering over
+          the file attachment. The comment can then be seen and edited here
+          in the review dialog.`,
+        _`Until you publish your review, your review and any comments in it
+          are only visible to you and can be edited freely. After you publish,
+          your review will be visible to others on the review request and you
+          won't be able to edit it anymore.`,
+        _`Use a "Ship It!" in your review to show your approval for a review
+          request. This can be toggled at the top of this review dialog, or
+          you can quickly post a "Ship It!" review with no other content in
+          it by clicking on the "Ship It!" action in the Review menu.`,
+        _`The optional header and footer fields can be useful for providing a
+          summary or conclusion for your review, or for encouraging remarks.`,
+        _`For more information on reviewing code and documents, visit our
+          <a href="${REVIEW_DOCS_URL}">documentation</a>.`,
+    ];
+
+    static events = {
+        'click .rb-c-alert__close': '_onCloseClicked',
+    };
+
+    /**
+     * Render the view.
+     */
+    onInitialRender() {
+        this.$el
+            .html(TipsSlideshowView.template)
+            .attr({
+                'aria-label': _`Tips`,
+                'aria-roledescription': 'carousel',
+            });
+
+        const $slides = this.$('.rb-c-slideshow__slides');
+        const li = dedent`
+            <li class="rb-c-slideshow__slide"
+                role="group"
+                aria-hidden="false"
+                aria-roledescription="slide">`;
+
+        for (const tip of this.#tips) {
+            $(li)
+                .html(tip)
+                .appendTo($slides);
+        }
+
+        super.onInitialRender();
+    }
+
+    /**
+     * Handler for when the close icon is clicked.
+     *
+     * Args:
+     *     ev (JQuery.ClickEvent):
+     *         The event.
+     */
+    private _onCloseClicked(ev: JQuery.ClickEvent) {
+        ev.stopPropagation();
+        ev.preventDefault();
+
+        this.trigger('hide');
+    }
+}
+
+
+/**
  * Options for the ReviewDialogView.
  *
  * Version Added:
@@ -918,7 +1040,7 @@ interface ReviewDialogViewCreationOptions extends ReviewDialogViewOptions {
     prototypeAttrs: ['template'],
 })
 export class ReviewDialogView extends BaseView<
-    RB.Review,
+    Review,
     HTMLDivElement,
     ReviewDialogViewOptions
 > {
@@ -938,7 +1060,7 @@ export class ReviewDialogView extends BaseView<
         <ol id="review-dialog-file-attachment-comments" class="review-comments"></ol>
         <ol id="review-dialog-diff-comments" class="review-comments"></ol>
         <ol id="review-dialog-body-bottom-comments" class="review-comments"></ol>
-        <div class="spinner"><span class="fa fa-spinner fa-pulse"></span></div>
+        <div class="spinner"><span class="djblets-o-spinner"></span></div>
         <div class="edit-field body-bottom"></div>
     `);
 
@@ -1046,6 +1168,12 @@ export class ReviewDialogView extends BaseView<
 
     /** The collection of screenshot comments. */
     _screenshotCommentsCollection: ResourceCollection<RB.ScreenshotComment>;
+
+    /** The link to show the tips carousel when hidden. */
+    #showTips: JQuery = null;
+
+    /** The carousel showing tips for creating reviews. */
+    #tipsView: TipsSlideshowView = null;
 
     /**
      * Initialize the review dialog.
@@ -1210,6 +1338,34 @@ export class ReviewDialogView extends BaseView<
         this._$shipIt = this.$('#id_shipit');
 
         const $hooksContainer = this.$('.review-dialog-hooks-container');
+
+        this.#tipsView = new TipsSlideshowView({
+            autoCycleTimeMS: 5000,
+        });
+        this.#tipsView.render();
+        this.#tipsView.$el
+            .hide()
+            .prependTo(this.$el);
+
+        this.listenTo(this.#tipsView, 'hide', () => {
+            UserSession.instance.set('showReviewDialogTips', false);
+            this.#updateTipsVisibility(false);
+        });
+
+        this.#showTips = $('<a href="#" id="show-review-tips" role="button">')
+            .text(_`Show tips`)
+            .hide()
+            .prependTo(this.$el)
+            .click(e => {
+                e.stopPropagation();
+                e.preventDefault();
+
+                this.#updateTipsVisibility(true);
+                UserSession.instance.set('showReviewDialogTips', true);
+            });
+
+        this.#updateTipsVisibility(
+            UserSession.instance.get('showReviewDialogTips'));
 
         RB.ReviewDialogHook.each(hook => {
             const HookView = hook.get('viewType');
@@ -1640,5 +1796,17 @@ export class ReviewDialogView extends BaseView<
             includeTextTypes: this.#defaultUseRichText
                               ? 'raw,markdown' : 'raw',
         });
+    }
+
+    /**
+     * Update the visibility of the tips box.
+     *
+     * Args:
+     *     show (boolean):
+     *         Whether to show the tips.
+     */
+    #updateTipsVisibility(show: boolean) {
+        this.#tipsView.$el.toggle(show);
+        this.#showTips.toggle(!show);
     }
 }

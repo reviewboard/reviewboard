@@ -6,9 +6,9 @@ from djblets.webapi.errors import (INVALID_FORM_DATA, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
 from djblets.webapi.fields import IntFieldType, StringFieldType
 
+from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import AuthorizationError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
@@ -175,7 +175,7 @@ class HostingServiceAccountResource(WebAPIResource):
             return self.get_no_access_error(request)
 
         # Validate the service.
-        service = get_hosting_service(service_id)
+        service = hosting_service_registry.get_hosting_service(service_id)
 
         if not service:
             return INVALID_FORM_DATA, {

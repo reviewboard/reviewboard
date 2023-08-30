@@ -6,6 +6,7 @@ import unittest
 import kgb
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard import get_manual_url
 from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
 from reviewboard.scmtools.core import PRE_CREATION
@@ -1379,7 +1380,7 @@ class GitAuthFormTests(TestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_load(self):
-        """Tetting GitTool authentication form load"""
+        """Testing GitTool authentication form load"""
         repository = self.create_repository(
             tool_name='Git',
             username='test-user',
@@ -1393,7 +1394,7 @@ class GitAuthFormTests(TestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_save(self):
-        """Tetting GitTool authentication form save"""
+        """Testing GitTool authentication form save"""
         repository = self.create_repository(tool_name='Git')
 
         form = GitTool.create_auth_form(
@@ -1412,7 +1413,7 @@ class GitAuthFormTests(TestCase):
 class GitRepositoryFormTests(TestCase):
     """Unit tests for GitTool's repository form."""
 
-    def test_fields(self):
+    def test_fields(self) -> None:
         """Testing GitTool repository form fields"""
         form = GitTool.create_repository_form()
 
@@ -1436,8 +1437,8 @@ class GitRepositoryFormTests(TestCase):
                          "the revision and filename parts of the path.")
 
     @add_fixtures(['test_scmtools'])
-    def test_load(self):
-        """Tetting GitTool repository form load"""
+    def test_load(self) -> None:
+        """Testing GitTool repository form load"""
         repository = self.create_repository(
             tool_name='Git',
             path='https://github.com/reviewboard/reviewboard',
@@ -1455,8 +1456,8 @@ class GitRepositoryFormTests(TestCase):
                          'http://git.example.com/raw/<revision>')
 
     @add_fixtures(['test_scmtools'])
-    def test_save(self):
-        """Tetting GitTool repository form save"""
+    def test_save(self) -> None:
+        """Testing GitTool repository form save"""
         repository = self.create_repository(tool_name='Git')
 
         form = GitTool.create_repository_form(
@@ -1475,3 +1476,63 @@ class GitRepositoryFormTests(TestCase):
                          'git@github.com:reviewboard/reviewboard.git')
         self.assertEqual(repository.raw_file_url,
                          'http://git.example.com/raw/<revision>')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save_with_local_path(self) -> None:
+        """Testing GitTool repository form save with a local .git path"""
+        repository = self.create_repository(tool_name='Git')
+
+        form = GitTool.create_repository_form(
+            repository=repository,
+            data={
+                'path': '/opt/repositories/repo1/.git',
+            })
+        form.full_clean()
+
+        self.assertTrue(form.is_valid())
+
+        form.save()
+        self.assertEqual(repository.path, '/opt/repositories/repo1/.git')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save_with_file_url(self) -> None:
+        """Testing GitTool repository form save with a file:// URL"""
+        repository = self.create_repository(tool_name='Git')
+
+        form = GitTool.create_repository_form(
+            repository=repository,
+            data={
+                'path': 'file:///opt/repositories/repo1/.git',
+            })
+        form.full_clean()
+
+        self.assertTrue(form.is_valid())
+
+        form.save()
+        self.assertEqual(repository.path,
+                         'file:///opt/repositories/repo1/.git')
+
+    @add_fixtures(['test_scmtools'])
+    def test_save_with_no_raw_file(self) -> None:
+        """Testing GitTool repository form save with a remote repo and no raw
+        file mask
+        """
+        repository = self.create_repository(tool_name='Git')
+
+        form = GitTool.create_repository_form(
+            repository=repository,
+            data={
+                'path': 'https://github.com/reviewboard/reviewboard',
+                'mirror_path': 'git@github.com:reviewboard/reviewboard.git',
+            })
+        form.full_clean()
+
+        self.assertFalse(form.is_valid())
+
+        manual_url = get_manual_url() + 'admin/configuration/repositories/git/'
+        self.assertEqual(form.errors['path'], [
+            'Remote Git repositories cannot be accessed without a Raw File '
+            'URL Mask. See the <a href="%s">documentation</a> for more '
+            'details.'
+            % manual_url,
+        ])

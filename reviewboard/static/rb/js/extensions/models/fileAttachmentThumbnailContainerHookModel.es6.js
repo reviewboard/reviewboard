@@ -8,7 +8,7 @@
  *
  * Users of this hook must provide a Backbone View (not an instance) which
  * will modify the File Attachment thumbnail. The view will have access to
- * the FileAttachmentThumbnail view and its FileAttachment model (through
+ * the FileAttachmentThumbnailView and its FileAttachment model (through
  * the thumbnailView and fileAttachment options passed to the view).
  *
  * Model Attributes:

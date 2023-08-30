@@ -1,3 +1,4 @@
+import { suite } from '@beanbag/jasmine-suites';
 import {
     afterEach,
     beforeEach,
@@ -8,12 +9,15 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { EnabledFeatures } from 'reviewboard/common';
-import { DnDUploader } from 'reviewboard/ui/views/dndUploaderView';
-import { UserSession } from 'reviewboard/common/models/userSessionModel';
+import {
+    EnabledFeatures,
+    Review,
+    UserSession,
+} from 'reviewboard/common';
+import { DnDUploader } from 'reviewboard/ui';
 
-import { ReviewDialogView } from '../reviewDialogView';
 import { ReviewRequestEditor } from '../../models/reviewRequestEditorModel';
+import { ReviewDialogView } from '../reviewDialogView';
 
 
 declare const $testsScratch: JQuery;
@@ -115,7 +119,7 @@ suite('rb/views/ReviewDialogView', function() {
             reviewRequest: reviewRequest,
         });
 
-        review = new RB.Review({
+        review = new Review({
             parentObject: reviewRequest,
         });
 

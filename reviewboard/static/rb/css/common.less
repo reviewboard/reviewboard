@@ -51,23 +51,6 @@
   line-height: 14px;
 }
 
-.inline-editor-form,
-.text-editor {
-  textarea {
-    border: @textarea-border;
-    box-sizing: border-box;
-    margin: 0;
-    outline: none;
-    padding: @textarea-editor-padding;
-
-    /*
-     * This prevents extra spacing below a text area in different browsers.
-     * See http://stackoverflow.com/questions/7144843/extra-space-under-textarea-differs-along-browsers
-     */
-    vertical-align: top;
-  }
-}
-
 .inline-editor-form {
   display: block;
   margin: 0;
@@ -97,7 +80,7 @@
   }
 
   textarea + .buttons,
-  .text-editor + .buttons {
+  .rb-c-text-editor + .buttons {
     margin-top: 6px;
     white-space: normal;
   }
@@ -115,15 +98,6 @@
 
 .loading-indicator {
   display: inline;
-}
-
-.text-editor {
-  margin: @textarea-editor-margin;
-  position: relative;
-
-  textarea, .CodeMirror {
-    margin: 0;
-  }
 }
 
 
