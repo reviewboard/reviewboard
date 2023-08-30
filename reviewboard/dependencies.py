@@ -19,7 +19,7 @@ from djblets.dependencies import npm_dependencies as djblets_npm_dependencies
 ###########################################################################
 
 #: The minimum supported version of Python.
-PYTHON_MIN_VERSION = (3, 7)
+PYTHON_MIN_VERSION = (3, 8)
 
 #: A string representation of the minimum supported version of Python.
 PYTHON_MIN_VERSION_STR = '%s.%s' % (PYTHON_MIN_VERSION)

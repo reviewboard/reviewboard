@@ -39,14 +39,14 @@ if pyver < PYTHON_MIN_VERSION:
     sys.stderr.write(
         'Review Board %s is incompatible with your version of Python '
         '(%s.%s).\n'
-        'Please install Review Board 4.0.x or upgrade to Python %s or '
-        'newer.\n'
-        % (pyver, get_package_version(), PYTHON_MIN_VERSION_STR))
+        'Please install an older release of Review Board or upgrade to '
+        'Python %s or newer.\n'
+        % (get_package_version(), pyver[0], pyver[1], PYTHON_MIN_VERSION_STR))
     sys.exit(1)
 
 
 # NOTE: When updating, make sure you update the classifiers below.
-SUPPORTED_PYVERS = ['3.7', '3.8', '3.9', '3.10']
+SUPPORTED_PYVERS = ['3.8', '3.9', '3.10', '3.11']
 
 
 if '--all-pyvers' in sys.argv:
@@ -433,7 +433,7 @@ setup(
         'build_i18n': BuildI18nCommand,
         'install_node_deps': InstallNodeDependenciesCommand,
     },
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Web Environment',
@@ -444,7 +444,6 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
