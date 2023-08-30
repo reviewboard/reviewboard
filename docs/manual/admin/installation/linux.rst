@@ -364,18 +364,47 @@ MySQL / MariaDB
 
          $ yum install mariadb-connector-c-devel
 
-2. Install the Python support in your environment:
+         # Or:
+         $ yum install mariadb-devel
+
+2. Install the Python support in your environment.
+
+   .. warning::
+
+      You may have trouble installing some versions of mysqlclient_,
+      depending on your Linux distribution.
+
+      mysqlclient_ 2.2 supports MySQL 8.0.33+, but is incompatible with many
+      Linux distributions (including Amazon Linux and Debian).
+
+      We recommend trying to install the latest version. If that doesn't
+      work, try installing 2.1.1. If you need help, `reach out to us for
+      support <support_>`_.
+
+      See the `mysqlclient documentation`_ and `bug tracker
+      <mysqlclient-bug-tracker>`_ for more information.
 
    .. tabs::
 
       .. code-tab:: console Python Virtual Environments
 
-         $ /opt/reviewboard/bin/pip install -U 'ReviewBoard[mysql]'
+         $ /opt/reviewboard/bin/pip install -U mysqlclient
+
+         # To install 2.1.1:
+         $ /opt/reviewboard/bin/pip install mysqlclient==2.1.1
 
       .. code-tab:: console System Installs
 
-         $ pip3 install -U 'ReviewBoard[mysql]'
+         $ pip3 install -U mysqlclient
 
+         # To install 2.1.1:
+         $ pip3 install mysqlclient==2.1.1
+
+
+.. _mysqlclient: https://pypi.org/project/mysqlclient/
+.. _mysqlclient documentation: https://github.com/PyMySQL/mysqlclient#install
+.. _mysqlclient-bug-tracker:
+   https://github.com/PyMySQL/mysqlclient/issues?q=is%3Aissue+
 
 
 PostgreSQL
