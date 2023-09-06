@@ -1101,10 +1101,23 @@ class FormattingToolbarView extends BaseView<
                 }
 
                 if (!wasReplaced) {
-                    /* The group is not formatted, so add syntax. */
+                    /* The selection is not formatted, so add syntax. */
                     const sym = symbols[0];
-                    codeMirror.replaceSelection(`${sym}${group}${sym}`,
-                                                'around');
+
+                    /* Format each line of the selection. */
+                    const lines = group.split('\n').map((line: string) => {
+                        if (line === '') {
+                            return line;
+                        } else if (line.startsWith(sym) &&
+                                   line.endsWith(sym)) {
+                            /* Remove the formatting. */
+                            return this.#removeSyntax(line, sym);
+                        } else {
+                            return `${sym}${line}${sym}`;
+                        }
+                    });
+
+                    codeMirror.replaceSelection(lines.join('\n'), 'around');
                 }
             }
         }
@@ -1142,12 +1155,12 @@ class FormattingToolbarView extends BaseView<
         const groupEnd = Object.assign({}, cursorEnd);
 
         for (let curToken = codeMirror.getTokenAt(cursorEnd, true);
-             curToken.string !== ' ' && groupEnd.ch !== lineLength;
+             curToken.string !== ' ' && groupEnd.ch < lineLength;
              curToken = codeMirror.getTokenAt(groupEnd, true)) {
             groupEnd.ch += 1;
         }
 
-        if (groupEnd.ch !== lineLength) {
+        if (groupEnd.ch !== lineLength && groupStart.line === groupEnd.line) {
             groupEnd.ch -= 1;
         }
 
