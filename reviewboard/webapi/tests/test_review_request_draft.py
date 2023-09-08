@@ -27,11 +27,13 @@ from reviewboard.webapi.tests.mimetypes import \
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
                                                         ExtraDataListMixin)
+from reviewboard.webapi.tests.mixins_ssl import SSLTestsMixin
 from reviewboard.webapi.tests.urls import get_review_request_draft_url
 
 
 class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
-                    BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
+                    SSLTestsMixin, BaseWebAPITestCase,
+                    metaclass=BasicTestsMetaclass):
     """Testing the ReviewRequestDraftResource API tests."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/draft/'
@@ -1572,6 +1574,24 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assertTrue('submitter' in rsp['fields'])
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_put_with_ssl_error(self):
+        """Testing the PUT <URL> API with CertificateVerificationError"""
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=self.user,
+                                                    publish=True)
+
+        self.run_ssl_cert_test(
+            spy_func=ReviewRequestDraft.update_from_commit_id,
+            spy_owner=ReviewRequestDraft,
+            url=get_review_request_draft_url(review_request),
+            method='put',
+            data={
+                'commit_id': '123',
+                'update_from_commit_id': 'true',
+            })
 
     def test_put_with_publish_and_trivial(self):
         """Testing the PUT review-requests/<id>/draft/ API with trivial

@@ -9,8 +9,10 @@ from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
-from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
-                                   NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.errors import (DOES_NOT_EXIST,
+                                   INVALID_FORM_DATA,
+                                   NOT_LOGGED_IN,
+                                   PERMISSION_DENIED)
 from djblets.webapi.fields import (BooleanFieldType,
                                    ChoiceFieldType,
                                    DateTimeFieldType,
@@ -20,6 +22,7 @@ from djblets.webapi.fields import (BooleanFieldType,
                                    ResourceListFieldType,
                                    StringFieldType)
 
+from reviewboard.certs.errors import CertificateVerificationError
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.reviews.builtin_fields import BuiltinFieldMixin
@@ -35,7 +38,8 @@ from reviewboard.webapi.errors import (COMMIT_ID_ALREADY_EXISTS,
                                        INVALID_CHANGE_NUMBER,
                                        NOTHING_TO_PUBLISH,
                                        PUBLISH_ERROR,
-                                       REPO_INFO_ERROR)
+                                       REPO_INFO_ERROR,
+                                       UNVERIFIED_HOST_CERT)
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 
@@ -384,9 +388,16 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(COMMIT_ID_ALREADY_EXISTS, DOES_NOT_EXIST,
-                            INVALID_CHANGE_NUMBER, INVALID_FORM_DATA,
-                            NOT_LOGGED_IN, PERMISSION_DENIED, PUBLISH_ERROR)
+    @webapi_response_errors(
+        COMMIT_ID_ALREADY_EXISTS,
+        DOES_NOT_EXIST,
+        INVALID_CHANGE_NUMBER,
+        INVALID_FORM_DATA,
+        NOT_LOGGED_IN,
+        PERMISSION_DENIED,
+        PUBLISH_ERROR,
+        UNVERIFIED_HOST_CERT,
+    )
     @webapi_request_fields(
         optional=CREATE_UPDATE_OPTIONAL_FIELDS,
         allow_unknown=True
@@ -424,10 +435,17 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(COMMIT_ID_ALREADY_EXISTS, DOES_NOT_EXIST,
-                            INVALID_CHANGE_NUMBER, INVALID_FORM_DATA,
-                            NOT_LOGGED_IN, PERMISSION_DENIED, PUBLISH_ERROR,
-                            REPO_INFO_ERROR)
+    @webapi_response_errors(
+        COMMIT_ID_ALREADY_EXISTS,
+        DOES_NOT_EXIST,
+        INVALID_CHANGE_NUMBER,
+        INVALID_FORM_DATA,
+        NOT_LOGGED_IN,
+        PERMISSION_DENIED,
+        PUBLISH_ERROR,
+        REPO_INFO_ERROR,
+        UNVERIFIED_HOST_CERT,
+    )
     @webapi_request_fields(
         optional=CREATE_UPDATE_OPTIONAL_FIELDS,
         allow_unknown=True
@@ -557,9 +575,11 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                         draft.update_from_commit_id(commit_id))
                 except InvalidChangeNumberError:
                     return INVALID_CHANGE_NUMBER
-                except HostingServiceError as e:
-                    return REPO_INFO_ERROR.with_message(str(e))
-                except SCMError as e:
+                except CertificateVerificationError as e:
+                    return UNVERIFIED_HOST_CERT.with_message(str(e)), {
+                        'certificate': e.certificate,
+                    }
+                except (HostingServiceError, SCMError) as e:
                     return REPO_INFO_ERROR.with_message(str(e))
 
         # Check for a new value for depends_on.

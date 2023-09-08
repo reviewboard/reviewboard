@@ -17,10 +17,11 @@ from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import validate_diffcommit_mimetype
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
+from reviewboard.webapi.tests.mixins_ssl import SSLTestsMixin
 from reviewboard.webapi.tests.urls import get_validate_diffcommit_url
 
 
-class ResourceTests(SpyAgency, BaseWebAPITestCase,
+class ResourceTests(SpyAgency, SSLTestsMixin, BaseWebAPITestCase,
                     metaclass=BasicTestsMetaclass):
     """Testing ValidateDiffCommitResource API."""
 
@@ -254,6 +255,25 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
+
+    @webapi_test_template
+    def test_post_with_ssl_error(self) -> None:
+        """Testing the POST <URL> API with CertificateVerificationError"""
+        repository = self.create_repository()
+
+        self.run_ssl_cert_test(
+            spy_func=repository.scmtool_class.file_exists,
+            spy_owner=repository.scmtool_class,
+            url=get_validate_diffcommit_url(),
+            data={
+                'commit_id': 'r1',
+                'parent_id': 'r0',
+                'diff': SimpleUploadedFile(
+                    'diff',
+                    self.DEFAULT_GIT_FILEDIFF_DATA_DIFF,
+                    content_type='text/x-patch'),
+                'repository': repository.name,
+            })
 
     @webapi_test_template
     def test_post_repo_multiple(self):

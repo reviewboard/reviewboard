@@ -4,13 +4,16 @@ from djblets.webapi.decorators import (webapi_response_errors,
 from djblets.webapi.errors import DOES_NOT_EXIST
 from djblets.webapi.fields import DateTimeFieldType, StringFieldType
 
+from reviewboard.certs.errors import CertificateVerificationError
 from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.errors import SCMError
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
-from reviewboard.webapi.errors import REPO_INFO_ERROR, REPO_NOT_IMPLEMENTED
+from reviewboard.webapi.errors import (REPO_INFO_ERROR,
+                                       REPO_NOT_IMPLEMENTED,
+                                       UNVERIFIED_HOST_CERT)
 from reviewboard.webapi.resources import resources
 
 
@@ -25,6 +28,7 @@ class RepositoryCommitsResource(WebAPIResource):
 
     Data on commits will not be available for all types of repositories.
     """
+
     added_in = '2.0'
 
     name = 'commits'
@@ -67,8 +71,12 @@ class RepositoryCommitsResource(WebAPIResource):
 
     @webapi_check_local_site
     @webapi_check_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, REPO_INFO_ERROR,
-                            REPO_NOT_IMPLEMENTED)
+    @webapi_response_errors(
+        DOES_NOT_EXIST,
+        REPO_INFO_ERROR,
+        REPO_NOT_IMPLEMENTED,
+        UNVERIFIED_HOST_CERT,
+    )
     @webapi_request_fields(
         optional={
             'branch': {
@@ -100,6 +108,10 @@ class RepositoryCommitsResource(WebAPIResource):
 
         try:
             items = repository.get_commits(branch=branch, start=start)
+        except CertificateVerificationError as e:
+            return UNVERIFIED_HOST_CERT.with_message(str(e)), {
+                'certificate': e.certificate,
+            }
         except (HostingServiceError, SCMError) as e:
             return REPO_INFO_ERROR.with_message(str(e))
         except NotImplementedError:

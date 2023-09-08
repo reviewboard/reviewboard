@@ -1,6 +1,11 @@
+"""Forms for configuring repositories."""
+
+from __future__ import annotations
+
 import logging
 import sys
 from itertools import chain
+from typing import Optional, Union
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
@@ -19,6 +24,7 @@ from reviewboard.admin.form_widgets import (RelatedGroupWidget,
                                             RelatedUserWidget)
 from reviewboard.admin.import_utils import has_module
 from reviewboard.admin.validation import validate_bug_tracker
+from reviewboard.certs.errors import CertificateVerificationError
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             SSHKeyAssociationError,
@@ -28,10 +34,12 @@ from reviewboard.hostingsvcs.fake import FAKE_HOSTING_SERVICES
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools import scmtools_registry
-from reviewboard.scmtools.errors import (AuthenticationError,
-                                         RepositoryNotFoundError,
-                                         SCMError,
-                                         UnverifiedCertificateError)
+from reviewboard.scmtools.certs import Certificate as LegacyCertificate
+from reviewboard.scmtools.errors import (
+    AuthenticationError,
+    RepositoryNotFoundError,
+    SCMError,
+    UnverifiedCertificateError as LegacyUnverifiedCertificateError)
 from reviewboard.scmtools.fake import FAKE_SCMTOOLS
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.mixins import LocalSiteAwareModelFormMixin
@@ -738,6 +746,24 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         label=_('Groups with access'),
         required=False,
         widget=RelatedGroupWidget(invite_only=True))
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: A legacy certificate accepted from legacy SCMTools.
+    #:
+    #: Type
+    #:     reviewboard.scmtools.certs.Certificate
+    cert: Optional[LegacyCertificate]
+
+    #: A certificate verification exception generated during validation.
+    #:
+    #: Type:
+    #:     reviewboard.certs.errors.CertificateVerificationError or
+    #:     reviewboard.scmtools.errors.UnverifiedCertificateError
+    certerror: Optional[Union[CertificateVerificationError,
+                              LegacyUnverifiedCertificateError]]
 
     def __init__(self, data=None, *args, **kwargs):
         """Initialize the repository configuration form.
@@ -1567,7 +1593,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     _('Unable to link the account: %s') % e,
                 ])
                 return
-            except UnverifiedCertificateError as e:
+            except (CertificateVerificationError,
+                    LegacyUnverifiedCertificateError) as e:
                 self.certerror = e
                 return
             except Exception as e:
@@ -2342,7 +2369,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     self.ssh_client.add_host_key(e.hostname, e.raw_key)
                 except IOError as e:
                     raise ValidationError(str(e), code='add_host_key_failed')
-            except UnverifiedCertificateError as e:
+            except (CertificateVerificationError,
+                    LegacyUnverifiedCertificateError) as e:
                 if not self.cleaned_data['trust_host']:
                     raise ValidationError(
                         str(e),

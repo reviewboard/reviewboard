@@ -37,6 +37,7 @@ from reviewboard.webapi.tests.mimetypes import (review_item_mimetype,
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
                                                         ExtraDataListMixin)
+from reviewboard.webapi.tests.mixins_ssl import SSLTestsMixin
 from reviewboard.webapi.tests.urls import (get_repository_item_url,
                                            get_review_item_url,
                                            get_review_request_draft_url,
@@ -45,9 +46,11 @@ from reviewboard.webapi.tests.urls import (get_repository_item_url,
                                            get_user_item_url)
 
 
-class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
+class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
+                        BaseWebAPITestCase,
                         metaclass=BasicTestsMetaclass):
     """Testing the ReviewRequestResource list API tests."""
+
     fixtures = ['test_users']
     basic_post_fixtures = ['test_scmtools']
     sample_api_url = 'review-requests/'
@@ -1316,6 +1319,18 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
         self.assertEqual(rsp['err']['code'], REPO_INFO_ERROR.code)
         self.assertEqual(rsp['err']['msg'], 'This is a SCMError')
 
+    @webapi_test_template
+    def test_post_with_ssl_error(self):
+        """Testing the POST <URL> API with CertificateVerificationError"""
+        repository = self.create_repository(tool_name='Test')
+
+        self.run_ssl_cert_test(
+            spy_func=ReviewRequest.objects.create,
+            url=get_review_request_list_url(),
+            data={
+                'repository': repository.path,
+            })
+
     @add_fixtures(['test_scmtools'])
     @webapi_test_template
     def test_post_with_changenum(self):
@@ -1752,9 +1767,11 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
 
-class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
+class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, SSLTestsMixin,
+                        BaseWebAPITestCase,
                         metaclass=BasicTestsMetaclass):
     """Testing the ReviewRequestResource item API tests."""
+
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/'
     resource = resources.review_request
@@ -2292,6 +2309,23 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
 
         self._test_put_status_as_other_user(
             self.get_local_site(name=self.local_site_name))
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_put_with_ssl_error(self):
+        """Testing the POST <URL> API with CertificateVerificationError"""
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=self.user,
+                                                    publish=True)
+
+        self.run_ssl_cert_test(
+            spy_func=ReviewRequestDraft.update_from_commit_id,
+            spy_owner=ReviewRequestDraft,
+            url=get_review_request_item_url(review_request.display_id),
+            method='put',
+            data={
+                'changenum': '123',
+            })
 
     def _test_put_status_as_other_user(self, local_site=None):
         review_request = self.create_review_request(

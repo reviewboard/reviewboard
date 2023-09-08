@@ -1,10 +1,14 @@
+"""Unit tests for ValidateDiffResource."""
+
+from __future__ import annotations
+
 import os
 
+import kgb
 from django.core.files.uploadedfile import SimpleUploadedFile
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
-from kgb import SpyAgency
 
 from reviewboard import scmtools
 from reviewboard.diffviewer.models import DiffSet
@@ -14,12 +18,14 @@ from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import validate_diff_mimetype
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
+from reviewboard.webapi.tests.mixins_ssl import SSLTestsMixin
 from reviewboard.webapi.tests.urls import get_validate_diff_url
 
 
-class ResourceTests(SpyAgency, BaseWebAPITestCase,
+class ResourceTests(kgb.SpyAgency, SSLTestsMixin, BaseWebAPITestCase,
                     metaclass=BasicTestsMetaclass):
     """Testing the ValidateDiffResource APIs."""
+
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'validation/diffs/'
     test_http_methods = ('DELETE', 'PUT',)
@@ -268,40 +274,14 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the POST <URL> API with CertificateVerificationError"""
         repository = self.create_repository(tool_name='Test')
 
-        self.spy_on(
-            repository.scmtool_class.file_exists,
-            owner=repository.scmtool_class,
-            op=kgb.SpyOpRaise(CertificateVerificationError(
-                code=CertificateVerificationFailureCode.NOT_TRUSTED,
-                certificate=Certificate(
-                    hostname='example.com',
-                    port=443))))
-
-        rsp = self.api_post(
-            get_validate_diff_url(),
-            {
+        self.run_ssl_cert_test(
+            spy_func=repository.scmtool_class.file_exists,
+            spy_owner=repository.scmtool_class,
+            url=get_validate_diff_url(),
+            data={
                 'basedir': '/trunk',
                 'path': SimpleUploadedFile('readme.diff',
                                            self.DEFAULT_GIT_README_DIFF,
                                            content_type='text/x-patch'),
                 'repository': repository.path,
-            },
-            expected_status=400)
-
-        self.assertEqual(
-            rsp,
-            {
-                'err': {
-                    'code': DIFF_PARSE_ERROR.code,
-                    'msg': (
-                        'The SSL certificate provided by example.com has not '
-                        'been signed by a trusted Certificate Authority and '
-                        'may not be safe. The certificate needs to be '
-                        'verified in Review Board before the server can be '
-                        'accessed. Certificate details: '
-                        'hostname="example.com", port=443'
-                    ),
-                    'type': 'diff-parse-error',
-                },
-                'stat': 'fail',
             })
