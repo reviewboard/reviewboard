@@ -1,7 +1,18 @@
+"""Repository-related errors."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.utils.encoding import force_str
 from django.utils.translation import gettext as _
+from housekeeping import ClassDeprecatedMixin
 
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.ssh.errors import SSHAuthenticationError
+
+if TYPE_CHECKING:
+    from reviewboard.scmtools.certs import Certificate
 
 
 class SCMError(Exception):
@@ -204,15 +215,39 @@ class AuthenticationError(SSHAuthenticationError, SCMError):
     pass
 
 
-class UnverifiedCertificateError(SCMError):
+class UnverifiedCertificateError(
+    ClassDeprecatedMixin,
+    SCMError,
+    warning_cls=RemovedInReviewBoard80Warning,
+    init_deprecation_msg=(
+        'UnverifiedCertificateError is deprecated in favor of '
+        'reviewboard.certs.errors.CertificateVerificationError, and '
+        'will be removed in Review Board 8.'
+    )
+):
     """An error representing an unverified SSL certificate.
 
-    Attributes:
-        reviewboard.scmtools.certs.Certificate:
-        The certificate this error pertains to.
+    Deprecated:
+        6.0:
+        This is deprecated in favor of
+        :py:class:`reviewboard.certs.errors.CertificateVerificationError`,
+        and will be removed in Review Board 8.
     """
 
-    def __init__(self, certificate):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The certificate generating this error.
+    #:
+    #: Type:
+    #:     reviewboard.scmtools.certs.Certificate
+    certificate: Certificate
+
+    def __init__(
+        self,
+        certificate: Certificate,
+    ) -> None:
         """Initialize the error message.
 
         Args:
@@ -240,5 +275,5 @@ class UnverifiedCertificateError(SCMError):
                 'verified before the repository can be accessed.'
             )
 
-        super(SCMError, self).__init__(msg)
+        super().__init__(msg)
         self.certificate = certificate
