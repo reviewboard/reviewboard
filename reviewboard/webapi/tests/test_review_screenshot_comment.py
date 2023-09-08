@@ -16,7 +16,8 @@ from reviewboard.webapi.tests.mixins_comment import (
     CommentListMixin)
 from reviewboard.webapi.tests.urls import (
     get_review_screenshot_comment_item_url,
-    get_review_screenshot_comment_list_url)
+    get_review_screenshot_comment_list_url,
+    get_screenshot_list_url)
 
 
 class BaseTestCase(BaseWebAPITestCase):
@@ -393,7 +394,9 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         self.assertEqual(rsp['screenshot_comment']['issue_status'], 'resolved')
 
         # Delete the screenshot.
-        self._delete_screenshot(review_request, screenshot)
+        self.api_delete('%s%s/' % (get_screenshot_list_url(review_request),
+                                   screenshot.pk))
+
         review_request.publish(review_request.submitter)
 
         # Try altering the issue_status. This should be allowed.
