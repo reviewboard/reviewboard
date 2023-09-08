@@ -492,7 +492,7 @@ class Certificate:
             hostname (str):
                 The hostname that would serve this certificate.
 
-            port (str):
+            port (int):
                 The port on the host that would serve this certificate.
 
             cert_data (bytes):
