@@ -1854,6 +1854,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
                     'code': PUBLISH_ERROR.code,
                     'msg': 'Error publishing: This commit series is not '
                            'finalized.',
+                    'type': 'review-request-publish-error',
                 },
             })
 

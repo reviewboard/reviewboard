@@ -464,6 +464,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                 'err': {
                     'code': INVALID_ATTRIBUTE.code,
                     'msg': INVALID_ATTRIBUTE.msg,
+                    'type': INVALID_ATTRIBUTE.error_type,
                 },
                 'reason': 'The diff has already been finalized.',
             })

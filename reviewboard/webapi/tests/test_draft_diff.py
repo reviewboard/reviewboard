@@ -619,6 +619,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
             'err': {
                 'code': INVALID_ATTRIBUTE.code,
                 'msg': INVALID_ATTRIBUTE.msg,
+                'type': INVALID_ATTRIBUTE.error_type,
             },
             'reason': 'This diff is already finalized.',
         })
@@ -649,6 +650,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
             'err': {
                 'code': INVALID_FORM_DATA.code,
                 'msg': INVALID_FORM_DATA.msg,
+                'type': INVALID_FORM_DATA.error_type,
             },
             'fields': {
                 'cumulative_diff': [
@@ -691,6 +693,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
             'err': {
                 'code': INVALID_ATTRIBUTE.code,
                 'msg': INVALID_ATTRIBUTE.msg,
+                'type': INVALID_ATTRIBUTE.error_type,
             },
             'reason': 'This review request was not created with commit '
                       'history support.',
@@ -753,6 +756,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
             'err': {
                 'code': INVALID_ATTRIBUTE.code,
                 'msg': INVALID_ATTRIBUTE.msg,
+                'type': INVALID_ATTRIBUTE.error_type,
             },
             'reason': 'Cannot finalize an empty commit series.',
         })
@@ -788,6 +792,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
             'err': {
                 'code': INVALID_FORM_DATA.code,
                 'msg': INVALID_FORM_DATA.msg,
+                'type': INVALID_FORM_DATA.error_type,
             },
             'fields': {
                 'validation_info': [
@@ -827,6 +832,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
             'err': {
                 'code': INVALID_FORM_DATA.code,
                 'msg': INVALID_FORM_DATA.msg,
+                'type': INVALID_FORM_DATA.error_type,
             },
             'fields': {
                 'validation_info': [
@@ -872,6 +878,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
             'err': {
                 'code': INVALID_FORM_DATA.code,
                 'msg': INVALID_FORM_DATA.msg,
+                'type': INVALID_FORM_DATA.error_type,
             },
             'fields': {
                 'validation_info': [expected_error],
@@ -923,6 +930,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
             'err': {
                 'code': INVALID_FORM_DATA.code,
                 'msg': INVALID_FORM_DATA.msg,
+                'type': INVALID_FORM_DATA.error_type,
             },
             'fields': {
                 'validation_info': [
@@ -979,6 +987,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
             'err': {
                 'code': INVALID_FORM_DATA.code,
                 'msg': INVALID_FORM_DATA.msg,
+                'type': INVALID_FORM_DATA.error_type,
             },
             'fields': {
                 'validation_info': [

@@ -505,6 +505,7 @@ class ResourceListTests(SpyAgency, CommentListMixin,
                 'err': {
                     'code': INVALID_FORM_DATA.code,
                     'msg': INVALID_FORM_DATA.msg,
+                    'type': INVALID_FORM_DATA.error_type,
                 },
                 'fields': {
                     'base_filediff_id': [

@@ -262,3 +262,46 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
+
+    @webapi_test_template
+    def test_post_with_ssl_error(self) -> None:
+        """Testing the POST <URL> API with CertificateVerificationError"""
+        repository = self.create_repository(tool_name='Test')
+
+        self.spy_on(
+            repository.scmtool_class.file_exists,
+            owner=repository.scmtool_class,
+            op=kgb.SpyOpRaise(CertificateVerificationError(
+                code=CertificateVerificationFailureCode.NOT_TRUSTED,
+                certificate=Certificate(
+                    hostname='example.com',
+                    port=443))))
+
+        rsp = self.api_post(
+            get_validate_diff_url(),
+            {
+                'basedir': '/trunk',
+                'path': SimpleUploadedFile('readme.diff',
+                                           self.DEFAULT_GIT_README_DIFF,
+                                           content_type='text/x-patch'),
+                'repository': repository.path,
+            },
+            expected_status=400)
+
+        self.assertEqual(
+            rsp,
+            {
+                'err': {
+                    'code': DIFF_PARSE_ERROR.code,
+                    'msg': (
+                        'The SSL certificate provided by example.com has not '
+                        'been signed by a trusted Certificate Authority and '
+                        'may not be safe. The certificate needs to be '
+                        'verified in Review Board before the server can be '
+                        'accessed. Certificate details: '
+                        'hostname="example.com", port=443'
+                    ),
+                    'type': 'diff-parse-error',
+                },
+                'stat': 'fail',
+            })

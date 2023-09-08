@@ -3,6 +3,7 @@ import os
 import kgb
 import paramiko
 from djblets.testing.decorators import add_fixtures
+from djblets.webapi.errors import INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
 
@@ -568,8 +569,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
 
         self.assertEqual(rsp, {
             'err': {
-                'code': 105,
-                'msg': 'One or more fields had errors',
+                'code': INVALID_FORM_DATA.code,
+                'msg': INVALID_FORM_DATA.msg,
+                'type': INVALID_FORM_DATA.error_type,
             },
             'fields': {
                 'hosting_account_username': [
