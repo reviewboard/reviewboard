@@ -584,7 +584,7 @@ class FileStoredCertificateFingerprints(FileStoredDataMixin,
         """
         try:
             with open(self._fingerprints_file_path, 'r') as fp:
-                return CertificateFingerprints.deserialize(json.load(fp))
+                return CertificateFingerprints.from_json(json.load(fp))
         except (IOError, ValueError) as e:
             error_id = str(uuid4())
             logger.error('[%s] Error loading SSL/TLS certificate '
@@ -1331,7 +1331,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         # Read/write the fingerprints data.
         try:
             with open(path, 'w') as fp:
-                json.dump(fingerprints.serialize(), fp)
+                json.dump(fingerprints.to_json(), fp)
         except IOError as e:
             error_id = str(uuid4())
             logger.error('[%s] Unable to write SSL/TLS fingerprints '
