@@ -1,0 +1,127 @@
+.. default-intersphinx:: djblets3.x rb5.x
+
+
+================================
+Review Board 5.0.6 Release Notes
+================================
+
+**Release date**: September 12, 2023
+
+
+Installation/Upgrade
+====================
+
+Review Board 5.0.6 is compatible with Python 3.7-3.11.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install ReviewBoard==5.0.6
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Packaging
+=========
+
+* The ``ReviewBoard[mysql]`` package now caps :pypi:`mysqlclient` to 2.1.x.
+
+  This resolves an installation problem that newer releases (2.2.x and higher)
+  have on most versions of Linux. Unfortunately, these newer versions may
+  be required for some versions of MySQL 8.
+
+  If you have trouble installing this version, you may need to manually
+  install :pypi:`mysqlclient` 2.2.x or higher directly.
+
+  This installation issue is unfortunate and beyond our control. Please see
+  the `mysqlclient discussion`_` around this issue.
+
+
+.. _mysqlclient discussion:
+   https://github.com/PyMySQL/mysqlclient/discussions/624
+
+
+New Features
+============
+
+Future-proofed upgrades
+-----------------------
+
+Upgrading a Review Board site now carefully updates the
+:file:`reviewboard.wsgi` file to remove any legacy settings, add modern
+settings, and preserve custom settings. The new versions include improved
+support for Python virtual environments (which are now recommended for all
+new installs).
+
+We've also bullet-proofed virtual environment management to avoid replacing
+an existing virtual environment if not managed by Review Board.
+
+
+Usability
+=========
+
+* Copying the review request ID link under the Summary field will no longer
+  include the ``#``.
+
+  This makes it easier to copy the ID of a review request to the clipboard.
+
+
+Web API
+=======
+
+* :ref:`webapi2.0-review-group-list-resource`:
+
+  * Added a ``?show-invisible=true`` query argument to include hidden
+    accessible review groups.
+
+  * Added a ``?invite-only=<true|false>`` query argument to filter review
+    groups based on the ``invite_only`` value.
+
+  * Fixed including hidden invite-only review groups when the special
+    ``reviews.can_view_invite_only_groups`` user permission is set.
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Fixed a display bug with Markdown code blocks that could occur when showing
+  content starting with a ``#!``.
+
+* Fixed a display bug with the file attachment diff revision slider.
+
+* Fixed a bug where updating a file attachment with a new revision would
+  sometimes create a new file attachment.
+
+
+Administration
+--------------
+
+* Configurable lists of review groups now include hidden accessible review
+  groups and repositories.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin
