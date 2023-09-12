@@ -50,7 +50,8 @@ Packaging
   install :pypi:`mysqlclient` 2.2.x or higher directly.
 
   This installation issue is unfortunate and beyond our control. Please see
-  the `mysqlclient discussion`_` around this issue.
+  the `mysqlclient discussion`_ around this issue, and our :ref:`MySQL
+  installation instructions <linux-mysql>`.
 
 
 .. _mysqlclient discussion:

@@ -349,6 +349,8 @@ Review Board can be used with MySQL, MariaDB, or Postgres databases. To use
 these, you will need to install the appropriate packages.
 
 
+.. _linux-mysql:
+
 MySQL / MariaDB
 ~~~~~~~~~~~~~~~
 
