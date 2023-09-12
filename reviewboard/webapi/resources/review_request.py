@@ -25,6 +25,7 @@ from djblets.webapi.fields import (BooleanFieldType,
                                    StringFieldType)
 
 from reviewboard.admin.server import build_server_url
+from reviewboard.certs.errors import CertificateVerificationError
 from reviewboard.diffviewer.errors import (DiffTooBigError,
                                            DiffParserError,
                                            EmptyDiffError)
@@ -62,7 +63,8 @@ from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
                                        PUBLISH_ERROR,
                                        REOPEN_ERROR,
                                        REPO_AUTHENTICATION_ERROR,
-                                       REPO_INFO_ERROR)
+                                       REPO_INFO_ERROR,
+                                       UNVERIFIED_HOST_CERT)
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.repository import RepositoryResource
@@ -650,12 +652,22 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(NOT_LOGGED_IN, PERMISSION_DENIED, INVALID_USER,
-                            INVALID_REPOSITORY, CHANGE_NUMBER_IN_USE,
-                            INVALID_CHANGE_NUMBER, EMPTY_CHANGESET,
-                            REPO_AUTHENTICATION_ERROR, REPO_INFO_ERROR,
-                            MISSING_REPOSITORY, DIFF_EMPTY, DIFF_TOO_BIG,
-                            DIFF_PARSE_ERROR)
+    @webapi_response_errors(
+        CHANGE_NUMBER_IN_USE,
+        DIFF_EMPTY,
+        DIFF_PARSE_ERROR,
+        DIFF_TOO_BIG,
+        EMPTY_CHANGESET,
+        INVALID_CHANGE_NUMBER,
+        INVALID_REPOSITORY,
+        INVALID_USER,
+        MISSING_REPOSITORY,
+        NOT_LOGGED_IN,
+        PERMISSION_DENIED,
+        REPO_AUTHENTICATION_ERROR,
+        REPO_INFO_ERROR,
+        UNVERIFIED_HOST_CERT,
+    )
     @webapi_request_fields(
         optional={
             'changenum': {
@@ -861,6 +873,10 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                              e,
                              extra={'request': request})
             return REPO_INFO_ERROR.with_message('SSH Error: %s' % e)
+        except CertificateVerificationError as e:
+            return UNVERIFIED_HOST_CERT.with_message(str(e)), {
+                'certificate': e.certificate,
+            }
         except SCMError as e:
             return REPO_INFO_ERROR.with_message(str(e))
         except ValidationError:
@@ -872,8 +888,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
-                            REPO_INFO_ERROR)
+    @webapi_response_errors(
+        DOES_NOT_EXIST,
+        NOT_LOGGED_IN,
+        PERMISSION_DENIED,
+        REPO_INFO_ERROR,
+        UNVERIFIED_HOST_CERT,
+    )
     @webapi_request_fields(
         optional={
             'status': {
@@ -1066,9 +1087,11 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 return INVALID_CHANGE_NUMBER
             except EmptyChangeSetError:
                 return EMPTY_CHANGESET
-            except HostingServiceError as e:
-                return REPO_INFO_ERROR.with_message(str(e))
-            except SCMError as e:
+            except CertificateVerificationError as e:
+                return UNVERIFIED_HOST_CERT.with_message(str(e)), {
+                    'certificate': e.certificate,
+                }
+            except (HostingServiceError, SCMError) as e:
                 return REPO_INFO_ERROR.with_message(str(e))
 
             draft.save()

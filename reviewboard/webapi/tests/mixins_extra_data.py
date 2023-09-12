@@ -385,17 +385,22 @@ class ExtraDataItemMixin(object):
         with override_feature_checks(self.override_features):
             rsp = self.api_put(url, data, expected_status=400)
 
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err'], {
-            'code': INVALID_FORM_DATA.code,
-            'msg': 'One or more fields had errors',
-        })
-        self.assertEqual(rsp['fields'], {
-            'extra_data': [
-                'extra_data:json cannot replace extra_data with a '
-                'non-dictionary type',
-            ],
-        })
+        self.assertEqual(
+            rsp,
+            {
+                'stat': 'fail',
+                'err': {
+                    'code': INVALID_FORM_DATA.code,
+                    'msg': INVALID_FORM_DATA.msg,
+                    'type': INVALID_FORM_DATA.error_type,
+                },
+                'fields': {
+                    'extra_data': [
+                        'extra_data:json cannot replace extra_data with a '
+                        'non-dictionary type',
+                    ],
+                },
+            })
 
         obj = self.resource.model.objects.get(pk=obj.pk)
         self.assertEqual(obj.extra_data, {
@@ -488,17 +493,22 @@ class ExtraDataItemMixin(object):
         with override_feature_checks(self.override_features):
             rsp = self.api_put(url, data, expected_status=400)
 
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err'], {
-            'code': INVALID_FORM_DATA.code,
-            'msg': 'One or more fields had errors',
-        })
-        self.assertEqual(rsp['fields'], {
-            'extra_data': [
-                'Failed to patch JSON data: Cannot write to path "/b/__c" '
-                'for patch entry 0',
-            ],
-        })
+        self.assertEqual(
+            rsp,
+            {
+                'stat': 'fail',
+                'err': {
+                    'code': INVALID_FORM_DATA.code,
+                    'msg': INVALID_FORM_DATA.msg,
+                    'type': INVALID_FORM_DATA.error_type,
+                },
+                'fields': {
+                    'extra_data': [
+                        'Failed to patch JSON data: Cannot write to path '
+                        '"/b/__c" for patch entry 0',
+                    ],
+                },
+            })
 
         obj = self.resource.model.objects.get(pk=obj.pk)
         self.assertEqual(obj.extra_data, {
@@ -552,17 +562,22 @@ class ExtraDataItemMixin(object):
         finally:
             self.resource.extra_data_access_callbacks.unregister(_access_cb)
 
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err'], {
-            'code': INVALID_FORM_DATA.code,
-            'msg': 'One or more fields had errors',
-        })
-        self.assertEqual(rsp['fields'], {
-            'extra_data': [
-                'Failed to patch JSON data: Cannot write to path "/a" '
-                'for patch entry 1',
-            ],
-        })
+        self.assertEqual(
+            rsp,
+            {
+                'stat': 'fail',
+                'err': {
+                    'code': INVALID_FORM_DATA.code,
+                    'msg': INVALID_FORM_DATA.msg,
+                    'type': INVALID_FORM_DATA.error_type,
+                },
+                'fields': {
+                    'extra_data': [
+                        'Failed to patch JSON data: Cannot write to path "/a" '
+                        'for patch entry 1',
+                    ],
+                },
+            })
 
         obj = self.resource.model.objects.get(pk=obj.pk)
         self.assertEqual(obj.extra_data, {
@@ -618,17 +633,22 @@ class ExtraDataItemMixin(object):
         finally:
             self.resource.extra_data_access_callbacks.unregister(_access_cb)
 
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err'], {
-            'code': INVALID_FORM_DATA.code,
-            'msg': 'One or more fields had errors',
-        })
-        self.assertEqual(rsp['fields'], {
-            'extra_data': [
-                'Failed to patch JSON data: Cannot write to path "/a" '
-                'for patch entry 2',
-            ],
-        })
+        self.assertEqual(
+            rsp,
+            {
+                'stat': 'fail',
+                'err': {
+                    'code': INVALID_FORM_DATA.code,
+                    'msg': INVALID_FORM_DATA.msg,
+                    'type': INVALID_FORM_DATA.error_type,
+                },
+                'fields': {
+                    'extra_data': [
+                        'Failed to patch JSON data: Cannot write to path "/a" '
+                        'for patch entry 2',
+                    ],
+                },
+            })
 
         obj = self.resource.model.objects.get(pk=obj.pk)
         self.assertEqual(obj.extra_data, {
@@ -667,17 +687,22 @@ class ExtraDataItemMixin(object):
         with override_feature_checks(self.override_features):
             rsp = self.api_put(url, data, expected_status=400)
 
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err'], {
-            'code': INVALID_FORM_DATA.code,
-            'msg': 'One or more fields had errors',
-        })
-        self.assertEqual(rsp['fields'], {
-            'extra_data': [
-                'Failed to patch JSON data: Cannot write to path "" '
-                'for patch entry 0',
-            ],
-        })
+        self.assertEqual(
+            rsp,
+            {
+                'stat': 'fail',
+                'err': {
+                    'code': INVALID_FORM_DATA.code,
+                    'msg': INVALID_FORM_DATA.msg,
+                    'type': INVALID_FORM_DATA.error_type,
+                },
+                'fields': {
+                    'extra_data': [
+                        'Failed to patch JSON data: Cannot write to path "" '
+                        'for patch entry 0',
+                    ],
+                },
+            })
 
         obj = self.resource.model.objects.get(pk=obj.pk)
         self.assertEqual(obj.extra_data, {

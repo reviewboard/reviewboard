@@ -432,13 +432,6 @@ class WebAPIResourceReadOnlyTests(BaseWebAPITestCase):
 
         del urlpatterns[:]
 
-    def tearDown(self):
-        super(WebAPIResourceReadOnlyTests, self).tearDown()
-
-        defaults = self.siteconfig.get_defaults()
-        self.siteconfig.set('site_read_only', defaults.get('site_read_only'))
-        self.siteconfig.save()
-
     def _test_method(self, method, read_only_enabled, is_superuser,
                      expect_503):
         """Test a request.

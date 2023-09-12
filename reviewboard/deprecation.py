@@ -34,6 +34,17 @@ class RemovedInReviewBoard70Warning(BaseRemovedInReviewBoardVersionWarning):
     version = '7.0'
 
 
+class RemovedInReviewBoard80Warning(BaseRemovedInReviewBoardVersionWarning):
+    """Deprecations for features scheduled for removal in Review Board 8.0.
+
+    Note that this class will itself be removed in Review Board 8.0. If you
+    need to check against Review Board deprecation warnings, please see
+    :py:class:`BaseRemovedInReviewBoardVersionWarning`.
+    """
+
+    version = '8.0'
+
+
 #: An alias for the next release of Review Board where features will be
 #: removed.
 RemovedInNextReviewBoardVersionWarning = RemovedInReviewBoard70Warning

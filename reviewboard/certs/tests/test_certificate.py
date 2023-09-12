@@ -6,6 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
+import json
 import os
 import tempfile
 from datetime import datetime, timedelta
@@ -13,6 +14,7 @@ from datetime import datetime, timedelta
 import kgb
 from cryptography.x509.oid import NameOID
 from django.utils import timezone
+from djblets.util.serializers import DjbletsJSONEncoder
 
 from reviewboard.certs.cert import Certificate, CertificateFingerprints
 from reviewboard.certs.errors import (CertificateNotFoundError,
@@ -425,3 +427,57 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
             "fingerprints=<CertificateFingerprints("
             "sha1='F2:35:0F:BB:34:40:84:78:8B:20:1D:40:B1:4A:17:0C:DE:36:2F:"
             "D5', sha256=None)>)>")
+
+    def test_to_json(self) -> None:
+        """Testing Certificate.to_json"""
+        fingerprints = CertificateFingerprints(sha1=TEST_SHA1,
+                                               sha256=TEST_SHA256)
+
+        cert = Certificate(
+            hostname='example.com',
+            port=443,
+            subject='Subject',
+            issuer='Issuer',
+            fingerprints=CertificateFingerprints(sha1=TEST_SHA1,
+                                                 sha256=TEST_SHA256),
+            valid_from=datetime(2023, 7, 14, 7, 50, 30, tzinfo=timezone.utc),
+            valid_through=datetime(2024, 7, 13, 7, 50, 30,
+                                   tzinfo=timezone.utc))
+
+        json_data = cert.to_json()
+
+        self.assertEqual(
+            json_data,
+            {
+                'fingerprints': fingerprints,
+                'hostname': 'example.com',
+                'issuer': 'Issuer',
+                'port': 443,
+                'subject': 'Subject',
+                'valid_from': datetime(2023, 7, 14, 7, 50, 30,
+                                       tzinfo=timezone.utc),
+                'valid_through': datetime(2024, 7, 13, 7, 50, 30,
+                                          tzinfo=timezone.utc),
+            })
+
+        # Verify we used encodeable data.
+        self.assertJSONEqual(
+            json.dumps(json_data, cls=DjbletsJSONEncoder),
+            {
+                'fingerprints': {
+                    'sha1': (
+                        'F2:35:0F:BB:34:40:84:78:8B:20:1D:40:B1:4A:17:0C:DE:'
+                        '36:2F:D5'
+                    ),
+                    'sha256': (
+                        '79:19:70:AE:A6:1B:EB:BC:35:7C:B8:54:B1:6A:AD:79:FF:'
+                        'F7:28:69:02:5E:C3:6F:B3:C2:B4:FD:84:66:DF:8F'
+                    ),
+                },
+                'hostname': 'example.com',
+                'issuer': 'Issuer',
+                'port': 443,
+                'subject': 'Subject',
+                'valid_from': '2023-07-14T07:50:30Z',
+                'valid_through': '2024-07-13T07:50:30Z',
+            })

@@ -24,9 +24,9 @@ class CertificateFingerprintTests(CertificateTestCase):
         6.0
     """
 
-    def test_deserialize(self) -> None:
-        """Testing CertificateFingerprints.deserialize"""
-        fingerprints = CertificateFingerprints.deserialize({
+    def test_from_json(self) -> None:
+        """Testing CertificateFingerprints.from_json"""
+        fingerprints = CertificateFingerprints.from_json({
             'sha1': TEST_SHA1,
             'sha256': TEST_SHA256,
         })
@@ -34,16 +34,16 @@ class CertificateFingerprintTests(CertificateTestCase):
         self.assertEqual(fingerprints.sha1, TEST_SHA1)
         self.assertEqual(fingerprints.sha256, TEST_SHA256)
 
-    def test_deserialize_with_empty(self) -> None:
-        """Testing CertificateFingerprints.deserialize with empty data"""
-        fingerprints = CertificateFingerprints.deserialize({})
+    def test_from_json_with_empty(self) -> None:
+        """Testing CertificateFingerprints.from_json with empty data"""
+        fingerprints = CertificateFingerprints.from_json({})
 
         self.assertIsNone(fingerprints.sha1)
         self.assertIsNone(fingerprints.sha256)
 
-    def test_deserialize_with_bad_data(self) -> None:
-        """Testing CertificateFingerprints.deserialize with bad data"""
-        fingerprints = CertificateFingerprints.deserialize({
+    def test_from_json_with_bad_data(self) -> None:
+        """Testing CertificateFingerprints.from_json with bad data"""
+        fingerprints = CertificateFingerprints.from_json({
             'sha1': 1,
             'sha256': 2,
         })
@@ -59,23 +59,23 @@ class CertificateFingerprintTests(CertificateTestCase):
         self.assertEqual(fingerprints.sha1, TEST_SHA1)
         self.assertEqual(fingerprints.sha256, TEST_SHA256)
 
-    def test_serialize(self) -> None:
-        """Testing CertificateFingerprints.serialize"""
-        fingerprints = CertificateFingerprints.deserialize({
+    def test_to_json(self) -> None:
+        """Testing CertificateFingerprints.to_json"""
+        fingerprints = CertificateFingerprints.from_json({
             'sha1': TEST_SHA1,
             'sha256': TEST_SHA256,
         })
 
-        self.assertEqual(fingerprints.serialize(), {
+        self.assertEqual(fingerprints.to_json(), {
             'sha1': TEST_SHA1,
             'sha256': TEST_SHA256,
         })
 
-    def test_serialize_with_empty(self) -> None:
-        """Testing CertificateFingerprints.serialize with empty fingerprints"""
+    def test_to_json_with_empty(self) -> None:
+        """Testing CertificateFingerprints.to_json with empty fingerprints"""
         fingerprints = CertificateFingerprints()
 
-        self.assertEqual(fingerprints.serialize(), {})
+        self.assertEqual(fingerprints.to_json(), {})
 
     def test_is_empty_with_empty(self) -> None:
         """Testing CertificateFingerprints.is_empty with empty fingerprints"""
@@ -164,3 +164,28 @@ class CertificateFingerprintTests(CertificateTestCase):
 
         self.assertFalse(fingerprints1.matches(fingerprints2))
         self.assertFalse(fingerprints2.matches(fingerprints1))
+
+    def test_eq_with_equal(self) -> None:
+        """"Testing CertificateFingerprints.__eq__ with objects equal"""
+        fingerprints1 = CertificateFingerprints(sha1=TEST_SHA1,
+                                                sha256=TEST_SHA256)
+        fingerprints2 = CertificateFingerprints(sha1=TEST_SHA1,
+                                                sha256=TEST_SHA256)
+
+        self.assertEqual(fingerprints1, fingerprints2)
+
+    def test_eq_with_not_equal(self) -> None:
+        """"Testing CertificateFingerprints.__eq__ with objects not equal"""
+        fingerprints1 = CertificateFingerprints(sha1=TEST_SHA1,
+                                                sha256=TEST_SHA256)
+        fingerprints2 = CertificateFingerprints(sha1=TEST_SHA1)
+
+        self.assertNotEqual(fingerprints1, fingerprints2)
+
+    def test_eq_with_wrong_object(self) -> None:
+        """"Testing CertificateFingerprints.__eq__ with wrong object type"""
+        fingerprints1 = CertificateFingerprints(sha1=TEST_SHA1,
+                                                sha256=TEST_SHA256)
+
+        self.assertNotEqual(fingerprints1, 123)
+        self.assertNotEqual(fingerprints1, None)

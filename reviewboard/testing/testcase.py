@@ -1,8 +1,12 @@
+"""Base test case support for Review Board."""
+
+from __future__ import annotations
+
 import os
 import re
 import warnings
 from contextlib import contextmanager
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Callable, Optional
 from uuid import uuid4
 
@@ -21,6 +25,7 @@ from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
 from djblets.secrets.token_generators import token_generator_registry
 from djblets.testing.testcases import (FixturesCompilerMixin,
                                        TestCase as DjbletsTestCase)
+from djblets.util.symbols import UNSET, Unsettable
 from oauthlib.common import generate_token
 from oauth2_provider.models import AccessToken
 
@@ -30,6 +35,9 @@ from reviewboard.accounts.models import LocalSiteProfile, ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
+from reviewboard.certs.cert import (Certificate,
+                                    CertificateBundle,
+                                    CertificateFingerprints)
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.models import (DiffCommit, DiffSet, DiffSetHistory,
                                            FileDiff)
@@ -2406,6 +2414,216 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             user=user,
             **kwargs
         )
+
+    def create_certificate(
+        self,
+        *,
+        hostname: str = 'example.com',
+        port: int = 443,
+        subject: Unsettable[str] = 'Test Subject',
+        issuer: Unsettable[str] = 'Test Issuer',
+        valid_from: Unsettable[Optional[datetime]] = None,
+        valid_through: Unsettable[Optional[datetime]] = None,
+        fingerprints: Unsettable[Optional[CertificateFingerprints]] = None,
+        cert_data: Optional[bytes] = None,
+        key_data: Optional[bytes] = None,
+        **kwargs,
+    ) -> Certificate:
+        """Return a Certificate for testing.
+
+        This will be pre-populated with default signature data and values,
+        if not otherwise specified.
+
+        If ``cert_data`` is provided, then most arguments will be ignored
+        in favor of the values in the certificate.
+
+        Version Added:
+            6.0
+
+        Args:
+            hostname (str, optional):
+                The hostname that would serve the certificate.
+
+            port (int, optional):
+                The port on the host that would serve the certificate.
+
+            subject (str, optional):
+                The subject (usually the hostname) of the certificate.
+
+                This can be :py:data:`~djblets.util.symbols.UNSET` to force
+                loading from a ``cert_data`` (if provided).
+
+            issuer (str, optional):
+                The issuer of the certificate.
+
+                This can be :py:data:`~djblets.util.symbols.UNSET` to force
+                loading from a ``cert_data`` (if provided).
+
+            valid_from (datetime, optional):
+                The first date/time in which the certificate is valid.
+
+                This must have a timezone associated with it.
+
+                If not provided or ``None``, a default timestamp of
+                2023-07-14 7:50:30 UTC will be used.
+
+                This can be :py:data:`~djblets.util.symbols.UNSET` to force
+                loading from a ``cert_data`` (if provided).
+
+            valid_through (datetime, optional):
+                The last date/time in which the certificate is valid.
+
+                This must have a timezone associated with it.
+
+                If not provided or ``None``, a default timestamp of
+                3023-07-14 7:50:30 UTC will be used.
+
+                This can be :py:data:`~djblets.util.symbols.UNSET` to force
+                loading from a ``cert_data`` (if provided).
+
+            fingerprints (CertificateFingerprints, optional):
+                Fingerprints to set for the certificate.
+
+                If not provided or ``None``, default fingerprints will be
+                created using :py:meth:`create_certificate_fingerprints`.
+
+                This can be :py:data:`~djblets.util.symbols.UNSET` to force
+                loading from a ``cert_data`` (if provided).
+
+            cert_data (bytes, optional):
+                PEM-formatted certificate data to load.
+
+                If set, ``subject``, ``issuer``, ``valid_from``,
+                ``valid_through``, and ``fingerprints`` arguments will be
+                ignored.
+
+            key_data (bytes, optional):
+                PEM-formatted private key data to load.
+
+            **kwargs (dict):
+                Additional keyword arguments supported by the
+                :py:class:`~reviewboard.certs.cert.Certificate` constructor.
+
+        Returns:
+            reviewboard.certs.cert.Certificate:
+            The new certificate instance.
+        """
+        if cert_data is not None:
+            return Certificate(hostname=hostname,
+                               port=port,
+                               cert_data=cert_data,
+                               key_data=key_data,
+                               **kwargs)
+        else:
+            if fingerprints is None:
+                fingerprints = self.create_certificate_fingerprints()
+
+            if valid_from is None:
+                valid_from = datetime(2023, 7, 14, 7, 50, 30,
+                                      tzinfo=timezone.utc)
+
+            if valid_through is None:
+                valid_through = datetime(3023, 7, 14, 7, 50, 30,
+                                         tzinfo=timezone.utc)
+
+            return Certificate(hostname=hostname,
+                               port=port,
+                               subject=subject,
+                               issuer=issuer,
+                               fingerprints=fingerprints,
+                               valid_from=valid_from,
+                               valid_through=valid_through,
+                               key_data=key_data,
+                               **kwargs)
+
+    def create_certificate_bundle(
+        self,
+        *,
+        bundle_data: Optional[bytes] = None,
+        **kwargs,
+    ) -> CertificateBundle:
+        """Return a CertificateBundle for testing.
+
+        This will be pre-populated with default data, unless otherwise
+        specified.
+
+        Version Added:
+            6.0
+
+        Args:
+            bundle_data (bytes, optional):
+                Explicit bundle data to load.
+
+                If a value is not specified or is ``None``, a sample bundle
+                will be used.
+
+            **kwargs (dict, optional):
+                Additional keyword arguments supported by the
+                :py:class:`~reviewboard.certs.cert.CertificateBundle`
+                constructor.
+
+        Returns:
+            reviewboard.certs.cert.CertificateFingerprints:
+            The new fingerprints instance.
+        """
+        from reviewboard.certs.tests.testcases import TEST_CERT_BUNDLE_PEM
+
+        if bundle_data is None:
+            bundle_data = TEST_CERT_BUNDLE_PEM
+
+        return CertificateBundle(bundle_data=bundle_data,
+                                 **kwargs)
+
+    def create_certificate_fingerprints(
+        self,
+        *,
+        sha1: Unsettable[Optional[str]] = UNSET,
+        sha256: Unsettable[Optional[str]] = UNSET,
+        **kwargs,
+    ) -> CertificateFingerprints:
+        """Return a CertificateFingerprints for testing.
+
+        This will be pre-populated with default SHA1 and SHA256 signatures,
+        if custom signatures are not supplied.
+
+        Version Added:
+            6.0
+
+        Args:
+            sha1 (str, optional):
+                An explicit SHA1 fingerprint to set, or ``None`` to unset.
+
+                If a value is not specified,
+                :py:data:`reviewboard.certs.tests.testcases.TEST_SHA1` will be
+                set.
+
+            sha256 (str, optional):
+                An explicit SHA256 fingerprint to set, or ``None`` to unset.
+
+                If a value is not specified,
+                :py:data:`reviewboard.certs.tests.testcases.TEST_SHA256` will
+                be set.
+
+            **kwargs (dict, optional):
+                Additional keyword arguments supported by the
+                :py:class:`~reviewboard.certs.cert.CertificateFingerprints`
+                constructor.
+
+        Returns:
+            reviewboard.certs.cert.CertificateFingerprints:
+            The new fingerprints instance.
+        """
+        from reviewboard.certs.tests.testcases import TEST_SHA1, TEST_SHA256
+
+        if sha1 is UNSET:
+            sha1 = TEST_SHA1
+
+        if sha256 is UNSET:
+            sha256 = TEST_SHA256
+
+        return CertificateFingerprints(sha1=sha1,
+                                       sha256=sha256,
+                                       **kwargs)
 
     @contextmanager
     def siteconfig_settings(self, settings, reload_settings=True):

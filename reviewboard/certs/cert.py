@@ -31,7 +31,9 @@ from reviewboard.certs.errors import (CertificateNotFoundError,
                                       InvalidCertificateFormatError)
 
 if TYPE_CHECKING:
-    from djblets.util.typing import JSONDict
+    from djblets.util.typing import (JSONDict,
+                                     SerializableJSONDict,
+                                     SerializableJSONDictImmutable)
 
 
 logger = logging.getLogger(__name__)
@@ -106,7 +108,7 @@ class CertificateFingerprints:
     sha256: Optional[str] = None
 
     @classmethod
-    def deserialize(
+    def from_json(
         cls,
         data: JSONDict,
     ) -> Self:
@@ -184,7 +186,7 @@ class CertificateFingerprints:
         self.sha1 = sha1
         self.sha256 = sha256
 
-    def serialize(self) -> JSONDict:
+    def to_json(self) -> SerializableJSONDictImmutable:
         """Serialize the fingerprints to a JSON payload.
 
         Returns:
@@ -203,7 +205,7 @@ class CertificateFingerprints:
             These keys will only be present if there are fingerprints
             available.
         """
-        data: JSONDict = {}
+        data: SerializableJSONDict = {}
 
         if self.sha1:
             data['sha1'] = self.sha1
@@ -257,6 +259,30 @@ class CertificateFingerprints:
         sha256_match = not has_sha256 or self.sha256 == other.sha256
 
         return sha1_match and sha256_match
+
+    def __eq__(
+        self,
+        other: object,
+    ) -> bool:
+        """Return whether this object is equal to another.
+
+        Two objects are equal if they're both
+        :py:class:`CertificateFingerprints` instances and contain the same
+        signatures.
+
+        Args:
+            other (object):
+                The object to compare this to.
+
+        Returns:
+            bool:
+            ``True`` if they are equal. ``False`` if they are not.
+        """
+        return (
+            isinstance(other, CertificateFingerprints) and
+            self.sha1 == other.sha1 and
+            self.sha256 == other.sha256
+        )
 
     def __repr__(self) -> str:
         """Return a string representation of the instance.
@@ -492,7 +518,7 @@ class Certificate:
             hostname (str):
                 The hostname that would serve this certificate.
 
-            port (str):
+            port (int):
                 The port on the host that would serve this certificate.
 
             cert_data (bytes):
@@ -696,6 +722,54 @@ class Certificate:
             bool
         """
         return '*' in self.hostname
+
+    def to_json(self) -> SerializableJSONDictImmutable:
+        """Serialize the certificate to data ready to be serialized to JSON.
+
+        Returns:
+            dict:
+            The resulting JSON payload, containing:
+
+            Keys:
+                fingerprints (dict):
+                    A dictionary of fingerprints for the certificate, or
+                    ``None`` if not available.
+
+                hostname (str):
+                    The hostname serving the certificate.
+
+                issuer (str):
+                    The issuer of the certificate, or ``None`` if not
+                    available.
+
+                port (int):
+                    The port on the host serving the certificate.
+
+                subject (str):
+                    The subject of the certificate, or ``None`` if not
+                    available.
+
+                valid_from (str):
+                    The first date/time in which the certificate is valid, or
+                    ``None`` if not available.
+
+                    This will be in :term:`ISO8601 format`.
+
+                valid_through (str):
+                    The last date/time in which the certificate is valid, or
+                    ``None`` if not available.
+
+                    This will be in :term:`ISO8601 format`.
+        """
+        return {
+            'fingerprints': self.fingerprints,
+            'hostname': self.hostname,
+            'issuer': self.issuer,
+            'port': self.port,
+            'subject': self.subject,
+            'valid_from': self.valid_from,
+            'valid_through': self.valid_through,
+        }
 
     def write_cert_file(
         self,

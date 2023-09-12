@@ -417,7 +417,7 @@ setup(
         'elasticsearch7': ['elasticsearch~=7.0'],
         'ldap': ['python-ldap>=3.3.1'],
         'mercurial': ['mercurial'],
-        'mysql': ['mysqlclient>=1.4'],
+        'mysql': ['mysqlclient>=1.4,<=2.1.999'],
         'p4': ['p4python'],
         'postgres': ['psycopg2-binary'],
         's3': ['django-storages>=1.8,<1.9'],

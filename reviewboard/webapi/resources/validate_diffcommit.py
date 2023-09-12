@@ -11,6 +11,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_ATTRIBUTE,
                                    PERMISSION_DENIED)
 from djblets.webapi.fields import FileFieldType, StringFieldType
 
+from reviewboard.certs.errors import CertificateVerificationError
 from reviewboard.diffviewer.commit_utils import (serialize_validation_info,
                                                  update_validation_info)
 from reviewboard.diffviewer.errors import (DiffParserError,
@@ -24,9 +25,12 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_local_site,
                                            webapi_check_login_required)
-from reviewboard.webapi.errors import (DIFF_EMPTY, DIFF_PARSE_ERROR,
-                                       DIFF_TOO_BIG, INVALID_REPOSITORY,
-                                       REPO_FILE_NOT_FOUND)
+from reviewboard.webapi.errors import (DIFF_EMPTY,
+                                       DIFF_PARSE_ERROR,
+                                       DIFF_TOO_BIG,
+                                       INVALID_REPOSITORY,
+                                       REPO_FILE_NOT_FOUND,
+                                       UNVERIFIED_HOST_CERT)
 
 
 logger = logging.getLogger(__name__)
@@ -84,7 +88,8 @@ class ValidateDiffCommitResource(WebAPIResource):
         INVALID_REPOSITORY,
         NOT_LOGGED_IN,
         REPO_FILE_NOT_FOUND,
-        PERMISSION_DENIED
+        PERMISSION_DENIED,
+        UNVERIFIED_HOST_CERT,
     )
     @webapi_request_fields(
         required={
@@ -217,6 +222,10 @@ class ValidateDiffCommitResource(WebAPIResource):
                 'reason': str(e),
                 'file': e.path,
                 'revision': str(e.revision),
+            }
+        except CertificateVerificationError as e:
+            return UNVERIFIED_HOST_CERT.with_message(str(e)), {
+                'certificate': e.certificate,
             }
         except SCMError as e:
             return DIFF_PARSE_ERROR.with_message(str(e))

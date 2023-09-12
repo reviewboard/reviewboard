@@ -11,7 +11,7 @@
 {% end_review_request_field %}
  <p>
 {%  blocktrans with review_request.display_id as review_request_id and review_request.get_absolute_url as review_request_url %}
-  Review Request <a href="{{review_request_url}}">#{{review_request_id}}</a>
+  Review Request #<a href="{{review_request_url}}">{{review_request_id}}</a>
   &mdash;
   {{review_request_status_html}}
 {%  endblocktrans %}

@@ -8,6 +8,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
 from djblets.webapi.fields import FileFieldType, StringFieldType
 
+from reviewboard.certs.errors import CertificateVerificationError
 from reviewboard.diffviewer.errors import (DiffParserError,
                                            DiffTooBigError,
                                            EmptyDiffError)
@@ -22,7 +23,8 @@ from reviewboard.webapi.errors import (DIFF_EMPTY,
                                        DIFF_PARSE_ERROR,
                                        DIFF_TOO_BIG,
                                        INVALID_REPOSITORY,
-                                       REPO_FILE_NOT_FOUND)
+                                       REPO_FILE_NOT_FOUND,
+                                       UNVERIFIED_HOST_CERT)
 from reviewboard.webapi.resources.diff import DiffResource
 
 
@@ -58,10 +60,18 @@ class ValidateDiffResource(DiffResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
-                            REPO_FILE_NOT_FOUND, INVALID_FORM_DATA,
-                            INVALID_REPOSITORY, DIFF_EMPTY, DIFF_TOO_BIG,
-                            DIFF_PARSE_ERROR)
+    @webapi_response_errors(
+        DIFF_EMPTY,
+        DIFF_PARSE_ERROR,
+        DIFF_TOO_BIG,
+        DOES_NOT_EXIST,
+        INVALID_FORM_DATA,
+        INVALID_REPOSITORY,
+        NOT_LOGGED_IN,
+        PERMISSION_DENIED,
+        REPO_FILE_NOT_FOUND,
+        UNVERIFIED_HOST_CERT,
+    )
     @webapi_request_fields(
         required={
             'repository': {
@@ -185,6 +195,10 @@ class ValidateDiffResource(DiffResource):
                 'reason': str(e),
                 'file': e.path,
                 'revision': str(e.revision),
+            }
+        except CertificateVerificationError as e:
+            return UNVERIFIED_HOST_CERT.with_message(str(e)), {
+                'certificate': e.certificate,
             }
         except SCMError as e:
             return DIFF_PARSE_ERROR.with_message(str(e))
