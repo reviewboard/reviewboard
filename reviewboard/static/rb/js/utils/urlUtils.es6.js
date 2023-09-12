@@ -62,3 +62,16 @@ RB.navigateTo = function(url, options={}) {
         window.location = url;
     }
 };
+
+
+/**
+ * Reload the page.
+ *
+ * This wrapper exists so the operation can be spied on in unit tests.
+ *
+ * Version Added:
+ *     6.0
+ */
+RB.reload = function() {
+    window.location.reload();
+};
