@@ -2,7 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path, re_path
 from django.views.generic import TemplateView
-from djblets.util.views import cached_javascript_catalog
+from djblets.util.views import HealthCheckView, cached_javascript_catalog
 from pipeline import views as pipeline_views
 
 from reviewboard.accounts import views as accounts_views
@@ -59,6 +59,9 @@ urlpatterns = [
     path('read-only/',
          TemplateView.as_view(template_name='read_only.html'),
          name='read-only'),
+    path('_health/',
+         HealthCheckView.as_view(),
+         name='health-check'),
 ]
 
 
