@@ -36,6 +36,13 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         return (get_review_list_url(review_request),
                 review_list_mimetype)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user,
+            publish=True)
+
+        return get_review_list_url(review_request)
+
     def compare_item(self, item_rsp, review):
         self.assertEqual(item_rsp['id'], review.pk)
         self.assertEqual(item_rsp['ship_it'], review.ship_it)
@@ -144,6 +151,14 @@ class ResourceItemTests(SpyAgency, ReviewItemMixin,
 
         return (get_review_item_url(review_request, review.pk),
                 review_item_mimetype)
+
+    def setup_http_not_allowed_list_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user,
+            publish=True)
+        review = self.create_review(review_request, user=user)
+
+        return get_review_item_url(review_request, review.pk)
 
     def compare_item(self, item_rsp, review):
         self.assertEqual(item_rsp['id'], review.pk)

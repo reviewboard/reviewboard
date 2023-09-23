@@ -47,6 +47,11 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertEqual(item_rsp['name'], group.name)
         self.assertEqual(item_rsp['display_name'], group.display_name)
 
+    def setup_http_not_allowed_item_test(self, user):
+        repository = self.create_repository()
+
+        return get_repository_group_list_url(repository)
+
     #
     # HTTP GET tests
     #
@@ -264,7 +269,27 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             The URL to fetch for the test.
         """
         repository = self.create_repository()
-        return get_repository_group_list_url(repository)
+        group = self.create_review_group(invite_only=True)
+        repository.review_groups.add(group)
+
+        return get_repository_group_item_url(repository, group.name)
+
+    def setup_http_not_allowed_list_test(self, user):
+        """Set up the HTTP not allowed test.
+
+        Args:
+            user (django.contrib.auth.models.User, unused):
+                The user to set up the test for.
+
+        Returns:
+            str:
+            The URL to fetch for the test.
+        """
+        repository = self.create_repository()
+        group = self.create_review_group(invite_only=True)
+        repository.review_groups.add(group)
+
+        return get_repository_group_item_url(repository, group.name)
 
     def compare_item(self, item_rsp, group):
         """Compare an item in the results.

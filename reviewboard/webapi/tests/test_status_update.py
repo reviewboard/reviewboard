@@ -33,6 +33,13 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         return (get_status_update_list_url(review_request),
                 status_update_list_mimetype)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user,
+            publish=True)
+
+        return get_status_update_list_url(review_request)
+
     def compare_item(self, item_rsp, status_update):
         self.assertEqual(item_rsp['id'], status_update.pk)
         self.assertEqual(item_rsp['summary'], status_update.summary)
@@ -226,6 +233,14 @@ class ResourceItemTests(SpyAgency, ReviewRequestChildItemMixin,
 
         return (get_status_update_item_url(review_request, status_update.pk),
                 status_update_item_mimetype)
+
+    def setup_http_not_allowed_list_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user,
+            publish=True)
+        status_update = self.create_status_update(review_request, user=user)
+
+        return get_status_update_item_url(review_request, status_update.pk)
 
     def compare_item(self, item_rsp, status_update):
         self.assertEqual(item_rsp['id'], status_update.pk)

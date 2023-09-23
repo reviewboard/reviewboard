@@ -30,6 +30,14 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertEqual(item_rsp['source_file'], filediff.source_file)
         self.assertEqual(item_rsp['extra_data'], filediff.extra_data)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(
+            create_repository=True,
+            submitter=user)
+        diffset = self.create_diffset(review_request, draft=True)
+
+        return get_draft_filediff_list_url(diffset, review_request)
+
     def setup_http_not_allowed_list_test(self, user):
         review_request = self.create_review_request(
             create_repository=True,

@@ -22,6 +22,13 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
         return (get_screenshot_list_url(review_request),
                 screenshot_list_mimetype)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user,
+            publish=True)
+
+        return get_screenshot_list_url(review_request)
+
     def compare_item(self, item_rsp, comment):
         self.assertEqual(item_rsp['id'], comment.pk)
         self.assertEqual(item_rsp['caption'], comment.caption)
@@ -119,6 +126,14 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase,
 
         return (get_screenshot_item_url(screenshot),
                 screenshot_item_mimetype)
+
+    def setup_http_not_allowed_list_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user,
+            publish=True)
+        screenshot = self.create_screenshot(review_request)
+
+        return get_screenshot_item_url(screenshot)
 
     def compare_item(self, item_rsp, comment):
         self.assertEqual(item_rsp['id'], comment.pk)

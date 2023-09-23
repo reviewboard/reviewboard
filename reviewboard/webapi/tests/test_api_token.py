@@ -72,6 +72,9 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
 
     compare_item = _compare_item
 
+    def setup_http_not_allowed_item_test(self, user):
+        return get_api_token_list_url(user)
+
     #
     # HTTP GET tests
     #
@@ -274,6 +277,11 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
     test_oauth_token_access = False
 
     compare_item = _compare_item
+
+    def setup_http_not_allowed_list_test(self, user):
+        token = self.create_webapi_token(user)
+
+        return get_api_token_item_url(token)
 
     #
     # HTTP DELETE tests

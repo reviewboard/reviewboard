@@ -38,6 +38,13 @@ class ResourceListTests(ReviewRequestChildListMixin,
         return (get_file_attachment_list_url(review_request),
                 file_attachment_list_mimetype)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user,
+            publish=True)
+
+        return get_file_attachment_list_url(review_request)
+
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['extra_data'], attachment.extra_data)
@@ -236,6 +243,13 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         self.assertEqual(item_rsp['revision'], attachment.attachment_revision)
         self.assertEqual(item_rsp['absolute_url'],
                          attachment.get_absolute_url())
+
+    def setup_http_not_allowed_list_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user)
+        file_attachment = self.create_file_attachment(review_request)
+
+        return get_file_attachment_item_url(file_attachment)
 
     #
     # HTTP DELETE tests

@@ -19,6 +19,13 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
         return (get_screenshot_comment_list_url(screenshot),
                 screenshot_comment_list_mimetype)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(submitter=user,
+                                                    publish=True)
+        screenshot = self.create_screenshot(review_request)
+
+        return get_screenshot_comment_list_url(screenshot)
+
     def setup_http_not_allowed_list_test(self, user):
         review_request = self.create_review_request(submitter=user,
                                                     publish=True)

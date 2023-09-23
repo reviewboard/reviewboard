@@ -26,6 +26,9 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
 
     compare_item = _compare_item
 
+    def setup_http_not_allowed_item_test(self, user):
+        return get_hosting_service_account_list_url()
+
     def setup_http_not_allowed_list_test(self, user):
         return get_hosting_service_account_list_url()
 
@@ -123,6 +126,13 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     compare_item = _compare_item
 
     def setup_http_not_allowed_item_test(self, user):
+        account = HostingServiceAccount.objects.create(
+            service_name='googlecode',
+            username='bob')
+
+        return get_hosting_service_account_item_url(account.pk)
+
+    def setup_http_not_allowed_list_test(self, user):
         account = HostingServiceAccount.objects.create(
             service_name='googlecode',
             username='bob')

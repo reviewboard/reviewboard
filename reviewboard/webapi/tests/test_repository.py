@@ -125,6 +125,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
 
     compare_item = BaseRepositoryTests.compare_item
 
+    def setup_http_not_allowed_item_test(self, user):
+        return get_repository_list_url()
+
     #
     # HTTP GET tests
     #

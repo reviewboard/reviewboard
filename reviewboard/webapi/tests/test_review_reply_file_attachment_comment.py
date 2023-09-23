@@ -34,6 +34,17 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
         return (get_review_reply_file_attachment_comment_list_url(reply),
                 review_reply_file_attachment_comment_list_mimetype)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user,
+            publish=True)
+        file_attachment = self.create_file_attachment(review_request)
+        review = self.create_review(review_request, user=user)
+        comment = self.create_file_attachment_comment(review, file_attachment)
+        reply = self.create_reply(review, user=user)
+
+        return get_review_reply_file_attachment_comment_list_url(reply)
+
     def compare_item(self, item_rsp, comment):
         self.assertEqual(item_rsp['id'], comment.pk)
         self.assertEqual(item_rsp['text'], comment.text)
@@ -189,6 +200,20 @@ class ResourceItemTests(CommentReplyItemMixin, ReviewRequestChildItemMixin,
             get_review_reply_file_attachment_comment_item_url(
                 reply, reply_comment.pk),
             review_reply_file_attachment_comment_item_mimetype)
+
+    def setup_http_not_allowed_list_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user,
+            publish=True)
+        file_attachment = self.create_file_attachment(review_request)
+        review = self.create_review(review_request, user=user, publish=True)
+        comment = self.create_file_attachment_comment(review, file_attachment)
+        reply = self.create_reply(review, user=user)
+        reply_comment = self.create_file_attachment_comment(
+            reply, file_attachment, reply_to=comment)
+
+        return get_review_reply_file_attachment_comment_item_url(
+            reply, reply_comment.pk)
 
     def compare_item(self, item_rsp, comment):
         self.assertEqual(item_rsp['id'], comment.pk)

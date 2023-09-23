@@ -20,6 +20,13 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertEqual(item_rsp['id'], screenshot.pk)
         self.assertEqual(item_rsp['caption'], screenshot.caption)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user,
+            publish=True)
+
+        return get_screenshot_draft_list_url(review_request)
+
     #
     # HTTP GET tests
     #
@@ -101,6 +108,14 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/draft/screenshots/<id>/'
     resource = resources.draft_screenshot
+
+    def setup_http_not_allowed_list_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user,
+            publish=True)
+        screenshot = self.create_screenshot(review_request, draft=True)
+
+        return get_screenshot_draft_item_url(review_request, screenshot.pk)
 
     def compare_item(self, item_rsp, screenshot):
         self.assertEqual(item_rsp['id'], screenshot.pk)

@@ -31,6 +31,12 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['filename'], attachment.filename)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user)
+
+        return get_draft_file_attachment_list_url(review_request)
+
     #
     # HTTP GET tests
     #
@@ -160,6 +166,15 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['filename'], attachment.filename)
+
+    def setup_http_not_allowed_list_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user)
+        file_attachment = self.create_file_attachment(review_request,
+                                                      draft=True)
+
+        return get_draft_file_attachment_item_url(review_request,
+                                                  file_attachment.pk)
 
     #
     # HTTP DELETE tests

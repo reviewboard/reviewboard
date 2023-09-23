@@ -40,6 +40,9 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
         self.assertEqual(item_rsp['absolute_url'],
                          self.base_url + group.get_absolute_url())
 
+    def setup_http_not_allowed_item_test(self, user):
+        return get_review_group_list_url()
+
     #
     # HTTP GET tests
     #
@@ -532,6 +535,11 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
         self.assertEqual(item_rsp['visible'], group.visible)
         self.assertEqual(item_rsp['invite_only'], group.invite_only)
         self.assertEqual(item_rsp['extra_data'], group.extra_data)
+
+    def setup_http_not_allowed_list_test(self, user):
+        group = self.create_review_group()
+
+        return get_review_group_item_url(group.name)
 
     #
     # HTTP DELETE tests

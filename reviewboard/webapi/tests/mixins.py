@@ -114,8 +114,9 @@ class BasicTestsMetaclass(type):
 
             bases = mixins + bases
 
-        if 'POST' in test_http_methods and (is_list or is_singleton):
-            if 'POST' not in resource.allowed_methods:
+        if 'POST' in test_http_methods:
+            if (not (is_list or is_singleton) or
+                'POST' not in resource.allowed_methods):
                 mixins = (BasicPostNotAllowedTestsMixin,)
             elif test_local_sites:
                 mixins = (BasicPostTestsWithLocalSiteMixin,)
@@ -132,8 +133,8 @@ class BasicTestsMetaclass(type):
 
             bases = mixins + bases
 
-        if 'PUT' in test_http_methods and not is_list:
-            if 'PUT' not in resource.allowed_methods:
+        if 'PUT' in test_http_methods:
+            if is_list or 'PUT' not in resource.allowed_methods:
                 mixins = (BasicPutNotAllowedTestsMixin,)
             elif test_local_sites:
                 mixins = (BasicPutTestsWithLocalSiteMixin,)

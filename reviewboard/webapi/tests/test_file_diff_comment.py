@@ -27,6 +27,15 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
         return (get_filediff_comment_list_url(filediff),
                 filediff_comment_list_mimetype)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=user,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+
+        return get_filediff_comment_list_url(filediff)
+
     def setup_http_not_allowed_list_test(self, user):
         review_request = self.create_review_request(create_repository=True,
                                                     submitter=user,

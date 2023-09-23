@@ -48,6 +48,12 @@ class ResourceListTests(SpyAgency, BaseWebAPITestCase,
 
     compare_item = _compare_item
 
+    def setup_http_not_allowed_item_test(self, user):
+        account = HostingServiceAccount.objects.create(service_name='github',
+                                                       username='bob')
+
+        return get_remote_repository_list_url(account)
+
     def setup_http_not_allowed_list_test(self, user):
         account = HostingServiceAccount.objects.create(service_name='github',
                                                        username='bob')
@@ -111,6 +117,20 @@ class ResourceItemTests(SpyAgency, BaseWebAPITestCase,
     compare_item = _compare_item
 
     def setup_http_not_allowed_item_test(self, user):
+        account = HostingServiceAccount.objects.create(service_name='github',
+                                                       username='bob')
+
+        remote_repository = RemoteRepository(
+            account.service,
+            repository_id='123',
+            name='repo1',
+            owner='bob',
+            scm_type='Git',
+            path='ssh://example.com/repo1')
+
+        return get_remote_repository_item_url(remote_repository)
+
+    def setup_http_not_allowed_list_test(self, user):
         account = HostingServiceAccount.objects.create(service_name='github',
                                                        username='bob')
 

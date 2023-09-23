@@ -170,6 +170,14 @@ class ResourceListTests(SpyAgency, CommentListMixin,
         return (get_review_diff_comment_list_url(review),
                 review_diff_comment_list_mimetype)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(
+            create_repository=True,
+            submitter=user,
+            publish=True)
+        review = self.create_review(review_request, publish=True)
+
+        return get_review_diff_comment_list_url(review)
     #
     # HTTP GET tests
     #
@@ -922,6 +930,18 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
 
         return (get_review_diff_comment_item_url(review, comment.pk),
                 review_diff_comment_item_mimetype)
+
+    def setup_http_not_allowed_list_test(self, user):
+        review_request = self.create_review_request(
+            create_repository=True,
+            submitter=user,
+            publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+        review = self.create_review(review_request, user=user)
+        comment = self.create_diff_comment(review, filediff)
+
+        return get_review_diff_comment_item_url(review, comment.pk)
 
     #
     # HTTP DELETE tests
