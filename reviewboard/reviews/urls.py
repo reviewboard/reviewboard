@@ -1,3 +1,6 @@
+"""URLs for the reviews app."""
+
+from django.conf import settings
 from django.urls import include, path, re_path
 
 from reviewboard.reviews import views
@@ -108,35 +111,39 @@ review_request_urls = [
     # Bugs
     re_path(r'^bugs/(?P<bug_id>[\w\.-]+)/', include(bugs_urls)),
 
-    # E-mail previews
-    re_path(r'^preview-email/(?P<message_format>text|html)/$',
-            views.PreviewReviewRequestEmailView.as_view(),
-            name='preview-review-request-email'),
-
-    re_path(r'^changes/(?P<changedesc_id>\d+)/preview-email/'
-            r'(?P<message_format>text|html)/$',
-            views.PreviewReviewRequestEmailView.as_view(),
-            name='preview-review-request-email'),
-
-    re_path(r'^batch-email/(?P<message_format>text|html)/',
-            views.PreviewBatchEmailView.as_view(),
-            name='preview-batch-email'),
-
-    re_path(r'^reviews/(?P<review_id>\d+)/preview-email/'
-            r'(?P<message_format>text|html)/$',
-            views.PreviewReviewEmailView.as_view(),
-            name='preview-review-email'),
-
-    re_path(r'^reviews/(?P<review_id>\d+)/replies/(?P<reply_id>\d+)/'
-            r'preview-email/(?P<message_format>text|html)/$',
-            views.PreviewReplyEmailView.as_view(),
-            name='preview-review-reply-email'),
-
     # Review Request infobox
     path('infobox/',
          views.ReviewRequestInfoboxView.as_view(),
          name='review-request-infobox'),
 ]
+
+
+if settings.DEBUG and not settings.PRODUCTION:
+    review_request_urls += [
+        # E-mail previews
+        re_path(r'^preview-email/(?P<message_format>text|html)/$',
+                views.PreviewReviewRequestEmailView.as_view(),
+                name='preview-review-request-email'),
+
+        re_path(r'^changes/(?P<changedesc_id>\d+)/preview-email/'
+                r'(?P<message_format>text|html)/$',
+                views.PreviewReviewRequestEmailView.as_view(),
+                name='preview-review-request-email'),
+
+        re_path(r'^batch-email/(?P<message_format>text|html)/',
+                views.PreviewBatchEmailView.as_view(),
+                name='preview-batch-email'),
+
+        re_path(r'^reviews/(?P<review_id>\d+)/preview-email/'
+                r'(?P<message_format>text|html)/$',
+                views.PreviewReviewEmailView.as_view(),
+                name='preview-review-email'),
+
+        re_path(r'^reviews/(?P<review_id>\d+)/replies/(?P<reply_id>\d+)/'
+                r'preview-email/(?P<message_format>text|html)/$',
+                views.PreviewReplyEmailView.as_view(),
+                name='preview-review-reply-email'),
+    ]
 
 
 urlpatterns = [

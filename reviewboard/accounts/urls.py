@@ -1,3 +1,5 @@
+"""URLs for the accounts app."""
+
 from django.conf import settings
 from django.urls import include, path, re_path
 from django.contrib.auth import views as auth_views
@@ -25,10 +27,6 @@ urlpatterns = [
     path('preferences/',
          accounts_views.MyAccountView.as_view(),
          name='user-preferences'),
-    re_path(r'^preferences/preview-email/password-changed/'
-            r'(?P<message_format>text|html)/$',
-            accounts_views.preview_password_changed_email,
-            name='preview-password-change-email'),
     path('register/',
          accounts_views.account_register,
          kwargs={
@@ -58,9 +56,6 @@ urlpatterns = [
     re_path(r'^preferences/oauth2-application/(?:(?P<app_id>[0-9]+)/)?$',
             accounts_views.edit_oauth_app,
             name='edit-oauth-app'),
-    path('preferences/preview-email/password-changed/',
-         accounts_views.preview_password_changed_email,
-         name='preview-password-change-email'),
     path('sso/', include(([sso_dynamic_urls], 'accounts'), namespace='sso')),
     path('client-login/',
          accounts_views.ClientLoginView.as_view(),
@@ -69,3 +64,15 @@ urlpatterns = [
          accounts_views.ClientLoginConfirmationView.as_view(),
          name='client-login-confirm'),
 ]
+
+
+if settings.DEBUG and not settings.PRODUCTION:
+    urlpatterns += [
+        re_path(r'^preferences/preview-email/password-changed/'
+                r'(?P<message_format>text|html)/$',
+                accounts_views.preview_password_changed_email,
+                name='preview-password-change-email'),
+        path('preferences/preview-email/password-changed/',
+             accounts_views.preview_password_changed_email,
+             name='preview-password-change-email'),
+    ]
