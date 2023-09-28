@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import logging
 import uuid
 from itertools import chain
+from typing import Any, Dict
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -1195,7 +1198,11 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
 
         return mark_safe(''.join(items))
 
-    def get_attachment_js_model_attrs(self, attachment, draft=False):
+    def get_attachment_js_model_attrs(
+        self,
+        attachment: FileAttachment,
+        draft: bool = False,
+    ) -> Dict[str, Any]:
         """Return attributes for the RB.FileAttachment JavaScript model.
 
         This will determine the right attributes to pass to an instance
@@ -1221,6 +1228,7 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
             'filename': attachment.filename,
             'id': attachment.pk,
             'loaded': True,
+            'publishedCaption': attachment.caption,
             'revision': attachment.attachment_revision,
             'state': self.review_request_details.get_file_attachment_state(
                 attachment).value,

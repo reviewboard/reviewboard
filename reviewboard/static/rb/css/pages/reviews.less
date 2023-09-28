@@ -1671,6 +1671,15 @@
 /****************************************************************************
  * Uploaded files
  ****************************************************************************/
+
+/**
+ * A container for a file attachment.
+ *
+ * Structure:
+ *     <div class="file-container">
+ *      <div class="file">...</div>
+ *     </div>
+ */
 .file-container {
   float: left;
 
@@ -1686,6 +1695,17 @@
     display: block;
   }
 
+  /**
+   * A file attachment.
+   *
+   * Structure:
+   *     <div class="file">...</div>
+   *      <div class="file-actions-container">...</div>
+   *      <div class="file-state-container">...</div>
+   *      <div class="file-thumbnail-container">...</div>
+   *      <div class="file-caption-container">...</div>
+   *     </div>
+   */
   .file {
     @file-attachment-bg: white;
     @file-attachment-overlay-bg: #FCFCFC;
@@ -1940,6 +1960,22 @@
         bottom: 6px;
       }
     }
+  }
+
+  /**
+   * A container for the file attachment state label.
+   *
+   * Structure:
+   *     <div class="file-state-container">
+   *      <div class="rb-c-field-state-label">...</div>
+   *     </div>
+   */
+    .file-state-container {
+      cursor: default;
+      padding: 0.5em;
+      position: absolute;
+      right: 0;
+      z-index: @z-index-subevent-overlay;
   }
 }
 

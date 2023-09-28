@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple
 
 from django.conf import settings
 from django.http import HttpRequest
@@ -18,7 +18,11 @@ from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.reviews.context import make_review_request_context
 from reviewboard.reviews.detail import ReviewRequestPageData, entry_registry
 from reviewboard.reviews.markdown_utils import is_rich_text_default_for_user
+from reviewboard.reviews.models.review_request import FileAttachmentState
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
+
+if TYPE_CHECKING:
+    from reviewboard.attachments.models import FileAttachment
 
 
 logger = logging.getLogger(__name__)
@@ -236,24 +240,44 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
 
         data.query_data_post_etag()
         entries = data.get_entries()
+        review_request_details = data.review_request_details
 
         review = review_request.get_pending_review(request.user)
         close_info = review_request.get_close_info()
         review_request_status_html = self.get_review_request_status_html(
-            review_request_details=data.review_request_details,
+            review_request_details=review_request_details,
             close_info=close_info)
 
         file_attachments = \
             get_latest_file_attachments(data.active_file_attachments)
+        all_file_attachments: List[FileAttachment] = data.all_file_attachments
+        attachments_length_before = len(file_attachments)
+
+        # Add the file attachments that are pending deletion so that
+        # we can display them.
+        file_attachments.extend(get_latest_file_attachments([
+            attachment
+            for attachment in all_file_attachments
+            if (review_request_details.get_file_attachment_state(attachment) ==
+                FileAttachmentState.PENDING_DELETION)
+        ]))
+
+        if attachments_length_before != len(file_attachments):
+            # Pending deletion file attachments were added, sort the list so
+            # that all attachments appear in the right order.
+            file_attachments.sort(
+                key=lambda file: file.attachment_history.display_position)
+
         social_page_image_url = self.get_social_page_image_url(
             file_attachments)
 
         context = super().get_context_data(**kwargs)
         context.update(make_review_request_context(request, review_request))
         context.update({
+            'all_file_attachments': all_file_attachments,
             'blocks': self.blocks,
             'draft': data.draft,
-            'review_request_details': data.review_request_details,
+            'review_request_details': review_request_details,
             'review_request_visit': self.visited,
             'review_request_status_html': review_request_status_html,
             'entries': entries,
@@ -267,7 +291,6 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
             'issue_counts': data.issue_counts,
             'issues': data.issues,
             'file_attachments': file_attachments,
-            'all_file_attachments': data.all_file_attachments,
             'screenshots': data.active_screenshots,
             'social_page_image_url': social_page_image_url,
             'social_page_title': (

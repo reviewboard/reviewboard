@@ -4,8 +4,15 @@
 
 import { BaseView, spina } from '@beanbag/spina';
 
-import { FileAttachment } from 'reviewboard/common';
-import { InlineEditorView } from 'reviewboard/ui';
+import {
+    FileAttachment,
+    FileAttachmentStates,
+} from 'reviewboard/common';
+import {
+    FieldStateLabelThemes,
+    FieldStateLabelView,
+    InlineEditorView,
+} from 'reviewboard/ui';
 
 import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 import { CommentDialogView } from './commentDialogView';
@@ -76,6 +83,7 @@ interface FileAttachmentThumbnailViewOptions {
 @spina({
     prototypeAttrs: [
         'actionsTemplate',
+        'states',
         'template',
         'thumbnailContainerTemplate',
     ],
@@ -90,6 +98,7 @@ export class FileAttachmentThumbnailView extends BaseView<
     static events = {
         'click .file-add-comment a': '_onAddCommentClicked',
         'click .file-delete': '_onDeleteClicked',
+        'click .file-undo-delete': '_onUndoDeleteClicked',
         'click .file-update a': '_onUpdateClicked',
     };
 
@@ -98,6 +107,7 @@ export class FileAttachmentThumbnailView extends BaseView<
          <div class="file-actions-container">
           <ul class="file-actions"></ul>
          </div>
+         <div class="file-state-container"></div>
          <div class="file-thumbnail-container"></div>
          <div class="file-caption-container">
           <div class="file-caption can-edit">
@@ -113,33 +123,46 @@ export class FileAttachmentThumbnailView extends BaseView<
         <% if (loaded) { %>
         <%  if (reviewURL) { %>
         <li>
-         <a class="file-review" href="<%- reviewURL %>">
-          <span class="fa fa-comment-o"></span> <%- reviewText %>
+         <a class="file-review" role="button" href="<%- reviewURL %>">
+          <span class="fa fa-comment-o" aria-hidden="true"></span>
+          <%- reviewText %>
          </a>
         </li>
         <%  } else { %>
         <li class="file-add-comment">
-         <a href="#">
-          <span class="fa fa-comment-o"></span> <%- commentText %>
+         <a role="button" href="#">
+          <span class="fa fa-comment-o" aria-hidden="true"></span>
+          <%- commentText %>
          </a>
         </li>
         <%  } %>
         <li>
-         <a class="file-download" href="<%- downloadURL %>">
-          <span class="fa fa-download"></span> <%- downloadText %>
+         <a class="file-download" role="button" href="<%- downloadURL %>">
+          <span class="fa fa-download" aria-hidden="true"></span>
+          <%- downloadText %>
          </a>
         </li>
-        <%  if (canEdit) { %>
+        <%  if (canUndoDeletion) { %>
+            <li class="file-undo-delete">
+             <a role="button" href="#">
+              <span class="fa fa-undo" aria-hidden="true"></span>
+              <%- undoDeleteText %>
+             </a>
+            </li>
+        <%  } else if (canEdit) { %>
         <%   if (attachmentHistoryID) { %>
         <li class="file-update">
-         <a href="#" data-attachment-history-id="<%- attachmentHistoryID %>">
-          <span class="fa fa-upload"></span> <%- updateText %>
+         <a role="button" href="#"
+            data-attachment-history-id="<%- attachmentHistoryID %>">
+          <span class="fa fa-upload" aria-hidden="true"></span>
+          <%- updateText %>
          </a>
         </li>
         <%   } %>
         <li class="file-delete">
-         <a href="#">
-         <span class="fa fa-trash-o"></span> <%- deleteText %>
+         <a role="button" href="#">
+          <span class="fa fa-trash-o" aria-hidden="true"></span>
+          <%- deleteText %>
          </a>
         </li>
         <%  } %>
@@ -156,6 +179,9 @@ export class FileAttachmentThumbnailView extends BaseView<
         <%=  thumbnailHTML %>
         <% } %>
     `);
+
+    /** The possible states for the file attachment. */
+    static states = FileAttachmentStates;
 
     /**********************
      * Instance variables *
@@ -190,8 +216,19 @@ export class FileAttachmentThumbnailView extends BaseView<
     /** The element representing the whole file attachment. */
     #$file: JQuery;
 
+    /** The container for the state label. */
+    #$stateContainer: JQuery;
+
     /** The thumbnail container. */
     #$thumbnailContainer: JQuery;
+
+    /**
+     * Whether the user can currently edit the file attachment.
+     *
+     * This differs from options.canEdit because this may change depending
+     * on the file attachment state.
+     */
+    #canCurrentlyEdit: boolean;
 
     /** The processed comments that are usable in the comment dialog. */
     #comments: RB.FileAttachmentComment[] = [];
@@ -205,6 +242,9 @@ export class FileAttachmentThumbnailView extends BaseView<
     /** Whether the thumbnail supports scrolling. */
     #scrollingThumbnail: boolean = null;
 
+    /** The view for the state label. */
+    #stateLabelView: FieldStateLabelView;
+
     /** Whether the thumbnail is currently playing a video. */
     #playingVideo: boolean = null;
 
@@ -217,6 +257,9 @@ export class FileAttachmentThumbnailView extends BaseView<
      */
     initialize(options: FileAttachmentThumbnailViewOptions) {
         this.options = options;
+        this.#canCurrentlyEdit = (
+            this.model.get('state') !== this.states.PENDING_DELETION &&
+            options.canEdit);
     }
 
     /**
@@ -260,6 +303,7 @@ export class FileAttachmentThumbnailView extends BaseView<
             this._$actions = this.#$actionsContainer.children('.file-actions');
             this.#$captionContainer = this.$('.file-caption-container');
             this.#$thumbnailContainer = this.$('.file-thumbnail-container');
+            this.#$stateContainer = this.$('.file-state-container');
             this.#$file = this.$('.file');
 
             this._$actions.find('.file-download')
@@ -277,50 +321,13 @@ export class FileAttachmentThumbnailView extends BaseView<
             this.listenTo(this.model, 'change:thumbnailHTML',
                           this._renderThumbnail);
             this._renderThumbnail();
+
+            this.listenTo(this.model, 'change:state', this._onStateChanged);
+            this._renderStateLabel();
         }
 
-        if (this.options.canEdit !== false) {
-            this._captionEditorView = new InlineEditorView({
-                editIconClass: 'rb-icon rb-icon-edit',
-                el: this.#$caption,
-                showButtons: true,
-            });
-            this._captionEditorView.render();
+        this._renderCaptionEditor();
 
-            this.listenTo(this._captionEditorView, 'beginEditPreShow', () => {
-                this.$el.addClass('editing');
-                this._stopAnimating();
-            });
-
-            this.listenTo(this._captionEditorView, 'beginEdit', () => {
-                if (this.#$caption.hasClass('empty-caption')) {
-                    this._captionEditorView.$field.val('');
-                }
-
-                this.trigger('beginEdit');
-            });
-
-            this.listenTo(this._captionEditorView, 'cancel', () => {
-                this.$el.removeClass('editing');
-                this.trigger('endEdit');
-            });
-
-            this.listenTo(this._captionEditorView, 'complete', async val => {
-                this.$el.removeClass('editing');
-
-                /*
-                 * We want to set the caption after ready() finishes, in case
-                 * it loads state and overwrites.
-                 */
-                await this.model.ready();
-
-                this.model.set('caption', val);
-                this.trigger('endEdit');
-                await this.model.save({
-                    attrs: ['caption'],
-                });
-            });
-        }
 
         if (!this.options.renderThumbnail) {
             /*
@@ -484,12 +491,90 @@ export class FileAttachmentThumbnailView extends BaseView<
     }
 
     /**
+     * Save the given caption value.
+     *
+     * Version Added:
+     *     6.0
+     */
+    async _saveCaption(val: string) {
+        const model = this.model;
+
+        /*
+         * We want to set the caption after ready() finishes, in case
+         * it loads state and overwrites.
+         */
+        await model.ready();
+
+        model.set('caption', val);
+        this.trigger('endEdit');
+        await model.save({
+            attrs: ['caption'],
+        });
+    }
+
+    /**
+     * Render the caption editor and set up its event listeners.
+     *
+     * Version Added:
+     *     6.0
+     */
+    _renderCaptionEditor() {
+        if (this.#canCurrentlyEdit === false && this._captionEditorView) {
+            /*
+             * The view exists but we're not allowed to edit anymore.
+             * Remove it.
+             */
+            this._captionEditorView.remove();
+
+            return;
+        } else if (this.#canCurrentlyEdit && this._captionEditorView) {
+            /* The view already exists. No op. */
+            return;
+        } else if (this.#canCurrentlyEdit === false) {
+            /* The view doesn't and shouldn't exist. No op. */
+            return;
+        }
+
+        this._captionEditorView = new InlineEditorView({
+            editIconClass: 'rb-icon rb-icon-edit',
+            el: this.#$caption,
+            showButtons: true,
+        });
+
+        this._captionEditorView.render();
+
+        this.listenTo(this._captionEditorView, 'beginEditPreShow', () => {
+            this.$el.addClass('editing');
+            this._stopAnimating();
+        });
+
+        this.listenTo(this._captionEditorView, 'beginEdit', () => {
+            if (this.#$caption.hasClass('empty-caption')) {
+                this._captionEditorView.$field.val('');
+            }
+
+            this.trigger('beginEdit');
+        });
+
+        this.listenTo(this._captionEditorView, 'cancel', () => {
+            this.$el.removeClass('editing');
+            this.trigger('endEdit');
+        });
+
+        this.listenTo(this._captionEditorView, 'complete', async val => {
+            this.$el.removeClass('editing');
+            await this._saveCaption(val);
+        });
+    }
+
+    /**
      * Render the contents of this view's element.
      *
      * This is only done when requested by the caller.
      */
     _renderContents() {
-        const caption = this.model.get('caption');
+        const model = this.model;
+        const caption = model.get('caption');
         const captionText = caption ? caption : _`No caption`;
         const captionClass = caption ? 'edit' : 'edit empty-caption';
 
@@ -497,7 +582,7 @@ export class FileAttachmentThumbnailView extends BaseView<
             .html(this.template(_.defaults({
                 caption: captionText,
                 captionClass: captionClass,
-            }, this.model.attributes)))
+            }, model.attributes)))
             .addClass(this.className);
     }
 
@@ -517,20 +602,96 @@ export class FileAttachmentThumbnailView extends BaseView<
     }
 
     /**
+     * Render the state label for the file attachment.
+     *
+     * Version Added:
+     *     6.0
+     */
+    _renderStateLabel() {
+        if (this.#stateLabelView) {
+            this.#stateLabelView.remove();
+        }
+
+        if (!this.options.canEdit) {
+            return;
+        }
+
+        const state = this.model.get('state');
+
+        if (state === this.states.PUBLISHED ||
+            state === this.states.DELETED) {
+            /* Don't display state labels for these types of attachments. */
+            return;
+        }
+
+        const theme = (state === this.states.PENDING_DELETION
+                       ? FieldStateLabelThemes.DELETED
+                       : FieldStateLabelThemes.DRAFT);
+
+        this.#stateLabelView = new FieldStateLabelView({
+            state: this._getStateText(state),
+            theme: theme,
+        });
+
+        this.#stateLabelView.renderInto(this.#$stateContainer);
+    }
+
+    /**
+     * Handler for when the model's 'state' property changes.
+     *
+     * Args:
+     *     model (FileAttachment):
+     *         The file attachment model.
+     *
+     *     state (string):
+     *         The new state value.
+     */
+    _onStateChanged(
+        model: FileAttachment,
+        state: string,
+    ) {
+        if (state === this.states.PENDING_DELETION) {
+            /* Block editing for attachments that are pending deletion. */
+            this.#canCurrentlyEdit = false;
+        } else if (this.#canCurrentlyEdit !== this.options.canEdit) {
+            /* We're not pending deletion, set this back to canEdit. */
+            this.#canCurrentlyEdit = this.options.canEdit;
+        }
+
+        this._renderStateLabel();
+        this._onLoadedChanged();
+        this._renderCaptionEditor();
+    }
+
+    /**
      * Handler for when the model's 'loaded' property changes.
      *
      * Depending on if the file attachment is now loaded, either a
      * blank spinner thumbnail will be shown, or a full thumbnail.
      */
     _onLoadedChanged() {
+        const model = this.model;
+        const state = model.get('state');
+        const useDraftDelete = (
+            state === this.states.NEW ||
+            state === this.states.NEW_REVISION ||
+            state === this.states.DRAFT
+        );
+        const deleteText = (useDraftDelete
+                            ? _`Delete Draft`
+                            : _`Delete`);
+
         this._$actions.html(this.actionsTemplate(_.defaults({
             canEdit: this.options.canEdit,
+            canUndoDeletion: (state === this.states.PENDING_DELETION &&
+                              this.options.canEdit),
             commentText: _`Comment`,
-            deleteText: _`Delete`,
+            deleteText: deleteText,
             downloadText: _`Download`,
             reviewText: _`Review`,
+            undoDeleteText: _`Undo Delete`,
             updateText: _`Update`,
-        }, this.model.attributes)));
+        }, model.attributes)));
 
         /*
         * Some hooks may depend on the elements being added above, so
@@ -541,7 +702,7 @@ export class FileAttachmentThumbnailView extends BaseView<
             const hookView = new HookViewType({
                 el: this.el,
                 extension: hook.get('extension'),
-                fileAttachment: this.model,
+                fileAttachment: model,
                 thumbnailView: this,
             });
 
@@ -556,7 +717,11 @@ export class FileAttachmentThumbnailView extends BaseView<
      * it will display "No caption".
      */
     _onCaptionChanged() {
-        const caption = this.model.get('caption');
+        const model = this.model;
+        const state = model.get('state');
+        const caption = model.get('caption');
+        const publishedCaption = model.get('publishedCaption');
+        const captionHasChanged = (caption !== publishedCaption);
 
         if (caption) {
             this.#$caption
@@ -567,6 +732,18 @@ export class FileAttachmentThumbnailView extends BaseView<
                 .text(_`No caption`)
                 .addClass('empty-caption');
         }
+
+        if (state === this.states.DRAFT && !captionHasChanged) {
+            /*
+             * This is a draft but the caption has changed back to the
+             * published version. Remove the draft state.
+             */
+            model.set('state', this.states.PUBLISHED);
+        } else if (state === this.states.PUBLISHED && captionHasChanged) {
+            /* The caption changed, put this into draft state. */
+            model.set('state', this.states.DRAFT);
+        }
+
     }
 
     /**
@@ -616,11 +793,64 @@ export class FileAttachmentThumbnailView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event that triggered the action.
      */
-    _onDeleteClicked(e: JQuery.ClickEvent) {
+    async _onDeleteClicked(e: JQuery.ClickEvent) {
         e.preventDefault();
         e.stopPropagation();
 
-        this.model.destroy();
+        const model = this.model;
+        const state = model.get('state');
+
+        if (state === this.states.DRAFT) {
+            /*
+             * "Delete" the draft version of the file attachment by reverting
+             * to its published caption.
+             */
+            await this._saveCaption(model.get('publishedCaption'));
+        } else {
+            model.destroy();
+        }
+    }
+
+    /**
+     * Handler for the Undo Delete button.
+     *
+     * Undoes the pending deletion of the file attachment, reverting it
+     * to its published state.
+     *
+     * Args:
+     *     e (JQuery.ClickEvent):
+     *         The event that triggered the action.
+     */
+    _onUndoDeleteClicked(e: JQuery.ClickEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const model = this.model;
+
+        RB.apiCall({
+            data: {
+                'pending_deletion': false,
+            },
+            error: xhr => {
+                const rsp = xhr.responseJSON;
+                const caption = model.get('caption');
+
+                if (rsp && rsp.stat) {
+                    alert(dedent`Failed to undo the deletion of file attachment
+                          "${caption}": ${rsp.err.msg}`);
+                } else {
+                    alert(dedent`Failed to undo the deletion of file attachment
+                          "${caption}": ${xhr.errorText}`);
+                }
+            },
+            method: 'PUT',
+            success: () => {
+                model.set({
+                    state: this.states.PUBLISHED,
+                });
+            },
+            url: model.url(),
+        });
     }
 
     /**
@@ -740,6 +970,42 @@ export class FileAttachmentThumbnailView extends BaseView<
         } else if (this.#playingVideo) {
             this.#playingVideo = false;
             this.$('video')[0].pause();
+        }
+    }
+
+    /**
+     * Return a localized text for the file attachment state.
+     *
+     * Args:
+     *     state (string):
+     *         The state value.
+     *
+     * Returns:
+     *     string:
+     *     The localized and human readable text representing the state.
+     */
+    _getStateText(state: string): string {
+        switch (state) {
+            case FileAttachmentStates.DELETED:
+                return _`Deleted`;
+
+            case FileAttachmentStates.DRAFT:
+                return _`Draft`;
+
+            case FileAttachmentStates.NEW:
+                return _`New`;
+
+            case FileAttachmentStates.NEW_REVISION:
+                return _`New Revision`;
+
+            case FileAttachmentStates.PENDING_DELETION:
+                return _`Pending Deletion`;
+
+            case FileAttachmentStates.PUBLISHED:
+                return _`Published`;
+
+            default:
+                return '';
         }
     }
 }

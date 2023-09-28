@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Sequence
+from typing import List, Sequence
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -300,7 +300,9 @@ class FileAttachment(models.Model):
         verbose_name_plural = _('File Attachments')
 
 
-def get_latest_file_attachments(file_attachments):
+def get_latest_file_attachments(
+    file_attachments: FileAttachmentSequence,
+) -> List[FileAttachment]:
     """Filter the list of file attachments to only return the latest revisions.
 
     Args:

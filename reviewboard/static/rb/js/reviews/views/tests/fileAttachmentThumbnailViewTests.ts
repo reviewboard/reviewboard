@@ -7,7 +7,11 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { FileAttachment } from 'reviewboard/common';
+import {
+    BaseResource,
+    FileAttachment,
+    FileAttachmentStates,
+} from 'reviewboard/common';
 
 import { FileAttachmentThumbnailView } from '../fileAttachmentThumbnailView';
 
@@ -35,10 +39,18 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
             expect(view.$('a.edit').length).toBe(1);
             expect(view.$('.file-caption').length).toBe(1);
             expect(view.$('.file-actions').length).toBe(1);
-            expect(view.$('.file-delete').length).toBe(
-                view.options.canEdit && model.get('loaded') ? 1 : 0);
-            expect(view.$('.file-update').length).toBe(
-                view.options.canEdit && model.get('loaded') ? 1 : 0);
+            expect(view.$('.file-state-container').length).toBe(1);
+
+            if (model.get('state') === FileAttachmentStates.PENDING_DELETION) {
+                expect(view.$('.file-undo-delete').length).toBe(
+                    view.options.canEdit && model.get('loaded') ? 1 : 0);
+                expect(view.$('.file-update').length).toBe(0);
+            } else {
+                expect(view.$('.file-delete').length).toBe(
+                    view.options.canEdit && model.get('loaded') ? 1 : 0);
+                expect(view.$('.file-update').length).toBe(
+                    view.options.canEdit && model.get('loaded') ? 1 : 0);
+            }
         }
 
         function expectAttributeMatches() {
@@ -72,6 +84,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
 
             expect(view.$('.file-actions').is(':visible')).toBe(true);
             expect(view.$('.djblets-o-spinner').length).toBe(0);
+            expect(view.$('.file-state-container').html()).toEqual('');
         });
 
         it('Rendered thumbnail with unloaded model', function() {
@@ -87,12 +100,14 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
 
             expect(view.$('.file-actions').children().length).toBe(0);
             expect(view.$('.djblets-o-spinner').length).toBe(1);
+            expect(view.$('.file-state-container').html()).toEqual('');
         });
 
         describe('Rendered thumbnail with loaded model', function() {
             beforeEach(function() {
                 model.id = 123;
                 model.attributes.id = 123;
+                model.set('attachmentHistoryID', 1);
                 model.set('caption', 'My Caption');
                 model.set('loaded', true);
                 model.url = '/api/file-attachments/123/';
@@ -116,6 +131,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                 expect(view.$('.djblets-o-spinner').length).toBe(0);
                 expect(view.$('.file-review').length).toBe(1);
                 expect(view.$('.file-add-comment').length).toBe(0);
+                expect(view.$('.file-state-container').html()).toEqual('');
             });
 
             it('No review UI', function() {
@@ -134,6 +150,87 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                 expect(view.$('.djblets-o-spinner').length).toBe(0);
                 expect(view.$('.file-review').length).toBe(0);
                 expect(view.$('.file-add-comment').length).toBe(1);
+                expect(view.$('.file-state-container').html()).toEqual('');
+            });
+
+            describe('With being able to edit', function() {
+                it('With a published attachment', function() {
+                    model.set('state', FileAttachmentStates.PUBLISHED);
+                    model.set('publishedCaption', model.get('caption'));
+
+                    view = new FileAttachmentThumbnailView({
+                        canEdit: true,
+                        model: model,
+                        renderThumbnail: true,
+                        reviewRequest: reviewRequest,
+                    });
+                    $testsScratch.append(view.$el);
+                    view.render();
+
+                    expectElements();
+                    expectAttributeMatches();
+
+                    expect(view.$('.file-actions').children().length).toBe(4);
+                    expect(view.$('.fa-spinner').length).toBe(0);
+                    expect(view.$('.file-review').length).toBe(0);
+                    expect(view.$('.file-add-comment').length).toBe(1);
+                    expect(view.$('.file-state-container').html()).toEqual('');
+                    expect(view._captionEditorView).not.toBe(undefined);
+                    expect(view.$('.file-delete').text().trim())
+                        .toEqual('Delete');
+                });
+
+                it('With a draft attachment', function() {
+                    model.set('state', FileAttachmentStates.DRAFT);
+
+                    view = new FileAttachmentThumbnailView({
+                        canEdit: true,
+                        model: model,
+                        renderThumbnail: true,
+                        reviewRequest: reviewRequest,
+                    });
+                    $testsScratch.append(view.$el);
+                    view.render();
+
+                    expectElements();
+                    expectAttributeMatches();
+
+                    expect(view.$('.file-actions').children().length).toBe(4);
+                    expect(view.$('.fa-spinner').length).toBe(0);
+                    expect(view.$('.file-review').length).toBe(0);
+                    expect(view.$('.file-add-comment').length).toBe(1);
+                    expect(view.$('.file-state-container').html())
+                        .not.toEqual('');
+                    expect(view._captionEditorView).not.toBe(undefined);
+                    expect(view.$('.file-delete').text().trim())
+                        .toEqual('Delete Draft');
+                });
+
+                it('With an attachment pending deletion', function() {
+                    model.set('state', FileAttachmentStates.PENDING_DELETION);
+
+                    view = new FileAttachmentThumbnailView({
+                        canEdit: true,
+                        model: model,
+                        renderThumbnail: true,
+                        reviewRequest: reviewRequest,
+                    });
+                    $testsScratch.append(view.$el);
+                    view.render();
+
+                    expectElements();
+                    expectAttributeMatches();
+
+                    expect(view.$('.file-actions').children().length).toBe(3);
+                    expect(view.$('.fa-spinner').length).toBe(0);
+                    expect(view.$('.file-review').length).toBe(0);
+                    expect(view.$('.file-add-comment').length).toBe(1);
+                    expect(view.$('.file-state-container').html())
+                        .not.toEqual('');
+                    expect(view.$('.file-delete').length).toBe(0);
+                    expect(view.$('.file-undo-delete').length).toBe(1);
+                    expect(view._captionEditorView).toBe(undefined);
+                });
             });
         });
     });
@@ -203,6 +300,64 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
             });
 
             view.$('.file-delete').click();
+        });
+
+        it('Delete a draft', function() {
+            const saveSpyFunc = val => {
+                expect(val).toBe('Old Caption');
+
+                return Promise.resolve();
+            };
+
+            model.set('caption', 'New caption');
+            model.set('publishedCaption', 'Old Caption');
+            model.set('state', FileAttachmentStates.DRAFT);
+
+            view = new FileAttachmentThumbnailView({
+                canEdit: true,
+                model: model,
+                renderThumbnail: true,
+                reviewRequest: reviewRequest,
+            });
+            $testsScratch.append(view.$el);
+            view.render();
+
+            spyOn(model, 'destroy').and.callThrough();
+            spyOn(view, '_saveCaption').and.callFake(saveSpyFunc);
+            spyOn($, 'ajax').and.callFake(options => options.success());
+            spyOn(view.$el, 'fadeOut').and.callFake(done => done());
+            spyOn(view, '_onDeleteClicked').and.callThrough();
+
+            view.$('.file-delete').click();
+
+            expect($.ajax).not.toHaveBeenCalled();
+            expect(model.destroy).not.toHaveBeenCalled();
+            expect(view.$el.fadeOut).not.toHaveBeenCalled();
+        });
+
+        it('Undo a pending delete', function() {
+            model.set('state', FileAttachmentStates.PENDING_DELETION);
+
+            view = new FileAttachmentThumbnailView({
+                canEdit: true,
+                model: model,
+                renderThumbnail: true,
+                reviewRequest: reviewRequest,
+            });
+            $testsScratch.append(view.$el);
+            view.render();
+
+            spyOn(model, 'url').and.callFake(() => {
+                return '/test-file-attachment/';
+            });
+            spyOn(RB, 'apiCall').and.callFake(options => options.success());
+            spyOn(view, '_onUndoDeleteClicked').and.callThrough();
+
+            view.$('.file-undo-delete').click();
+
+            expect(RB.apiCall).toHaveBeenCalled();
+            expect(model.get('state'))
+                .toBe(FileAttachmentStates.PUBLISHED);
         });
     });
 

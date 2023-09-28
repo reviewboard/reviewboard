@@ -602,17 +602,13 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
 
         this.listenTo(fileAttachments, 'add',
                       this.buildFileAttachmentThumbnail);
-        this.listenTo(fileAttachments, 'remove', model => {
-            const index = this.#fileAttachmentThumbnailViews.findIndex(
-                view => (view.model === model));
-            this.#fileAttachmentThumbnailViews[index].remove();
-            this.#fileAttachmentThumbnailViews.splice(index, 1);
-        });
+        this.listenTo(fileAttachments, 'remove', this._removeThumbnail);
         this.listenTo(fileAttachments, 'destroy', () => {
             if (fileAttachments.length === 0) {
                 this.#$attachmentsContainer.hide();
             }
         });
+        this.listenTo(this.model, 'replaceAttachment', this._removeThumbnail);
 
         /*
          * Import all the screenshots and file attachments rendered onto
@@ -822,7 +818,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
     /**
      * Build a thumbnail for a FileAttachment.
      *
-     * The thumbnail will eb added to the page. The editor will listen
+     * The thumbnail will be added to the page. The editor will listen
      * for events on the thumbnail to update the current edit state.
      *
      * This can be called either when dynamically adding a new file
@@ -1112,5 +1108,23 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      */
     _refreshPage() {
         RB.navigateTo(this.model.get('reviewRequest').get('reviewURL'));
+    }
+
+    /**
+     * Remove a file attachment thumbnail.
+     *
+     * Version Added:
+     *     6.0
+     *
+     * Args:
+     *     attachmentModel (FileAttachment):
+     *         The model of the file attachment to remove.
+     */
+    _removeThumbnail(attachmentModel: FileAttachment) {
+        const thumbnailViews = this.#fileAttachmentThumbnailViews;
+        const index = thumbnailViews.findIndex(
+            view => (view.model === attachmentModel));
+        thumbnailViews[index].remove();
+        thumbnailViews.splice(index, 1);
     }
 }

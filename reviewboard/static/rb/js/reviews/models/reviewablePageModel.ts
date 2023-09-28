@@ -135,20 +135,27 @@ export class ReviewablePage<
         });
 
         const editorData = attributes.editorData || {};
+        const reviewRequestOrDraft = (editorData.mutableByUser
+                                      ? reviewRequest.draft
+                                      : reviewRequest);
         const fileAttachments = new ResourceCollection<FileAttachment>(
             _.map(editorData.fileAttachments,
-                  (editorData.mutableByUser
-                   ? attrs => reviewRequest.draft.createFileAttachment(attrs)
-                   : attrs => reviewRequest.createFileAttachment(attrs))),
+                  attrs => reviewRequestOrDraft.createFileAttachment(attrs)),
             {
                 model: FileAttachment,
-                parentResource: (editorData.mutableByUser
-                                 ? reviewRequest.draft
-                                 : reviewRequest),
+                parentResource: reviewRequestOrDraft,
+            });
+        const allFileAttachments = new ResourceCollection<FileAttachment>(
+            _.map(editorData.allFileAttachments,
+                  attrs => reviewRequestOrDraft.createFileAttachment(attrs)),
+            {
+                model: FileAttachment,
+                parentResource: reviewRequestOrDraft,
             });
 
         this.reviewRequestEditor = new ReviewRequestEditor(
             _.defaults({
+                allFileAttachments: allFileAttachments,
                 commentIssueManager: this.commentIssueManager,
                 fileAttachments: fileAttachments,
                 reviewRequest: reviewRequest,
