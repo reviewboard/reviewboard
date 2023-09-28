@@ -859,12 +859,17 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                                attachment_history=None,
                                draft=False,
                                active=True,
+                               with_history=True,
                                **kwargs):
         """Create a FileAttachment for testing.
 
         The attachment is tied to the given
         :py:class:`~reviewboard.reviews.models.review_request.ReviewRequest`.
         It's populated with default data that can be overridden by the caller.
+
+        Version Changed:
+            6.0:
+            Added the ``with_history`` parameter.
 
         Args:
             review_request (reviewboard.reviews.models.review_request.
@@ -886,6 +891,16 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             active (bool, optional):
                 Whether this attachment is considered active (not deleted).
 
+            with_history (bool, optional):
+                Whether to create a FileAttachmentHistory for this file
+                attachment. If ``attachment_history`` is supplied, that
+                attachment history will be used instead.
+
+                This defaults to ``True``.
+
+                Version Added:
+                    6.0
+
             **kwargs (dict):
                 Additional keyword arguments to pass to
                 :py:meth:`create_file_attachment_base`.
@@ -894,6 +909,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             reviewboard.attachments.models.FileAttachment:
             The resulting file attachment.
         """
+        if with_history and attachment_history is None:
+            attachment_history = self.create_file_attachment_history(
+                review_request)
+
         file_attachment = self.create_file_attachment_base(
             attachment_history=attachment_history,
             **kwargs)
@@ -2071,10 +2090,14 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         if not uuid:
             uuid = uuid4()
 
+        attachment_revision = kwargs.pop('attachment_revision', 1)
+        draft_caption = kwargs.pop('draft_caption', caption)
         filename = kwargs.get('filename', '%s-%s' % (uuid, orig_filename))
 
         file_attachment = FileAttachment(
+            attachment_revision=attachment_revision,
             caption=caption,
+            draft_caption=draft_caption,
             mimetype=mimetype,
             user=user,
             uuid=uuid,
