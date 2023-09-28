@@ -344,6 +344,9 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
             draft.inactive_file_attachments.remove(*update_ids)
             draft.file_attachments.add(*update_ids)
 
+        # Make sure the last_updated field gets updated.
+        draft.save(update_fields=('last_updated',))
+
         return 200, {
             self.item_result_key: self.serialize_object(
                 file, request=request, *args, **kwargs),
@@ -369,6 +372,12 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                                            **kwargs):
             return self.get_no_access_error(request)
 
+        try:
+            draft = resources.review_request_draft.prepare_draft(
+                request, review_request)
+        except PermissionDenied:
+            return self.get_no_access_error(request)
+
         if (not file_attachment.review_request.exists() and
             not file_attachment.inactive_review_request.exists()):
             # If this file attachment has never been made public,
@@ -377,12 +386,6 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         else:
             # Put the file attachment and all of its revisions in a pending
             # deletion state.
-            try:
-                draft = resources.review_request_draft.prepare_draft(
-                    request, review_request)
-            except PermissionDenied:
-                return self.get_no_access_error(request)
-
             update_ids: Set[Any] = {file_attachment.pk}
             attachment_history_id = file_attachment.attachment_history_id
 
@@ -397,5 +400,8 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
 
             draft.inactive_file_attachments.add(*update_ids)
             draft.file_attachments.remove(*update_ids)
+
+        # Make sure the last_updated field gets updated.
+        draft.save(update_fields=('last_updated',))
 
         return 204, {}

@@ -1,6 +1,9 @@
+from datetime import timedelta
+
 from django.contrib import auth
 from django.contrib.auth.models import Permission, User
 from django.core import mail
+from django.utils import timezone
 from djblets.features.testing import override_feature_check
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
@@ -490,13 +493,17 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         """Testing the PUT review-requests/<id>/draft/ API
         with no changes made to the fields
         """
+        timestamp = timezone.now()
+        self.spy_on(timezone.now, call_fake=lambda: timestamp)
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
 
-        ReviewRequestDraft.create(review_request)
+        draft = ReviewRequestDraft.create(review_request)
 
         self.spy_on(ChangeDescription.save, owner=ChangeDescription)
         self.spy_on(ReviewRequestDraft.save, owner=ReviewRequestDraft)
+
+        timestamp += timedelta(days=1)
 
         rsp = self.api_put(
             get_review_request_draft_url(review_request),
@@ -508,6 +515,11 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
         self.assertFalse(ChangeDescription.save.called)
         self.assertFalse(ReviewRequestDraft.save.called)
+
+        draft.refresh_from_db()
+
+        # Make sure last_updated wasn't updated.
+        self.assertEqual(draft.last_updated, timestamp - timedelta(days=1))
 
     def test_put_with_text_type_markdown(self):
         """Testing the PUT review-requests/<id>/draft/ API
@@ -642,14 +654,53 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
             expected_custom_field_text_type='plain')
 
     @webapi_test_template
-    def test_put_with_branch(self):
-        """Testing the PUT <URL> API with branch field"""
+    def test_put_updates_last_updated(self):
+        """Testing the PUT <URL> API updates the last_updated timestamp"""
+        timestamp = timezone.now()
+        self.spy_on(timezone.now, call_fake=lambda: timestamp)
+
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
-        ReviewRequestDraft.create(review_request)
+        draft = ReviewRequestDraft.create(review_request)
 
         self.spy_on(ChangeDescription.save, owner=ChangeDescription)
         self.spy_on(ReviewRequestDraft.save, owner=ReviewRequestDraft)
+
+        timestamp += timedelta(days=1)
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'description': 'new description',
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['draft']['description'], 'new description')
+
+        draft.refresh_from_db()
+
+        self.assertEqual(draft.description, 'new description')
+        self.assertEqual(draft.last_updated, timestamp)
+
+        self.assertFalse(ChangeDescription.save.called)
+        self.assertTrue(ReviewRequestDraft.save.last_called_with(
+            update_fields=['description', 'last_updated']))
+
+    @webapi_test_template
+    def test_put_with_branch(self):
+        """Testing the PUT <URL> API with branch field"""
+        timestamp = timezone.now()
+        self.spy_on(timezone.now, call_fake=lambda: timestamp)
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+        draft = ReviewRequestDraft.create(review_request)
+
+        self.spy_on(ChangeDescription.save, owner=ChangeDescription)
+        self.spy_on(ReviewRequestDraft.save, owner=ReviewRequestDraft)
+
+        timestamp += timedelta(days=1)
 
         rsp = self.api_put(
             get_review_request_draft_url(review_request),
@@ -661,8 +712,10 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['draft']['branch'], 'new branch')
 
-        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        draft.refresh_from_db()
+
         self.assertEqual(draft.branch, 'new branch')
+        self.assertEqual(draft.last_updated, timestamp)
 
         self.assertFalse(ChangeDescription.save.called)
         self.assertTrue(ReviewRequestDraft.save.last_called_with(
@@ -698,12 +751,17 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
     @webapi_test_template
     def test_put_with_changedescription(self):
         """Testing the PUT <URL> with a change description"""
+        timestamp = timezone.now()
+        self.spy_on(timezone.now, call_fake=lambda: timestamp)
+
         review_request = self.create_review_request(submitter=self.user,
                                                     publish=True)
-        ReviewRequestDraft.create(review_request)
+        draft = ReviewRequestDraft.create(review_request)
 
         self.spy_on(ChangeDescription.save, owner=ChangeDescription)
         self.spy_on(ReviewRequestDraft.save, owner=ReviewRequestDraft)
+
+        timestamp += timedelta(days=1)
 
         changedesc = 'This is a test change description.'
 
@@ -717,9 +775,14 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['draft']['changedescription'], changedesc)
 
-        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        draft.refresh_from_db()
+
         self.assertIsNotNone(draft.changedesc)
         self.assertEqual(draft.changedesc.text, changedesc)
+
+        # The last_updated timestamp shouldn't be updated when only setting
+        # a change description.
+        self.assertEqual(draft.last_updated, timestamp - timedelta(days=1))
 
         self.assertTrue(ChangeDescription.save.last_called_with(
             update_fields=['text']))

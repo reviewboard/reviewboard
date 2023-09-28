@@ -319,7 +319,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         file_attachment = self.create_file_attachment(review_request)
         review_request_draft = self.create_review_request_draft(review_request)
 
-        # 11 queries:
+        # 12 queries:
         #
         #  1. Fetch review request
         #  2. Fetch request user
@@ -329,9 +329,10 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         #  6. Fetch  file attachments
         #  7. Fetch review request draft
         #  8. Save any file attachment updates
-        #  9. Fetch review request
+        #  9. Save the review request draft last_updated field
         # 10. Fetch review request
         # 11. Fetch review request
+        # 12. Fetch review request
         queries = [
             {
                 'model': ReviewRequest,
@@ -388,6 +389,11 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'model': FileAttachment,
                 'type': 'UPDATE',
                 'where': Q(pk=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'type': 'UPDATE',
+                'where': Q(pk=review_request_draft.pk)
             },
             {
                 'model': ReviewRequest,
@@ -453,7 +459,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
 
         del review_request._file_attachments_data
 
-        # 24 queries:
+        # 25 queries:
         #
         #  1. Fetch review request
         #  2. Fetch request user
@@ -477,9 +483,10 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         # 19. Add file attachment to active draft file attachments
         # 20. Update active draft file attachments count
         # 21. Fetch active draft file attachments count
-        # 22. Fetch review request
+        # 22. Save the review request draft last_updated field
         # 23. Fetch review request
         # 24. Fetch review request
+        # 25. Fetch review request
         queries = [
             {
                 'model': ReviewRequest,
@@ -612,6 +619,11 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(pk=review_request_draft.pk),
             },
             {
+                'model': ReviewRequestDraft,
+                'type': 'UPDATE',
+                'where': Q(pk=review_request_draft.pk)
+            },
+            {
                 'model': ReviewRequest,
                 'limit': 1,
                 'num_joins': 1,
@@ -684,7 +696,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
 
         del review_request._file_attachments_data
 
-        # 24 queries:
+        # 25 queries:
         #
         #  1. Fetch review request
         #  2. Fetch request user
@@ -708,9 +720,10 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         # 19. Add file attachment to active draft file attachments
         # 20. Update active draft file attachments count
         # 21. Fetch active draft file attachments count
-        # 22. Fetch review request
+        # 22. Save the review request draft last_updated field
         # 23. Fetch review request
         # 24. Fetch review request
+        # 25. Fetch review request
         queries = [
             {
                 'model': ReviewRequest,
@@ -843,6 +856,11 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'limit': 1,
                 'values_select': ('file_attachments_count',),
                 'where': Q(pk=review_request_draft.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'type': 'UPDATE',
+                'where': Q(pk=review_request_draft.pk)
             },
             {
                 'model': ReviewRequest,

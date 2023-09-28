@@ -371,7 +371,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         file_attachment = self.create_file_attachment(review_request)
         review_request_draft = self.create_review_request_draft(review_request)
 
-        # 11 queries:
+        # 12 queries:
         #
         #  1. Fetch request user
         #  2. Fetch request user's Profile
@@ -380,10 +380,11 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         #  5. Fetch file attachment
         #  6. Fetch review request draft
         #  7. Save any file attachment updates
-        #  8. Fetch the review request draft
-        #  9. Fetch review request
+        #  8. Save the review request draft last_updated field
+        #  9. Fetch the review request draft
         # 10. Fetch review request
         # 11. Fetch review request
+        # 12. Fetch review request
         queries = [
             {
                 'model': User,
@@ -431,6 +432,11 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                 'model': FileAttachment,
                 'type': 'UPDATE',
                 'where': Q(pk=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'type': 'UPDATE',
+                'where': Q(pk=review_request_draft.pk)
             },
             {
                 'model': ReviewRequestDraft,
@@ -500,7 +506,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
 
         del review_request._file_attachments_data
 
-        # 24 queries:
+        # 25 queries:
         #
         #  1. Fetch request user
         #  2. Fetch request user's Profile
@@ -523,10 +529,11 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         # 18. Add file attachment to active draft file attachments
         # 19. Update active draft file attachments count
         # 20. Fetch active draft file attachments count
-        # 21. Fetch review request draft
-        # 22. Fetch review request
+        # 21. Save the review request draft last_updated field
+        # 22. Fetch review request draft
         # 23. Fetch review request
         # 24. Fetch review request
+        # 25. Fetch review request
         queries = [
             {
                 'model': User,
@@ -651,6 +658,11 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             },
             {
                 'model': ReviewRequestDraft,
+                'type': 'UPDATE',
+                'where': Q(pk=review_request_draft.pk)
+            },
+            {
+                'model': ReviewRequestDraft,
                 'num_joins': 1,
                 'tables': {
                     'reviews_reviewrequestdraft_file_attachments',
@@ -749,10 +761,11 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         # 18. Add file attachments to active draft file attachments
         # 19. Update active draft file attachments count
         # 20. Fetch active draft file attachments count
-        # 21. Fetch review request draft
-        # 22. Fetch review request
+        # 21. Save the review request draft last_updated field
+        # 22. Fetch review request draft
         # 23. Fetch review request
         # 24. Fetch review request
+        # 25. Fetch review request
         queries = [
             {
                 'model': User,
@@ -877,6 +890,11 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                 'limit': 1,
                 'values_select': ('file_attachments_count',),
                 'where': Q(pk=review_request_draft.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'type': 'UPDATE',
+                'where': Q(pk=review_request_draft.pk)
             },
             {
                 'model': ReviewRequestDraft,
