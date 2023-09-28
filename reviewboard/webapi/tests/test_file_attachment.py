@@ -1,7 +1,16 @@
+from __future__ import annotations
+
+from django.contrib.auth.models import User
+from django.db.models import Q
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 
+from reviewboard.accounts.models import Profile
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
+from reviewboard.reviews.models import (
+    ReviewRequest,
+    ReviewRequestDraft)
+from reviewboard.reviews.models.review_request import FileAttachmentState
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (file_attachment_item_mimetype,
@@ -301,3 +310,619 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         self.assertIn(file_attachment, draft.file_attachments.all())
         self.assertIn(file_attachment, review_request.file_attachments.all())
         self.compare_item(item_rsp, file_attachment)
+
+    def test_put_with_caption(self) -> None:
+        """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/
+        with setting a new caption and when a draft already exists
+        """
+        review_request = self.create_review_request(submitter=self.user)
+        file_attachment = self.create_file_attachment(review_request)
+        review_request_draft = self.create_review_request_draft(review_request)
+
+        # 11 queries:
+        #
+        #  1. Fetch review request
+        #  2. Fetch request user
+        #  3. Fetch request user's Profile
+        #  4. Fetch review request
+        #  5. Fetch review request draft
+        #  6. Fetch  file attachments
+        #  7. Fetch review request draft
+        #  8. Save any file attachment updates
+        #  9. Fetch review request
+        # 10. Fetch review request
+        # 11. Fetch review request
+        queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+            {
+                'model': User,
+                'where': Q(pk=self.user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=self.user),
+            },
+            {
+                'model': ReviewRequest,
+                'select_related': {'submitter', 'repository'},
+                'where': (Q(local_site=None) &
+                          Q(pk=str(review_request.pk))),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'select_related': {'review_request'},
+                'where': Q(review_request=review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 4,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest_inactive_file_attachments',
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_inactive_file_attachments',
+                    'reviews_reviewrequestdraft_file_attachments'
+                },
+                'where': (((Q(review_request=review_request) &
+                            Q(added_in_filediff__isnull=True) &
+                            Q(repository__isnull=True) &
+                            Q(user__isnull=True)) |
+                           Q(inactive_review_request=review_request) |
+                           Q(drafts=review_request_draft) |
+                           Q(inactive_drafts=review_request_draft)) &
+                          Q(pk=str(review_request.pk)))
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=review_request),
+            },
+            {
+                'model': FileAttachment,
+                'type': 'UPDATE',
+                'where': Q(pk=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+        ]
+
+        # The purpose of this test is to see what queries are being executed,
+        # to compare against the queries executed during ``pending_deletion``
+        # updates.
+        with self.assertQueries(queries):
+            rsp = self.api_put(
+                get_file_attachment_item_url(file_attachment),
+                {
+                    'caption': 'Updated caption',
+                },
+                expected_mimetype=file_attachment_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+    def test_put_with_pending_deletion_false(self) -> None:
+        """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/
+        with setting pending_deletion to False for a file attachment that
+        is currently pending deletion
+        """
+        review_request = self.create_review_request(submitter=self.user)
+        file_attachment = self.create_file_attachment(review_request)
+        review_request_draft = self.create_review_request_draft(review_request)
+
+        # "Delete" the file attachment.
+        review_request_draft.inactive_file_attachments.add(file_attachment)
+        review_request_draft.file_attachments.remove(file_attachment)
+
+        self.assertEqual(
+            review_request.get_file_attachment_state(file_attachment),
+            FileAttachmentState.PENDING_DELETION)
+
+        del review_request._file_attachments_data
+
+        # 24 queries:
+        #
+        #  1. Fetch review request
+        #  2. Fetch request user
+        #  3. Fetch request user's Profile
+        #  4. Fetch review request
+        #  5. Fetch review request draft
+        #  6. Fetch file attachment
+        #  7. Fetch review request draft
+        #  8. Save any file attachment updates
+        #  9. Fetch review request when getting file attachment state
+        # 10. Fetch active file attachments when getting file attachment state
+        # 11. Fetch review request draft when getting file attachment state
+        # 12. Fetch inactive draft file attachments when getting file
+        #     attachment state
+        # 13. Fetch file attachment IDs matching history ID
+        # 14. Fetch inactive draft file attachments
+        # 15. Remove file attachment from inactive draft file attachments
+        # 16. Update inactive draft file attachments count
+        # 17. Fetch inactive draft file attachments count
+        # 18. Fetch active draft file attachments
+        # 19. Add file attachment to active draft file attachments
+        # 20. Update active draft file attachments count
+        # 21. Fetch active draft file attachments count
+        # 22. Fetch review request
+        # 23. Fetch review request
+        # 24. Fetch review request
+        queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+            {
+                'model': User,
+                'where': Q(pk=self.user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=self.user),
+            },
+            {
+                'model': ReviewRequest,
+                'select_related': {'submitter', 'repository'},
+                'where': (Q(local_site=None) &
+                          Q(pk=str(review_request.pk))),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'select_related': {'review_request'},
+                'where': Q(review_request=review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 4,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest_inactive_file_attachments',
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_inactive_file_attachments',
+                    'reviews_reviewrequestdraft_file_attachments'
+                },
+                'where': (((Q(review_request=review_request) &
+                            Q(added_in_filediff__isnull=True) &
+                            Q(repository__isnull=True) &
+                            Q(user__isnull=True)) |
+                           Q(inactive_review_request=review_request) |
+                           Q(drafts=review_request_draft) |
+                           Q(inactive_drafts=review_request_draft)) &
+                          Q(pk=str(review_request.pk)))
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=review_request),
+            },
+            {
+                'model': FileAttachment,
+                'type': 'UPDATE',
+                'where': Q(pk=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'where': Q(id=review_request.pk),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_inactive_file_attachments',
+                },
+                'where': Q(inactive_drafts__id=review_request_draft.pk),
+            },
+            {
+                'model': FileAttachment,
+                'where': Q(
+                    attachment_history=file_attachment.attachment_history_id),
+                'values_select': ('pk',),
+            },
+            {
+                'model': ReviewRequestDraft.inactive_file_attachments.through,
+                'where': (Q(reviewrequestdraft=(review_request_draft.pk,)) &
+                          Q(fileattachment__in={file_attachment.pk})),
+            },
+            {
+                'model': ReviewRequestDraft.inactive_file_attachments.through,
+                'type': 'DELETE',
+                'where': Q(id__in=[file_attachment.pk]),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'type': 'UPDATE',
+                'where': Q(pk=review_request_draft.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'limit': 1,
+                'values_select': ('inactive_file_attachments_count',),
+                'where': Q(pk=review_request_draft.pk),
+            },
+            {
+                'model': ReviewRequestDraft.file_attachments.through,
+                'values_select': ('fileattachment',),
+                'where': (Q(fileattachment__in={file_attachment.pk}) &
+                          Q(reviewrequestdraft=review_request_draft.pk)),
+            },
+            {
+                'model': ReviewRequestDraft.file_attachments.through,
+                'type': 'INSERT',
+            },
+            {
+                'model': ReviewRequestDraft,
+                'type': 'UPDATE',
+                'where': Q(pk=review_request_draft.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'limit': 1,
+                'values_select': ('file_attachments_count',),
+                'where': Q(pk=review_request_draft.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            rsp = self.api_put(
+                get_file_attachment_item_url(file_attachment),
+                {
+                    'pending_deletion': False,
+                },
+                expected_mimetype=file_attachment_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(
+            review_request.get_file_attachment_state(file_attachment),
+            FileAttachmentState.PUBLISHED)
+
+    def test_put_with_pending_deletion_false_with_history(self) -> None:
+        """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/
+        with setting pending_deletion to False for a file attachment that
+        is currently pending deletion and has a history of revisions
+        """
+        review_request = self.create_review_request(submitter=self.user)
+        file_attachment = self.create_file_attachment(review_request)
+        file_attachment_2 = self.create_file_attachment(
+            review_request,
+            attachment_history=file_attachment.attachment_history,
+            attachment_revision=file_attachment.attachment_revision + 1)
+        review_request_draft = self.create_review_request_draft(review_request)
+
+        # "Delete" the file attachment and all revisions of it.
+        review_request_draft.inactive_file_attachments.add(file_attachment)
+        review_request_draft.file_attachments.remove(file_attachment)
+        review_request_draft.inactive_file_attachments.add(file_attachment_2)
+        review_request_draft.file_attachments.remove(file_attachment_2)
+
+        self.assertEqual(
+            review_request.get_file_attachment_state(file_attachment),
+            FileAttachmentState.PENDING_DELETION)
+        self.assertEqual(
+            review_request.get_file_attachment_state(file_attachment_2),
+            FileAttachmentState.PENDING_DELETION)
+
+        del review_request._file_attachments_data
+
+        # 24 queries:
+        #
+        #  1. Fetch review request
+        #  2. Fetch request user
+        #  3. Fetch request user's Profile
+        #  4. Fetch review request
+        #  5. Fetch review request draft
+        #  6. Fetch file attachment
+        #  7. Fetch review request draft
+        #  8. Save any file attachment updates
+        #  9. Fetch review request when getting file attachment state
+        # 10. Fetch active file attachments when getting file attachment state
+        # 11. Fetch review request draft when getting file attachment state
+        # 12. Fetch inactive draft file attachments when getting file
+        #     attachment state
+        # 13. Fetch file attachment IDs matching history ID
+        # 14. Fetch inactive draft file attachments
+        # 15. Remove file attachment from inactive draft file attachments
+        # 16. Update inactive draft file attachments count
+        # 17. Fetch inactive draft file attachments count
+        # 18. Fetch active draft file attachments
+        # 19. Add file attachment to active draft file attachments
+        # 20. Update active draft file attachments count
+        # 21. Fetch active draft file attachments count
+        # 22. Fetch review request
+        # 23. Fetch review request
+        # 24. Fetch review request
+        queries = [
+            {
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+            {
+                'model': User,
+                'where': Q(pk=self.user.pk),
+            },
+            {
+                'model': Profile,
+                'where': Q(user=self.user),
+            },
+            {
+                'model': ReviewRequest,
+                'select_related': {'submitter', 'repository'},
+                'where': (Q(local_site=None) &
+                          Q(pk=str(review_request.pk))),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'select_related': {'review_request'},
+                'where': Q(review_request=review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 4,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest_inactive_file_attachments',
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_inactive_file_attachments',
+                    'reviews_reviewrequestdraft_file_attachments'
+                },
+                'where': (((Q(review_request=review_request) &
+                            Q(added_in_filediff__isnull=True) &
+                            Q(repository__isnull=True) &
+                            Q(user__isnull=True)) |
+                           Q(inactive_review_request=review_request) |
+                           Q(drafts=review_request_draft) |
+                           Q(inactive_drafts=review_request_draft)) &
+                          Q(pk=str(review_request.pk)))
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=review_request),
+            },
+            {
+                'model': FileAttachment,
+                'type': 'UPDATE',
+                'where': Q(pk=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'where': Q(id=review_request.pk),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_inactive_file_attachments',
+                },
+                'where': Q(inactive_drafts__id=review_request_draft.pk),
+            },
+            {
+                'model': FileAttachment,
+                'where': Q(
+                    attachment_history=file_attachment.attachment_history_id),
+                'values_select': ('pk',),
+            },
+            {
+                'model': ReviewRequestDraft.inactive_file_attachments.through,
+                'where': (Q(reviewrequestdraft=(review_request_draft.pk,)) &
+                          Q(fileattachment__in={file_attachment.pk,
+                                                file_attachment_2.pk})),
+            },
+            {
+                'model': ReviewRequestDraft.inactive_file_attachments.through,
+                'type': 'DELETE',
+                'where': Q(id__in=[file_attachment_2.pk, file_attachment.pk]),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'type': 'UPDATE',
+                'where': Q(pk=review_request_draft.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'limit': 1,
+                'values_select': ('inactive_file_attachments_count',),
+                'where': Q(pk=review_request_draft.pk),
+            },
+            {
+                'model': ReviewRequestDraft.file_attachments.through,
+                'values_select': ('fileattachment',),
+                'where': (Q(fileattachment__in={file_attachment.pk,
+                                                file_attachment_2.pk}) &
+                          Q(reviewrequestdraft=review_request_draft.pk)),
+            },
+            {
+                'model': ReviewRequestDraft.file_attachments.through,
+                'type': 'INSERT',
+            },
+            {
+                'model': ReviewRequestDraft,
+                'type': 'UPDATE',
+                'where': Q(pk=review_request_draft.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'limit': 1,
+                'values_select': ('file_attachments_count',),
+                'where': Q(pk=review_request_draft.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            rsp = self.api_put(
+                get_file_attachment_item_url(file_attachment),
+                {
+                    'pending_deletion': False,
+                },
+                expected_mimetype=file_attachment_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(
+            review_request.get_file_attachment_state(file_attachment),
+            FileAttachmentState.PUBLISHED)
+        self.assertEqual(
+            review_request.get_file_attachment_state(file_attachment_2),
+            FileAttachmentState.PUBLISHED)
+
+    def test_put_with_pending_deletion_false_for_invalid(self) -> None:
+        """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/
+        with setting pending_deletion to False for a file attachment that isn't
+        currently pending deletion
+        """
+        review_request = self.create_review_request(submitter=self.user)
+        file_attachment = self.create_file_attachment(review_request)
+        self.create_review_request_draft(review_request)
+
+        rsp = self.api_put(
+            get_file_attachment_item_url(file_attachment),
+            {
+                'pending_deletion': False,
+            },
+            expected_status=400)
+
+        self.assertEqual(
+            rsp,
+            {
+                'err': {
+                    'code': 105,
+                    'msg': 'One or more fields had errors',
+                    'type': 'request-field-error',
+                },
+                'fields': {
+                    'pending_deletion': (
+                        'This can only be used to undo the pending '
+                        'deletion of a file attachment. This file '
+                        'attachment is not currently pending '
+                        'deletion.'
+                    ),
+                },
+                'stat': 'fail',
+            })
