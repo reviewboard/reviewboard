@@ -1217,11 +1217,13 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
         review_request = self.review_request_details.get_review_request()
 
         model_attrs = {
-            'id': attachment.pk,
-            'loaded': True,
             'downloadURL': attachment.get_absolute_url(),
             'filename': attachment.filename,
+            'id': attachment.pk,
+            'loaded': True,
             'revision': attachment.attachment_revision,
+            'state': self.review_request_details.get_file_attachment_state(
+                attachment).value,
             'thumbnailHTML': attachment.thumbnail,
         }
 

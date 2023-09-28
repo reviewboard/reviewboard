@@ -1,14 +1,17 @@
 import kgb
 from django.contrib.auth.models import User
-from django.db.models import Q
+from django.db.models import Max, Q
 from django.utils import timezone
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.attachments.models import (FileAttachment,
+                                            FileAttachmentHistory)
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.models import (Comment, ReviewRequest,
                                         ReviewRequestDraft)
+from reviewboard.reviews.models.review_request import FileAttachmentState
 from reviewboard.reviews.signals import (review_request_reopened,
                                          review_request_reopening)
 from reviewboard.scmtools.core import ChangeSet
@@ -1219,3 +1222,944 @@ class ApprovalTests(TestCase):
         self.assertFalse(self.review_request.approved)
         self.assertEqual(self.review_request.approval_failure,
                          'The review request has unverified issues.')
+
+
+class GetFileAttachmentsDataTests(TestCase):
+    """Unit tests for ReviewRequest.get_file_attachments_data"""
+
+    fixtures = ['test_scmtools', 'test_users']
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
+
+        self.review_request = self.create_review_request(
+            create_repository=True,
+            publish=True)
+
+    def test_get_file_attachments_data(self):
+        """Testing ReviewRequest.get_file_attachments_data"""
+        active = self.create_file_attachment(
+            self.review_request)
+        active_2 = self.create_file_attachment(
+            self.review_request)
+        inactive = self.create_file_attachment(
+            self.review_request,
+            active=False)
+        draft_active = self.create_file_attachment(
+            self.review_request,
+            draft=True)
+        draft_inactive = self.create_file_attachment(
+            self.review_request,
+            draft=True,
+            active=False)
+        draft_inactive_2 = self.create_file_attachment(
+            self.review_request,
+            draft=True,
+            active=False)
+
+        draft = self.review_request.get_draft()
+
+        # 5 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch inactive file attachments
+        # 3. Fetch the review request draft
+        # 4. Fetch active draft file attachments
+        # 5. Fetch the inactive draft file attachments
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=self.review_request.pk),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_inactive_file_attachments',
+                },
+                'where': Q(inactive_review_request__id=self.review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=self.review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_file_attachments',
+                },
+                'where': Q(drafts__id=draft.pk),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_inactive_file_attachments',
+                },
+                'where': Q(inactive_drafts__id=draft.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self._assert_data_equals(
+                active_ids={
+                    active.pk,
+                    active_2.pk,
+                },
+                inactive_ids={
+                    inactive.pk,
+                },
+                draft_active_ids={
+                    active.pk,
+                    active_2.pk,
+                    draft_active.pk
+                },
+                draft_inactive_ids={
+                    inactive.pk,
+                    draft_inactive.pk,
+                    draft_inactive_2.pk,
+                })
+
+        # The data should be cached. No queries.
+        with self.assertNumQueries(0):
+            self._assert_data_equals(
+                active_ids={
+                    active.pk,
+                    active_2.pk,
+                },
+                inactive_ids={
+                    inactive.pk,
+                },
+                draft_active_ids={
+                    active.pk,
+                    active_2.pk,
+                    draft_active.pk
+                },
+                draft_inactive_ids={
+                    inactive.pk,
+                    draft_inactive.pk,
+                    draft_inactive_2.pk,
+                })
+
+    def test_get_file_attachments_data_no_drafts(self):
+        """Testing ReviewRequest.get_file_attachments_data with no
+        review request draft
+        """
+        active = self.create_file_attachment(
+            self.review_request)
+        inactive = self.create_file_attachment(
+            self.review_request,
+            active=False)
+
+        # 3 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch inactive file attachments
+        # 3. Fetch the review request draft
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=self.review_request.pk),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_inactive_file_attachments',
+                },
+                'where': Q(inactive_review_request__id=self.review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=self.review_request),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self._assert_data_equals(
+                active_ids={
+                    active.pk,
+                },
+                inactive_ids={
+                    inactive.pk,
+                })
+
+    def test_get_file_attachments_data_multiple_review_requests(self):
+        """Testing ReviewRequest.get_file_attachments_data when file
+        attachments from other review requests exist
+        """
+        review_request_2 = self.create_review_request(
+            repository=self.review_request.repository,
+            publish=True)
+
+        active = self.create_file_attachment(
+            self.review_request)
+        inactive = self.create_file_attachment(
+            self.review_request,
+            active=False)
+        draft_active = self.create_file_attachment(
+            self.review_request,
+            draft=True)
+        draft_inactive = self.create_file_attachment(
+            self.review_request,
+            draft=True,
+            active=False)
+
+        self.create_file_attachment(
+            review_request_2)
+        self.create_file_attachment(
+            review_request_2,
+            active=False)
+        self.create_file_attachment(
+            review_request_2,
+            draft=True)
+        self.create_file_attachment(
+            review_request_2,
+            draft=True,
+            active=False)
+
+        draft = self.review_request.get_draft()
+
+        # 5 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch inactive file attachments
+        # 3. Fetch the review request draft
+        # 4. Fetch active draft file attachments
+        # 5. Fetch the inactive draft file attachments
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=self.review_request.pk),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_inactive_file_attachments',
+                },
+                'where': Q(inactive_review_request__id=self.review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=self.review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_file_attachments',
+                },
+                'where': Q(drafts__id=draft.pk),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_inactive_file_attachments',
+                },
+                'where': Q(inactive_drafts__id=draft.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self._assert_data_equals(
+                active_ids={
+                    active.pk,
+                },
+                inactive_ids={
+                    inactive.pk,
+                },
+                draft_active_ids={
+                    active.pk,
+                    draft_active.pk
+                },
+                draft_inactive_ids={
+                    inactive.pk,
+                    draft_inactive.pk,
+                })
+
+    def test_get_file_attachments_data_legacy(self):
+        """Testing ReviewRequest.get_file_attachments_data with legacy
+        file attachments that don't have attachment histories
+        """
+
+        active = self.create_file_attachment(
+            self.review_request,
+            with_history=False)
+        inactive = self.create_file_attachment(
+            self.review_request,
+            active=False,
+            with_history=False)
+        draft_active = self.create_file_attachment(
+            self.review_request,
+            draft=True,
+            with_history=False)
+        draft_inactive = self.create_file_attachment(
+            self.review_request,
+            draft=True,
+            active=False,
+            with_history=False)
+
+        draft = self.review_request.get_draft()
+
+        # 13 queries:
+        #
+        #    1. Fetch active file attachments
+        #  2-5. Create a FileAttachmentHistory for the active file attachments.
+        #       This happens because we don't automatically create a history
+        #       for test file attachments. These queries won't happen in
+        #       practice
+        #    6. Fetch inactive file attachments
+        #    7. Fetch the review request draft
+        #    8. Fetch active draft file attachments
+        # 9-12. Create a FileAttachmentHistory for the active draft file
+        #       attachments. Same as above, these queries won't happen in
+        #       practice
+        #   13. Fetch the inactive draft file attachments
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=self.review_request.pk),
+            },
+            {
+                'model': FileAttachmentHistory,
+                'annotations': {
+                    'display_position__max': Max('display_position'),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachmenthistory',
+                    'reviews_reviewrequest_file_attachment_histories',
+                },
+                'where': Q(review_request=self.review_request),
+            },
+            {
+                'model': FileAttachmentHistory,
+                'type': 'INSERT',
+            },
+            {
+                'model': ReviewRequest.file_attachment_histories.through,
+                'type': 'INSERT',
+            },
+            {
+                'model': FileAttachment,
+                'type': 'UPDATE',
+                'where': Q(pk=active.pk)
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_inactive_file_attachments',
+                },
+                'where': Q(inactive_review_request__id=self.review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=self.review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_file_attachments',
+                },
+                'where': Q(drafts__id=draft.pk),
+            },
+            {
+                'model': FileAttachmentHistory,
+                'annotations': {
+                    'display_position__max': Max('display_position'),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachmenthistory',
+                    'reviews_reviewrequest_file_attachment_histories',
+                },
+                'where': Q(review_request=self.review_request),
+            },
+            {
+                'model': FileAttachmentHistory,
+                'type': 'INSERT',
+            },
+            {
+                'model': ReviewRequest.file_attachment_histories.through,
+                'type': 'INSERT',
+            },
+            {
+                'model': FileAttachment,
+                'type': 'UPDATE',
+                'where': Q(pk=draft_active.pk)
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_inactive_file_attachments',
+                },
+                'where': Q(inactive_drafts__id=draft.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self._assert_data_equals(
+                active_ids={
+                    active.pk,
+                },
+                inactive_ids={
+                    inactive.pk,
+                },
+                draft_active_ids={
+                    active.pk,
+                    draft_active.pk,
+                },
+                draft_inactive_ids={
+                    inactive.pk,
+                    draft_inactive.pk,
+                })
+
+    def _assert_data_equals(
+        self,
+        active_ids: set = set(),
+        inactive_ids: set = set(),
+        draft_active_ids: set = set(),
+        draft_inactive_ids: set = set(),
+    ) -> None:
+        """Assert that the given data matches get_file_attachments_data().
+
+        Args:
+            active_ids (set):
+                The set of active file attachment IDs on the review request.
+
+            inactive_ids (set):
+                The set of inactive file attachment IDs on the review request.
+
+            draft_active_ids (set):
+                The set of active file attachment IDs on the review request
+                draft.
+
+            draft_inactive_ids (set):
+                The set of inactive file attachment IDs on the review request
+                draft.
+
+        Raises:
+            AssertionError:
+                The given data does not match the returned data from
+                get_file_attachments_data().
+        """
+        self.assertEqual(
+            self.review_request.get_file_attachments_data(),
+            {
+                'active_ids': active_ids,
+                'inactive_ids': inactive_ids,
+                'draft_active_ids': draft_active_ids,
+                'draft_inactive_ids':
+                    draft_inactive_ids,
+            })
+
+
+class GetFileAttachmentStateTests(TestCase):
+    """Unit tests for ReviewRequest.get_file_attachment_state"""
+
+    fixtures = ['test_scmtools', 'test_users']
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
+
+        self.review_request = self.create_review_request(
+            create_repository=True,
+            publish=True)
+
+    def test_get_file_attachment_state_published(self):
+        """Testing ReviewRequest.get_file_attachment_state with a published
+        file attachment
+        """
+        published = self.create_file_attachment(self.review_request)
+
+        # 2 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch the review request draft
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=self.review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=self.review_request),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(published),
+                FileAttachmentState.PUBLISHED)
+
+    def test_get_file_attachment_state_published_while_draft(self):
+        """Testing ReviewRequest.get_file_attachment_state with a published
+        file attachment and while the review request is a draft
+        """
+        published = self.create_file_attachment(self.review_request)
+
+        review_request_draft = \
+            self.create_review_request_draft(self.review_request)
+
+        # 3 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch the review request draft
+        # 3. Fetch the active draft file attachments
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=self.review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=self.review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_file_attachments',
+                },
+                'where': Q(drafts__id=review_request_draft.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(published),
+                FileAttachmentState.PUBLISHED)
+
+    def test_get_file_attachment_state_draft(self):
+        """Testing ReviewRequest.get_file_attachment_state with a draft
+        file attachment
+        """
+        draft = self.create_file_attachment(
+            self.review_request,
+            caption='Original Caption',
+            draft_caption='New Caption')
+
+        review_request_draft = \
+            self.create_review_request_draft(self.review_request)
+
+        # 3 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch the review request draft
+        # 3. Fetch active draft file attachments
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=self.review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=self.review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_file_attachments',
+                },
+                'where': Q(drafts__id=review_request_draft.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(draft),
+                FileAttachmentState.DRAFT)
+
+    def test_get_file_attachment_state_deleted(self):
+        """Testing ReviewRequest.get_file_attachment_state with a deleted
+        file attachment
+        """
+        deleted = self.create_file_attachment(self.review_request)
+
+        self.review_request.inactive_file_attachments.add(deleted)
+        self.review_request.file_attachments.remove(deleted)
+
+        # 2 queries:
+        #
+        # 1. Fetch inactive file attachments
+        # 2. Fetch the review request draft
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_inactive_file_attachments',
+                },
+                'where': Q(inactive_review_request__id=self.review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=self.review_request),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(deleted),
+                FileAttachmentState.DELETED)
+
+    def test_get_file_attachment_state_deleted_with_while_draft(self):
+        """Testing ReviewRequest.get_file_attachment_state with a deleted
+        file attachment and while the review request is a draft
+        """
+        deleted = self.create_file_attachment(self.review_request)
+
+        self.review_request.inactive_file_attachments.add(deleted)
+        self.review_request.file_attachments.remove(deleted)
+
+        review_request_draft = \
+            self.create_review_request_draft(self.review_request)
+
+        # 2 queries:
+        #
+        # 1. Fetch inactive file attachments
+        # 2. Fetch the review request draft
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_inactive_file_attachments',
+                },
+                'where': Q(inactive_review_request__id=self.review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=self.review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_inactive_file_attachments',
+                },
+                'where': Q(inactive_drafts__id=review_request_draft.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(deleted),
+                FileAttachmentState.DELETED)
+
+    def test_get_file_attachment_state_pending_deletion(self):
+        """Testing ReviewRequest.get_file_attachment_state with a file
+        attachment that's pending deletion
+        """
+        pending_deletion = self.create_file_attachment(self.review_request)
+
+        review_request_draft = \
+            self.create_review_request_draft(self.review_request)
+
+        review_request_draft.inactive_file_attachments.add(pending_deletion)
+        review_request_draft.file_attachments.remove(pending_deletion)
+
+        # 2 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch the review request draft
+        # 3. Fetch inactive draft file attachments
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=self.review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=self.review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_inactive_file_attachments',
+                },
+                'where': Q(inactive_drafts__id=review_request_draft.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(
+                    pending_deletion),
+                FileAttachmentState.PENDING_DELETION)
+
+    def test_get_file_attachment_state_new(self):
+        """Testing ReviewRequest.get_file_attachment_state with a new
+        file attachment
+        """
+        new = self.create_file_attachment(
+            self.review_request,
+            draft=True)
+
+        review_request_draft = self.review_request.get_draft()
+
+        # 2 queries:
+        #
+        # 1. Fetch the review request draft
+        # 2. Fetch active file attachments
+        queries = [
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=self.review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_file_attachments',
+                },
+                'where': Q(drafts__id=review_request_draft.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(
+                    new),
+                FileAttachmentState.NEW)
+
+    def test_get_file_attachment_state_new_revision(self):
+        """Testing ReviewRequest.get_file_attachment_state with a new
+        revision of a file attachment
+        """
+        published = self.create_file_attachment(self.review_request)
+
+        new_revision = self.create_file_attachment(
+            self.review_request,
+            attachment_history=published.attachment_history,
+            attachment_revision=published.attachment_revision + 1,
+            draft=True)
+
+        review_request_draft = self.review_request.get_draft()
+
+        # 3 queries:
+        #
+        # 1. Fetch the review request draft
+        # 2. Fetch active file attachments
+        # 3. Fetch active draft file attachments
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=self.review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=self.review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_file_attachments',
+                },
+                'where': Q(drafts__id=review_request_draft.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(
+                    new_revision),
+                FileAttachmentState.NEW_REVISION)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(
+                    published),
+                FileAttachmentState.PUBLISHED)
+
+    def test_get_file_attachment_state_all(self):
+        """Testing ReviewRequest.get_file_attachment_state with one
+        file attachment of each state on a review request
+        """
+        published = self.create_file_attachment(self.review_request)
+
+        draft = self.create_file_attachment(
+            self.review_request,
+            caption='Original Caption',
+            draft_caption='New Caption')
+
+        deleted = self.create_file_attachment(
+            self.review_request)
+        self.review_request.inactive_file_attachments.add(deleted)
+        self.review_request.file_attachments.remove(deleted)
+
+        new = self.create_file_attachment(
+            self.review_request,
+            draft=True)
+
+        new_revision = self.create_file_attachment(
+            self.review_request,
+            attachment_history=published.attachment_history,
+            attachment_revision=published.attachment_revision + 1,
+            draft=True)
+
+        review_request_draft = self.review_request.get_draft()
+
+        pending_deletion = self.create_file_attachment(self.review_request)
+        review_request_draft.inactive_file_attachments.add(pending_deletion)
+        review_request_draft.file_attachments.remove(pending_deletion)
+
+        # 5 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch inactive file attachments
+        # 3. Fetch the review request draft
+        # 4. Fetch active draft file attachments
+        # 5. Fetch the inactive draft file attachments
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=self.review_request.pk),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_inactive_file_attachments',
+                },
+                'where': Q(inactive_review_request__id=self.review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=self.review_request),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_file_attachments',
+                },
+                'where': Q(drafts__id=review_request_draft.pk),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequestdraft_inactive_file_attachments',
+                },
+                'where': Q(inactive_drafts__id=review_request_draft.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(
+                    published),
+                FileAttachmentState.PUBLISHED)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(
+                    draft),
+                FileAttachmentState.DRAFT)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(
+                    deleted),
+                FileAttachmentState.DELETED)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(
+                    pending_deletion),
+                FileAttachmentState.PENDING_DELETION)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(
+                    new),
+                FileAttachmentState.NEW)
+
+        with self.assertNumQueries(0):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(
+                    new_revision),
+                FileAttachmentState.NEW_REVISION)

@@ -34,6 +34,9 @@ export interface FileAttachmentAttrs extends BaseResourceAttrs {
     /** The revision of the file attachment. */
     revision: number;
 
+    /** The state of the file attachment. */
+    state: string;
+
     /** The HTML for the thumbnail depicting this file attachment. */
     thumbnailHTML: string;
 }
@@ -70,6 +73,7 @@ export class FileAttachment extends BaseResource<FileAttachmentAttrs> {
             'filename': null,
             'reviewURL': null,
             'revision': null,
+            'state': 'New',
             'thumbnailHTML': null,
         }, super.defaults());
     }
@@ -99,6 +103,7 @@ export class FileAttachment extends BaseResource<FileAttachmentAttrs> {
         'filename',
         'reviewURL',
         'revision',
+        'state',
         'thumbnailHTML',
     ];
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -11,7 +11,7 @@ from reviewboard.attachments.models import FileAttachmentHistory
 from reviewboard.reviews.models.default_reviewer import DefaultReviewer
 
 if TYPE_CHECKING:
-    from reviewboard.attachments.models import FileAttachment
+    from reviewboard.attachments.models import FileAttachmentSequence
 
 
 class BaseReviewRequestDetails(models.Model):
@@ -106,7 +106,7 @@ class BaseReviewRequestDetails(models.Model):
         self,
         *,
         sort: bool = True,
-    ) -> List[FileAttachment]:
+    ) -> FileAttachmentSequence:
         """Return a list for all active file attachments.
 
         This includes all current file attachments, but not previous inactive

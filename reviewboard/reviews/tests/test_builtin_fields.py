@@ -1,10 +1,12 @@
 """Unit tests for reviewboard.reviews.builtin_fields."""
 
 from django.contrib.auth.models import AnonymousUser, User
+from django.db.models import Q
 from django.test.client import RequestFactory
 from django.urls import resolve
 from django.utils.safestring import SafeText
 
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.builtin_fields import (CommitListField,
                                                 FileAttachmentsField)
 from reviewboard.reviews.detail import ReviewRequestPageData
@@ -1025,10 +1027,41 @@ class FileAttachmentsFieldTests(FieldsTestCase):
 
         field = self.make_field(review_request)
 
+        # 3 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch inactive file attachments
+        # 3. Fetch the review request draft
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=review_request.pk),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_inactive_file_attachments',
+                },
+                'where': Q(inactive_review_request__id=review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=review_request),
+            },
+        ]
+
         # Check the added file attachments. Only file attachments 2 and 3
         # should be present.
-        result = field.render_change_entry_html(
-            changedesc.fields_changed[field.field_id]['added'])
+        with self.assertQueries(queries):
+            result = field.render_change_entry_html(
+                changedesc.fields_changed[field.field_id]['added'])
 
         self.assertIsInstance(result, SafeText)
 
@@ -1038,11 +1071,80 @@ class FileAttachmentsFieldTests(FieldsTestCase):
 
         # Check the removed file attachments. Only file attachment 1
         # should be present.
-        result = field.render_change_entry_html(
-            changedesc.fields_changed[field.field_id]['removed'])
+        with self.assertNumQueries(0):
+            result = field.render_change_entry_html(
+                changedesc.fields_changed[field.field_id]['removed'])
 
         self.assertIsInstance(result, SafeText)
 
         self.assertIn('"id": %s,' % attachment1.pk, result)
         self.assertNotIn('"id": %s,' % attachment2.pk, result)
         self.assertNotIn('"id": %s,' % attachment3.pk, result)
+
+    def test_get_change_entry_sections_html(self):
+        """Testing FileAttachmentsField.get_change_entry_sections_html"""
+        target = User.objects.get(username='doc')
+        review_request = self.create_review_request(public=True,
+                                                    create_with_history=True,
+                                                    target_people=[target])
+        attachment1 = self.create_file_attachment(
+            review_request,
+            caption='Attachment 1',
+            orig_filename='file1.png')
+
+        self.create_file_attachment(
+            review_request,
+            draft=True,
+            draft_caption='Attachment 2',
+            orig_filename='file2.png')
+        self.create_file_attachment(
+            review_request,
+            draft=True,
+            draft_caption='Attachment 3',
+            orig_filename='file3.png')
+
+        draft = review_request.get_draft()
+        draft.inactive_file_attachments.add(attachment1)
+        draft.file_attachments.remove(attachment1)
+
+        review_request.publish(user=review_request.submitter)
+        changedesc = review_request.changedescs.latest()
+
+        field = self.make_field(review_request)
+
+        # 3 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch inactive file attachments
+        # 3. Fetch the review request draft
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=review_request.pk),
+            },
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_inactive_file_attachments',
+                },
+                'where': Q(inactive_review_request__id=review_request.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=review_request),
+            },
+        ]
+
+        # Check that the queries are only run once and that the cached data
+        # is used subsequently when fetching the state of all file attachments
+        # in the changedesc.
+        with self.assertQueries(queries):
+            field.get_change_entry_sections_html(
+                changedesc.fields_changed[field.field_id])
