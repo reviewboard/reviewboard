@@ -5,6 +5,14 @@
   display: none;
 }
 
+/*
+ * Our tests may set up a fake page structure. Avoid inheriting the
+ * `display: none` from above.
+ */
+#tests-scratch #page-container {
+  display: block;
+}
+
 .jasmine_html-reporter {
   background: none;
   margin: @page-container-padding;
