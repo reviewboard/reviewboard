@@ -271,7 +271,7 @@ RB.DiffCommitListView = Backbone.View.extend({
         e.preventDefault();
         e.stopPropagation();
 
-        this._expandOrCollapse($(e.currentTarget), true);
+        this._expandOrCollapse($(e.currentTarget), false);
     },
 
     /**
