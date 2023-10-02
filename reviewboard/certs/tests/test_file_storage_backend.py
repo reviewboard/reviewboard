@@ -974,6 +974,28 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 'storage_id': 'test-site:my-certs',
             })
 
+    def test_get_stored_ca_bundle_with_local_site_mismatch(self) -> None:
+        """Testing FileCertificateStorageBackend.get_stored_ca_bundle with
+        LocalSite mismatch
+        """
+        local_site1 = self.create_local_site(name='test-site-1')
+        local_site2 = self.create_local_site(name='test-site-2')
+
+        backend = self._create_backend()
+        path1 = os.path.join(backend.storage_path, 'cabundles',
+                             'my-certs1.pem')
+        path2 = os.path.join(backend.storage_path, 'sites', 'test-site-1',
+                             'cabundles', 'my-certs2.pem')
+
+        self._write_file(path1, TEST_CERT_BUNDLE_PEM)
+        self._write_file(path2, TEST_CERT_BUNDLE_PEM)
+
+        self.assertIsNone(backend.get_stored_ca_bundle(name='my-certs1',
+                                                       local_site=local_site1))
+        self.assertIsNone(backend.get_stored_ca_bundle(name='my-certs2'))
+        self.assertIsNone(backend.get_stored_ca_bundle(name='my-certs2',
+                                                       local_site=local_site2))
+
     def test_get_stored_ca_bundle_with_not_found(self) -> None:
         """Testing FileCertificateStorageBackend.get_stored_ca_bundle with
         not found

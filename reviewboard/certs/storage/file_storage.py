@@ -15,10 +15,10 @@ from uuid import uuid4
 
 from django.core.cache import cache
 from django.core.files.utils import validate_file_name
-from django.utils._os import safe_join
 from django.utils.text import slugify
 from django.utils.translation import gettext as _, gettext_lazy
 from djblets.cache.backend import cache_memoize, make_cache_key
+from djblets.util.filesystem import safe_join
 from djblets.util.functional import iterable_len, lazy_re_compile
 
 from reviewboard.certs.cert import (CertDataFormat,
