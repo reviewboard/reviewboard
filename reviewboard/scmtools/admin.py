@@ -23,10 +23,17 @@ from reviewboard.scmtools.models import Repository, Tool
 if TYPE_CHECKING:
     from django.utils.safestring import SafeString
     from reviewboard.hostingsvcs.service import HostingService
+    from reviewboard.scmtools.core import SCMTool
 
 
 class RepositoryAdmin(ModelAdmin):
-    list_display = ('name', 'path', 'hosting', '_visible', 'inline_actions')
+    list_display = (
+        'name',
+        'path',
+        '_repository_type',
+        '_visible',
+        'inline_actions',
+    )
     list_select_related = ('hosting_account',)
     search_fields = ('name', 'path', 'mirror_path', 'tool__name')
     raw_id_fields = ('local_site',)
@@ -87,33 +94,52 @@ class RepositoryAdmin(ModelAdmin):
 
     fieldset_template_name = 'admin/scmtools/repository/_fieldset.html'
 
-    @admin.display(description=_('Hosting Service Account'))
-    def hosting(
+    @admin.display(description=_('Type / Account'))
+    def _repository_type(
         self,
         repository: Repository,
     ) -> str:
-        hosting_info: str
+        result: str
+        scmtool: Optional[SCMTool]
+        missing_support: bool = False
 
-        if repository.hosting_account_id:
+        try:
+            scmtool = repository.get_scmtool()
+        except Exception:
+            scmtool = None
+
+        if scmtool:
+            assert scmtool.name
+            scmtool_name = scmtool.name
+        else:
+            missing_support = True
+            scmtool_name = repository.scmtool_id
+
+        hosting_account = repository.hosting_account
+
+        if hosting_account:
             service: Optional[HostingService]
-            account = repository.hosting_account
 
             try:
-                service = account.service
+                service = hosting_account.service
             except MissingHostingServiceError:
                 service = None
 
             if service:
-                service_name = account.service.name
+                service_name = hosting_account.service.name
             else:
-                service_name = (gettext('%s (missing support)')
-                                % account.service_name)
+                service_name = hosting_account.service_name
+                missing_support = True
 
-            hosting_info = '%s@%s' % (account.username, service_name)
+            result = '%s (%s@%s)' % (scmtool_name, hosting_account.username,
+                                     service_name)
         else:
-            hosting_info = ''
+            result = scmtool_name
 
-        return hosting_info
+        if missing_support:
+            result = gettext('%s (missing support)') % result
+
+        return result
 
     @admin.display(description='')
     def inline_actions(
