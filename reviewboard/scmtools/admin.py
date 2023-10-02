@@ -1,16 +1,28 @@
+"""Model administration for SCMTools and repositories."""
+
+from __future__ import annotations
+
+from typing import Optional, TYPE_CHECKING
+
+from django.contrib import admin
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.http import HttpResponse, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, render
 from django.urls import include, path
 from django.utils.html import format_html, mark_safe
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 
 from reviewboard.accounts.admin import fix_review_counts
 from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.admin.server import get_server_url
+from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.models import Repository, Tool
+
+if TYPE_CHECKING:
+    from django.utils.safestring import SafeString
+    from reviewboard.hostingsvcs.service import HostingService
 
 
 class RepositoryAdmin(ModelAdmin):
@@ -75,17 +87,39 @@ class RepositoryAdmin(ModelAdmin):
 
     fieldset_template_name = 'admin/scmtools/repository/_fieldset.html'
 
-    def hosting(self, repository):
+    @admin.display(description=_('Hosting Service Account'))
+    def hosting(
+        self,
+        repository: Repository,
+    ) -> str:
+        hosting_info: str
+
         if repository.hosting_account_id:
+            service: Optional[HostingService]
             account = repository.hosting_account
 
-            if account.service:
-                return '%s@%s' % (account.username, account.service.name)
+            try:
+                service = account.service
+            except MissingHostingServiceError:
+                service = None
 
-        return ''
-    hosting.short_description = _('Hosting Service Account')
+            if service:
+                service_name = account.service.name
+            else:
+                service_name = (gettext('%s (missing support)')
+                                % account.service_name)
 
-    def inline_actions(self, repository):
+            hosting_info = '%s@%s' % (account.username, service_name)
+        else:
+            hosting_info = ''
+
+        return hosting_info
+
+    @admin.display(description='')
+    def inline_actions(
+        self,
+        repository: Repository,
+    ) -> SafeString:
         """Return HTML containing actions to show for each repository.
 
         Args:
@@ -105,7 +139,12 @@ class RepositoryAdmin(ModelAdmin):
                 css_class, url, name)
 
         if repository.hosting_account:
-            service = repository.hosting_account.service
+            service: Optional[HostingService]
+
+            try:
+                service = repository.hosting_account.service
+            except Exception:
+                service = None
 
             if service and service.has_repository_hook_instructions:
                 s.append(_build_item(
@@ -121,12 +160,11 @@ class RepositoryAdmin(ModelAdmin):
         s.append('</div>')
 
         return mark_safe(''.join(s))
-    inline_actions.short_description = ''
 
+    @admin.display(boolean=True,
+                   description=_('Show'))
     def _visible(self, repository):
         return repository.visible
-    _visible.boolean = True
-    _visible.short_description = _('Show')
 
     def get_urls(self):
         return [

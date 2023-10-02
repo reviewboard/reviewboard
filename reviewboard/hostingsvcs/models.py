@@ -1,3 +1,9 @@
+"""Models for hosting service accounts."""
+
+from __future__ import annotations
+
+import logging
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
@@ -6,6 +12,9 @@ from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.managers import HostingServiceAccountManager
 from reviewboard.site.models import LocalSite
+
+
+logger = logging.getLogger(__name__)
 
 
 class HostingServiceAccount(models.Model):
@@ -61,13 +70,19 @@ class HostingServiceAccount(models.Model):
                 The hosting service could not be loaded from the registry.
         """
         if not hasattr(self, '_service'):
+            service_name = self.service_name
+
             cls = hosting_service_registry.get_hosting_service(
                 self.service_name)
 
             if cls:
                 self._service = cls(self)
             else:
-                raise MissingHostingServiceError(self.service_name)
+                logger.error('Failed to load hosting service %s for '
+                             'repository %s.',
+                             service_name, self.pk)
+
+                raise MissingHostingServiceError(service_name)
 
         return self._service
 
