@@ -356,6 +356,10 @@ Sample Apache Configuration
      ServerName reviews.example.com
 
 
+     # Enable HTTP/2 support, if available.
+     Protocols h2 h2c http/1.1
+
+
      # If enabling SSL on Apache, uncomment these lines and specify the
      # SSL paths.
      #
