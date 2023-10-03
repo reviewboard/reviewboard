@@ -3,9 +3,11 @@
 {% template_hook_point "before-review-request-summary" %}
 
 <div class="review-request-section review-request-summary">
+ <div class="rb-c-review-request-fieldset -has-inline-fields"
+      aria-label="{% trans 'Review request summary' %}"
+      role="group">
 {% template_hook_point "review-request-summary-pre" %}
 
- <label class="review-request-section-label" for="field_summary">{% trans "Summary" %}: </label>
 {% review_request_field review_request_details 'summary' %}
  {{field.as_html}}
 {% end_review_request_field %}
@@ -18,6 +20,7 @@
  </p>
 
 {% template_hook_point "review-request-summary-post" %}
+ </div>
 </div>
 
 {% template_hook_point "after-review-request-summary" %}
@@ -26,42 +29,40 @@
 
 {% template_hook_point "before-review-request-fields" %}
 
-<table id="review-request-details" class="review-request-section">
- <colgroup>
-  <col width="0%" />
-  <col width="100%" />
- </colgroup>
+<div id="review-request-details" class="review-request-section">
 {% for_review_request_fieldset review_request_details %}
 {%  if fieldset.fieldset_id != 'main' and fieldset.fieldset_id != 'extra' %}
- <thead id="fieldset_{{fieldset.fieldset_id}}_head"{% if forloop.first %} class="first-fieldset"{% endif %}>
-  <tr>
-   <th class="review-request-section-label" colspan="2">{{fieldset.label}}
+ <div class="rb-c-review-request-fieldset -is-tabular -has-inline-fields"
+      id="fieldset_{{fieldset.fieldset_id}}_head"
+      aria-labelledby="fieldset_label_{{fieldset.fieldset_id}}"
+      role="group">
+  <h3 class="rb-c-review-request-fieldset__label"
+      id="fieldset_label_{{fieldset.fieldset_id}}">
+   {{fieldset.label}}
 {%   if show_fieldset_required %}
     <span class="required-flag" aria-label="{% trans 'This field is required' %}" title="{% trans 'This field is required' %}">*</span>
 {%   endif %}
-  </tr>
- </thead>
- <tbody id="fieldset_{{fieldset.fieldset_id}}_body">
+  </h3>
 {%   for_review_request_field review_request_details fieldset %}
-  <tr>
-   <th><label for="field_{{field.field_id}}">{{field.label}}:</label></th>
-   <td>{{field.as_html}}</td>
-  </tr>
+{{field.as_html}}
 {%   end_for_review_request_field %}
- </tbody>
-{%  endif %}
-{% end_for_review_request_fieldset %}
-</table>
-
-<div id="review-request-main">
-{% for_review_request_field review_request_details 'main' %}
-{%  if field.field_id != 'summary' %}
- <div class="review-request-section">
-  <label class="review-request-section-label" for="field_{{field.field_id}}">{{field.label}}</label>
-  <div class="field-container">{{field.as_html}}</div>
  </div>
 {%  endif %}
+{% end_for_review_request_fieldset %}
+</div>
+
+<div id="review-request-main">
+ <div class="rb-c-review-request-fieldset"
+      aria-label="{% trans 'Main fields' %}"
+      role="group">
+{% for_review_request_field review_request_details 'main' %}
+{%  if field.field_id != 'summary' %}
+  <div class="review-request-section">
+   {{field.as_html}}
+  </div>
+{%  endif %}
 {% end_for_review_request_field %}
+ </div>
 </div>
 
 {% template_hook_point "after-review-request-fields" %}
@@ -69,10 +70,7 @@
 
 <div id="review-request-extra">
 {% for_review_request_field review_request_details 'extra' %}
- <div class="review-request-section">
-  <label class="review-request-section-label" for="field_{{field.field_id}}">{{field.label}}</label>
-  <div class="field-container">{{field.as_html}}</div>
- </div>
+ <div class="review-request-section">{{field.as_html}}</div>
 {% end_for_review_request_field %}
 {% template_hook_point "review-request-extra-panes-pre" %}
 

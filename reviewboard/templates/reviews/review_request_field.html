@@ -1,8 +1,17 @@
-{% with field.tag_name|default:'div' as tag_name %}
-<{{tag_name}} id="field_{{field.field_id}}"
-              data-field-id="{{field.field_id}}"
-              class="field {{field.get_css_classes|join:' '}}"
-              {% for key, value in field.get_dom_attributes.items %} {{key}}="{{value}}"{% endfor %}
-              {% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}
-              >{{field.value_as_html|safe}}</{{tag_name}}>
+{% with field_id=field.field_id tag_name=field.tag_name|default:'div' %}
+<div class="rb-c-review-request-field"
+     aria-labelledby="field_label_{{field_id}}"
+     role="group">
+ <label class="rb-c-review-request-field__label"
+        id="field_label_{{field_id}}"
+        for="field_{{field_id}}">{{field.label}}</label>
+ <div class="rb-c-review-request-field__value">
+  <{{tag_name}} id="field_{{field_id}}"
+                data-field-id="{{field_id}}"
+                class="field {{field.get_css_classes|join:' '}}"
+                {% for key, value in field.get_dom_attributes.items %} {{key}}="{{value}}"{% endfor %}
+                {% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}
+                >{{field.value_as_html|safe}}</{{tag_name}}>
+ </div>
+</div>
 {% endwith %}

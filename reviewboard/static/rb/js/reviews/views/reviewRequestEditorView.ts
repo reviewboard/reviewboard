@@ -982,9 +982,11 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      * and prevents a bunch of wasted-looking space.
      */
     _resizeLayout() {
-        const $lastContent =
-            this.#$main.children('.review-request-section:last-child');
-        const $lastFieldContainer = $lastContent.children('.field-container');
+        const $lastContent = this.#$main
+            .children('.rb-c-review-request-fieldset')
+            .children('.review-request-section:last-child');
+        const $lastFieldContainer =
+            $lastContent.find('.rb-c-review-request-field__value');
         const $lastField = $lastFieldContainer.children('.editable');
         const lastFieldView =
             this.#fieldViews[$lastField.data('field-id')] as TextFieldView;
@@ -992,9 +994,12 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
         const editor = lastFieldView.inlineEditorView.textEditor;
         const detailsWidth = 300; // Defined as @details-width in reviews.less
         const detailsPadding = 10;
-        const $detailsBody = $('#review-request-details tbody');
-        const $detailsLabels = $detailsBody.find('th:first-child');
-        const $detailsValues = $detailsBody.find('span');
+        const $detailsBody =
+            $('#review-request-details .rb-c-review-request-fieldset__fields');
+        const $detailsLabels = $detailsBody
+            .find('.rb-c-review-request-field__label').eq(0);
+        const $detailsValues = $detailsBody
+            .find('.rb-c-review-request-field__value');
 
         this.#blockResizeLayout = true;
 

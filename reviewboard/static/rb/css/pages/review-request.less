@@ -47,10 +47,6 @@
   border-radius: 0 0 @box-border-radius @box-border-radius;
   clear: both;
   padding: 0.5rem;
-
-  .field-container {
-    position: relative;
-  }
 }
 
 .banner pre.field,
@@ -157,12 +153,16 @@
 }
 
 .review-request-summary {
+  padding-top: 0;
+
   p {
     margin: @box-padding 0 0 0;
   }
 
   #field_summary {
-    display: inline;
+    font-size: inherit;
+    margin: 0;
+    padding: 0;
 
     a {
       color: black;
@@ -170,18 +170,23 @@
     }
   }
 
-  .review-request-section-label, #field_summary {
+  .rb-c-review-request-field {
     font-size: @review-request-summary-font-size;
   }
 
-  .review-request-section-label {
-    /* Hide the "Summary:" label on mobile. */
-    .desktop-only();
-  }
+  .on-mobile-medium-screen-720({
+    .rb-c-review-request-fieldset.-has-inline-fields {
+      .rb-c-review-request-field {
+        /* There's no longer a baseline to work with, so center this instead. */
+        align-items: center;
 
-  .rb-icon-edit {
-    vertical-align: text-bottom;
-  }
+        &__label {
+          /* Hide the "Summary:" label on mobile. */
+          display: none;
+        }
+      }
+    }
+  });
 }
 
 .review-request-main-fieldset {
@@ -215,13 +220,17 @@
   .review-request-main-fieldset();
 }
 
+
 /****************************************************************************
  * Review request details pane
  ****************************************************************************/
 
 #review-request-details {
-  border-spacing: 0px;
+  box-sizing: border-box;
+  display: table;
   float: right;
+  margin: 0;
+  padding: 1em;
   width: @details-width;
 
   .on-mobile-medium-screen-720({
@@ -233,64 +242,6 @@
   a {
     color: @link-color;
     text-decoration: none;
-  }
-
-  tbody {
-    td, th, .field {
-      vertical-align: text-top;
-    }
-
-    td, th {
-      padding: 0 0 (@box-padding * 1.5) @box-padding;
-    }
-
-    th {
-      text-align: right;
-      white-space: nowrap;
-    }
-
-    .rb-c-inline-editor-edit-icon {
-      /* Undo style added up above. */
-      margin-left: 0;
-    }
-
-    .field {
-      display: inline-block;
-      margin-right: 4px;
-      word-wrap: break-word;
-
-      &:empty {
-        margin-right: 0;
-      }
-    }
-  }
-
-  thead {
-    &.first-fieldset th {
-      padding-top: 0;
-    }
-
-    th {
-      color: @review-request-label-color;
-      font-size: @review-request-section-label-font-size;
-      padding: (@box-padding * 2) 0 @box-padding 0;
-      text-align: left;
-    }
-  }
-
-  th {
-    color: @review-request-label-color;
-    font-weight: bold;
-  }
-
-  .buttons {
-    display: block;
-    margin-bottom: @box-padding;
-    padding: 6px 0 0 0;
-
-    input {
-      font-size: 11px;
-    }
   }
 }
 

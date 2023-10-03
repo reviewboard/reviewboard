@@ -11,6 +11,7 @@ RB.PageManager.beforeRender(function(page) {
         new {{field.js_view_class}}({
             el: $('#field_{{field.field_id|escapejs}}'),
             fieldID: '{{field.field_id|escapejs}}',
+            fieldLabel: '{{field.label|escapejs}}',
             model: model
         }));
 {%   endif %}

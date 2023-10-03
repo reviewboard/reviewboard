@@ -39,65 +39,106 @@ suite('rb/views/ReviewRequestEditorView', function() {
           <a href="#" id="delete-review-request-action"></a>
          </div>
          <div class="review-request">
-          <div id="review-request-main">
-           <span id="field_summary"
-                 data-field-id="summary"
-                 class="field editable"></span>
-           <span id="field_branch"
-                 data-field-id="branch"
-                 class="field editable"></span>
-           <span id="field_submitter"
-                 data-field-id="submitter"
-                 class="field editable"></span>
-           <span id="field_bugs_closed"
-                 data-field-id="bugs_closed"
-                 class="field editable comma-editable"></span>
-           <span id="field_depends_on"
-                 data-field-id="depends_on"
-                 class="field editable comma-editable"></span>
-           <span id="field_target_groups"
-                 data-field-id="target_groups"
-                 class="field editable comma-editable"></span>
-           <span id="field_target_people"
-                 data-field-id="target_people"
-                 class="field editable"></span>
-           <div class="review-request-section">
-            <pre id="field_description"
-                 data-field-id="description"
-                 class="field field-text-area editable"></pre>
-           </div>
-           <div class="review-request-section">
-            <pre id="field_testing_done"
-                 data-field-id="testing_done"
-                 class="field field-text-area editable"></pre>
-           </div>
-           <div class="review-request-section">
-            <div class="field-container">
-             <pre id="field_my_custom"
-                  data-field-id="my_custom"
-                  class="field editable"></pre>
-             <pre id="field_my_rich_text_custom"
-                  data-field-id="my_rich_text_custom"
-                  class="field field-text-area editable rich-text"
-                  data-allow-markdown="True"></pre>
-             <pre id="field_text"
-                  data-field-id="text"
-                  class="field field-text-area editable"
-                  data-allow-markdown="True"></pre>
-             <input id="field_checkbox"
-                    data-field-id="checkbox"
-                    class="field"
-                    type="checkbox">
+          <div class="review-request-section review-request-summary">
+           <div class="rb-c-review-request-fieldset">
+            <div class="rb-c-review-request-field">
+             <label class="rb-c-review-request-field__label">Summary</label>
+             <div class="rb-c-review-request-field__value">
+              <span id="field_summary"
+                    data-field-id="summary"
+                    class="field editable"></span>
+             </div>
             </div>
            </div>
           </div>
-         </div>
-         <div id="review-request-extra">
-          <div>
-           <div id="file-list"><br /></div>
+
+          <div id="review-request-details">
+           <div class="rb-c-review-request-fieldset">
+            <div class="rb-c-review-request-field">
+             <div class="rb-c-review-request-field__value">
+              <span id="field_branch"
+                    data-field-id="branch"
+                    class="field editable"></span>
+             </div>
+             <div class="rb-c-review-request-field__value">
+              <span id="field_submitter"
+                    data-field-id="submitter"
+                    class="field editable"></span>
+             </div>
+             <div class="rb-c-review-request-field__value">
+              <span id="field_bugs_closed"
+                    data-field-id="bugs_closed"
+                    class="field editable comma-editable"></span>
+             </div>
+             <div class="rb-c-review-request-field__value">
+              <span id="field_depends_on"
+                    data-field-id="depends_on"
+                    class="field editable comma-editable"></span>
+             </div>
+             <div class="rb-c-review-request-field__value">
+              <span id="field_target_groups"
+                    data-field-id="target_groups"
+                    class="field editable comma-editable"></span>
+             </div>
+             <div class="rb-c-review-request-field__value">
+              <span id="field_target_people"
+                    data-field-id="target_people"
+                    class="field editable"></span>
+             </div>
+            </div>
+           </div>
           </div>
-          <div>
-           <div id="screenshot-thumbnails"><br /></div>
+
+          <div id="review-request-main">
+           <div class="rb-c-review-request-fieldset">
+            <div class="review-request-section">
+             <div class="rb-c-review-request-field">
+              <div class="rb-c-review-request-field__value">
+               <pre id="field_description"
+                    data-field-id="description"
+                    class="field field-text-area editable"></pre>
+              </div>
+             </div>
+            </div>
+            <div class="review-request-section">
+             <div class="rb-c-review-request-field">
+              <div class="rb-c-review-request-field__value">
+               <pre id="field_testing_done"
+                    data-field-id="testing_done"
+                    class="field field-text-area editable"></pre>
+              </div>
+             </div>
+            </div>
+            <div class="review-request-section">
+             <div class="rb-c-review-request-field">
+              <div class="rb-c-review-request-field__value">
+               <pre id="field_my_custom"
+                    data-field-id="my_custom"
+                    class="field editable"></pre>
+               <pre id="field_my_rich_text_custom"
+                    data-field-id="my_rich_text_custom"
+                    class="field field-text-area editable rich-text"
+                    data-allow-markdown="True"></pre>
+               <pre id="field_text"
+                    data-field-id="text"
+                    class="field field-text-area editable"
+                    data-allow-markdown="True"></pre>
+               <input id="field_checkbox"
+                      data-field-id="checkbox"
+                      class="field"
+                      type="checkbox">
+              </div>
+             </div>
+            </div>
+           </div>
+          </div>
+          <div id="review-request-extra">
+           <div>
+            <div id="file-list"><br /></div>
+           </div>
+           <div>
+            <div id="screenshot-thumbnails"><br /></div>
+           </div>
           </div>
          </div>
         </div>
