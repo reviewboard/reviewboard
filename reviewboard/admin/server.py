@@ -7,6 +7,7 @@ import socket
 from typing import Optional
 from urllib.parse import urljoin
 
+from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import gettext as _
@@ -90,8 +91,8 @@ def get_data_dir() -> str:
     """
     global _data_dir
 
-    if _data_dir is None:
-        _data_dir = os.environ.get('HOME')
+    if _data_dir != settings.SITE_DATA_DIR:
+        _data_dir = settings.SITE_DATA_DIR
 
         if not _data_dir:
             raise ImproperlyConfigured(
