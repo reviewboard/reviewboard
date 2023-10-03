@@ -5,6 +5,28 @@
  * watching for server-side updates relevant to entries and UI on the page.
  */
 RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
+    /**
+     * A multiplier to apply to the current polling interval for backoff.
+     *
+     * Every time an empty update comes in, this value will be multiplied onto
+     * the current polling interval, delaying the time until the next poll.
+     *
+     * Version Added:
+     *     6.0
+     */
+    WATCH_UPDATED_BACKOFF_MULTIPLIER: 1.15,
+
+    /**
+     * The maximum delay for polling intervals.
+     *
+     * This is applied only when calculating a new polling interval for
+     * backoff.
+     *
+     * Version Added:
+     *     6.0
+     */
+    WATCH_UPDATED_POLL_CAP_MS: 10 * 1000,
+
     defaults: _.defaults({
         updatesURL: null,
     }, RB.ReviewablePage.prototype.defaults),
@@ -19,12 +41,11 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
         this._watchedUpdatesPeriodMS = null;
         this._watchedUpdatesTimeout = null;
         this._watchedUpdatesLastScheduleTime = null;
+        this._watchedUpdatesLastTimestamp = null;
 
         this.entries = new Backbone.Collection([], {
             model: RB.ReviewRequestPage.Entry,
         });
-
-        this._updateTimestamps = {};
     },
 
     /**
@@ -106,6 +127,9 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
             periodMS: periodMS,
         };
 
+        /* We're watching new entries, so don't filter based on time. */
+        this._watchedUpdatesLastTimestamp = null;
+
         this._scheduleCheckUpdates();
     },
 
@@ -179,7 +203,19 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
                 this._watchedUpdatesTimeout = null;
                 this._loadUpdates({
                     entries: _.pluck(this._watchedEntries, 'entry'),
-                    onDone: this._scheduleCheckUpdates.bind(this),
+                    onDone: totalApplied => {
+                        if (totalApplied === 0) {
+                            /*
+                             * Apply a backoff multiplier for the next check.
+                             */
+                            this._watchedUpdatesPeriodMS = Math.round(Math.min(
+                                this.WATCH_UPDATED_POLL_CAP_MS,
+                                (this._watchedUpdatesPeriodMS *
+                                 this.WATCH_UPDATED_BACKOFF_MULTIPLIER)));
+                        }
+
+                        this._scheduleCheckUpdates();
+                    },
                 });
             },
             this._watchedUpdatesPeriodMS);
@@ -237,6 +273,12 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
             urlQuery.push(`entries=${urlEntryTypeIDs.join(';')}`);
         }
 
+        const timestamp = this._watchedUpdatesLastTimestamp;
+
+        if (timestamp !== null) {
+            urlQuery.push(`since=${timestamp.toISOString()}`);
+        }
+
         /*
          * Like above, sort the URL queries, so that we have a stable URL
          * for caching.
@@ -274,6 +316,12 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
      *         applied.
      */
     _processUpdatesFromPayload(arrayBuffer, onDone) {
+        if (arrayBuffer.byteLength === 0) {
+            onDone(0);
+
+            return;
+        }
+
         const dataView = new DataView(arrayBuffer);
         const len = dataView.byteLength;
         let pos = 0;
@@ -289,18 +337,16 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
             if (metadata.type === 'entry') {
                 this._processEntryUpdate(metadata, html);
             } else {
-                if (metadata.updatedTimestamp) {
-                    const newTimestamp =
-                        moment.utc(metadata.updatedTimestamp).toDate();
-                    const oldTimestamp = this._updateTimestamps[metadata.type];
+                this._reloadFromUpdate(null, metadata, html);
+            }
 
-                    if (oldTimestamp === undefined ||
-                        newTimestamp > oldTimestamp) {
-                        this._updateTimestamps[metadata.type] = newTimestamp;
-                        this._reloadFromUpdate(null, metadata, html);
-                    }
-                } else {
-                    this._reloadFromUpdate(null, metadata, html);
+            if (metadata.hasOwnProperty('updatedTimestamp')) {
+                const newTimestamp =
+                    moment.utc(metadata.updatedTimestamp).toDate();
+                const lastTimestamp = this._watchedUpdatesLastTimestamp;
+
+                if (lastTimestamp === null || newTimestamp > lastTimestamp) {
+                    this._watchedUpdatesLastTimestamp = newTimestamp;
                 }
             }
 
@@ -310,7 +356,7 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
                 this.trigger('updatesProcessed');
 
                 if (_.isFunction(onDone)) {
-                    onDone();
+                    onDone(totalApplied);
                 }
             }
         };

@@ -33,7 +33,7 @@ class ReviewRequestUpdatesViewTests(TestCase):
         self.general_comment = self.create_general_comment(
             self.review1,
             issue_opened=True,
-            timestamp=self.review1.timestamp)
+            timestamp=self.review1.timestamp + timedelta(days=5))
 
         # Create the second review (10 days later).
         self.review2 = self.create_review(
@@ -127,7 +127,7 @@ class ReviewRequestUpdatesViewTests(TestCase):
             metadata,
             {
                 'type': 'issue-summary-table',
-                'updatedTimestamp': '2017-09-17T17:00:00Z',
+                'updatedTimestamp': '2017-09-22T17:00:00Z',
             })
         self.assertTrue(html.startswith('<div id="issue-summary"'))
         self.assertTrue(html.endswith('\n</div>'))
@@ -345,7 +345,7 @@ class ReviewRequestUpdatesViewTests(TestCase):
         })
         self.assertEqual(response.status_code, 400)
 
-    def test_get_with_since(self):
+    def test_get_with_since(self) -> None:
         """Testing ReviewRequestUpdatesView GET with ?since=..."""
         timestamp = self.review1.timestamp + timedelta(days=1)
         updates = self._get_updates({
@@ -388,6 +388,50 @@ class ReviewRequestUpdatesViewTests(TestCase):
             })
         self.assertTrue(html.startswith('<div id="issue-summary"'))
         self.assertTrue(html.endswith('\n</div>'))
+
+    def test_get_with_since_and_review_no_issues(self) -> None:
+        """Testing ReviewRequestUpdatesView GET with ?since=... and review
+        with updates but no issues
+        """
+        timestamp = self.review1.timestamp + timedelta(days=8)
+        updates = self._get_updates({
+            'since': timestamp.isoformat(),
+        })
+        self.assertEqual(len(updates), 1)
+
+        metadata, html = updates[0]
+        self.assertEqual(
+            metadata,
+            {
+                'addedTimestamp': '2017-09-27T17:00:00Z',
+                'entryID': '2',
+                'entryType': 'review',
+                'etag': '',
+                'modelData': {
+                    'reviewData': {
+                        'authorName': 'dopey',
+                        'id': self.review2.pk,
+                        'public': True,
+                        'bodyTop': self.review2.body_top,
+                        'bodyBottom': self.review2.body_bottom,
+                        'shipIt': self.review2.ship_it,
+                    },
+                },
+                'type': 'entry',
+                'updatedTimestamp': '2017-09-27T17:00:00Z',
+                'viewOptions': {},
+            })
+        self.assertTrue(html.startswith('<div id="review2"'))
+        self.assertTrue(html.endswith('\n</div>'))
+
+    def test_get_with_since_and_no_entries(self) -> None:
+        """Testing ReviewRequestUpdatesView GET with ?since=... and no entries
+        """
+        timestamp = self.review1.timestamp + timedelta(days=30)
+        updates = self._get_updates({
+            'since': timestamp.isoformat(),
+        })
+        self.assertEqual(len(updates), 0)
 
     def test_post(self):
         """Testing ReviewRequestUpdatesView POST not allowed"""
