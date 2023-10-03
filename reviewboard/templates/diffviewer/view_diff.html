@@ -45,13 +45,14 @@
  <div id="review-request-banners"></div>
 {% display_review_request_trophies review_request %}
 
- <div class="review-request">
+ <section class="rb-c-review-request"
+          aria-label="{% trans 'Review Request information' %}">
 {%   include "reviews/review_request_header.html" %}
 
-  <div class="review-request-body">
+  <div class="rb-c-review-request__fields">
 {%    include "reviews/review_request_box.html" %}
 
-   <div id="diff-details" class="review-request-section loading">
+   <div id="diff-details" class="rb-c-review-request__diff loading">
     <a name="index_header"></a>
     <div id="diff_revision_label"></div>
     <div id="diff_revision_selector"></div>
@@ -75,7 +76,7 @@
     <div id="pagination1"></div>
    </div>
   </div>
- </div>
+ </section>
 </div>
 
 <ul id="view_controls"></ul>

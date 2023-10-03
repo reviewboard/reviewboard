@@ -1,5 +1,5 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load djblets_utils %}
+{% load djblets_utils i18n %}
 
 
 {% block title %}
@@ -56,10 +56,11 @@
 {%  include "reviews/trophy_box.html" %}
  <div id="review-request-banners"></div>
 
- <div class="review-request">
+ <section class="rb-c-review-request"
+          aria-label="{% trans 'Review file attachment' %}">
 {%   include "reviews/review_request_header.html" %}
   <div class="content review-ui-box-content">{{review_ui_box_content}}</div>
- </div>
+ </section>
 </div>
 
 <div class="review-ui-standalone">

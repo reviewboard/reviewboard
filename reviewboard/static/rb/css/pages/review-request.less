@@ -10,53 +10,281 @@
  * reviewRequestEditorView.js
  */
 
-@details-width: 300px;
+@details-width: 32em;
 
 
 /****************************************************************************
  * Review request box
  ****************************************************************************/
 
-.review-request {
+/**
+ * Information and fields for a review request.
+ *
+ * This manages the structure of the review request box, used on the review
+ * request page, diff viewer, and review UI pages.
+ *
+ * This may also be mixed into ``review-ui-box``, providing additional elements.
+ *
+ * Version Added:
+ *     6.0
+ *
+ * DOM Attributes:
+ *     aria-label (string):
+ *         A string describing that this is the review request information.
+ *
+ * Structure:
+ *     <section class="rb-c-review-request">
+ *      <div class="rb-c-review-request__header">...</div>
+ *      <div class="rb-c-review-request__fields">...</div>
+ *     </section>
+ */
+.rb-c-review-request {
   background: none;
   border-radius: @box-border-radius;
   box-shadow: @box-shadow;
 
-  .required-flag {
-    color: @required-flag-color;
-    font-size: 10px;
-    font-weight: bold;
-    padding: 0 2px;
-  }
-}
+  /**
+   * The details pane of the review request.
+   *
+   * This contains fields and information on the review request, positioned
+   * along the side of the main review request fields.
+   *
+   * Structure:
+   *     <div class="rb-c-review-request__details">
+   *      <div class="rb-c-review-request-fieldset">...</div>
+   *      ...
+   *     </div>
+   */
+  &__details {
+    box-sizing: border-box;
+    grid-area: details;
+    padding: @box-padding;
 
-.review-request-header {
-  border-bottom: 1px @review-request-action-border-color solid;
+    a {
+      color: @link-color;
+      text-decoration: none;
+    }
+  }
+
+  /**
+   * Information on a diff in the diff viewer.
+   *
+   * Structure:
+   *     <div class="rb-c-review-request__diff">
+   *      ...
+   *     </div>
+   */
+  &__diff {
+    grid-area: diff;
+    padding: @box-padding;
+  }
+
+  /**
+   * Extra fields for a review request.
+   *
+   * Structure:
+   *     <div class="rb-c-review-request__extra">
+   *      ...
+   *     </div>
+   */
+  &__extra {
+    grid-area: extra;
+    padding: @box-padding;
+  }
+
+  /**
+   * Fields on a review request.
+   *
+   * This is grouped into the following sections:
+   *
+   * * Summary
+   * * Warning banner
+   * * Details fields
+   * * Main fields
+   * * Extra fields (optional)
+   * * Diff information (optional)
+   *
+   * Structure:
+   *     <div class="rb-c-review-request__fields">
+   *      <div class="rb-c-review-request__summary">...</div>
+   *      <div class="rb-c-review-request__warning">...</div>
+   *      <div class="rb-c-review-request__details">...</div>
+   *      <div class="rb-c-review-request__main">...</div>
+   *      <div class="rb-c-review-request__extra">...</div>
+   *      <div class="rb-c-review-request__diff">...</div>
+   *     </div>
+   */
+  &__fields {
+    background-color: @review-request-bg;
+    #gradient > .vertical(@review-request-bg-gradient-start,
+                          @review-request-bg-gradient-end);
+    border: 1px @review-request-border-color solid;
+    border-top: 0;
+    border-radius: 0 0 @box-border-radius @box-border-radius;
+    clear: both;
+    padding: 0.5rem;
+    display: grid;
+    grid-template-areas:
+      "summary summary"
+      "warning warning"
+      "main    details"
+      "extra   extra"
+      "diff    diff";
+    grid-template-columns: 1fr @details-width;
+    gap: 0 @box-padding;
+  }
+
+  /**
+   * The header for a review request box.
+   *
+   * This contains the actions and tabs for the review request.
+   *
+   * Structure:
+   *     <header class="rb-c-review-request__header">
+   *      <menu class="rb-c-review-request-tabs">...</menu>
+   *      <div class="rb-c-actions">...</div>
+   *     </header>
+   */
+  &__header {
+    border-bottom: 1px @review-request-action-border-color solid;
+
+    .on-mobile-medium-screen-720({
+      text-align: center;
+    });
+  }
+
+  /**
+   * The main fields for a review request.
+   *
+   * This contains the Description and Testing Done by default.
+   *
+   * Structure:
+   *     <div class="rb-c-review-request__main">
+   *      ...
+   *     </div>
+   */
+  &__main {
+    display: flex;
+    flex-direction: column;
+    grid-area: main;
+    padding: @box-padding;
+
+    /*
+     * Allow this column to resize in favor of the details pane. This overrides
+     * a grid cell's default value of 'auto'.
+     */
+    min-width: 0;
+
+    > .rb-c-review-request-fieldset {
+      flex-grow: 1;
+    }
+
+    .rb-c-review-request-field:last-child {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+
+      .editable,
+      .rb-c-inline-editor {
+        flex-grow: 1;
+      }
+    }
+  }
+
+  /**
+   * The summary information for a review request.
+   *
+   * Structure:
+   *     <div class="rb-c-review-request__summary">
+   *      ...
+   *     </div>
+   */
+  &__summary {
+    grid-area: summary;
+    padding: 0 @box-padding @box-padding @box-padding;
+
+    p {
+      margin: @box-padding 0 0 0;
+    }
+
+    #field_summary {
+      font-size: inherit;
+      margin: 0;
+      padding: 0;
+
+      a {
+        color: black;
+        text-decoration: none;
+      }
+    }
+
+    .rb-c-review-request-field {
+      font-size: @review-request-summary-font-size;
+    }
+
+    .on-mobile-medium-screen-720({
+      .rb-c-review-request-fieldset.-has-inline-fields {
+        .rb-c-review-request-field {
+          /*
+           * There's no longer a baseline to work with, so center this
+           * instead.
+           */
+          align-items: center;
+
+          &__label {
+            /* Hide the "Summary:" label on mobile. */
+            display: none;
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * A warning banner for a review request.
+   *
+   * This will show information when there are validation errors with fields.
+   *
+   * Structure:
+   *     <div class="rb-c-review-request__warning">
+   *      ...
+   *     </div>
+   */
+  &__warning {
+    background-color: @review-request-warning-bg;
+    border: 1px solid @review-request-warning-border-color;
+    display: none;
+    font-weight: bold;
+    grid-area: warning;
+    padding: 5px;
+    text-align: center;
+  }
 
   .on-mobile-medium-screen-720({
-    text-align: center;
+    &__fields {
+      /* Simplify layout, creating a vertical list of block elements. */
+      display: block;
+    }
   });
 }
 
-.review-request-body {
-  background-color: @review-request-bg;
-  #gradient > .vertical(@review-request-bg-gradient-start,
-                        @review-request-bg-gradient-end);
-  border: 1px @review-request-border-color solid;
-  border-top: 0;
-  border-radius: 0 0 @box-border-radius @box-border-radius;
-  clear: both;
-  padding: 0.5rem;
+
+.required-flag {
+  color: @required-flag-color;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 0 2px;
 }
 
 .banner pre.field,
 .rb-c-unified-banner pre.field,
-.review-request-body pre.field {
+.rb-c-review-request-field pre.field {
   background-color: @textarea-editor-background;
   border: @textarea-border;
   margin: @textarea-editor-margin;
   padding: @textarea-editor-padding;
   white-space: pre-wrap;
+  word-wrap: break-word;
 
   .codehilite {
     .flush-codehilite();
@@ -141,6 +369,17 @@
   line-height: 14px;
 }
 
+#field_commit_list {
+  .review-request-main-fieldset();
+}
+
+
+/*
+ * Legacy fields for defining sections and labels.
+ *
+ * Deprecated:
+ *     6.0
+ */
 .review-request-section {
   padding: @box-padding;
   position: relative;
@@ -152,97 +391,13 @@
   font-weight: bold;
 }
 
-.review-request-summary {
-  padding-top: 0;
-
-  p {
-    margin: @box-padding 0 0 0;
-  }
-
-  #field_summary {
-    font-size: inherit;
-    margin: 0;
-    padding: 0;
-
-    a {
-      color: black;
-      text-decoration: none;
-    }
-  }
-
-  .rb-c-review-request-field {
-    font-size: @review-request-summary-font-size;
-  }
-
-  .on-mobile-medium-screen-720({
-    .rb-c-review-request-fieldset.-has-inline-fields {
-      .rb-c-review-request-field {
-        /* There's no longer a baseline to work with, so center this instead. */
-        align-items: center;
-
-        &__label {
-          /* Hide the "Summary:" label on mobile. */
-          display: none;
-        }
-      }
-    }
-  });
-}
-
 .review-request-main-fieldset {
   display: block;
-  margin-right: (@details-width + 10px);
   position: relative;
 
   .on-mobile-medium-screen-720({
     margin-right: 0;
   });
-}
-
-#review-request-main {
-  .review-request-main-fieldset();
-}
-
-#review-request-extra {
-  clear: both;
-}
-
-#review-request-warning {
-  background-color: @review-request-warning-bg;
-  border: 1px solid @review-request-warning-border-color;
-  display: none;
-  font-weight: bold;
-  padding: 5px;
-  text-align: center;
-}
-
-#field_commit_list {
-  .review-request-main-fieldset();
-}
-
-
-/****************************************************************************
- * Review request details pane
- ****************************************************************************/
-
-#review-request-details {
-  box-sizing: border-box;
-  display: table;
-  float: right;
-  margin: 0;
-  padding: 1em;
-  width: @details-width;
-
-  .on-mobile-medium-screen-720({
-    /* Give the details pane its own full row above the other sections. */
-    float: none;
-    width: auto;
-  });
-
-  a {
-    color: @link-color;
-    text-decoration: none;
-  }
 }
 
 
@@ -275,7 +430,7 @@
  *      </menu>
  *     </div>
  */
-#review-request .rb-c-actions {
+.rb-c-review-request .rb-c-actions {
   background: @review-request-action-bg;
   border-color: @review-request-action-border-color;
   border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;

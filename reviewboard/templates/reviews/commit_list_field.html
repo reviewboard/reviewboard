@@ -7,41 +7,43 @@ This template should be kept in sync with the templates in:
 
 so that they render items identically.
 {% endcomment %}
-<table class="commit-list">
- <colgroup>
+<div class="rb-c-review-request-field__tabular commit-list">
+ <table class="rb-c-review-request-field-tabular__data">
+  <colgroup>
 {% if to_expand %}
-   <col class="expand-collapse-control">
+    <col class="expand-collapse-control">
 {% endif %}
-   <col>{# Summary column #}
+    <col>{# Summary column #}
 {% if include_author_name %}
-   <col>
+    <col>
 {% endif %}
- </colgroup>
- <thead>
-  <tr>
-    <th{% if to_expand %} colspan="2"{% endif %}>{% trans "Summary" %}</th>
+  </colgroup>
+  <thead>
+   <tr>
+     <th{% if to_expand %} colspan="2"{% endif %}>{% trans "Summary" %}</th>
 {% if include_author_name %}
-   <th>{% trans "Author" %}</th>
+    <th>{% trans "Author" %}</th>
 {% endif %}
-  </tr>
- </thead>
- <tbody>
+   </tr>
+  </thead>
+  <tbody>
 {% for commit in commits %}
-  <tr>
+   <tr>
 {%  if to_expand %}
-   <td>
+    <td>
 {%   if commit.pk in to_expand %}
-    <a href="#" class="expand-commit-message" data-commit-id="{{commit.pk}}" aria-role="button">
-     <span class="fa fa-plus" title="{% trans "Expand commit message."%}"></span>
-    </a>
+     <a href="#" class="expand-commit-message" data-commit-id="{{commit.pk}}" aria-role="button">
+      <span class="fa fa-plus" title="{% trans "Expand commit message."%}"></span>
+     </a>
 {%   endif %}
-   </td>
+    </td>
 {%  endif %}
-   <td class="commit-message"><pre>{{commit.summary}}</pre></td>
+    <td class="commit-message"><pre>{{commit.summary}}</pre></td>
 {%  if include_author_name %}
-   <td>{{commit.author_name}}</td>
+    <td>{{commit.author_name}}</td>
 {%  endif %}
-  </tr>
+   </tr>
 {% endfor %}
- </tbody>
-</table>
+  </tbody>
+ </table>
+</div>

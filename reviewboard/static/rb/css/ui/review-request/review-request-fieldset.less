@@ -53,14 +53,18 @@
  *     </div>
  */
 .rb-c-review-request-fieldset {
+  display: flex;
+  flex-direction: column;
   border: 0;
   margin: 0;
   padding: 0;
+  gap: (2 * @box-padding);
 
   &.-has-inline-fields {
     .rb-c-review-request-field {
       display: flex;
       align-items: baseline;
+      flex-direction: row;
       gap: 0.5em;
 
       /*
@@ -78,6 +82,7 @@
 
       &__value {
         display: inline-flex;
+        flex-direction: row;
         flex-grow: 1;
 
         .rb-c-inline-editor {
