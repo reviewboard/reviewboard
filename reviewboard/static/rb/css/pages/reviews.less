@@ -1611,10 +1611,6 @@
       font-size: 1.25em;
       line-height: normal;
     }
-
-    .editicon {
-      margin-left: 0.5em;
-    }
   }
 
   #show-review-tips {
@@ -1888,43 +1884,44 @@
         line-height: @file-attachment-caption-height;
         height: @file-attachment-caption-height;
         text-shadow: 0px 0px 2px white;
-
-        .buttons {
-          /*
-           * This provides enough padding to cleanly cover much of any file
-           * attachment's header below.
-           */
-          @buttons-padding-vert: 5px;
-
-
-          /* Line up with .file's side borders. */
-          margin: 0 0 0 (-1px - @file-caption-padding);
-
-          background: darken(@file-attachment-bg, 5%);
-          border: 1px @file-attachment-border-color solid;
-          border-top: 0;
-          border-radius: 0 0 @box-border-radius @box-border-radius;
-          box-shadow: @box-shadow;
-          box-sizing: border-box;
-          display: block;
-          padding: @buttons-padding-vert 0;
-          position: absolute;
-          text-align: center;
-          width: @file-attachment-width;
-          z-index: @z-index-deco;
-        }
       }
 
-      .inline-editor-form > input[type='text'] {
+      .rb-c-inline-editor {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        gap: 0;
+        width: @file-attachment-width;
+        z-index: @z-index-deco;
+
+        /* Line up with .file's side borders. */
+        margin-left: -(1px + @file-caption-padding);
+      }
+
+      .rb-c-inline-editor__actions {
+        /*
+         * This provides enough padding to cleanly cover much of any file
+         * attachment's header below.
+         */
+        @buttons-padding-vert: 5px;
+
+        background: darken(@file-attachment-bg, 5%);
+        border: 1px @file-attachment-border-color solid;
+        border-top: 0;
+        border-radius: 0 0 @box-border-radius @box-border-radius;
+        box-shadow: @box-shadow;
+        justify-content: center;
+        padding: @buttons-padding-vert 0;
+      }
+
+      .rb-c-inline-editor__field > input[type='text'] {
         background: transparent;
         border: 0;
-        box-sizing: border-box;
+        border-radius: 0;
         font-family: inherit;
         font-size: inherit;
         height: @file-attachment-caption-height;
         margin: 0;
-        padding-bottom: 0;
-        padding-top: 0;
         text-align: inherit;
         vertical-align: bottom;
 
@@ -1933,7 +1930,6 @@
          * the margin between the text and pencil.
          */
         padding: 0 @edit-icon-margin 0 0;
-
 
         &:focus {
           outline: 0;

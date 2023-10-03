@@ -20,6 +20,14 @@ interface BaseFieldViewOptions {
     /** The ID of the field. */
     fieldID: string;
 
+    /**
+     * The label for the field.
+     *
+     * Version Added:
+     *     6.0
+     */
+    fieldLabel?: string;
+
     /** The name of the JSON field to use, if available. */
     jsonFieldName?: string;
 }
@@ -54,6 +62,14 @@ export class BaseFieldView extends BaseView<
     /** The ID of the field. */
     fieldID: string;
 
+    /**
+     * The label for the field.
+     *
+     * Version Added:
+     *     6.0
+     */
+    fieldLabel: string;
+
     /** The name to use when storing the data as JSON. */
     jsonFieldName: string;
 
@@ -72,6 +88,7 @@ export class BaseFieldView extends BaseView<
      */
     initialize(options: BaseFieldViewOptions) {
         this.fieldID = options.fieldID;
+        this.fieldLabel = options.fieldLabel || null;
         this.jsonFieldName = options.jsonFieldName ||
                              this.jsonFieldName ||
                              this.fieldID;
@@ -283,7 +300,9 @@ export class TextFieldView extends BaseFieldView {
             editIconClass: 'rb-icon rb-icon-edit',
             el: this.$el,
             enabled: this.model.get(this.editableProp),
+            fieldLabel: this.fieldLabel,
             formClass: `${this.$el.prop('id')}-editor`,
+            hasShortButtons: !this.multiline,
             multiline: this.multiline,
             showRequiredFlag: this.$el.hasClass('required'),
             useEditIconOnly: this.useEditIconOnly,
@@ -291,6 +310,7 @@ export class TextFieldView extends BaseFieldView {
 
         if (this.allowRichText) {
             _.extend(inlineEditorOptions, {
+                fieldName: this.fieldName,
                 hasRawValue: true,
                 matchHeight: false,
                 rawValue: this._loadValue({

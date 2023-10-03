@@ -22,19 +22,11 @@
   border-radius: @box-border-radius;
   box-shadow: @box-shadow;
 
-  .inline-editor-form input[type='text']:not(:focus) {
-    box-shadow: 0px 0px 4px rgba(255, 0, 0, .75);
-  }
-
   .required-flag {
     color: @required-flag-color;
     font-size: 10px;
     font-weight: bold;
     padding: 0 2px;
-  }
-
-  .editicon, .editicon:hover {
-    text-decoration: none;
   }
 }
 
@@ -148,6 +140,11 @@
   }
 }
 
+.editable,
+.rb-c-inline-editor-edit-icon {
+  line-height: 14px;
+}
+
 .review-request-section {
   padding: @box-padding;
   position: relative;
@@ -157,16 +154,6 @@
   color: @review-request-label-color;
   font-size: @review-request-section-label-font-size;
   font-weight: bold;
-
-  .editicon {
-    /*
-     * Make sure this has an explicit alignment and bounding box, in order to
-     * avoid sub-pixel-precision issues during repository layout caused by
-     * the default of `vertical-align: baseline` and content changes within
-     * the label.
-     */
-    vertical-align: top;
-  }
 }
 
 .review-request-summary {
@@ -262,8 +249,8 @@
       white-space: nowrap;
     }
 
-    .editicon {
-      /* Undo style added in common.less */
+    .rb-c-inline-editor-edit-icon {
+      /* Undo style added up above. */
       margin-left: 0;
     }
 
