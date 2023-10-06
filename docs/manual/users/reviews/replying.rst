@@ -9,7 +9,7 @@ review request page in individual review boxes. Discussion about a particular
 review will take place solely within that review box.
 
 To reply to a comment in a review, click the :guilabel:`Reply` button below the
-comment. You can type your comment and then press :guilabel:`OK` to save, or
+comment. You can type your comment and then press :guilabel:`Save` to save, or
 :guilabel:`Cancel` to discard the comment.
 
 You can also reply to the review as a whole by clicking :guilabel:`Reply` under

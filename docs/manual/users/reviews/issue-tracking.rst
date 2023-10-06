@@ -93,15 +93,17 @@ Issue Verification
 ==================
 
 If an issue is particularly important, you can enable Issue Verification.
+This can be done by toggling :guilabel:`Require Verification` when creating
+a comment.
 
 This will prevent owners of a review request from closing an issue until the
 reviewer (or an administrator) has approved the resolution. Instead, the issue
 will state it's waiting for verification.
 
-Issue verification can be enabled by enabling :guilabel:`Require Verification`
-when creating a comment.
-
-.. todo:: Screenshot
+.. image:: issue-verification.png
+   :alt: An issue box that says "Waiting for verification before resolving"
+         with buttons for re-opening the issue and for showing all issues.
+   :sources: 2x issue-verification@2x.png
 
 Because this adds an extra step to the process, we recommend only requiring
 verification for extremely important issues that should truly block the

@@ -15,8 +15,6 @@ information about the request.
 
 .. image:: review-request-details.png
 
-.. todo:: new screenshot of review request box
-
 At the top-right are the two major views for the review request: The first is
 the :guilabel:`Reviews` view, which has all of the reviews that people have
 done, as well as a record of the changes that have been made to the review
@@ -26,8 +24,6 @@ themselves.
 Next to the view tabs are several action commands, both for manipulating the
 state of the review request, as well as performing reviews. At the top-left are
 visibility controls (:ref:`star-archive-and-mute`).
-
-.. TODO: link to docs on archive/mute once they're written
 
 The review request box itself is primarily devoted to user-supplied information
 about whatever is under review. There are several fields such as a one-line
@@ -56,6 +52,7 @@ set up to the author's liking, clicking :guilabel:`Publish` will publish the
 review request to all of the chosen reviewers.
 
 When any changes are made to a published review request, including uploading a
-new revision of the diff or making changes to any of the fields, a new draft
-will be created. The changes will not be visible to anyone until that draft is
-published.
+new revision of the diff, updating, deleting, and uploading file attachments,
+or making changes to any of the fields, a new draft will be created. The
+changes will not be visible to anyone until the draft is
+:ref:`published <publishing-review-request-updates>`.

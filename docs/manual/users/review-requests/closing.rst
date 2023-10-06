@@ -30,7 +30,7 @@ For example, if you completed the review request, you might specify the
 revision it was committed as. If you discarded, you might explain why.
 
 The gray completed or discarded banners have a field for the description.
-You can enter the text here and click :guilabel:`OK`. The description will
+You can enter the text here and click :guilabel:`Save`. The description will
 be saved immediately, and other users will be able to see it.
 
 This field supports rich text using the :term:`Markdown` language. See

@@ -147,8 +147,8 @@ Automated Review Status and Results
 When automated reviews are active for a review request, they'll be presented
 as a list of :guilabel:`Checks run` (also known as :term:`status updates`).
 These will appear under the :ref:`review request overview
-<review-requests-overview>` and under any :guilabel:`Review request changed`
-overview.
+<review-requests-overview>` and under any
+:ref:`Review request changed overview <review-request-changed-overview>`.
 
 .. image:: status-updates.png
 

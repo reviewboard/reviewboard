@@ -32,7 +32,7 @@ the review dialog, showing the entire contents of your draft review.
 In this dialog, you can add a summary for your review,
 :ref:`approve it <approving-changes>` for shipping, manage comments, and write
 text to appear at the top and bottom of your review. Toggling a checkbox or
-pressing :guilabel:`OK` on a text field will instantly save those changes, so
+pressing :guilabel:`Save` on a text field will instantly save those changes, so
 you don't have to worry about losing your work if you close the page.
 
 The bottom of the dialog has the following buttons:
@@ -97,7 +97,7 @@ all the comments you've filed on the review request. These will cover
 <reviewing-file-attachments>`.
 
 Existing comments can be edited by clicking the comment text or pencil icon,
-entering new text, and clicking :guilabel:`OK`.
+entering new text, and clicking :guilabel:`Save`.
 
 .. image:: review-dialog-comment.png
 
@@ -127,7 +127,7 @@ Adding General Comments
 :ref:`General comments <general-comments>` can be added directly in the Review
 Dialog by clicking :guilabel:`Add General Comment` at the bottom-left of the
 dialog. This will create a new comment entry, which you can fill out and save
-by clicking :guilabel:`OK`.
+by clicking :guilabel:`Save`.
 
 The list of general comments will appear at the top of the review, much like
 the :ref:`review's header <review-dialog-header>`. Unlike the header, you can
