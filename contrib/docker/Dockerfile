@@ -19,7 +19,7 @@
 # Alpine doesn't use glibc, and cannot benefit from pre-compiled wheels.
 # See https://pythonspeed.com/articles/alpine-docker-python/
 ##############################################################################
-FROM ubuntu:20.04 AS builder
+FROM ubuntu:22.04 AS builder
 MAINTAINER Beanbag, Inc. <support@beanbaginc.com>
 
 # The version of Review Board this will install.
@@ -62,6 +62,7 @@ RUN    set -ex \
            libjpeg-dev \
            libmysqlclient-dev \
            libsasl2-dev \
+           libsvn1 \
            libsvn-dev \
            libxml2-dev \
            libxmlsec1-dev \
@@ -69,7 +70,7 @@ RUN    set -ex \
            openssl \
            pkg-config \
            postgresql-client \
-           python3.8-dev \
+           python3.11-dev \
            sendmail \
            subversion \
            tzdata \
@@ -91,7 +92,7 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Set up a virtualenv for Review Board.
 ENV VIRTUAL_ENV=/venv
-RUN virtualenv -p python3.8 $VIRTUAL_ENV
+RUN virtualenv -p python3.11 $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Install Review Board and its Python dependencies.
@@ -119,12 +120,14 @@ RUN    set -ex \
            'ReviewBoard[ldap]' \
            'ReviewBoard[mercurial]' \
            'ReviewBoard[mysql]' \
-           'ReviewBoard[p4]' \
            'ReviewBoard[postgres]' \
            'ReviewBoard[s3]' \
            'ReviewBoard[saml]' \
            'ReviewBoard[swift]' \
-    && { curl https://pysvn.reviewboard.org | python3.8 -; } \
+    && if [[ $BUILDARCH == "amd64" ]]; then \
+           pip3 install --no-cache-dir 'ReviewBoard[p4]'; \
+       fi \
+    && { curl https://pysvn.reviewboard.org | python3.11 -; } \
     && rm -rf /tmp/packages
 
 
@@ -134,7 +137,7 @@ RUN    set -ex \
 # We'll create a new, final image that contains the virtualenv and only the
 # runtime dependencies necessary to run Review Board.
 ##############################################################################
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 # Review Board user ID
 #
@@ -242,18 +245,20 @@ RUN    set -ex \
            cvs \
            git \
            gosu \
-           helix-cli \
            libmysqlclient21 \
            libxmlsec1-openssl \
            patch \
            mysql-client \
            postgresql-client \
-           python3.8 \
-           python3.8-distutils \
+           python3.11 \
+           python3.11-distutils \
            stunnel \
            subversion \
+    && if [[ $BUILDARCH == "amd64" ]]; then \
+           pip3 install helix-cli; \
+       fi \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -sf /usr/bin/python3.8 /usr/bin/python3
+    && ln -sf /usr/bin/python3.11 /usr/bin/python3
 
 COPY scripts/* /
 COPY --from=builder $VIRTUAL_ENV $VIRTUAL_ENV

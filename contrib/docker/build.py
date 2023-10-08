@@ -69,10 +69,13 @@ if __name__ == '__main__':
 
     # Build the Docker command line to run.
     cmd = [
-        'docker', 'build',
-        '--platform', 'linux/amd64',
+        'docker', 'buildx', 'build',
+        '--platform', 'linux/amd64,linux/arm64',
         '--build-arg', 'REVIEWBOARD_VERSION=%s' % package_version,
     ]
+
+    if options.upload:
+        cmd.append('--push')
 
     for tag in tags:
         cmd += ['-t', tag]
@@ -88,14 +91,3 @@ if __name__ == '__main__':
 
     if p.wait() != 0:
         sys.exit(1)
-
-    if options.upload:
-        for tag in tags:
-            p = subprocess.Popen(['docker', 'push', tag],
-                                 stdin=sys.stdin,
-                                 stdout=sys.stdout,
-                                 stderr=sys.stderr,
-                                 cwd=docker_dir)
-
-            if p.wait() != 0:
-                sys.exit(1)
