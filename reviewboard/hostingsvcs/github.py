@@ -1,9 +1,14 @@
+"""Hosting service support for GitHub."""
+
+from __future__ import annotations
+
 import hashlib
 import hmac
 import json
 import logging
 import re
 from collections import defaultdict
+from typing import Optional, TYPE_CHECKING
 from urllib.parse import urljoin
 
 from django import forms
@@ -37,6 +42,11 @@ from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.site.urlresolvers import local_site_reverse
+
+if TYPE_CHECKING:
+    from urllib.error import URLError
+
+    from reviewboard.hostingsvcs.base.http import HostingServiceHTTPRequest
 
 
 logger = logging.getLogger(__name__)
@@ -245,7 +255,11 @@ class GitHubClient(HostingServiceClient):
 
         return response
 
-    def process_http_error(self, request, e):
+    def process_http_error(
+        self,
+        request: HostingServiceHTTPRequest,
+        e: URLError,
+    ) -> None:
         """Process an HTTP error, possibly raising a result.
 
         This will look at the error, possibly raising a more suitable exception
@@ -271,23 +285,25 @@ class GitHubClient(HostingServiceClient):
             reviewboard.scmtools.errors.UnverifiedCertificateError:
                 The SSL certificate was not able to be verified.
         """
-        super(GitHubClient, self).process_http_error(request, e)
+        super().process_http_error(request, e)
 
         try:
-            data = e.read()
+            data = e.read()  # type: ignore
             rsp = json.loads(data.decode('utf-8'))
         except Exception:
             rsp = None
 
+        http_code: Optional[int] = getattr(e, 'code', None)
+
         if rsp and 'message' in rsp:
             message = rsp['message']
 
-            if e.code == 401:
-                raise AuthorizationError(message, http_code=e.code)
+            if http_code == 401:
+                raise AuthorizationError(message, http_code=http_code)
 
-            raise HostingServiceError(message, http_code=e.code)
+            raise HostingServiceError(message, http_code=http_code)
         else:
-            raise HostingServiceError(str(e), http_code=e.code)
+            raise HostingServiceError(str(e), http_code=http_code)
 
     #
     # Higher-level API methods
