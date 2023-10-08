@@ -714,9 +714,9 @@ class RawDiffChunkGenerator(object):
         # line.
         for direction, moved_line_num in (('to', old_line_num),
                                           ('from', new_line_num)):
-            moved_meta = meta.get('moved-%s' % direction, {})
+            moved_meta = meta.get(f'moved-{direction}', {})
             direction_move_info = self._get_move_info(moved_line_num,
-                                                      line_meta)
+                                                      moved_meta)
 
             if direction_move_info is not None:
                 line_meta[direction] = direction_move_info
