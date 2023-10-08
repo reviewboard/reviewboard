@@ -255,7 +255,8 @@
       /* Change the labels to appear above the fields and not to the side. */
       padding-left: 0;
 
-      &.auth-field-row {
+      &.auth-field-row,
+      &.auth-field-row:not(.checkbox-row) {
         label {
           display: block;
           float: none;
