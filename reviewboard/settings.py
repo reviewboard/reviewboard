@@ -314,6 +314,8 @@ LOGGING_BLACKLIST = [
     'MARKDOWN',
     'PIL.Image',
 ]
+LOGGING_ENABLED = True
+LOGGING_DIRECTORY = None
 
 AUTH_PROFILE_MODULE = "accounts.Profile"
 
@@ -473,6 +475,9 @@ if PRODUCTION:
     SITE_DATA_DIR = os.path.join(LOCAL_ROOT, 'data')
 else:
     SITE_DATA_DIR = os.path.dirname(LOCAL_ROOT)
+
+if not LOGGING_DIRECTORY:
+    LOGGING_DIRECTORY = os.path.join(LOCAL_ROOT, 'logs')
 
 HTDOCS_ROOT = os.path.join(LOCAL_ROOT, 'htdocs')
 STATIC_ROOT = os.path.join(HTDOCS_ROOT, 'static')
