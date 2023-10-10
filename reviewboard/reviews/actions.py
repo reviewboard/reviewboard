@@ -193,14 +193,14 @@ class DownloadDiffAction(BaseAction):
             str:
             The URL to invoke if this action is clicked.
         """
-        request = context['request']
-
         # We want to use a relative URL in the diff viewer as we will not be
         # re-rendering the page when switching between revisions.
         from reviewboard.urls import diffviewer_url_names
+
+        request: HttpRequest = context['request']
         match = request.resolver_match
 
-        if match.url_name in diffviewer_url_names:
+        if match and match.url_name in diffviewer_url_names:
             return 'raw/'
 
         return local_site_reverse(
@@ -226,9 +226,11 @@ class DownloadDiffAction(BaseAction):
             ``True`` if the action should start visible. ``False``, otherwise.
         """
         from reviewboard.urls import diffviewer_url_names
-        match = context['request'].resolver_match
 
-        if match.url_name in diffviewer_url_names:
+        request: HttpRequest = context['request']
+        match = request.resolver_match
+
+        if match and match.url_name in diffviewer_url_names:
             return match.url_name != 'view-interdiff'
 
         return super().get_visible(context=context)
@@ -253,11 +255,13 @@ class DownloadDiffAction(BaseAction):
             ``True`` if the action should render.
         """
         from reviewboard.urls import diffviewer_url_names
-        match = context['request'].resolver_match
+
+        request: HttpRequest = context['request']
+        match = request.resolver_match
 
         # If we're on a diff viewer page, then this should be initially
         # rendered, but might be hidden.
-        if match.url_name in diffviewer_url_names:
+        if match and match.url_name in diffviewer_url_names:
             return True
 
         review_request = context.get('review_request')
