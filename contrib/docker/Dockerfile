@@ -290,9 +290,9 @@ RUN    set -ex \
 COPY scripts/* /
 COPY --from=builder $VIRTUAL_ENV $VIRTUAL_ENV
 
-# Periodically check that we can hit our API endpoint, to ensure Review Board
-# is running.
-HEALTHCHECK CMD curl -f http://127.0.0.1:8080/api/info/ || exit 1
+# Periodically check that we can hit our health check endpoint, to ensure
+# Review Board is running.
+HEALTHCHECK CMD curl -f http://127.0.0.1:8080/health/ || exit 1
 
 # Run the site install/upgrade operation and the web server.
 ENTRYPOINT ["/docker-entrypoint.sh"]

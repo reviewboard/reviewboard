@@ -55,6 +55,15 @@ at peak performance by following our guides.
 * :ref:`Troubleshooting performance problems <troubleshooting-performance>`
 
 
+Monitoring Your Server
+======================
+
+To ensure things are running smoothly, and to handle auto-scaling of services,
+you'll want to monitor your Review Board servers.
+
+* :doc:`Health checks <monitoring/health-checks>`
+
+
 The Administration UI
 =====================
 

@@ -28,3 +28,7 @@ DEBUG = False
 # A list of domains or IP addresses that this server identifies as.
 # Review Board will refuse to handle requests to anything else.
 ALLOWED_HOSTS = @allowed_hosts_json@
+
+# A list of external IP addresses that should be able to access the /health/
+# endpoint.
+HEALTHCHECK_IPS = []

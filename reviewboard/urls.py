@@ -59,7 +59,7 @@ urlpatterns = [
     path('read-only/',
          TemplateView.as_view(template_name='read_only.html'),
          name='read-only'),
-    path('_health/',
+    path('health/',
          HealthCheckView.as_view(),
          name='health-check'),
 ]
