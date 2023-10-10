@@ -1,5 +1,9 @@
 """Privacy support for user accounts."""
 
+from __future__ import annotations
+
+import threading
+
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
@@ -16,6 +20,9 @@ from djblets.urls.staticfiles import static_lazy
 from djblets.util.html import mark_safe_lazy
 
 
+_recompute_privacy_lock = threading.Lock()
+
+
 class GravatarConsentRequirement(BaseGravatarConsentRequirement):
     intent_description = mark_safe_lazy(_(
         "Gravatar is used by many services and applications to manage and "
@@ -30,37 +37,42 @@ class GravatarConsentRequirement(BaseGravatarConsentRequirement):
     }
 
 
-def recompute_privacy_consents(unregister=True):
+def recompute_privacy_consents(
+    unregister: bool = True,
+) -> None:
     """Recompute the built-in consent requirements for user privacy.
 
     Args:
         unregister (bool, optional):
             Whether to unregister previous entries first.
     """
-    registry = get_consent_requirements_registry()
+    # This can be called by multiple threads. Don't allow them to manipulate
+    # the registry at the same time.
+    with _recompute_privacy_lock:
+        registry = get_consent_requirements_registry()
 
-    if unregister:
-        # Unregister our consent requirements (but leave ones provided by
-        # extensions).
-        for requirement in (GravatarConsentRequirement,
-                            PolicyConsentRequirement):
-            try:
-                registry.unregister_by_attr(
-                    'requirement_id', requirement.requirement_id)
-            except ItemLookupError:
-                pass
+        if unregister:
+            # Unregister our consent requirements (but leave ones provided by
+            # extensions).
+            for requirement in (GravatarConsentRequirement,
+                                PolicyConsentRequirement):
+                try:
+                    registry.unregister_by_attr(
+                        'requirement_id', requirement.requirement_id)
+                except ItemLookupError:
+                    pass
 
-    siteconfig = SiteConfiguration.objects.get_current()
-    privacy_policy = siteconfig.get('privacy_policy_url')
-    terms_of_service = siteconfig.get('terms_of_service_url')
+        siteconfig = SiteConfiguration.objects.get_current()
+        privacy_policy = siteconfig.get('privacy_policy_url')
+        terms_of_service = siteconfig.get('terms_of_service_url')
 
-    if privacy_policy or terms_of_service:
-        registry.register(PolicyConsentRequirement(
-            privacy_policy,
-            terms_of_service,
-            siteconfig.get('site_admin_email')))
+        if privacy_policy or terms_of_service:
+            registry.register(PolicyConsentRequirement(
+                privacy_policy,
+                terms_of_service,
+                siteconfig.get('site_admin_email')))
 
-    registry.register(GravatarConsentRequirement())
+        registry.register(GravatarConsentRequirement())
 
 
 def is_consent_missing(user):
@@ -106,4 +118,6 @@ def _on_consent_requirements_registry_populating(**kwargs):
         **kwargs (dict):
             Keyword arguments passed to the handler.
     """
-    recompute_privacy_consents(unregister=False)
+    # Only recompute if we're not already recomputing.
+    if not _recompute_privacy_lock.locked():
+        recompute_privacy_consents(unregister=False)
