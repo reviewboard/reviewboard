@@ -74,8 +74,10 @@ class CommitListFieldTests(FieldsTestCase):
         """Testing CommitListField.should_render with a review request created
         with history
         """
-        review_request = self.create_review_request(create_with_history=True)
+        review_request = self.create_review_request(create_repository=True,
+                                                    create_with_history=True)
         request = self.build_review_request_get(review_request)
+        self.create_diffset(review_request)
         field = CommitListField(review_request, request=request)
 
         self.assertTrue(field.should_render)
@@ -84,10 +86,11 @@ class CommitListFieldTests(FieldsTestCase):
         """Testing CommitListField.should_render with a draft of a review
         request created with history
         """
-        review_request = self.create_review_request(create_with_history=True)
-        draft = ReviewRequestDraft.create(review_request)
+        review_request = self.create_review_request(create_repository=True,
+                                                    create_with_history=True)
+        self.create_diffset(review_request, draft=True)
         request = self.build_review_request_get(review_request)
-        field = CommitListField(draft, request=request)
+        field = CommitListField(review_request.get_draft(), request=request)
 
         self.assertTrue(field.should_render)
 
@@ -106,6 +109,15 @@ class CommitListFieldTests(FieldsTestCase):
         request created without history
         """
         review_request = self.create_review_request()
+        draft = ReviewRequestDraft.create(review_request)
+        request = self.build_review_request_get(review_request)
+        field = CommitListField(draft, request=request)
+
+        self.assertFalse(field.should_render)
+
+    def test_should_render_with_no_value(self):
+        """Testing CommitListField.should_render with no value"""
+        review_request = self.create_review_request(create_with_history=True)
         draft = ReviewRequestDraft.create(review_request)
         request = self.build_review_request_get(review_request)
         field = CommitListField(draft, request=request)

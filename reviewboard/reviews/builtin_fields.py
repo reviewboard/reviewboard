@@ -1415,7 +1415,7 @@ class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
         from reviewboard.urls import diffviewer_url_names
         url_name = self.request.resolver_match.url_name
 
-        return (self.value and
+        return (self.value is not None and
                 self.review_request_created_with_history and
                 url_name not in diffviewer_url_names)
 

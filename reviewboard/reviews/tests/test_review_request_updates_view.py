@@ -129,7 +129,10 @@ class ReviewRequestUpdatesViewTests(TestCase):
                 'type': 'issue-summary-table',
                 'updatedTimestamp': '2017-09-22T17:00:00Z',
             })
-        self.assertTrue(html.startswith('<div id="issue-summary"'))
+        self.assertRegex(
+            html,
+            r'^<div class="rb-c-review-request__field"'
+            r'\s+id="issue-summary"')
         self.assertTrue(html.endswith('\n</div>'))
 
     def test_get_with_unicode(self):
@@ -225,7 +228,10 @@ class ReviewRequestUpdatesViewTests(TestCase):
                 'updatedTimestamp': self.general_comment.timestamp.strftime(
                     '%Y-%m-%dT%H:%M:%SZ'),
             })
-        self.assertTrue(html.startswith('<div id="issue-summary"'))
+        self.assertRegex(
+            html,
+            r'^<div class="rb-c-review-request__field"'
+            r'\s+id="issue-summary"')
         self.assertTrue(html.endswith('\n</div>'))
         self.assertIn('ĀĒĪŌ', html)
 
@@ -288,7 +294,10 @@ class ReviewRequestUpdatesViewTests(TestCase):
                 'updatedTimestamp': self.general_comment.timestamp.strftime(
                     '%Y-%m-%dT%H:%M:%SZ'),
             })
-        self.assertTrue(html.startswith('<div id="issue-summary"'))
+        self.assertRegex(
+            html,
+            r'^<div class="rb-c-review-request__field"'
+            r'\s+id="issue-summary"')
         self.assertTrue(html.endswith('\n</div>'))
 
     def test_get_with_review_entries_adds_issue_summary_table(self):
@@ -333,7 +342,10 @@ class ReviewRequestUpdatesViewTests(TestCase):
                 'updatedTimestamp': self.general_comment.timestamp.strftime(
                     '%Y-%m-%dT%H:%M:%SZ'),
             })
-        self.assertTrue(html.startswith('<div id="issue-summary"'))
+        self.assertRegex(
+            html,
+            r'^<div class="rb-c-review-request__field"'
+            r'\s+id="issue-summary"')
         self.assertTrue(html.endswith('\n</div>'))
 
     def test_get_with_invalid_entries(self):
@@ -386,7 +398,10 @@ class ReviewRequestUpdatesViewTests(TestCase):
                 'updatedTimestamp': self.general_comment.timestamp.strftime(
                     '%Y-%m-%dT%H:%M:%SZ'),
             })
-        self.assertTrue(html.startswith('<div id="issue-summary"'))
+        self.assertRegex(
+            html,
+            r'^<div class="rb-c-review-request__field"'
+            r'\s+id="issue-summary"')
         self.assertTrue(html.endswith('\n</div>'))
 
     def test_get_with_since_and_review_no_issues(self) -> None:

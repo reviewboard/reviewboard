@@ -427,11 +427,13 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
 
         parsed_html = str(parse_html(response.content.decode('utf-8')))
         self.assertIn(
-            '<div class="review-request-body">\n'
+            '<div class="rb-c-review-request__fields">\n'
             '[before-review-request-summary here]',
             parsed_html)
         self.assertIn(
-            '<div class="review-request-section review-request-summary">\n'
+            '<div aria-label="Review request summary"'
+            ' class="-has-inline-fields rb-c-review-request-fieldset"'
+            ' role="group">\n'
             '[review-request-summary-pre here]',
             parsed_html)
         self.assertIn(
@@ -439,18 +441,22 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             parsed_html)
         self.assertIn(
             '[before-review-request-fields here]'
-            '<table class="review-request-section"'
+            '<div class="rb-c-review-request__details"'
             ' id="review-request-details">',
             parsed_html)
         self.assertIn(
             '</div>'
             '[after-review-request-fields here] '
             '[before-review-request-extra-panes here]'
-            '<div id="review-request-extra">\n'
+            '<div class="rb-c-review-request__extra"'
+            ' id="review-request-extra">\n'
+            '<div aria-label="Extra fields"'
+            ' class="rb-c-review-request-fieldset" role="group">\n'
             '[review-request-extra-panes-pre here]',
             parsed_html)
         self.assertIn(
             '</div>[review-request-extra-panes-post here]\n'
+            '</div>\n'
             '</div>[after-review-request-extra-panes here]\n'
             '</div>',
             parsed_html)
