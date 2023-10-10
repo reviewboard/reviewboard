@@ -4,6 +4,33 @@
 #
 # Documentation on this Docker image is available at
 # https://www.reviewboard.org/docs/manual/latest/admin/installation/docker/
+#
+# This can be built through Docker, as normal. The ./build.py script can help
+# automate the multi-platform builds for the official Review Board Docker
+# images.
+#
+# If building for multi-platform (amd64 and arm64), you will need at least
+# one machine capable of arm64 builds (or supporting cross-compilation or
+# emulation). A macOS machine is capable of both amd64 and arm64 builds.
+#
+# To build using a single machine capable of multiple architectures, first run:
+#
+#     $ docker buildx create --name rb-build --use
+#
+# That will create a single build environment (see `docker buildx ls`) with
+# support for both.
+#
+# To build across multiple machines, run:
+#
+#     $ docker buildx create --name rb-build --platform linux/arm64
+#     $ docker buildx create --name rb-build --platform linux/amd64 \
+#              --append ssh://<user>@<host>
+#
+# (Change architectures as needed)
+#
+# Then, before building this image, run:
+#
+#     $ docker buildx use rb-build
 
 
 ##############################################################################

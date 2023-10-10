@@ -31,6 +31,14 @@ if __name__ == '__main__':
         dest='tag_major',
         help='disable tagging the image with the "X.Y" major version tag')
     argparser.add_argument(
+        '--load',
+        action='store_true',
+        help='load the image into Docker (this requires a single --platform).')
+    argparser.add_argument(
+        '--platform',
+        action='append',
+        help='specify an explicit platform to build.')
+    argparser.add_argument(
         '--upload',
         action='store_true',
         help='upload the image after build')
@@ -59,6 +67,20 @@ if __name__ == '__main__':
                 % package_path)
             sys.exit(1)
 
+    platforms = options.platform or [
+        'linux/amd64',
+        'linux/arm64',
+    ]
+
+    if options.load and len(platforms) != 1:
+        sys.stderr.write('--load requires a single --platform to be '
+                         'specified.\n')
+        sys.exit(1)
+
+    if options.load and options.upload:
+        sys.stderr.write('--load and --upload cannot both be specified.\n')
+        sys.exit(1)
+
     tags = ['%s:%s' % (IMAGE_NAME, image_version)]
 
     if options.tag_major:
@@ -70,12 +92,14 @@ if __name__ == '__main__':
     # Build the Docker command line to run.
     cmd = [
         'docker', 'buildx', 'build',
-        '--platform', 'linux/amd64,linux/arm64',
+        '--platform', ','.join(platforms),
         '--build-arg', 'REVIEWBOARD_VERSION=%s' % package_version,
     ]
 
     if options.upload:
         cmd.append('--push')
+    elif options.load:
+        cmd.append('--load')
 
     for tag in tags:
         cmd += ['-t', tag]
