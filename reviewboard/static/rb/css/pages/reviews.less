@@ -228,13 +228,6 @@
   margin-right: 0.5em;
   text-decoration: none;
 
-  .on-mobile-medium-screen-720({
-    /* Let the Markdown Reference link flow to the next line. */
-    display: block !important;
-    float: none;
-    margin-top: 0.5em;
-  });
-
   &:hover {
     text-decoration: underline;
   }
@@ -2093,15 +2086,18 @@
   border: 1px @comment-dlg-border-color solid;
   border-radius: @box-border-radius;
   box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
   cursor: default;
   margin-top: 8px;
   overflow: hidden;
   position: absolute;
+  max-width: calc(100vw - 2em);
 
   form {
     background-color: @comment-dlg-bg;
     display: block;
     padding: @comment-dlg-padding;
+    max-width: 100%;
 
     .buttons {
       margin: 0;
