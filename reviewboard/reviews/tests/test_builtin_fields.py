@@ -170,12 +170,13 @@ class CommitListFieldTests(FieldsTestCase):
         diffset = self.create_diffset(review_request)
 
         author_name = review_request.submitter.get_full_name()
+        self.assertEqual(author_name, 'Doc Dwarf')
 
         self.create_diffcommit(diffset=diffset,
                                commit_id='r1',
                                parent_id='r0',
                                commit_message='Commit message 1',
-                               author_name=author_name),
+                               author_name=author_name)
         self.create_diffcommit(diffset=diffset,
                                commit_id='r2',
                                parent_id='r1',
@@ -185,18 +186,37 @@ class CommitListFieldTests(FieldsTestCase):
         field = self.make_field(review_request)
         result = field.render_value(field.load_value(review_request))
 
-        self.assertInHTML('<colgroup><col></colgroup>', result)
-        self.assertInHTML('<tr><th>Summary</th></tr>', result)
-        self.assertInHTML(
-            '<tbody>'
-            ' <tr>'
-            '  <td class="commit-message"><pre>Commit message 1</pre></td>'
-            ' </tr>'
-            ' <tr>'
-            '  <td class="commit-message"><pre>Commit message 2</pre></td>'
-            ' </tr>'
-            '</tbody>',
-            result)
+        self.assertHTMLEqual(
+            result,
+            """
+            <div class="rb-c-review-request-field-tabular rb-c-commit-list">
+             <table class="rb-c-review-request-field-tabular__data">
+              <thead>
+               <tr>
+                <th>Summary</th>
+                <th>ID</th>
+               </tr>
+              </thead>
+              <tbody>
+               <tr class="rb-c-commit-list__commit">
+                <td class="rb-c-commit-list__message">
+                 <div class="rb-c-commit-list__message-summary">Commit
+                  message 1</div>
+                </td>
+                <td class="rb-c-commit-list__id" title="r1">r1</td>
+               </tr>
+
+               <tr class="rb-c-commit-list__commit">
+                <td class="rb-c-commit-list__message">
+                 <div class="rb-c-commit-list__message-summary">Commit
+                  message 2</div>
+                </td>
+                <td class="rb-c-commit-list__id" title="r2">r2</td>
+               </tr>
+              </tbody>
+             </table>
+            </div>
+            """)
 
     def test_render_value_with_author(self):
         """Testing CommitListField.render_value with an author that differs
@@ -208,6 +228,7 @@ class CommitListFieldTests(FieldsTestCase):
         diffset = self.create_diffset(review_request)
 
         submitter_name = review_request.submitter.get_full_name()
+        self.assertEqual(submitter_name, 'Doc Dwarf')
 
         self.create_diffcommit(diffset=diffset,
                                commit_id='r1',
@@ -223,23 +244,40 @@ class CommitListFieldTests(FieldsTestCase):
         field = self.make_field(review_request)
         result = field.render_value(field.load_value(review_request))
 
-        self.assertInHTML('<colgroup><col><col></colgroup>', result)
-        self.assertInHTML(
-            '<tr><th>Summary</th><th>Author</th></tr>',
-            result)
-        self.assertInHTML(
-            '<tbody>'
-            ' <tr>'
-            '  <td class="commit-message"><pre>Commit message 1</pre></td>'
-            '  <td>Example Author</td>'
-            ' </tr>'
-            ' <tr>'
-            '  <td class="commit-message"><pre>Commit message 2</pre></td>'
-            '  <td>%s</td>'
-            ' </tr>'
-            '</tbody>'
-            % submitter_name,
-            result)
+        self.assertHTMLEqual(
+            result,
+            """
+            <div class="rb-c-review-request-field-tabular rb-c-commit-list">
+             <table class="rb-c-review-request-field-tabular__data">
+              <thead>
+               <tr>
+                <th>Summary</th>
+                <th>ID</th>
+                <th>Author</th>
+               </tr>
+              </thead>
+              <tbody>
+               <tr class="rb-c-commit-list__commit">
+                <td class="rb-c-commit-list__message">
+                 <div class="rb-c-commit-list__message-summary">Commit
+                  message 1</div>
+                </td>
+                <td class="rb-c-commit-list__id" title="r1">r1</td>
+                <td class="rb-c-commit-list__author">Example Author</td>
+               </tr>
+
+               <tr class="rb-c-commit-list__commit">
+                <td class="rb-c-commit-list__message">
+                 <div class="rb-c-commit-list__message-summary">Commit
+                  message 2</div>
+                </td>
+                <td class="rb-c-commit-list__id" title="r2">r2</td>
+                <td class="rb-c-commit-list__author">Doc Dwarf</td>
+               </tr>
+              </tbody>
+             </table>
+            </div>
+            """)
 
     def test_render_value_with_collapse(self):
         """Testing CommitListField.render_value with a multi-line commit
@@ -251,6 +289,7 @@ class CommitListFieldTests(FieldsTestCase):
         diffset = self.create_diffset(review_request)
 
         author_name = review_request.submitter.get_full_name()
+        self.assertEqual(author_name, 'Doc Dwarf')
 
         self.create_diffcommit(diffset=diffset,
                                commit_id='r1',
@@ -267,30 +306,41 @@ class CommitListFieldTests(FieldsTestCase):
         field = self.make_field(review_request)
         result = field.render_value(field.load_value(review_request))
 
-        self.assertInHTML(
-            '<colgroup>'
-            ' <col class="expand-collapse-control">'
-            ' <col>'
-            '</colgroup>',
-            result)
-        self.assertInHTML('<tr><th colspan="2">Summary</th></tr>', result)
-        self.assertInHTML(
-            '<tbody>'
-            ' <tr>'
-            '  <td></td>'
-            '  <td class="commit-message"><pre>Commit message 1</pre></td>'
-            ' </tr>'
-            ' <tr>'
-            '  <td>'
-            '   <a href="#" class="expand-commit-message" '
-            '      data-commit-id="2" aria-role="button">'
-            '    <span class="fa fa-plus" title="Expand commit message." />'
-            '   </a>'
-            '  </td>'
-            '  <td class="commit-message"><pre>Commit message 2</pre></td>'
-            ' </tr>'
-            '</tbody>',
-            result)
+        self.assertHTMLEqual(
+            result,
+            """
+            <div class="rb-c-review-request-field-tabular rb-c-commit-list">
+             <table class="rb-c-review-request-field-tabular__data">
+              <thead>
+               <tr>
+                <th>Summary</th>
+                <th>ID</th>
+               </tr>
+              </thead>
+              <tbody>
+               <tr class="rb-c-commit-list__commit">
+                <td class="rb-c-commit-list__message">
+                 <div class="rb-c-commit-list__message-summary">Commit
+                  message 1</div>
+                </td>
+                <td class="rb-c-commit-list__id" title="r1">r1</td>
+               </tr>
+
+               <tr class="rb-c-commit-list__commit">
+                <td class="rb-c-commit-list__message">
+                 <details>
+                  <summary class="rb-c-commit-list__message-summary">Commit
+                   message 2</summary>
+                  <div class="rb-c-commit-list__message-body">Longer
+                   message</div>
+                 </details>
+                </td>
+                <td class="rb-c-commit-list__id" title="r2">r2</td>
+               </tr>
+              </tbody>
+             </table>
+            </div>
+            """)
 
     def test_render_value_with_collapse_and_author(self):
         """Testing CommitListField.render_value with an author that differs
@@ -302,6 +352,7 @@ class CommitListFieldTests(FieldsTestCase):
         diffset = self.create_diffset(review_request)
 
         submitter_name = review_request.submitter.get_full_name()
+        self.assertEqual(submitter_name, 'Doc Dwarf')
 
         self.create_diffcommit(diffset=diffset,
                                commit_id='r1',
@@ -318,39 +369,44 @@ class CommitListFieldTests(FieldsTestCase):
         field = self.make_field(review_request)
         result = field.render_value(field.load_value(review_request))
 
-        self.assertInHTML(
-            '<colgroup>'
-            ' <col class="expand-collapse-control">'
-            ' <col>'
-            ' <col>'
-            '</colgroup>',
-            result)
-        self.assertInHTML(
-            '<tr>'
-            ' <th colspan="2">Summary</th>'
-            ' <th>Author</th>'
-            '</tr>',
-            result)
-        self.assertInHTML(
-            '<tbody>'
-            ' <tr>'
-            '  <td></td>'
-            '  <td class="commit-message"><pre>Commit message 1</pre></td>'
-            '  <td>Example Author</td>'
-            ' </tr>'
-            ' <tr>'
-            '  <td>'
-            '   <a href="#" class="expand-commit-message" '
-            '      data-commit-id="2" aria-role="button">'
-            '    <span class="fa fa-plus" title="Expand commit message." />'
-            '   </a>'
-            '  </td>'
-            '  <td class="commit-message"><pre>Commit message 2</pre></td>'
-            '  <td>%s</td>'
-            ' </tr>'
-            '</tbody>'
-            % submitter_name,
-            result)
+        self.assertHTMLEqual(
+            result,
+            """
+            <div class="rb-c-review-request-field-tabular rb-c-commit-list">
+             <table class="rb-c-review-request-field-tabular__data">
+              <thead>
+               <tr>
+                <th>Summary</th>
+                <th>ID</th>
+                <th>Author</th>
+               </tr>
+              </thead>
+              <tbody>
+               <tr class="rb-c-commit-list__commit">
+                <td class="rb-c-commit-list__message">
+                 <div class="rb-c-commit-list__message-summary">Commit
+                  message 1</div>
+                </td>
+                <td class="rb-c-commit-list__id" title="r1">r1</td>
+                <td class="rb-c-commit-list__author">Example Author</td>
+               </tr>
+
+               <tr class="rb-c-commit-list__commit">
+                <td class="rb-c-commit-list__message">
+                 <details>
+                  <summary class="rb-c-commit-list__message-summary">Commit
+                   message 2</summary>
+                  <div class="rb-c-commit-list__message-body">Longer
+                   message</div>
+                 </details>
+                </td>
+                <td class="rb-c-commit-list__id" title="r2">r2</td>
+                <td class="rb-c-commit-list__author">Doc Dwarf</td>
+               </tr>
+              </tbody>
+             </table>
+            </div>
+            """)
 
     def test_render_change_entry_html(self):
         """Testing CommitListField.render_change_entry_html"""
@@ -401,35 +457,63 @@ class CommitListFieldTests(FieldsTestCase):
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
-        self.assertInHTML('<colgroup><col><col></colgroup>', result)
-        self.assertInHTML(
-            '<thead>'
-            ' <tr>'
-            '  <th class="marker"></th>'
-            '  <th>Summary</th>'
-            ' </tr>'
-            '</thead>',
-            result)
-        self.assertInHTML(
-            '<tbody>'
-            ' <tr class="old-value">'
-            '  <td class="marker">-</td>'
-            '  <td class="value"><pre>Commit message 1</pre></td>'
-            ' </tr>'
-            ' <tr class="old-value">'
-            '  <td class="marker">-</td>'
-            '  <td class="value"><pre>Commit message 2</pre></td>'
-            ' </tr>'
-            ' <tr class="new-value">'
-            '  <td class="marker">+</td>'
-            '  <td class="value"><pre>New commit message 1</pre></td>'
-            ' </tr>'
-            ' <tr class="new-value">'
-            '  <td class="marker">+</td>'
-            '  <td class="value"><pre>New commit message 2</pre></td>'
-            ' </tr>'
-            '</tbody>',
-            result)
+        self.assertHTMLEqual(
+            result,
+            """
+            <div class="commit-list-container">
+             <div class="rb-c-review-request-field-tabular rb-c-commit-list">
+              <table class="rb-c-review-request-field-tabular__data">
+               <thead>
+                <tr>
+                 <th></th>
+                 <th>Summary</th>
+                 <th>ID</th>
+                </tr>
+               </thead>
+               <tbody>
+                <tr class="rb-c-commit-list__commit -is-removed">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Removed commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">Commit
+                   message 1</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r1">r1</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-removed">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Removed commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">Commit
+                   message 2</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r2">r2</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-added">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Added commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">New
+                   commit message 1</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r1">r1</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-added">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Added commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">New
+                   commit message 2</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r2">r2</td>
+                </tr>
+               </tbody>
+              </table>
+             </div>
+            """)
 
     def test_render_change_entry_html_expand(self):
         """Testing CommitListField.render_change_entry_html with a multi-line
@@ -484,55 +568,72 @@ class CommitListFieldTests(FieldsTestCase):
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
-        self.assertInHTML(
-            '<colgroup>'
-            ' <col>'
-            ' <col class="expand-collapse-control">'
-            ' <col>'
-            '</colgroup>',
-            result)
-        self.assertInHTML(
-            '<thead>'
-            ' <tr>'
-            '  <th class="marker"></th>'
-            '  <th colspan="2">Summary</th>'
-            ' </tr>'
-            '</thead>',
-            result)
-        self.assertInHTML(
-            '<tbody>'
-            ' <tr class="old-value">'
-            '  <td class="marker">-</td>'
-            '  <td>'
-            '   <a href="#" class="expand-commit-message" '
-            '      data-commit-id="1" aria-role="button">'
-            '    <span class="fa fa-plus" title="Expand commit message." />'
-            '   </a>'
-            '  </td>'
-            '  <td class="value"><pre>Commit message 1</pre></td>'
-            ' </tr>'
-            ' <tr class="old-value">'
-            '  <td class="marker">-</td>'
-            '  <td />'
-            '  <td class="value"><pre>Commit message 2</pre></td>'
-            ' </tr>'
-            ' <tr class="new-value">'
-            '  <td class="marker">+</td>'
-            '  <td />'
-            '  <td class="value"><pre>New commit message 1</pre></td>'
-            ' </tr>'
-            ' <tr class="new-value">'
-            '  <td class="marker">+</td>'
-            '  <td>'
-            '   <a href="#" class="expand-commit-message" '
-            '      data-commit-id="4" aria-role="button">'
-            '    <span class="fa fa-plus" title="Expand commit message." />'
-            '   </a>'
-            '  </td>'
-            '  <td class="value"><pre>New commit message 2</pre></td>'
-            ' </tr>'
-            '</tbody>',
-            result)
+        self.assertHTMLEqual(
+            result,
+            """
+            <div class="commit-list-container">
+             <div class="rb-c-review-request-field-tabular rb-c-commit-list">
+              <table class="rb-c-review-request-field-tabular__data">
+               <thead>
+                <tr>
+                 <th></th>
+                 <th>Summary</th>
+                 <th>ID</th>
+                </tr>
+               </thead>
+               <tbody>
+                <tr class="rb-c-commit-list__commit -is-removed">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Removed commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <details>
+                   <summary class="rb-c-commit-list__message-summary">Commit
+                    message 1</summary>
+                   <div class="rb-c-commit-list__message-body">A long
+                    message.</div>
+                  </details>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r1">r1</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-removed">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Removed commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">Commit
+                   message 2</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r2">r2</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-added">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Added commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">New commit
+                   message 1</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r1">r1</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-added">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Added commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <details>
+                   <summary class="rb-c-commit-list__message-summary">New
+                    commit message 2</summary>
+                   <div class="rb-c-commit-list__message-body">So very long
+                    of a message.</div>
+                  </details>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r2">r2</td>
+                </tr>
+               </tbody>
+              </table>
+             </div>
+            </div>
+            """)
 
     def test_render_change_entry_html_expand_with_author(self):
         """Testing CommitListField.render_change_entry_html with an author that
@@ -548,6 +649,7 @@ class CommitListFieldTests(FieldsTestCase):
         diffset = self.create_diffset(review_request)
 
         submitter_name = review_request.submitter.get_full_name()
+        self.assertEqual(submitter_name, 'Doc Dwarf')
 
         self.create_diffcommit(diffset=diffset,
                                commit_id='r1',
@@ -588,62 +690,77 @@ class CommitListFieldTests(FieldsTestCase):
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
-        self.assertInHTML(
-            '<colgroup>'
-            ' <col>'
-            ' <col class="expand-collapse-control">'
-            ' <col>'
-            ' <col>'
-            '</colgroup>',
-            result)
-        self.assertInHTML(
-            '<thead>'
-            ' <tr>'
-            '  <th class="marker"></th>'
-            '  <th colspan="2">Summary</th>'
-            '  <th>Author</th>'
-            ' </tr>'
-            '</thead>',
-            result)
-        self.assertInHTML(
-            '<tbody>'
-            ' <tr class="old-value">'
-            '  <td class="marker">-</td>'
-            '  <td>'
-            '   <a href="#" class="expand-commit-message" '
-            '      data-commit-id="1" aria-role="button">'
-            '    <span class="fa fa-plus" title="Expand commit message." />'
-            '   </a>'
-            '  </td>'
-            '  <td class="value"><pre>Commit message 1</pre></td>'
-            '  <td class="value">Example Author</td>'
-            ' </tr>'
-            ' <tr class="old-value">'
-            '  <td class="marker">-</td>'
-            '  <td />'
-            '  <td class="value"><pre>Commit message 2</pre></td>'
-            '  <td class="value">%(name)s</td>'
-            ' </tr>'
-            ' <tr class="new-value">'
-            '  <td class="marker">+</td>'
-            '  <td />'
-            '  <td class="value"><pre>New commit message 1</pre></td>'
-            '  <td class="value">%(name)s</td>'
-            ' </tr>'
-            ' <tr class="new-value">'
-            '  <td class="marker">+</td>'
-            '  <td>'
-            '   <a href="#" class="expand-commit-message" '
-            '      data-commit-id="4" aria-role="button">'
-            '    <span class="fa fa-plus" title="Expand commit message." />'
-            '   </a>'
-            '  </td>'
-            '  <td class="value"><pre>New commit message 2</pre></td>'
-            '  <td class="value">%(name)s</td>'
-            ' </tr>'
-            '</tbody>'
-            % {'name': submitter_name},
-            result)
+        self.assertHTMLEqual(
+            result,
+            """
+            <div class="commit-list-container">
+             <div class="rb-c-review-request-field-tabular rb-c-commit-list">
+              <table class="rb-c-review-request-field-tabular__data">
+               <thead>
+                <tr>
+                 <th></th>
+                 <th>Summary</th>
+                 <th>ID</th>
+                 <th>Author</th>
+                </tr>
+               </thead>
+               <tbody>
+                <tr class="rb-c-commit-list__commit -is-removed">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Removed commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <details>
+                   <summary class="rb-c-commit-list__message-summary">Commit
+                    message 1</summary>
+                   <div class="rb-c-commit-list__message-body">A long
+                    message.</div>
+                  </details>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r1">r1</td>
+                 <td class="rb-c-commit-list__author">Example Author</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-removed">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Removed commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">Commit
+                   message 2</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r2">r2</td>
+                 <td class="rb-c-commit-list__author">Doc Dwarf</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-added">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Added commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">New commit
+                   message 1</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r1">r1</td>
+                 <td class="rb-c-commit-list__author">Doc Dwarf</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-added">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Added commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <details>
+                   <summary class="rb-c-commit-list__message-summary">New
+                    commit message 2</summary>
+                   <div class="rb-c-commit-list__message-body">So very long
+                    of a message.</div>
+                  </details>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r2">r2</td>
+                 <td class="rb-c-commit-list__author">Doc Dwarf</td>
+                </tr>
+               </tbody>
+              </table>
+             </div>
+            </div>
+            """)
 
     def test_render_change_entry_html_with_author_old(self):
         """Testing CommitListField.render_change_entry_html with an author that
@@ -658,6 +775,7 @@ class CommitListFieldTests(FieldsTestCase):
         diffset = self.create_diffset(review_request)
 
         submitter_name = review_request.submitter.get_full_name()
+        self.assertEqual(submitter_name, 'Doc Dwarf')
 
         self.create_diffcommit(diffset=diffset,
                                commit_id='r1',
@@ -696,41 +814,69 @@ class CommitListFieldTests(FieldsTestCase):
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
-        self.assertInHTML('<colgroup><col><col><col></colgroup>', result)
-        self.assertInHTML(
-            '<thead>'
-            ' <tr>'
-            '  <th class="marker"></th>'
-            '  <th>Summary</th>'
-            '  <th>Author</th>'
-            ' </tr>'
-            '</thead>',
-            result)
-        self.assertInHTML(
-            '<tbody>'
-            ' <tr class="old-value">'
-            '  <td class="marker">-</td>'
-            '  <td class="value"><pre>Commit message 1</pre></td>'
-            '  <td class="value">Example Author</td>'
-            ' </tr>'
-            ' <tr class="old-value">'
-            '  <td class="marker">-</td>'
-            '  <td class="value"><pre>Commit message 2</pre></td>'
-            '  <td class="value">%(name)s</td>'
-            ' </tr>'
-            ' <tr class="new-value">'
-            '  <td class="marker">+</td>'
-            '  <td class="value"><pre>New commit message 1</pre></td>'
-            '  <td class="value">%(name)s</td>'
-            ' </tr>'
-            ' <tr class="new-value">'
-            '  <td class="marker">+</td>'
-            '  <td class="value"><pre>New commit message 2</pre></td>'
-            '  <td class="value">%(name)s</td>'
-            ' </tr>'
-            '</tbody>'
-            % {'name': submitter_name},
-            result)
+        self.assertHTMLEqual(
+            result,
+            """
+            <div class="commit-list-container">
+             <div class="rb-c-review-request-field-tabular rb-c-commit-list">
+              <table class="rb-c-review-request-field-tabular__data">
+               <thead>
+                <tr>
+                 <th></th>
+                 <th>Summary</th>
+                 <th>ID</th>
+                 <th>Author</th>
+                </tr>
+               </thead>
+               <tbody>
+                <tr class="rb-c-commit-list__commit -is-removed">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Removed commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">Commit
+                   message 1</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r1">r1</td>
+                 <td class="rb-c-commit-list__author">Example Author</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-removed">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Removed commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">Commit
+                   message 2</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r2">r2</td>
+                 <td class="rb-c-commit-list__author">Doc Dwarf</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-added">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Added commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">New
+                   commit message 1</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r1">r1</td>
+                 <td class="rb-c-commit-list__author">Doc Dwarf</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-added">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Added commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">New
+                   commit message 2</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r2">r2</td>
+                 <td class="rb-c-commit-list__author">Doc Dwarf</td>
+                </tr>
+               </tbody>
+              </table>
+             </div>
+            </div>
+            """)
 
     def test_render_change_entry_html_with_author_new(self):
         """Testing CommitListField.render_change_entry_html with an author that
@@ -745,6 +891,7 @@ class CommitListFieldTests(FieldsTestCase):
         diffset = self.create_diffset(review_request)
 
         submitter_name = review_request.submitter.get_full_name()
+        self.assertEqual(submitter_name, 'Doc Dwarf')
 
         self.create_diffcommit(diffset=diffset,
                                commit_id='r1',
@@ -783,41 +930,69 @@ class CommitListFieldTests(FieldsTestCase):
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
-        self.assertInHTML('<colgroup><col><col><col></colgroup>', result)
-        self.assertInHTML(
-            '<thead>'
-            ' <tr>'
-            '  <th class="marker"></th>'
-            '  <th>Summary</th>'
-            '  <th>Author</th>'
-            ' </tr>'
-            '</thead>',
-            result)
-        self.assertInHTML(
-            '<tbody>'
-            ' <tr class="old-value">'
-            '  <td class="marker">-</td>'
-            '  <td class="value"><pre>Commit message 1</pre></td>'
-            '  <td class="value">%(name)s</td>'
-            ' </tr>'
-            ' <tr class="old-value">'
-            '  <td class="marker">-</td>'
-            '  <td class="value"><pre>Commit message 2</pre></td>'
-            '  <td class="value">%(name)s</td>'
-            ' </tr>'
-            ' <tr class="new-value">'
-            '  <td class="marker">+</td>'
-            '  <td class="value"><pre>New commit message 1</pre></td>'
-            '  <td class="value">%(name)s</td>'
-            ' </tr>'
-            ' <tr class="new-value">'
-            '  <td class="marker">+</td>'
-            '  <td class="value"><pre>New commit message 2</pre></td>'
-            '  <td class="value">Example Author</td>'
-            ' </tr>'
-            '</tbody>'
-            % {'name': submitter_name},
-            result)
+        self.assertHTMLEqual(
+            result,
+            """
+            <div class="commit-list-container">
+             <div class="rb-c-review-request-field-tabular rb-c-commit-list">
+              <table class="rb-c-review-request-field-tabular__data">
+               <thead>
+                <tr>
+                 <th></th>
+                 <th>Summary</th>
+                 <th>ID</th>
+                 <th>Author</th>
+                </tr>
+               </thead>
+               <tbody>
+                <tr class="rb-c-commit-list__commit -is-removed">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Removed commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">Commit
+                   message 1</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r1">r1</td>
+                 <td class="rb-c-commit-list__author">Doc Dwarf</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-removed">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Removed commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">Commit
+                   message 2</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r2">r2</td>
+                 <td class="rb-c-commit-list__author">Doc Dwarf</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-added">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Added commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">New
+                   commit message 1</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r1">r1</td>
+                 <td class="rb-c-commit-list__author">Doc Dwarf</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-added">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Added commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">New
+                   commit message 2</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r2">r2</td>
+                 <td class="rb-c-commit-list__author">Example Author</td>
+                </tr>
+               </tbody>
+              </table>
+             </div>
+            </div>
+            """)
 
     def test_render_change_entry_html_first_diffset(self):
         """Testing CommitListfield.render_change_entry_html with a change that
@@ -830,6 +1005,7 @@ class CommitListFieldTests(FieldsTestCase):
                                                     public=True,
                                                     create_with_history=True)
         author_name = review_request.submitter.get_full_name()
+        self.assertEqual(author_name, 'Doc Dwarf')
 
         draft_diffset = self.create_diffset(review_request, draft=True)
         self.create_diffcommit(diffset=draft_diffset,
@@ -857,27 +1033,44 @@ class CommitListFieldTests(FieldsTestCase):
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
-        self.assertInHTML('<colgroup><col><col></colgroup>', result)
-        self.assertInHTML(
-            '<thead>'
-            ' <tr>'
-            '  <th class="marker"></th>'
-            '  <th>Summary</th>'
-            ' </tr>'
-            '</thead>',
-            result)
-        self.assertInHTML(
-            '<tbody>'
-            ' <tr class="new-value">'
-            '  <td class="marker">+</td>'
-            '  <td class="value"><pre>New commit message 1</pre></td>'
-            ' </tr>'
-            ' <tr class="new-value">'
-            '  <td class="marker">+</td>'
-            '  <td class="value"><pre>New commit message 2</pre></td>'
-            ' </tr>'
-            '</tbody>',
-            result)
+        self.assertHTMLEqual(
+            result,
+            """
+            <div class="commit-list-container">
+             <div class="rb-c-review-request-field-tabular rb-c-commit-list">
+              <table class="rb-c-review-request-field-tabular__data">
+               <thead>
+                <tr>
+                 <th></th>
+                 <th>Summary</th>
+                 <th>ID</th>
+                </tr>
+               </thead>
+               <tbody>
+                <tr class="rb-c-commit-list__commit -is-added">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Added commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">New
+                   commit message 1</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r1">r1</td>
+                </tr>
+
+                <tr class="rb-c-commit-list__commit -is-added">
+                 <td class="rb-c-commit-list__op"
+                     aria-label="Added commit"></td>
+                 <td class="rb-c-commit-list__message">
+                  <div class="rb-c-commit-list__message-summary">New
+                   commit message 2</div>
+                 </td>
+                 <td class="rb-c-commit-list__id" title="r2">r2</td>
+                </tr>
+               </tbody>
+              </table>
+             </div>
+            </div>
+            """)
 
     def test_serialize_change_entry(self):
         """Testing CommitListField.serialize_change_entry"""

@@ -298,67 +298,6 @@
   }
 }
 
-.commit-list {
-  margin: @textarea-editor-margin;
-
-  &.changed {
-    .marker {
-      font-family: @textarea-font-family;
-      font-size: @textarea-font-size;
-      font-weight: bold;
-      text-align: center;
-      width: 0;
-    }
-
-    .new-value .marker {
-      background: @diff-insert-linenum-color;
-    }
-
-    .old-value .marker {
-      background: @diff-delete-linenum-color;
-    }
-  }
-
-  .collapse-commit-message,
-  .expand-commit-message {
-    color: @review-request-commit-list-link-color !important;
-  }
-
-  .select-base,
-  .select-tip {
-    width: 0;
-  }
-
-  pre {
-    margin: 0;
-    white-space: pre-wrap;
-  }
-
-  td,
-  th {
-    border-bottom: @review-request-field-table-divider-border;
-    font-family: @font-family !important;
-    padding: 0.25em 0.5em;
-    vertical-align: baseline;
-  }
-
-  th {
-    text-align: left;
-  }
-
-  tr:last-child td {
-    border-bottom: none;
-  }
-
-  .expand-collapse-control {
-    width: 2em;
-  }
-
-  .value {
-    width: 100%;
-  }
-}
-
 .editable,
 .rb-c-inline-editor-edit-icon {
   line-height: 14px;

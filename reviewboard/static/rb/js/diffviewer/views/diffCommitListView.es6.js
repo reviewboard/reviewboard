@@ -10,51 +10,52 @@
 
 
 const itemTemplate = _.template(dedent`
-    <tr<% if (rowClass) { %> class="<%- rowClass %>"<% } %>>
+    <tr class="rb-c-commit-list__commit <%- rowClass || '' %>">
      <% if (showHistorySymbol) { %>
-      <td class="marker">
-       <%- historyDiffEntry.getSymbol() %>
-      </td>
+      <td class="rb-c-commit-list__op" aria-label="<%- opLabel %>"></td>
      <% } else if (showInterCommitDiffControls) { %>
-      <td class="select-base">
+      <td class="rb-c-commit-list__select-base">
        <input type="radio"
               class="base-commit-selector"
               name="base-commit-id"
+              aria-label="<%- baseSelectorLabel %>"
               <% if (baseSelected) { %>checked<% } %>
               <% if (baseDisabled) { %>disabled<% } %>
               value="<%- commit.id %>">
       </td>
-      <td class="select-tip">
+      <td class="rb-c-commit-list__select-tip">
        <input type="radio"
               class="tip-commit-selector"
               name="tip-commit-id"
+              aria-label="<%- tipSelectorLabel %>"
               <% if (tipSelected) { %>checked<% } %>
               <% if (tipDisabled) { %>disabled<% } %>
               value="<%- commit.id %>">
       </td>
      <% } %>
-     <% if (showExpandCollapse) { %>
-      <td>
-       <% if (commit && commit.hasSummary()) { %>
-        <a href="#"
-           class="expand-commit-message"
-           data-commit-id="<%- commit.id %>"
-           aria-role="button">
-         <span class="fa fa-plus" title="<%- expandText %>"></span>
-        </a>
+     <% if (commit) { %>
+      <td class="rb-c-commit-list__message">
+       <% if (commitBody) { %>
+        <details>
+         <summary class="rb-c-commit-list__message-summary"><%-
+          commitSummary
+         %></summary>
+         <div class="rb-c-commit-list__message-body"><%- commitBody %></div>
+        </details>
+       <% } else { %>
+        <div class="rb-c-commit-list__message-summary"><%-
+         commitSummary
+        %></div>
        <% } %>
       </td>
+      <td class="rb-c-commit-list__id"
+          title="<%- commitID %>"><%- commitID %></td>
+      <td class="rb-c-commit-list__author"><%- commitAuthor %></td>
+     <% } else { %>
+      <td class="rb-c-commit-list__message"></td>
+      <td class="rb-c-commit-list__id"></td>
+      <td class="rb-c-commit-list__author"></td>
      <% } %>
-     <td<% if (showHistorySymbol) { %> class="value"<% } %>>
-      <% if (commit !== null) { %>
-       <pre><%- commit.get('summary') %></pre>
-      <% } %>
-     </td>
-     <td<% if (showHistorySymbol) { %> class="value"<% } %>>
-      <% if (commit !== null) { %>
-       <%- commit.get('authorName') %>
-      <% } %>
-     </td>
     </tr>
 `);
 
@@ -67,31 +68,16 @@ const headerTemplate = _.template(dedent`
        <th><%- firstText %></th>
        <th><%- lastText %></th>
       <% } %>
-      <th<% if (showExpandCollapse) { %> colspan="2"<% } %>>
-       <%- summaryText %>
-       </th>
+      <th><%- summaryText %></th>
+      <th><%- idText %></th>
       <th><%- authorText %></th>
      </tr>
     </thead>
 `);
 
 const tableTemplate = _.template(dedent`
-    <form>
-     <table class="commit-list">
-      <colgroup>
-       <% if (showHistorySymbol) { %>
-        <col>
-       <% } else if (showInterCommitDiffControls) { %>
-         <col>
-         <col>
-       <% } %>
-       <% if (showExpandCollapse) { %>
-        <col class="expand-collapse-control">
-       <% } %>
-       <col>
-       <col>
-      </colgroup>
-     </table>
+    <form class="rb-c-review-request-field-tabular rb-c-commit-list">
+     <table class="rb-c-review-request-field-tabular__data"></table>
     </form>
 `);
 
@@ -102,8 +88,6 @@ RB.DiffCommitListView = Backbone.View.extend({
     events: {
         'change .base-commit-selector': '_onBaseChanged',
         'change .tip-commit-selector': '_onTipChanged',
-        'click .collapse-commit-message': '_collapseCommitMessage',
-        'click .expand-commit-message': '_expandCommitMessage',
     },
 
     /**
@@ -139,29 +123,27 @@ RB.DiffCommitListView = Backbone.View.extend({
         const isInterdiff = this.model.isInterdiff();
 
         const commonContext = {
-            showExpandCollapse: commits.some(commit => commit.hasSummary()),
+            baseSelectorLabel: _`Set first commit`,
             showHistorySymbol: isInterdiff,
-            showInterCommitDiffControls:
-                this._showInterCommitDiffControls,
+            showInterCommitDiffControls: this._showInterCommitDiffControls,
+            tipSelectorLabel: _`Set last commit`,
         };
 
         const $content = $(tableTemplate(commonContext))
         const $table = $content
-            .find('table')
-            .toggleClass('changed', isInterdiff)
+            .find('.rb-c-review-request-field-tabular__data')
             .append(headerTemplate(_.extend(
                 {
-                    authorText: gettext('Author'),
-                    firstText: gettext('First'),
-                    lastText: gettext('Last'),
-                    summaryText: gettext('Summary'),
+                    authorText: _`Author`,
+                    firstText: _`First`,
+                    idText: _`ID`,
+                    lastText: _`Last`,
+                    summaryText: _`Summary`,
                 },
                 commonContext
             )));
 
         const $tbody = $('<tbody />');
-
-        commonContext.expandText = gettext('Expand commit message.');
 
         if (isInterdiff) {
             this.model.get('historyDiff').each(historyDiffEntry => {
@@ -169,21 +151,30 @@ RB.DiffCommitListView = Backbone.View.extend({
 
                 let key;
                 let rowClass;
+                let opLabel;
 
                 switch (entryType) {
                     case RB.CommitHistoryDiffEntry.ADDED:
-                        rowClass = 'new-value';
+                        rowClass = '-is-added';
                         key = 'newCommitID';
+                        opLabel = _`Added commit`;
                         break;
 
                     case RB.CommitHistoryDiffEntry.REMOVED:
-                        rowClass = 'old-value';
+                        rowClass = '-is-removed';
                         key = 'oldCommitID';
+                        opLabel = _`Removed commit`;
                         break;
 
                     case RB.CommitHistoryDiffEntry.UNMODIFIED:
-                    case RB.CommitHistoryDiffEntry.MODIFIED:
                         key = 'newCommitID';
+                        opLabel = _`Added commit`;
+                        break;
+
+                    case RB.CommitHistoryDiffEntry.MODIFIED:
+                        rowClass = '-is-modified';
+                        key = 'newCommitID';
+                        opLabel = _`Unmodified commit`;
                         break;
 
                     default:
@@ -196,10 +187,11 @@ RB.DiffCommitListView = Backbone.View.extend({
 
                 $tbody.append(itemTemplate(_.extend(
                     {
-                        commit: commit,
                         historyDiffEntry: historyDiffEntry,
+                        opLabel: opLabel,
                         rowClass: rowClass,
                     },
+                    this._buildItemCommitContext(commit),
                     commonContext
                 )));
             });
@@ -223,12 +215,12 @@ RB.DiffCommitListView = Backbone.View.extend({
             commits.each((commit, i) => {
                 $tbody.append(itemTemplate(_.extend(
                     {
-                        commit: commit,
                         baseSelected: i === baseIndex,
                         tipSelected: i === tipIndex,
                         baseDisabled: i > tipIndex,
                         tipDisabled: i < baseIndex,
                     },
+                    this._buildItemCommitContext(commit),
                     commonContext
                 )));
             });
@@ -247,63 +239,36 @@ RB.DiffCommitListView = Backbone.View.extend({
     },
 
     /**
-     * Handle the expand button being clicked.
+     * Return template render context for a commit item.
      *
      * Args:
-     *     e (jQuery.Event):
-     *         The click event.
-     */
-    _expandCommitMessage(e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        this._expandOrCollapse($(e.currentTarget), true);
-    },
-
-    /**
-     * Handle the collapse button being clicked.
+     *     commit (RB.DiffCommit):
+     *         The commit for which to return context.
      *
-     * Args:
-     *     e (jQuery.Event):
-     *         The click event.
+     * Returns:
+     *     object:
+     *     The template render context for the item.
      */
-    _collapseCommitMessage(e) {
-        e.preventDefault();
-        e.stopPropagation();
+    _buildItemCommitContext(commit) {
+        let commitAuthor = null;
+        let commitID = null;
+        let commitSummary = null;
+        let commitBody = null;
 
-        this._expandOrCollapse($(e.currentTarget), false);
-    },
+        if (commit) {
+            commitAuthor = commit.get('authorName');
+            commitID = commit.get('commitID');
+            commitSummary = commit.get('summary');
+            commitBody = commit.get('commitMessageBody');
+        }
 
-    /**
-     * Expand or collapse the commit message on the same row as the link.
-     *
-     * Args:
-     *     $link (jQuery):
-     *         The expand or collapse link that was clicked.
-     *
-     *     expand (boolean):
-     *         Whether we are expanding (``true``) or collapsing (``false``).
-     */
-    _expandOrCollapse($link, expand) {
-        const $icon = $link.find('.fa');
-        const commitID = $link.data('commitId');
-
-        const commit = this.model.get('commits').get(commitID);
-        const newText = commit.get(expand ? 'commitMessage' : 'summary');
-
-        $link.closest('tr')
-            .find('pre')
-            .text(newText);
-
-        $link.attr(
-            'class',
-            expand ? 'collapse-commit-message' : 'expand-commit-message');
-
-        $icon.attr({
-            'class': expand ? 'fa fa-minus' : 'fa fa-plus',
-            'title': expand ? gettext('Collapse commit message.')
-                            : gettext('Expand commit message.'),
-        });
+        return {
+            commit: commit,
+            commitAuthor: commitAuthor,
+            commitBody: commitBody,
+            commitID: commitID,
+            commitSummary: commitSummary,
+        };
     },
 
     /**

@@ -2,25 +2,19 @@
 {% comment %}
 This template should be kept in sync with the templates in:
 
-- templates/reviews/changedesc_commit_list.html
 - static/rb/js/diffviewer/views/diffCommitListView.es6.js
 
 so that they render items identically.
 {% endcomment %}
-<div class="rb-c-review-request-field__tabular commit-list">
+<div class="rb-c-review-request-field-tabular rb-c-commit-list">
  <table class="rb-c-review-request-field-tabular__data">
-  <colgroup>
-{% if to_expand %}
-    <col class="expand-collapse-control">
-{% endif %}
-    <col>{# Summary column #}
-{% if include_author_name %}
-    <col>
-{% endif %}
-  </colgroup>
   <thead>
    <tr>
-     <th{% if to_expand %} colspan="2"{% endif %}>{% trans "Summary" %}</th>
+{% if show_commits_diff %}
+    <th></th>
+{% endif %}
+    <th>{% trans "Summary" %}</th>
+    <th>{% trans "ID" %}</th>
 {% if include_author_name %}
     <th>{% trans "Author" %}</th>
 {% endif %}
@@ -28,22 +22,53 @@ so that they render items identically.
   </thead>
   <tbody>
 {% for commit in commits %}
-   <tr>
-{%  if to_expand %}
-    <td>
-{%   if commit.pk in to_expand %}
-     <a href="#" class="expand-commit-message" data-commit-id="{{commit.pk}}" aria-role="button">
-      <span class="fa fa-plus" title="{% trans "Expand commit message."%}"></span>
-     </a>
+   <tr class="rb-c-commit-list__commit{% if show_commits_diff %} -is-removed{% endif %}">
+{%  if show_commits_diff %}
+    <td class="rb-c-commit-list__op"
+        aria-label="{% trans 'Removed commit' %}"></td>
+{%  endif %}
+    <td class="rb-c-commit-list__message">
+{%   if commit.commit_message_body %}
+     <details>
+      <summary class="rb-c-commit-list__message-summary">{{commit.summary}}</summary>
+      <div class="rb-c-commit-list__message-body">{{commit.commit_message_body}}</div>
+     </details>
+{%   else %}
+     <div class="rb-c-commit-list__message-summary">{{commit.summary}}</div>
 {%   endif %}
     </td>
-{%  endif %}
-    <td class="commit-message"><pre>{{commit.summary}}</pre></td>
+    <td class="rb-c-commit-list__id"
+        title="{{commit.commit_id}}">{{commit.commit_id}}</td>
 {%  if include_author_name %}
-    <td>{{commit.author_name}}</td>
+    <td class="rb-c-commit-list__author">{{commit.author_name}}</td>
 {%  endif %}
    </tr>
 {% endfor %}
+{% if show_commits_diff %}
+{%  for commit in new_commits %}
+   <tr class="rb-c-commit-list__commit{% if show_commits_diff %} -is-added{% endif %}">
+{%   if show_commits_diff %}
+    <td class="rb-c-commit-list__op"
+        aria-label="{% trans 'Added commit' %}"></td>
+{%   endif %}
+    <td class="rb-c-commit-list__message">
+{%   if commit.commit_message_body %}
+     <details>
+      <summary class="rb-c-commit-list__message-summary">{{commit.summary}}</summary>
+      <div class="rb-c-commit-list__message-body">{{commit.commit_message_body}}</div>
+     </details>
+{%   else %}
+     <div class="rb-c-commit-list__message-summary">{{commit.summary}}</div>
+{%   endif %}
+    </td>
+    <td class="rb-c-commit-list__id"
+        title="{{commit.commit_id}}">{{commit.commit_id}}</td>
+{%   if include_author_name %}
+    <td class="rb-c-commit-list__author">{{commit.author_name}}</td>
+{%   endif %}
+   </tr>
+{%  endfor %}
+{% endif %}
   </tbody>
  </table>
 </div>
