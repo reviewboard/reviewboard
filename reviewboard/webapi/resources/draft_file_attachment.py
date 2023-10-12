@@ -41,7 +41,12 @@ class DraftFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
             return self.model.objects.none()
 
     def serialize_caption_field(self, obj, **kwargs):
-        return obj.draft_caption or obj.caption
+        draft_caption = obj.draft_caption
+
+        if draft_caption is not None:
+            return draft_caption
+        else:
+            return obj.caption
 
     @webapi_check_local_site
     @webapi_login_required

@@ -279,6 +279,56 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                 draft_file_attachment_item_mimetype,
                 file_attachment)
 
+    def test_get_with_caption(self) -> None:
+        """Testing the GET review-requests/<id>/draft/file-attachments/<id>/
+        with a draft caption
+        """
+        review_request = self.create_review_request(submitter=self.user)
+        file_attachment = self.create_file_attachment(
+            review_request,
+            draft=True,
+            caption='Published caption',
+            draft_caption='Draft caption')
+
+        rsp = self.api_get(
+            get_draft_file_attachment_item_url(review_request,
+                                               file_attachment.pk),
+            expected_mimetype=draft_file_attachment_item_mimetype)
+        item_rsp = rsp['draft_file_attachment']
+
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(item_rsp['id'], file_attachment.pk)
+        self.assertEqual(item_rsp['caption'], 'Draft caption')
+        self.assertEqual(file_attachment.draft_caption, 'Draft caption')
+        self.assertEqual(file_attachment.caption, 'Published caption')
+
+    def test_get_with_empty_caption(self) -> None:
+        """Testing the GET review-requests/<id>/draft/file-attachments/<id>/
+        with an empty draft caption
+        """
+        review_request = self.create_review_request(submitter=self.user)
+        file_attachment = self.create_file_attachment(
+            review_request,
+            draft=True,
+            caption='Published caption',
+            draft_caption='')
+
+        rsp = self.api_get(
+            get_draft_file_attachment_item_url(review_request,
+                                               file_attachment.pk),
+            expected_mimetype=draft_file_attachment_item_mimetype)
+        item_rsp = rsp['draft_file_attachment']
+
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(item_rsp['id'], file_attachment.pk)
+        self.assertEqual(item_rsp['caption'], '')
+        self.assertEqual(file_attachment.draft_caption, '')
+        self.assertEqual(file_attachment.caption, 'Published caption')
+
     #
     # HTTP PUT tests
     #
@@ -303,6 +353,30 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertEqual(item_rsp['id'], file_attachment.pk)
         self.assertEqual(item_rsp['caption'], 'My new caption')
         self.assertEqual(file_attachment.draft_caption, 'My new caption')
+
+    def test_put_with_empty_caption(self) -> None:
+        """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/
+        with an empty caption
+        """
+        review_request = self.create_review_request(submitter=self.user)
+        file_attachment = self.create_file_attachment(review_request)
+
+        rsp = self.api_put(
+            get_draft_file_attachment_item_url(review_request,
+                                               file_attachment.pk),
+            {
+                'caption': '',
+            },
+            expected_mimetype=draft_file_attachment_item_mimetype)
+        item_rsp = rsp['draft_file_attachment']
+
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(item_rsp['id'], file_attachment.pk)
+        self.assertEqual(item_rsp['caption'], '')
+        self.assertEqual(file_attachment.draft_caption, '')
+        self.assertEqual(file_attachment.caption, 'My Caption')
 
     def test_put_with_non_owner_superuser(self):
         """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/

@@ -286,6 +286,25 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
             view._captionEditorView.submit();
         });
 
+        it('Save empty caption', function(done) {
+            spyOn(model, 'save').and.callFake(() => {
+                expect(view.trigger).toHaveBeenCalledWith('endEdit');
+                expect(model.get('caption')).toBe('');
+                expect(model.save).toHaveBeenCalled();
+
+                done();
+            });
+
+            view._captionEditorView.startEdit();
+            expect(view.trigger).toHaveBeenCalledWith('beginEdit');
+
+            view.$('input')
+                .val('')
+                .triggerHandler('keyup');
+
+            view._captionEditorView.submit();
+        });
+
         it('Delete', function(done) {
             spyOn(model, 'destroy').and.callThrough();
             spyOn($, 'ajax').and.callFake(options => options.success());
