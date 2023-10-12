@@ -12,8 +12,8 @@
  *     diffAgainstFileAttachmentID (number):
  *         An optional ID of the file attachment being diffed against.
  *
- *     public (boolean):
- *         Whether the diff has been published.
+ *     state (string):
+ *         The state of the file attachment.
  *
  * See Also:
  *     :js:class:`RB.AbstractCommentBlock`:
@@ -21,9 +21,9 @@
  */
 RB.FileAttachmentCommentBlock = RB.AbstractCommentBlock.extend({
     defaults: _.defaults({
-        fileAttachmentID: null,
         diffAgainstFileAttachmentID: null,
-        public: false,
+        fileAttachmentID: null,
+        state: null,
     }, RB.AbstractCommentBlock.prototype.defaults),
 
     /**
@@ -61,6 +61,25 @@ RB.FileAttachmentCommentBlock = RB.AbstractCommentBlock.extend({
     },
 
     /**
+     * Return a warning about commenting on a deleted object.
+     *
+     * Version Added:
+     *     6.0
+     *
+     * Returns:
+     *     string:
+     *     A warning to display to the user if they're commenting on a deleted
+     *     object. Return null if there's no warning.
+     */
+    getDeletedWarning() {
+        if (this.get('state') === RB.FileAttachmentStates.DELETED) {
+            return _`This file is deleted and cannot be commented on.`;
+        } else {
+            return null;
+        }
+    },
+
+    /**
      * Return a warning about commenting on a draft object.
      *
      * Returns:
@@ -69,10 +88,15 @@ RB.FileAttachmentCommentBlock = RB.AbstractCommentBlock.extend({
      *     object. Return null if there's no warning.
      */
     getDraftWarning() {
-        if (this.get('public')) {
-            return null;
+        const state = this.get('state');
+
+        if (state === RB.FileAttachmentStates.NEW ||
+            state === RB.FileAttachmentStates.NEW_REVISION ||
+            state === RB.FileAttachmentStates.DRAFT) {
+            return _`The file for this comment is still a draft. Replacing or
+                     deleting the file will delete this comment.`;
         } else {
-            return _`The file for this comment is still a draft. Replacing or deleting the file will delete this comment.`;
+            return null;
         }
     },
 });

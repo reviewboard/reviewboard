@@ -3,6 +3,7 @@
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
+from reviewboard.reviews.models.review_request import FileAttachmentState
 from reviewboard.reviews.ui.base import (FileAttachmentReviewUI,
                                          register_ui,
                                          unregister_ui)
@@ -316,7 +317,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'fileAttachmentID': 1,
                 'fileRevision': 1,
                 'filename': 'filename.txt',
-                'public': True,
+                'state': FileAttachmentState.PUBLISHED.value,
             })
 
     def test_get_js_model_data_with_draft_attachment(self):
@@ -338,7 +339,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'fileAttachmentID': 1,
                 'fileRevision': 1,
                 'filename': 'filename.txt',
-                'public': False,
+                'state': FileAttachmentState.NEW.value,
             })
 
     def test_get_js_model_data_with_history(self):
@@ -366,7 +367,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'fileRevision': 2,
                 'filename': 'filename.txt',
                 'numRevisions': 2,
-                'public': True,
+                'state': FileAttachmentState.PUBLISHED.value,
             })
 
     def test_get_js_model_data_with_history_and_draft(self):
@@ -395,7 +396,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'fileRevision': 2,
                 'filename': 'filename.txt',
                 'numRevisions': 2,
-                'public': False,
+                'state': FileAttachmentState.NEW_REVISION.value,
             })
 
     def test_get_js_model_data_with_diff(self):
@@ -428,7 +429,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'fileRevision': 2,
                 'filename': 'filename.txt',
                 'numRevisions': 2,
-                'public': True,
+                'state': FileAttachmentState.PUBLISHED.value,
             })
 
     def test_get_js_model_data_with_diff_type_mismatch(self):
@@ -464,7 +465,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'fileRevision': 2,
                 'filename': 'filename.txt',
                 'numRevisions': 2,
-                'public': True,
+                'state': FileAttachmentState.PUBLISHED.value,
             })
 
     def test_serialize_comment(self):

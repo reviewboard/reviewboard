@@ -167,6 +167,21 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
     },
 
     /**
+     * Return a warning about commenting on a deleted object.
+     *
+     * Version Added:
+     *     6.0
+     *
+     * Returns:
+     *     string:
+     *     A warning to display to the user if they're commenting on a deleted
+     *     object. Return null if there's no warning.
+     */
+    getDeletedWarning() {
+        return null;
+    },
+
+    /**
      * Return a warning about commenting on a draft object.
      *
      * Returns:

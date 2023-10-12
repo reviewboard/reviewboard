@@ -121,20 +121,22 @@ export class FileAttachmentThumbnailView extends BaseView<
 
     static actionsTemplate = _.template(dedent`
         <% if (loaded) { %>
-        <%  if (reviewURL) { %>
+        <%  if (canReview) { %>
+        <%   if (reviewURL) { %>
         <li>
          <a class="file-review" role="button" href="<%- reviewURL %>">
           <span class="fa fa-comment-o" aria-hidden="true"></span>
           <%- reviewText %>
          </a>
         </li>
-        <%  } else { %>
+        <%   } else { %>
         <li class="file-add-comment">
          <a role="button" href="#">
           <span class="fa fa-comment-o" aria-hidden="true"></span>
           <%- commentText %>
          </a>
         </li>
+        <%   } %>
         <%  } %>
         <li>
          <a class="file-download" role="button" href="<%- downloadURL %>">
@@ -683,6 +685,7 @@ export class FileAttachmentThumbnailView extends BaseView<
 
         this._$actions.html(this.actionsTemplate(_.defaults({
             canEdit: this.options.canEdit,
+            canReview: (state !== this.states.DELETED),
             canUndoDeletion: (state === this.states.PENDING_DELETION &&
                               this.options.canEdit),
             commentText: _`Comment`,
