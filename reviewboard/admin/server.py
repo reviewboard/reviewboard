@@ -104,6 +104,6 @@ def get_data_dir() -> str:
             raise ImproperlyConfigured(
                 _('The site data directory (%s) does not exist. Please '
                   'make sure you are running in the right environment with a '
-                  'working site directory.'))
+                  'working site directory.') % _data_dir)
 
     return _data_dir
