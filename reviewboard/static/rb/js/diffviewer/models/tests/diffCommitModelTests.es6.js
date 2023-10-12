@@ -16,6 +16,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
                 authorName: 'Author Name',
                 commitID: 'r123',
                 commitMessage: 'A commit message.',
+                commitMessageBody: null,
                 id: 1,
                 parentID: 'r122',
                 summary: 'A commit message.',
@@ -50,6 +51,10 @@ suite('rb/diffviewer/models/DiffCommit', function() {
                     'It spans several lines.\n' +
                     'It has trailing newlines as well.'
                 ),
+                commitMessageBody: (
+                    'It spans several lines.\n' +
+                    'It has trailing newlines as well.'
+                ),
                 id: 2,
                 parentID: 'r122',
                 summary: 'This is a long commit message.',
@@ -76,6 +81,7 @@ suite('rb/diffviewer/models/DiffCommit', function() {
                 authorName: 'Author Name',
                 commitID: 'r234',
                 commitMessage: message,
+                commitMessageBody: null,
                 id: 3,
                 parentID: 'r233',
                 summary: summary,
