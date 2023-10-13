@@ -69,8 +69,8 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
      *     This instance, for chaining.
      */
     render() {
-        const $issueSummaryTable =
-            this.$el.children('.rb-c-issue-summary-table');
+        const $issueSummaryTable = this.$('.rb-c-issue-summary-table');
+        console.assert($issueSummaryTable.length === 1);
 
         this._$header = $issueSummaryTable.children(
             '.rb-c-review-request-field-tabular__header');
