@@ -24,7 +24,7 @@ suite('rb/models/CommChannel', () => {
     });
 
     afterEach(() => {
-        ClientCommChannel.instance = null;
+        commChannel.close();
     });
 
     describe('reload handler', () => {
