@@ -7,8 +7,10 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { BaseResource } from '../baseResourceModel';
-import { ReviewReply } from '../reviewReplyModel';
+import {
+    BaseResource,
+    ReviewReply,
+} from 'reviewboard/common';
 
 
 suite('rb/resources/models/ReviewReply', function() {

@@ -14,10 +14,11 @@ import {
     Review,
     UserSession,
 } from 'reviewboard/common';
+import {
+    ReviewDialogView,
+    ReviewRequestEditor,
+} from 'reviewboard/reviews';
 import { DnDUploader } from 'reviewboard/ui';
-
-import { ReviewRequestEditor } from '../../models/reviewRequestEditorModel';
-import { ReviewDialogView } from '../reviewDialogView';
 
 
 declare const $testsScratch: JQuery;

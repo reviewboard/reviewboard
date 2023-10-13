@@ -11,8 +11,7 @@ import {
     BaseResource,
     UserSession,
 } from 'reviewboard/common';
-
-import { CommentEditor } from '../commentEditorModel';
+import { CommentEditor } from 'reviewboard/reviews';
 
 
 suite('rb/models/CommentEditor', function() {

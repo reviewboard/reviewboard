@@ -8,7 +8,7 @@ import {
     it,
 } from 'jasmine-core';
 
-import { ContentViewport } from '../contentViewport';
+import { ContentViewport } from 'reviewboard/ui';
 
 
 declare const $testsScratch: JQuery;

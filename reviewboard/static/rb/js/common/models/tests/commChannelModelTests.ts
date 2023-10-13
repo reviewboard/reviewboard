@@ -9,8 +9,10 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { PageView } from '../../views/pageView';
-import { ClientCommChannel } from '../commChannelModel';
+import {
+    ClientCommChannel,
+    PageView,
+} from 'reviewboard/common';
 
 
 declare const $testsScratch: JQuery;

@@ -8,12 +8,10 @@ import {
 } from 'jasmine-core';
 
 import {
-    BaseResource,
     FileAttachment,
     FileAttachmentStates,
 } from 'reviewboard/common';
-
-import { FileAttachmentThumbnailView } from '../fileAttachmentThumbnailView';
+import { FileAttachmentThumbnailView } from 'reviewboard/reviews';
 
 
 declare const $testsScratch: JQuery;

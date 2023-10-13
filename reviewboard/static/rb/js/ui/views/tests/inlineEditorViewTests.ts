@@ -9,7 +9,7 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { InlineEditorView } from '../inlineEditorView';
+import { InlineEditorView } from 'reviewboard/ui';
 
 
 declare const $testsScratch: JQuery;

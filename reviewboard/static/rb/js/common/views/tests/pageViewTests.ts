@@ -9,7 +9,7 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { PageView } from '../pageView';
+import { PageView } from 'reviewboard/common';
 
 
 declare const $testsScratch: JQuery;

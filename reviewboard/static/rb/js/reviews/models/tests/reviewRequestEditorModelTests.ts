@@ -8,7 +8,7 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { ReviewRequestEditor } from '../reviewRequestEditorModel';
+import { ReviewRequestEditor } from 'reviewboard/reviews';
 
 
 suite('rb/models/ReviewRequestEditor', function() {

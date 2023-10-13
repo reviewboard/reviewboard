@@ -6,8 +6,10 @@ import {
     it,
 } from 'jasmine-core';
 
-import { BaseResource } from '../baseResourceModel';
-import { FileAttachment } from '../fileAttachmentModel';
+import {
+    BaseResource,
+    FileAttachment,
+} from 'reviewboard/common';
 
 
 suite('rb/resources/models/FileAttachment', function() {
