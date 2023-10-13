@@ -63,14 +63,14 @@ const headerTemplate = _.template(dedent`
     <thead>
      <tr>
       <% if (showHistorySymbol) { %>
-       <th></th>
+       <th class="rb-c-commit-list__column-op"></th>
       <% } else if (showInterCommitDiffControls) { %>
-       <th><%- firstText %></th>
-       <th><%- lastText %></th>
+       <th class="rb-c-commit-list__column-select-tip"><%- firstText %></th>
+       <th class="rb-c-commit-list__column-select-base"><%- lastText %></th>
       <% } %>
-      <th><%- summaryText %></th>
-      <th><%- idText %></th>
-      <th><%- authorText %></th>
+      <th class="rb-c-commit-list__column-summary"><%- summaryText %></th>
+      <th class="rb-c-commit-list__column-id"><%- idText %></th>
+      <th class="rb-c-commit-list__column-author"><%- authorText %></th>
      </tr>
     </thead>
 `);

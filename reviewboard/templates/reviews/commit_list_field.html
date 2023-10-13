@@ -11,12 +11,12 @@ so that they render items identically.
   <thead>
    <tr>
 {% if show_commits_diff %}
-    <th></th>
+    <th class="rb-c-commit-list__column-op"></th>
 {% endif %}
-    <th>{% trans "Summary" %}</th>
-    <th>{% trans "ID" %}</th>
+    <th class="rb-c-commit-list__column-summary">{% trans "Summary" %}</th>
+    <th class="rb-c-commit-list__column-id">{% trans "ID" %}</th>
 {% if include_author_name %}
-    <th>{% trans "Author" %}</th>
+    <th class="rb-c-commit-list__column-author">{% trans "Author" %}</th>
 {% endif %}
    </tr>
   </thead>

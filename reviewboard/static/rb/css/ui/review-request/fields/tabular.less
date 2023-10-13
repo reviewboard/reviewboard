@@ -121,44 +121,38 @@
     overflow: hidden;
     width: 100%;
 
-    tbody tr {
-      &.-is-hidden {
-        display: none;
+    tbody {
+      tr {
+        background: @_data-vars[@cell-bg];
+
+        &.-is-hidden {
+          display: none;
+        }
       }
 
       td {
-        background: @_data-vars[@cell-bg];
         padding: @_cell-padding;
         vertical-align: top;
       }
     }
 
-    thead th {
-      background: @_color-vars[@bg];
-      border-bottom: @_border-width @_color-vars[@border] solid;
-      cursor: pointer;
-      padding: (@_cell-padding / 2) @_cell-padding;
-      text-align: left;
-      white-space: nowrap;
+    thead {
+      th {
+        border-bottom: @_border-width @_color-vars[@border] solid;
+        cursor: pointer;
+        padding: (@_cell-padding / 2) @_cell-padding;
+        text-align: left;
+        white-space: nowrap;
 
-      &.-is-sortable:hover {
-        background: @_color-vars[@hover-bg];
+        &.-is-sortable:hover {
+          background: @_color-vars[@hover-bg];
+        }
+      }
+
+      tr {
+        background: @_color-vars[@bg];
       }
     }
-
-    .on-mobile-medium-screen-720({
-      /* Display the cells vertically. */
-      tbody,
-      tbody tr,
-      tbody td {
-        display: block;
-      }
-
-      /* Never show the header. */
-      thead {
-        display: none !important;
-      }
-    });
   }
 
   .rb-c-tabs {
