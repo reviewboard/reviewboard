@@ -17,6 +17,12 @@ const MAX_SUMMARY_LEN = 80;
  *     commitMessage (string):
  *         The commit message.
  *
+ *     commitMessageBody (string):
+ *         The commit message body, without the summary.
+ *
+ *         Version Added:
+ *             6.0
+ *
  *     parentID (string):
  *         The unique identifier of the parent commit.
  *
@@ -28,6 +34,7 @@ RB.DiffCommit = Backbone.Model.extend({
         authorName: null,
         commitID: null,
         commitMessage: null,
+        commitMessageBody: null,
         parentID: null,
         summary: null,
     },
@@ -44,16 +51,29 @@ RB.DiffCommit = Backbone.Model.extend({
      *     The parsed attribute-value pairs.
      */
     parse(attrs) {
-        let summary = attrs.commit_message.split('\n', 1)[0].trim();
+        const commitMessage = attrs.commit_message.trim();
+        const i = commitMessage.indexOf('\n');
+
+        let summary = (
+            i === -1
+            ? commitMessage
+            : commitMessage.substr(0, i)
+        ).trim();
 
         if (summary.length > MAX_SUMMARY_LEN) {
             summary = summary.substr(0, MAX_SUMMARY_LEN - 3) + '...';
         }
 
+        const body = (
+            i === -1
+            ? null
+            : commitMessage.substr(i).trim());
+
         return {
             authorName: attrs.author_name,
             commitID: attrs.commit_id,
-            commitMessage: attrs.commit_message.trim(),
+            commitMessage: commitMessage,
+            commitMessageBody: body,
             id: attrs.id,
             parentID: attrs.parent_id,
             summary: summary,

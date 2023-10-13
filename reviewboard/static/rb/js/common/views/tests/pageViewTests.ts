@@ -12,11 +12,15 @@ import {
 import { PageView } from '../pageView';
 
 
+declare const $testsScratch: JQuery;
+
+
 suite('rb/pages/views/PageView', function() {
     const pageSidebarTemplate = dedent`
         <div class="rb-c-page-sidebar test-page-sidebar">
          <div class="rb-c-page-sidebar__panes">
-          <div class="rb-c-page-sidebar__pane -is-shown">
+          <div class="rb-c-page-sidebar__pane -is-shown"
+               id="page-sidebar-main-pane">
            <div class="rb-c-page-sidebar__pane-content"></div>
           </div>
          </div>
@@ -30,9 +34,11 @@ suite('rb/pages/views/PageView', function() {
     let pageView;
 
     beforeEach(function() {
-        $body = $('<div/>').appendTo($testsScratch);
+        $body = $('<body/>').appendTo($testsScratch);
         $headerBar = $('<div/>').appendTo($body);
-        $pageContainer = $('<div/>').appendTo($body);
+        $pageContainer = $('<div id="page-container"/>')
+            .css('padding', 0)  // Normalize padding for some tests.
+            .appendTo($body);
         $pageContent = $('<div/>').appendTo($pageContainer);
         $pageSidebar = $(pageSidebarTemplate).appendTo($body);
 
@@ -73,28 +79,52 @@ suite('rb/pages/views/PageView', function() {
         describe('With full-page-content', function() {
             let $mainSidebarPane;
 
-            beforeEach(function() {
-                $pageContainer.css('display', 'none');
-                $mainSidebarPane = $pageSidebar.find('.-is-shown')
-                    .css('display', 'none');
+            beforeEach(() => {
+                $mainSidebarPane = $pageSidebar
+                    .find('#page-sidebar-main-pane');
+                expect($mainSidebarPane.length).toBe(1);
+
+                document.body.classList.remove('-is-loaded');
+            });
+
+            afterEach(() => {
+                document.body.classList.add('-is-loaded');
             });
 
             it('Using body.-is-content-full-page', function() {
                 $body.addClass('-is-content-full-page');
                 pageView.render();
+                $body.removeClass('-is-loaded');
 
                 expect(pageView.isFullPage).toBe(true);
                 expect($mainSidebarPane.css('display')).toBe('block');
                 expect($pageContainer.css('display')).toBe('block');
+                expect($mainSidebarPane.css('visibility')).toBe('hidden');
+                expect($pageContainer.css('visibility')).toBe('hidden');
             });
 
             it('Using legacy body.full-page-content', function() {
                 $body.addClass('full-page-content');
                 pageView.render();
+                $body.removeClass('-is-loaded');
 
                 expect(pageView.isFullPage).toBe(true);
                 expect($mainSidebarPane.css('display')).toBe('block');
                 expect($pageContainer.css('display')).toBe('block');
+                expect($mainSidebarPane.css('visibility')).toBe('hidden');
+                expect($pageContainer.css('visibility')).toBe('hidden');
+            });
+
+            it('Using body.-is-content-full-page and -is-loaded', function() {
+                $body.addClass('-is-content-full-page')
+                pageView.render();
+                expect($body[0]).toHaveClass('-is-loaded');
+
+                expect(pageView.isFullPage).toBe(true);
+                expect($mainSidebarPane.css('display')).toBe('block');
+                expect($pageContainer.css('display')).toBe('block');
+                expect($mainSidebarPane.css('visibility')).toBe('visible');
+                expect($pageContainer.css('visibility')).toBe('visible');
             });
         });
 
@@ -245,6 +275,7 @@ suite('rb/pages/views/PageView', function() {
 
                     beforeEach(function() {
                         pageView.isFullPage = true;
+                        $body.addClass('-is-loaded');
 
                         drawer = new RB.DrawerView();
 

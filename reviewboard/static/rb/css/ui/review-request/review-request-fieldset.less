@@ -1,0 +1,141 @@
+@import (reference) "rb/css/defs.less";
+
+
+/**
+ * A set of fields on a review request.
+ *
+ * This groups together one or more fields on a review request in a top-down
+ * form (default) or a tabular form (used for the review request details area).
+ *
+ * If the fieldset is marked to have inline fields, then each field label will
+ * have a ``:`` appended.
+ *
+ * This will generally contain ``.rb-c-review-request-field`` children, but
+ * are not required to.
+ *
+ * Note that this should not use the ``<fieldset>`` tag, as that tag has hidden
+ * structure that can interfere with tabular form.
+ *
+ * Version Added:
+ *     6.0
+ *
+ * Modifiers:
+ *     -has-inline-fields:
+ *         The fieldset contains inline fields. All field labels will have a
+ *         ``:`` appended.
+ *
+ *     -is-tabular:
+ *         The field layout should appear in a tabular form, with each field
+ *         in a row of label and value columns.
+ *
+ * DOM Attributes:
+ *     aria-label (string):
+ *         The label of the fieldset, if the fieldset does not contain a
+ *         ``.rb-c-review-request-fieldset__label`` part.
+ *
+ *         If a label part does exist, use ``aria-labelledby``.
+ *
+ *     aria-labelledby (string):
+ *         The ID of the ``.rb-c-review-request-fieldset__label`` part for the
+ *         fieldset, if one is used.
+ *
+ *         If a label part does not exist, use ``aria-label``.
+ *
+ *     role (string):
+ *         This should always be "group".
+ *
+ * Structure:
+ *     <div class="rb-c-review-request-fieldset"
+ *          aria-labelledby="..."
+ *          role="group">
+ *      <h3 class="rb-c-review-request-fieldset__label">...</h3>
+ *      ...
+ *     </div>
+ */
+.rb-c-review-request-fieldset {
+  display: flex;
+  flex-direction: column;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  gap: (2 * @box-padding);
+
+  &.-has-inline-fields {
+    .rb-c-review-request-field {
+      display: flex;
+      align-items: baseline;
+      flex-direction: row;
+      gap: 0.5em;
+
+      /*
+       * We want to leave enough room for the inline editor to grow. We opt
+       * for both of these methods in order to handle both tabular and
+       * non-tabular forms. The line-height is needed for any table-based
+       * layout and the min-height is needed for any flexboxes.
+       */
+      line-height: 2.5em;
+      min-height: 2.5em;
+
+      &__label:after {
+        content: ":";
+      }
+
+      &__value {
+        display: inline-flex;
+        flex-direction: row;
+        flex-grow: 1;
+
+        .rb-c-inline-editor {
+          flex-grow: 1;
+        }
+      }
+    }
+
+    .editable:empty + .rb-c-inline-editor-edit-icon {
+      /* Avoid an unwanted margin when alongside an empty value. */
+      margin-left: 0;
+    }
+  }
+
+  &.-is-tabular {
+    display: table-row-group;
+
+    .rb-c-review-request-field {
+      display: table-row;
+
+      &__label {
+        display: table-cell;
+        font-size: inherit;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      &__value {
+        display: table-cell;
+        width: 100%;
+      }
+
+      &__label,
+      &__value {
+        padding: 0 0 0.5em 1em;
+      }
+    }
+  }
+
+  /**
+   * The optional label for the fieldset.
+   *
+   * Structure:
+   *     <h3 class="rb-c-review-request-fieldset__label" id="...">
+   *      text...
+   *     </h3>
+   */
+  &__label {
+    color: @review-request-label-color;
+    font-size: @review-request-section-label-font-size;
+    font-weight: bold;
+    margin: 0;
+    padding: (@box-padding * 2) 0 @box-padding 0;
+    text-align: left;
+  }
+}

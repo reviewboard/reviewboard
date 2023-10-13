@@ -1,0 +1,73 @@
+@import (reference) "rb/css/defs.less";
+
+
+/**
+ * A container for a field on a review request.
+ *
+ * This is a wrapper for an editable field on a review request. It provides
+ * structure for a label and a container for a field's HTML or displayed value.
+ *
+ * Version Added:
+ *     6.0
+ *
+ * DOM Attributes:
+ *     aria-labelledby (string):
+ *         The ID of the field label.
+ *
+ *     role (string):
+ *         This should always be "group".
+ *
+ * Structure:
+ *     <div class="rb-c-review-request-field"
+ *          aria-labelledby="..."
+ *          role="group">
+ *      <label class="rb-c-review-request-field__label" ...>...</label>
+ *      <div class="rb-c-review-request-field__value">...</div>
+ *     </div>
+ */
+.rb-c-review-request-field {
+  display: flex;
+  flex-direction: column;
+  vertical-align: text-top;
+
+  /**
+   * The label for a field.
+   *
+   * DOM Attributes:
+   *     for (string):
+   *         The ID of the inner field or value.
+   *
+   *     id (string):
+   *         The ID of the field, for the parent element's ``aria-labelledby``.
+   *
+   * Structure:
+   *     <label class="rb-c-review-request-field__label"
+   *            for="..."
+   *            id="...">
+   *      text...
+   *     </label>
+   */
+  &__label {
+    color: @review-request-label-color;
+    font-size: @review-request-section-label-font-size;
+    font-weight: bold;
+  }
+
+  /**
+   * The inner field or value to show and manage.
+   *
+   * This may contain a field type like an ``<input>`` or ``<textarea>``, or
+   * a rendered value, or a ``rb-c-inline-editor``, or any combination of those.
+   *
+   * Structure:
+   *     <div class="rb-c-review-request-field__value">
+   *      field...
+   *     </div>
+   */
+  &__value {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    position: relative;
+  }
+}

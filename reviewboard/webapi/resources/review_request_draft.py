@@ -716,8 +716,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         if draft_update_fields or new_draft_values:
             # If there's any changes made at all to the draft, make sure we
             # allow last_updated to be computed and saved.
-            if draft_update_fields or new_draft_values:
-                draft_update_fields.add('last_updated')
+            draft_update_fields.add('last_updated')
 
             to_apply.append((draft, draft_update_fields, new_draft_values))
 

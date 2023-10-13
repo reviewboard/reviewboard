@@ -22,6 +22,11 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertEqual(item_rsp['caption'], attachment.caption)
         self.assertEqual(item_rsp['mimetype'], attachment.mimetype)
 
+    def setup_http_not_allowed_item_test(self, user):
+        repository = self.create_repository()
+
+        return get_diff_file_attachment_list_url(repository)
+
     def setup_http_not_allowed_list_test(self, user):
         repository = self.create_repository()
 
@@ -175,6 +180,15 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         attachment = self.create_diff_file_attachment(filediff)
 
         return get_diff_file_attachment_item_url(repository, attachment)
+
+    def setup_http_not_allowed_list_test(self, user):
+        repository = self.create_repository(public=False)
+        repository.users.add(self.user)
+        diffset = self.create_diffset(repository=repository)
+        filediff = self.create_filediff(diffset)
+        attachment = self.create_diff_file_attachment(filediff)
+
+        return get_diff_file_attachment_item_url(attachment, repository)
 
     #
     # HTTP GET tests

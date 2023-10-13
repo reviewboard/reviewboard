@@ -314,6 +314,8 @@ LOGGING_BLACKLIST = [
     'MARKDOWN',
     'PIL.Image',
 ]
+LOGGING_ENABLED = True
+LOGGING_DIRECTORY = None
 
 AUTH_PROFILE_MODULE = "accounts.Profile"
 
@@ -397,6 +399,19 @@ EXTENSIONS_ENABLED_BY_DEFAULT = [
 DJBLETS_EXTENSIONS_BROWSE_URL = 'https://www.reviewboard.org/store/'
 
 
+#: A list of external IP addresses that are allowed to access /health/.
+#:
+#: Version Added:
+#:     6.0
+#:
+#: Type:
+#:     list of str
+#:
+#: Example:
+#:     HEALTHCHECK_IPS = ['10.0.1.20']
+HEALTHCHECK_IPS = []
+
+
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
 try:
@@ -474,6 +489,9 @@ if PRODUCTION:
 else:
     SITE_DATA_DIR = os.path.dirname(LOCAL_ROOT)
 
+if not LOGGING_DIRECTORY:
+    LOGGING_DIRECTORY = os.path.join(LOCAL_ROOT, 'logs')
+
 HTDOCS_ROOT = os.path.join(LOCAL_ROOT, 'htdocs')
 STATIC_ROOT = os.path.join(HTDOCS_ROOT, 'static')
 MEDIA_ROOT = os.path.join(HTDOCS_ROOT, 'media')
@@ -523,6 +541,13 @@ CACHES['default'] = {
     'BACKEND': 'djblets.cache.forwarding_backend.ForwardingCacheBackend',
     'LOCATION': 'forwarded_backend',
 }
+
+
+# Combine any custom healthcheck IPs with our defaults.
+DJBLETS_HEALTHCHECK_IPS = [
+    '127.0.0.1',
+    '::1',
+] + HEALTHCHECK_IPS
 
 
 # URL prefix for media -- CSS, JavaScript and images. Make sure to use a

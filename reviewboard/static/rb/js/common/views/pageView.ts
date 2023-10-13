@@ -128,7 +128,7 @@ export class PageView<
             this.#commChannel = new ClientCommChannel();
             this.listenTo(this.#commChannel, 'reload', () => {
                 alert(_`This page is out of date and needs to be reloaded.`);
-                RB.navigateTo(window.location);
+                RB.reload();
             });
         }
     }

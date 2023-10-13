@@ -1,94 +1,101 @@
 {% load accounts avatars djblets_utils i18n reviewtags %}
 
-<div id="issue-summary" class="review-request-section"{% if issue_counts.total == 0 %} style="display: none;"{% endif %}>
+<div class="rb-c-review-request__field"
+     id="issue-summary"
+     {% if issue_counts.total == 0 %} style="display: none;"{% endif %}
+     aria-labelledby="issue_summary_table_label"
+     role="group">
  <a name="issue-summary"></a>
- <label class="review-request-section-label">{% trans "Issues" %}</label>
- <div class="rb-c-review-request-field-tabular rb-c-issue-summary-table">
-  <header class="rb-c-review-request-field-tabular__header">
-   <div class="rb-c-review-request-field-tabular__filters">
-    <select class="rb-c-review-request-field-tabular__filter rb-c-issue-summary-table__reviewer-filter">
-     <option value="all">{% trans "All Users" %}</option>
-    </select>
-   </div>
-   <ul class="rb-c-tabs">
-    <li class="rb-c-tabs__tab -is-active"
-        title="{% trans 'Open issues' %}"
-        data-issue-state="open">
-     <label class="rb-c-tabs__tab-label">
-      <span class="rb-icon rb-icon-issue-open"></span>
-      <span class="rb-c-issue-summary-table__counter">{{issue_counts.open}}</span>
-     </label>
-    </li>
-    <li class="rb-c-tabs__tab"
-        title="{% trans 'Issues waiting for verification' %}"
-        data-issue-state="verifying">
-     <label class="rb-c-tabs__tab-label">
-      <span class="rb-icon rb-icon-issue-verifying"></span>
-      <span class="rb-c-issue-summary-table__counter">{{issue_counts.verifying}}</span>
-     </label>
-    </li>
-    <li class="rb-c-tabs__tab"
-        title="{% trans 'Resolved issues' %}"
-        data-issue-state="resolved">
-     <label class="rb-c-tabs__tab-label">
-      <span class="rb-icon rb-icon-issue-resolved"></span>
-      <span class="rb-c-issue-summary-table__counter">{{issue_counts.resolved}}</span>
-     </label>
-    </li>
-    <li class="rb-c-tabs__tab"
-        title="{% trans 'Dropped issues' %}"
-        data-issue-state="dropped">
-     <label class="rb-c-tabs__tab-label">
-      <span class="rb-icon rb-icon-issue-dropped"></span>
-      <span class="rb-c-issue-summary-table__counter">{{issue_counts.dropped}}</span>
-     </label>
-    </li>
-    <li class="rb-c-tabs__tab"
-        title="{% trans 'All issues' %}"
-        data-issue-state="all">
-     <label class="rb-c-tabs__tab-label">
-      <span class="rb-c-tabs__tab-label-full">{% trans "All Issues:" %}</span>
-      <span class="rb-c-tabs__tab-label-short">{% trans "All:" %}</span>
-      <span class="rb-c-issue-summary-table__counter">{{issue_counts.total}}</span>
-     </label>
-    </li>
-   </ul>
-  </header>
-  <table class="rb-c-review-request-field-tabular__data">
-   <thead>
-    <tr>
-     <th class="-is-sortable">{% trans "Description" %}</th>
-     <th class="-is-sortable">{% trans "From" %}</th>
-     <th class="-is-sortable">{% trans "Last Updated" %}</th>
-    </tr>
-   </thead>
-   <tbody>
+ <label class="rb-c-review-request-field__label"
+        id="issue_summary_table_label">{% trans "Issues" %}</label>
+ <div class="rb-c-review-request-field__value">
+  <div class="rb-c-review-request-field-tabular rb-c-issue-summary-table">
+   <header class="rb-c-review-request-field-tabular__header">
+    <div class="rb-c-review-request-field-tabular__filters">
+     <select class="rb-c-review-request-field-tabular__filter rb-c-issue-summary-table__reviewer-filter">
+      <option value="all">{% trans "All Users" %}</option>
+     </select>
+    </div>
+    <ul class="rb-c-tabs">
+     <li class="rb-c-tabs__tab -is-active"
+         title="{% trans 'Open issues' %}"
+         data-issue-state="open">
+      <label class="rb-c-tabs__tab-label">
+       <span class="rb-icon rb-icon-issue-open"></span>
+       <span class="rb-c-issue-summary-table__counter">{{issue_counts.open}}</span>
+      </label>
+     </li>
+     <li class="rb-c-tabs__tab"
+         title="{% trans 'Issues waiting for verification' %}"
+         data-issue-state="verifying">
+      <label class="rb-c-tabs__tab-label">
+       <span class="rb-icon rb-icon-issue-verifying"></span>
+       <span class="rb-c-issue-summary-table__counter">{{issue_counts.verifying}}</span>
+      </label>
+     </li>
+     <li class="rb-c-tabs__tab"
+         title="{% trans 'Resolved issues' %}"
+         data-issue-state="resolved">
+      <label class="rb-c-tabs__tab-label">
+       <span class="rb-icon rb-icon-issue-resolved"></span>
+       <span class="rb-c-issue-summary-table__counter">{{issue_counts.resolved}}</span>
+      </label>
+     </li>
+     <li class="rb-c-tabs__tab"
+         title="{% trans 'Dropped issues' %}"
+         data-issue-state="dropped">
+      <label class="rb-c-tabs__tab-label">
+       <span class="rb-icon rb-icon-issue-dropped"></span>
+       <span class="rb-c-issue-summary-table__counter">{{issue_counts.dropped}}</span>
+      </label>
+     </li>
+     <li class="rb-c-tabs__tab"
+         title="{% trans 'All issues' %}"
+         data-issue-state="all">
+      <label class="rb-c-tabs__tab-label">
+       <span class="rb-c-tabs__tab-label-full">{% trans "All Issues:" %}</span>
+       <span class="rb-c-tabs__tab-label-short">{% trans "All:" %}</span>
+       <span class="rb-c-issue-summary-table__counter">{{issue_counts.total}}</span>
+      </label>
+     </li>
+    </ul>
+   </header>
+   <table class="rb-c-review-request-field-tabular__data">
+    <thead>
+     <tr>
+      <th class="-is-sortable">{% trans "Description" %}</th>
+      <th class="-is-sortable">{% trans "From" %}</th>
+      <th class="-is-sortable">{% trans "Last Updated" %}</th>
+     </tr>
+    </thead>
+    <tbody>
 {% for comment in issues %}
 {%  definevar 'reviewer_name' %}{% user_profile_display_name comment.review_obj.user %}{% enddefinevar %}
 {%  definevar 'issue_status' %}{{comment.issue_status|pretty_print_issue_status}}{% enddefinevar %}
-    <tr class="{% if issue_status %}-is-{{issue_status}}{% endif %}{% if comment.issue_status != 'O' %} -is-hidden{% endif %}"
-        data-issue-id="{{comment.pk}}"
-        data-reviewer="{{reviewer_name}}"
-        data-comment-type="{{comment.comment_type}}"
-        data-comment-href="#{{comment.anchor_prefix}}{{comment.pk}}">
-     <td>
-      <span class="rb-icon {{comment.issue_status|issue_status_icon}}"></span>
-      <p>{{comment.text|render_markdown:comment.rich_text|striptags|truncatewords:20}}</p>
-     </td>
-     <td>
-      <a href="{% url 'user' comment.review_obj.user %}" class="user">{% spaceless %}
-{%  if siteconfig_settings.avatars_enabled %}
-       {% avatar comment.review_obj.user 24 %}
-{%  endif %}
-       <span>{{reviewer_name}}</span>
-      {% endspaceless %}</a>
-     </td>
-     <td>
-      <time class="timesince" datetime="{{comment.timestamp|date:'c'}}">{{comment.timestamp}}</time>
-     </td>
-    </tr>
+     <tr class="{% if issue_status %}-is-{{issue_status}}{% endif %}{% if comment.issue_status != 'O' %} -is-hidden{% endif %}"
+         data-issue-id="{{comment.pk}}"
+         data-reviewer="{{reviewer_name}}"
+         data-comment-type="{{comment.comment_type}}"
+         data-comment-href="#{{comment.anchor_prefix}}{{comment.pk}}">
+      <td>
+       <span class="rb-icon {{comment.issue_status|issue_status_icon}}"></span>
+       <p>{{comment.text|render_markdown:comment.rich_text|striptags|truncatewords:20}}</p>
+      </td>
+      <td>
+       <a href="{% url 'user' comment.review_obj.user %}" class="user">{% spaceless %}
+ {%  if siteconfig_settings.avatars_enabled %}
+        {% avatar comment.review_obj.user 24 %}
+ {%  endif %}
+        <span>{{reviewer_name}}</span>
+       {% endspaceless %}</a>
+      </td>
+      <td>
+       <time class="timesince" datetime="{{comment.timestamp|date:'c'}}">{{comment.timestamp}}</time>
+      </td>
+     </tr>
 {% endfor %}
-   </tbody>
-  </table>
+    </tbody>
+   </table>
+  </div>
  </div>
 </div>

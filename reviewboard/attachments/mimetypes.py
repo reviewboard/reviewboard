@@ -1,9 +1,12 @@
 """File attachment mimetype registration and scoring."""
 
+from __future__ import annotations
+
 import docutils.core
 import logging
 import os
 import subprocess
+from typing import Optional, TYPE_CHECKING
 
 import mimeparse
 from django.contrib.staticfiles.storage import staticfiles_storage
@@ -12,6 +15,7 @@ from django.utils.html import format_html, format_html_join
 from django.utils.encoding import force_str, smart_str
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.filesystem import is_exe_in_path
 from djblets.util.templatetags.djblets_images import thumbnail
 from pygments import highlight
@@ -19,6 +23,9 @@ from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
 
 from reviewboard.reviews.markdown_utils import render_markdown
+
+if TYPE_CHECKING:
+    from reviewboard.attachments.models import FileAttachment
 
 
 logger = logging.getLogger(__name__)
@@ -406,6 +413,19 @@ class MimetypeHandler(object):
         """
         raise NotImplementedError
 
+    def delete_associated_files(self) -> None:
+        """Delete any extra files associated with this attachment.
+
+        This should be implemented by subclasses who create and store extra
+        files for file attachments, such as handlers that create and store
+        thumbnail files. This should not delete the main file of the file
+        attachment.
+
+        Version Added:
+            6.0
+        """
+        pass
+
     def _get_mimetype_file(self, name):
         return '%s/%s.png' % (self.MIMETYPES_DIR, name)
 
@@ -415,6 +435,27 @@ class ImageMimetype(MimetypeHandler):
 
     supported_mimetypes = ['image/*']
 
+    def __init__(
+        self,
+        attachment: FileAttachment,
+        mimetype: str,
+    ) -> None:
+        """Initialize the handler.
+
+        Args:
+            attachment (reviewboard.attachments.models.FileAttachment):
+                The file attachment being handled.
+
+            mimetype (str):
+                The mimetype for the file attachment.
+        """
+        super().__init__(attachment, mimetype)
+
+        self._thumbnails = {
+            '1x': thumbnail(attachment.file, (300, None)),
+            '2x': thumbnail(attachment.file, (600, None)),
+        }
+
     def get_thumbnail(self):
         """Return a thumbnail of the image.
 
@@ -422,14 +463,38 @@ class ImageMimetype(MimetypeHandler):
             django.utils.safestring.SafeText:
             The HTML for the thumbnail for the associated attachment.
         """
+        thumbnails = self._thumbnails
+
         return format_html(
             '<div class="file-thumbnail">'
             ' <img src="{src_1x}" srcset="{src_1x} 1x, {src_2x} 2x"'
             ' alt="{caption}" width="300" />'
             '</div>',
-            src_1x=thumbnail(self.attachment.file, (300, None)),
-            src_2x=thumbnail(self.attachment.file, (600, None)),
+            src_1x=thumbnails['1x'],
+            src_2x=thumbnails['2x'],
             caption=self.attachment.caption)
+
+    def delete_associated_files(self) -> None:
+        """Delete the thumbnail files for this attachment.
+
+        Version Added:
+            6.0
+        """
+        siteconfig = SiteConfiguration.objects.get_current()
+        site_media_url = siteconfig.get('site_media_url')
+        storage = self.attachment.file.storage
+
+        for t in self._thumbnails.values():
+            filename: Optional[str] = None
+
+            if t.startswith(site_media_url):
+                filename = t[len(site_media_url):]
+
+            if filename and storage.exists(filename):
+                storage.delete(filename)
+            else:
+                logger.warning('Unable to find and delete thumbnail file '
+                               'at %s', t)
 
 
 class TextMimetype(MimetypeHandler):

@@ -35,71 +35,6 @@
   }
 }
 
-/****************************************************************************
- * Inline editor forms
- ****************************************************************************/
-.editicon {
-  margin-left: @edit-icon-margin;
-  text-decoration: none;
-
-  .rb-icon {
-    vertical-align: bottom;
-  }
-}
-
-.editable, .editicon {
-  line-height: 14px;
-}
-
-.inline-editor-form {
-  display: block;
-  margin: 0;
-  padding: 0;
-  white-space: nowrap;
-
-  .buttons input[type='button'] {
-    margin-left: 6px;
-    margin-right: 0;
-
-    &:first-child {
-      margin-left: 0;
-    }
-  }
-
-  input[type="text"] {
-    border: 1px #888a85 solid;
-    padding: 1px 2px;
-  }
-
-  input[type] + .buttons {
-    padding-left: 6px;
-  }
-
-  textarea {
-    margin-top: 5px;
-  }
-
-  textarea + .buttons,
-  .rb-c-text-editor + .buttons {
-    margin-top: 6px;
-    white-space: normal;
-  }
-
-  .enable-markdown {
-    margin-left: 1em;
-
-    label {
-      color: black;
-      font-size: 8pt !important;
-      font-weight: normal;
-    }
-  }
-}
-
-.loading-indicator {
-  display: inline;
-}
-
 
 /****************************************************************************
  * Forms
@@ -320,7 +255,8 @@
       /* Change the labels to appear above the fields and not to the side. */
       padding-left: 0;
 
-      &.auth-field-row {
+      &.auth-field-row,
+      &.auth-field-row:not(.checkbox-row) {
         label {
           display: block;
           float: none;

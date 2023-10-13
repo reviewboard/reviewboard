@@ -7,6 +7,7 @@ import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
 import {
     ResourceCollection,
     FileAttachment,
+    FileAttachmentStates,
 } from 'reviewboard/common';
 import {
     FileAttachmentAttrs,
@@ -15,6 +16,9 @@ import {
 
 /** Attributes for the ReviewRequestEditor model. */
 export interface ReviewRequestEditorAttrs extends ModelAttributes {
+    /** All files attached to this review request. */
+    allFileAttachments: ResourceCollection<FileAttachment>;
+
     /** The collection of commits on this review request. */
     commits: RB.DiffCommitCollection;
 
@@ -41,7 +45,12 @@ export interface ReviewRequestEditorAttrs extends ModelAttributes {
     /** Whether or not a draft currently exists. */
     hasDraft: boolean;
 
-    /** The files attached to this review request. */
+    /**
+     * The files attached to this review request to display.
+     *
+     * This includes active published and draft file attachments, and
+     * ones that are pending deletion.
+    */
     fileAttachments: ResourceCollection<FileAttachment>;
 
     /** A mapping of file attachment IDs to their comments. */
@@ -174,6 +183,7 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
 
         // Set up file attachments.
         let fileAttachments = this.get('fileAttachments');
+        let allFileAttachments = this.get('allFileAttachments');
 
         if (fileAttachments === null) {
             fileAttachments = new ResourceCollection<FileAttachment>([], {
@@ -183,10 +193,21 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
             this.set('fileAttachments', fileAttachments);
         }
 
+        if (allFileAttachments === null) {
+            allFileAttachments = new ResourceCollection<FileAttachment>([], {
+                model: FileAttachment,
+                parentResource: reviewRequest.draft,
+            });
+            this.set('allFileAttachments', allFileAttachments);
+        }
+
         this.listenTo(fileAttachments, 'add',
                       this._onFileAttachmentOrScreenshotAdded);
         fileAttachments.each(
             this._onFileAttachmentOrScreenshotAdded.bind(this));
+
+        this.listenTo(fileAttachments, 'remove',
+                      this._onFileAttachmentRemoved);
 
         // Set up screenshots.
         let screenshots = this.get('screenshots');
@@ -257,17 +278,35 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
     ): FileAttachment {
         const draft = this.get('reviewRequest').draft;
         const fileAttachment = draft.createFileAttachment(attributes);
+        const attachmentHistoryID = attributes.attachmentHistoryID;
 
         const fileAttachments = this.get('fileAttachments');
 
-        if (attributes.attachmentHistoryID) {
-            const oldAttachment = fileAttachments.findWhere({
+        if (attachmentHistoryID && attachmentHistoryID > 1) {
+            /* We're adding a new revision of an existing attachment. */
+            fileAttachment.set({
+                state: FileAttachmentStates.NEW_REVISION,
+            });
+            const replacedAttachment = fileAttachments.findWhere({
                 attachmentHistoryID: attributes.attachmentHistoryID,
             });
-            const index = fileAttachments.indexOf(oldAttachment);
+            const index = fileAttachments.indexOf(replacedAttachment);
 
-            fileAttachments.remove(oldAttachment);
-            fileAttachments.add(fileAttachment, { at: index, });
+            /*
+             * Since we're replacing an attachment instead of actually
+             * removing one, we silently remove the existing attachment as to
+             * not trigger any standard removal handlers.
+             *
+             * We do however want to remove the existing attachment's
+             * thumbnail, so we fire a "replaceAttachment" signal which will
+             * be picked up by the ReviewRequestEditorView to remove the
+             * thumbnail. Note that we trigger this signal before adding the
+             * new attachment so that the existing thumbnail gets removed
+             * before the new thumbnail get added.
+             */
+            fileAttachments.remove(replacedAttachment, {silent: true});
+            this.trigger('replaceAttachment', replacedAttachment);
+            fileAttachments.add(fileAttachment, { at: index });
         } else {
             fileAttachments.add(fileAttachment);
         }
@@ -609,5 +648,61 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
             this.set('hasDraft', true);
             this.trigger('saved');
         });
+    }
+
+    /**
+     * Handle when a FileAttachment is removed.
+     *
+     * Version Added:
+     *     6.0
+     *
+     * Args:
+     *     fileAttachment (RB.FileAttachment):
+     *         The file attachment.
+     *
+     *     collection (Backbone.Collection):
+     *         The collection of all file attachments.
+     *
+     *     options (object):
+     *         Options.
+     *
+     * Option Args:
+     *     index (number):
+     *         The index of the file attachment being removed.
+     */
+    _onFileAttachmentRemoved(
+        fileAttachment: FileAttachment,
+        collection: ResourceCollection<FileAttachment>,
+        options: {
+            index: number;
+        },
+    ) {
+        const state = fileAttachment.get('state');
+        const fileAttachments = this.get('fileAttachments');
+        const allFileAttachments = this.get('allFileAttachments');
+
+        if (state === FileAttachmentStates.NEW_REVISION) {
+            /*
+             * We're removing a new revision of a published file attachment.
+             * Add the published file attachment back to the list of file
+             * attachments to display it again.
+             */
+            const historyID = fileAttachment.get('attachmentHistoryID');
+            const revision = fileAttachment.get('revision');
+            const replacedAttachment = allFileAttachments.findWhere({
+                attachmentHistoryID: historyID,
+                revision: revision - 1,
+            });
+            fileAttachments.add(replacedAttachment, { at: options.index });
+        } else if (state === FileAttachmentStates.PUBLISHED) {
+            /*
+             * We're removing a published file attachment. Change its state
+             * and add it back to the list to continue displaying it.
+             */
+            fileAttachment.set({
+                state: FileAttachmentStates.PENDING_DELETION,
+            });
+            fileAttachments.add(fileAttachment.clone(), { at: options.index });
+        }
     }
 }

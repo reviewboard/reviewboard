@@ -1124,6 +1124,41 @@ suite('rb/views/CommentDialogView', function() {
             });
         });
 
+        describe('Deleted indicator', function() {
+            it('Shown when deletedWarning != null', function() {
+                const commentEditor = new CommentEditor({
+                    reviewRequest: reviewRequest,
+                    reviewRequestEditor: reviewRequestEditor,
+                });
+                dlg = new CommentDialogView({
+                    animate: false,
+                    deletedWarning: 'warning',
+                    model: commentEditor,
+                });
+                dlg.render();
+
+                expect(dlg.$el.find('p[class="deleted-warning"]').length)
+                    .toBe(1);
+                expect(commentEditor.get('canEdit')).toBe(false);
+            });
+
+            it('Hidden when deletedWarning == null', function() {
+                const commentEditor = new CommentEditor({
+                    reviewRequest: reviewRequest,
+                    reviewRequestEditor: reviewRequestEditor,
+                });
+                dlg = new CommentDialogView({
+                    animate: false,
+                    model: commentEditor,
+                });
+                dlg.render();
+
+                expect(dlg.$el.find('p[class="deleted-warning"]').length)
+                    .toBe(0);
+                expect(commentEditor.get('canEdit')).toBe(true);
+            });
+        });
+
         describe('Draft indicator', function() {
             it('Shown when draftWarning != null', function() {
                 dlg = new CommentDialogView({

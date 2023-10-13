@@ -49,6 +49,14 @@ interface InlineEditorViewOptions {
     /** Extra height to add when displaying the editor, in pixels. */
     extraHeight: number;
 
+    /**
+     * The label of the field, used for accessibility purposes.
+     *
+     * Version Added:
+     *     6.0
+     */
+    fieldLabel: string;
+
     /** Whether to focus the field when opening the editor. */
     focusOnOpen: boolean;
 
@@ -73,6 +81,17 @@ interface InlineEditorViewOptions {
      * from the actual contents of the element.
      */
     hasRawValue: boolean;
+
+    /**
+     * Whether the button's icons should be short (icons only).
+     *
+     * This should be used when space is limited and the Save/Cancel buttons
+     * need to be of minimal size.
+     *
+     * Version Added:
+     *     6.0
+     */
+    hasShortButtons: boolean;
 
     /** A function to calculate whether the editor value is dirty. */
     isFieldDirty: (InlineEditorView, unknown) => boolean;
@@ -186,6 +205,7 @@ export class InlineEditorView<
         editIconPath: null,
         enabled: true,
         extraHeight: 100,
+        fieldLabel: null,
         focusOnOpen: true,
         formClass: '',
         formatResult: value => value.htmlEncode(),
@@ -218,9 +238,23 @@ export class InlineEditorView<
      **********************/
 
     $buttons: JQuery;
+
+    /**
+     * The field used to edit the caption.
+     */
     $field: JQuery;
+
     options: TExtraViewOptions;
     _$editIcon: JQuery;
+
+    /**
+     * The wrapper for the edit field.
+     *
+     * Version Added:
+     *     6.0
+     */
+    _$fieldWrapper: JQuery;
+
     _$form: JQuery;
     _dirty = false;
     _dirtyCalcTimeout: number = null;
@@ -243,44 +277,98 @@ export class InlineEditorView<
      * Render the view.
      */
     onInitialRender() {
+        const options = this.options;
+        const multiline = options.multiline;
+        const fieldLabel = options.fieldLabel;
+        const editorID = _.uniqueId('rb-c-inline-editor');
+
         this.$el.data('inline-editor', this);
 
-        this._$form = $('<form>')
-            .addClass(`inline-editor-form ${this.options.formClass}`)
-            .css('display', 'inline')
-            .hide()
-            .insertBefore(this.$el);
+        const $form = $('<form>')
+            .addClass('rb-c-inline-editor')
+            .addClass(multiline ? '-is-multi-line'
+                                : '-is-single-line')
+            .attr({
+                'aria-label': fieldLabel
+                              ? _`Edit the ${fieldLabel} field`
+                              : _`Edit the field`,
+                'id': editorID,
+            });
+
+        if (options.formClass) {
+            $form.addClass(options.formClass);
+        }
+
+        if (options.hasShortButtons) {
+            $form.addClass('-has-short-buttons');
+        }
+
+        this._$form = $form;
+
+        const $fieldWrapper = $('<div class="rb-c-inline-editor__field"/>')
+            .appendTo($form);
+        this._$fieldWrapper = $fieldWrapper;
 
         this.$field = this.createField()
-            .prependTo(this._$form);
+            .appendTo($fieldWrapper);
         this._isTextArea = (this.$field[0].tagName === 'TEXTAREA');
 
         this.$buttons = $();
 
-        if (this.options.showButtons) {
-            this.$buttons = $(this.options.multiline ? '<div>' : '<span>')
+        if (options.showButtons) {
+            this.$buttons = $('<div>')
                 .hide()
-                .addClass('buttons')
-                .appendTo(this._$form);
+                .addClass('rb-c-inline-editor__actions')
+                .appendTo($form);
 
-            $('<input type="button" class="save">')
-                .val(_`OK`)
+            $('<button class="rb-c-button" data-action="save">')
+                .append($('<span class="rb-c-button__icon">')
+                    .attr('aria-hidden', 'true'))
+                .append($('<label class="rb-c-button__label">')
+                    .text(_`Save`))
+                .attr('aria-label',
+                      fieldLabel
+                      ? _`Save ${fieldLabel}`
+                      : _`Save the field`)
                 .appendTo(this.$buttons)
-                .click(this.submit.bind(this));
+                .click(e => {
+                    e.preventDefault();
+                    e.stopPropagation();
 
-            $('<input type="button" class="cancel">')
-                .val(_`Cancel`)
+                    this.submit();
+                });
+
+            $('<button class="rb-c-button" data-action="cancel">')
+                .append($('<span class="rb-c-button__icon">')
+                    .attr('aria-hidden', 'true'))
+                .append($('<label class="rb-c-button__label">')
+                    .text(_`Cancel`))
+                .attr('aria-label',
+                      fieldLabel
+                      ? _`Cancel editing ${fieldLabel} and discard changes`
+                      : _`Cancel editing and discard changes`)
                 .appendTo(this.$buttons)
-                .click(this.cancel.bind(this));
+                .click(e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    this.cancel();
+                });
         }
 
         this._$editIcon = $();
 
-        if (this.options.showEditIcon) {
-            const editText = _`Edit this field`;
-            this._$editIcon = $('<a class="editicon" href="#" role="button">')
+        if (options.showEditIcon) {
+            const editText = fieldLabel
+                             ? _`Edit the ${fieldLabel} field`
+                             : _`Edit this field`;
+
+            this._$editIcon = $('<a href="#" role="button">')
+                .addClass('rb-c-inline-editor-edit-icon')
                 .attr({
+                    'aria-controls': editorID,
                     'aria-label': editText,
+                    'tabindex': 0,
                     'title': editText,
                 })
                 .click(e => {
@@ -290,15 +378,15 @@ export class InlineEditorView<
                     this.startEdit();
                 });
 
-            if (this.options.editIconPath) {
+            if (options.editIconPath) {
                 this._$editIcon.append(
-                    `<img src="${this.options.editIconPath}">`);
-            } else if (this.options.editIconClass) {
+                    `<img src="${options.editIconPath}">`);
+            } else if (options.editIconClass) {
                 this._$editIcon.append(
-                    `<div class="${this.options.editIconClass}" aria-hidden="true"></div>`);
+                    `<div class="${options.editIconClass}" aria-hidden="true"></div>`);
             }
 
-            if (this.options.showRequiredFlag) {
+            if (options.showRequiredFlag) {
                 const requiredText = _`This field is required`;
                 $('<span class="required-flag">*</span>')
                     .attr({
@@ -308,7 +396,7 @@ export class InlineEditorView<
                     .appendTo(this._$editIcon);
             }
 
-            if (this.options.multiline && this.$el[0].id) {
+            if (multiline && this.$el[0].id) {
                 $(`label[for="${this.$el[0].id}"]`)
                     .append(this._$editIcon);
             } else {
@@ -316,17 +404,21 @@ export class InlineEditorView<
             }
         }
 
-        if (!this.options.deferEventSetup) {
+        $form
+            .hide()
+            .insertBefore(this.$el);
+
+        if (!options.deferEventSetup) {
             this.setupEvents();
         }
 
-        if (this.options.startOpen) {
+        if (options.startOpen) {
             this.startEdit({
                 preventAnimation: true,
             });
         }
 
-        if (this.options.enabled) {
+        if (options.enabled) {
             this.enable();
         } else {
             this.disable();
@@ -443,8 +535,6 @@ export class InlineEditorView<
                     lastY = null;
                 });
         }
-
-        $(window).on(`resize.${this.cid}`, this._fitWidthToParent());
     }
 
     /**
@@ -495,7 +585,7 @@ export class InlineEditorView<
                     visibility: 'hidden',
                 }));
         } else {
-            $editIcon.css('visibility', 'hidden');
+            $editIcon.css('display', 'none');
         }
 
         this.$el.hide();
@@ -505,11 +595,8 @@ export class InlineEditorView<
             const elHeight = this.$el.outerHeight();
             const newHeight = elHeight + this.options.extraHeight;
 
-            this._fitWidthToParent();
-
             if (this._isTextArea) {
                 if (this.options.matchHeight) {
-                    // TODO: Set autosize min height
                     this.$field
                         .autoSizeTextArea('setMinHeight', newHeight)
                         .css('overflow', 'hidden');
@@ -545,8 +632,6 @@ export class InlineEditorView<
                 this.$field.css('overflow', 'auto');
             }
 
-            this._fitWidthToParent();
-
             if (this.options.focusOnOpen) {
                 this.$field.focus();
             }
@@ -574,7 +659,7 @@ export class InlineEditorView<
                 this.options.animationSpeedMS,
                 () => $editIcon.css('visibility', 'visible'));
         } else {
-            $editIcon.css('visibility', 'visible');
+            $editIcon.css('display', '');
         }
 
         if (this.options.multiline &&
@@ -794,76 +879,6 @@ export class InlineEditorView<
         }
 
         this._dirtyCalcTimeout = null;
-    }
-
-    /**
-     * Fit the editor width to the parent element.
-     */
-    _fitWidthToParent() {
-        if (!this._editing) {
-            return;
-        }
-
-        if (this.options.multiline) {
-            this.$field.css({
-                'box-sizing': 'border-box',
-                'width': '100%',
-            });
-
-            return;
-        }
-
-        const $formParent = this._$form.parent();
-        const parentTextAlign = $formParent.css('text-align');
-        const isLeftAligned = (parentTextAlign === 'left');
-
-        if (!isLeftAligned) {
-            $formParent.css('text-align', 'left');
-        }
-
-        const boxSizing = this.$field.css('box-sizing');
-        let extentTypes;
-
-        if (boxSizing === 'border-box') {
-            extentTypes = 'm';
-        } else if (boxSizing === 'padding-box') {
-            extentTypes = 'p';
-        } else {
-            extentTypes = 'bmp';
-        }
-
-        let buttonsWidth = 0;
-
-        if (this.$buttons.length !== 0) {
-            const buttonsDisplay = this.$buttons.css('display');
-
-            if (buttonsDisplay === 'inline' ||
-                buttonsDisplay === 'inline-block') {
-                /*
-                 * The buttons are set for the same line as the field, so
-                 * factor the width of the buttons container into the field
-                 * width calculation below.
-                 */
-                buttonsWidth = this.$buttons.outerWidth();
-            }
-        }
-
-        /*
-         * First make the field really small so it will fit without wrapping,
-         * then figure out the offset and use it to calculate the desired
-         * width.
-         */
-        this.$field
-            .width(0)
-            .outerWidth(
-                $formParent.innerWidth() -
-                (this._$form.offset().left - $formParent.offset().left) -
-                this.$field.getExtents(extentTypes, 'lr') -
-                buttonsWidth);
-
-        if (!isLeftAligned) {
-            $formParent.css('text-align', parentTextAlign);
-        }
     }
 }
 

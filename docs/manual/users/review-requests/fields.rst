@@ -24,7 +24,7 @@ To change a field, either click on the field (in the case of
 :guilabel:`Description` and :guilabel:`Testing Done`) or click on the pencil
 icon. A text box will appear allowing you to modify the value.
 
-To save a field, press the :kbd:`Enter` key or click :guilabel:`OK`. To revert
+To save a field, press the :kbd:`Enter` key or click :guilabel:`Save`. To revert
 your changes, press the :kbd:`Escape` key or click :guilabel:`Cancel`.
 
 

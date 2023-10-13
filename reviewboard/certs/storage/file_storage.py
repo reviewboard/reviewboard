@@ -15,10 +15,10 @@ from uuid import uuid4
 
 from django.core.cache import cache
 from django.core.files.utils import validate_file_name
-from django.utils._os import safe_join
 from django.utils.text import slugify
 from django.utils.translation import gettext as _, gettext_lazy
 from djblets.cache.backend import cache_memoize, make_cache_key
+from djblets.util.filesystem import safe_join
 from djblets.util.functional import iterable_len, lazy_re_compile
 
 from reviewboard.certs.cert import (CertDataFormat,
@@ -181,6 +181,7 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
         cert_file_path: str,
         key_file_path: Optional[str] = None,
         hostname: Optional[str] = None,
+        storage_hostname: Optional[str] = None,
         port: Optional[int] = None,
         certificate: Optional[Certificate] = None,
         local_site: Optional[LocalSite] = None,
@@ -200,6 +201,13 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
                 The hostname serving the certificate.
 
                 Either this or ``certificate`` must be provided.
+
+            storage_hostname (str, optional):
+                The hostname used as part of a storage ID.
+
+                This is provided in order to handle wildcard certificates,
+                where the certificate hostname will be the requested hostname
+                while the storage hostname will contain the wildcard.
 
             port (int, optional):
                 The port on the host serving the certificate.
@@ -245,7 +253,10 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
         # arguments. With file-based storage, the ID is always based on
         # the hostname, port, and any Local Site name.
         if storage_id is None:
-            storage_id = f'{hostname}:{port}'
+            if not storage_hostname:
+                storage_hostname = hostname
+
+            storage_id = f'{storage_hostname}:{port}'
 
             if local_site:
                 storage_id = f'{local_site.name}:{storage_id}'
@@ -626,13 +637,17 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
     for this backend::
 
         cabundles/<slug>.pem
-        certs/<hostname>_<port>.cer
-        certs/<hostname>_<port>.key
-        fingerprints/<hostname>_<port>.json
+        certs/<hostname>__<port>.crt
+        certs/<hostname>__<port>.key
+        certs/__.<hostname>__<port>.crt
+        certs/__.<hostname>__<port>.key
+        fingerprints/<hostname>__<port>.json
         sites/<local_site_name>/cabundles/<slug>.pem
-        sites/<local_site_name>/certs/<hostname>_<port>.cer
-        sites/<local_site_name>/certs/<hostname>_<port>.key
-        sites/<local_site_name>/fingerprints/<hostname>_<port>.json
+        sites/<local_site_name>/certs/<hostname>__<port>.crt
+        sites/<local_site_name>/certs/<hostname>__<port>.key
+        sites/<local_site_name>/certs/__.<hostname>__<port>.crt
+        sites/<local_site_name>/certs/__.<hostname>__<port>.key
+        sites/<local_site_name>/fingerprints/<hostname>__<port>.json
 
     Iterating through data involves scanning these directories for information,
     and possibly opening each file. This can involve a lot of IO for large
@@ -653,10 +668,13 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
     _cabundle_re = lazy_re_compile(r'(?P<basename>.+)\.pem')
 
     _cert_re = lazy_re_compile(
-        r'(?P<basename>(?P<hostname>[^_]+)_(?P<port>\d+))\.crt')
+        r'(?P<basename>(?P<hostname>(?:__)?[A-Za-z0-9.-]+)__'
+        r'(?P<port>\d+))\.crt'
+    )
 
     _fingerprints_json_re = lazy_re_compile(
-        r'(?P<hostname>[^_]+)_(?P<port>\d+)\.json')
+        r'(?P<hostname>(?:__)?[A-Za-z0-9.-]+)__(?P<port>\d+)\.json'
+    )
 
     def get_stats(
         self,
@@ -1181,11 +1199,24 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             local_site=local_site,
             if_exists=True)
 
-        if not cert_file_path:
-            return None
+        if cert_file_path:
+            storage_hostname = hostname
+        else:
+            # Look for a wildcard cert.
+            storage_hostname = self._build_wildcard_hostname(hostname)
+
+            cert_file_path = self._build_cert_file_path(
+                hostname=storage_hostname,
+                port=port,
+                ext='crt',
+                local_site=local_site,
+                if_exists=True)
+
+            if not cert_file_path:
+                return None
 
         key_file_path = self._build_cert_file_path(
-            hostname=hostname,
+            hostname=storage_hostname,
             port=port,
             ext='key',
             local_site=local_site,
@@ -1194,6 +1225,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         return FileStoredCertificate(
             hostname=hostname,
             port=port,
+            storage_hostname=storage_hostname,
             cert_file_path=cert_file_path,
             key_file_path=key_file_path,
             local_site=local_site,
@@ -1271,8 +1303,13 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             if not os.path.exists(key_file_path):
                 key_file_path = None
 
+            hostname = m.group('hostname')
+
+            if hostname.startswith('__'):
+                hostname = '*.%s' % hostname[3:]
+
             yield FileStoredCertificate(
-                hostname=m.group('hostname'),
+                hostname=hostname,
                 port=int(m.group('port')),
                 cert_file_path=cert_file_path,
                 key_file_path=key_file_path,
@@ -1490,7 +1527,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         storage_id: str,
         **kwargs,
     ) -> Optional[FileStoredCertificateFingerprints]:
-        """Return certificate fingerpritns from storage identified by ID.
+        """Return certificate fingerprints from storage identified by ID.
 
         Args:
             storage_id (str):
@@ -1865,7 +1902,9 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         """
         return self._build_data_file_path(
             stored_data_cls=FileStoredCertificate,
-            filename=f'{hostname}_{port}.{ext}',
+            filename=self._build_host_filename(hostname=hostname,
+                                               port=port,
+                                               ext=ext),
             **kwargs)
 
     def _build_ca_bundle_file_path(
@@ -1941,8 +1980,64 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         """
         return self._build_data_file_path(
             stored_data_cls=FileStoredCertificateFingerprints,
-            filename=f'{hostname}_{port}.json',
+            filename=self._build_host_filename(hostname=hostname,
+                                               port=port,
+                                               ext='json'),
             **kwargs)
+
+    def _build_host_filename(
+        self,
+        *,
+        hostname: str,
+        port: int,
+        ext: str,
+    ) -> str:
+        """Return a base filename for a hostname, port, and extension.
+
+        This will take care of normalizing wildcard hostnames to filenames.
+
+        Args:
+            hostname (str):
+                The hostname for the certificate.
+
+                This may be a wildcard hostname.
+
+            port (int):
+                The port for the certificate.
+
+            ext (str):
+                The file extension.
+
+        Returns:
+            str:
+            The resulting filename.
+        """
+        if hostname.startswith('*'):
+            return f'__{hostname[1:]}__{port}.{ext}'
+        else:
+            return f'{hostname}__{port}.{ext}'
+
+    def _build_wildcard_hostname(
+        self,
+        hostname: str,
+    ) -> str:
+        """Return a wildcard hostname for a given hostname.
+
+        This will strip off the leading name on the hostname and replace it
+        with a wildcard. A hostname of ``test.example.com`` will be converted
+        to ``*.example.com``.
+
+        Args:
+            hostname (str):
+                The hostname to turn into a wildcard.
+
+        Returns:
+            str:
+            The resulting wildcard hostname.
+        """
+        hostname = hostname.split('.', 1)[1]
+
+        return f'*.{hostname}'
 
     def _build_stats_cache_key(
         self,

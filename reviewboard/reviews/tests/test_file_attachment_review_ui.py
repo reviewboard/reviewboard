@@ -3,6 +3,7 @@
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
+from reviewboard.reviews.models.review_request import FileAttachmentState
 from reviewboard.reviews.ui.base import (FileAttachmentReviewUI,
                                          register_ui,
                                          unregister_ui)
@@ -305,7 +306,8 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
         attachment = self.create_file_attachment(
             self.review_request,
             mimetype='application/rbtest',
-            orig_filename='filename.txt')
+            orig_filename='filename.txt',
+            with_history=False)
         review_ui = attachment.review_ui
 
         self.assertIsInstance(review_ui, MyReviewUI)
@@ -313,9 +315,9 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             review_ui.get_js_model_data(),
             {
                 'fileAttachmentID': 1,
-                'fileRevision': 0,
+                'fileRevision': 1,
                 'filename': 'filename.txt',
-                'public': True,
+                'state': FileAttachmentState.PUBLISHED.value,
             })
 
     def test_get_js_model_data_with_draft_attachment(self):
@@ -326,7 +328,8 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             self.review_request,
             mimetype='application/rbtest',
             orig_filename='filename.txt',
-            draft=True)
+            draft=True,
+            with_history=False)
         review_ui = attachment.review_ui
 
         self.assertIsInstance(review_ui, MyReviewUI)
@@ -334,27 +337,23 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             review_ui.get_js_model_data(),
             {
                 'fileAttachmentID': 1,
-                'fileRevision': 0,
+                'fileRevision': 1,
                 'filename': 'filename.txt',
-                'public': False,
+                'state': FileAttachmentState.NEW.value,
             })
 
     def test_get_js_model_data_with_history(self):
         """Testing FileAttachmentReviewUI.get_js_model_data with
         FileAttachmentHistory
         """
-        attachment_history = self.create_file_attachment_history(
-            self.review_request)
         attachment1 = self.create_file_attachment(
             self.review_request,
-            attachment_history=attachment_history,
-            attachment_revision=0,
             mimetype='application/rbtest',
             orig_filename='filename.txt')
         attachment2 = self.create_file_attachment(
             self.review_request,
-            attachment_history=attachment_history,
-            attachment_revision=1,
+            attachment_history=attachment1.attachment_history,
+            attachment_revision=attachment1.attachment_revision + 1,
             mimetype='application/rbtest',
             orig_filename='filename.txt')
         review_ui = attachment2.review_ui
@@ -365,28 +364,24 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             {
                 'attachmentRevisionIDs': [attachment1.pk, attachment2.pk],
                 'fileAttachmentID': attachment2.pk,
-                'fileRevision': 1,
+                'fileRevision': 2,
                 'filename': 'filename.txt',
                 'numRevisions': 2,
-                'public': True,
+                'state': FileAttachmentState.PUBLISHED.value,
             })
 
     def test_get_js_model_data_with_history_and_draft(self):
         """Testing FileAttachmentReviewUI.get_js_model_data with
         FileAttachmentHistory and draft attachment
         """
-        attachment_history = self.create_file_attachment_history(
-            self.review_request)
         attachment1 = self.create_file_attachment(
             self.review_request,
-            attachment_history=attachment_history,
-            attachment_revision=0,
             mimetype='application/rbtest',
             orig_filename='filename.txt')
         attachment2 = self.create_file_attachment(
             self.review_request,
-            attachment_history=attachment_history,
-            attachment_revision=1,
+            attachment_history=attachment1.attachment_history,
+            attachment_revision=attachment1.attachment_revision + 1,
             mimetype='application/rbtest',
             orig_filename='filename.txt',
             draft=True)
@@ -398,27 +393,23 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             {
                 'attachmentRevisionIDs': [attachment1.pk, attachment2.pk],
                 'fileAttachmentID': attachment2.pk,
-                'fileRevision': 1,
+                'fileRevision': 2,
                 'filename': 'filename.txt',
                 'numRevisions': 2,
-                'public': False,
+                'state': FileAttachmentState.NEW_REVISION.value,
             })
 
     def test_get_js_model_data_with_diff(self):
         """Testing FileAttachmentReviewUI.get_js_model_data with diff"""
-        attachment_history = self.create_file_attachment_history(
-            self.review_request)
         attachment1 = self.create_file_attachment(
             self.review_request,
-            attachment_history=attachment_history,
-            attachment_revision=0,
             mimetype='application/rbtest',
             orig_filename='filename.txt',
             caption='My attachment 1')
         attachment2 = self.create_file_attachment(
             self.review_request,
-            attachment_history=attachment_history,
-            attachment_revision=1,
+            attachment_history=attachment1.attachment_history,
+            attachment_revision=attachment1.attachment_revision + 1,
             mimetype='application/rbtest',
             orig_filename='filename.txt',
             caption='My attachment 2')
@@ -433,31 +424,27 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'attachmentRevisionIDs': [attachment1.pk, attachment2.pk],
                 'diffAgainstFileAttachmentID': attachment1.pk,
                 'diffCaption': 'My attachment 1',
-                'diffRevision': 0,
+                'diffRevision': 1,
                 'fileAttachmentID': attachment2.pk,
-                'fileRevision': 1,
+                'fileRevision': 2,
                 'filename': 'filename.txt',
                 'numRevisions': 2,
-                'public': True,
+                'state': FileAttachmentState.PUBLISHED.value,
             })
 
     def test_get_js_model_data_with_diff_type_mismatch(self):
         """Testing FileAttachmentReviewUI.get_js_model_data with diff type
         mismatch
         """
-        attachment_history = self.create_file_attachment_history(
-            self.review_request)
         attachment1 = self.create_file_attachment(
             self.review_request,
-            attachment_history=attachment_history,
-            attachment_revision=0,
             mimetype='image/png',
             orig_filename='filename.png',
             caption='My attachment 1')
         attachment2 = self.create_file_attachment(
             self.review_request,
-            attachment_history=attachment_history,
-            attachment_revision=1,
+            attachment_history=attachment1.attachment_history,
+            attachment_revision=attachment1.attachment_revision + 1,
             mimetype='application/rbtest',
             orig_filename='filename.txt',
             caption='My attachment 2')
@@ -472,13 +459,13 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'attachmentRevisionIDs': [attachment1.pk, attachment2.pk],
                 'diffAgainstFileAttachmentID': attachment1.pk,
                 'diffCaption': 'My attachment 1',
-                'diffRevision': 0,
+                'diffRevision': 1,
                 'diffTypeMismatch': True,
                 'fileAttachmentID': attachment2.pk,
-                'fileRevision': 1,
+                'fileRevision': 2,
                 'filename': 'filename.txt',
                 'numRevisions': 2,
-                'public': True,
+                'state': FileAttachmentState.PUBLISHED.value,
             })
 
     def test_serialize_comment(self):

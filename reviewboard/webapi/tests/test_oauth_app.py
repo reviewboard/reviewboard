@@ -50,6 +50,9 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
 
     compare_item = _compare_item
 
+    def setup_http_not_allowed_item_test(self, user):
+        return get_oauth_app_list_url()
+
     #
     # HTTP GET tests
     #
@@ -580,6 +583,11 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
     not_owner_error = DOES_NOT_EXIST
 
     compare_item = _compare_item
+
+    def setup_http_not_allowed_list_test(self, user):
+        app = self.create_oauth_application(user)
+
+        return get_oauth_app_item_url(app.pk)
 
     #
     # HTTP GET tests

@@ -4,6 +4,33 @@
 #
 # Documentation on this Docker image is available at
 # https://www.reviewboard.org/docs/manual/latest/admin/installation/docker/
+#
+# This can be built through Docker, as normal. The ./build.py script can help
+# automate the multi-platform builds for the official Review Board Docker
+# images.
+#
+# If building for multi-platform (amd64 and arm64), you will need at least
+# one machine capable of arm64 builds (or supporting cross-compilation or
+# emulation). A macOS machine is capable of both amd64 and arm64 builds.
+#
+# To build using a single machine capable of multiple architectures, first run:
+#
+#     $ docker buildx create --name rb-build --use
+#
+# That will create a single build environment (see `docker buildx ls`) with
+# support for both.
+#
+# To build across multiple machines, run:
+#
+#     $ docker buildx create --name rb-build --platform linux/arm64
+#     $ docker buildx create --name rb-build --platform linux/amd64 \
+#              --append ssh://<user>@<host>
+#
+# (Change architectures as needed)
+#
+# Then, before building this image, run:
+#
+#     $ docker buildx use rb-build
 
 
 ##############################################################################
@@ -19,7 +46,7 @@
 # Alpine doesn't use glibc, and cannot benefit from pre-compiled wheels.
 # See https://pythonspeed.com/articles/alpine-docker-python/
 ##############################################################################
-FROM ubuntu:20.04 AS builder
+FROM ubuntu:22.04 AS builder
 MAINTAINER Beanbag, Inc. <support@beanbaginc.com>
 
 # The version of Review Board this will install.
@@ -62,6 +89,7 @@ RUN    set -ex \
            libjpeg-dev \
            libmysqlclient-dev \
            libsasl2-dev \
+           libsvn1 \
            libsvn-dev \
            libxml2-dev \
            libxmlsec1-dev \
@@ -69,7 +97,7 @@ RUN    set -ex \
            openssl \
            pkg-config \
            postgresql-client \
-           python3.8-dev \
+           python3.11-dev \
            sendmail \
            subversion \
            tzdata \
@@ -91,7 +119,7 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Set up a virtualenv for Review Board.
 ENV VIRTUAL_ENV=/venv
-RUN virtualenv -p python3.8 $VIRTUAL_ENV
+RUN virtualenv -p python3.11 $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # Install Review Board and its Python dependencies.
@@ -119,12 +147,14 @@ RUN    set -ex \
            'ReviewBoard[ldap]' \
            'ReviewBoard[mercurial]' \
            'ReviewBoard[mysql]' \
-           'ReviewBoard[p4]' \
            'ReviewBoard[postgres]' \
            'ReviewBoard[s3]' \
            'ReviewBoard[saml]' \
            'ReviewBoard[swift]' \
-    && { curl https://pysvn.reviewboard.org | python3.8 -; } \
+    && if [[ $BUILDARCH == "amd64" ]]; then \
+           pip3 install --no-cache-dir 'ReviewBoard[p4]'; \
+       fi \
+    && { curl https://pysvn.reviewboard.org | python3.11 -; } \
     && rm -rf /tmp/packages
 
 
@@ -134,7 +164,7 @@ RUN    set -ex \
 # We'll create a new, final image that contains the virtualenv and only the
 # runtime dependencies necessary to run Review Board.
 ##############################################################################
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 # Review Board user ID
 #
@@ -242,25 +272,27 @@ RUN    set -ex \
            cvs \
            git \
            gosu \
-           helix-cli \
            libmysqlclient21 \
            libxmlsec1-openssl \
            patch \
            mysql-client \
            postgresql-client \
-           python3.8 \
-           python3.8-distutils \
+           python3.11 \
+           python3.11-distutils \
            stunnel \
            subversion \
+    && if [[ $BUILDARCH == "amd64" ]]; then \
+           pip3 install helix-cli; \
+       fi \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -sf /usr/bin/python3.8 /usr/bin/python3
+    && ln -sf /usr/bin/python3.11 /usr/bin/python3
 
 COPY scripts/* /
 COPY --from=builder $VIRTUAL_ENV $VIRTUAL_ENV
 
-# Periodically check that we can hit our API endpoint, to ensure Review Board
-# is running.
-HEALTHCHECK CMD curl -f http://127.0.0.1:8080/api/info/ || exit 1
+# Periodically check that we can hit our health check endpoint, to ensure
+# Review Board is running.
+HEALTHCHECK CMD curl -f http://127.0.0.1:8080/health/ || exit 1
 
 # Run the site install/upgrade operation and the web server.
 ENTRYPOINT ["/docker-entrypoint.sh"]

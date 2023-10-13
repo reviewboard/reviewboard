@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 from django.db.models import Q
 from django.http import Http404, HttpRequest, HttpResponse
@@ -20,7 +20,6 @@ from djblets.views.generic.base import (CheckRequestMethodViewMixin,
 from typing_extensions import TypedDict
 
 from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
-from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 from reviewboard.reviews.models.base_review_request_details import \
@@ -29,6 +28,8 @@ from reviewboard.reviews.models.review_request import ReviewRequestCloseInfo
 from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 from reviewboard.site.models import LocalSite
 
+if TYPE_CHECKING:
+    from reviewboard.attachments.models import FileAttachmentSequence
 
 logger = logging.getLogger(__name__)
 
@@ -221,7 +222,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
 
     def get_social_page_image_url(
         self,
-        file_attachments: List[FileAttachment],
+        file_attachments: FileAttachmentSequence,
     ) -> Optional[str]:
         """Return the URL to an image used for social media sharing.
 

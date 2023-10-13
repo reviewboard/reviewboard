@@ -31,6 +31,14 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
     def setup_review_request_child_test(self, review_request):
         return get_diff_list_url(review_request), diff_list_mimetype
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(
+            create_repository=True,
+            submitter=user,
+            publish=True)
+
+        return get_diff_list_url(review_request)
+
     def compare_item(self, item_rsp, diffset):
         self.assertEqual(item_rsp['id'], diffset.pk)
         self.assertEqual(item_rsp['name'], diffset.name)
@@ -361,6 +369,14 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
         return get_diff_item_url(review_request, 1)
+
+    def setup_http_not_allowed_list_test(self, user):
+        review_request = self.create_review_request(
+            create_repository=True,
+            submitter=user)
+        diffset = self.create_diffset(review_request)
+
+        return get_diff_item_url(review_request, diffset.revision)
 
     def compare_item(self, item_rsp, diffset):
         self.assertEqual(item_rsp['id'], diffset.pk)

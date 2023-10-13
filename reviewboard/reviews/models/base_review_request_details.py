@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import re
+from typing import TYPE_CHECKING
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -6,6 +9,9 @@ from djblets.db.fields import JSONField
 
 from reviewboard.attachments.models import FileAttachmentHistory
 from reviewboard.reviews.models.default_reviewer import DefaultReviewer
+
+if TYPE_CHECKING:
+    from reviewboard.attachments.models import FileAttachmentSequence
 
 
 class BaseReviewRequestDetails(models.Model):
@@ -96,7 +102,11 @@ class BaseReviewRequestDetails(models.Model):
                 screenshot._review_request = review_request
                 yield screenshot
 
-    def get_file_attachments(self):
+    def get_file_attachments(
+        self,
+        *,
+        sort: bool = True,
+    ) -> FileAttachmentSequence:
         """Return a list for all active file attachments.
 
         This includes all current file attachments, but not previous inactive
@@ -104,6 +114,19 @@ class BaseReviewRequestDetails(models.Model):
 
         By accessing file attachments through this method, future review
         request lookups from the file attachments will be avoided.
+
+        Version Changed:
+            6.0:
+            Added the ``sort`` argument.
+
+        Args:
+            sort (bool, optional):
+                Whether to sort the file attachments by display position.
+
+                This is the default.
+
+                Version Added:
+                    6.0
 
         Returns:
             list of reviewboard.attachments.models.FileAttachment:
@@ -116,7 +139,7 @@ class BaseReviewRequestDetails(models.Model):
                 # Handle legacy entries which don't have an associated
                 # FileAttachmentHistory entry.
                 if (not file_attachment.is_from_diff and
-                    file_attachment.attachment_history is None):
+                    file_attachment.attachment_history_id is None):
                     history = FileAttachmentHistory.objects.create(
                         display_position=FileAttachmentHistory
                             .compute_next_display_position(
@@ -138,8 +161,11 @@ class BaseReviewRequestDetails(models.Model):
         if self.file_attachments_count > 0:
             review_request = self.get_review_request()
 
-            return sorted(get_attachments(review_request),
-                          key=get_display_position)
+            if sort:
+                return sorted(get_attachments(review_request),
+                              key=get_display_position)
+
+            return list(get_attachments(review_request))
         else:
             return []
 

@@ -475,6 +475,12 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
 
         self.assertEqual(len(item_rsp['repositories']), len(repos))
 
+    def setup_http_not_allowed_list_test(self, user):
+        default_reviewer = DefaultReviewer.objects.create(
+            name='default1', file_regex='.*')
+
+        return get_default_reviewer_item_url(default_reviewer.pk)
+
     #
     # HTTP DELETE tests
     #

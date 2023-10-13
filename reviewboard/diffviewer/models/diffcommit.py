@@ -1,5 +1,9 @@
 """DiffCommit model definition."""
 
+from __future__ import annotations
+
+from typing import Optional
+
 from dateutil.tz import tzoffset
 from django.db import models
 from django.utils import timezone
@@ -184,6 +188,29 @@ class DiffCommit(models.Model):
             summary = summary.split('\n', 1)[0].strip()
 
         return summary
+
+    @cached_property
+    def commit_message_body(self) -> Optional[str]:
+        """The body of a commit message.
+
+        This will contain the content following a commit summary, if any.
+
+        Version Added:
+            6.0
+
+        Type:
+            str
+        """
+        body: Optional[str] = None
+        message = self.commit_message
+
+        if message:
+            parts = message.split('\n', 1)
+
+            if len(parts) > 1:
+                body = parts[1].strip() or None
+
+        return body
 
     @cached_property
     def summary_truncated(self):

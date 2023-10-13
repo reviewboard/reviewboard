@@ -282,20 +282,20 @@ export class DiffFileIndexView extends BaseView<
      * Update the list of files in the index view.
      */
     #update() {
-        this.#$itemsTable.empty();
-
-        this.collection.each(file => {
-            this.#$itemsTable.append(DiffFileIndexView.itemTemplate(
+        const items = this.collection.map(
+            file => $(DiffFileIndexView.itemTemplate(
                 _.defaults({
                     binaryFileText: _`Binary file`,
                     deletedFileText: _`Deleted`,
-                    wasText: interpolate(_`Was %s`,
-                                         [file.get('depotFilename')]),
+                    wasText: _`Was ${file.get('depotFilename')}`,
                 }, file.attributes)
-            ));
-        });
+            )));
 
-        this.#$items = this.$('tr');
+        this.#$itemsTable
+            .empty()
+            .append(items);
+
+        this.#$items = this.#$itemsTable.find('tr');
     }
 
     /**

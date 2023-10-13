@@ -1,8 +1,15 @@
 """Unit tests for BaseReviewRequestDetails."""
 
-from django.contrib.auth.models import User
+from __future__ import annotations
 
-from reviewboard.reviews.models import DefaultReviewer
+from django.contrib.auth.models import User
+from django.db.models import Max, Q
+from djblets.testing.decorators import add_fixtures
+
+from reviewboard.attachments.models import (
+    FileAttachment,
+    FileAttachmentHistory)
+from reviewboard.reviews.models import DefaultReviewer, ReviewRequest
 from reviewboard.testing import TestCase
 
 
@@ -178,3 +185,177 @@ class BaseReviewRequestDetailsTests(TestCase):
 
         with self.assertNumQueries(0):
             review_request.add_default_reviewers()
+
+    @add_fixtures(['test_users'])
+    def test_get_file_attachments(self) -> None:
+        """Testing BaseReviewRequestDetails.get_file_attachments"""
+        review_request = self.create_review_request()
+
+        active = self.create_file_attachment(review_request)
+        active_2 = self.create_file_attachment(review_request)
+
+        self.create_file_attachment(review_request, active=False)
+
+        # 3 queries:
+        #
+        # 1. Fetch active file attachments.
+        # 2. Fetch display position for the first attachment
+        # 3. Fetch display position for the second attachment
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=review_request.pk),
+            },
+            {
+                'model': FileAttachmentHistory,
+                'where': Q(id=active.pk),
+            },
+            {
+                'model': FileAttachmentHistory,
+                'where': Q(id=active_2.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            attachments = review_request.get_file_attachments()
+
+        self.assertListEqual(attachments, [active, active_2])
+
+    @add_fixtures(['test_users'])
+    def test_get_file_attachments_with_sort_false(self) -> None:
+        """Testing BaseReviewRequestDetails.get_file_attachments with
+        sort=False
+        """
+        review_request = self.create_review_request()
+
+        active = self.create_file_attachment(review_request)
+        active_2 = self.create_file_attachment(review_request)
+
+        self.create_file_attachment(review_request, active=False)
+
+        # 1 query:
+        #
+        # 1. Fetch active file attachments.
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=review_request.pk),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            attachments = review_request.get_file_attachments(sort=False)
+
+        self.assertListEqual(attachments, [active, active_2])
+
+    @add_fixtures(['test_users'])
+    def test_get_file_attachments_legacy(self) -> None:
+        """Testing BaseReviewRequestDetails.get_file_attachments with legacy
+        attachments that don't have an associated FileAttachmentHistory
+        """
+        review_request = self.create_review_request()
+
+        active = self.create_file_attachment(
+            review_request,
+            with_history=False)
+        active_2 = self.create_file_attachment(
+            review_request,
+            with_history=False)
+
+        self.create_file_attachment(review_request, active=False)
+
+        # 9 queries:
+        #
+        #   1. Fetch active file attachments.
+        # 2-5. Create a FileAttachmentHistory for the first attachment.
+        # 6-9. Create a FileAttachmentHistory for the second attachment.
+        queries = [
+            {
+                'model': FileAttachment,
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(review_request__id=review_request.pk),
+            },
+            {
+                'model': FileAttachmentHistory,
+                'annotations': {
+                    'display_position__max': Max('display_position'),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachmenthistory',
+                    'reviews_reviewrequest_file_attachment_histories',
+                },
+                'where': Q(review_request=review_request),
+            },
+            {
+                'model': FileAttachmentHistory,
+                'type': 'INSERT',
+            },
+            {
+                'model': ReviewRequest.file_attachment_histories.through,
+                'type': 'INSERT',
+            },
+            {
+                'model': FileAttachment,
+                'type': 'UPDATE',
+                'where': Q(pk=active.pk)
+            },
+            {
+                'model': FileAttachmentHistory,
+                'annotations': {
+                    'display_position__max': Max('display_position'),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'attachments_fileattachmenthistory',
+                    'reviews_reviewrequest_file_attachment_histories',
+                },
+                'where': Q(review_request=review_request),
+            },
+            {
+                'model': FileAttachmentHistory,
+                'type': 'INSERT',
+            },
+            {
+                'model': ReviewRequest.file_attachment_histories.through,
+                'type': 'INSERT',
+            },
+            {
+                'model': FileAttachment,
+                'type': 'UPDATE',
+                'where': Q(pk=active_2.pk)
+            },
+        ]
+
+        with self.assertQueries(queries):
+            attachments = review_request.get_file_attachments()
+
+        self.assertListEqual(attachments, [active, active_2])
+
+    @add_fixtures(['test_users'])
+    def test_get_file_attachments_with_no_attachments(self) -> None:
+        """Testing BaseReviewRequestDetails.get_file_attachments with
+        no active attachments
+        """
+        review_request = self.create_review_request()
+
+        self.create_file_attachment(review_request, active=False)
+
+        with self.assertNumQueries(0):
+            attachments = review_request.get_file_attachments(sort=False)
+
+        self.assertListEqual(attachments, [])

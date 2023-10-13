@@ -24,6 +24,9 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertEqual(watched_rsp['id'], obj.pk)
         self.assertEqual(watched_rsp['name'], obj.name)
 
+    def setup_http_not_allowed_item_test(self, user):
+        return get_watched_review_group_list_url(user.username)
+
     #
     # HTTP GET tests
     #

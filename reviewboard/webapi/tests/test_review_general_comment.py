@@ -58,6 +58,14 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         return (get_review_general_comment_list_url(review),
                 general_comment_list_mimetype)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user,
+            publish=True)
+        review = self.create_review(review_request, user=user)
+
+        return get_review_general_comment_list_url(review)
+
     def compare_item(self, item_rsp, comment):
         self.assertEqual(item_rsp['id'], comment.pk)
         self.assertEqual(item_rsp['text'], comment.text)
@@ -179,6 +187,15 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
 
         return (get_review_general_comment_item_url(review, comment.pk),
                 general_comment_item_mimetype)
+
+    def setup_http_not_allowed_list_test(self, user):
+        review_request = self.create_review_request(
+            submitter=user,
+            publish=True)
+        review = self.create_review(review_request, user=user)
+        comment = self.create_general_comment(review)
+
+        return get_review_general_comment_item_url(review, comment.pk)
 
     #
     # HTTP DELETE tests

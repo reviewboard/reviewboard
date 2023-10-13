@@ -1,0 +1,230 @@
+@import (reference) "rb/css/defs.less";
+
+
+/**
+ * A list of commits, with expandable messages, metadata, and controls.
+ *
+ * The commit list is used to show a list of commits, along with useful
+ * information for each commit. This is used in the following places:
+ *
+ * 1. On the main review request page.
+ *
+ * 2. On a Change Description, showing the differences between commit
+ *    histories.
+ *
+ * 3. On the diff viewer, with controls for selecting ranges.
+ *
+ * 4. On interdiffs in the diff viewer, showing the differences between
+ *    commit histories.
+ *
+ * This handles all these use cases, allowing for optional history diff
+ * indicators and selection controls.
+ *
+ * This is meant to be mixed in with ``.rb-c-review-request-field-tabular``.
+ *
+ * Structure:
+ *     <div class="rb-c-review-request-field-tabular rb-c-commit-list">
+ *      <table class="rb-c-review-request-field-tabular__data">
+ *       <thead>
+ *        <tr>
+ *         ...leading control/diff marker <th> tags here..
+ *         <th>Summary</th>
+ *         <th>ID</th>
+ *         <th>Author</th>
+ *        </tr>
+ *       </thead>
+ *       <tbody>
+ *        <tr class="rb-c-commit-list__commit ...>...</tr>
+ *        ...
+ *       </tbody>
+ *      </table>
+ *     </div>
+ */
+.rb-c-commit-list {
+  /**
+   * The author for a commit.
+   *
+   * Structure:
+   *     <td class="rb-c-commit-list__author">...</td>
+   */
+  &__author {
+    max-width: 20em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /**
+   * A commit in the list.
+   *
+   * This row will contain a commit message, ID, author, and possibly
+   * information on a diff history operation or selection controls.
+   *
+   * If showing a diff history, a modifier may be applied to indicate the
+   * diff operation or state of the commit.
+   *
+   * Modifiers:
+   *     -is-added:
+   *         This commit was added to the history.
+   *
+   *     -is-modified:
+   *         This commit was modified in the history.
+   *
+   *     -is-removed:
+   *         This commit was removed from the history.
+   *
+   * Structure:
+   *     <tr class="rb-c-commit-list__commit">
+   *      <td class="rb-c-commit-list__message">...</td>
+   *      <td class="rb-c-commit-list__id">...</td>
+   *      <td class="rb-c-commit-list__author">...</td>
+   *     </tr>
+   *
+   *     <!-- If showing diff information -->
+   *     <tr class="rb-c-commit-list__commit [modifiers]">
+   *      <td class="rb-c-commit-list__op">...</td>
+   *      <td class="rb-c-commit-list__message">...</td>
+   *      <td class="rb-c-commit-list__id">...</td>
+   *      <td class="rb-c-commit-list__author">...</td>
+   *     </tr>
+   *
+   *     <!-- If showing selection controls -->
+   *     <tr class="rb-c-commit-list__commit">
+   *      <td class="rb-c-commit-list__select-base">...</td>
+   *      <td class="rb-c-commit-list__select-tip">...</td>
+   *      <td class="rb-c-commit-list__message">...</td>
+   *      <td class="rb-c-commit-list__id">...</td>
+   *      <td class="rb-c-commit-list__author">...</td>
+   *     </tr>
+   */
+  &__commit {
+    &.-is-added {
+      .rb-c-commit-list__op {
+        background: @diff-insert-linenum-color;
+
+        &::before {
+          .fa-icon();
+          content: @fa-var-plus;
+        }
+      }
+    }
+
+    &.-is-modified {
+      .rb-c-commit-list__op {
+        background: @diff-replace-linenum-color;
+
+        &::before {
+          content: "~";
+          font-weight: bold;
+        }
+      }
+    }
+
+    &.-is-removed {
+      .rb-c-commit-list__op {
+        background: @diff-delete-linenum-color;
+
+        &::before {
+          .fa-icon();
+          content: @fa-var-minus;
+        }
+      }
+    }
+  }
+
+  /**
+   * The ID of a commit.
+   *
+   * This will truncate up to about 8-10 digits. It should have a ``title``
+   * attribute for seeing the full ID.
+   *
+   * DOM Attributes:
+   *     title (string):
+   *         The full commit ID.
+   */
+  &__id {
+    max-width: 10em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /**
+   * The summary and message for a commit.
+   *
+   * This will show the summary of the commit. If a commit message body is
+   * available, it should be wrapped in a ``<details>``.
+   *
+   * Structure:
+   *     <!-- If only a summary is available: -->
+   *     <td class="rb-c-commit-list__message">
+   *      <div class="rb-c-commit-list__message-summary">...</div>
+   *     </td>
+   *
+   *     <!-- If a summary and body is available: -->
+   *     <td class="rb-c-commit-list__message">
+   *      <details>
+   *       <summary class="rb-c-commit-list__message-summary">...</summary>
+   *       <div class="rb-c-commit-list__message-body">...</div>
+   *      </details>
+   *     </td>
+   */
+  &__message {
+    font-family: @textarea-font-family;
+    font-size: @textarea-font-size;
+    width: 100%;
+
+    details,
+    summary {
+      border: 0;
+      margin: 0;
+      padding: 0;
+    }
+
+    summary {
+      cursor: pointer;
+    }
+  }
+
+  /**
+   * The body of a commit message.
+   *
+   * This includes pre-wrapped text. There should be no extra spacing between
+   * the tags and text.
+   *
+   * Structure:
+   *     <div class="rb-c-commit-list__message-body">text...</div>
+   */
+  &__message-body {
+    margin-top: 2em;
+    white-space: pre-wrap;
+  }
+
+  /**
+   * The summary of a commit message.
+   *
+   * Structure:
+   *     <!-- If in a <details>: -->
+   *     <summary class="rb-c-commit-list__message-summary">text...</summary>
+   *
+   *     <!-- If not in a <details>: -->
+   *     <div class="rb-c-commit-list__message-summary">text...</div>
+   */
+  &__message-summary {
+  }
+
+  /**
+   * A commit history diff operation indicator for the commit.
+   *
+   * This will be updated to show an appropriate icon, depending on the
+   * modifiers on the parent ``.rb-c-commit-list__commit``.
+   *
+   * DOM Attributes:
+   *     aria-label (string):
+   *         A label describing the operation or state.
+   *
+   * Structure:
+   *     <td class="rb-c-commit-list__op">...</td>
+   */
+  &__op {
+  }
+}

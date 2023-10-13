@@ -169,7 +169,10 @@ class ReviewFileAttachmentViewTests(TestCase):
         """
         review_request = self.create_review_request(publish=True)
         attachment = self.create_file_attachment(review_request)
-        attachment2 = self.create_file_attachment(review_request)
+        attachment2 = self.create_file_attachment(
+            review_request,
+            attachment_history=attachment.attachment_history,
+            attachment_revision=attachment.attachment_revision + 1)
 
         response = self.client.get(
             local_site_reverse(
@@ -187,7 +190,11 @@ class ReviewFileAttachmentViewTests(TestCase):
         """
         review_request = self.create_review_request(publish=True)
         attachment = self.create_file_attachment(review_request)
-        attachment2 = self.create_file_attachment(review_request, draft=True)
+        attachment2 = self.create_file_attachment(
+            review_request,
+            attachment_history=attachment.attachment_history,
+            attachment_revision=attachment.attachment_revision + 1,
+            draft=True)
 
         # Log in so that we can check against the draft.
         username = review_request.submitter.username

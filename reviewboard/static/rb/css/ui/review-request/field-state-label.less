@@ -1,0 +1,73 @@
+/**
+ * Styles for the field state label.
+ */
+
+@import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/ui/colors.less";
+
+#rb-ns-ui() {
+  .field-state-label() {
+    @_color-vars: #rb-ns-ui.colors();
+
+    @border-radius: 4px;
+    @border-width: 1px;
+    @line-height: 1.4;
+    @padding-vert: 0;
+    @padding-horiz: 0.4em;
+
+    @bg-color-deleted: @_color-vars[@red-90];
+    @border-color-deleted: @_color-vars[@red-60];
+    @text-color-deleted: @_color-vars[@red-60];
+
+    @bg-color-draft: @summary-label-draft-bg;
+    @border-color-draft: @summary-label-draft-border-color;
+    @text-color-draft: @summary-label-text-color;
+  }
+}
+
+/**
+ * A label indicating the state of a field.
+ *
+ * Modifiers:
+ *     -is-deleted:
+ *         The label will have a deleted color theme.
+ *
+ *     -is-draft:
+ *         The label will have a draft color theme.
+ *
+ *     -is-inline:
+ *         The label will be displayed inline.
+ *
+ * Structure:
+ *     <div class="rb-c-field-state-label [modifiers]">
+ *      ...
+ *     </div>
+ */
+ .rb-c-field-state-label {
+  @_label-vars: #rb-ns-ui.field-state-label();
+
+  border-radius: @_label-vars[@border-radius];
+  line-height: @_label-vars[@line-height];
+  padding: @_label-vars[@padding-vert] @_label-vars[@padding-horiz];
+  width: fit-content;
+
+  &.-is-deleted {
+    background: @_label-vars[@bg-color-deleted];
+    border: @_label-vars[@border-width]
+            solid
+            @_label-vars[@border-color-deleted];
+    color: @_label-vars[@text-color-deleted];
+  }
+
+  &.-is-draft {
+    background: @_label-vars[@bg-color-draft];
+    border: @_label-vars[@border-width]
+            solid
+            @_label-vars[@border-color-draft];
+    color: @_label-vars[@text-color-draft];
+  }
+
+  &.-is-inline {
+    display: inline;
+  }
+}

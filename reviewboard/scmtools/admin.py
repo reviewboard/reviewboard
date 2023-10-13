@@ -1,20 +1,39 @@
+"""Model administration for SCMTools and repositories."""
+
+from __future__ import annotations
+
+from typing import Optional, TYPE_CHECKING
+
+from django.contrib import admin
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.http import HttpResponse, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, render
 from django.urls import include, path
 from django.utils.html import format_html, mark_safe
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 
 from reviewboard.accounts.admin import fix_review_counts
 from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.admin.server import get_server_url
+from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.models import Repository, Tool
 
+if TYPE_CHECKING:
+    from django.utils.safestring import SafeString
+    from reviewboard.hostingsvcs.service import HostingService
+    from reviewboard.scmtools.core import SCMTool
+
 
 class RepositoryAdmin(ModelAdmin):
-    list_display = ('name', 'path', 'hosting', '_visible', 'inline_actions')
+    list_display = (
+        'name',
+        'path',
+        '_repository_type',
+        '_visible',
+        'inline_actions',
+    )
     list_select_related = ('hosting_account',)
     search_fields = ('name', 'path', 'mirror_path', 'tool__name')
     raw_id_fields = ('local_site',)
@@ -75,17 +94,58 @@ class RepositoryAdmin(ModelAdmin):
 
     fieldset_template_name = 'admin/scmtools/repository/_fieldset.html'
 
-    def hosting(self, repository):
-        if repository.hosting_account_id:
-            account = repository.hosting_account
+    @admin.display(description=_('Type / Account'))
+    def _repository_type(
+        self,
+        repository: Repository,
+    ) -> str:
+        result: str
+        scmtool: Optional[SCMTool]
+        missing_support: bool = False
 
-            if account.service:
-                return '%s@%s' % (account.username, account.service.name)
+        try:
+            scmtool = repository.get_scmtool()
+        except Exception:
+            scmtool = None
 
-        return ''
-    hosting.short_description = _('Hosting Service Account')
+        if scmtool:
+            assert scmtool.name
+            scmtool_name = scmtool.name
+        else:
+            missing_support = True
+            scmtool_name = repository.scmtool_id
 
-    def inline_actions(self, repository):
+        hosting_account = repository.hosting_account
+
+        if hosting_account:
+            service: Optional[HostingService]
+
+            try:
+                service = hosting_account.service
+            except MissingHostingServiceError:
+                service = None
+
+            if service:
+                service_name = hosting_account.service.name
+            else:
+                service_name = hosting_account.service_name
+                missing_support = True
+
+            result = '%s (%s@%s)' % (scmtool_name, hosting_account.username,
+                                     service_name)
+        else:
+            result = scmtool_name
+
+        if missing_support:
+            result = gettext('%s (missing support)') % result
+
+        return result
+
+    @admin.display(description='')
+    def inline_actions(
+        self,
+        repository: Repository,
+    ) -> SafeString:
         """Return HTML containing actions to show for each repository.
 
         Args:
@@ -105,7 +165,12 @@ class RepositoryAdmin(ModelAdmin):
                 css_class, url, name)
 
         if repository.hosting_account:
-            service = repository.hosting_account.service
+            service: Optional[HostingService]
+
+            try:
+                service = repository.hosting_account.service
+            except Exception:
+                service = None
 
             if service and service.has_repository_hook_instructions:
                 s.append(_build_item(
@@ -121,12 +186,11 @@ class RepositoryAdmin(ModelAdmin):
         s.append('</div>')
 
         return mark_safe(''.join(s))
-    inline_actions.short_description = ''
 
+    @admin.display(boolean=True,
+                   description=_('Show'))
     def _visible(self, repository):
         return repository.visible
-    _visible.boolean = True
-    _visible.short_description = _('Show')
 
     def get_urls(self):
         return [

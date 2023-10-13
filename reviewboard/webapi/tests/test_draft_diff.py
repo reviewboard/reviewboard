@@ -39,6 +39,14 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
         self.assertEqual(item_rsp['base_commit_id'], diffset.base_commit_id)
         self.assertEqual(item_rsp['extra_data'], diffset.extra_data)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(
+            create_repository=True,
+            submitter=user,
+            publish=True)
+
+        return get_draft_diff_list_url(review_request)
+
     #
     # HTTP GET tests
     #
@@ -276,6 +284,11 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
     resource = resources.draft_diff
 
     def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        return get_draft_diff_item_url(review_request, 1)
+
+    def setup_http_not_allowed_list_test(self, user):
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
         return get_draft_diff_item_url(review_request, 1)

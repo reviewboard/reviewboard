@@ -54,6 +54,16 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
 
     compare_item = compare_diffcommit
 
+    def setup_http_not_allowed_item_test(self, user):
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(
+            repository=repository,
+            create_with_history=True,
+            public=True)
+
+        diffset = self.create_diffset(review_request=review_request)
+        return get_diffcommit_list_url(review_request, diffset.revision)
+
     def setup_http_not_allowed_list_test(self, user):
         repository = self.create_repository(tool_name='Git')
         review_request = self.create_review_request(
@@ -134,6 +144,19 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
         commit = self.create_diffcommit(diffset=diffset,
                                         repository=repository)
         return get_diffcommit_item_url(review_request, diffset.revision,
+                                       commit.commit_id)
+
+    def setup_http_not_allowed_list_test(self, user):
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(
+            repository=repository,
+            submitter=user)
+        diffset = self.create_diffset(review_request)
+        commit = self.create_diffcommit(diffset=diffset,
+                                        repository=repository)
+
+        return get_diffcommit_item_url(review_request,
+                                       diffset.revision,
                                        commit.commit_id)
 
     #

@@ -1,6 +1,11 @@
+"""The review request model and related information."""
+
+from __future__ import annotations
+
 import logging
 from datetime import datetime
-from typing import Optional
+from enum import Enum
+from typing import Any, Optional, Set, TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -40,6 +45,10 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
+if TYPE_CHECKING:
+    from reviewboard.attachments.models import FileAttachmentSequence
+    from reviewboard.reviews.models import ReviewRequestDraft
+
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +77,74 @@ class ReviewRequestCloseInfo(TypedDict):
     #: Type:
     #:     datetime.datetime
     timestamp: Optional[datetime]
+
+
+class ReviewRequestFileAttachmentsData(TypedDict):
+    """Information about a review request and its draft's file attachments.
+
+    This contains sets of the active and inactive file attachment IDs
+    that are attached to a review request or its draft.
+
+    Version Added:
+        6.0
+    """
+
+    #: The active file attachment IDs attached to the review request.
+    #:
+    #: Type:
+    #:     set
+    active_ids: Set[int]
+
+    #: The inactive file attachment IDs attached to the review request.
+    #:
+    #: Type:
+    #:     set
+    inactive_ids: Set[int]
+
+    #: The active file attachment IDs attached to the review request draft.
+    #:
+    #: Type:
+    #:     set
+    draft_active_ids: Set[int]
+
+    #: The inactive file attachment IDs attached to the review request draft.
+    #:
+    #: Type:
+    #:     set
+    draft_inactive_ids: Set[int]
+
+
+# TODO: Switch to StrEnum once we're on Python 3.11+.
+class FileAttachmentState(Enum):
+    """States for file attachments.
+
+    Version Added:
+        6.0
+    """
+
+    #: A published file attachment that has been deleted.
+    DELETED = 'deleted'
+
+    #: A draft version of a file attachment that has been published before.
+    #:
+    #: These are file attachments that have a draft update to their caption.
+    DRAFT = 'draft'
+
+    #: A new draft file attachment that has never been published before.
+    NEW = 'new'
+
+    #: A draft file attachment that is a new revision of an existing one.
+    NEW_REVISION = 'new-revision'
+
+    #: A file attachment that is pending deletion.
+    #:
+    #: These are previously published file attachments that have been deleted
+    #: from a review request draft, but have not been fully deleted yet because
+    #: the review request draft has not been published.
+    PENDING_DELETION = 'pending-deletion'
+
+    #: A published file attachment.
+    PUBLISHED = 'published'
 
 
 def fetch_issue_counts(review_request, extra_query=None):
@@ -689,11 +766,22 @@ class ReviewRequest(BaseReviewRequestDetails):
         return (user.has_perm('reviews.delete_reviewrequest') and
                 not is_site_read_only_for(user))
 
-    def get_draft(self, user=None):
+    def get_draft(
+        self,
+        user: Optional[User] = None
+    ) -> Optional[ReviewRequestDraft]:
         """Returns the draft of the review request.
 
-        If a user is specified, than the draft will be returned only if owned
-        by the user. Otherwise, None will be returned.
+        If a user is specified, then the draft will be returned only if owned
+        by the user. Otherwise, ``None`` will be returned.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user who must own the draft.
+
+        Returns:
+            reviewboard.reviews.models.review_request_draft.ReviewRequestDraft:
+            The draft of the review request or None.
         """
         if not user:
             return get_object_or_none(self.draft)
@@ -945,6 +1033,144 @@ class ReviewRequest(BaseReviewRequestDetails):
             self._blocks = list(self.blocks.all())
 
         return self._blocks
+
+    def get_file_attachments_data(
+        self,
+        *,
+        active_attachments: Optional[FileAttachmentSequence] = None,
+        inactive_attachments: Optional[FileAttachmentSequence] = None,
+        draft_active_attachments: Optional[FileAttachmentSequence] = None,
+        draft_inactive_attachments: Optional[FileAttachmentSequence] = None,
+    ) -> ReviewRequestFileAttachmentsData:
+        """Return data about a review request and its draft's file attachments.
+
+        This returns sets of the active and inactive file attachment IDs
+        that are attached to the review request or its draft. This data is
+        used in :py:meth:`get_file_attachment_state`.
+
+        The active and inactive file attachments on the review request and its
+        draft may be passed in to avoid fetching them again if they've already
+        been fetched elsewhere.
+
+        The returned data will be cached for future lookups.
+
+        Version Added:
+            6.0
+
+        Args:
+            active_attachments (list of FileAttachment, optional):
+                The list of active file attachments on the review request.
+
+            inactive_attachments (list of FileAttachment, optional):
+                The list of inactive file attachments on the review request.
+
+            draft_active_attachments (list of FileAttachment, optional):
+                The list of active file attachments on the review request
+                draft.
+
+            draft_inactive_attachments (list of FileAttachment, optional):
+                The list of inactive file attachments on the review request
+                draft.
+
+        Returns:
+            ReviewRequestFileAttachmentsData:
+                The data about the file attachments on a review request and
+                its draft.
+        """
+        if hasattr(self, '_file_attachments_data'):
+            return self._file_attachments_data
+
+        if active_attachments is None:
+            active_attachments = self.get_file_attachments(sort=False)
+
+        if inactive_attachments is None:
+            inactive_attachments = list(self.get_inactive_file_attachments())
+
+        attachment_ids: Set[Any] = {
+            file.pk for file in active_attachments
+        }
+        inactive_attachment_ids: Set[Any] = {
+            file.pk for file in inactive_attachments
+        }
+
+        draft_attachment_ids: Set[Any] = set()
+        draft_inactive_attachment_ids: Set[Any] = set()
+        draft = self.get_draft()
+
+        if draft:
+            if draft_active_attachments is None:
+                draft_active_attachments = draft.get_file_attachments(
+                    sort=False)
+
+            if draft_inactive_attachments is None:
+                draft_inactive_attachments = list(
+                    draft.get_inactive_file_attachments())
+
+            draft_attachment_ids = {
+                file.pk for file in draft_active_attachments
+            }
+
+            draft_inactive_attachment_ids = {
+                file.pk for file in draft_inactive_attachments
+            }
+
+        data = ReviewRequestFileAttachmentsData(
+            active_ids=attachment_ids,
+            inactive_ids=inactive_attachment_ids,
+            draft_active_ids=draft_attachment_ids,
+            draft_inactive_ids=draft_inactive_attachment_ids,
+        )
+        self._file_attachments_data = data
+
+        return data
+
+    def get_file_attachment_state(
+        self,
+        file_attachment: FileAttachment,
+    ) -> FileAttachmentState:
+        """Get the state of a file attachment attached to this review request.
+
+        Version Added:
+            6.0
+
+        Args:
+            file_attachment (reviewboard.attachments.models.FileAttachment):
+                The file attachment whose state will be returned.
+
+        Returns:
+            FileAttachmentState:
+            The file attachment state.
+        """
+        file_attachment_id = file_attachment.pk
+        data = self.get_file_attachments_data()
+        active_ids = data['active_ids']
+        inactive_ids = data['inactive_ids']
+        draft_active_ids = data['draft_active_ids']
+        draft_inactive_ids = data['draft_inactive_ids']
+
+        if (file_attachment_id in draft_inactive_ids and
+            file_attachment_id in active_ids):
+            return FileAttachmentState.PENDING_DELETION
+        elif (file_attachment_id in draft_active_ids and
+              file_attachment_id not in active_ids):
+            if file_attachment.attachment_revision > 1:
+                return FileAttachmentState.NEW_REVISION
+            else:
+                return FileAttachmentState.NEW
+        elif file_attachment_id in inactive_ids:
+            return FileAttachmentState.DELETED
+        elif (file_attachment_id in draft_active_ids and
+              file_attachment.caption != file_attachment.draft_caption):
+            # TODO: Right now, the only attribute that can be changed on a
+            #       file attachment is the caption. Eventually we may have
+            #       other attributes that can be updated, and we'll need to
+            #       check for these to see if a file attachment is a draft.
+            #       We should eventually replace this check with some method
+            #       that checks if any draft attributes differ between the
+            #       published version and the draft version of the attachment.
+            return FileAttachmentState.DRAFT
+        else:
+            return FileAttachmentState.PUBLISHED
 
     def save(self, update_counts=False, old_submitter=None, **kwargs):
         if update_counts or self.id is None:

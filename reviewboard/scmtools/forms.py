@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import sys
 from itertools import chain
-from typing import Optional, Union
+from typing import Optional, TYPE_CHECKING, Type, Union
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
@@ -27,6 +27,7 @@ from reviewboard.admin.validation import validate_bug_tracker
 from reviewboard.certs.errors import CertificateVerificationError
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
+                                            MissingHostingServiceError,
                                             SSHKeyAssociationError,
                                             TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.base import hosting_service_registry
@@ -49,6 +50,9 @@ from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import (BadHostKeyError,
                                     SSHError,
                                     UnknownHostKeyError)
+
+if TYPE_CHECKING:
+    from reviewboard.hostingsvcs.service import HostingService
 
 
 logger = logging.getLogger(__name__)
@@ -849,11 +853,15 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         # fields here that aren't dependent on any loaded hosting service or
         # SCMTool forms or state.
         instance = self.instance
-        cur_hosting_service_cls = None
+        cur_hosting_service_cls: Optional[Type[HostingService]] = None
 
         if instance:
             cur_scmtool_cls = instance.scmtool_class
-            cur_hosting_service_cls = type(instance.hosting_service)
+
+            try:
+                cur_hosting_service_cls = type(instance.hosting_service)
+            except MissingHostingServiceError:
+                pass
 
             if cur_scmtool_cls is not None:
                 self.fields['tool'].initial = cur_scmtool_cls.scmtool_id
@@ -1422,14 +1430,20 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         hosting_account = self.instance.hosting_account
 
         if hosting_account:
-            service = hosting_account.service
+            hosting_service: Optional[HostingService]
+
+            try:
+                hosting_service = hosting_account.service
+            except MissingHostingServiceError:
+                hosting_service = None
+
             self.fields['hosting_type'].initial = \
                 hosting_account.service_name
 
-            if service.plans:
+            if hosting_service and hosting_service.plans:
                 self.fields['repository_plan'].choices = [
                     (plan_id, info['name'])
-                    for plan_id, info in service.plans
+                    for plan_id, info in hosting_service.plans
                 ]
 
                 repository_plan = \

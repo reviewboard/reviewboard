@@ -62,6 +62,10 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         self.assertEqual(
             item_rsp['extra_data'],
             self.resource.serialize_extra_data_field(review_request))
+
+    def setup_http_not_allowed_item_test(self, user):
+        return get_review_request_list_url()
+
     #
     # HTTP GET tests
     #

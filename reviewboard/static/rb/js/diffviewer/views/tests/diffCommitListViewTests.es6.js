@@ -7,34 +7,32 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
             (options.haveInterCommitDiffControls ? 2 : 0)
         );
 
-        const valueStartIndex = (
-            linkIndex +
-            (options.haveExpandCollapse ? 1 : 0)
-        );
+        const valueStartIndex = linkIndex;
 
         for (let i = 0; i < $rows.length; i++) {
-            const $row = $rows.eq(i).find('td');
+            const $row = $rows.eq(i);
+            const $cols = $row.find('td');
 
             const rowOptions = options.rowOptions[i];
             const values = rowOptions.values;
 
-            expect($row.length).toEqual(values.length + valueStartIndex);
+            expect($cols.length).toEqual(values.length + valueStartIndex);
 
             if (options.haveHistory) {
-                expect($row.eq(0).text().trim()).toEqual(
-                    rowOptions.historySymbol.trim());
+                expect($row[0]).toHaveClass(rowOptions.op);
             }
 
             if (options.haveInterCommitDiffControls) {
-                const $baseSelector = $row.eq(0).find('input');
+                const $baseSelector = $cols.eq(0).find('input');
                 expect($baseSelector.length).toEqual(1);
-                expect($baseSelector.attr('value')).toEqual((i + 1).toString());
+                expect($baseSelector.attr('value')).toEqual(
+                    (i + 1).toString());
                 expect($baseSelector.prop('checked')).toEqual(
                     !!rowOptions.baseSelected);
                 expect($baseSelector.prop('disabled')).toEqual(
                     !!rowOptions.baseDisabled);
 
-                const $tipSelector = $row.eq(1).find('input');
+                const $tipSelector = $cols.eq(1).find('input');
                 expect($tipSelector.length).toEqual(1);
                 expect($tipSelector.attr('value')).toEqual((i + 1).toString());
                 expect($tipSelector.prop('checked')).toEqual(
@@ -43,28 +41,9 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
                     !!rowOptions.tipDisabled);
             }
 
-            if (options.haveExpandCollapse) {
-                const $link = $row.eq(linkIndex).find('a');
-
-                if (rowOptions.haveExpandCollapse) {
-                    expect($link.length).toEqual(1);
-
-                    const $span = $link.find('span');
-
-                    if (rowOptions.expanded) {
-                        expect($span.attr('class')).toEqual('fa fa-minus');
-                        expect($span.attr('title'))
-                            .toEqual(gettext('Collapse commit message.'));
-                    } else {
-                        expect($span.attr('class')).toEqual('fa fa-plus');
-                        expect($span.attr('title'))
-                            .toEqual(gettext('Expand commit message.'));
-                    }
-                }
-            }
-
             for (let j = 0; j < values; j++) {
-                expect($row.eq(valueStartIndex + j).text().trim()).toEqual(values[j]);
+                expect($cols.eq(valueStartIndex + j).text().trim())
+                    .toEqual(values[j]);
             }
         }
     }
@@ -113,64 +92,6 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
             });
         });
 
-        it('Without expand/collapse column', function() {
-            view = new RB.DiffCommitListView({
-                model: model,
-                el: $container,
-            });
-            view.render();
-
-            const $table = $container.find('table');
-            const $cols = $table.find('thead th');
-            expect($cols.length).toEqual(2);
-            expect($cols.eq(0).text().trim()).toEqual(gettext('Summary'));
-            expect($cols.eq(1).text().trim()).toEqual(gettext('Author'));
-
-            testRows($table.find('tbody tr'), {
-                haveExpandCollapse: false,
-                rowOptions: [
-                    {values: ['Commit message 1', 'Example Author']},
-                    {values: ['Commit message 2', 'Example Author']},
-                ],
-            });
-        });
-
-        it('With expand/collapse column', function() {
-            model.get('commits').models[0].set({
-                commitMessage: 'Long commit message\n\n' +
-                               'This is a long message.\n',
-                summary: 'Long commit message',
-            });
-
-            view = new RB.DiffCommitListView({
-                model: model,
-                el: $container,
-            });
-            view.render();
-
-            const $table = $container.find('table');
-            const $cols = $table.find('thead th');
-            expect($cols.length).toEqual(2);
-
-            expect($cols.eq(0).text().trim()).toEqual(gettext('Summary'));
-            expect($cols.eq(1).text().trim()).toEqual(gettext('Author'));
-
-            testRows($table.find('tbody tr'), {
-                haveExpandCollapse: true,
-                rowOptions: [
-                    {
-                        haveExpandCollapse: true,
-                        expanded: false,
-                        values: ['Long commit message', 'Example Author'],
-                    },
-                    {
-                        haveExpandCollapse: false,
-                        values: ['Commit message 2', 'Example Author'],
-                    },
-                ],
-            });
-        });
-
         it('Updates when collection reset', function() {
             view = new RB.DiffCommitListView({
                 model: model,
@@ -181,15 +102,27 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
             let $table = $container.find('table');
 
             let $cols = $table.find('thead th');
-            expect($cols.length).toEqual(2);
+            expect($cols.length).toEqual(3);
             expect($cols.eq(0).text().trim()).toEqual(gettext('Summary'));
-            expect($cols.eq(1).text().trim()).toEqual(gettext('Author'));
+            expect($cols.eq(1).text().trim()).toEqual(gettext('ID'));
+            expect($cols.eq(2).text().trim()).toEqual(gettext('Author'));
 
             testRows($table.find('tbody tr'), {
-                haveExpandCollapse: false,
                 rowOptions: [
-                    {values: ['Commit message 1', 'Example Author']},
-                    {values: ['Commit message 2', 'Example Author']},
+                    {
+                        values: [
+                            'Commit message 1',
+                            'r1',
+                            'Example Author',
+                        ],
+                    },
+                    {
+                        values: [
+                            'Commit message 2',
+                            'r2',
+                            'Example Author',
+                        ],
+                    },
                 ],
             });
 
@@ -204,17 +137,20 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
             $table = $container.find('table');
 
             $cols = $table.find('thead th');
-            expect($cols.length).toEqual(2);
+            expect($cols.length).toEqual(3);
             expect($cols.eq(0).text().trim()).toEqual(gettext('Summary'));
-            expect($cols.eq(1).text().trim()).toEqual(gettext('Author'));
+            expect($cols.eq(1).text().trim()).toEqual(gettext('ID'));
+            expect($cols.eq(2).text().trim()).toEqual(gettext('Author'));
 
             testRows($table.find('tbody tr'), {
-                haveExpandCollapse: true,
                 rowOptions: [
                     {
-                        haveExpandCollapse: true,
                         expanded: false,
-                        values: ['Commit message 4', 'Example Author'],
+                        values: [
+                            'Commit message 4',
+                            'r4',
+                            'Example Author',
+                        ],
                     },
                 ],
             });
@@ -240,22 +176,30 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
 
             const $table = $container.find('table');
             const $cols = $table.find('thead th');
-            expect($cols.length).toEqual(3);
+            expect($cols.length).toEqual(4);
             expect($cols.eq(0).text().trim()).toEqual('');
             expect($cols.eq(1).text().trim()).toEqual(gettext('Summary'));
-            expect($cols.eq(2).text().trim()).toEqual(gettext('Author'));
+            expect($cols.eq(2).text().trim()).toEqual(gettext('ID'));
+            expect($cols.eq(3).text().trim()).toEqual(gettext('Author'));
 
             testRows($table.find('tbody tr'), {
-                haveExpandCollapse: false,
                 haveHistory: true,
                 rowOptions: [
                     {
-                        historySymbol: '-',
-                        values: ['Commit message 1', 'Example Author'],
+                        op: '-is-removed',
+                        values: [
+                            'Commit message 1',
+                            'r1',
+                            'Example Author',
+                        ],
                     },
                     {
-                        historySymbol: '+',
-                        values: ['Commit message 2', 'Example Author'],
+                        op: '-is-added',
+                        values: [
+                            'Commit message 2',
+                            'r2',
+                            'Example Author',
+                        ],
                     },
                 ],
             });
@@ -271,29 +215,38 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
 
             const $table = $container.find('table');
             const $cols = $table.find('thead th');
-            expect($cols.length).toEqual(4);
+            expect($cols.length).toEqual(5);
             expect($cols.eq(0).text().trim()).toEqual(gettext('First'));
             expect($cols.eq(1).text().trim()).toEqual(gettext('Last'));
             expect($cols.eq(2).text().trim()).toEqual(gettext('Summary'));
-            expect($cols.eq(3).text().trim()).toEqual(gettext('Author'));
+            expect($cols.eq(3).text().trim()).toEqual(gettext('ID'));
+            expect($cols.eq(4).text().trim()).toEqual(gettext('Author'));
 
             testRows($table.find('tbody tr'), {
                 haveInterCommitDiffControls: true,
                 rowOptions: [
                     {
                         baseSelected: true,
-                        values: ['Commit message 1', 'Example Author'],
+                        values: [
+                            'Commit message 1',
+                            'r1',
+                            'Example Author',
+                        ],
                     },
                     {
                         tipSelected: true,
-                        values: ['Commit message 2', 'Example Author'],
+                        values: [
+                            'Commit message 2',
+                            'r2',
+                            'Example Author',
+                        ],
                     },
                 ],
             });
         });
 
         it('With Inter-Commit Diff and Expand/Collapse Controls', function() {
-             model.get('commits').get(1).set({
+            model.get('commits').get(1).set({
                 commitMessage: 'Long commit message\n' +
                                '\nThis is a long message.\n',
                 summary: 'Long commit message',
@@ -309,24 +262,32 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
 
             const $table = $container.find('table');
             const $cols = $table.find('thead th');
-            expect($cols.length).toEqual(4);
+            expect($cols.length).toEqual(5);
             expect($cols.eq(0).text().trim()).toEqual(gettext('First'));
             expect($cols.eq(1).text().trim()).toEqual(gettext('Last'));
             expect($cols.eq(2).text().trim()).toEqual(gettext('Summary'));
-            expect($cols.eq(3).text().trim()).toEqual(gettext('Author'));
+            expect($cols.eq(3).text().trim()).toEqual(gettext('ID'));
+            expect($cols.eq(4).text().trim()).toEqual(gettext('Author'));
 
             testRows($table.find('tbody tr'), {
-                haveExpandCollapse: true,
                 haveInterCommitDiffControls: true,
                 rowOptions: [
                     {
                         baseSelected: true,
                         haveExpandCollapse: true,
-                        values: ['Long commit message', 'Example Author'],
+                        values: [
+                            'Long commit message',
+                            'r1',
+                            'Example Author',
+                        ],
                     },
                     {
                         tipSelected: true,
-                        values: ['Commit message 2', 'Example Author'],
+                        values: [
+                            'Commit message 2',
+                            'r2',
+                            'Example Author',
+                        ],
                     },
                 ],
             });
@@ -368,32 +329,49 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
 
             const $table = $container.find('table');
             const $cols = $table.find('thead th');
-            expect($cols.length).toEqual(4);
+            expect($cols.length).toEqual(5);
             expect($cols.eq(0).text().trim()).toEqual(gettext('First'));
             expect($cols.eq(1).text().trim()).toEqual(gettext('Last'));
             expect($cols.eq(2).text().trim()).toEqual(gettext('Summary'));
-            expect($cols.eq(3).text().trim()).toEqual(gettext('Author'));
+            expect($cols.eq(3).text().trim()).toEqual(gettext('ID'));
+            expect($cols.eq(4).text().trim()).toEqual(gettext('Author'));
 
             testRows($table.find('tbody tr'), {
                 haveInterCommitDiffControls: true,
                 rowOptions: [
                     {
                         tipDisabled: true,
-                        values: ['Long commit message', 'Example Author'],
+                        values: [
+                            'Long commit message',
+                            'r1',
+                            'Example Author',
+                        ],
                     },
                     {
                         tipDisabled: true,
-                        values: ['Commit message 2', 'Example Author'],
+                        values: [
+                            'Commit message 2',
+                            'r2',
+                            'Example Author',
+                        ],
                     },
                     {
                         baseSelected: true,
                         tipSelected: true,
-                        values: ['Commit message 3', 'Example Author'],
+                        values: [
+                            'Commit message 3',
+                            'r3',
+                            'Example Author',
+                        ],
 
                     },
                     {
                         baseDisabled: true,
-                        values: ['Commit message 4', 'Example Author'],
+                        values: [
+                            'Commit message 4',
+                            'r4',
+                            'Example Author',
+                        ],
                     },
                 ],
             });
@@ -425,122 +403,6 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
             model = new RB.DiffCommitList({
                 commits,
                 isInterdiff: false,
-            });
-        });
-
-        it('Expand/collapse', function() {
-            view = new RB.DiffCommitListView({
-                model: model,
-                el: $container,
-            });
-
-            view.render();
-
-            const $table = $container.find('table');
-            const $cols = $table.find('thead th');
-
-            expect($cols.length).toEqual(2);
-            expect($cols.eq(0).text().trim()).toEqual(gettext('Summary'));
-            expect($cols.eq(1).text().trim()).toEqual(gettext('Author'));
-
-            testRows($table.find('tbody tr'), {
-                haveExpandCollapse: true,
-                rowOptions: [
-                    {
-                        haveExpandCollapse: true,
-                        expanded: false,
-                        values: ['Long commit message', 'Example Author'],
-                    },
-                    {
-                        haveExpandCollapse: true,
-                        expanded: false,
-                        values: ['Super long', 'Example Author'],
-                    },
-                ],
-            });
-
-            const $links = $table.find('a');
-
-            // Expand first row.
-            $links.eq(0).click();
-
-            testRows($table.find('tbody tr'), {
-                haveExpandCollapse: true,
-                rowOptions: [
-                    {
-                        haveExpandCollapse: true,
-                        expanded: true,
-                        values: [
-                            'Long commit message\n\nThis is a long message.',
-                            'Example Author',
-                        ],
-                    },
-                    {
-                        haveExpandCollapse: true,
-                        expanded: false,
-                        values: ['Super long', 'Example Author'],
-                    },
-                ],
-            });
-
-            // Collapse first row.
-            $links.eq(0).click();
-
-            testRows($table.find('tbody tr'), {
-                haveExpandCollapse: true,
-                rowOptions: [
-                    {
-                        haveExpandCollapse: true,
-                        iconClass: 'fa-plus',
-                        values: ['Long commit message', 'Example Author'],
-                    },
-                    {
-                        haveExpandCollapse: true,
-                        iconClass: 'fa-plus',
-                        values: ['Super long', 'Example Author'],
-                    },
-                ],
-            });
-
-            // Expand second row.
-            $links.eq(1).click();
-
-            testRows($table.find('tbody tr'), {
-                haveExpandCollapse: true,
-                rowOptions: [
-                    {
-                        haveExpandCollapse: true,
-                        expanded: false,
-                        values: ['Long commit message', 'Example Author'],
-                    },
-                    {
-                        haveExpandCollapse: true,
-                        expanded: true,
-                        values: [
-                            'Super long\n\nSo very long.',
-                            'Example Author',
-                        ],
-                    },
-                ],
-            });
-
-            // Collapse second row.
-            $links.eq(1).click();
-
-            testRows($table.find('tbody tr'), {
-                haveExpandCollapse: true,
-                rowOptions: [
-                    {
-                        haveExpandCollapse: true,
-                        expanded: false,
-                        values: ['Long commit message', 'Example Author'],
-                    },
-                    {
-                        haveExpandCollapse: true,
-                        expanded: false,
-                        values: ['Super long', 'Example Author'],
-                    },
-                ],
             });
         });
 

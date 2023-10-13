@@ -39,6 +39,8 @@
 
   background: @_text-editor-vars[@bg];
   border: @_text-editor-vars[@border];
+  display: flex;
+  flex-direction: column;
   margin: @_text-editor-vars[@margin];;
   position: relative;
 
@@ -64,6 +66,8 @@
    *     <div class="rb-c-text-editor__textarea -is-rich CodeMirror">...</div>
    */
   &__textarea {
+    flex-grow: 1;
+
     /* Make sure we override any default rules for .CodeMirror here. */
     textarea&,
     &.CodeMirror {

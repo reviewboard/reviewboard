@@ -67,9 +67,9 @@ Our Docker images are available in the following forms:
 * ``beanbag/reviewboard:latest``
   -- The latest stable release of Review Board.
 * :samp:`beanbag/reviewboard:{X.Y}`
-  -- The latest stable release in a major version series (e.g., 3.0, 4.0).
+  -- The latest stable release in a major version series (e.g., 5.0, 6.0).
 * :samp:`beanbag/reviewboard:{X.Y.Z}`
-  -- A specific release of Review Board (e.g., 3.0.21, 4.0.4).
+  -- A specific release of Review Board (e.g., 5.0.6, 6.0.1).
 
 See `our Docker repository`_ for all available versions.
 
@@ -90,7 +90,23 @@ Using Docker Run
 First, make sure you've set up memcached and a database server. Create a new
 database and a user account that can write to it.
 
-Then, to start a new container, run:
+Once those are set up, you can start your backend Review Board server.
+
+.. note::
+
+   You won't be accessing Review Board through this webserver.
+
+   This is the backend server, handling Review Board requests. It does not
+   serve up CSS, JavaScript, or images, and is not meant to be accessed
+   directly. You'll need to configure a frontend web server, such as Nginx.
+
+   Make sure to proceed to :ref:`docker-serving-content` below to configure
+   the frontend web server.
+
+
+Creating a Review Board server is easy. You can use our :ref:`docker-compose
+<installation-docker-compose>` instructions, or create it manually by
+running:
 
 .. code-block:: shell
 
@@ -136,22 +152,30 @@ and populate your database.
 
 See the `docker-run documentation`_ for more information.
 
+
 .. _docker-run documentation: https://docs.docker.com/engine/reference/run/
 
+
+.. _docker-serving-content:
 
 Serving Content
 ~~~~~~~~~~~~~~~
 
-The server will be accessible over port 8080. You can change this by passing
-:samp:`-p {port}:8080`.
+The backend Review Board server will be accessible over port 8080. You can
+change this by passing :samp:`-p {port}:8080` to map a custom local port to
+Review Board's port 8080.
 
-You'll need another web server to forward traffic to that port, and to serve
-up the following URLs:
+You'll need a frontend web server (such as the `nginx Docker image`_), to
+forward traffic to that backend port, and to serve up the following URLs:
 
 * ``/static/`` (pointing to the site directory's ``htdocs/static/``)
 * ``/media/`` (pointing to the site directory's ``htdocs/media/``)
+* ``/robots.txt`` (pointing to the site directory's ``htdocs/robots.txt``)
 
-If using Nginx, your configuration may look like:
+You'll need to mount your Review Board site directory volume to an appropriate
+directory (such as ``/var/www/reviewboard``, as shown below).
+
+If using Nginx, your configuration may look something like:
 
 .. code-block:: nginx
 
@@ -161,34 +185,74 @@ If using Nginx, your configuration may look like:
 
     server {
         server_name reviews.corp.example.com
+
+        # If enabling SSL on Nginx, remove the "listen ${NGINX_PORT}" lines
+        # below and use these settings instead. You will also need
+        # to change X-Forwarded-Ssl below.
+        #
+        # listen [::]:443 ssl http2;
+        # listen 443 ssl http2;
+        # ssl_certificate /var/www/reviewboard/conf/ssl/fullchain.pem;
+        # ssl_certificate_key /var/www/reviewboard/conf/ssl/privkey.pem;
+        listen [::]:80;
         listen 80;
 
         root /var/www/reviewboard/htdocs;
 
         location / {
             proxy_pass http://reviewboard;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header Host $host;
             proxy_redirect off;
+
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Port $server_port;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # NOTE: Set this to "on" if using SSL.
+            proxy_set_header X-Forwarded-Ssl off;
+
+            client_max_body_size        10m;
+            client_body_buffer_size     128k;
+            proxy_connect_timeout       90;
+            proxy_send_timeout          90;
+            proxy_read_timeout          90;
+            proxy_headers_hash_max_size 512;
+            proxy_buffer_size           4k;
+            proxy_buffers               4 32k;
+            proxy_busy_buffers_size     64k;
+            proxy_temp_file_write_size  64k;
         }
 
         location /media/ {
-            alias /var/www/reviewboard/htdocs/media/;
-            add_header Access-Control-Allow-Origin *;
-            expires max;
-
-            location ~ \.(html|htm|shtml|php)$ {
-                types {}
-                default_type text/plain;
-            }
+          alias /var/www/reviews.example.com/htdocs/media/;
+          expires max;
+          add_header Cache-Control public;
         }
 
         location /static/ {
-            alias /var/www/reviewboard/htdocs/static/;
-            add_header Access-Control-Allow-Origin *;
-            expires max;
+          alias /var/www/reviews.example.com/htdocs/static/;
+          expires max;
+          add_header Cache-Control public;
+        }
+
+        location /errordocs/ {
+          alias /var/www/reviews.example.com/htdocs/errordocs/;
+          expires 5d;
+        }
+
+        location /robots.txt {
+          alias /var/www/reviews.example.com/htdocs/robots.txt;
+          expires 5d;
         }
     }
+
+
+See :ref:`Configuring the Web Server <configuring-web-server>` for additional
+web server configuration examples.
+
+
+.. _nginx Docker image: https://hub.docker.com/_/nginx
 
 
 .. _installation-docker-compose:
@@ -205,10 +269,10 @@ and related configuration that you can download and launch:
 .. code-block:: shell
 
     # MySQL configuration
-    docker-compose -f docker-compose.mysql.yaml -p reviewboard_mysql up
+    $ docker-compose -f docker-compose.mysql.yaml -p reviewboard_mysql up
 
     # Postgres configuration
-    docker-compose -f docker-compose.postgres.yaml -p reviewboard_postgres up
+    $ docker-compose -f docker-compose.postgres.yaml -p reviewboard_postgres up
 
 You should make a copy of these and modify them for your needs. See the
 `docker-compose documentation`_ for more information.
@@ -446,11 +510,11 @@ If you need to install additional extensions, you'll need to build an image.
 
    .. code-block:: shell
 
-    $ docker run -P \
-                 --name ... \
-                 -v ... \
-                 -e ... \
-                 my-reviewboard
+       $ docker run -P \
+                    --name ... \
+                    -v ... \
+                    -e ... \
+                    my-reviewboard
 
 
 .. _docker build documentation:

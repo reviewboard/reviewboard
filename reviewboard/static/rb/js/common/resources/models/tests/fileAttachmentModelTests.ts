@@ -65,6 +65,7 @@ suite('rb/resources/models/FileAttachment', function() {
                     id: 42,
                     review_url: 'reviewURL',
                     revision: 123,
+                    state: 'Published',
                     thumbnail: 'thumbnailHTML',
                     url: 'downloadURL',
                 },
@@ -78,6 +79,7 @@ suite('rb/resources/models/FileAttachment', function() {
             expect(data.id).toBe(42);
             expect(data.reviewURL).toBe('reviewURL');
             expect(data.revision).toBe(123);
+            expect(data.state).toBe('Published');
             expect(data.thumbnailHTML).toBe('thumbnailHTML');
         });
     });

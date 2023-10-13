@@ -1,4 +1,9 @@
+"""Tags related to review requests."""
+
+from __future__ import annotations
+
 import logging
+from typing import Any, Dict, List, Mapping, Set, TYPE_CHECKING
 
 from django.template import Library, TemplateSyntaxError
 from django.template.defaultfilters import escapejs, stringfilter
@@ -31,6 +36,10 @@ from reviewboard.reviews.models import (BaseComment, Group,
                                         GeneralComment)
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 from reviewboard.site.urlresolvers import local_site_reverse
+
+if TYPE_CHECKING:
+    from django.utils.safestring import SafeString
+    from reviewboard.attachments.models import FileAttachment
 
 
 logger = logging.getLogger(__name__)
@@ -803,7 +812,9 @@ def diff_comment_line_numbers(context, chunks, comment):
 
 
 @register.simple_tag(takes_context=True)
-def reviewable_page_model_data(context):
+def reviewable_page_model_data(
+    context: Mapping[str, Any],
+) -> SafeString:
     """Output JSON-serialized data for a RB.ReviewablePage model.
 
     The data will be used by :js:class:`RB.ReviewablePage` in order to
@@ -990,12 +1001,35 @@ def reviewable_page_model_data(context):
         review_request_details=review_request_details,
         request=request)
 
-    file_attachments_data = [
+    all_file_attachments: List[FileAttachment] = context.get(
+        'all_file_attachments', [])
+    file_attachments: List[FileAttachment] = context.get(
+        'file_attachments', [])
+    file_attachment_ids: Set[Any] = {
+        file_attachment.pk for file_attachment in file_attachments
+    }
+
+    # This will contain data for the file attachments that will be displayed
+    # on the review request.
+    file_attachments_data: List[Dict[str, Any]] = [
         file_attachments_field.get_attachment_js_model_attrs(
             attachment=file_attachment,
             draft=draft)
-        for file_attachment in context.get('file_attachments', [])
+        for file_attachment in file_attachments
     ]
+
+    # This will contain data for all file attachments related to the review
+    # request, including ones that won't be displayed.
+    all_file_attachments_data: List[Dict[str, Any]] = [
+        file_attachments_field.get_attachment_js_model_attrs(
+            attachment=file_attachment,
+            draft=draft)
+        for file_attachment in all_file_attachments
+        if file_attachment.pk not in file_attachment_ids
+    ] + file_attachments_data
+
+    if all_file_attachments_data:
+        editor_data['allFileAttachments'] = all_file_attachments_data
 
     if file_attachments_data:
         editor_data['fileAttachments'] = file_attachments_data
@@ -1003,7 +1037,7 @@ def reviewable_page_model_data(context):
     # Build the file attachment comments data for the editor data.
     file_attachment_comments_data = {}
 
-    for file_attachment in context.get('all_file_attachments', []):
+    for file_attachment in all_file_attachments:
         review_ui = file_attachment.review_ui
 
         if not review_ui:

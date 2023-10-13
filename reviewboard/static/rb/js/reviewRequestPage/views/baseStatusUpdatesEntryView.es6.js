@@ -12,7 +12,7 @@ const ParentView = RB.ReviewRequestPage.EntryView;
  * shown without a page reload.
  */
 RB.ReviewRequestPage.BaseStatusUpdatesEntryView = ParentView.extend({
-    CHECK_UPDATES_MS: 10 * 1000,  // 10 seconds
+    CHECK_UPDATES_MS: 2 * 1000,  // 2 seconds
 
     events: _.defaults({
         'click .status-update-request-run': '_onRequestRunClicked',

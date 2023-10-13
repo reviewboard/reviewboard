@@ -443,7 +443,8 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             'DEBUG = False\n'
             'ALLOWED_HOSTS = [\n'
             '    "reviews.example.com"\n'
-            ']\n')
+            ']\n'
+            'HEALTHCHECK_IPS = []\n')
 
     def test_generate_settings_local_with_postgres(self):
         """Testing Site.generate_settings_local with Postgres"""
@@ -488,7 +489,8 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             'DEBUG = False\n'
             'ALLOWED_HOSTS = [\n'
             '    "reviews.example.com"\n'
-            ']\n')
+            ']\n'
+            'HEALTHCHECK_IPS = []\n')
 
     def test_generate_settings_local_with_sqlite(self):
         """Testing Site.generate_settings_local with SQLite"""
@@ -525,7 +527,8 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
             'DEBUG = False\n'
             'ALLOWED_HOSTS = [\n'
             '    "reviews.example.com"\n'
-            ']\n')
+            ']\n'
+            'HEALTHCHECK_IPS = []\n')
 
     def test_get_settings_upgrade_needed_with_legacy_database(self):
         """Testing Site.get_settings_upgrade_needed with legacy

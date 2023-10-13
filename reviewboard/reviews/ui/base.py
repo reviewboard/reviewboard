@@ -730,16 +730,18 @@ class FileAttachmentReviewUI(ReviewUI):
             dict:
             The attributes to pass to the model.
         """
+        obj = self.obj
+
         data = {
-            'fileAttachmentID': self.obj.pk,
-            'fileRevision': self.obj.attachment_revision,
-            'filename': self.obj.orig_filename,
-            'public': self.obj.review_request.exists(),
+            'fileAttachmentID': obj.pk,
+            'fileRevision': obj.attachment_revision,
+            'filename': obj.orig_filename,
+            'state': self.review_request.get_file_attachment_state(obj).value,
         }
 
-        if self.obj.attachment_history is not None:
+        if obj.attachment_history is not None:
             attachments = FileAttachment.objects.filter(
-                attachment_history=self.obj.attachment_history)
+                attachment_history=obj.attachment_history)
             data['attachmentRevisionIDs'] = list(
                 attachments.order_by('attachment_revision')
                 .values_list('pk', flat=True))

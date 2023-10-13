@@ -162,6 +162,18 @@ interface CommentDialogViewOptions {
     commentIssueManager?: RB.CommentIssueManager;
 
     /**
+     * The warning to show to the user about deleted objects.
+     *
+     * If the user is trying to comment on a deleted object (such as a file
+     * attachment that has been deleted), show this warning to them and
+     * block them from commenting.
+     *
+     * Version Added:
+     *     6.0
+     */
+    deletedWarning: string;
+
+    /**
      * The warning to show to the user about draft objects.
      *
      * If the user is commenting on a draft object (such as a diff or file
@@ -186,6 +198,18 @@ interface CommentDialogViewCreationOptions {
 
     /** The container to add the dialog to. */
     container: HTMLElement | JQuery;
+
+    /**
+     * The warning to show to the user about deleted objects.
+     *
+     * If the user is trying to comment on a deleted object (such as a file
+     * attachment that has been deleted), show this warning to them and
+     * block them from commenting.
+     *
+     * Version Added:
+     *     6.0
+     */
+    deletedWarning?: string;
 
     /**
      * The warning to show to the user about draft objects.
@@ -273,17 +297,18 @@ export class CommentDialogView extends BaseView<
         <form method="post">
          <h1 class="comment-dlg-header">
           <span class="title"></span>
-          <% if (authenticated) { %>
+          <% if (canEdit) { %>
            <a class="markdown-info" href="<%- markdownDocsURL %>"
               target="_blank"><%- markdownText %></a>
           <% } %>
          </h1>
          <% if (!authenticated) { %>
           <p class="login-text"><%= loginText %></p>
+         <% } else if (deletedWarning) { %>
+          <p class="deleted-warning"><%= deletedWarning %></p>
          <% } else if (readOnly) { %>
           <p class="read-only-text"><%= readOnlyText %></p>
-         <% } %>
-         <% if (draftWarning) { %>
+         <% } else if (draftWarning) { %>
           <p class="draft-warning"><%= draftWarning %></p>
          <% } %>
          <div class="comment-dlg-body">
@@ -345,6 +370,7 @@ export class CommentDialogView extends BaseView<
             commentIssueManager: (
                 options.commentIssueManager ||
                 reviewRequestEditor.get('commentIssueManager')),
+            deletedWarning: options.deletedWarning,
             draftWarning: options.draftWarning,
             model: new CommentEditor({
                 comment: options.comment,
@@ -465,17 +491,26 @@ export class CommentDialogView extends BaseView<
      * Render the view.
      */
     onInitialRender() {
+        const model = this.model;
         const userSession = UserSession.instance;
-        const reviewRequest = this.model.get('reviewRequest');
-        const reviewRequestEditor = this.model.get('reviewRequestEditor');
+        const reviewRequest = model.get('reviewRequest');
+        const reviewRequestEditor = model.get('reviewRequestEditor');
+        const deletedWarning = this.options.deletedWarning;
+
+        if (deletedWarning) {
+            /* Block commenting on deleted objects. */
+            model.set('canEdit', false);
+        }
 
         this.$el
             .hide()
             .html(CommentDialogView.template({
                 authenticated: userSession.get('authenticated'),
+                canEdit: model.get('canEdit'),
                 cancelButton: CommentDialogView._cancelText,
                 closeButton: CommentDialogView._closeText,
                 deleteButton: CommentDialogView._deleteText,
+                deletedWarning: deletedWarning,
                 draftWarning: this.options.draftWarning,
                 enableMarkdownText: CommentDialogView._enableMarkdownText,
                 loginText: interpolate(
@@ -503,31 +538,31 @@ export class CommentDialogView extends BaseView<
 
         this._$issueOptions =
             this._$commentOptions.children('.comment-issue-options')
-                .bindVisibility(this.model, 'canEdit');
+                .bindVisibility(model, 'canEdit');
         this._$markdownOptions =
             this._$commentOptions.children('.comment-markdown-options')
-                .bindVisibility(this.model, 'canEdit');
+                .bindVisibility(model, 'canEdit');
 
         this._$issueField = this._$issueOptions
             .find('#comment_issue')
-                .bindProperty('checked', this.model, 'openIssue')
-                .bindProperty('disabled', this.model, 'editing', {
+                .bindProperty('checked', model, 'openIssue')
+                .bindProperty('disabled', model, 'editing', {
                     elementToModel: false,
                     inverse: true,
                 });
 
         this._$issueVerificationField = this._$issueOptions
             .find('#comment_issue_verify')
-                .bindProperty('checked', this.model, 'requireVerification')
-                .bindProperty('disabled', this.model, 'editing', {
+                .bindProperty('checked', model, 'requireVerification')
+                .bindProperty('disabled', model, 'editing', {
                     elementToModel: false,
                     inverse: true,
                 });
 
         this._$enableMarkdownField = this._$markdownOptions
             .find('#enable_markdown')
-                .bindProperty('checked', this.model, 'richText')
-                .bindProperty('disabled', this.model, 'editing', {
+                .bindProperty('checked', model, 'richText')
+                .bindProperty('disabled', model, 'editing', {
                     elementToModel: false,
                     inverse: true,
                 });
@@ -537,24 +572,24 @@ export class CommentDialogView extends BaseView<
         this.$buttons = this._$footer.find('.buttons');
 
         this.$saveButton = this.$buttons.find('input.save')
-            .bindVisibility(this.model, 'canEdit')
-            .bindProperty('disabled', this.model, 'canSave', {
+            .bindVisibility(model, 'canEdit')
+            .bindProperty('disabled', model, 'canSave', {
                 elementToModel: false,
                 inverse: true,
             });
 
         this.$cancelButton = this.$buttons.find('input.cancel')
-            .bindVisibility(this.model, 'canEdit');
+            .bindVisibility(model, 'canEdit');
 
         this.$deleteButton = this.$buttons.find('input.delete')
-            .bindVisibility(this.model, 'canDelete')
-            .bindProperty('disabled', this.model, 'canDelete', {
+            .bindVisibility(model, 'canDelete')
+            .bindProperty('disabled', model, 'canDelete', {
                 elementToModel: false,
                 inverse: true,
             });
 
         this.$closeButton = this.$buttons.find('input.close')
-            .bindVisibility(this.model, 'canEdit', {
+            .bindVisibility(model, 'canEdit', {
                 inverse: true,
             });
 
@@ -573,26 +608,26 @@ export class CommentDialogView extends BaseView<
             autoSize: false,
             bindRichText: {
                 attrName: 'richText',
-                model: this.model,
+                model: model,
             },
             el: this._$draftForm.find('.comment-text-field'),
             minHeight: 0,
-            text: this.model.get('text'),
+            text: model.get('text'),
         });
         this._textEditor.render();
         this._textEditor.show();
-        this._textEditor.$el.bindVisibility(this.model, 'canEdit');
+        this._textEditor.$el.bindVisibility(model, 'canEdit');
         this.listenTo(this._textEditor, 'change',
-                      () => this.model.set('text',
+                      () => model.set('text',
                                            this._textEditor.getText()));
         this._textEditor.bindRichTextCheckbox(this._$enableMarkdownField);
         this._textEditor.bindRichTextVisibility(
             this._$draftForm.find('.markdown-info'));
 
-        this.listenTo(this.model, 'change:text',
-                      () => this._textEditor.setText(this.model.get('text')));
+        this.listenTo(model, 'change:text',
+                      () => this._textEditor.setText(model.get('text')));
 
-        this.listenTo(this.model, 'change:richText', this.#handleResize);
+        this.listenTo(model, 'change:richText', this.#handleResize);
 
         this.$el
             .css('position', 'absolute')
@@ -616,10 +651,10 @@ export class CommentDialogView extends BaseView<
             handle: '.comment-dlg-header',
         });
 
-        this.listenTo(this.model, 'change:dirty', this.#updateTitle);
+        this.listenTo(model, 'change:dirty', this.#updateTitle);
         this.#updateTitle();
 
-        this.listenTo(this.model, 'change:publishedComments',
+        this.listenTo(model, 'change:publishedComments',
                       () => this.#onPublishedCommentsChanged());
         this.#onPublishedCommentsChanged();
 
@@ -628,7 +663,7 @@ export class CommentDialogView extends BaseView<
             const HookViewType = hook.get('viewType');
             const hookView = new HookViewType({
                 commentDialog: this,
-                commentEditor: this.model,
+                commentEditor: model,
                 el: this.el,
                 extension: hook.get('extension'),
             });

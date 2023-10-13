@@ -24,6 +24,19 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
         'review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/'
     resource = resources.review_reply_diff_comment
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(
+            create_repository=True,
+            submitter=user,
+            publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+        review = self.create_review(review_request, user=user)
+        comment = self.create_diff_comment(review, filediff)
+        reply = self.create_reply(review, user=user)
+
+        return get_review_reply_diff_comment_list_url(reply)
+
     def setup_review_request_child_test(self, review_request):
         if not review_request.repository_id:
             # The group tests don't create a repository by default.
@@ -169,6 +182,21 @@ class ResourceItemTests(CommentReplyItemMixin, ReviewRequestChildItemMixin,
 
         return (get_review_reply_diff_comment_list_url(reply),
                 review_reply_diff_comment_list_mimetype)
+
+    def setup_http_not_allowed_list_test(self, user):
+        review_request = self.create_review_request(
+            create_repository=True,
+            submitter=user,
+            publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+        review = self.create_review(review_request, user=user, publish=True)
+        comment = self.create_diff_comment(review, filediff)
+        reply = self.create_reply(review, user=user)
+        reply_comment = self.create_diff_comment(reply, filediff,
+                                                 reply_to=comment)
+
+        return get_review_reply_diff_comment_item_url(reply, reply_comment.pk)
 
     def compare_item(self, item_rsp, comment):
         self.assertEqual(item_rsp['id'], comment.pk)

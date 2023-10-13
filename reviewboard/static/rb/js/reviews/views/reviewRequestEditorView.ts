@@ -482,9 +482,6 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
     /** The warning message box. */
     #$warning: JQuery = null;
 
-    /** Whether to block layout change updates. */
-    #blockResizeLayout = false;
-
     /** A mapping from field ID to field view instance. */
     #fieldViews: {
         [key: string]: BaseFieldView;
@@ -511,8 +508,6 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      * Initialize the view.
      */
     initialize() {
-        _.bindAll(this, '_checkResizeLayout', '_scheduleResizeLayout');
-
         this.draft = this.model.get('reviewRequest').draft;
     }
 
@@ -527,7 +522,6 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
         this.#fieldViews[view.fieldID] = view;
         view.reviewRequestEditorView = this;
 
-        this.listenTo(view, 'resize', this._scheduleResizeLayout);
         this.listenTo(view, 'fieldError', err => {
             this.#$warning
                 .delay(6000)
@@ -574,7 +568,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
         this.#$warning = $('#review-request-warning');
         const $screenshots = $('#screenshot-thumbnails');
         this.#$attachments = $('#file-list');
-        this.#$attachmentsContainer = $(this.#$attachments.parent()[0]);
+        this.#$attachmentsContainer = $('#file-list-container');
         this.#$bannersContainer = $('#review-request-banners');
         this.#$main = $('#review-request-main');
         this.#$extra = $('#review-request-extra');
@@ -602,17 +596,13 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
 
         this.listenTo(fileAttachments, 'add',
                       this.buildFileAttachmentThumbnail);
-        this.listenTo(fileAttachments, 'remove', model => {
-            const index = this.#fileAttachmentThumbnailViews.findIndex(
-                view => (view.model === model));
-            this.#fileAttachmentThumbnailViews[index].remove();
-            this.#fileAttachmentThumbnailViews.splice(index, 1);
-        });
+        this.listenTo(fileAttachments, 'remove', this._removeThumbnail);
         this.listenTo(fileAttachments, 'destroy', () => {
             if (fileAttachments.length === 0) {
                 this.#$attachmentsContainer.hide();
             }
         });
+        this.listenTo(this.model, 'replaceAttachment', this._removeThumbnail);
 
         /*
          * Import all the screenshots and file attachments rendered onto
@@ -629,14 +619,6 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
         for (const fieldView of Object.values(this.#fieldViews)) {
             fieldView.render();
         }
-
-        /*
-         * Update the layout constraints any time these properties
-         * change. Also, right away.
-         */
-        $(window).resize(this._scheduleResizeLayout);
-        this.listenTo(this.model, 'change:editCount', this._checkResizeLayout);
-        this._checkResizeLayout();
 
         this._setupActions();
 
@@ -822,7 +804,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
     /**
      * Build a thumbnail for a FileAttachment.
      *
-     * The thumbnail will eb added to the page. The editor will listen
+     * The thumbnail will be added to the page. The editor will listen
      * for events on the thumbnail to update the current edit state.
      *
      * This can be called either when dynamically adding a new file
@@ -962,130 +944,6 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
     }
 
     /**
-     * Conditionally resize the layout.
-     *
-     * This is a wrapper for _resizeLayout that verifies that there's actually
-     * a layout to resize.
-     */
-    _checkResizeLayout() {
-        /*
-         * Not every page that uses this has a #review-request-main element
-         * (for instance, review UIs want to have the draft banners but not
-         * the review request box). In this case, just skip all of this.
-         */
-        if (this.#$main.length !== 0 && !this.#blockResizeLayout) {
-            this._resizeLayout();
-        }
-    }
-
-    /**
-     * Resize the layout in response to size or position changes of fields.
-     *
-     * This will spread out the main text fields to cover the full height of
-     * the review request box's main area. That helps keep a consistent look
-     * and prevents a bunch of wasted-looking space.
-     */
-    _resizeLayout() {
-        const $lastContent =
-            this.#$main.children('.review-request-section:last-child');
-        const $lastFieldContainer = $lastContent.children('.field-container');
-        const $lastField = $lastFieldContainer.children('.editable');
-        const lastFieldView =
-            this.#fieldViews[$lastField.data('field-id')] as TextFieldView;
-        const lastContentTop = Math.ceil($lastContent.position().top);
-        const editor = lastFieldView.inlineEditorView.textEditor;
-        const detailsWidth = 300; // Defined as @details-width in reviews.less
-        const detailsPadding = 10;
-        const $detailsBody = $('#review-request-details tbody');
-        const $detailsLabels = $detailsBody.find('th:first-child');
-        const $detailsValues = $detailsBody.find('span');
-
-        this.#blockResizeLayout = true;
-
-        /*
-         * Make sure that the details fields wrap correctly, even if they don't
-         * have wrappable characters (this combines with the white-space:
-         * word-wrap: break-word style). This computation makes things handle
-         * potentially unknown field labels correctly.
-         */
-        $detailsValues.css('max-width', (detailsWidth -
-                                         $detailsLabels.outerWidth() -
-                                         detailsPadding * 3) + 'px');
-
-        /*
-         * Reset all the heights so we can do calculations based on their
-         * native sizes.
-         */
-        this.#$main.height('auto');
-        $lastContent.height('auto');
-        $lastField.height('auto');
-
-        if (editor) {
-            editor.setSize(null, 'auto');
-        }
-
-        /*
-         * Set the review request box's main height to take up the full
-         * amount of spaces between its top and the top of the "extra"
-         * pane (where the issue summary table and stuff live).
-         */
-        this.#$main.height(Math.ceil(this.#$extra.offset().top -
-                                     this.#$main.offset().top));
-        const height = this.#$main.height();
-
-        if ($lastContent.outerHeight() + lastContentTop < height) {
-            $lastContent.outerHeight(height - lastContentTop);
-
-            /*
-             * Get the size of the content box, and factor in the padding at
-             * the bottom, to balance out position()'s calculation of the
-             * padding at the top. This ensures we get a height that matches
-             * the content area of the content box.
-             */
-            const contentHeight = (
-                $lastContent.height() -
-                Math.ceil($lastFieldContainer.position().top));
-
-            /*
-             * Set the height of the editor or the editable field placeholder,
-             * depending on whether we're in edit mode. There's no need to do
-             * both, since this logic will be called again when the state
-             * changes.
-             */
-            if (lastFieldView.inlineEditorView.editing() && editor) {
-                editor.setSize(
-                    null,
-                    contentHeight -
-                    lastFieldView.inlineEditorView.$buttons.height());
-            } else {
-                /*
-                 * It's possible to squish the editable element if we force
-                 * a size, so make sure it's always at least the natural
-                 * height.
-                 */
-                const newEditableHeight = contentHeight +
-                                          $lastField.getExtents('m', 'tb');
-
-                if (newEditableHeight > $lastField.outerHeight()) {
-                    $lastField.outerHeight(newEditableHeight);
-                }
-            }
-        }
-
-        this.#blockResizeLayout = false;
-    }
-
-    /**
-     * Schedule a layout resize after the stack unwinds.
-     *
-     * This will only trigger a layout resize after the stack has unwound,
-     * and only once every 100 milliseconds at most.
-     */
-    _scheduleResizeLayout = _.throttleLayout(
-        () => this._checkResizeLayout(),
-        { defer: true });
-
-    /**
      * Handle a click on "Update -> Update Diff".
      *
      * Returns:
@@ -1112,5 +970,23 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      */
     _refreshPage() {
         RB.navigateTo(this.model.get('reviewRequest').get('reviewURL'));
+    }
+
+    /**
+     * Remove a file attachment thumbnail.
+     *
+     * Version Added:
+     *     6.0
+     *
+     * Args:
+     *     attachmentModel (FileAttachment):
+     *         The model of the file attachment to remove.
+     */
+    _removeThumbnail(attachmentModel: FileAttachment) {
+        const thumbnailViews = this.#fileAttachmentThumbnailViews;
+        const index = thumbnailViews.findIndex(
+            view => (view.model === attachmentModel));
+        thumbnailViews[index].remove();
+        thumbnailViews.splice(index, 1);
     }
 }

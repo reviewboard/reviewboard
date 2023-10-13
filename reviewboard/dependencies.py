@@ -38,7 +38,7 @@ django_doc_major_version = '3.2'
 djblets_doc_major_version = 'dev'
 
 #: The version of Django required for the current version of Python.
-django_version = '~=3.2.17'
+django_version = '~=3.2.22'
 
 #: The version range required for Djblets.
 djblets_version = '~=4.0b3'
@@ -51,7 +51,7 @@ djblets_version = '~=4.0b3'
 #: All dependencies required to install Review Board.
 package_dependencies = {
     'bleach': '~=6.0.0',
-    'cryptography': '~=39.0.2',
+    'cryptography': '~=41.0.4',
     'Django': django_version,
     'django-cors-headers': '~=3.11.0',
     'django_evolution': '~=2.2',
@@ -72,7 +72,7 @@ package_dependencies = {
     # cryptography (impacting pip as well). So we pin a compatible version.
     #
     # This must match cryptography compatibility.
-    'pyOpenSSL': '~=23.0.0',
+    'pyOpenSSL': '~=23.2.0',
 
     # TODO: We can migrate to the latest pymdown-extensions release now that
     # we're Python 3+ only.

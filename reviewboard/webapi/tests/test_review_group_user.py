@@ -27,6 +27,11 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertEqual(item_rsp['first_name'], user.first_name)
         self.assertEqual(item_rsp['last_name'], user.last_name)
 
+    def setup_http_not_allowed_item_test(self, user):
+        group = self.create_review_group()
+
+        return get_review_group_user_list_url(group.name)
+
     #
     # HTTP GET tests
     #
@@ -215,7 +220,18 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     basic_put_use_admin = True
 
     def setup_http_not_allowed_item_test(self, user):
-        return get_review_group_user_list_url('my-group')
+        group = self.create_review_group()
+        doc = User.objects.get(username='doc')
+        group.users.add(doc)
+
+        return get_review_group_user_item_url(group.name, doc.username)
+
+    def setup_http_not_allowed_list_test(self, user):
+        group = self.create_review_group()
+        doc = User.objects.get(username='doc')
+        group.users.add(doc)
+
+        return get_review_group_user_item_url(group.name, doc.username)
 
     def compare_item(self, item_rsp, user):
         self.assertEqual(item_rsp['id'], user.pk)

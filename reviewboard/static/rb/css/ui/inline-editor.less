@@ -1,0 +1,220 @@
+@import (reference) "rb/css/ui/buttons.less";
+
+
+#rb-ns-ui() {
+  .inline-editor() {
+    @spacing: 0.5em;
+    @edit-icon-margin: 4px;
+  }
+}
+
+
+/**
+ * The inline editor component.
+ *
+ * This wraps a piece of displayed content (generally text) that, when clicked,
+ * displays an editor for changing that content.
+ *
+ * They contain a wrapper for the edit field and a list of buttons or other
+ * actions that apply to that content.
+ *
+ * Inline editors can be in one of two modes:
+ *
+ * 1. **Single-line:** The editor field and save/cancel buttons will displayed
+ *    in a single line.
+ *
+ * 2. **Multi-line:** The editor field will be displayed in one line, and
+ *    buttons in a separate line.
+ *
+ * Buttons can also be shortened to only show icons, for areas where space is
+ * at a premium.
+ *
+ * Inline editors are managed by :js:class:`RB.InlineEditorView` and subclasses.
+ *
+ * Version Added:
+ *     6.0
+ *
+ * DOM Attributes:
+ *     id (string):
+ *         The ID of the inline editor.
+ *
+ *         This must be referenced by the ``.rb-c-inline-editor-edit-icon``.
+ *
+ * Modifiers:
+ *     -is-multi-line:
+ *         The inline editor is in multi-line mode.
+ *
+ *     -is-single-line:
+ *         The inline editor is in single-line mode.
+ *
+ *     -has-short-buttons:
+ *         The Save/Cancel buttons will show icons but no text.
+ *
+ * Structure:
+ *     <form class="rb-c-inline-editor [modifiers]"
+ *           id="...">
+ *      <div class="rb-c-inline-editor__field">...</div>
+ *      <div class="rb-c-inline-editor__actions">...</div>
+ *     </form>
+ *     rendered_field_html...
+ *     <a class="rb-c-inline-editor-edit-icon" ...>...</a>
+ */
+.rb-c-inline-editor {
+  @_inline-editor-vars: #rb-ns-ui.inline-editor();
+  @_spacing: @_inline-editor-vars[@spacing];
+
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
+  gap: @_spacing;
+
+  &.-is-multi-line {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &.-is-single-line {
+    display: inline-flex;
+    flex-direction: row;
+  }
+
+  &.-has-short-buttons {
+    .rb-c-button {
+      &[data-action="cancel"],
+      &[data-action="save"] {
+        /* Save space by making these icon-only. */
+        #rb-ns-ui.buttons.set-icon-only();
+      }
+    }
+  }
+
+  /**
+   * The actions available for the inline editor.
+   *
+   * This will always have at minimum a Save and a Cancel button, but may
+   * also contain other actions.
+   *
+   * Support for Markdown-related actions are built-in to the component.
+   *
+   * Structure:
+   *     <div class="rb-c-inline-editor__actions">
+   *      <button class="rb-c-button" data-action="save">...</button>
+   *      <button class="rb-c-button" data-action="cancel">...</button>
+   *      ...
+   *     </div>
+   */
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: @_spacing;
+    white-space: normal;
+
+    > .markdown-info {
+      margin-left: auto;
+    }
+
+    > .rb-c-button {
+      margin: 0;
+
+      &[data-action="cancel"] {
+        #rb-ns-ui.buttons.set-fa-icon(@fa-var-close);
+      }
+
+      &[data-action="save"] {
+        #rb-ns-ui.buttons.set-fa-icon(@fa-var-check);
+      }
+    }
+  }
+
+  /**
+   * A wrapper for the field used to edit the content.
+   *
+   * This will usually contain a ``<textarea>``, ``<input>``, or
+   * ``.rb-c-text-editor``.
+   *
+   * Structure:
+   *     <div class="rb-c-inline-editor__field">
+   *      <textarea>...</textarea>
+   *     </div>
+   *
+   *     <div class="rb-c-inline-editor__field">
+   *      <input type="...">
+   *     </div>
+   *
+   *     <div class="rb-c-inline-editor__field">
+   *      <div class="rb-c-text-editor">...</div>
+   *     </div>
+   */
+  &__field {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+
+    > * {
+      flex-grow: 1;
+      width: 100%;
+    }
+
+    > input[type='text']:not(:focus) {
+      box-shadow: 0px 0px 4px rgba(255, 0, 0, .75);
+    }
+  }
+}
+
+
+/**
+ * An edit icon used to open an inline editor.
+ *
+ * This will exist outside of the inline editor component. It will trigger
+ * opening the inline editor when clicked.
+ *
+ * Version Added:
+ *     6.0
+ *
+ * DOM Attributes:
+ *     aria-controls (string):
+ *         The ID of the ``.rb-c-inline-editor`` that this controls.
+ *
+ *     aria-label (string):
+ *         A label describing the action performed by this icon.
+ *
+ *     role (string):
+ *         This should be "button".
+ *
+ *     tabindex (number):
+ *         This should be 0.
+ *
+ *     title (string):
+ *         A tooltip describing the action performed by this icon.
+ *
+ * Structure:
+ *     rendered...
+ *     <a class="rb-c-inline-editor-edit-icon"
+ *        aria-controls="..."
+ *        aria-label="..."
+ *        href="#"
+ *        role="button"
+ *        tabindex="0"
+ *        title="...">
+ *      <div class="rb-icon rb-icon-edit" aria-hidden="true"></div>
+ *     </a>
+ */
+.rb-c-inline-editor-edit-icon {
+  @_inline-editor-vars: #rb-ns-ui.inline-editor();
+
+  display: inline-block;
+  margin-left: @edit-icon-margin;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: none;
+  }
+
+  .rb-icon {
+    vertical-align: text-bottom;
+  }
+
+  .required-flag {
+    vertical-align: top;
+  }
+}

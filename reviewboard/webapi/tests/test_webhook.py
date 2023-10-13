@@ -50,6 +50,13 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
 
     compare_item = compare_item
 
+    def setup_http_not_allowed_item_test(self, user):
+        return get_webhook_list_url()
+
+    #
+    # HTTP GET tests
+    #
+
     def setup_basic_get_test(self, user, with_local_site, local_site_name,
                              populate_items):
         webhook = self.create_webhook(with_local_site=with_local_site)
@@ -62,6 +69,10 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
         return (get_webhook_list_url(local_site_name),
                 webhook_list_mimetype,
                 items)
+
+    #
+    # HTTP POST tests
+    #
 
     def setup_basic_post_test(self, user, with_local_site, local_site_name,
                               post_valid_data):
@@ -432,6 +443,15 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
 
     compare_item = compare_item
 
+    def setup_http_not_allowed_list_test(self, user):
+        webhook = self.create_webhook()
+
+        return get_webhook_item_url(webhook.pk)
+
+    #
+    # HTTP GET tests
+    #
+
     def setup_basic_get_test(self, user, with_local_site, local_site_name):
         webhook = self.create_webhook(with_local_site=with_local_site)
 
@@ -449,15 +469,9 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
                 webhook,
                 [local_site_name])
 
-    def check_put_result(self, user, item_rsp, item, local_site_name=None):
-        webhook = WebHookTarget.objects.get(pk=item_rsp['id'])
-
-        if local_site_name is None:
-            self.assertIsNone(webhook.local_site)
-        else:
-            self.assertEqual(webhook.local_site.name, local_site_name)
-
-        self.compare_item(item_rsp, webhook)
+    #
+    # HTTP DELETE tests
+    #
 
     def setup_basic_delete_test(self, user, with_local_site, local_site_name):
         webhook = self.create_webhook(with_local_site=with_local_site)
@@ -468,6 +482,20 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
     def check_delete_result(self, user, webhook):
         self.assertRaises(WebHookTarget.DoesNotExist,
                           lambda: WebHookTarget.objects.get(pk=webhook.pk))
+
+    #
+    # HTTP PUT tests
+    #
+
+    def check_put_result(self, user, item_rsp, item, local_site_name=None):
+        webhook = WebHookTarget.objects.get(pk=item_rsp['id'])
+
+        if local_site_name is None:
+            self.assertIsNone(webhook.local_site)
+        else:
+            self.assertEqual(webhook.local_site.name, local_site_name)
+
+        self.compare_item(item_rsp, webhook)
 
     @webapi_test_template
     def test_put_with_global_site_and_set_local_site(self):

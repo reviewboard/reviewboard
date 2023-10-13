@@ -110,7 +110,7 @@ class CertificateFingerprints:
     @classmethod
     def from_json(
         cls,
-        data: JSONDict,
+        data: SerializableJSONDictImmutable,
     ) -> Self:
         """Return a new instance from a serialized JSON payload.
 

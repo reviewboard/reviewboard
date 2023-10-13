@@ -1,6 +1,6 @@
 {% load actions %}
 
-<div class="review-request-header">
+<header class="rb-c-review-request__header">
  <menu class="rb-c-review-request-tabs" role="menu">
 {% for tab in tabs %}
   <li class="rb-c-review-request-tabs__tab{% if tab.active or tab.url == request.path %} -is-active{% endif %}"
@@ -30,4 +30,4 @@
    </div>
   </menu>
  </div>
-</div>
+</header>

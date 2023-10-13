@@ -28,6 +28,10 @@ from reviewboard.scmtools.errors import InvalidChangeNumberError
 
 if TYPE_CHECKING:
     from django.db.models.manager import RelatedManager
+    from reviewboard.attachments.models import FileAttachmentSequence
+    from reviewboard.reviews.models.review_request import (
+        FileAttachmentState,
+        ReviewRequestFileAttachmentsData)
     from reviewboard.scmtools.core import ChangeSet
 
 
@@ -145,6 +149,78 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     def is_mutable_by(self, user):
         """Returns whether or not the user can modify this draft."""
         return self.review_request.is_mutable_by(user)
+
+    def get_file_attachments_data(
+        self,
+        *,
+        active_attachments: Optional[FileAttachmentSequence] = None,
+        inactive_attachments: Optional[FileAttachmentSequence] = None,
+        draft_active_attachments: Optional[FileAttachmentSequence] = None,
+        draft_inactive_attachments: Optional[FileAttachmentSequence] = None,
+        **kwargs,
+    ) -> ReviewRequestFileAttachmentsData:
+        """Return data about a review request and its draft's file attachments.
+
+        This returns sets of the active and inactive file attachment IDs
+        that are attached to the review request or its draft. This data is
+        used in :py:meth:`ReviewRequest.get_file_attachment_state()
+        <reviewboard.reviews.models.review_request.ReviewRequest
+        .get_file_attachment_state>`.
+
+        The active and inactive file attachments on the review request and its
+        draft may be passed in to avoid fetching them again if they've already
+        been fetched elsewhere.
+
+        The returned data will be cached for future lookups.
+
+        Version Added:
+            6.0
+
+        Args:
+            active_attachments (list, optional):
+                The list of active file attachments on the review request.
+
+            inactive_attachments (list, optional):
+                The list of inactive file attachments on the review request.
+
+            draft_active_attachments (list, optional):
+                The list of active file attachments on the review request
+                draft.
+
+            draft_inactive_attachments (list, optional):
+                The list of inactive file attachments on the review request
+                draft.
+
+        Returns:
+            ReviewRequestFileAttachmentsData:
+                The data about the file attachments on a review request and
+                its draft.
+        """
+        return self.get_review_request().get_file_attachments_data(
+            active_attachments=active_attachments,
+            inactive_attachments=inactive_attachments,
+            draft_active_attachments=draft_active_attachments,
+            draft_inactive_attachments=draft_inactive_attachments)
+
+    def get_file_attachment_state(
+        self,
+        file_attachment: FileAttachment,
+    ) -> FileAttachmentState:
+        """Get the state of a file attachment attached to this review request.
+
+        Version Added:
+            6.0
+
+        Args:
+            file_attachment (reviewboard.attachments.models.FileAttachment):
+                The file attachment whose state will be returned.
+
+        Returns:
+            FileAttachmentState:
+            The file attachment state.
+        """
+        return self.get_review_request().get_file_attachment_state(
+            file_attachment)
 
     @staticmethod
     def create(review_request, changedesc=None):

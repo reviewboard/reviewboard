@@ -73,6 +73,49 @@
         }
       }
     }
+
+    /**
+     * Set a button to only show an icon.
+     *
+     * This will hide the label and fix padding to appear ideal for showing
+     * just an icon.
+     *
+     * Callers should take care to set appropriate ARIA attributes on the
+     * button and to use both ``.rb-c-button__icon`` and
+     * ``.rb-c-button__label``.
+     *
+     * Version Added:
+     *     6.0
+     */
+    .set-icon-only() {
+      @_padding-vert: #rb-ns-ui.buttons()[@padding-vert];
+
+      padding: @_padding-vert (@_padding-vert * 2);
+
+      > .rb-c-button__label {
+        display: none;
+      }
+    }
+
+    /**
+     * Set a FontAwesome icon for a button.
+     *
+     * This will style the button icon to render a FontAwesome icon. It
+     * requires an existing ``.rb-c-button__icon`` part in the component.
+     *
+     * Version Added:
+     *     6.0
+     *
+     * Args:
+     *     @icon (string):
+     *         The FontAwesome icon variable.
+     */
+    .set-fa-icon(@icon) {
+      > .rb-c-button__icon::before {
+        .fa-icon();
+        content: @icon;
+      }
+    }
   }
 
   .button-groups() {
@@ -177,6 +220,9 @@
  * Buttons may contain a ``<span class="djblets-o-spinner"></span>`` to show
  * a spinner. This will be themed properly for the state of the button.
  *
+ * They may also contain ``.rb-c-button__icon`` and ``.rb-c-button__label``
+ * children to style an icon and label. These will be spaced appropriately.
+ *
  * Modifiers:
  *     -is-danger:
  *         Indicates that the button performs an operation that might result
@@ -197,6 +243,15 @@
  *         Should be set to "button" if using an element other than
  *         ``<button>`` or ``<input>``.
  *
+ *     data-action (optional):
+ *         An action the button should perform.
+ *
+ *         This may be used by implementations to differentiate buttons, or to
+ *         handle styling per-button (using ``&[data-action="..."]``).
+ *
+ *         Version Added:
+ *             6.0
+ *
  *     disabled (optional):
  *         Disables the button. This is used instead of the ``-is-disabled``
  *         modifier when the element is a ``<button>`` or ``<input>``.
@@ -215,6 +270,11 @@
  *
  *     <button class="rb-c-button [modifiers]">...</button>
  *
+ *     <button class="rb-c-button [modifiers]">
+ *      <span class="rb-c-button__icon"></span>
+ *      <label class="rb-c-button__label">...</label>
+ *     </button>
+ *
  *     <input type="submit" class="rb-c-button [modifiers]">
  *
  *     <input type="submit" class="[modifiers]">
@@ -224,6 +284,11 @@
  *     <input type="button" class="[modifiers]">
  *
  *     <a class="rb-c-button [modifiers]" role="button" href="...">...</a>
+ *
+ *     <a class="rb-c-button [modifiers]" role="button" href="...">
+ *      <span class="rb-c-button__icon"></span>
+ *      <label class="rb-c-button__label">...</label>
+ *     </a>
  */
 .rb-c-button {
   @_button-vars: #rb-ns-ui.buttons();
@@ -232,7 +297,10 @@
   border-radius: @_button-vars[@border-radius];
   color: @_button-vars[@text-color];
   cursor: pointer;
-  display: inline-block;
+  display: inline-flex;
+  gap: 0.5em;
+  align-items: center;
+  justify-content: center;
   font-family: @font-family;
   font-weight: normal;
   font-size: @_button-vars[@font-size];
@@ -287,6 +355,60 @@
       #djblets-ns-ui.spinners.set-theme(light);
     }
   }
+
+  > * {
+    cursor: inherit;
+  }
+}
+
+
+/*
+ * NOTE: The following are provided separately due to the use of &:extend()
+ *       below, which would cause these definitions to be lost if part of
+ *       ``.rb-c-button`` above.
+ */
+
+/**
+ * The icon for a button.
+ *
+ * Consumers are responsible for styling the icon, using Review Board
+ * icons, FontAwesome, or some other mechanism. This can be done by
+ * attaching additional CSS classes or styling in CSS.
+ *
+ * If including any text-based content for the icon, consider using
+ * ``aria-hidden="true"``.
+ *
+ * Version Added:
+ *     6.0
+ *
+ * DOM Attributes:
+ *     aria-hidden (boolean):
+ *         Should always be set to ``true``.
+ *
+ * Structure:
+ *     <span class="rb-c-button__icon [...]"
+ *           aria-hidden="true">
+ *      [...]
+ *     </span>
+ */
+.rb-c-button__icon {
+  min-width: 1em;
+}
+
+
+/**
+ * The label for a button.
+ *
+ * This should be used when the button also contains an icon, to properly
+ * handle styling of both the icon and label.
+ *
+ * Version Added:
+ *     6.0
+ *
+ * Structure:
+ *     <label class="rb-c-button__label">text...</label>
+ */
+.rb-c-button__label {
 }
 
 
@@ -333,7 +455,7 @@ input[type="submit"] {
 
   border: @_button-vars[@border];
   border-radius: @_button-vars[@border-radius];
-  display: inline-block;
+  display: inline-flex;
 
   /* Make sure there's no space between buttons. */
   font-size: 0;

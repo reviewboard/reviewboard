@@ -26,13 +26,14 @@
 <div id="review-request">
  <div id="review-request-banners"></div>
 {% display_review_request_trophies review_request %}
- <div class="review-request">
+  <section class="rb-c-review-request"
+           aria-label="{% trans 'Review Request information' %}">
 {%   include "reviews/review_request_header.html" %}
 
-  <div class="review-request-body">
+  <div class="rb-c-review-request__fields">
 {%   include "reviews/review_request_box.html" with show_issue_summary_table=True %}
   </div>
- </div>
+ </section>
 </div>
 
 <div id="reviews">

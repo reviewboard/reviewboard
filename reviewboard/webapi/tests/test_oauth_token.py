@@ -36,6 +36,9 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
 
     compare_item = _compare_item
 
+    def setup_http_not_allowed_item_test(self, user):
+        return get_oauth_token_list_url()
+
     def setup_http_not_allowed_list_test(self, user):
         return get_oauth_token_list_url()
 
@@ -106,6 +109,9 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     compare_item = _compare_item
 
     def setup_http_not_allowed_item_test(self, user):
+        return get_oauth_token_item_url(1)
+
+    def setup_http_not_allowed_list_test(self, user):
         return get_oauth_token_item_url(1)
 
     #

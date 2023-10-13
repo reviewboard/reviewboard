@@ -25,6 +25,13 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
         return (get_file_attachment_comment_list_url(file_attachment),
                 file_attachment_comment_list_mimetype)
 
+    def setup_http_not_allowed_item_test(self, user):
+        review_request = self.create_review_request(submitter=user,
+                                                    publish=True)
+        file_attachment = self.create_file_attachment(review_request)
+
+        return get_file_attachment_comment_list_url(file_attachment)
+
     def setup_http_not_allowed_list_test(self, user):
         review_request = self.create_review_request(submitter=user,
                                                     publish=True)

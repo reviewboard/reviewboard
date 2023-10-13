@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import logging
 import uuid
 from itertools import chain
+from typing import Any, Dict
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -1195,7 +1198,11 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
 
         return mark_safe(''.join(items))
 
-    def get_attachment_js_model_attrs(self, attachment, draft=False):
+    def get_attachment_js_model_attrs(
+        self,
+        attachment: FileAttachment,
+        draft: bool = False,
+    ) -> Dict[str, Any]:
         """Return attributes for the RB.FileAttachment JavaScript model.
 
         This will determine the right attributes to pass to an instance
@@ -1217,11 +1224,14 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
         review_request = self.review_request_details.get_review_request()
 
         model_attrs = {
-            'id': attachment.pk,
-            'loaded': True,
             'downloadURL': attachment.get_absolute_url(),
             'filename': attachment.filename,
+            'id': attachment.pk,
+            'loaded': True,
+            'publishedCaption': attachment.caption,
             'revision': attachment.attachment_revision,
+            'state': self.review_request_details.get_file_attachment_state(
+                attachment).value,
             'thumbnailHTML': attachment.thumbnail,
         }
 
@@ -1405,7 +1415,8 @@ class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
         from reviewboard.urls import diffviewer_url_names
         url_name = self.request.resolver_match.url_name
 
-        return (self.review_request_created_with_history and
+        return (self.value is not None and
+                self.review_request_created_with_history and
                 url_name not in diffviewer_url_names)
 
     @property

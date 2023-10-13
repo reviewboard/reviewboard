@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Set, Union
 
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
 from django.http import HttpRequest
+from django.utils.translation import gettext as _
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
@@ -14,10 +15,14 @@ from djblets.webapi.errors import (DOES_NOT_EXIST,
                                    NOT_LOGGED_IN,
                                    PERMISSION_DENIED,
                                    WebAPIError)
-from djblets.webapi.fields import FileFieldType, IntFieldType, StringFieldType
+from djblets.webapi.fields import (BooleanFieldType,
+                                   FileFieldType,
+                                   IntFieldType,
+                                   StringFieldType)
 
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.reviews.models.review_request import FileAttachmentState
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.base import ImportExtraDataError
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -33,10 +38,20 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
     """A base resource representing file attachments."""
 
     fields = dict({
+        'attachment_history_id': {
+            'type': IntFieldType,
+            'description': 'ID of the corresponding FileAttachmentHistory.',
+            'added_in': '2.5',
+        },
         'review_url': {
             'type': StringFieldType,
             'description': 'The URL to a review UI for this file.',
             'added_in': '1.7',
+        },
+        'revision': {
+            'type': IntFieldType,
+            'description': 'The revision of the file attachment.',
+            'added_in': '2.5',
         },
         'url': {
             'type': StringFieldType,
@@ -46,16 +61,6 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                            "This is deprecated and will be removed in a "
                            "future version.",
             'deprecated_in': '2.0',
-        },
-        'revision': {
-            'type': IntFieldType,
-            'description': 'The revision of the file attachment.',
-            'added_in': '2.5',
-        },
-        'attachment_history_id': {
-            'type': IntFieldType,
-            'description': 'ID of the corresponding FileAttachmentHistory.',
-            'added_in': '2.5',
         },
     }, **BaseFileAttachmentResource.fields)
 
@@ -217,6 +222,14 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                 'type': StringFieldType,
                 'description': 'The new caption for the file.',
             },
+            'pending_deletion': {
+                'type': BooleanFieldType,
+                'description': 'Whether the file attachment is currently '
+                               'pending deletion. This can be set to '
+                               '``false`` to undo the pending deletion of '
+                               'a published file attachment.',
+                'added_in': '6.0',
+            },
             'thumbnail': {
                 'type': StringFieldType,
                 'description': 'The thumbnail data for the file.',
@@ -230,6 +243,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         request: HttpRequest,
         caption: Optional[str] = None,
         thumbnail: Optional[bytes] = None,
+        pending_deletion: Optional[bool] = None,
         extra_fields: Dict[str, Any] = {},
         *args,
         **kwargs,
@@ -239,6 +253,11 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         This allows updating the file in a draft. Currently, only the caption,
         thumbnail and extra_data can be updated. See
         :ref:`webapi2.0-extra-data` for more information.
+
+        Set ``pending_deletion=false`` in the request to undo the pending
+        deletion of a published file attachment. Setting this to ``true`` is
+        unsupported and will not delete the file attachment. To perform a
+        deletion, perform a HTTP DELETE on the resource instead.
         """
         try:
             review_request = \
@@ -256,7 +275,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
             return DOES_NOT_EXIST
 
         try:
-            resources.review_request_draft.prepare_draft(
+            draft = resources.review_request_draft.prepare_draft(
                 request,
                 review_request)
         except PermissionDenied:
@@ -286,6 +305,48 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                     }
                 }
 
+        if pending_deletion is True:
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'pending_deletion': _(
+                        'This can only be set to false to undo the pending '
+                        'deletion of a published file attachment. You cannot '
+                        'set this to true.'
+                    ),
+                },
+            }
+        elif pending_deletion is False:
+            state = draft.get_file_attachment_state(file)
+
+            if state != FileAttachmentState.PENDING_DELETION:
+                return INVALID_FORM_DATA, {
+                    'fields': {
+                        'pending_deletion': _(
+                            'This can only be used to undo the pending '
+                            'deletion of a file attachment. This file '
+                            'attachment is not currently pending deletion.'
+                        ),
+                    },
+                }
+
+            update_ids: Set[Any] = {file.pk}
+
+            if file.attachment_history_id is not None:
+                # Undo the pending deletion for all revisions of the file.
+                all_revs = list(
+                    FileAttachment.objects
+                    .filter(attachment_history=file.attachment_history_id)
+                    .values_list('pk', flat=True)
+                )
+
+                update_ids.update(all_revs)
+
+            draft.inactive_file_attachments.remove(*update_ids)
+            draft.file_attachments.add(*update_ids)
+
+        # Make sure the last_updated field gets updated.
+        draft.save(update_fields=('last_updated',))
+
         return 200, {
             self.item_result_key: self.serialize_object(
                 file, request=request, *args, **kwargs),
@@ -294,7 +355,12 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
-    def delete(self, request, *args, **kwargs):
+    def delete(
+        self,
+        request: HttpRequest,
+        *args,
+        **kwargs
+    ) -> Union[tuple, WebAPIError]:
         try:
             review_request = \
                 resources.review_request.get_object(request, *args, **kwargs)
@@ -306,30 +372,36 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                                            **kwargs):
             return self.get_no_access_error(request)
 
-        # If this file attachment has never been made public,
-        # delete the model itself.
+        try:
+            draft = resources.review_request_draft.prepare_draft(
+                request, review_request)
+        except PermissionDenied:
+            return self.get_no_access_error(request)
+
         if (not file_attachment.review_request.exists() and
             not file_attachment.inactive_review_request.exists()):
+            # If this file attachment has never been made public,
+            # delete the model itself.
             file_attachment.delete()
         else:
-            try:
-                draft = resources.review_request_draft.prepare_draft(
-                    request, review_request)
-            except PermissionDenied:
-                return self.get_no_access_error(request)
+            # Put the file attachment and all of its revisions in a pending
+            # deletion state.
+            update_ids: Set[Any] = {file_attachment.pk}
+            attachment_history_id = file_attachment.attachment_history_id
 
-            if file_attachment.attachment_history_id is None:
-                draft.inactive_file_attachments.add(file_attachment)
-                draft.file_attachments.remove(file_attachment)
-            else:
-                # "Delete" all revisions of the given file
-                all_revs = FileAttachment.objects.filter(
-                    attachment_history=file_attachment.attachment_history_id)
+            if file_attachment.attachment_history_id is not None:
+                all_revs = list(
+                    FileAttachment.objects
+                    .filter(attachment_history=attachment_history_id)
+                    .values_list('pk', flat=True)
+                )
 
-                for revision in all_revs:
-                    draft.inactive_file_attachments.add(revision)
-                    draft.file_attachments.remove(revision)
+                update_ids.update(all_revs)
 
-            draft.save()
+            draft.inactive_file_attachments.add(*update_ids)
+            draft.file_attachments.remove(*update_ids)
+
+        # Make sure the last_updated field gets updated.
+        draft.save(update_fields=('last_updated',))
 
         return 204, {}

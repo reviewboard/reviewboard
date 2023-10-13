@@ -2,6 +2,7 @@
 @import (reference) "rb/css/ui/colors.less";
 @import (reference) "rb/css/ui/datagrids.less";
 @import (reference) "rb/css/ui/forms.less";
+@import (reference) "rb/css/ui/inline-editor.less";
 @import (reference) "rb/css/ui/page-sidebar.less";
 @import (reference) "rb/css/ui/sidebars.less";
 
@@ -71,7 +72,14 @@
 @box-bg: #rb-ns-ui.boxes[@bg];
 
 
-@edit-icon-margin: 4px;
+/**
+ * Inline Editor definitions.
+ *
+ * Deprecated:
+ *     6.0:
+ *     These have been replaced by definitions in ``#rb-ns-ui.inline-editor``.
+ */
+@edit-icon-margin: #rb-ns-ui.inline-editor[@edit-icon-margin];
 
 @review-request-bg: #FEFADF;
 @review-request-bg-gradient-start: lighten(@review-request-bg, 4%);

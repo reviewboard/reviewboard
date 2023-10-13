@@ -244,7 +244,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
                 entry
                 for entry in entries
                 if (entry.updated_timestamp is not None and
-                    entry.updated_timestamp > since)
+                    entry.updated_timestamp.replace(microsecond=0) > since)
             )
 
         # We can now begin to serialize the payload for all the updates.
@@ -294,7 +294,9 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         # If any of the entries required any information on reviews, then
         # the state of the issue summary table may have changed. We'll need
         # to send this along as well.
-        if needs_issue_summary_table:
+        if (needs_issue_summary_table and
+            (since is None or
+             data.latest_issue_timestamp.replace(microsecond=0) > since)):
             metadata = {
                 'type': 'issue-summary-table',
                 'updatedTimestamp': data.latest_issue_timestamp,

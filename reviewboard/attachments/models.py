@@ -1,5 +1,10 @@
+"""Models for file attachments and related objects."""
+
+from __future__ import annotations
+
 import logging
 import os
+from typing import List, Sequence
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -7,6 +12,7 @@ from django.db import models
 from django.db.models import Max
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField, RelationCounterField
+from typing_extensions import TypeAlias
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.managers import FileAttachmentManager
@@ -294,7 +300,9 @@ class FileAttachment(models.Model):
         verbose_name_plural = _('File Attachments')
 
 
-def get_latest_file_attachments(file_attachments):
+def get_latest_file_attachments(
+    file_attachments: FileAttachmentSequence,
+) -> List[FileAttachment]:
     """Filter the list of file attachments to only return the latest revisions.
 
     Args:
@@ -320,3 +328,10 @@ def get_latest_file_attachments(file_attachments):
         if (not f.is_from_diff and
             f.attachment_revision == latest[f.attachment_history_id])
     ]
+
+
+#: Type alias for a sequence of file attachments.
+#:
+#: Version Added:
+#:     6.0
+FileAttachmentSequence: TypeAlias = Sequence[FileAttachment]

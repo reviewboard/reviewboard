@@ -1,3 +1,7 @@
+"""Unit tests for file attachments and related functionality."""
+
+from __future__ import annotations
+
 import json
 import mimeparse
 import os
@@ -1194,3 +1198,74 @@ class TextMimetypeTests(SpyAgency, TestCase):
         thumbnail = self.file_attachment.thumbnail
 
         self.assertIsInstance(thumbnail, SafeText)
+
+
+class ImageMimetypeTests(BaseFileAttachmentTestCase):
+    """Unit tests for reviewboard.attachments.mimetypes.ImageMimetype.
+
+    Version Added:
+        6.0
+    """
+
+    fixtures = ['test_scmtools', 'test_users']
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        image_file = self.make_uploaded_file()
+
+        review_request = self.create_review_request(publish=True)
+
+        form = UploadFileForm(review_request, files={
+            'path': image_file,
+        })
+        self.assertTrue(form.is_valid())
+
+        self.file_attachment = form.create()
+
+    def test_get_thumbnail(self) -> None:
+        """Testing ImageMimetype.get_thumbnail"""
+        file = self.file_attachment.file
+        storage = file.storage
+        file_url_base = os.path.splitext(storage.url(file.name))[0]
+        filename_base = os.path.splitext(file.name)[0]
+
+        self.assertHTMLEqual(
+            self.file_attachment.thumbnail,
+            f'<div class="file-thumbnail">'
+            f'<img src="{file_url_base}_300.png" '
+            f'srcset="{file_url_base}_300.png 1x, {file_url_base}_600.png 2x"'
+            f'alt="" width="300" />'
+            f'</div>')
+
+        self.assertTrue(storage.exists(f'{filename_base}_300.png'))
+        self.assertTrue(storage.exists(f'{filename_base}_600.png'))
+
+    def test_delete_associated_files(self) -> None:
+        """Testing ImageMimetype.delete_associated_files"""
+        file = self.file_attachment.file
+        storage = file.storage
+        filename_base = os.path.splitext(file.name)[0]
+        filename_300 = f'{filename_base}_300.png'
+        filename_600 = f'{filename_base}_600.png'
+
+        self.file_attachment.thumbnail
+
+        self.assertTrue(storage.exists(filename_300))
+        self.assertTrue(storage.exists(filename_600))
+
+        self.file_attachment.mimetype_handler.delete_associated_files()
+
+        self.assertFalse(storage.exists(filename_300))
+        self.assertFalse(storage.exists(filename_600))
+
+        with self.assertLogs() as logs:
+            self.file_attachment.mimetype_handler.delete_associated_files()
+
+            self.assertEqual(
+                logs.records[0].getMessage(),
+                'Unable to find and delete thumbnail file at %s'
+                % storage.url(filename_300))
+            self.assertEqual(
+                logs.records[1].getMessage(),
+                'Unable to find and delete thumbnail file at %s'
+                % storage.url(filename_600))

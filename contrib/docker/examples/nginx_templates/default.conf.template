@@ -4,36 +4,64 @@ upstream reviewboard {
 
 server {
     server_name ${NGINX_HOST};
+
+    # If enabling SSL on Nginx, remove the "listen ${NGINX_PORT}" lines below
+    # and use these settings instead. You will also need to change
+    # X-Forwarded-Ssl below.
+    #
+    # listen [::]:443 ssl http2;
+    # listen 443 ssl http2;
+    # ssl_certificate /var/www/reviewboard/conf/ssl/fullchain.pem;
+    # ssl_certificate_key /var/www/reviewboard/conf/ssl/privkey.pem;
+    listen [::]:${NGINX_PORT};
     listen ${NGINX_PORT};
 
     root /var/www/reviewboard/htdocs;
 
     location / {
         proxy_pass http://reviewboard;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header Host $host;
         proxy_redirect off;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # NOTE: Set this to "on" if using SSL.
+        proxy_set_header X-Forwarded-Ssl off;
+
+        client_max_body_size        10m;
+        client_body_buffer_size     128k;
+        proxy_connect_timeout       90;
+        proxy_send_timeout          90;
+        proxy_read_timeout          90;
+        proxy_headers_hash_max_size 512;
+        proxy_buffer_size           4k;
+        proxy_buffers               4 32k;
+        proxy_busy_buffers_size     64k;
+        proxy_temp_file_write_size  64k;
     }
 
     location /media/ {
-        alias /var/www/reviewboard/htdocs/media/;
-        add_header Access-Control-Allow-Origin *;
-        expires max;
-
-        location ~ \.(html|htm|shtml|php)$ {
-            types {}
-            default_type text/plain;
-        }
+      alias /var/www/reviews.example.com/htdocs/media/;
+      expires max;
+      add_header Cache-Control public;
     }
 
     location /static/ {
-        alias /var/www/reviewboard/htdocs/static/;
-        add_header Access-Control-Allow-Origin *;
-        expires max;
+      alias /var/www/reviews.example.com/htdocs/static/;
+      expires max;
+      add_header Cache-Control public;
     }
 
     location /errordocs/ {
-        alias /var/www/reviewboard/htdocs/errordocs/;
-        expires 30d;
+      alias /var/www/reviews.example.com/htdocs/errordocs/;
+      expires 5d;
+    }
+
+    location /robots.txt {
+      alias /var/www/reviews.example.com/htdocs/robots.txt;
+      expires 5d;
     }
 }

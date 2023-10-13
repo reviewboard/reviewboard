@@ -71,7 +71,7 @@ class ReviewRequestPageDataTests(TestCase):
     def test_query_data_post_etag(self):
         """Testing ReviewRequestPageData.query_data_post_etag"""
         self._test_query_data_post_etag_with(
-            expected_num_queries=16,
+            expected_num_queries=10,
             expect_reviews=True,
             expect_file_attachments=True,
             expect_screenshots=True,
@@ -85,7 +85,7 @@ class ReviewRequestPageDataTests(TestCase):
         """
         self._test_query_data_post_etag_with(
             entry_classes=[ReviewRequestEntry],
-            expected_num_queries=16,
+            expected_num_queries=10,
             expect_draft=True,
             expect_reviews=True,
             expect_file_attachments=True,
@@ -99,7 +99,7 @@ class ReviewRequestPageDataTests(TestCase):
         """
         self._test_query_data_post_etag_with(
             entry_classes=[InitialStatusUpdatesEntry],
-            expected_num_queries=16,
+            expected_num_queries=10,
             expect_reviews=True,
             expect_file_attachments=True,
             expect_screenshots=True,
@@ -112,7 +112,7 @@ class ReviewRequestPageDataTests(TestCase):
         """
         self._test_query_data_post_etag_with(
             entry_classes=[ReviewEntry],
-            expected_num_queries=16,
+            expected_num_queries=10,
             expect_reviews=True,
             expect_file_attachments=True,
             expect_screenshots=True,
@@ -125,7 +125,7 @@ class ReviewRequestPageDataTests(TestCase):
         """
         self._test_query_data_post_etag_with(
             entry_classes=[ChangeEntry],
-            expected_num_queries=16,
+            expected_num_queries=10,
             expect_reviews=True,
             expect_file_attachments=True,
             expect_screenshots=True,
