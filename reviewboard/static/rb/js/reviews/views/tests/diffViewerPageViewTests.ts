@@ -12,11 +12,12 @@ import {
     EnabledFeatures,
     UserSession,
 } from 'reviewboard/common';
+import {
+    DiffViewerPage,
+    DiffViewerPageView,
+    UnifiedBannerView,
+} from 'reviewboard/reviews';
 import { DnDUploader } from 'reviewboard/ui';
-
-import { DiffViewerPage } from '../../models/diffViewerPageModel';
-import { DiffViewerPageView } from '../diffViewerPageView';
-import { UnifiedBannerView } from '../unifiedBannerView';
 
 
 suite('rb/pages/views/DiffViewerPageView', function() {

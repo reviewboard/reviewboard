@@ -10,12 +10,13 @@ import {
 } from 'jasmine-core';
 
 import { EnabledFeatures } from 'reviewboard/common';
+import {
+    ReviewablePage,
+    ReviewDialogView,
+    ReviewablePageView,
+    UnifiedBannerView,
+} from 'reviewboard/reviews';
 import { DnDUploader } from 'reviewboard/ui';
-
-import { ReviewablePage } from '../../models/reviewablePageModel';
-import { ReviewDialogView } from '../reviewDialogView';
-import { ReviewablePageView } from '../reviewablePageView';
-import { UnifiedBannerView } from '../unifiedBannerView';
 
 
 suite('rb/pages/views/ReviewablePageView', function() {

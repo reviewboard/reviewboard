@@ -7,7 +7,7 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { DiffViewerPage } from '../diffViewerPageModel';
+import { DiffViewerPage } from 'reviewboard/reviews';
 
 
 suite('rb/pages/models/DiffViewerPage', function() {

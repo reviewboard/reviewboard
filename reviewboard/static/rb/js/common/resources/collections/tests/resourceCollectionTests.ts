@@ -7,9 +7,11 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { BaseCollection } from '../../../collections/baseCollection';
-import { Review } from '../../models/reviewModel';
-import { ResourceCollection } from '../resourceCollection';
+import {
+    BaseCollection,
+    ResourceCollection,
+    Review,
+} from 'reviewboard/common';
 
 
 suite('rb/resources/collections/ResourceCollection', function() {

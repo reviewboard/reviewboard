@@ -9,9 +9,10 @@ import {
 } from 'jasmine-core';
 
 import { UserSession } from 'reviewboard/common';
-
-import { DnDUploader } from '../dndUploaderView';
-import { TextEditorView } from '../textEditorView';
+import {
+    DnDUploader,
+    TextEditorView,
+} from 'reviewboard/ui';
 
 
 suite('rb/ui/views/TextEditorView', function() {

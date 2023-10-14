@@ -8,7 +8,7 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { ExtraDataMixin } from '../extraDataMixin';
+import { ExtraDataMixin } from 'reviewboard/common';
 
 
 suite('rb/models/ExtraData', function() {

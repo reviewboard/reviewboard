@@ -8,7 +8,7 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { DateInlineEditorView } from '../inlineEditorView';
+import { DateInlineEditorView } from 'reviewboard/ui';
 
 
 declare const $testsScratch: JQuery;

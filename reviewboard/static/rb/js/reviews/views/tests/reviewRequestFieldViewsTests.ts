@@ -7,13 +7,19 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { ReviewRequestEditor } from '../../models/reviewRequestEditorModel';
-import { ReviewRequestEditorView } from '../reviewRequestEditorView';
 import {
+    ReviewRequestEditor,
+    ReviewRequestEditorView,
+    ReviewRequestFields,
+} from 'reviewboard/reviews';
+
+
+const {
     BaseFieldView,
     MultilineTextFieldView,
     TextFieldView,
-} from '../reviewRequestFieldViews';
+} = ReviewRequestFields;
+
 
 suite('rb/views/reviewRequestFieldViews', function() {
     let reviewRequest;

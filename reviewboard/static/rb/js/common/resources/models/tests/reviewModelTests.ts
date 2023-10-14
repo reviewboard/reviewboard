@@ -6,7 +6,7 @@ import {
     it,
 } from 'jasmine-core';
 
-import { Review } from '../reviewModel';
+import { Review } from 'reviewboard/common';
 
 
 suite('rb/resources/models/Review', function() {

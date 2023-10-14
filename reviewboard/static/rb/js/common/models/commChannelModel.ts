@@ -55,6 +55,8 @@ export class ClientCommChannel extends BaseModel {
      * Initialize the model.
      */
     initialize() {
+        console.assert(ClientCommChannel.instance === null);
+
         this.#channel = new BroadcastChannel('reviewboard');
 
         this.#channel.addEventListener('message', (event: MessageEvent) => {
@@ -77,15 +79,34 @@ export class ClientCommChannel extends BaseModel {
     }
 
     /**
+     * Close the communication channel.
+     */
+    close() {
+        this.#channel.close();
+
+        console.assert(ClientCommChannel.instance === this);
+        ClientCommChannel.instance = null;
+    }
+
+    /**
      * Send a reload signal to other tabs.
      */
     reload() {
         const page = RB.PageManager.getPage();
+        const pageData = page.getReloadData();
 
-        this.#channel.postMessage({
-            data: page.getReloadData(),
-            event: 'reload',
-        });
+        if (pageData === null) {
+            console.warn(dedent`
+                Ignoring page reload request: No page data to send over the
+                broadcast channel. This would have affected all tabs without
+                reload data!
+            `);
+        } else {
+            this.#channel.postMessage({
+                data: pageData,
+                event: 'reload',
+            });
+        }
     }
 
     /**
@@ -98,8 +119,12 @@ export class ClientCommChannel extends BaseModel {
     private _onReload(message: Message) {
         const page = RB.PageManager.getPage();
 
-        if (_.isEqual(message.data, page.getReloadData())) {
-            this.trigger('reload');
+        if (page) {
+            const pageData = page.getReloadData();
+
+            if (pageData !== null && _.isEqual(message.data, pageData)) {
+                this.trigger('reload');
+            }
         }
     }
 }

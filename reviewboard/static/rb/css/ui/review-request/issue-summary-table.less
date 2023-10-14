@@ -38,6 +38,7 @@
   @_data-vars: #rb-ns-review-requests.fields.tabular.data();
   @_common-vars: #rb-ns-ui.issue-summary-table();
   @_mobile-vars: #rb-ns-ui.issue-summary-table.mobile();
+  @_row-border-color: @_color-scheme-vars[@border];
 
   /**
    * An issue counter on a tab.
@@ -60,8 +61,6 @@
    */
   .rb-c-review-request-field-tabular__data {
     tr {
-      @_row-border-color: @_color-scheme-vars[@border];
-
       /*
        * Sets the background and hover colors for an issue row of a given type.
        */
@@ -110,19 +109,6 @@
       &.-is-verifying-resolved {
         ._issue-row-colors(@issue-verifying-bg, @issue-verifying-hover-bg);
       }
-
-      .on-mobile-medium-screen-720({
-        /*
-         * Add a border betwen all sections, but don't add it to the very top.
-         * This sort of selector will guarantee all visible rows following the
-         * first visible row will have a top border set.
-         */
-        &:not(.-is-hidden) ~ .issue:not(.-is-hidden) {
-          td:first-child {
-            border-top-color: @_row-border-color;
-          }
-        }
-      });
 
       td {
         /*
@@ -179,37 +165,48 @@
         .user {
           white-space: nowrap;
         }
-
-        .on-mobile-medium-screen-720({
-          white-space: normal;
-
-          /* Description column */
-          &:nth-child(1) {
-            padding-top: 1em;
-            width: auto;
-
-            .rb-icon {
-              margin-left: @_mobile-vars[@status-icon-margin-left];
-              margin-right: @_mobile-vars[@status-icon-margin-right];
-            }
-          }
-
-          /* Last Updated column */
-          &:nth-child(3) {
-            padding-bottom: 1em;
-
-            time {
-              /* Align the text. */
-              margin-left: @_mobile-vars[@text-only-margin-left];
-            }
-          }
-
-          /* Usernames that aren't preceded by an avatar. */
-          .user span:first-child {
-            margin-left: @_mobile-vars[@text-only-margin-left];
-          }
-        });
       }
     }
   }
+
+  .on-mobile-medium-screen-720({
+    .rb-c-review-request-field-tabular__data {
+      tbody {
+        display: block;
+      }
+
+      thead {
+        /*
+         * Ensure this doesn't get set on mobile when transitioning between
+         * tabs. JavaScript will try to manage the display.
+         */
+        display: none !important;
+      }
+
+      tr {
+        display: flex;
+      }
+
+      td {
+        &:nth-child(1) {
+          flex-grow: 1;
+          max-width: 75%;
+
+          .rb-icon {
+            margin-left: 0;
+          }
+        }
+
+        &:nth-child(2) {
+          max-width: 25%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        &:nth-child(3) {
+          display: none;
+        }
+      }
+    }
+  });
 }

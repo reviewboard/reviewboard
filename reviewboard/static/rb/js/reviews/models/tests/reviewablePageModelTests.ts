@@ -7,7 +7,7 @@ import {
 } from 'jasmine-core';
 
 import { Review } from 'reviewboard/common';
-import { ReviewablePage } from '../reviewablePageModel';
+import { ReviewablePage } from 'reviewboard/reviews';
 
 
 suite('rb/pages/models/ReviewablePage', function() {

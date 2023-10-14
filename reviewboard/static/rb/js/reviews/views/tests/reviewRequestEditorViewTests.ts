@@ -10,14 +10,16 @@ import {
 } from 'jasmine-core';
 
 import { EnabledFeatures } from 'reviewboard/common';
+import {
+    FileAttachmentThumbnailView,
+    ReviewRequestEditor,
+    ReviewRequestEditorView,
+    ReviewRequestFields,
+    UnifiedBanner,
+    UnifiedBannerView,
+} from 'reviewboard/reviews';
 import { DnDUploader } from 'reviewboard/ui';
 
-import { ReviewRequestEditor } from '../../models/reviewRequestEditorModel';
-import { UnifiedBanner } from '../../models/unifiedBannerModel';
-import { FileAttachmentThumbnailView } from '../fileAttachmentThumbnailView';
-import { ReviewRequestEditorView } from '../reviewRequestEditorView';
-import * as ReviewRequestFields from '../reviewRequestFieldViews';
-import { UnifiedBannerView } from '../unifiedBannerView';
 
 declare const $testsScratch: JQuery;
 declare const dedent: (string) => string;
