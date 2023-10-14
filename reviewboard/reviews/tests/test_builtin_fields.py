@@ -193,8 +193,8 @@ class CommitListFieldTests(FieldsTestCase):
              <table class="rb-c-review-request-field-tabular__data">
               <thead>
                <tr>
-                <th>Summary</th>
-                <th>ID</th>
+                <th class="rb-c-commit-list__column-summary">Summary</th>
+                <th class="rb-c-commit-list__column-id">ID</th>
                </tr>
               </thead>
               <tbody>
@@ -251,9 +251,9 @@ class CommitListFieldTests(FieldsTestCase):
              <table class="rb-c-review-request-field-tabular__data">
               <thead>
                <tr>
-                <th>Summary</th>
-                <th>ID</th>
-                <th>Author</th>
+                <th class="rb-c-commit-list__column-summary">Summary</th>
+                <th class="rb-c-commit-list__column-id">ID</th>
+                <th class="rb-c-commit-list__column-author">Author</th>
                </tr>
               </thead>
               <tbody>
@@ -313,8 +313,8 @@ class CommitListFieldTests(FieldsTestCase):
              <table class="rb-c-review-request-field-tabular__data">
               <thead>
                <tr>
-                <th>Summary</th>
-                <th>ID</th>
+                <th class="rb-c-commit-list__column-summary">Summary</th>
+                <th class="rb-c-commit-list__column-id">ID</th>
                </tr>
               </thead>
               <tbody>
@@ -376,9 +376,9 @@ class CommitListFieldTests(FieldsTestCase):
              <table class="rb-c-review-request-field-tabular__data">
               <thead>
                <tr>
-                <th>Summary</th>
-                <th>ID</th>
-                <th>Author</th>
+                <th class="rb-c-commit-list__column-summary">Summary</th>
+                <th class="rb-c-commit-list__column-id">ID</th>
+                <th class="rb-c-commit-list__column-author">Author</th>
                </tr>
               </thead>
               <tbody>
@@ -465,9 +465,9 @@ class CommitListFieldTests(FieldsTestCase):
               <table class="rb-c-review-request-field-tabular__data">
                <thead>
                 <tr>
-                 <th></th>
-                 <th>Summary</th>
-                 <th>ID</th>
+                 <th class="rb-c-commit-list__column-op"></th>
+                 <th class="rb-c-commit-list__column-summary">Summary</th>
+                 <th class="rb-c-commit-list__column-id">ID</th>
                 </tr>
                </thead>
                <tbody>
@@ -576,9 +576,9 @@ class CommitListFieldTests(FieldsTestCase):
               <table class="rb-c-review-request-field-tabular__data">
                <thead>
                 <tr>
-                 <th></th>
-                 <th>Summary</th>
-                 <th>ID</th>
+                 <th class="rb-c-commit-list__column-op"></th>
+                 <th class="rb-c-commit-list__column-summary">Summary</th>
+                 <th class="rb-c-commit-list__column-id">ID</th>
                 </tr>
                </thead>
                <tbody>
@@ -698,10 +698,10 @@ class CommitListFieldTests(FieldsTestCase):
               <table class="rb-c-review-request-field-tabular__data">
                <thead>
                 <tr>
-                 <th></th>
-                 <th>Summary</th>
-                 <th>ID</th>
-                 <th>Author</th>
+                 <th class="rb-c-commit-list__column-op"></th>
+                 <th class="rb-c-commit-list__column-summary">Summary</th>
+                 <th class="rb-c-commit-list__column-id">ID</th>
+                 <th class="rb-c-commit-list__column-author">Author</th>
                 </tr>
                </thead>
                <tbody>
@@ -822,10 +822,10 @@ class CommitListFieldTests(FieldsTestCase):
               <table class="rb-c-review-request-field-tabular__data">
                <thead>
                 <tr>
-                 <th></th>
-                 <th>Summary</th>
-                 <th>ID</th>
-                 <th>Author</th>
+                 <th class="rb-c-commit-list__column-op"></th>
+                 <th class="rb-c-commit-list__column-summary">Summary</th>
+                 <th class="rb-c-commit-list__column-id">ID</th>
+                 <th class="rb-c-commit-list__column-author">Author</th>
                 </tr>
                </thead>
                <tbody>
@@ -938,10 +938,10 @@ class CommitListFieldTests(FieldsTestCase):
               <table class="rb-c-review-request-field-tabular__data">
                <thead>
                 <tr>
-                 <th></th>
-                 <th>Summary</th>
-                 <th>ID</th>
-                 <th>Author</th>
+                 <th class="rb-c-commit-list__column-op"></th>
+                 <th class="rb-c-commit-list__column-summary">Summary</th>
+                 <th class="rb-c-commit-list__column-id">ID</th>
+                 <th class="rb-c-commit-list__column-author">Author</th>
                 </tr>
                </thead>
                <tbody>
@@ -1041,9 +1041,9 @@ class CommitListFieldTests(FieldsTestCase):
               <table class="rb-c-review-request-field-tabular__data">
                <thead>
                 <tr>
-                 <th></th>
-                 <th>Summary</th>
-                 <th>ID</th>
+                 <th class="rb-c-commit-list__column-op"></th>
+                 <th class="rb-c-commit-list__column-summary">Summary</th>
+                 <th class="rb-c-commit-list__column-id">ID</th>
                 </tr>
                </thead>
                <tbody>
