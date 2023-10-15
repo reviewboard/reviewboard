@@ -46,7 +46,7 @@ if pyver < PYTHON_MIN_VERSION:
 
 
 # NOTE: When updating, make sure you update the classifiers below.
-SUPPORTED_PYVERS = ['3.8', '3.9', '3.10', '3.11']
+SUPPORTED_PYVERS = ['3.8', '3.9', '3.10', '3.11', '3.12']
 
 
 if '--all-pyvers' in sys.argv:
@@ -449,6 +449,7 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'Topic :: Software Development',
         'Topic :: Software Development :: Quality Assurance',
     ],
