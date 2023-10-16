@@ -11,7 +11,7 @@ nose
 #
 # We also have to wire off p4python entirely on Apple M1 for now, as neither
 # p4python nor p4api are available for the arch64 architecture.
-p4python; (python_version <= '3.9' or platform_system == 'Linux') and platform_machine != 'arm64'
+p4python; python_version >= '3' and (python_version <= '3.9' or platform_system == 'Linux') and platform_machine != 'arm64'
 
 setuptools>=18.2
 subvertpy
