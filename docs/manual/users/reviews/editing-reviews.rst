@@ -65,6 +65,13 @@ review or to provide general feedback (maybe something encouraging). This
 field supports :ref:`Markdown <using-markdown>` text.
 
 .. image:: review-dialog-header.png
+   :alt: The Header text field of the Review Dialog, showing text in the box.
+         The text says, "This change looks great! Just a few small nits."
+         Below that are a row of Markdown formatting buttons, and a row with
+         Save, Cancel, Enable Markdown, and Markdown Reference buttons.
+   :width: 463
+   :height: 167
+   :sources: 2x review-dialog-header@2x.png
 
 Unlike a comment, you won't be able to :ref:`file an issue <issue-tracking>`
 with your header text. However, like a comment, people will be able to reply
@@ -83,6 +90,13 @@ your review. This is a good place to have a conclusion that you want people to
 read after they've gone through all your comments.
 
 .. image:: review-dialog-footer.png
+   :alt: The Footer text field of the Review Dialog, showing text in the box.
+         The text says, "Hope that makes sense. I'm new to this code." Below
+         that are a row of Markdown formatting buttons, and a row with Save,
+         Cancel, Enable Markdown, and Markdown Reference buttons.
+   :width: 463
+   :height: 166
+   :sources: 2x review-dialog-footer@2x.png
 
 
 .. _review-dialog-comments:

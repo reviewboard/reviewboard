@@ -24,6 +24,14 @@ Comment dialogs contain an :guilabel:`Open an issue` checkbox. Comments with
 this checkbox checked will be filed as an open issue.
 
 .. image:: comment-box.png
+   :alt: A screenshot of the Comment Dialog, showing an example comment being
+         typed that includes Markdown formatting and a JavaScript code sample
+         being recommended. There are two checked checkboxes: "Open an Issue"
+         and "Enable Markdown". There's one unchecked checkbox: "Require
+         Verification".
+   :width: 454
+   :height: 354
+   :sources: 2x comment-box@2x.png
 
 This checkbox is available when :ref:`reviewing diffs <reviewing-diffs>`,
 :ref:`images <reviewing-images>`, and other kinds of
@@ -103,6 +111,8 @@ will state it's waiting for verification.
 .. image:: issue-verification.png
    :alt: An issue box that says "Waiting for verification before resolving"
          with buttons for re-opening the issue and for showing all issues.
+   :width: 613
+   :height: 44
    :sources: 2x issue-verification@2x.png
 
 Because this adds an extra step to the process, we recommend only requiring

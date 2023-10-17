@@ -20,6 +20,14 @@ this button pops up a comment dialog that works exactly like the dialog you
 get when :doc:`reviewing diffs <reviewing-diffs>`.
 
 .. image:: comment-box.png
+   :alt: A screenshot of the Comment Dialog, showing an example comment being
+         typed that includes Markdown formatting and a JavaScript code sample
+         being recommended. There are two checked checkboxes: "Open an Issue"
+         and "Enable Markdown". There's one unchecked checkbox: "Require
+         Verification".
+   :width: 454
+   :height: 354
+   :sources: 2x comment-box@2x.png
 
 Comments support rich text using the :term:`Markdown` language. See
 :ref:`using-markdown` for more information.
@@ -44,6 +52,14 @@ change. To browse old revisions, set the handle on the left to
 look at.
 
 .. image:: file-revision-selector.png
+   :alt: A screenshot of the file revision selector, providing handles to
+         drag for selecting a file revision range for viewing. The text at
+         the top says: "This file attachment has multiple revisions. Showing
+         revision 2. This is not the most recent revision of the file. The
+         latest revision is revision 4." beside a "What's Changed" link.
+   :width: 564
+   :height: 109
+   :sources: 2x file-revision-selector@2x.png
 
 The file attachment viewer also allows you to do comparisons between diff
 revisions (called :term:`interdiffs`). In other words, it lets you see what

@@ -341,4 +341,4 @@ class ClientLoginViewTests(kgb.SpyAgency, TestCase):
             self.assertEqual(token.expires, token_expires)
             self.assertEqual(token.extra_data['client_name'], client_name)
         else:
-            self.assertEquals(payload, {})
+            self.assertEqual(payload, {})

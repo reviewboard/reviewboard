@@ -14,6 +14,14 @@ a review request, you'll see a large box at the top which contains all of the
 information about the request.
 
 .. image:: review-request-details.png
+   :alt: An example review request, showing the primary text fields (Summary,
+         Description, Testing Done), secondary fields (Owner, Repository,
+         Branch, Bugs, Depends On, and reviewers), a list of commits that make
+         up the change, file attachment thumbnails, and a list of issues that
+         are opened and need to be resolved.
+   :width: 1070
+   :height: 1109
+   :sources: 2x review-request-details@2x.png
 
 At the top-right are the two major views for the review request: The first is
 the :guilabel:`Reviews` view, which has all of the reviews that people have
