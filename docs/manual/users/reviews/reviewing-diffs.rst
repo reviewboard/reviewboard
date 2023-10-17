@@ -53,6 +53,16 @@ you that you have additional comments on an older revision, with a helpful
 link to jump back to that revision.
 
 .. image:: diff-revision-selector.png
+   :alt: Three examples of a diff revision selector. The first shows the diff
+         between upstream code and the latest uploaded diff revision 5. The
+         second shows a diff between upstream and uploaded diff revision 3,
+         with a notice that it's not the latest diff, and a link for viewing
+         the changes made since. The third shows an interdiff between uploaded
+         revisions 2 and 4.
+   :width: 566
+   :height: 288
+   :sources: 2x diff-revision-selector@2x.png
+
 
 The diff viewer also allows you to do comparisons between diff revisions
 (called :term:`interdiffs`). In other words, it lets you see what changes the
@@ -122,6 +132,13 @@ will detect that the lines have been moved and show an indicator. These
 indicators can be clicked to jump to the other end of the move.
 
 .. image:: moved-lines.png
+   :alt: A diff showing a block of four lines moving below another block of
+         code. These show as deletes and inserts, but with move flags showing
+         that the lines moved without changes, and which line numbers they
+         moved from/to.
+   :width: 1072
+   :height: 659
+   :sources: 2x moved-lines@2x.png
 
 
 Indentation Change Indicators
@@ -137,6 +154,12 @@ beginning of the line. Dedents will be shown on the left-hand side of the diff,
 and indents will be shown on the right.
 
 .. image:: diff-indentation.png
+   :alt: A screenshot of a section of a diff where lines are indented under
+         a new if statement. Instead of showing the lines as modified, they're
+         shown as indented with greater-than symbols, one per space.
+   :width: 532
+   :height: 125
+   :sources: 2x diff-indentation@2x.png
 
 
 Highlighted Changes in Replaced Lines
@@ -148,6 +171,13 @@ highlight which characters changed. This is shown with a slightly darker yellow
 background.
 
 .. image:: diff-replace-highlighting.png
+   :alt: A changed line in a diff of Python code, with highlighting showing
+         that square brackets for a dictionary item access have been replaced
+         with a conditional get() call. The brackets, "get", and parenthesis
+         are highlighted in gold.
+   :width: 873
+   :height: 56
+   :sources: 2x diff-replace-highlighting@2x.png
 
 
 Seeing More of a File
@@ -162,6 +192,13 @@ enough. Instead of opening the original file in an editor or a browser to see
 more, you can expand the number of lines of context with a simple click.
 
 .. image:: diff-expand-context.png
+   :alt: A collapsed section of a diff showing the nearest function or class
+         definition and buttons for expanding to that definition, expanding 20
+         lines on either side of the header, or expanding the entire collapsed
+         area.
+   :width: 1059
+   :height: 122
+   :sources: 2x diff-expand-context@2x.png
 
 These headers appear above any group of modified lines, and at the bottom of
 the diff viewer (if not otherwise showing the last lines in the file).
@@ -179,6 +216,12 @@ Expanded context can be re-collapsed by clicking the floating collapse icon
 shown.
 
 .. image:: diff-collapse-context.png
+   :alt: The "Collapse" button shown centered on an expanded section of a
+         diff.
+   :width: 226
+   :height: 106
+   :sources: 2x diff-collapse-context@2x.png
+
 
 .. |expand-20-lines-icon| image:: diff-expand-20-icon.png
 .. |expand-all-lines-icon| image:: diff-expand-all-icon.png
@@ -197,11 +240,20 @@ diff, as this code often doesn't need to be reviewed. Instead, you'll see a
 simple message stating that the file was deleted.
 
 .. image:: diff-show-deleted.png
+   :alt: An example deleted diff. The contents are red, stating
+         "This file was deleted" with a link saying "Show content."
+   :width: 764
+   :height: 105
+   :sources: 2x diff-show-deleted@2x.png
 
 For those times that you *do* need to see more, you can click :guilabel:`Show
 content` to load in the content of the deleted file.
 
 .. image:: diff-show-deleted-contents.png
+   :alt: An example deleted diff with its contents expanded.
+   :width: 764
+   :height: 188
+   :sources: 2x diff-show-deleted-contents@2x.png
 
 Deleted files can be commented on and will appear in reviews. It's important
 to note though that deleted files that contain comments are not automatically
@@ -234,6 +286,12 @@ reviews are shown with a blue bar, while lines that are part of your draft
 review are shown with a green bar.
 
 .. image:: diff-comments.png
+   :alt: A screenshot of three comment flags shown alongside the line numbers.
+         One is blue, indicating a published comments. Two are green,
+         indicating new draft comments.
+   :width: 60
+   :height: 202
+   :sources: 2x diff-comments@2x.png
 
 Comments support rich text using :ref:`Markdown <using-markdown>` and provide
 :ref:`issue tracking <issue-tracking>` capabilities.
@@ -250,6 +308,14 @@ To leave a comment across multiple lines, click-and-drag down multiple line
 numbers. Each will highlight and be made a part of your comment.
 
 .. image:: comment-box.png
+   :alt: A screenshot of the Comment Dialog, showing an example comment being
+         typed that includes Markdown formatting and a JavaScript code sample
+         being recommended. There are two checked checkboxes: "Open an Issue"
+         and "Enable Markdown". There's one unchecked checkbox: "Require
+         Verification".
+   :width: 454
+   :height: 354
+   :sources: 2x comment-box@2x.png
 
 After saving a comment, you can re-edit it by clicking the green comment bar,
 or by editing it in the :ref:`review dialog <review-dialog>`.
@@ -269,6 +335,11 @@ other comments for that line, along with links for viewing or replying to the
 full comment on the review request page.
 
 .. image:: full-comment-box.png
+   :alt: A screenshot of the Comment Dialog, with a side pane showing other
+         reviews performed on the same lines.
+   :width: 734
+   :height: 354
+   :sources: 2x full-comment-box@2x.png
 
 If you have something new to say as part of your own review, you can write a
 new comment in the comment dialog.

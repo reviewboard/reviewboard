@@ -25,6 +25,14 @@ range of line numbers. This will pop open a new comment dialog, just like in
 the diff viewer.
 
 .. image:: comment-box.png
+   :alt: A screenshot of the Comment Dialog, showing an example comment being
+         typed that includes Markdown formatting and a JavaScript code sample
+         being recommended. There are two checked checkboxes: "Open an Issue"
+         and "Enable Markdown". There's one unchecked checkbox: "Require
+         Verification".
+   :width: 454
+   :height: 354
+   :sources: 2x comment-box@2x.png
 
 Comments support rich text using the :term:`Markdown` language. See
 :ref:`using-markdown` for more information.
@@ -58,6 +66,14 @@ box.
 
 
 .. image:: full-comment-box.png
+   :alt: A screenshot of the Comment Dialog, with a side pane showing other
+         reviews performed on the same lines.
+   :width: 734
+   :height: 354
+   :sources: 2x full-comment-box@2x.png
+
+If you have something new to say as part of your own review, you can write a
+new comment in the comment dialog.
 
 .. note:: It's important to note that this is **not** the place to reply to
           those comments. When you add a comment from the diff viewer, it's

@@ -43,6 +43,11 @@ Maybe you want to give some praise for an awesome change. You can do this by
 opening the review dialog and clicking the :guilabel:`Ship It!` checkbox.
 
 .. image:: review-dialog-shipit.png
+   :alt: The top section of the Review Dialog, with a "Ship It" checkmark,
+         followed by the Header text field.
+   :width: 505
+   :height: 278
+   :sources: 2x review-dialog-shipit@2x.png
 
 This will give you the opportunity to fill out the :guilabel:`Header` field
 with a general summary. It's a good opportunity to say something encouraging.

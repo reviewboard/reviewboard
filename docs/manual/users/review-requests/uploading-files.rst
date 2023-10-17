@@ -67,6 +67,8 @@ changes to a file attachment by clicking :guilabel:`Delete Draft`.
          of a new revision. There is a menu of buttons beside the thumbnail,
          with options for reviewing, downloading, updating, and deleting
          the draft.
+   :width: 403
+   :height: 154
    :sources: 2x file-attachments-delete-draft@2x.png
 
 See :ref:`reviewing-file-attachments` for more information on how file
@@ -91,4 +93,6 @@ Before publishing the draft, you may undo the deletion by clicking
          the top right corner of its thumbnail stating that it is
          pending deletion. There is a menu of buttons beside the thumbnail,
          with options for reviewing, downloading, and undoing the delete.
+   :width: 404
+   :height: 154
    :sources: 2x file-attachments-undo-delete@2x.png
