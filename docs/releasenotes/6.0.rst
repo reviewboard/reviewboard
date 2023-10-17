@@ -5,7 +5,7 @@
 Review Board 6.0 Release Notes
 ==============================
 
-**Release date**: TBD
+**Release date**: October 17, 2023
 
 This release contains all bug fixes and features from Review Board version
 :doc:`5.0.6 <5.0.6>`.

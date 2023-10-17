@@ -35,13 +35,13 @@ PYTHON_MIN_VERSION_STR = '%s.%s' % (PYTHON_MIN_VERSION)
 django_doc_major_version = '3.2'
 
 #: The major version of Djblets we're using for documentation.
-djblets_doc_major_version = 'dev'
+djblets_doc_major_version = '4.x'
 
 #: The version of Django required for the current version of Python.
 django_version = '~=3.2.22'
 
 #: The version range required for Djblets.
-djblets_version = '~=4.0b3'
+djblets_version = '~=4.0'
 
 
 ###########################################################################
