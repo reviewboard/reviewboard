@@ -546,6 +546,33 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
                          'inline; filename=diffset')
 
     @webapi_test_template
+    def test_get_patch_and_inaccessible(self) -> None:
+        """Testing the GET <URL> API with Accept: text/x-patch and
+        inaccessible diff
+        """
+        repository = self.create_repository(public=False)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        self.create_filediff(diffset)
+
+        rsp = self.api_get(
+            get_diff_item_url(review_request, diffset.revision),
+            HTTP_ACCEPT='text/x-patch',
+            expected_status=403)
+
+        self.assertEqual(
+            rsp,
+            {
+                'err': {
+                    'code': PERMISSION_DENIED.code,
+                    'msg': PERMISSION_DENIED.msg,
+                },
+                'stat': 'fail',
+            })
+
+    @webapi_test_template
     def test_get_patch_with_bugs_closed(self):
         """Testing the GET <URL> API with Accept: text/x-patch and bugs_closed
         field

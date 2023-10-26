@@ -185,6 +185,9 @@ class DiffResource(WebAPIResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
+        if not self.has_access_permissions(request, diffset, *args, **kwargs):
+            return self.get_no_access_error(request)
+
         tool = review_request.repository.get_scmtool()
         data = tool.get_parser(b'').raw_diff(diffset)
 
