@@ -669,8 +669,13 @@ class ReviewRequestManager(ConcurrencyManager):
             django.db.models.Q:
             The query object.
         """
-        return Q(target_groups__name=group_name,
-                 local_site=local_site)
+        return (
+            Q(target_groups__name=group_name) &
+            LocalSite.objects.build_q(
+                local_site,
+                local_site_field='target_groups__local_site',
+                allow_all=False)
+        )
 
     def get_to_user_groups_query(self, user_or_username):
         """Return a Q() query object targeting groups joined by a user.
@@ -1154,8 +1159,7 @@ class ReviewRequestManager(ConcurrencyManager):
         if status:
             q &= Q(status=status)
 
-        if local_site is not LocalSite.ALL:
-            q &= Q(local_site=local_site)
+        q &= LocalSite.objects.build_q(local_site)
 
         if extra_query:
             q &= extra_query

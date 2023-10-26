@@ -2,7 +2,7 @@ import kgb
 from django.contrib import auth
 from django.contrib.auth.models import User, Permission
 from django.db import IntegrityError
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.utils.timezone import get_current_timezone
 from djblets.db.query import get_object_or_none
 from djblets.features.testing import override_feature_check
@@ -14,14 +14,20 @@ from djblets.webapi.testing.decorators import webapi_test_template
 from pytz import timezone
 
 from reviewboard.accounts.backends import AuthBackend
+from reviewboard.accounts.models import Profile
 from reviewboard.admin.server import build_server_url
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.features import dvcs_feature
-from reviewboard.reviews.models import (BaseComment, ReviewRequest,
+from reviewboard.diffviewer.models import DiffSet
+from reviewboard.reviews.models import (BaseComment,
+                                        Group,
+                                        ReviewRequest,
                                         ReviewRequestDraft)
 from reviewboard.reviews.signals import (review_request_closing,
                                          review_request_publishing,
                                          review_request_reopening)
 from reviewboard.reviews.errors import CloseError, PublishError, ReopenError
+from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
                                        CLOSE_ERROR,
@@ -842,19 +848,253 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
     @webapi_test_template
     def test_get_num_queries(self):
         """Testing the GET <URL> API for number of queries"""
+        user = self.user
         repo = self.create_repository()
 
         review_requests = [
-            self.create_review_request(repository=repo, publish=True),
-            self.create_review_request(repository=repo, publish=True),
-            self.create_review_request(repository=repo, publish=True),
+            self.create_review_request(repository=repo,
+                                       summary='Test Summary 1',
+                                       publish=True),
+            self.create_review_request(repository=repo,
+                                       summary='Test Summary 2',
+                                       publish=True),
+            self.create_review_request(repository=repo,
+                                       summary='Test Summary 3',
+                                       publish=True),
         ]
 
         for review_request in review_requests:
             self.create_diffset(review_request)
             self.create_diffset(review_request)
 
-        with self.assertNumQueries(14):
+        # Prime the caches.
+        user.get_profile()
+        user.get_site_profile(local_site=None)
+        LocalSite.objects.has_local_sites()
+
+        queries = [
+            {
+                'model': User,
+                'tables': {
+                    'auth_user',
+                },
+                'where': Q(pk=user.pk),
+            },
+            {
+                'model': Profile,
+                'tables': {
+                    'accounts_profile',
+                },
+                'where': Q(user=self.user),
+            },
+            {
+                'model': Permission,
+                'values_select': ('content_type__app_label', 'codename',),
+                'num_joins': 2,
+                'tables': {
+                    'auth_permission',
+                    'auth_user_user_permissions',
+                    'django_content_type',
+                },
+                'where': Q(user__id=user.pk),
+            },
+            {
+                'model': Permission,
+                'values_select': ('content_type__app_label', 'codename',),
+                'num_joins': 4,
+                'tables': {
+                    'auth_permission',
+                    'auth_group',
+                    'auth_user_groups',
+                    'auth_group_permissions',
+                    'django_content_type',
+                },
+                'where': Q(group__user=user),
+            },
+            {
+                'model': Repository,
+                'values_select': ('pk',),
+                'num_joins': 4,
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                    'scmtools_repository',
+                    'scmtools_repository_review_groups',
+                    'scmtools_repository_users',
+                },
+                'where': (
+                    (Q(public=True) |
+                     Q(users__pk=user.pk) |
+                     Q(review_groups__users=user.pk)) &
+                    Q(local_site=None)
+                ),
+            },
+            {
+                'model': Group,
+                'values_select': ('pk',),
+                'num_joins': 1,
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                },
+                'where': (
+                    (Q(invite_only=False) |
+                     Q(users=user.pk)) &
+                    Q(local_site=None)
+                ),
+            },
+            {
+                'model': ReviewRequest,
+                'annotations': {
+                    '__count': Count('*'),
+                },
+                'tables': {
+                    'reviews_reviewrequest',
+                },
+            },
+            {
+                'model': ReviewRequest,
+                'distinct': True,
+                'limit': 25,
+                'num_joins': 3,
+                'tables': {
+                    'auth_user',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                    'reviews_reviewrequest_target_people',
+                },
+                'select_related': {
+                    'diffset_history',
+                    'repository',
+                    'submitter',
+                },
+                'where': (
+                    (Q(public=True) |
+                     Q(submitter=user)) &
+                    Q(submitter__is_active=True) &
+                    Q(status='P') &
+                    (Q(submitter=user) |
+                     ((Q(repository=None) |
+                       Q(repository__in=[repo.pk])) &
+                      (Q(target_people=user) |
+                       Q(target_groups=None) |
+                       Q(target_groups__in=[]))))
+                ),
+            },
+            {
+                'model': ChangeDescription,
+                'extra': {
+                    '_prefetch_related_val_reviewrequest_id': (
+                        ('"reviews_reviewrequest_changedescs".'
+                         '"reviewrequest_id"'),
+                        [],
+                    ),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'changedescs_changedescription',
+                    'reviews_reviewrequest_changedescs',
+                },
+                'where': Q(review_request__in=[
+                    review_requests[2],
+                    review_requests[1],
+                    review_requests[0],
+                ]),
+            },
+            {
+                'model': DiffSet,
+                'tables': {
+                    'diffviewer_diffset',
+                },
+                'where': Q(history__in=[
+                    review_requests[2].diffset_history,
+                    review_requests[1].diffset_history,
+                    review_requests[0].diffset_history,
+                ]),
+            },
+            {
+                'model': ReviewRequest,
+                'extra': {
+                    '_prefetch_related_val_to_reviewrequest_id': (
+                        ('"reviews_reviewrequest_depends_on".'
+                         '"to_reviewrequest_id"'),
+                        [],
+                    ),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_depends_on',
+                },
+                'where': Q(depends_on__in=[
+                    review_requests[2],
+                    review_requests[1],
+                    review_requests[0],
+                ]),
+            },
+            {
+                'model': ReviewRequest,
+                'extra': {
+                    '_prefetch_related_val_from_reviewrequest_id': (
+                        ('"reviews_reviewrequest_depends_on".'
+                         '"from_reviewrequest_id"'),
+                        [],
+                    ),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_depends_on',
+                },
+                'where': Q(blocks__in=[
+                    review_requests[2],
+                    review_requests[1],
+                    review_requests[0],
+                ]),
+            },
+            {
+                'model': Group,
+                'extra': {
+                    '_prefetch_related_val_reviewrequest_id': (
+                        ('"reviews_reviewrequest_target_groups".'
+                         '"reviewrequest_id"'),
+                        [],
+                    ),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'reviews_group',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'where': Q(review_requests__in=[
+                    review_requests[2],
+                    review_requests[1],
+                    review_requests[0],
+                ]),
+            },
+            {
+                'model': User,
+                'extra': {
+                    '_prefetch_related_val_reviewrequest_id': (
+                        ('"reviews_reviewrequest_target_people".'
+                         '"reviewrequest_id"'),
+                        [],
+                    ),
+                },
+                'num_joins': 1,
+                'tables': {
+                    'auth_user',
+                    'reviews_reviewrequest_target_people',
+                },
+                'where': Q(directed_review_requests__in=[
+                    review_requests[2],
+                    review_requests[1],
+                    review_requests[0],
+                ]),
+            },
+        ]
+
+        with self.assertQueries(queries):
             rsp = self.api_get(get_review_request_list_url(),
                                expected_mimetype=review_request_list_mimetype)
 

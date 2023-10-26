@@ -308,6 +308,9 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             """, []),
         }
 
+        # Prime the caches.
+        LocalSite.objects.has_local_sites()
+
         # 10 queries:
         #
         # 1. Fetch logged-in user
@@ -395,7 +398,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         Q(submitter=user)) &
                       Q(submitter__is_active=True) &
                       Q(status='P') &
-                      Q(local_site=None) &
                       Q(Q(target_people=user) |
                         Q(target_groups__in=[]) |
                         Q(starred_by=profile))) &
@@ -478,6 +480,9 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             """, []),
         }
 
+        # Prime the caches.
+        LocalSite.objects.has_local_sites()
+
         # 10 queries:
         #
         # 1. Fetch logged-in user
@@ -554,7 +559,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         Q(submitter=user)) &
                       Q(submitter__is_active=True) &
                       Q(status='P') &
-                      Q(local_site=None) &
                       Q(submitter=user)) &
                     ~Q(pk__in=ReviewRequestVisit.objects.none()) &
                     Q(local_site=None)
@@ -669,6 +673,9 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             """, []),
         }
 
+        # Prime the caches.
+        LocalSite.objects.has_local_sites()
+
         # 13 queries:
         #
         # 1. Fetch logged-in user
@@ -741,7 +748,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                     Q(Q(Q(public=True) |
                         Q(submitter=user)) &
                       Q(submitter__is_active=True) &
-                      Q(local_site=None) &
                       Q(submitter=user)) &
                     ~Q(pk__in=ReviewRequestVisit.objects.none()) &
                     Q(local_site=None)
@@ -922,7 +928,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         Q(submitter=user)) &
                       Q(submitter__is_active=True) &
                       Q(status='P') &
-                      Q(local_site=None) &
                       (Q(target_people=user) |
                        Q(starred_by=profile))) &
                     ~Q(pk__in=ReviewRequestVisit.objects.none()) &
@@ -1110,8 +1115,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         Q(submitter=user)) &
                       Q(submitter__is_active=True) &
                       Q(status='P') &
-                      Q(local_site=None) &
-                      Q(local_site=None) &
                       Q(target_groups__name='devgroup')) &
                     ~Q(pk__in=ReviewRequestVisit.objects.none()) &
                     Q(local_site=None)
@@ -1294,8 +1297,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         Q(submitter=user)) &
                       Q(submitter__is_active=True) &
                       Q(status='P') &
-                      Q(local_site=None) &
-                      Q(local_site=None) &
                       Q(target_groups__name='devgroup')) &
                     ~Q(pk__in=ReviewRequestVisit.objects.none()) &
                     Q(local_site=None)
@@ -1418,6 +1419,9 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             """, []),
         }
 
+        # Prime the caches.
+        LocalSite.objects.has_local_sites()
+
         # 15 queries:
         #
         # 1. Fetch logged-in user
@@ -1511,7 +1515,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         Q(submitter=user)) &
                       Q(submitter__is_active=True) &
                       Q(status='P') &
-                      Q(local_site=None) &
                       Q(Q(target_people=user) |
                         Q(target_groups__in=[]) |
                         Q(starred_by=profile))) &
@@ -2984,7 +2987,6 @@ class SubmitterViewTests(BaseViewTestCase):
                 },
                 'values_select': ('pk',),
                 'where': (Q(Q(public=True) &
-                            Q(local_site=None) &
                             Q(submitter__username='grumpy') &
                             Q(Q(repository=None) |
                               Q(repository__public=True)) &
