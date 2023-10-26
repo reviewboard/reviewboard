@@ -1518,8 +1518,9 @@ class ReviewManager(ConcurrencyManager):
         if status:
             q &= Q(review_request__status=status)
 
-        if local_site is not LocalSite.ALL:
-            q &= Q(review_request__local_site=local_site)
+        q &= LocalSite.objects.build_q(
+            local_site,
+            local_site_field='review_request__local_site')
 
         if extra_query:
             q &= extra_query

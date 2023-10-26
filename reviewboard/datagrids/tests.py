@@ -2050,6 +2050,7 @@ class UsersDataGridTests(BaseViewTestCase):
             {
                 'model': User,
                 'annotations': {'__count': Count('*')},
+                'where': Q(is_active=True),
             },
             {
                 'model': User,
@@ -2098,6 +2099,7 @@ class UsersDataGridTests(BaseViewTestCase):
             {
                 'model': User,
                 'annotations': {'__count': Count('*')},
+                'where': Q(is_active=True),
             },
             {
                 'model': User,
@@ -2168,6 +2170,7 @@ class UsersDataGridTests(BaseViewTestCase):
             {
                 'model': User,
                 'annotations': {'__count': Count('*')},
+                'where': Q(is_active=True),
             },
             {
                 'model': User,
@@ -2253,6 +2256,7 @@ class UsersDataGridTests(BaseViewTestCase):
             {
                 'model': User,
                 'annotations': {'__count': Count('*')},
+                'where': Q(is_active=True),
             },
             {
                 'model': User,
@@ -2311,6 +2315,7 @@ class UsersDataGridTests(BaseViewTestCase):
             {
                 'model': User,
                 'annotations': {'__count': Count('*')},
+                'where': Q(is_active=True),
             },
             {
                 'model': User,
@@ -2378,6 +2383,7 @@ class UsersDataGridTests(BaseViewTestCase):
             {
                 'model': User,
                 'annotations': {'__count': Count('*')},
+                'where': Q(is_active=True),
             },
             {
                 'model': User,
@@ -2447,6 +2453,7 @@ class UsersDataGridTests(BaseViewTestCase):
             {
                 'model': User,
                 'annotations': {'__count': Count('*')},
+                'where': Q(is_active=True),
             },
             {
                 'model': User,
@@ -2547,6 +2554,12 @@ class UsersDataGridTests(BaseViewTestCase):
             {
                 'model': User,
                 'annotations': {'__count': Count('*')},
+                'num_joins': 1,
+                'tables': {
+                    'auth_user',
+                    'site_localsite_users',
+                },
+                'where': Q(local_site=local_site) & Q(is_active=True),
             },
             {
                 'model': User,
@@ -2629,6 +2642,7 @@ class SubmitterListViewTests(BaseViewTestCase):
             {
                 'model': User,
                 'annotations': {'__count': Count('*')},
+                'where': Q(is_active=True),
             },
             {
                 'model': User,
@@ -2793,6 +2807,8 @@ class SubmitterListViewTests(BaseViewTestCase):
             {
                 'model': User,
                 'annotations': {'__count': Count('*')},
+                'where': (Q(username__istartswith='A') &
+                          Q(is_active=True)),
             },
             {
                 'model': User,
@@ -3079,6 +3095,9 @@ class SubmitterViewTests(BaseViewTestCase):
             for i in range(5)
         ]
 
+        # Prime the cache.
+        LocalSite.objects.has_local_sites()
+
         # 6 queries:
         #
         # 1. Fetch user
@@ -3110,6 +3129,25 @@ class SubmitterViewTests(BaseViewTestCase):
             {
                 'model': Review,
                 'annotations': {'__count': Count('*')},
+                'num_joins': 5,
+                'tables': {
+                    'auth_user',
+                    'reviews_group',
+                    'reviews_review',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                    'scmtools_repository',
+                },
+                'where': (
+                    Q(Q(base_reply_to=None) &
+                      Q(user__username='grumpy') &
+                      Q(Q(review_request__repository=None) |
+                        Q(review_request__repository__public=True)) &
+                      Q(Q(review_request__target_groups=None) |
+                        Q(review_request__target_groups__invite_only=False)) &
+                      Q(public=True)) &
+                    Q(review_request__local_site=None)
+                ),
             },
             {
                 'model': Review,
@@ -3125,7 +3163,6 @@ class SubmitterViewTests(BaseViewTestCase):
                 'values_select': ('pk',),
                 'where': (
                     Q(Q(base_reply_to=None) &
-                      Q(review_request__local_site=None) &
                       Q(user__username='grumpy') &
                       Q(Q(review_request__repository=None) |
                         Q(review_request__repository__public=True)) &
@@ -3155,7 +3192,8 @@ class SubmitterViewTests(BaseViewTestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self._get_context_var(response, 'datagrid')
-        self.assertIsNotNone(datagrid)
+        assert datagrid is not None
+
         self.assertEqual(len(datagrid.rows), 5)
         self.assertEqual(datagrid.rows[0]['object'], reviews[4])
         self.assertEqual(datagrid.rows[1]['object'], reviews[3])

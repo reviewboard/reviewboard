@@ -595,14 +595,14 @@ class ReviewManagerTests(TestCase):
         """Testing Review.objects.from_user with local_site=None"""
         self._test_accessible_with_from_user()
 
-    @add_fixtures(['test_scmtools'])
+    @add_fixtures(['test_site', 'test_scmtools'])
     def test_from_user_local_site_in_db(self) -> None:
         """Testing Review.objects.from_user with local_site=None, with
         Local Sites in the database
         """
         self._test_accessible_with_from_user(local_sites_in_db=True)
 
-    @add_fixtures(['test_scmtools'])
+    @add_fixtures(['test_site', 'test_scmtools'])
     def test_from_user_local_site(self) -> None:
         """Testing Review.objects.from_user with local_site=None, with
         Local Sites
@@ -637,11 +637,17 @@ class ReviewManagerTests(TestCase):
         superuser = User.objects.get(username='admin')
 
         local_site: Optional[LocalSite]
+        review_local_site_q: Q = Q()
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
+
+        if local_sites_in_db:
+            review_local_site_q = Q(review_request__local_site=local_site)
+        else:
+            review_local_site_q = Q()
 
         # Review from a public repository.
         repo1 = self.create_repository(
@@ -765,7 +771,7 @@ class ReviewManagerTests(TestCase):
             local_site=local_site,
             accessible_q=(
                 Q(base_reply_to=None) &
-                Q(review_request__local_site=local_site) &
+                review_local_site_q &
                 (Q(review_request__repository=None) |
                  Q(review_request__repository__public=True)) &
                 (Q(review_request__target_groups=None) |
@@ -782,7 +788,7 @@ class ReviewManagerTests(TestCase):
             local_sites_in_db=local_sites_in_db,
             accessible_q=(
                 Q(base_reply_to=None) &
-                Q(review_request__local_site=local_site) &
+                review_local_site_q &
                 (Q(user=user) |
                  (Q(public=True) &
                   (Q(review_request__repository=None) |
@@ -836,11 +842,17 @@ class ReviewManagerTests(TestCase):
         superuser = User.objects.get(username='admin')
 
         local_site: Optional[LocalSite]
+        review_local_site_q: Q = Q()
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
+
+        if local_sites_in_db:
+            review_local_site_q = Q(review_request__local_site=local_site)
+        else:
+            review_local_site_q = Q()
 
         # Review that the user has access to from being in a public
         # review group that is targeted by the review request.
@@ -926,7 +938,7 @@ class ReviewManagerTests(TestCase):
             local_site=local_site,
             accessible_q=(
                 Q(base_reply_to=None) &
-                Q(review_request__local_site=local_site) &
+                review_local_site_q &
                 (Q(review_request__repository=None) |
                  Q(review_request__repository__public=True)) &
                 (Q(review_request__target_groups=None) |
@@ -944,7 +956,7 @@ class ReviewManagerTests(TestCase):
             local_sites_in_db=local_sites_in_db,
             accessible_q=(
                 Q(base_reply_to=None) &
-                Q(review_request__local_site=local_site) &
+                review_local_site_q &
                 (Q(user=user) |
                  (Q(public=True) &
                   (Q(review_request__repository=None) |
@@ -996,11 +1008,17 @@ class ReviewManagerTests(TestCase):
         superuser = User.objects.get(username='admin')
 
         local_site: Optional[LocalSite]
+        review_local_site_q: Q = Q()
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
+
+        if local_sites_in_db:
+            review_local_site_q = Q(review_request__local_site=local_site)
+        else:
+            review_local_site_q = Q()
 
         # Prime the user caches.
         user.get_site_profile(local_site)
@@ -1079,7 +1097,7 @@ class ReviewManagerTests(TestCase):
             local_site=local_site,
             accessible_q=(
                 Q(base_reply_to=None) &
-                Q(review_request__local_site=local_site) &
+                review_local_site_q &
                 (Q(review_request__repository=None) |
                  Q(review_request__repository__public=True)) &
                 (Q(review_request__target_groups=None) |
@@ -1096,7 +1114,7 @@ class ReviewManagerTests(TestCase):
             local_sites_in_db=local_sites_in_db,
             accessible_q=(
                 Q(base_reply_to=None) &
-                Q(review_request__local_site=local_site) &
+                review_local_site_q &
                 (Q(user=user) |
                  (Q(public=True) &
                   (Q(review_request__repository=None) |
@@ -1152,15 +1170,23 @@ class ReviewManagerTests(TestCase):
         superuser = User.objects.get(username='admin')
 
         local_site: Optional[LocalSite]
+        review_local_site_q: Q = Q()
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
 
+        if local_sites_in_db:
+            review_local_site_q = Q(review_request__local_site=local_site)
+        else:
+            review_local_site_q = Q()
+
         # Publicly-accessible published review request.
-        review_request = self.create_review_request(publish=True,
-                                                    local_site=local_site)
+        review_request = self.create_review_request(
+            publish=True,
+            local_site=local_site,
+            local_id=1)
 
         # Published/unpublished reviews on a publicly-accessible
         # review request.
@@ -1178,10 +1204,14 @@ class ReviewManagerTests(TestCase):
 
         # Published review request from a private repository the user
         # does not have access to.
-        repo = self.create_repository(public=False)
+        repo = self.create_repository(
+            public=False,
+            local_site=local_site)
         review_request_inaccessible = self.create_review_request(
             repository=repo,
-            publish=True)
+            publish=True,
+            local_site=local_site,
+            local_id=2)
 
         # Published/unpublished reviews on a private repository the user does
         # not have access to.
@@ -1190,7 +1220,8 @@ class ReviewManagerTests(TestCase):
         self.create_review(review_request_inaccessible,
                            publish=not expected_public)
 
-        self._prime_caches(user=user)
+        self._prime_caches(user=user,
+                           local_site=local_site)
 
         if expected_public:
             # Testing that anonymous users can only access publicly-accessible
@@ -1200,7 +1231,7 @@ class ReviewManagerTests(TestCase):
                 local_site=local_site,
                 accessible_q=(
                     Q(base_reply_to=None) &
-                    Q(review_request__local_site=local_site) &
+                    review_local_site_q &
                     (Q(review_request__repository=None) |
                      Q(review_request__repository__public=True)) &
                     (Q(review_request__target_groups=None) |
@@ -1224,7 +1255,7 @@ class ReviewManagerTests(TestCase):
                 local_sites_in_db=local_sites_in_db,
                 accessible_q=(
                     Q(base_reply_to=None) &
-                    Q(review_request__local_site=local_site) &
+                    review_local_site_q &
                     Q(public=expected_public) &
                     ((Q(review_request__repository=None) |
                      Q(review_request__repository__in=[])) &
@@ -1237,17 +1268,24 @@ class ReviewManagerTests(TestCase):
                     'public': True,
                 })
         else:
+            if local_sites_in_db:
+                accessible_tables = {
+                    'reviews_review',
+                    'reviews_reviewrequest',
+                }
+            else:
+                accessible_tables = {
+                    'reviews_review',
+                }
+
             self._check_user_accessible_queries(
                 user=user,
                 local_site=local_site,
                 local_sites_in_db=local_sites_in_db,
-                accessible_tables={
-                    'reviews_review',
-                    'reviews_reviewrequest',
-                },
+                accessible_tables=accessible_tables,
                 accessible_q=(
                     Q(base_reply_to=None) &
-                    Q(review_request__local_site=local_site) &
+                    review_local_site_q &
                     Q(public=expected_public) &
                     Q(user=user)
                 ),
@@ -1302,6 +1340,11 @@ class ReviewManagerTests(TestCase):
         else:
             local_site = None
 
+        if local_sites_in_db:
+            review_local_site_q = Q(review_request__local_site=local_site)
+        else:
+            review_local_site_q = Q()
+
         user2 = self.create_user()
         repo = self.create_repository(
             public=True,
@@ -1331,7 +1374,7 @@ class ReviewManagerTests(TestCase):
                 'where': (
                     Q(base_reply_to=None) &
                     Q(review_request__status='P') &
-                    Q(review_request__local_site=None) &
+                    review_local_site_q &
                     Q(user=user)
                 ),
             },
@@ -1340,7 +1383,7 @@ class ReviewManagerTests(TestCase):
         with self.assertQueries(queries):
             # Testing that only reviews from the given user are returned.
             self.assertQuerysetEqual(
-                Review.objects.from_user(user),
+                Review.objects.from_user(user, local_site=local_site),
                 [review])
 
     def _test_accessible_with_extra_query(
@@ -1367,21 +1410,30 @@ class ReviewManagerTests(TestCase):
                 One of the checks failed.
         """
         local_site: Optional[LocalSite]
+        review_local_site_q: Q = Q()
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
 
+        if local_sites_in_db:
+            review_local_site_q = Q(review_request__local_site=local_site)
+        else:
+            review_local_site_q = Q()
+
         user = User.objects.get(username='doc')
-        review_request = self.create_review_request(publish=True)
+        review_request = self.create_review_request(
+            publish=True,
+            local_site=local_site)
 
         review = self.create_review(review_request,
                                     body_top='hello',
                                     publish=True)
         self.create_review(review_request, publish=True)
 
-        self._prime_caches(user=user)
+        self._prime_caches(user=user,
+                           local_site=local_site)
 
         self._check_user_accessible_queries(
             user=user,
@@ -1389,7 +1441,7 @@ class ReviewManagerTests(TestCase):
             local_sites_in_db=local_sites_in_db,
             accessible_q=(
                 Q(base_reply_to=None) &
-                Q(review_request__local_site=local_site) &
+                review_local_site_q &
                 Q(body_top='hello') &
                 (Q(user=user) |
                  (Q(public=True) &
@@ -1681,20 +1733,29 @@ class ReviewManagerTests(TestCase):
         """
         self.assertTrue(user.is_superuser)
 
+        if local_sites_in_db:
+            local_site_q = Q(review_request__local_site=local_site)
+            tables = {
+                'reviews_reviewrequest',
+                'reviews_review',
+            }
+        else:
+            local_site_q = Q()
+            tables = {
+                'reviews_review',
+            }
+
         # 1 query:
         #
         # 1. Fetch reviews
         queries = [
             {
                 'model': Review,
-                'num_joins': 1,
-                'tables': {
-                    'reviews_reviewrequest',
-                    'reviews_review',
-                },
+                'num_joins': len(tables) - 1,
+                'tables': tables,
                 'where': (
                     Q(base_reply_to=None) &
-                    Q(review_request__local_site=local_site) &
+                    local_site_q &
                     expected_extra_q
                 ),
             },
