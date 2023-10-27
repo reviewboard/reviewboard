@@ -20,6 +20,7 @@ import { ReviewRequestEditorView } from './reviewRequestEditorView';
 import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
 
 
+declare const SITE_ROOT: string;
 declare const dedent: (string, ...args) => string;
 declare const gettext: (string) => string;
 
@@ -666,7 +667,7 @@ export class UnifiedBannerView extends FloatingBannerView<
                     }),
                 },
                 prefix: localSitePrefix,
-                url: '/r/_batch/',
+                url: `${SITE_ROOT}r/_batch/`,
 
                 error: xhr => {
                     const rsp = xhr.responseJSON;
