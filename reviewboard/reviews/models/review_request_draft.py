@@ -1,3 +1,9 @@
+"""Models for review request drafts."""
+
+from __future__ import annotations
+
+from typing import ClassVar
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import F
@@ -118,7 +124,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         verbose_name=_('inactive file attachments count'))
 
     # Set this up with a ConcurrencyManager to help prevent race conditions.
-    objects = ConcurrencyManager()
+    objects: ClassVar[ConcurrencyManager] = ConcurrencyManager()
 
     commit = property(lambda self: self.commit_id,
                       lambda self, value: setattr(self, 'commit_id', value))

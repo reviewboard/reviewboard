@@ -1,4 +1,9 @@
+"""Models for reviews."""
+
+from __future__ import annotations
+
 import logging
+from typing import ClassVar
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -135,7 +140,7 @@ class Review(models.Model):
 
     # Set this up with a ReviewManager to help prevent race conditions and
     # to fix duplicate reviews.
-    objects = ReviewManager()
+    objects: ClassVar[ReviewManager] = ReviewManager()
 
     @cached_property
     def ship_it_only(self):

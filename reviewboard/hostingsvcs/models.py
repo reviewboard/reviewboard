@@ -1,3 +1,9 @@
+"""Models for hosting service account storage."""
+
+from __future__ import annotations
+
+from typing import ClassVar
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
@@ -38,7 +44,8 @@ class HostingServiceAccount(models.Model):
         null=True,
         help_text=_('The LocalSite to associate with this account.'))
 
-    objects = HostingServiceAccountManager()
+    objects: ClassVar[HostingServiceAccountManager] = \
+        HostingServiceAccountManager()
 
     def __str__(self):
         if self.hosting_url:

@@ -1,8 +1,13 @@
+"""Models for repository support."""
+
+from __future__ import annotations
+
 import logging
 import uuid
 from functools import wraps
 from importlib import import_module
 from time import time
+from typing import ClassVar
 from urllib.parse import quote
 
 from django.contrib.auth.models import User
@@ -81,7 +86,7 @@ class Tool(models.Model):
     name = models.CharField(max_length=32, unique=True)
     class_name = models.CharField(max_length=128, unique=True)
 
-    objects = ToolManager()
+    objects: ClassVar[ToolManager] = ToolManager()
 
     # Templates can't access variables on a class properly. It'll attempt to
     # instantiate the class, which will fail without the necessary parameters.
@@ -324,7 +329,7 @@ class Repository(models.Model):
         help_text=_('Unique identifier used for validating incoming '
                     'webhooks.'))
 
-    objects = RepositoryManager()
+    objects: ClassVar[RepositoryManager] = RepositoryManager()
 
     @property
     def password(self):

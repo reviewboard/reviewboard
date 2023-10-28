@@ -1,5 +1,9 @@
 """The base class for all comment types."""
 
+from __future__ import annotations
+
+from typing import ClassVar
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q
@@ -63,7 +67,7 @@ class BaseComment(models.Model):
 
     extra_data = JSONField(null=True)
 
-    objects = CommentManager()
+    objects: ClassVar[CommentManager] = CommentManager()
 
     @staticmethod
     def issue_status_to_string(status):

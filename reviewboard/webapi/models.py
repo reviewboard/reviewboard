@@ -1,3 +1,9 @@
+"""Models for API tokens."""
+
+from __future__ import annotations
+
+from typing import ClassVar
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from djblets.webapi.models import BaseWebAPIToken
@@ -22,7 +28,7 @@ class WebAPIToken(BaseWebAPIToken):
                                    related_name='webapi_tokens',
                                    blank=True, null=True)
 
-    objects = WebAPITokenManager()
+    objects: ClassVar[WebAPITokenManager] = WebAPITokenManager()
 
     @classmethod
     def get_root_resource(cls):

@@ -1,5 +1,9 @@
 """DiffCommit model definition."""
 
+from __future__ import annotations
+
+from typing import ClassVar
+
 from dateutil.tz import tzoffset
 from django.db import models
 from django.utils import timezone
@@ -106,7 +110,7 @@ class DiffCommit(models.Model):
 
     extra_data = JSONField(null=True)
 
-    objects = DiffCommitManager()
+    objects: ClassVar[DiffCommitManager] = DiffCommitManager()
 
     @property
     def author(self):

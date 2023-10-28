@@ -1,5 +1,10 @@
+"""Models for file attachments."""
+
+from __future__ import annotations
+
 import logging
 import os
+from typing import ClassVar
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -122,7 +127,7 @@ class FileAttachment(models.Model):
                                            related_name='file_attachments')
     attachment_revision = models.IntegerField(default=0)
 
-    objects = FileAttachmentManager()
+    objects: ClassVar[FileAttachmentManager] = FileAttachmentManager()
 
     @property
     def mimetype_handler(self):

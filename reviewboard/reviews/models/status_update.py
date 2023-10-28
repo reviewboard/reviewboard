@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import Optional
+from typing import ClassVar, Optional
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -149,7 +149,7 @@ class StatusUpdate(models.Model):
     #: ``TIMEOUT``.
     timeout = models.IntegerField(null=True, blank=True)
 
-    objects = StatusUpdateManager()
+    objects: ClassVar[StatusUpdateManager] = StatusUpdateManager()
 
     ######################
     # Instance variables #
