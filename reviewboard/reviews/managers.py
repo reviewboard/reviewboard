@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from reviewboard.integrations.base import Integration
     from reviewboard.integrations.models import IntegrationConfig
     from reviewboard.reviews.models import ReviewRequest, StatusUpdate
+    from reviewboard.site.models import AnyOrAllLocalSites
 
 
 logger = logging.getLogger(__name__)
@@ -1048,16 +1049,29 @@ class ReviewRequestManager(ConcurrencyManager):
             extra_query=self.get_from_user_query(user_or_username),
             *args, **kwargs)
 
-    def _query(self, user=None, status='P', with_counts=False,
-               extra_query=None, local_site=None, filter_private=False,
-               show_inactive=False, show_all_unpublished=False,
-               show_all_local_sites=None):
+    def _query(
+        self,
+        user: Optional[User] = None,
+        status: Optional[str] = 'P',
+        with_counts: bool = False,
+        extra_query: Optional[Q] = None,
+        local_site: AnyOrAllLocalSites = None,
+        filter_private: bool = False,
+        show_inactive: bool = False,
+        show_all_unpublished: bool = False,
+        show_all_local_sites: Optional[bool] = None,
+        distinct: bool = True,
+    ) -> QuerySet[ReviewRequest]:
         """Return a queryset for review requests matching the given criteria.
 
         By default, the results will not be filtered based on whether a user
         has access to the review requests (via private repository or
         invite-only review group ACLs). To filter based on access, pass
         ``filter_private=True``.
+
+        Version Changed:
+            5.0.7:
+            * Added the ``distinct`` argument.
 
         Version Changed:
             5.0:
@@ -1125,6 +1139,12 @@ class ReviewRequestManager(ConcurrencyManager):
                     <reviewboard.site.models.LocalSite.ALL>` instead of
                     setting this to ``True``.
 
+            distinct (bool, optional):
+                Whether to return distinct results.
+
+                Version Added:
+                    5.0.7
+
         Returns:
             django.db.models.query.QuerySet:
             The resulting queryset.
@@ -1139,7 +1159,7 @@ class ReviewRequestManager(ConcurrencyManager):
 
             if show_all_local_sites:
                 assert local_site in (None, LocalSite.ALL)
-                local_site = LocalSite.ALL
+                local_site = LocalSite.ALL  # type: ignore
             else:
                 assert local_site is not LocalSite.ALL
 
@@ -1194,7 +1214,10 @@ class ReviewRequestManager(ConcurrencyManager):
 
                 q &= repo_q & group_q
 
-        queryset = self.filter(q).distinct()
+        queryset = self.filter(q)
+
+        if distinct:
+            queryset = queryset.distinct()
 
         if with_counts:
             queryset = queryset.with_counts(user)
