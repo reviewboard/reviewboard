@@ -26,35 +26,6 @@ from reviewboard.site.models import LocalSite
 class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
     """Unit tests for the dashboard view."""
 
-    def setUp(self):
-        """Set up the test state.
-
-        This will temporarily patch :py:meth:`django.db.models.QuerySet.
-        __eq__` to help compare with nested queries. This is a temporary
-        issue, and this function will soon be removed.
-        """
-        super().setUp()
-
-        # This is a very temporary hack to work around some assertQueries
-        # comparisons that fail due to our improper use of a nested query.
-        # It will be removed as soon as this issue is fixed.
-        self._old_queryset_eq = QuerySet.__eq__
-
-        def _queryset_eq(_self, other):
-            return repr(_self) == repr(other)
-
-        QuerySet.__eq__ = _queryset_eq
-
-    def tearDown(self):
-        """Tear down test state.
-
-        This will restore :py:meth:`django.db.models.QuerySet.__eq__` to
-        defaults.
-        """
-        QuerySet.__eq__ = self._old_queryset_eq
-
-        super().tearDown()
-
     @add_fixtures(['test_users'])
     def test_incoming(self):
         """Testing dashboard view (incoming)"""
