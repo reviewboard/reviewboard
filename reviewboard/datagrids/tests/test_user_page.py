@@ -331,7 +331,11 @@ class SubmitterViewTests(BaseViewTestCase):
                 'distinct': True,
                 'model': Group,
                 'num_joins': 1,
-                'order_by': ('name',),
+                'only_fields': {
+                    'id',
+                    'name',
+                    'local_site',
+                },
                 'tables': {
                     'reviews_group',
                     'reviews_group_users',
@@ -341,7 +345,7 @@ class SubmitterViewTests(BaseViewTestCase):
                               Q(visible=True)) |
                              Q(users=user.pk)) &
                             Q(local_site=None)) &
-                          Q(local_site=local_site)),
+                          Q(local_site_q)),
             },
             {
                 'model': Profile,
@@ -419,7 +423,7 @@ class SubmitterViewTests(BaseViewTestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, with_tracebacks=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -462,6 +466,11 @@ class SubmitterViewTests(BaseViewTestCase):
             local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
+
+        if local_sites_in_db:
+            local_site_q = Q(local_site=local_site)
+        else:
+            local_site_q = Q()
 
         self.client.login(username='doc', password='doc')
         user = User.objects.get(username='doc')
@@ -623,7 +632,11 @@ class SubmitterViewTests(BaseViewTestCase):
                 'distinct': True,
                 'model': Group,
                 'num_joins': 1,
-                'order_by': ('name',),
+                'only_fields': {
+                    'id',
+                    'name',
+                    'local_site',
+                },
                 'tables': {
                     'reviews_group',
                     'reviews_group_users',
@@ -633,7 +646,7 @@ class SubmitterViewTests(BaseViewTestCase):
                               Q(visible=True)) |
                              Q(users=user.pk)) &
                             Q(local_site=None)) &
-                          Q(local_site=local_site)),
+                          Q(local_site_q)),
             },
             {
                 'model': Profile,
@@ -712,8 +725,10 @@ class SubmitterViewTests(BaseViewTestCase):
             local_site = None
 
         if local_sites_in_db:
+            local_site_q = Q(local_site=local_site)
             review_local_site_q = Q(review_request__local_site=local_site)
         else:
+            local_site_q = Q()
             review_local_site_q = Q()
 
         ReviewRequest.objects.all().delete()
@@ -904,7 +919,11 @@ class SubmitterViewTests(BaseViewTestCase):
                 'distinct': True,
                 'model': Group,
                 'num_joins': 1,
-                'order_by': ('name',),
+                'only_fields': {
+                    'id',
+                    'name',
+                    'local_site',
+                },
                 'tables': {
                     'reviews_group',
                     'reviews_group_users',
@@ -914,7 +933,7 @@ class SubmitterViewTests(BaseViewTestCase):
                                 Q(visible=True)) |
                               Q(users=user.pk)) &
                             Q(local_site=None)) &
-                          Q(local_site=local_site)),
+                          Q(local_site_q)),
             },
             {
                 'model': Review,

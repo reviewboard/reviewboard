@@ -296,6 +296,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
+        profile.starred_groups.clear()
+
         grumpy = User.objects.get(username='grumpy')
 
         for i in range(10):
@@ -314,7 +316,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             if i < 5:
                 review_request.target_people.add(user)
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         extra = {
             'new_review_count': ("""
@@ -420,29 +423,24 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
                 'where': Q(users__id=user.pk),
             },
+
+            # Fetch the list of a user's review groups.
             {
                 'model': Group,
                 'num_joins': 1,
+                'only_fields': {
+                    'id',
+                    'incoming_request_count',
+                    'name',
+                },
                 'tables': {
                     'reviews_group',
                     'reviews_group_users',
                 },
                 'where': (Q(users__id=user.pk) &
-                          Q(local_site=local_site)),
-                'order_by': ('name',),
+                          Q(local_site_q)),
             },
-            {
-                'model': Group,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': (Q(starred_by__id=profile.pk) &
-                          Q(local_site=local_site) &
-                          ~Q(name__in=set())),
-                'order_by': ('name',),
-            },
+
             {
                 'type': 'UPDATE',
                 'model': Profile,
@@ -561,6 +559,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
+        profile.starred_groups.clear()
+
         for i in range(10):
             review_request = self.create_review_request(
                 local_site=local_site,
@@ -571,7 +571,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             if i < 5:
                 review_request.target_people.add(user)
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         extra = {
             'new_review_count': ("""
@@ -677,29 +678,24 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
                 'where': Q(users__id=user.pk),
             },
+
+            # Fetch the list of a user's review groups.
             {
                 'model': Group,
                 'num_joins': 1,
+                'only_fields': {
+                    'id',
+                    'incoming_request_count',
+                    'name',
+                },
                 'tables': {
                     'reviews_group',
                     'reviews_group_users',
                 },
                 'where': (Q(users__id=user.pk) &
-                          Q(local_site=local_site)),
-                'order_by': ('name',),
+                          Q(local_site_q)),
             },
-            {
-                'model': Group,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': (Q(starred_by__id=profile.pk) &
-                          Q(local_site=local_site) &
-                          ~Q(name__in=set())),
-                'order_by': ('name',),
-            },
+
             {
                 'type': 'UPDATE',
                 'model': Profile,
@@ -818,6 +814,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         grumpy = User.objects.get(username='grumpy')
 
         profile = user.get_profile()
+        profile.starred_groups.clear()
 
         for i in range(10):
             if i < 5:
@@ -832,7 +829,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 submitter=submitter,
                 publish=True)
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         extra = {
             'new_review_count': ("""
@@ -890,29 +888,24 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                           Q(profile=profile) &
                           Q(user=user)),
             },
+
+            # Fetch the list of a user's review groups.
             {
                 'model': Group,
                 'num_joins': 1,
+                'only_fields': {
+                    'id',
+                    'incoming_request_count',
+                    'name',
+                },
                 'tables': {
                     'reviews_group',
                     'reviews_group_users',
                 },
                 'where': (Q(users__id=user.pk) &
-                          Q(local_site=local_site)),
-                'order_by': ('name',),
+                          Q(local_site_q)),
             },
-            {
-                'model': Group,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': (Q(starred_by__id=profile.pk) &
-                          Q(local_site=local_site) &
-                          ~Q(name__in=set())),
-                'order_by': ('name',),
-            },
+
             {
                 'type': 'UPDATE',
                 'model': Profile,
@@ -1036,6 +1029,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
+        profile.starred_groups.clear()
+
         grumpy = User.objects.get(username='grumpy')
 
         for i in range(10):
@@ -1051,7 +1046,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 local_id=i + 1,
                 publish=True)
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         extra = {
             'new_review_count': ("""
@@ -1147,29 +1143,24 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                           Q(profile=profile) &
                           Q(user=user)),
             },
+
+            # Fetch the list of a user's review groups.
             {
                 'model': Group,
                 'num_joins': 1,
+                'only_fields': {
+                    'id',
+                    'incoming_request_count',
+                    'name',
+                },
                 'tables': {
                     'reviews_group',
                     'reviews_group_users',
                 },
                 'where': (Q(users__id=user.pk) &
-                          Q(local_site=local_site)),
-                'order_by': ('name',),
+                          Q(local_site_q)),
             },
-            {
-                'model': Group,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': (Q(starred_by__id=profile.pk) &
-                          Q(local_site=local_site) &
-                          ~Q(name__in=set())),
-                'order_by': ('name',),
-            },
+
             {
                 'type': 'UPDATE',
                 'model': Profile,
@@ -1282,6 +1273,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
+        profile.starred_groups.clear()
+
         group = self.create_review_group(local_site=local_site)
         group.users.add(user)
 
@@ -1297,7 +1290,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             elif i < 10:
                 review_request.target_groups.add(group)
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         extra = {
             'new_review_count': ("""
@@ -1393,29 +1387,24 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                           Q(profile=profile) &
                           Q(user=user)),
             },
+
+            # Fetch the list of a user's review groups.
             {
                 'model': Group,
                 'num_joins': 1,
+                'only_fields': {
+                    'id',
+                    'incoming_request_count',
+                    'name',
+                },
                 'tables': {
                     'reviews_group',
                     'reviews_group_users',
                 },
                 'where': (Q(users__id=user.pk) &
-                          Q(local_site=local_site)),
-                'order_by': ('name',),
+                          Q(local_site_q)),
             },
-            {
-                'model': Group,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': (Q(starred_by__id=profile.pk) &
-                          Q(local_site=local_site) &
-                          ~Q(name__in={'test-group'})),
-                'order_by': ('name',),
-            },
+
             {
                 'type': 'UPDATE',
                 'model': Profile,
@@ -1535,10 +1524,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
-        group = self.create_review_group(
+        profile.starred_groups.clear()
+
+        group1 = self.create_review_group(
             name='devgroup',
             local_site=local_site)
-        group.users.add(User.objects.get(username='doc'))
+        group1.users.add(User.objects.get(username='doc'))
 
         group2 = self.create_review_group(
             name='test-group',
@@ -1552,12 +1543,13 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 local_id=i + 1)
 
             if i < 5:
-                review_request.target_groups.add(group)
+                review_request.target_groups.add(group1)
             elif i < 10:
                 review_request.target_groups.add(group2)
 
         user.get_site_profile(local_site=local_site)
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         extra = {
             'new_review_count': ("""
@@ -1686,29 +1678,23 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
 
         queries += [
+            # Fetch the list of a user's review groups.
             {
                 'model': Group,
                 'num_joins': 1,
+                'only_fields': {
+                    'id',
+                    'incoming_request_count',
+                    'name',
+                },
                 'tables': {
-                    'reviews_group_users',
                     'reviews_group',
+                    'reviews_group_users',
                 },
                 'where': (Q(users__id=user.pk) &
-                          Q(local_site=local_site)),
-                'order_by': ('name',),
+                          Q(local_site_q)),
             },
-            {
-                'model': Group,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': (Q(starred_by__id=profile.pk) &
-                          Q(local_site=local_site) &
-                          ~Q(name__in={'devgroup'})),
-                'order_by': ('name',),
-            },
+
             {
                 'type': 'UPDATE',
                 'model': Profile,
@@ -1830,6 +1816,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
+        profile.starred_groups.clear()
+
         group = self.create_review_group(
             name='devgroup',
             local_site=local_site)
@@ -1841,7 +1829,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             local_id=1)
         review_request.target_groups.add(group)
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         extra = {
             'new_review_count': ("""
@@ -1970,29 +1959,23 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
 
         queries += [
+            # Fetch the list of a user's review groups.
             {
                 'model': Group,
                 'num_joins': 1,
+                'only_fields': {
+                    'id',
+                    'incoming_request_count',
+                    'name',
+                },
                 'tables': {
                     'reviews_group',
                     'reviews_group_users',
                 },
                 'where': (Q(users__id=user.pk) &
-                          Q(local_site=local_site)),
-                'order_by': ('name',),
+                          Q(local_site_q)),
             },
-            {
-                'model': Group,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': (Q(starred_by__id=profile.pk) &
-                          Q(local_site=local_site) &
-                          ~Q(name__in=set())),
-                'order_by': ('name',),
-            },
+
             {
                 'type': 'UPDATE',
                 'model': Profile,
@@ -2209,6 +2192,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
+        profile.starred_groups.clear()
+
         review_requests = []
         diffset_histories = []
 
@@ -2224,7 +2209,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 diffset_histories.append(review_request.diffset_history)
                 review_requests.append(review_request)
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         extra = {
             'new_review_count': ("""
@@ -2338,29 +2324,24 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
                 'where': Q(users__id=user.pk),
             },
+
+            # Fetch the list of a user's review groups.
             {
                 'model': Group,
                 'num_joins': 1,
+                'only_fields': {
+                    'id',
+                    'incoming_request_count',
+                    'name',
+                },
                 'tables': {
                     'reviews_group',
                     'reviews_group_users',
                 },
                 'where': (Q(users__id=user.pk) &
-                          Q(local_site=local_site)),
-                'order_by': ('name',),
+                          Q(local_site_q)),
             },
-            {
-                'model': Group,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': (Q(starred_by__id=profile.pk) &
-                          Q(local_site=local_site) &
-                          ~Q(name__in=set())),
-                'order_by': ('name',),
-            },
+
             {
                 'type': 'UPDATE',
                 'model': Profile,
@@ -2554,6 +2535,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
+        profile.starred_groups.clear()
+
         if local_site:
             local_site.users.add(user)
 
@@ -2591,7 +2574,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         visit.visibility = ReviewRequestVisit.MUTED
         visit.save(update_fields=('visibility',))
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         extra = {
             'new_review_count': ("""
@@ -2697,29 +2681,24 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': Q(users__id=user.pk),
                 'values_select': ('pk',),
             },
+
+            # Fetch the list of a user's review groups.
             {
                 'model': Group,
                 'num_joins': 1,
+                'only_fields': {
+                    'id',
+                    'incoming_request_count',
+                    'name',
+                },
                 'tables': {
                     'reviews_group',
                     'reviews_group_users',
                 },
                 'where': (Q(users__id=user.pk) &
-                          Q(local_site=local_site)),
-                'order_by': ('name',),
+                          Q(local_site_q)),
             },
-            {
-                'model': Group,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': (Q(starred_by__id=profile.pk) &
-                          Q(local_site=local_site) &
-                          ~Q(name__in=set())),
-                'order_by': ('name',),
-            },
+
             {
                 'type': 'UPDATE',
                 'model': Profile,
@@ -2779,7 +2758,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 for i in range(5)
             ]
 
-        with self.assertQueries(queries, with_tracebacks=True):
+        with self.assertQueries(queries):
             response = self.client.get(
                 dashboard_url,
                 {
@@ -2901,6 +2880,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         profile = user.get_profile()
         profile.extra_data = None
         profile.save(update_fields=('extra_data',))
+        profile.starred_groups.clear()
 
         archived.target_people.add(user)
 
@@ -2911,7 +2891,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         visit.visibility = ReviewRequestVisit.ARCHIVED
         visit.save(update_fields=('visibility',))
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         extra = {
             'new_review_count': ("""
@@ -3017,29 +2998,24 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': Q(users__id=user.pk),
                 'values_select': ('pk',),
             },
+
+            # Fetch the list of a user's review groups.
             {
                 'model': Group,
                 'num_joins': 1,
+                'only_fields': {
+                    'id',
+                    'incoming_request_count',
+                    'name',
+                },
                 'tables': {
                     'reviews_group',
                     'reviews_group_users',
                 },
                 'where': (Q(users__id=user.pk) &
-                          Q(local_site=local_site)),
-                'order_by': ('name',),
+                          Q(local_site_q)),
             },
-            {
-                'model': Group,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': (Q(starred_by__id=profile.pk) &
-                          Q(local_site=local_site) &
-                          ~Q(name__in=set())),
-                'order_by': ('name',),
-            },
+
             {
                 'type': 'UPDATE',
                 'model': Profile,
@@ -3147,6 +3123,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
+        user.review_groups.clear()
+
         # Create all the test data.
         devgroup = self.create_review_group(
             local_site=local_site,
@@ -3189,7 +3167,15 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         review_request4.publish(review_request4.submitter)
         profile.star_review_request(review_request4)
 
-        self._prefetch_cached(local_site=local_site)
+        # Join a group.
+        devgroup.users.add(user)
+
+        # Star some groups.
+        profile.star_review_group(devgroup)
+        profile.star_review_group(privgroup)
+
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         extra = {
             'new_review_count': ("""
@@ -3295,29 +3281,42 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': Q(users__id=user.pk),
                 'values_select': ('pk',),
             },
+
+            # Fetch the list of a user's review groups.
             {
                 'model': Group,
                 'num_joins': 1,
+                'only_fields': {
+                    'id',
+                    'incoming_request_count',
+                    'name',
+                },
                 'tables': {
                     'reviews_group',
                     'reviews_group_users',
                 },
                 'where': (Q(users__id=user.pk) &
-                          Q(local_site=local_site)),
-                'order_by': ('name',),
+                          Q(local_site_q)),
             },
+
+            # Fetch the list of a user's starred review groups.
             {
                 'model': Group,
                 'num_joins': 1,
+                'only_fields': {
+                    'id',
+                    'incoming_request_count',
+                    'name',
+                },
                 'tables': {
                     'accounts_profile_starred_groups',
                     'reviews_group',
                 },
                 'where': (Q(starred_by__id=profile.pk) &
-                          Q(local_site=local_site) &
-                          ~Q(name__in={'devgroup', 'privgroup'})),
-                'order_by': ('name',),
+                          ~Q(pk__in={devgroup.pk, privgroup.pk}) &
+                          Q(local_site_q)),
             },
+
             {
                 'type': 'UPDATE',
                 'model': Profile,

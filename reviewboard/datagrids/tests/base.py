@@ -14,6 +14,7 @@ from django.test.client import RequestFactory
 from djblets.datagrid.grids import Column, DataGrid
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.accounts.models import Profile
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
@@ -98,7 +99,12 @@ class BaseViewTestCase(TestCase):
 
         return url
 
-    def _prefetch_cached(self, local_site=None):
+    def _prefetch_cached(
+        self,
+        *,
+        local_site: Optional[LocalSite] = None,
+        user: Optional[User] = None,
+    ) -> None:
         """Pre-fetch cacheable statistics and data.
 
         Version Added:
@@ -113,8 +119,15 @@ class BaseViewTestCase(TestCase):
         if local_site is not None:
             LocalSite.objects.get_local_site_acl_stats(local_site)
 
-        for user in User.objects.all():
-            user.get_local_site_stats()
+        for temp_user in User.objects.all():
+            temp_user.get_local_site_stats()
+
+        if user is not None:
+            try:
+                profile = user.get_profile(create_if_missing=False)
+                profile.has_starred_review_groups(local_site=local_site)
+            except Profile.DoesNotExist:
+                pass
 
     def _get_context_var(self, response, varname):
         """Return a variable from the view context."""

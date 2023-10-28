@@ -198,7 +198,7 @@ class UsersDataGridTests(BaseViewTestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
-        self._prefetch_cached()
+        self._prefetch_cached(user=user)
 
         # 6 queries:
         #
@@ -277,10 +277,12 @@ class UsersDataGridTests(BaseViewTestCase):
         local_site = LocalSite.objects.get(name='local-site-2')
 
         self.client.login(username='doc', password='doc')
-        self._prefetch_cached(local_site=local_site)
 
         user = User.objects.get(username='doc')
         profile = user.get_profile()
+
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         # 8 queries:
         #
@@ -412,7 +414,8 @@ class UsersDataGridTests(BaseViewTestCase):
         if local_site:
             local_site.users.add(*all_users.keys())
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         queries = [
             {
@@ -613,7 +616,8 @@ class UsersDataGridTests(BaseViewTestCase):
         if local_site:
             local_site.users.add(*all_users.keys())
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         queries = [
             {
@@ -803,7 +807,8 @@ class UsersDataGridTests(BaseViewTestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         queries = [
             {
@@ -1089,7 +1094,8 @@ class UsersDataGridTests(BaseViewTestCase):
         if local_site:
             local_site.users.add(*User.objects.all())
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         queries = [
             {
@@ -1278,7 +1284,8 @@ class UsersDataGridTests(BaseViewTestCase):
         if local_site:
             local_site.users.add(*User.objects.all())
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         queries = [
             {
@@ -1563,7 +1570,6 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.create(user_id=3)
         Profile.objects.all().update(is_private=True)
         self.client.login(username='admin', password='admin')
-        self._prefetch_cached()
 
         user = User.objects.get(username='admin')
         profile = user.get_profile()
@@ -1571,7 +1577,8 @@ class UsersDataGridTests(BaseViewTestCase):
         if local_site:
             local_site.users.add(*User.objects.all())
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         queries = [
             {
