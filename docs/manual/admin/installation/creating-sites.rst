@@ -272,6 +272,17 @@ Apache
 ------
 
 Apache is commonly used along with mod_wsgi_ to serve Python applications.
+To install this:
+
+.. tabs::
+
+   .. code-tab:: console Debian/Ubuntu
+
+      $ apt-get install apache2 libapache2-mod-wsgi-py3
+
+   .. code-tab:: console RHEL/Fedora/CentOS
+
+      $ yum install httpd mod_wsgi
 
 Review Board ships a sample :file:`{sitedir}/conf/webconfs/apache-wsgi.conf`
 file built for your site. You can use this as-is or customize it. A sample
