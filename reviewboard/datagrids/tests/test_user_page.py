@@ -356,33 +356,25 @@ class SubmitterViewTests(BaseViewTestCase):
             # Fetch the number of items across all datagrid pages.
             {
                 'annotations': {'__count': Count('*')},
-                'inner_query': {
-                    'distinct': True,
-                    'extra': {
-                        'new_review_count': extra['new_review_count'],
-                    },
-                    'model': ReviewRequest,
-                    'num_joins': 3,
-                    'subquery': True,
-                    'tables': {
-                        'auth_user',
-                        'reviews_reviewrequest',
-                        'reviews_reviewrequest_target_groups',
-                        'reviews_reviewrequest_target_people',
-                    },
-                    'where': (Q((Q(public=True) |
-                                 Q(submitter=user)) &
-                                local_site_q &
-                                Q(submitter__username='grumpy') &
-                                Q(Q(submitter=user) |
-                                  (Q(repository=None) |
-                                   Q(repository__in=[])) &
-                                  (Q(target_people=user) |
-                                   Q(target_groups=None) |
-                                   Q(target_groups__in=[group1.pk])))) &
-                              Q(local_site=local_site)),
-                },
                 'model': ReviewRequest,
+                'num_joins': 3,
+                'tables': {
+                    'auth_user',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                    'reviews_reviewrequest_target_people',
+                },
+                'where': (Q((Q(public=True) |
+                             Q(submitter=user)) &
+                            local_site_q &
+                            Q(submitter__username='grumpy') &
+                            Q(Q(submitter=user) |
+                              (Q(repository=None) |
+                               Q(repository__in=[])) &
+                              (Q(target_people=user) |
+                               Q(target_groups=None) |
+                               Q(target_groups__in=[group1.pk])))) &
+                          Q(local_site=local_site)),
             },
 
             # Fetch the IDs of the items for one page.
@@ -693,46 +685,24 @@ class SubmitterViewTests(BaseViewTestCase):
             {
                 'annotations': {'__count': Count('*')},
                 'model': ReviewRequest,
-                'inner_query': {
-                    'distinct': True,
-                    'extra': {
-                        'new_review_count': (
-                            'SELECT COUNT(*)'
-                            ' FROM reviews_review,'
-                            ' accounts_reviewrequestvisit'
-                            ' WHERE reviews_review.public AND'
-                            ' reviews_review.review_request_id'
-                            ' = reviews_reviewrequest.id AND'
-                            ' accounts_reviewrequestvisit.review_request_id'
-                            ' = reviews_reviewrequest.id AND'
-                            ' accounts_reviewrequestvisit.user_id = 2 AND'
-                            ' reviews_review.timestamp >'
-                            ' accounts_reviewrequestvisit.timestamp AND'
-                            ' reviews_review.user_id != 2',
-                            [],
-                        ),
-                    },
-                    'model': ReviewRequest,
-                    'num_joins': 3,
-                    'subquery': True,
-                    'tables': {
-                        'auth_user',
-                        'reviews_reviewrequest',
-                        'reviews_reviewrequest_target_groups',
-                        'reviews_reviewrequest_target_people',
-                    },
-                    'where': (Q((Q(public=True) |
-                                 Q(submitter=user)) &
-                                local_site_q &
-                                Q(submitter__username='grumpy') &
-                                Q(Q(submitter=user) |
-                                  (Q(repository=None) |
-                                   Q(repository__in=[])) &
-                                  (Q(target_people=user) |
-                                   Q(target_groups=None) |
-                                   Q(target_groups__in=[group1.pk])))) &
-                              Q(local_site=local_site)),
+                'num_joins': 3,
+                'tables': {
+                    'auth_user',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                    'reviews_reviewrequest_target_people',
                 },
+                'where': (Q((Q(public=True) |
+                             Q(submitter=user)) &
+                            local_site_q &
+                            Q(submitter__username='grumpy') &
+                            Q(Q(submitter=user) |
+                              (Q(repository=None) |
+                               Q(repository__in=[])) &
+                              (Q(target_people=user) |
+                               Q(target_groups=None) |
+                               Q(target_groups__in=[group1.pk])))) &
+                          Q(local_site=local_site)),
             },
             {
                 'model': Profile,

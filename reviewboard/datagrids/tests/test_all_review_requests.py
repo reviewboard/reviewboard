@@ -309,33 +309,25 @@ class AllReviewRequestViewTests(BaseViewTestCase):
             # Fetch the number of items across all datagrid pages.
             {
                 'annotations': {'__count': Count('*')},
-                'inner_query': {
-                    'distinct': True,
-                    'extra': {
-                        'new_review_count': extra['new_review_count'],
-                    },
-                    'model': ReviewRequest,
-                    'num_joins': 2,
-                    'subquery': True,
-                    'tables': {
-                        'reviews_reviewrequest',
-                        'reviews_reviewrequest_target_groups',
-                        'reviews_reviewrequest_target_people',
-                    },
-                    'where': (
-                        Q((Q(public=True) |
-                           Q(submitter=user)) &
-                          local_site_q &
-                          (Q(submitter=user) |
-                           (Q(repository=None) |
-                            Q(repository__in=[])) &
-                           (Q(target_people=user) |
-                            Q(target_groups=None) |
-                            Q(target_groups__in=[])))) &
-                        Q(local_site=local_site)
-                    ),
-                },
                 'model': ReviewRequest,
+                'num_joins': 2,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                    'reviews_reviewrequest_target_people',
+                },
+                'where': (
+                    Q((Q(public=True) |
+                       Q(submitter=user)) &
+                      local_site_q &
+                      (Q(submitter=user) |
+                       (Q(repository=None) |
+                        Q(repository__in=[])) &
+                       (Q(target_people=user) |
+                        Q(target_groups=None) |
+                        Q(target_groups__in=[])))) &
+                    Q(local_site=local_site)
+                ),
             },
 
             # Fetch the IDs of the items for one page.
@@ -679,33 +671,25 @@ class AllReviewRequestViewTests(BaseViewTestCase):
             # Fetch the number of items across all datagrid pages.
             {
                 'annotations': {'__count': Count('*')},
-                'inner_query': {
-                    'distinct': True,
-                    'extra': {
-                        'new_review_count': extra['new_review_count'],
-                    },
-                    'model': ReviewRequest,
-                    'num_joins': 2,
-                    'subquery': True,
-                    'tables': {
-                        'reviews_reviewrequest',
-                        'reviews_reviewrequest_target_groups',
-                        'reviews_reviewrequest_target_people',
-                    },
-                    'where': (
-                        Q((Q(public=True) |
-                           Q(submitter=user)) &
-                          local_site_q &
-                          (Q(submitter=user) |
-                           (Q(repository=None) |
-                            Q(repository__in=[1])) &
-                           (Q(target_people=user) |
-                            Q(target_groups=None) |
-                            Q(target_groups__in=[1])))) &
-                        Q(local_site=local_site)
-                    ),
-                },
                 'model': ReviewRequest,
+                'num_joins': 2,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                    'reviews_reviewrequest_target_people',
+                },
+                'where': (
+                    Q((Q(public=True) |
+                       Q(submitter=user)) &
+                      local_site_q &
+                      (Q(submitter=user) |
+                       (Q(repository=None) |
+                        Q(repository__in=[1])) &
+                       (Q(target_people=user) |
+                        Q(target_groups=None) |
+                        Q(target_groups__in=[1])))) &
+                    Q(local_site=local_site)
+                ),
             },
 
             # Fetch the IDs of the items for one page.
@@ -1005,33 +989,25 @@ class AllReviewRequestViewTests(BaseViewTestCase):
             # Fetch the number of items across all datagrid pages.
             {
                 'annotations': {'__count': Count('*')},
-                'inner_query': {
-                    'distinct': True,
-                    'extra': {
-                        'new_review_count': extra['new_review_count'],
-                    },
-                    'model': ReviewRequest,
-                    'num_joins': 2,
-                    'subquery': True,
-                    'tables': {
-                        'reviews_reviewrequest',
-                        'reviews_reviewrequest_target_groups',
-                        'reviews_reviewrequest_target_people',
-                    },
-                    'where': (
-                        Q((Q(public=True) |
-                           Q(submitter=user)) &
-                          local_site_q &
-                          (Q(submitter=user) |
-                           (Q(repository=None) |
-                            Q(repository__in=[])) &
-                           (Q(target_people=user) |
-                            Q(target_groups=None) |
-                            Q(target_groups__in=[])))) &
-                        Q(local_site=local_site)
-                    ),
-                },
                 'model': ReviewRequest,
+                'num_joins': 2,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                    'reviews_reviewrequest_target_people',
+                },
+                'where': (
+                    Q((Q(public=True) |
+                       Q(submitter=user)) &
+                      local_site_q &
+                      (Q(submitter=user) |
+                       (Q(repository=None) |
+                        Q(repository__in=[])) &
+                       (Q(target_people=user) |
+                        Q(target_groups=None) |
+                        Q(target_groups__in=[])))) &
+                    Q(local_site=local_site)
+                ),
             },
 
             # Fetch the IDs of the items for one page.

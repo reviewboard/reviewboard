@@ -82,9 +82,9 @@ def all_review_requests(
         request=request,
         queryset=ReviewRequest.objects.public(
             user=request.user,
+            distinct=False,
             status=None,
             local_site=local_site,
-            with_counts=True,
             show_inactive=True),
         title=_('All Review Requests'),
         local_site=local_site)
@@ -168,8 +168,8 @@ def group(
             group_name=name,
             local_site=local_site,
             user=request.user,
-            status=None,
-            with_counts=True),
+            distinct=False,
+            status=None),
         title=_('Review requests for %s') % group.display_name,
         local_site=local_site)
 

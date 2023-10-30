@@ -473,12 +473,14 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
             queryset = ReviewRequest.objects.from_user(
                 user,  # The target user
                 user,  # The accessing user
+                distinct=False,
                 local_site=self.local_site)
             title = _('All Outgoing Review Requests')
         elif view == 'overview':
             queryset = ReviewRequest.objects.to_or_from_user(
                 user,  # The target user
                 user,  # The accessing user
+                distinct=False,
                 local_site=self.local_site)
             title = _('Open Incoming and Outgoing Review Requests')
         elif view == 'mine':
@@ -486,12 +488,14 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
                 user,  # The target user
                 user,  # The accessing user
                 status=None,
+                distinct=False,
                 local_site=self.local_site)
             title = _('All My Review Requests')
         elif view == 'to-me':
             queryset = ReviewRequest.objects.to_user_directly(
                 user,  # The target user
                 user,  # The accessing user
+                distinct=False,
                 local_site=self.local_site)
             title = _('Incoming Review Requests to Me')
         elif view in ('to-group', 'to-watched-group'):
@@ -515,24 +519,28 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
                 queryset = ReviewRequest.objects.to_group(
                     group_name=group_name,
                     local_site=self.local_site,
+                    distinct=False,
                     user=user)
                 title = _('Incoming Review Requests to %s') % group_name
             else:
                 queryset = ReviewRequest.objects.to_user_groups(
                     username=user,  # The target user
                     user=user,      # The accessing user
+                    distinct=False,
                     local_site=self.local_site)
                 title = _('All Incoming Review Requests to My Groups')
         elif view == 'starred':
             queryset = self.profile.starred_review_requests.public(
                 user=user,
                 local_site=self.local_site,
+                distinct=False,
                 status=None)
             title = _('Starred Review Requests')
         elif view == 'incoming':
             queryset = ReviewRequest.objects.to_user(
                 user,  # The target user
                 user,  # The accessing user
+                distinct=False,
                 local_site=self.local_site)
             title = _('All Incoming Review Requests')
         else:
@@ -727,8 +735,8 @@ class UserPageReviewRequestDataGrid(UserPageDataGridMixin,
         queryset = ReviewRequest.objects.from_user(
             user.username,
             user=request.user,
+            distinct=False,
             status=None,
-            with_counts=True,
             local_site=kwargs.get('local_site'),
             filter_private=True,
             show_inactive=True)
