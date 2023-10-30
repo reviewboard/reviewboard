@@ -16,14 +16,14 @@ from djblets.webapi.testing.decorators import webapi_test_template
 from oauth2_provider.generators import (generate_client_id,
                                         generate_client_secret)
 from oauth2_provider.models import AccessToken
-from typing_extensions import TypeAlias
+from typing_extensions import NotRequired, TypeAlias, TypedDict
 
 from reviewboard.oauth.models import Application
 from reviewboard.webapi.models import WebAPIToken
 
 if TYPE_CHECKING:
     from djblets.features.testing import FeatureStates
-    from djblets.util.typing import JSONDict
+    from djblets.util.typing import JSONDict, KwargsDict
     from djblets.webapi.errors import WebAPIError
 
     from reviewboard.reviews.models import ReviewRequest
@@ -39,6 +39,84 @@ else:
 #: Version Added:
 #:     5.0.7
 APIRequestData: TypeAlias = Union[bytes, Dict[str, Any]]
+
+
+class BasicTestSetupState(TypedDict):
+    """Test setup data for basic HTTP unit tests.
+
+    Version Added:
+        5.0.7
+    """
+
+    #: The user to use for the test.
+    user: User
+
+    #: The URL to the API resource.
+    url: str
+
+    #: Custom positional arguments to pass to response-checking functions.
+    check_result_args: NotRequired[Tuple[Any, ...]]
+
+    #: Custom keyword arguments to pass to response-checking functions.
+    check_result_kwargs: NotRequired[KwargsDict]
+
+    #: The expected mimetype of the response.
+    mimetype: NotRequired[str]
+
+
+class BasicGetItemTestSetupState(BasicTestSetupState):
+    """Test setup data for basic HTTP GET item unit tests.
+
+    Version Added:
+        5.0.7
+    """
+
+    #: The item to compare result payloads to.
+    item: Any
+
+
+class BasicGetItemListTestSetupState(BasicTestSetupState):
+    """Test setup data for basic HTTP GET list unit tests.
+
+    Version Added:
+        5.0.7
+    """
+
+    #: The list of items to compare result payloads to.
+    items: Sequence[Any]
+
+
+class BasicDeleteTestSetupState(BasicTestSetupState):
+    """Test setup data for basic HTTP DELETE unit tests.
+
+    Version Added:
+        5.0.7
+    """
+
+
+class BasicPostTestSetupState(BasicTestSetupState):
+    """Test setup data for basic HTTP POST unit tests.
+
+    Version Added:
+        5.0.7
+    """
+
+    #: The body data to send in the POST request.
+    request_data: APIRequestData
+
+
+class BasicPutTestSetupState(BasicTestSetupState):
+    """Test setup data for basic HTTP PUT unit tests.
+
+    Version Added:
+        5.0.7
+    """
+
+    #: The item to compare result payloads to.
+    item: Any
+
+    #: The body data to send in the PUT request.
+    request_data: APIRequestData
 
 
 class BasicTestsMetaclass(type):
@@ -453,35 +531,80 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
     @webapi_test_template
     def test_delete(self) -> None:
         """Testing the DELETE <URL> API"""
-        self.load_fixtures(self.basic_delete_fixtures)
-        self._login_user(admin=self.basic_delete_use_admin)
-
-        url, cb_args = self.setup_basic_delete_test(self.user, False, None)
-        self.assertFalse(url.startswith('/s/' + self.local_site_name))
+        setup_state = self.setup_delete_test_state(
+            with_admin=self.basic_delete_use_admin)
 
         with override_feature_checks(self.override_features):
-            self.api_delete(url)
+            self.api_delete(setup_state['url'])
 
-        self.check_delete_result(self.user, *cb_args)
+        self.check_delete_result(setup_state['user'],
+                                 *setup_state.get('check_result_args', ()),
+                                 **setup_state.get('check_result_kwargs', {}))
 
     @webapi_test_template
     def test_delete_not_owner(self) -> None:
         """Testing the DELETE <URL> API without owner"""
-        self.load_fixtures(self.basic_delete_fixtures)
-
         user = User.objects.get(username='doc')
         self.assertNotEqual(user, self.user)
 
-        url, cb_args = self.setup_basic_delete_test(user, False, None)
-        self.assertFalse(url.startswith('/s/' + self.local_site_name))
+        setup_state = self.setup_delete_test_state(user=user)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_delete(url,
+            rsp = self.api_delete(setup_state['url'],
                                   expected_status=self.not_owner_status_code)
 
         assert rsp is not None
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], self.not_owner_error.code)
+
+    def setup_delete_test_state(
+        self,
+        *,
+        with_local_site: bool = False,
+        **auth_kwargs,
+    ) -> BasicDeleteTestSetupState:
+        """Set up a HTTP DELETE item test.
+
+        This performs some built-in setup for all HTTP DELETE tests before
+        calling :py:meth:`setup_basic_get_test`.
+
+        Args:
+            with_local_site (bool, optional):
+                Whether this is being tested with a Local Site.
+
+            **auth_kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`_authenticate_basic_tests`.
+
+        Returns:
+            BasicDeleteTestSetupState:
+            The resulting setup state for the test.
+        """
+        self.load_fixtures(self.basic_delete_fixtures)
+
+        user = self._authenticate_basic_tests(with_local_site=with_local_site,
+                                              **auth_kwargs)
+
+        local_site_name = self.local_site_name
+
+        if with_local_site:
+            setup_local_site_name = local_site_name
+        else:
+            setup_local_site_name = None
+
+        url, cb_args = \
+            self.setup_basic_delete_test(user=user,
+                                         with_local_site=with_local_site,
+                                         local_site_name=setup_local_site_name)
+
+        self.assertEqual(url.startswith(f'/s/{local_site_name}'),
+                         with_local_site)
+
+        return {
+            'check_result_args': cb_args,
+            'url': url,
+            'user': user,
+        }
 
 
 class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
@@ -495,75 +618,34 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
     @webapi_test_template
     def test_delete_with_site(self) -> None:
         """Testing the DELETE <URL> API with access to a local site"""
-        user, url, cb_args = self._setup_test_delete_with_site()
+        setup_state = self.setup_delete_test_state(
+            with_local_site=True,
+            with_admin=self.basic_delete_use_admin)
 
         with override_feature_checks(self.override_features):
-            self.api_delete(url)
+            self.api_delete(setup_state['url'])
 
-        self.check_delete_result(user, *cb_args)
+        self.check_delete_result(setup_state['user'],
+                                 *setup_state.get('check_result_args', ()),
+                                 **setup_state.get('check_result_kwargs', {}))
 
     @add_fixtures(['test_site'])
     @webapi_test_template
     def test_delete_with_site_no_access(self) -> None:
         """Testing the DELETE <URL> API without access to a local site"""
-        user, url, cb_args = self._setup_test_delete_with_site()
+        setup_state = self.setup_delete_test_state(
+            with_local_site=True,
+            with_admin=self.basic_delete_use_admin)
 
+        # Undo our Local Site login, reverting back to a normal user.
         self._login_user()
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_delete(url, expected_status=403)
+            rsp = self.api_delete(setup_state['url'], expected_status=403)
 
         assert rsp is not None
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def _setup_test_delete_with_site(
-        self,
-        **auth_kwargs,
-    ) -> Tuple[User, str, Tuple[Any, ...]]:
-        """Set up a HTTP DELETE test with a Local Site.
-
-        This performs some built-in setup for all Local Site HTTP DELETE
-        tests before calling :py:meth:`setup_basic_delete_test`.
-
-        Args:
-            **auth_kwargs (dict):
-                Keyword arguments to pass to
-                :py:meth:`_authenticate_basic_tests`.
-
-        Returns:
-            tuple:
-            A 3-tuple of:
-
-            Tuple:
-                0 (django.contrib.auth.models.User):
-                    The user that was authenticated for the test.
-
-                1 (str):
-                    The URL to the API resource.
-
-                2 (tuple):
-                    Positional arguments provided by
-                    :py:meth:`setup_basic_delete_test`.
-        """
-        self.load_fixtures(self.basic_delete_fixtures)
-
-        with_local_site = auth_kwargs.setdefault('with_local_site', True)
-
-        user = self._authenticate_basic_tests(
-            with_admin=self.basic_delete_use_admin,
-            **auth_kwargs)
-
-        if with_local_site:
-            url, cb_args = self.setup_basic_delete_test(user, True,
-                                                        self.local_site_name)
-        else:
-            url, cb_args = self.setup_basic_delete_test(user, False, None)
-
-        self.assertEqual(url.startswith('/s/' + self.local_site_name),
-                         with_local_site)
-
-        return user, url, cb_args
 
 
 class BasicDeleteTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
@@ -579,14 +661,19 @@ class BasicDeleteTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
         """Testing the DELETE <URL> API with access to a local site
         and session restricted to the site
         """
-        user, url, cb_args = self._setup_test_delete_with_site(
+        setup_state = self.setup_delete_test_state(
+            with_local_site=True,
+            with_admin=self.basic_delete_use_admin,
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id)
+        user = setup_state['user']
 
         with override_feature_checks(self.override_features):
-            self.api_delete(url)
+            self.api_delete(setup_state['url'])
 
-        self.check_delete_result(user, *cb_args)
+        self.check_delete_result(user,
+                                 *setup_state.get('check_result_args', ()),
+                                 **setup_state.get('check_result_kwargs', {}))
 
     @add_fixtures(['test_site'])
     @webapi_test_template
@@ -594,12 +681,14 @@ class BasicDeleteTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
         """Testing the DELETE <URL> API with access to a local site
         and session restricted to a different site
         """
-        user, url, cb_args = self._setup_test_delete_with_site(
+        setup_state = self.setup_delete_test_state(
+            with_local_site=True,
+            with_admin=self.basic_delete_use_admin,
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_delete(url, expected_status=403)
+            rsp = self.api_delete(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -615,15 +704,18 @@ class BasicDeleteTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the DELETE <URL> API with access to a local site using an
         OAuth token for an enabled application on the current site
         """
-        user, url, cb_args = self._setup_test_delete_with_site(
+        setup_state = self.setup_delete_test_state(
+            with_local_site=True,
+            with_admin=self.basic_delete_use_admin,
             with_oauth_token=True,
-            webapi_token_local_site_id=self.local_site_id,
-        )
+            webapi_token_local_site_id=self.local_site_id)
 
         with override_feature_checks(self.override_features):
-            self.api_delete(url)
+            self.api_delete(setup_state['url'])
 
-        self.check_delete_result(user, *cb_args)
+        self.check_delete_result(setup_state['user'],
+                                 *setup_state.get('check_result_args', ()),
+                                 **setup_state.get('check_result_kwargs', {}))
 
     @add_fixtures(['test_site'])
     @webapi_test_template
@@ -631,13 +723,14 @@ class BasicDeleteTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the DELETE <URL> API with access to a local site using an
         OAuth token for an enabled application on a different site
         """
-        user, url, cb_args = self._setup_test_delete_with_site(
+        setup_state = self.setup_delete_test_state(
+            with_local_site=True,
+            with_admin=self.basic_delete_use_admin,
             with_oauth_token=True,
-            webapi_token_local_site_id=self.local_site_id + 1,
-        )
+            webapi_token_local_site_id=self.local_site_id + 1)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_delete(url, expected_status=403)
+            rsp = self.api_delete(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -649,14 +742,15 @@ class BasicDeleteTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the DELETE <URL> API with access to a local site using an
         OAuth token for a disabled application on the current site
         """
-        user, url, cb_args = self._setup_test_delete_with_site(
+        setup_state = self.setup_delete_test_state(
+            with_local_site=True,
+            with_admin=self.basic_delete_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id,
-            oauth_application_enabled=False,
-        )
+            oauth_application_enabled=False)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_delete(url, expected_status=403)
+            rsp = self.api_delete(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -668,14 +762,13 @@ class BasicDeleteTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the DELETE <URL> API with access to a local site using an
         OAuth token meant for a local site on the root
         """
-        user, url, cb_args = self._setup_test_delete_with_site(
-            with_local_site=False,
+        setup_state = self.setup_delete_test_state(
+            with_admin=self.basic_delete_use_admin,
             with_oauth_token=True,
-            webapi_token_local_site_id=self.local_site_id,
-        )
+            webapi_token_local_site_id=self.local_site_id)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_delete(url, expected_status=403)
+            rsp = self.api_delete(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -687,13 +780,14 @@ class BasicDeleteTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the DELETE <URL> API with access to a local site using an
         OAuth token for the root on a local site
         """
-        user, url, cb_args = self._setup_test_delete_with_site(
+        setup_state = self.setup_delete_test_state(
+            with_local_site=True,
+            with_admin=self.basic_delete_use_admin,
             with_oauth_token=True,
-            webapi_token_local_site_id=None,
-        )
+            webapi_token_local_site_id=None)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_delete(url, expected_status=403)
+            rsp = self.api_delete(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -811,15 +905,13 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
     @webapi_test_template
     def test_get(self) -> None:
         """Testing the GET <URL> API"""
-        self.load_fixtures(self.basic_get_fixtures)
-        self._login_user(admin=self.basic_get_use_admin)
-
-        url, mimetype, item = self.setup_basic_get_test(self.user, False, None)
-        self.assertFalse(url.startswith('/s/' + self.local_site_name))
+        setup_state = self.setup_get_item_test_state(
+            with_admin=self.basic_get_use_admin)
+        item = setup_state['item']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url,
-                               expected_mimetype=mimetype,
+            rsp = self.api_get(setup_state['url'],
+                               expected_mimetype=setup_state['mimetype'],
                                expected_json=self.basic_get_returns_json)
 
         assert rsp
@@ -833,6 +925,53 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         else:
             self.compare_item(rsp, item)
 
+    def setup_get_item_test_state(
+        self,
+        *,
+        with_local_site: bool = False,
+        **auth_kwargs,
+    ) -> BasicGetItemTestSetupState:
+        """Set up a HTTP GET item test.
+
+        This performs some built-in setup for all HTTP GET tests before
+        calling :py:meth:`setup_basic_get_test`.
+
+        Args:
+            **auth_kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`_authenticate_basic_tests`.
+
+        Returns:
+            BasicGetItemTestSetupState:
+            The resulting setup state for the test.
+        """
+        self.load_fixtures(self.basic_get_fixtures)
+
+        user = self._authenticate_basic_tests(with_local_site=with_local_site,
+                                              **auth_kwargs)
+
+        local_site_name = self.local_site_name
+
+        if with_local_site:
+            setup_local_site_name = local_site_name
+        else:
+            setup_local_site_name = None
+
+        url, mimetype, item = \
+            self.setup_basic_get_test(user=user,
+                                      with_local_site=with_local_site,
+                                      local_site_name=setup_local_site_name)
+
+        self.assertEqual(url.startswith(f'/s/{local_site_name}'),
+                         with_local_site)
+
+        return {
+            'item': item,
+            'mimetype': mimetype,
+            'url': url,
+            'user': user,
+        }
+
 
 class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
     """Adds basic HTTP GET unit tests for item resources with Local Sites.
@@ -845,11 +984,14 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
     @webapi_test_template
     def test_get_with_site(self) -> None:
         """Testing the GET <URL> API with access to a local site"""
-        user, url, mimetype, item = self._setup_test_get_with_site()
+        setup_state = self.setup_get_item_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin)
+        item = setup_state['item']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url,
-                               expected_mimetype=mimetype,
+            rsp = self.api_get(setup_state['url'],
+                               expected_mimetype=setup_state['mimetype'],
                                expected_json=self.basic_get_returns_json)
 
         assert rsp
@@ -867,65 +1009,19 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
     @webapi_test_template
     def test_get_with_site_no_access(self) -> None:
         """Testing the GET <URL> API without access to a local site"""
-        user, url, mimetype, item = self._setup_test_get_with_site()
+        setup_state = self.setup_get_item_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin)
 
+        # Undo our Local Site login, reverting back to a normal user.
         self._login_user()
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_status=403)
+            rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def _setup_test_get_with_site(
-        self,
-        **auth_kwargs,
-    ) -> Tuple[User, str, str, Any]:
-        """Set up a HTTP GET item test with a Local Site.
-
-        This performs some built-in setup for all Local Site HTTP GET
-        tests before calling :py:meth:`setup_basic_get_test`.
-
-        Args:
-            **auth_kwargs (dict):
-                Keyword arguments to pass to
-                :py:meth:`_authenticate_basic_tests`.
-
-        Returns:
-            tuple:
-            A 4-tuple of:
-
-            Tuple:
-                0 (django.contrib.auth.models.User):
-                    The user that was authenticated for the test.
-
-                1 (str):
-                    The URL to the API resource.
-
-                2 (str):
-                    The expected mimetype of the response.
-
-                3 (object):
-                    The item to compare to in :py:meth:`compare_item`.
-        """
-        self.load_fixtures(self.basic_get_fixtures)
-
-        with_local_site = auth_kwargs.setdefault('with_local_site', True)
-        user = self._authenticate_basic_tests(
-            with_admin=self.basic_get_use_admin,
-            **auth_kwargs)
-
-        if with_local_site:
-            url, mimetype, item = \
-                self.setup_basic_get_test(user, True, self.local_site_name)
-        else:
-            url, mimetype, item = self.setup_basic_get_test(user, False, None)
-
-        self.assertEqual(url.startswith('/s/' + self.local_site_name),
-                         with_local_site)
-
-        return user, url, mimetype, item
 
 
 class BasicGetItemTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
@@ -941,12 +1037,16 @@ class BasicGetItemTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site
         and session restricted to the site
         """
-        user, url, mimetype, item = self._setup_test_get_with_site(
+        setup_state = self.setup_get_item_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id)
+        item = setup_state['item']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_mimetype=mimetype,
+            rsp = self.api_get(setup_state['url'],
+                               expected_mimetype=setup_state['mimetype'],
                                expected_json=self.basic_get_returns_json)
 
         assert rsp
@@ -966,12 +1066,14 @@ class BasicGetItemTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site
         and session restricted to a different site
         """
-        user, url, mimetype, item = self._setup_test_get_with_site(
+        setup_state = self.setup_get_item_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_status=403)
+            rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
 
@@ -988,13 +1090,16 @@ class BasicGetItemTestsWithLocalsSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site using an
         OAuth token for an enabled application on the current site
         """
-        user, url, mimetype, item = self._setup_test_get_with_site(
+        setup_state = self.setup_get_item_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
-            webapi_token_local_site_id=self.local_site_id,
-        )
+            webapi_token_local_site_id=self.local_site_id)
+        item = setup_state['item']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_mimetype=mimetype,
+            rsp = self.api_get(setup_state['url'],
+                               expected_mimetype=setup_state['mimetype'],
                                expected_json=self.basic_get_returns_json)
 
         assert rsp
@@ -1014,13 +1119,14 @@ class BasicGetItemTestsWithLocalsSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site using an
         OAuth token for an enabled application on a different site
         """
-        user, url, mimetype, item = self._setup_test_get_with_site(
+        setup_state = self.setup_get_item_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
-            webapi_token_local_site_id=self.local_site_id + 1,
-        )
+            webapi_token_local_site_id=self.local_site_id + 1)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_status=403)
+            rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1032,14 +1138,15 @@ class BasicGetItemTestsWithLocalsSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site using an
         OAuth token for a disabled application on the current site
         """
-        user, url, mimetype, item = self._setup_test_get_with_site(
+        setup_state = self.setup_get_item_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id,
-            oauth_application_enabled=False,
-        )
+            oauth_application_enabled=False)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_status=403)
+            rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1051,14 +1158,13 @@ class BasicGetItemTestsWithLocalsSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site using an
         OAuth token meant for a local site on the root
         """
-        user, url, mimetype, item = self._setup_test_get_with_site(
-            with_local_site=False,
+        setup_state = self.setup_get_item_test_state(
+            with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
-            webapi_token_local_site_id=self.local_site_id,
-        )
+            webapi_token_local_site_id=self.local_site_id)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_status=403)
+            rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1070,13 +1176,14 @@ class BasicGetItemTestsWithLocalsSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site using an
         OAuth token for the root on a local site
         """
-        user, url, mimetype, item = self._setup_test_get_with_site(
+        setup_state = self.setup_get_item_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
-            webapi_token_local_site_id=None,
-        )
+            webapi_token_local_site_id=None)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_status=403)
+            rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1154,15 +1261,13 @@ class BasicGetListTestsMixin(BasicTestsMixin):
     @webapi_test_template
     def test_get(self) -> None:
         """Testing the GET <URL> API"""
-        self.load_fixtures(self.basic_get_fixtures)
-        self._login_user(admin=self.basic_get_use_admin)
-
-        url, mimetype, items = self.setup_basic_get_test(self.user, False,
-                                                         None, True)
-        self.assertFalse(url.startswith('/s/' + self.local_site_name))
+        setup_state = self.setup_get_list_test_state(
+            with_admin=self.basic_get_use_admin)
+        items = setup_state['items']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_mimetype=mimetype)
+            rsp = self.api_get(setup_state['url'],
+                               expected_mimetype=setup_state['mimetype'])
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
@@ -1173,6 +1278,55 @@ class BasicGetListTestsMixin(BasicTestsMixin):
 
         for i in range(len(items)):
             self.compare_item(items_rsp[i], items[i])
+
+    def setup_get_list_test_state(
+        self,
+        *,
+        with_local_site: bool = False,
+        populate_items: bool = True,
+        **auth_kwargs,
+    ) -> BasicGetItemListTestSetupState:
+        """Set up a HTTP GET list test.
+
+        This performs some built-in setup for all HTTP GET tests before
+        calling :py:meth:`setup_basic_get_test`.
+
+        Args:
+            **auth_kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`_authenticate_basic_tests`.
+
+        Returns:
+            BasicGetItemListTestSetupState:
+            The resulting setup state for the test.
+        """
+        self.load_fixtures(self.basic_get_fixtures)
+
+        user = self._authenticate_basic_tests(with_local_site=with_local_site,
+                                              **auth_kwargs)
+
+        local_site_name = self.local_site_name
+
+        if with_local_site:
+            setup_local_site_name = local_site_name
+        else:
+            setup_local_site_name = None
+
+        url, mimetype, items = \
+            self.setup_basic_get_test(user=user,
+                                      with_local_site=with_local_site,
+                                      local_site_name=setup_local_site_name,
+                                      populate_items=populate_items)
+
+        self.assertEqual(url.startswith(f'/s/{local_site_name}'),
+                         with_local_site)
+
+        return {
+            'items': items,
+            'mimetype': mimetype,
+            'url': url,
+            'user': user,
+        }
 
 
 class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
@@ -1186,10 +1340,14 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
     @webapi_test_template
     def test_get_with_site(self) -> None:
         """Testing the GET <URL> API with access to a local site"""
-        user, url, mimetype, items = self._setup_test_get_list_with_site()
+        setup_state = self.setup_get_list_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin)
+        items = setup_state['items']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_mimetype=mimetype)
+            rsp = self.api_get(setup_state['url'],
+                               expected_mimetype=setup_state['mimetype'])
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
@@ -1205,70 +1363,18 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
     @webapi_test_template
     def test_get_with_site_no_access(self) -> None:
         """Testing the GET <URL> API without access to a local site"""
-        user, url, mimetype, items = self._setup_test_get_list_with_site()
+        setup_state = self.setup_get_list_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin)
 
+        # Undo our Local Site login, reverting back to a normal user.
         self._login_user()
 
-        rsp = self.api_get(url, expected_status=403)
+        rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def _setup_test_get_list_with_site(
-        self,
-        **auth_kwargs,
-    ) -> Tuple[User, str, str, Sequence[Any]]:
-        """Set up a HTTP GET list test with a Local Site.
-
-        This performs some built-in setup for all Local Site HTTP GET
-        tests before calling :py:meth:`setup_basic_get_test`.
-
-        Args:
-            **auth_kwargs (dict):
-                Keyword arguments to pass to
-                :py:meth:`_authenticate_basic_tests`.
-
-        Returns:
-            tuple:
-            A 4-tuple of:
-
-            Tuple:
-                0 (django.contrib.auth.models.User):
-                    The user that was authenticated for the test.
-
-                1 (str):
-                    The URL to the API resource.
-
-                2 (str):
-                    The expected mimetype of the response.
-
-                3 (list of object):
-                    The list of items to compare to in :py:meth:`compare_item`.
-        """
-        self.load_fixtures(self.basic_get_fixtures)
-
-        with_local_site = auth_kwargs.setdefault('with_local_site', True)
-
-        user = self._login_user(local_site=with_local_site,
-                                admin=self.basic_get_use_admin)
-
-        if with_local_site:
-            url, mimetype, items = self.setup_basic_get_test(
-                user, True, self.local_site_name, True)
-        else:
-            url, mimetype, items = self.setup_basic_get_test(
-                user, False, None, True)
-
-        user = self._authenticate_basic_tests(
-            with_admin=self.basic_get_use_admin,
-            user=user,
-            **auth_kwargs)
-
-        self.assertEqual(url.startswith('/s/' + self.local_site_name),
-                         with_local_site)
-
-        return user, url, mimetype, items
 
 
 class BasicGetListTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
@@ -1284,12 +1390,16 @@ class BasicGetListTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site
         and session restricted to the site
         """
-        user, url, mimetype, items = self._setup_test_get_list_with_site(
+        setup_state = self.setup_get_list_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id)
+        items = setup_state['items']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_mimetype=mimetype)
+            rsp = self.api_get(setup_state['url'],
+                               expected_mimetype=setup_state['mimetype'])
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
@@ -1307,12 +1417,14 @@ class BasicGetListTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site
         and session restricted to a different site
         """
-        user, url, mimetype, items = self._setup_test_get_list_with_site(
+        setup_state = self.setup_get_list_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_status=403)
+            rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1328,13 +1440,16 @@ class BasicGetListTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site using an
         OAuth token for an enabled application on the current site
         """
-        user, url, mimetype, items = self._setup_test_get_list_with_site(
+        setup_state = self.setup_get_list_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
-            webapi_token_local_site_id=self.local_site_id,
-        )
+            webapi_token_local_site_id=self.local_site_id)
+        items = setup_state['items']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_mimetype=mimetype)
+            rsp = self.api_get(setup_state['url'],
+                               expected_mimetype=setup_state['mimetype'])
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
@@ -1352,13 +1467,14 @@ class BasicGetListTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site using an
         OAuth token for an enabled application on a different site
         """
-        user, url, mimetype, items = self._setup_test_get_list_with_site(
+        setup_state = self.setup_get_list_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
-            webapi_token_local_site_id=self.local_site_id + 1,
-        )
+            webapi_token_local_site_id=self.local_site_id + 1)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_status=403)
+            rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1370,14 +1486,15 @@ class BasicGetListTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site using an
         OAuth token for a disabled application on the current site
         """
-        user, url, mimetype, items = self._setup_test_get_list_with_site(
+        setup_state = self.setup_get_list_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id,
-            oauth_application_enabled=False,
-        )
+            oauth_application_enabled=False)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_status=403)
+            rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1389,14 +1506,13 @@ class BasicGetListTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site using an
         OAuth token meant for a local site on the root
         """
-        user, url, mimetype, items = self._setup_test_get_list_with_site(
-            with_local_site=False,
+        setup_state = self.setup_get_list_test_state(
+            with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
-            webapi_token_local_site_id=self.local_site_id,
-        )
+            webapi_token_local_site_id=self.local_site_id)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_status=403)
+            rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1408,13 +1524,14 @@ class BasicGetListTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the GET <URL> API with access to a local site using an
         OAuth token for the root on a local site
         """
-        user, url, mimetype, items = self._setup_test_get_list_with_site(
+        setup_state = self.setup_get_list_test_state(
+            with_local_site=True,
+            with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
-            webapi_token_local_site_id=None,
-        )
+            webapi_token_local_site_id=None)
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_get(url, expected_status=403)
+            rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1534,22 +1651,81 @@ class BasicPostTestsMixin(BasicTestsMixin):
     @webapi_test_template
     def test_post(self) -> None:
         """Testing the POST <URL> API"""
-        self.load_fixtures(self.basic_post_fixtures)
-        self._login_user(admin=self.basic_post_use_admin)
-
-        url, mimetype, post_data, cb_args = \
-            self.setup_basic_post_test(self.user, False, None, True)
-        self.assertFalse(url.startswith('/s/' + self.local_site_name))
+        setup_state = self.setup_post_test_state(
+            with_admin=self.basic_post_use_admin)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_mimetype=mimetype,
+            rsp = self.api_post(setup_state['url'],
+                                request_data,
+                                expected_mimetype=setup_state['mimetype'],
                                 expected_status=self.basic_post_success_status)
-
-        self._close_file_handles(post_data)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
-        self.check_post_result(self.user, rsp, *cb_args)
+        self.check_post_result(setup_state['user'],
+                               rsp,
+                               *setup_state.get('check_result_args', ()),
+                               **setup_state.get('check_result_kwargs', {}))
+
+    def setup_post_test_state(
+        self,
+        *,
+        with_local_site: bool = False,
+        post_valid_data: bool = True,
+        **auth_kwargs,
+    ) -> BasicPostTestSetupState:
+        """Set up a HTTP POST item test.
+
+        This performs some built-in setup for all HTTP POST tests before
+        calling :py:meth:`setup_basic_post_test`.
+
+        Args:
+            with_local_site (bool, optional):
+                Whether this is being tested with a Local Site.
+
+            post_valid_data (bool, optional):
+                Whether valid data should be generated for the HTTP request
+                body.
+
+            **auth_kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`_authenticate_basic_tests`.
+
+        Returns:
+            BasicPostTestSetupState:
+            The resulting setup state for the test.
+        """
+        self.load_fixtures(self.basic_post_fixtures)
+
+        user = self._authenticate_basic_tests(with_local_site=with_local_site,
+                                              **auth_kwargs)
+
+        local_site_name = self.local_site_name
+
+        if with_local_site:
+            setup_local_site_name = local_site_name
+        else:
+            setup_local_site_name = None
+
+        url, mimetype, post_data, cb_args = \
+            self.setup_basic_post_test(user=user,
+                                       with_local_site=with_local_site,
+                                       local_site_name=setup_local_site_name,
+                                       post_valid_data=post_valid_data)
+
+        self.addCleanup(lambda: self._close_file_handles(post_data))
+
+        self.assertEqual(url.startswith(f'/s/{local_site_name}'),
+                         with_local_site)
+
+        return {
+            'check_result_args': cb_args,
+            'mimetype': mimetype,
+            'request_data': post_data,
+            'url': url,
+            'user': user,
+        }
 
 
 class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
@@ -1563,91 +1739,44 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
     @webapi_test_template
     def test_post_with_site(self) -> None:
         """Testing the POST <URL> API with access to a local site"""
-        user, url, mimetype, post_data, cb_args = \
-            self._setup_test_post_with_site()
+        setup_state = self.setup_post_test_state(
+            with_local_site=True,
+            with_admin=self.basic_post_use_admin)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_mimetype=mimetype,
+            rsp = self.api_post(setup_state['url'],
+                                request_data,
+                                expected_mimetype=setup_state['mimetype'],
                                 expected_status=self.basic_post_success_status)
-
-        self._close_file_handles(post_data)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
-        self.check_post_result(user, rsp, *cb_args)
+        self.check_post_result(setup_state['user'],
+                               rsp,
+                               *setup_state.get('check_result_args', ()),
+                               **setup_state.get('check_result_kwargs', {}))
 
     @add_fixtures(['test_site'])
     @webapi_test_template
     def test_post_with_site_no_access(self) -> None:
         """Testing the POST <URL> API without access to a local site"""
-        user, url, mimetype, post_data, cb_args = \
-            self._setup_test_post_with_site()
+        setup_state = self.setup_post_test_state(
+            with_local_site=True,
+            with_admin=self.basic_post_use_admin)
+        request_data = setup_state['request_data']
 
+        # Undo our Local Site login, reverting back to a normal user.
         self._login_user()
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_status=403)
-
-        self._close_file_handles(post_data)
+            rsp = self.api_post(setup_state['url'],
+                                request_data,
+                                expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def _setup_test_post_with_site(
-        self,
-        **auth_kwargs,
-    ) -> Tuple[User, str, str, APIRequestData, Tuple[Any, ...]]:
-        """Set up a HTTP POST test with a Local Site.
-
-        This performs some built-in setup for all Local Site HTTP POST
-        tests before calling :py:meth:`setup_basic_post_test`.
-
-        Args:
-            **auth_kwargs (dict):
-                Keyword arguments to pass to
-                :py:meth:`_authenticate_basic_tests`.
-
-        Returns:
-            tuple:
-            A 5-tuple of:
-
-            Tuple:
-                0 (django.contrib.auth.models.User):
-                    The user that was authenticated for the test.
-
-                1 (str):
-                    The URL to the API resource.
-
-                2 (str):
-                    The expected mimetype of the response.
-
-                3 (dict or bytes):
-                    The data to send in the POST request.
-
-                4 (tuple):
-                    Positional arguments provided by
-                    :py:meth:`setup_basic_post_test`.
-        """
-        self.load_fixtures(self.basic_post_fixtures)
-
-        with_local_site = auth_kwargs.setdefault('with_local_site', True)
-        user = self._authenticate_basic_tests(
-            with_admin=self.basic_post_use_admin,
-            **auth_kwargs)
-
-        if with_local_site:
-            url, mimetype, post_data, cb_args = \
-                self.setup_basic_post_test(user, True, self.local_site_name,
-                                           True)
-        else:
-            url, mimetype, post_data, cb_args = \
-                self.setup_basic_post_test(user, False, None, True)
-
-        self.assertEqual(url.startswith('/s/' + self.local_site_name),
-                         with_local_site)
-
-        return user, url, mimetype, post_data, cb_args
 
 
 class BasicPostTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
@@ -1663,20 +1792,25 @@ class BasicPostTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
         """Testing the POST <URL> API with access to a local site
         and session restricted to the site
         """
-        user, url, mimetype, post_data, cb_args = \
-            self._setup_test_post_with_site(
-                with_webapi_token=True,
-                webapi_token_local_site_id=self.local_site_id)
+        setup_state = self.setup_post_test_state(
+            with_local_site=True,
+            with_admin=self.basic_post_use_admin,
+            with_webapi_token=True,
+            webapi_token_local_site_id=self.local_site_id)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_mimetype=mimetype,
+            rsp = self.api_post(setup_state['url'],
+                                request_data,
+                                expected_mimetype=setup_state['mimetype'],
                                 expected_status=self.basic_post_success_status)
-
-        self._close_file_handles(post_data)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
-        self.check_post_result(user, rsp, *cb_args)
+        self.check_post_result(setup_state['user'],
+                               rsp,
+                               *setup_state.get('check_result_args', ()),
+                               **setup_state.get('check_result_kwargs', {}))
 
     @add_fixtures(['test_site'])
     @webapi_test_template
@@ -1684,15 +1818,17 @@ class BasicPostTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
         """Testing the POST <URL> API with access to a local site
         and session restricted to a different site
         """
-        user, url, mimetype, post_data, cb_args = \
-            self._setup_test_post_with_site(
-                with_webapi_token=True,
-                webapi_token_local_site_id=self.local_site_id + 1)
+        setup_state = self.setup_post_test_state(
+            with_local_site=True,
+            with_admin=self.basic_post_use_admin,
+            with_webapi_token=True,
+            webapi_token_local_site_id=self.local_site_id + 1)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_status=403)
-
-        self._close_file_handles(post_data)
+            rsp = self.api_post(setup_state['url'],
+                                request_data,
+                                expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1708,21 +1844,25 @@ class BasicPostTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the POST <URL> API with access to a local site using an
         OAuth token for an enabled application on the current site
         """
-        user, url, mimetype, post_data, cb_args = \
-            self._setup_test_post_with_site(
-                with_oauth_token=True,
-                webapi_token_local_site_id=self.local_site_id,
-            )
+        setup_state = self.setup_post_test_state(
+            with_local_site=True,
+            with_admin=self.basic_post_use_admin,
+            with_oauth_token=True,
+            webapi_token_local_site_id=self.local_site_id)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_mimetype=mimetype,
+            rsp = self.api_post(setup_state['url'],
+                                request_data,
+                                expected_mimetype=setup_state['mimetype'],
                                 expected_status=self.basic_post_success_status)
-
-        self._close_file_handles(post_data)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
-        self.check_post_result(user, rsp, *cb_args)
+        self.check_post_result(setup_state['user'],
+                               rsp,
+                               *setup_state.get('check_result_args', ()),
+                               **setup_state.get('check_result_kwargs', {}))
 
     @add_fixtures(['test_site'])
     @webapi_test_template
@@ -1730,16 +1870,17 @@ class BasicPostTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the POST <URL> API with access to a local site using an
         OAuth token for an enabled application on a different site
         """
-        user, url, mimetype, post_data, cb_args = \
-            self._setup_test_post_with_site(
-                with_oauth_token=True,
-                webapi_token_local_site_id=self.local_site_id + 1,
-            )
+        setup_state = self.setup_post_test_state(
+            with_local_site=True,
+            with_admin=self.basic_post_use_admin,
+            with_oauth_token=True,
+            webapi_token_local_site_id=self.local_site_id + 1)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_status=403)
-
-        self._close_file_handles(post_data)
+            rsp = self.api_post(setup_state['url'],
+                                request_data,
+                                expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1751,17 +1892,18 @@ class BasicPostTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the POST <URL> API with access to a local site using an
         OAuth token for a disabled application on the current site
         """
-        user, url, mimetype, post_data, cb_args = \
-            self._setup_test_post_with_site(
-                with_oauth_token=True,
-                webapi_token_local_site_id=self.local_site_id,
-                oauth_application_enabled=False,
-            )
+        setup_state = self.setup_post_test_state(
+            with_local_site=True,
+            with_admin=self.basic_post_use_admin,
+            with_oauth_token=True,
+            webapi_token_local_site_id=self.local_site_id,
+            oauth_application_enabled=False)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_status=403)
-
-        self._close_file_handles(post_data)
+            rsp = self.api_post(setup_state['url'],
+                                request_data,
+                                expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1773,17 +1915,16 @@ class BasicPostTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the POST <URL> API with access to a local site using an
         OAuth token meant for a local site on the root
         """
-        user, url, mimetype, post_data, cb_args = \
-            self._setup_test_post_with_site(
-                with_local_site=False,
-                with_oauth_token=True,
-                webapi_token_local_site_id=self.local_site_id,
-            )
+        setup_state = self.setup_post_test_state(
+            with_admin=self.basic_post_use_admin,
+            with_oauth_token=True,
+            webapi_token_local_site_id=self.local_site_id)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_status=403)
-
-        self._close_file_handles(post_data)
+            rsp = self.api_post(setup_state['url'],
+                                request_data,
+                                expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1795,16 +1936,17 @@ class BasicPostTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the POST <URL> API with access to a local site using an
         OAuth token for the root on a local site
         """
-        user, url, mimetype, post_data, cb_args = \
-            self._setup_test_post_with_site(
-                with_oauth_token=True,
-                webapi_token_local_site_id=None,
-            )
+        setup_state = self.setup_post_test_state(
+            with_local_site=True,
+            with_admin=self.basic_post_use_admin,
+            with_oauth_token=True,
+            webapi_token_local_site_id=None)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_post(url, post_data, expected_status=403)
-
-        self._close_file_handles(post_data)
+            rsp = self.api_post(setup_state['url'],
+                                request_data,
+                                expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1962,42 +2104,104 @@ class BasicPutTestsMixin(BasicTestsMixin):
     @webapi_test_template
     def test_put(self) -> None:
         """Testing the PUT <URL> API"""
-        self.load_fixtures(self.basic_put_fixtures)
-        self._login_user(admin=self.basic_put_use_admin)
-
-        url, mimetype, put_data, item, cb_args = \
-            self.setup_basic_put_test(self.user, False, None, True)
-        self.assertFalse(url.startswith('/s/' + self.local_site_name))
+        setup_state = self.setup_put_test_state(
+            with_admin=self.basic_put_use_admin)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
+            rsp = self.api_put(setup_state['url'],
+                               request_data,
+                               expected_mimetype=setup_state['mimetype'])
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.item_result_key, rsp)
 
-        self.check_put_result(self.user, rsp[self.resource.item_result_key],
-                              item, *cb_args)
+        self.check_put_result(setup_state['user'],
+                              rsp[self.resource.item_result_key],
+                              setup_state['item'],
+                              *setup_state.get('check_result_args', ()),
+                              **setup_state.get('check_result_kwargs', {}))
 
     @webapi_test_template
     def test_put_not_owner(self) -> None:
         """Testing the PUT <URL> API without owner"""
-        self.load_fixtures(self.basic_put_fixtures)
-
         user = User.objects.get(username='doc')
         self.assertNotEqual(user, self.user)
 
-        url, mimetype, put_data, item, cb_args = \
-            self.setup_basic_put_test(user, False, None, False)
-        self.assertFalse(url.startswith('/s/' + self.local_site_name))
+        setup_state = self.setup_put_test_state(
+            user=user,
+            put_valid_data=False)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_put(url, put_data,
+            rsp = self.api_put(setup_state['url'],
+                               request_data,
                                expected_status=self.not_owner_status_code)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], self.not_owner_error.code)
+
+    def setup_put_test_state(
+        self,
+        *,
+        with_local_site: bool = False,
+        put_valid_data: bool = True,
+        **auth_kwargs,
+    ) -> BasicPutTestSetupState:
+        """Set up a HTTP PUT item test.
+
+        This performs some built-in setup for all HTTP PUT tests before
+        calling :py:meth:`setup_basic_put_test`.
+
+        Args:
+            with_local_site (bool, optional):
+                Whether this is being tested with a Local Site.
+
+            put_valid_data (bool, optional):
+                Whether valid data should be generated for the HTTP request
+                body.
+
+            **auth_kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`_authenticate_basic_tests`.
+
+        Returns:
+            BasicPutTestSetupState:
+            The resulting setup state for the test.
+        """
+        self.load_fixtures(self.basic_put_fixtures)
+
+        user = self._authenticate_basic_tests(with_local_site=with_local_site,
+                                              **auth_kwargs)
+
+        local_site_name = self.local_site_name
+
+        if with_local_site:
+            setup_local_site_name = local_site_name
+        else:
+            setup_local_site_name = None
+
+        url, mimetype, put_data, item, cb_args = \
+            self.setup_basic_put_test(user=user,
+                                      with_local_site=with_local_site,
+                                      local_site_name=setup_local_site_name,
+                                      put_valid_data=put_valid_data)
+
+        self.addCleanup(lambda: self._close_file_handles(put_data))
+
+        self.assertEqual(url.startswith(f'/s/{local_site_name}'),
+                         with_local_site)
+
+        return {
+            'check_result_args': cb_args,
+            'item': item,
+            'mimetype': mimetype,
+            'request_data': put_data,
+            'url': url,
+            'user': user,
+        }
 
 
 class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
@@ -2011,92 +2215,44 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
     @webapi_test_template
     def test_put_with_site(self) -> None:
         """Testing the PUT <URL> API with access to a local site"""
-        user, url, mimetype, put_data, item, cb_args = \
-            self._setup_test_put_with_site()
+        setup_state = self.setup_put_test_state(
+            with_local_site=True,
+            with_admin=self.basic_put_use_admin)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
+            rsp = self.api_put(setup_state['url'],
+                               request_data,
+                               expected_mimetype=setup_state['mimetype'])
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.item_result_key, rsp)
 
-        self.check_put_result(user, rsp[self.resource.item_result_key],
-                              item, *cb_args)
+        self.check_put_result(setup_state['user'],
+                              rsp[self.resource.item_result_key],
+                              setup_state['item'],
+                              *setup_state.get('check_result_args', ()),
+                              **setup_state.get('check_result_kwargs', {}))
 
     @add_fixtures(['test_site'])
     @webapi_test_template
     def test_put_with_site_no_access(self) -> None:
         """Testing the PUT <URL> API without access to a local site"""
-        user, url, mimetype, put_data, item, cb_args = \
-            self._setup_test_put_with_site()
+        setup_state = self.setup_put_test_state(with_local_site=True)
+        request_data = setup_state['request_data']
 
+        # Undo our Local Site login, reverting back to a normal user.
         self._login_user()
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_put(url, put_data, expected_status=403)
+            rsp = self.api_put(setup_state['url'],
+                               request_data,
+                               expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def _setup_test_put_with_site(
-        self,
-        **auth_kwargs,
-    ) -> Tuple[User, str, str, APIRequestData, Any, Tuple[Any, ...]]:
-        """Set up a HTTP PUT test with a Local Site.
-
-        This performs some built-in setup for all Local Site HTTP PUT
-        tests before calling :py:meth:`setup_basic_put_test`.
-
-        Args:
-            **auth_kwargs (dict):
-                Keyword arguments to pass to
-                :py:meth:`_authenticate_basic_tests`.
-
-        Returns:
-            tuple:
-            A 6-tuple of:
-
-            Tuple:
-                0 (django.contrib.auth.models.User):
-                    The user that was authenticated for the test.
-
-                1 (str):
-                    The URL to the API resource.
-
-                2 (str):
-                    The expected mimetype of the response.
-
-                3 (dict or bytes):
-                    The data to send in the POST request.
-
-                4 (object):
-                    The item to compare to in :py:meth:`compare_item`.
-
-                5 (tuple):
-                    Positional arguments provided by
-                    :py:meth:`setup_basic_put_test`.
-        """
-        self.load_fixtures(self.basic_put_fixtures)
-
-        with_local_site = auth_kwargs.setdefault('with_local_site', True)
-        user = self._authenticate_basic_tests(
-            with_admin=self.basic_put_use_admin,
-            **auth_kwargs)
-
-        if with_local_site:
-            url, mimetype, put_data, item, cb_args = \
-                self.setup_basic_put_test(user, True, self.local_site_name,
-                                          True)
-        else:
-            url, mimetype, put_data, item, cb_args = \
-                self.setup_basic_put_test(user, False, None, True)
-
-        self.assertEqual(url.startswith('/s/' + self.local_site_name),
-                         with_local_site)
-
-        return user, url, mimetype, put_data, item, cb_args
 
 
 class BasicPutTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
@@ -2112,20 +2268,27 @@ class BasicPutTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
         """Testing the PUT <URL> API with access to a local site
         and session restricted to the site
         """
-        user, url, mimetype, put_data, item, cb_args = \
-            self._setup_test_put_with_site(
-                with_webapi_token=True,
-                webapi_token_local_site_id=self.local_site_id)
+        setup_state = self.setup_put_test_state(
+            with_local_site=True,
+            with_admin=self.basic_put_use_admin,
+            with_webapi_token=True,
+            webapi_token_local_site_id=self.local_site_id)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
+            rsp = self.api_put(setup_state['url'],
+                               request_data,
+                               expected_mimetype=setup_state['mimetype'])
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.item_result_key, rsp)
 
-        self.check_put_result(user, rsp[self.resource.item_result_key],
-                              item, *cb_args)
+        self.check_put_result(setup_state['user'],
+                              rsp[self.resource.item_result_key],
+                              setup_state['item'],
+                              *setup_state.get('check_result_args', ()),
+                              **setup_state.get('check_result_kwargs', {}))
 
     @add_fixtures(['test_site'])
     @webapi_test_template
@@ -2133,13 +2296,17 @@ class BasicPutTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
         """Testing the PUT <URL> API with access to a local site
         and session restricted to a different site
         """
-        user, url, mimetype, put_data, item, cb_args = \
-            self._setup_test_put_with_site(
-                with_webapi_token=True,
-                webapi_token_local_site_id=self.local_site_id + 1)
+        setup_state = self.setup_put_test_state(
+            with_local_site=True,
+            with_admin=self.basic_put_use_admin,
+            with_webapi_token=True,
+            webapi_token_local_site_id=self.local_site_id + 1)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_put(url, put_data, expected_status=403)
+            rsp = self.api_put(setup_state['url'],
+                               request_data,
+                               expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -2155,21 +2322,27 @@ class BasicPutTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the PUT <URL> API with access to a local site using an
         OAuth token for an enabled application on the current site
         """
-        user, url, mimetype, put_data, item, cb_args = \
-            self._setup_test_put_with_site(
-                with_oauth_token=True,
-                webapi_token_local_site_id=self.local_site_id,
-            )
+        setup_state = self.setup_put_test_state(
+            with_local_site=True,
+            with_admin=self.basic_put_use_admin,
+            with_oauth_token=True,
+            webapi_token_local_site_id=self.local_site_id)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
+            rsp = self.api_put(setup_state['url'],
+                               request_data,
+                               expected_mimetype=setup_state['mimetype'])
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.item_result_key, rsp)
 
-        self.check_put_result(user, rsp[self.resource.item_result_key],
-                              item, *cb_args)
+        self.check_put_result(setup_state['user'],
+                              rsp[self.resource.item_result_key],
+                              setup_state['item'],
+                              *setup_state.get('check_result_args', ()),
+                              **setup_state.get('check_result_kwargs', {}))
 
     @add_fixtures(['test_site'])
     @webapi_test_template
@@ -2177,14 +2350,17 @@ class BasicPutTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the PUT <URL> API with access to a local site using an
         OAuth token for an enabled application on a different site
         """
-        user, url, mimetype, put_data, item, cb_args = \
-            self._setup_test_put_with_site(
-                with_oauth_token=True,
-                webapi_token_local_site_id=self.local_site_id + 1,
-            )
+        setup_state = self.setup_put_test_state(
+            with_local_site=True,
+            with_admin=self.basic_put_use_admin,
+            with_oauth_token=True,
+            webapi_token_local_site_id=self.local_site_id + 1)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_put(url, put_data, expected_status=403)
+            rsp = self.api_put(setup_state['url'],
+                               request_data,
+                               expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -2196,15 +2372,18 @@ class BasicPutTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the PUT <URL> API with access to a local site using an
         OAuth token for a disabled application on the current site
         """
-        user, url, mimetype, put_data, item, cb_args = \
-            self._setup_test_put_with_site(
-                with_oauth_token=True,
-                webapi_token_local_site_id=self.local_site_id,
-                oauth_application_enabled=False,
-            )
+        setup_state = self.setup_put_test_state(
+            with_local_site=True,
+            with_admin=self.basic_put_use_admin,
+            with_oauth_token=True,
+            webapi_token_local_site_id=self.local_site_id,
+            oauth_application_enabled=False)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_put(url, put_data, expected_status=403)
+            rsp = self.api_put(setup_state['url'],
+                               request_data,
+                               expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -2216,15 +2395,16 @@ class BasicPutTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the PUT <URL> API with access to a local site using an
         OAuth token meant for a local site on the root
         """
-        user, url, mimetype, put_data, item, cb_args = \
-            self._setup_test_put_with_site(
-                with_local_site=False,
-                with_oauth_token=True,
-                webapi_token_local_site_id=self.local_site_id,
-            )
+        setup_state = self.setup_put_test_state(
+            with_admin=self.basic_put_use_admin,
+            with_oauth_token=True,
+            webapi_token_local_site_id=self.local_site_id)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_put(url, put_data, expected_status=403)
+            rsp = self.api_put(setup_state['url'],
+                               request_data,
+                               expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -2236,14 +2416,17 @@ class BasicPutTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         """Testing the PUT <URL> API with access to a local site using an
         OAuth token for the root on a local site
         """
-        user, url, mimetype, put_data, item, cb_args = \
-            self._setup_test_put_with_site(
-                with_oauth_token=True,
-                webapi_token_local_site_id=None,
-            )
+        setup_state = self.setup_put_test_state(
+            with_local_site=True,
+            with_admin=self.basic_put_use_admin,
+            with_oauth_token=True,
+            webapi_token_local_site_id=None)
+        request_data = setup_state['request_data']
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_put(url, put_data, expected_status=403)
+            rsp = self.api_put(setup_state['url'],
+                               request_data,
+                               expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
