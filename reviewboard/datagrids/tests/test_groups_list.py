@@ -182,10 +182,28 @@ class GroupListViewTests(BaseViewTestCase):
                 'type': 'UPDATE',
                 'where': Q(pk=profile.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'model': Group,
+                    'num_joins': 1,
+                    'subquery': True,
+                    'tables': {
+                        'reviews_group',
+                        'reviews_group_users',
+                    },
+                    'where': (((Q(invite_only=False) &
+                                Q(visible=True)) |
+                               Q(users=user.pk)) &
+                              Q(local_site=local_site)),
+                },
                 'model': Group,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'distinct': True,
                 'limit': 10,
@@ -202,6 +220,8 @@ class GroupListViewTests(BaseViewTestCase):
                            Q(users=user.pk)) &
                           Q(local_site=local_site)),
             },
+
+            # Fetch the IDs of the page's groups that are starred.
             {
                 'model': Group,
                 'num_joins': 1,
@@ -213,6 +233,8 @@ class GroupListViewTests(BaseViewTestCase):
                 'where': (Q(starred_by__id=profile.pk) &
                           Q(pk__in=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10])),
             },
+
+            # Fetch the data for one page based on the IDs.
             {
                 'model': Group,
                 'where': Q(pk__in=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
@@ -249,7 +271,7 @@ class GroupListViewTests(BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 

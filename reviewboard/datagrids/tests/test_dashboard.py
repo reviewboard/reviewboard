@@ -446,10 +446,40 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
-                'model': ReviewRequest,
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'model': ReviewRequest,
+                    'num_joins': 4,
+                    'subquery': True,
+                    'tables': {
+                        'accounts_profile_starred_review_requests',
+                        'auth_user',
+                        'reviews_reviewrequest',
+                        'reviews_reviewrequest_target_groups',
+                        'reviews_reviewrequest_target_people',
+                    },
+                    'where': (
+                        Q(Q(Q(public=True) |
+                            Q(submitter=user)) &
+                          Q(submitter__is_active=True) &
+                          Q(status='P') &
+                          local_site_q &
+                          Q(Q(target_people=user) |
+                            Q(target_groups__in=[]) |
+                            Q(starred_by=profile) |
+                            Q(submitter=user))) &
+                        ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                        Q(local_site=local_site)
+                    ),
+                },
+                'model': ReviewRequest,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'model': ReviewRequest,
                 'num_joins': 4,
@@ -483,6 +513,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_site:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {
@@ -495,6 +526,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
@@ -503,7 +535,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -702,10 +734,39 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
-                'model': ReviewRequest,
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'model': ReviewRequest,
+                    'num_joins': 4,
+                    'subquery': True,
+                    'tables': {
+                        'accounts_profile_starred_review_requests',
+                        'auth_user',
+                        'reviews_reviewrequest',
+                        'reviews_reviewrequest_target_groups',
+                        'reviews_reviewrequest_target_people',
+                    },
+                    'where': (
+                        Q(Q(Q(public=True) |
+                            Q(submitter=user)) &
+                          Q(submitter__is_active=True) &
+                          Q(status='P') &
+                          local_site_q &
+                          Q(Q(target_people=user) |
+                            Q(target_groups__in=[]) |
+                            Q(starred_by=profile))) &
+                        ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                        Q(local_site=local_site)
+                    ),
+                },
+                'model': ReviewRequest,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'model': ReviewRequest,
                 'num_joins': 4,
@@ -737,6 +798,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         ]
 
         if local_site:
+            # Fetch the data for one page based on the IDs.
             queries += [
                 {
                     'model': ReviewRequest,
@@ -749,6 +811,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
             ]
         else:
+            # Fetch the data for one page based on the IDs.
             queries += [
                 {
                     'model': ReviewRequest,
@@ -758,7 +821,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -913,10 +976,34 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
-                'model': ReviewRequest,
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'model': ReviewRequest,
+                    'num_joins': 1,
+                    'subquery': True,
+                    'tables': {
+                        'auth_user',
+                        'reviews_reviewrequest',
+                    },
+                    'where': (
+                        Q(Q(Q(public=True) |
+                            Q(submitter=user)) &
+                          Q(submitter__is_active=True) &
+                          Q(status='P') &
+                          local_site_q &
+                          Q(submitter=user)) &
+                        ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                        Q(local_site=local_site)
+                    ),
+                },
+                'model': ReviewRequest,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'model': ReviewRequest,
                 'num_joins': 1,
@@ -940,6 +1027,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'distinct': True,
                 'limit': 5,
             },
+
+            # Fetch the IDs of the page's review requests that are starred.
             {
                 'model': ReviewRequest,
                 'num_joins': 1,
@@ -955,6 +1044,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_site:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {
@@ -967,6 +1057,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
@@ -975,7 +1066,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1169,10 +1260,33 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
-                'model': ReviewRequest,
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'model': ReviewRequest,
+                    'num_joins': 1,
+                    'subquery': True,
+                    'tables': {
+                        'auth_user',
+                        'reviews_reviewrequest',
+                    },
+                    'where': (
+                        Q(Q(Q(public=True) |
+                            Q(submitter=user)) &
+                          Q(submitter__is_active=True) &
+                          local_site_q &
+                          Q(submitter=user)) &
+                        ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                        Q(local_site=local_site)
+                    ),
+                },
+                'model': ReviewRequest,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'model': ReviewRequest,
                 'num_joins': 1,
@@ -1199,6 +1313,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_site:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {
@@ -1211,6 +1326,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
@@ -1219,7 +1335,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1414,10 +1530,37 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
-                'model': ReviewRequest,
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'model': ReviewRequest,
+                    'num_joins': 3,
+                    'subquery': True,
+                    'tables': {
+                        'accounts_profile_starred_review_requests',
+                        'auth_user',
+                        'reviews_reviewrequest',
+                        'reviews_reviewrequest_target_people',
+                    },
+                    'where': (
+                        Q(Q(Q(public=True) |
+                            Q(submitter=user)) &
+                          Q(submitter__is_active=True) &
+                          Q(status='P') &
+                          local_site_q &
+                          (Q(target_people=user) |
+                           Q(starred_by=profile))) &
+                        ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                        Q(local_site=local_site)
+                    ),
+                },
+                'model': ReviewRequest,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'model': ReviewRequest,
                 'num_joins': 3,
@@ -1448,6 +1591,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_site:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {
@@ -1460,6 +1604,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
@@ -1468,7 +1613,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1705,10 +1850,37 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
-                'model': ReviewRequest,
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'model': ReviewRequest,
+                    'num_joins': 3,
+                    'subquery': True,
+                    'tables': {
+                        'auth_user',
+                        'reviews_group',
+                        'reviews_reviewrequest',
+                        'reviews_reviewrequest_target_groups',
+                    },
+                    'where': (
+                        Q(Q(Q(public=True) |
+                            Q(submitter=user)) &
+                          Q(submitter__is_active=True) &
+                          Q(status='P') &
+                          local_site_q &
+                          Q(target_groups__name='devgroup') &
+                          target_groups_local_site_q) &
+                        ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                        Q(local_site=local_site)
+                    ),
+                },
+                'model': ReviewRequest,
             },
+            # Fetch the IDs of the items for one page.
+
             {
                 'model': ReviewRequest,
                 'num_joins': 3,
@@ -1739,6 +1911,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_site:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {
@@ -1751,6 +1924,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
@@ -1759,7 +1933,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1987,10 +2161,37 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
-                'model': ReviewRequest,
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'model': ReviewRequest,
+                    'num_joins': 3,
+                    'subquery': True,
+                    'tables': {
+                        'auth_user',
+                        'reviews_group',
+                        'reviews_reviewrequest',
+                        'reviews_reviewrequest_target_groups',
+                    },
+                    'where': (
+                        Q(Q(Q(public=True) |
+                            Q(submitter=user)) &
+                          Q(submitter__is_active=True) &
+                          Q(status='P') &
+                          local_site_q &
+                          Q(target_groups__name='devgroup') &
+                          target_groups_local_site_q) &
+                        ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                        Q(local_site=local_site)
+                    ),
+                },
+                'model': ReviewRequest,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'model': ReviewRequest,
                 'num_joins': 3,
@@ -2021,6 +2222,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_site:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {
@@ -2033,6 +2235,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {
@@ -2043,7 +2246,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -2157,7 +2360,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -2361,10 +2564,39 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
-                'model': ReviewRequest,
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'model': ReviewRequest,
+                    'num_joins': 4,
+                    'subquery': True,
+                    'tables': {
+                        'accounts_profile_starred_review_requests',
+                        'auth_user',
+                        'reviews_reviewrequest',
+                        'reviews_reviewrequest_target_groups',
+                        'reviews_reviewrequest_target_people',
+                    },
+                    'where': (
+                        Q(Q(Q(public=True) |
+                            Q(submitter=user)) &
+                          Q(submitter__is_active=True) &
+                          Q(status='P') &
+                          local_site_q &
+                          Q(Q(target_people=user) |
+                            Q(target_groups__in=[]) |
+                            Q(starred_by=profile))) &
+                        ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                        Q(local_site=local_site)
+                    ),
+                },
+                'model': ReviewRequest,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'model': ReviewRequest,
                 'num_joins': 4,
@@ -2393,6 +2625,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'distinct': True,
                 'limit': 5,
             },
+
+            # Fetch the IDs of the page's review requests that are starred.
             {
                 'model': ReviewRequest,
                 'num_joins': 1,
@@ -2404,6 +2638,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': (Q(starred_by__id=profile.pk) &
                           Q(pk__in=[5, 4, 3, 2, 1])),
             },
+
+            # Fetch the IDs of the page's review requests targeting the user.
             {
                 'model': ReviewRequest,
                 'num_joins': 1,
@@ -2419,6 +2655,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_site:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {
@@ -2433,6 +2670,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {
@@ -2489,7 +2727,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             for _column in DashboardDataGrid.get_columns()
         )
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -2724,10 +2962,38 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
-                'model': ReviewRequest,
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'model': ReviewRequest,
+                    'num_joins': 4,
+                    'subquery': True,
+                    'tables': {
+                        'accounts_profile_starred_review_requests',
+                        'auth_user',
+                        'reviews_reviewrequest_target_groups',
+                        'reviews_reviewrequest',
+                        'reviews_reviewrequest_target_people',
+                    },
+                    'where': (
+                        Q(Q(Q(public=True) |
+                            Q(submitter=user)) &
+                          Q(submitter__is_active=True) &
+                          Q(status='P') &
+                          local_site_q &
+                          (Q(target_people=user) |
+                           Q(target_groups__in=[]) |
+                           Q(starred_by=profile))) &
+                        Q(local_site=local_site)
+                    ),
+                },
+                'model': ReviewRequest,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'model': ReviewRequest,
                 'num_joins': 4,
@@ -2759,6 +3025,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_site:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {
@@ -2771,6 +3038,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
@@ -2779,7 +3047,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 dashboard_url,
                 {
@@ -3042,10 +3310,43 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
-                'model': ReviewRequest,
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'model': ReviewRequest,
+                    'num_joins': 4,
+                    'subquery': True,
+                    'tables': {
+                        'accounts_profile_starred_review_requests',
+                        'auth_user',
+                        'reviews_reviewrequest_target_groups',
+                        'reviews_reviewrequest',
+                        'reviews_reviewrequest_target_people',
+                    },
+                    'where': (
+                        Q(Q(Q(public=True) |
+                            Q(submitter=user)) &
+                          Q(submitter__is_active=True) &
+                          Q(status='P') &
+                          local_site_q &
+                          (Q(target_people=user) |
+                           Q(target_groups__in=[]) |
+                           Q(starred_by=profile))) &
+                        Q(pk__in=(
+                            ReviewRequestVisit.objects
+                            .filter(pk__in=[1])
+                            .values_list('pk', flat=True)
+                        )) &
+                        Q(local_site=local_site)
+                    ),
+                },
+                'model': ReviewRequest,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'model': ReviewRequest,
                 'num_joins': 4,
@@ -3073,6 +3374,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'distinct': True,
                 'limit': 3,
             },
+
+            # Fetch the data for one page based on the IDs.
             {
                 'model': ReviewRequest,
                 'select_related': {'submitter'},
@@ -3081,7 +3384,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -3328,10 +3631,39 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
-                'model': ReviewRequest,
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'model': ReviewRequest,
+                    'num_joins': 4,
+                    'subquery': True,
+                    'tables': {
+                        'accounts_profile_starred_review_requests',
+                        'auth_user',
+                        'reviews_reviewrequest_target_groups',
+                        'reviews_reviewrequest',
+                        'reviews_reviewrequest_target_people',
+                    },
+                    'where': (
+                        Q(Q(Q(public=True) |
+                            Q(submitter=user)) &
+                          Q(submitter__is_active=True) &
+                          Q(status='P') &
+                          local_site_q &
+                          (Q(target_people=user) |
+                           Q(target_groups__in=[devgroup.pk, privgroup.pk]) |
+                           Q(starred_by=profile))) &
+                        ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                        Q(local_site=local_site)
+                    ),
+                },
+                'model': ReviewRequest,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'model': ReviewRequest,
                 'num_joins': 4,
@@ -3364,6 +3696,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_site:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {
@@ -3380,6 +3713,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
@@ -3393,7 +3727,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
 
         # Now load the dashboard and get the sidebar items.
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {

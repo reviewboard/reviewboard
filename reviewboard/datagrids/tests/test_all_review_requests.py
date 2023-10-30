@@ -305,10 +305,40 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 'type': 'UPDATE',
                 'where': Q(pk=profile.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
-                'model': ReviewRequest,
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'extra': {
+                        'new_review_count': extra['new_review_count'],
+                    },
+                    'model': ReviewRequest,
+                    'num_joins': 2,
+                    'subquery': True,
+                    'tables': {
+                        'reviews_reviewrequest',
+                        'reviews_reviewrequest_target_groups',
+                        'reviews_reviewrequest_target_people',
+                    },
+                    'where': (
+                        Q((Q(public=True) |
+                           Q(submitter=user)) &
+                          local_site_q &
+                          (Q(submitter=user) |
+                           (Q(repository=None) |
+                            Q(repository__in=[])) &
+                           (Q(target_people=user) |
+                            Q(target_groups=None) |
+                            Q(target_groups__in=[])))) &
+                        Q(local_site=local_site)
+                    ),
+                },
+                'model': ReviewRequest,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'distinct': True,
                 'extra': extra,
@@ -335,6 +365,8 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                     Q(local_site=local_site)
                 ),
             },
+
+            # Fetch the IDs of the page's review requests that are starred.
             {
                 'model': ReviewRequest,
                 'num_joins': 1,
@@ -350,6 +382,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
 
         if local_site:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'extra': extra,
                     'model': ReviewRequest,
@@ -362,6 +395,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
             ]
         else:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'extra': extra,
                     'model': ReviewRequest,
@@ -370,7 +404,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -641,10 +675,40 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 'type': 'UPDATE',
                 'where': Q(pk=profile.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'extra': {
+                        'new_review_count': extra['new_review_count'],
+                    },
+                    'model': ReviewRequest,
+                    'num_joins': 2,
+                    'subquery': True,
+                    'tables': {
+                        'reviews_reviewrequest',
+                        'reviews_reviewrequest_target_groups',
+                        'reviews_reviewrequest_target_people',
+                    },
+                    'where': (
+                        Q((Q(public=True) |
+                           Q(submitter=user)) &
+                          local_site_q &
+                          (Q(submitter=user) |
+                           (Q(repository=None) |
+                            Q(repository__in=[1])) &
+                           (Q(target_people=user) |
+                            Q(target_groups=None) |
+                            Q(target_groups__in=[1])))) &
+                        Q(local_site=local_site)
+                    ),
+                },
                 'model': ReviewRequest,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'distinct': True,
                 'extra': extra,
@@ -671,6 +735,8 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                     Q(local_site=local_site)
                 ),
             },
+
+            # Fetch the IDs of the page's review requests that are starred.
             {
                 'model': ReviewRequest,
                 'num_joins': 1,
@@ -686,6 +752,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
 
         if local_site:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'extra': extra,
                     'model': ReviewRequest,
@@ -698,6 +765,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
             ]
         else:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'extra': extra,
                     'model': ReviewRequest,
@@ -706,7 +774,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -933,10 +1001,40 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 'type': 'UPDATE',
                 'where': Q(pk=profile.pk),
             },
+
+            # Fetch the number of items across all datagrid pages.
             {
                 'annotations': {'__count': Count('*')},
+                'inner_query': {
+                    'distinct': True,
+                    'extra': {
+                        'new_review_count': extra['new_review_count'],
+                    },
+                    'model': ReviewRequest,
+                    'num_joins': 2,
+                    'subquery': True,
+                    'tables': {
+                        'reviews_reviewrequest',
+                        'reviews_reviewrequest_target_groups',
+                        'reviews_reviewrequest_target_people',
+                    },
+                    'where': (
+                        Q((Q(public=True) |
+                           Q(submitter=user)) &
+                          local_site_q &
+                          (Q(submitter=user) |
+                           (Q(repository=None) |
+                            Q(repository__in=[])) &
+                           (Q(target_people=user) |
+                            Q(target_groups=None) |
+                            Q(target_groups__in=[])))) &
+                        Q(local_site=local_site)
+                    ),
+                },
                 'model': ReviewRequest,
             },
+
+            # Fetch the IDs of the items for one page.
             {
                 'distinct': True,
                 'extra': extra,
@@ -963,6 +1061,8 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                     Q(local_site=local_site)
                 ),
             },
+
+            # Fetch the IDs of the page's review requests that are starred.
             {
                 'model': ReviewRequest,
                 'num_joins': 1,
@@ -978,6 +1078,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
 
         if local_site:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'extra': extra,
                     'model': ReviewRequest,
@@ -990,6 +1091,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
             ]
         else:
             queries += [
+                # Fetch the data for one page based on the IDs.
                 {
                     'extra': extra,
                     'model': ReviewRequest,
@@ -998,7 +1100,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(queries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
