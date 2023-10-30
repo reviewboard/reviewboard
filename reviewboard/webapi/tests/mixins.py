@@ -41,6 +41,26 @@ else:
 APIRequestData: TypeAlias = Union[bytes, Dict[str, Any]]
 
 
+class AuthenticateSetupState(TypedDict):
+    """Test setup data for authentication setup for tests.
+
+    Version Added:
+        5.0.7
+    """
+
+    #: The OAuth2 access token used for the test, if any.
+    oauth2_access_token: Optional[AccessToken]
+
+    #: The OAuth2 application used for the test, if any.
+    oauth2_application: Optional[Application]
+
+    #: The user to use for the test.
+    user: User
+
+    #: The API token used for the test, if any.
+    webapi_token: Optional[WebAPIToken]
+
+
 class BasicTestSetupState(TypedDict):
     """Test setup data for basic HTTP unit tests.
 
@@ -48,11 +68,20 @@ class BasicTestSetupState(TypedDict):
         5.0.7
     """
 
+    #: The OAuth2 access token used for the test, if any.
+    oauth2_access_token: Optional[AccessToken]
+
+    #: The OAuth2 application used for the test, if any.
+    oauth2_application: Optional[Application]
+
     #: The user to use for the test.
     user: User
 
     #: The URL to the API resource.
     url: str
+
+    #: The API token used for the test, if any.
+    webapi_token: Optional[WebAPIToken]
 
     #: Custom positional arguments to pass to response-checking functions.
     check_result_args: NotRequired[Tuple[Any, ...]]
@@ -342,7 +371,7 @@ class BasicTestsMixin(_MixinsParentClass):
         with_oauth_token: bool = False,
         oauth_application_enabled: bool = True,
         user: Optional[User] = None,
-    ) -> User:
+    ) -> AuthenticateSetupState:
         """Authenticate the user for basic API tests.
 
         Args:
@@ -387,6 +416,9 @@ class BasicTestsMixin(_MixinsParentClass):
             user = self._login_user(local_site=with_local_site,
                                     admin=with_admin)
 
+        access_token: Optional[AccessToken] = None
+        application: Optional[Application] = None
+        webapi_token: Optional[WebAPIToken] = None
         session = self.client.session
 
         if with_webapi_token:
@@ -398,6 +430,8 @@ class BasicTestsMixin(_MixinsParentClass):
                 token='abc123',
                 token_generator_id=token_generator_id,
                 local_site_id=webapi_token_local_site_id)[0]
+
+            assert webapi_token is not None
 
             session['webapi_token_id'] = webapi_token.pk
 
@@ -416,6 +450,8 @@ class BasicTestsMixin(_MixinsParentClass):
                     'user': user,
                 },
             )[0]
+
+            assert application is not None
 
             if application.enabled != oauth_application_enabled:
                 application.enabled = oauth_application_enabled
@@ -438,7 +474,12 @@ class BasicTestsMixin(_MixinsParentClass):
         if with_webapi_token or with_oauth_token:
             session.save()
 
-        return user
+        return {
+            'oauth2_access_token': access_token,
+            'oauth2_application': application,
+            'user': user,
+            'webapi_token': webapi_token,
+        }
 
 
 class BasicDeleteTestsMixin(BasicTestsMixin):
@@ -582,8 +623,10 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         """
         self.load_fixtures(self.basic_delete_fixtures)
 
-        user = self._authenticate_basic_tests(with_local_site=with_local_site,
-                                              **auth_kwargs)
+        auth_setup_state = self._authenticate_basic_tests(
+            with_local_site=with_local_site,
+            **auth_kwargs)
+        user = auth_setup_state['user']
 
         local_site_name = self.local_site_name
 
@@ -602,8 +645,11 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
 
         return {
             'check_result_args': cb_args,
+            'oauth2_access_token': auth_setup_state['oauth2_access_token'],
+            'oauth2_application': auth_setup_state['oauth2_application'],
             'url': url,
             'user': user,
+            'webapi_token': auth_setup_state['webapi_token'],
         }
 
 
@@ -947,8 +993,10 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         """
         self.load_fixtures(self.basic_get_fixtures)
 
-        user = self._authenticate_basic_tests(with_local_site=with_local_site,
-                                              **auth_kwargs)
+        auth_setup_state = self._authenticate_basic_tests(
+            with_local_site=with_local_site,
+            **auth_kwargs)
+        user = auth_setup_state['user']
 
         local_site_name = self.local_site_name
 
@@ -968,8 +1016,11 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         return {
             'item': item,
             'mimetype': mimetype,
+            'oauth2_access_token': auth_setup_state['oauth2_access_token'],
+            'oauth2_application': auth_setup_state['oauth2_application'],
             'url': url,
             'user': user,
+            'webapi_token': auth_setup_state['webapi_token'],
         }
 
 
@@ -1302,8 +1353,10 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         """
         self.load_fixtures(self.basic_get_fixtures)
 
-        user = self._authenticate_basic_tests(with_local_site=with_local_site,
-                                              **auth_kwargs)
+        auth_setup_state = self._authenticate_basic_tests(
+            with_local_site=with_local_site,
+            **auth_kwargs)
+        user = auth_setup_state['user']
 
         local_site_name = self.local_site_name
 
@@ -1324,8 +1377,11 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         return {
             'items': items,
             'mimetype': mimetype,
+            'oauth2_access_token': auth_setup_state['oauth2_access_token'],
+            'oauth2_application': auth_setup_state['oauth2_application'],
             'url': url,
             'user': user,
+            'webapi_token': auth_setup_state['webapi_token'],
         }
 
 
@@ -1698,8 +1754,10 @@ class BasicPostTestsMixin(BasicTestsMixin):
         """
         self.load_fixtures(self.basic_post_fixtures)
 
-        user = self._authenticate_basic_tests(with_local_site=with_local_site,
-                                              **auth_kwargs)
+        auth_setup_state = self._authenticate_basic_tests(
+            with_local_site=with_local_site,
+            **auth_kwargs)
+        user = auth_setup_state['user']
 
         local_site_name = self.local_site_name
 
@@ -1722,9 +1780,12 @@ class BasicPostTestsMixin(BasicTestsMixin):
         return {
             'check_result_args': cb_args,
             'mimetype': mimetype,
+            'oauth2_access_token': auth_setup_state['oauth2_access_token'],
+            'oauth2_application': auth_setup_state['oauth2_application'],
             'request_data': post_data,
             'url': url,
             'user': user,
+            'webapi_token': auth_setup_state['webapi_token'],
         }
 
 
@@ -2173,8 +2234,10 @@ class BasicPutTestsMixin(BasicTestsMixin):
         """
         self.load_fixtures(self.basic_put_fixtures)
 
-        user = self._authenticate_basic_tests(with_local_site=with_local_site,
-                                              **auth_kwargs)
+        auth_setup_state = self._authenticate_basic_tests(
+            with_local_site=with_local_site,
+            **auth_kwargs)
+        user = auth_setup_state['user']
 
         local_site_name = self.local_site_name
 
@@ -2198,9 +2261,12 @@ class BasicPutTestsMixin(BasicTestsMixin):
             'check_result_args': cb_args,
             'item': item,
             'mimetype': mimetype,
+            'oauth2_access_token': auth_setup_state['oauth2_access_token'],
+            'oauth2_application': auth_setup_state['oauth2_application'],
             'request_data': put_data,
             'url': url,
             'user': user,
+            'webapi_token': auth_setup_state['webapi_token'],
         }
 
 
