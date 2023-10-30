@@ -346,27 +346,28 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 'where': (Q(starred_by__id=profile.pk) &
                           Q(pk__in=[3, 2, 1])),
             },
-            {
-                'extra': extra,
-                'model': ReviewRequest,
-                'select_related': {'submitter'},
-                'where': Q(pk__in=[3, 2, 1]),
-            },
         ]
 
         if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
             queries += [
                 {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
+                    'extra': extra,
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'local_site',
+                        'submitter',
                     },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(5)
+                    'where': Q(pk__in=[3, 2, 1]),
+                },
+            ]
+        else:
+            queries += [
+                {
+                    'extra': extra,
+                    'model': ReviewRequest,
+                    'select_related': {'submitter'},
+                    'where': Q(pk__in=[3, 2, 1]),
+                },
             ]
 
         with self.assertQueries(queries):
@@ -681,27 +682,28 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 'where': (Q(starred_by__id=profile.pk) &
                           Q(pk__in=[4, 3, 2, 1])),
             },
-            {
-                'extra': extra,
-                'model': ReviewRequest,
-                'select_related': {'submitter'},
-                'where': Q(pk__in=[4, 3, 2, 1]),
-            },
         ]
 
         if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
             queries += [
                 {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
+                    'extra': extra,
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'local_site',
+                        'submitter',
                     },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(5)
+                    'where': Q(pk__in=[4, 3, 2, 1]),
+                },
+            ]
+        else:
+            queries += [
+                {
+                    'extra': extra,
+                    'model': ReviewRequest,
+                    'select_related': {'submitter'},
+                    'where': Q(pk__in=[4, 3, 2, 1]),
+                },
             ]
 
         with self.assertQueries(queries):
@@ -972,27 +974,28 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 'where': (Q(starred_by__id=profile.pk) &
                           Q(pk__in=[2, 1])),
             },
-            {
-                'extra': extra,
-                'model': ReviewRequest,
-                'select_related': {'submitter'},
-                'where': Q(pk__in=[2, 1]),
-            },
         ]
 
         if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
             queries += [
                 {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
+                    'extra': extra,
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'local_site',
+                        'submitter',
                     },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(5)
+                    'where': Q(pk__in=[2, 1]),
+                },
+            ]
+        else:
+            queries += [
+                {
+                    'extra': extra,
+                    'model': ReviewRequest,
+                    'select_related': {'submitter'},
+                    'where': Q(pk__in=[2, 1]),
+                },
             ]
 
         with self.assertQueries(queries):

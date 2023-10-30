@@ -479,27 +479,28 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'distinct': True,
                 'limit': 5,
             },
-            {
-                'model': ReviewRequest,
-                'select_related': {'submitter'},
-                'extra': extra,
-                'where': Q(pk__in=[5, 4, 3, 2, 1]),
-            },
         ]
 
         if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
             queries += [
                 {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'local_site',
+                        'submitter',
                     },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(5)
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
+                },
+            ]
+        else:
+            queries += [
+                {
+                    'model': ReviewRequest,
+                    'select_related': {'submitter'},
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
+                },
             ]
 
         with self.assertQueries(queries):
@@ -733,27 +734,28 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'distinct': True,
                 'limit': 5,
             },
-            {
-                'model': ReviewRequest,
-                'select_related': {'submitter'},
-                'extra': extra,
-                'where': Q(pk__in=[5, 4, 3, 2, 1]),
-            },
         ]
 
         if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
             queries += [
                 {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'local_site',
+                        'submitter',
                     },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(5)
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
+                },
+            ]
+        else:
+            queries += [
+                {
+                    'model': ReviewRequest,
+                    'select_related': {'submitter'},
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
+                },
             ]
 
         with self.assertQueries(queries):
@@ -949,27 +951,28 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': (Q(starred_by__id=profile.pk) &
                           Q(pk__in=[5, 4, 3, 2, 1])),
             },
-            {
-                'model': ReviewRequest,
-                'select_related': {'submitter'},
-                'extra': extra,
-                'where': Q(pk__in=[5, 4, 3, 2, 1]),
-            },
         ]
 
         if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
             queries += [
                 {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'local_site',
+                        'submitter',
                     },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(5)
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
+                },
+            ]
+        else:
+            queries += [
+                {
+                    'model': ReviewRequest,
+                    'select_related': {'submitter'},
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
+                },
             ]
 
         with self.assertQueries(queries):
@@ -1192,27 +1195,28 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'distinct': True,
                 'limit': 5,
             },
-            {
-                'model': ReviewRequest,
-                'select_related': {'submitter'},
-                'extra': extra,
-                'where': Q(pk__in=[5, 4, 3, 2, 1]),
-            },
         ]
 
         if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
             queries += [
                 {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'local_site',
+                        'submitter',
                     },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(5)
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
+                },
+            ]
+        else:
+            queries += [
+                {
+                    'model': ReviewRequest,
+                    'select_related': {'submitter'},
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
+                },
             ]
 
         with self.assertQueries(queries):
@@ -1440,27 +1444,28 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'distinct': True,
                 'limit': 5,
             },
-            {
-                'model': ReviewRequest,
-                'select_related': {'submitter'},
-                'extra': extra,
-                'where': Q(pk__in=[5, 4, 3, 2, 1]),
-            },
         ]
 
         if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
             queries += [
                 {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'local_site',
+                        'submitter',
                     },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(5)
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
+                },
+            ]
+        else:
+            queries += [
+                {
+                    'model': ReviewRequest,
+                    'select_related': {'submitter'},
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
+                },
             ]
 
         with self.assertQueries(queries):
@@ -1647,8 +1652,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             },
             {
                 'model': Group,
-                'where': (Q(local_site=local_site) &
-                          Q(name='devgroup')),
+                'where': (Q(name='devgroup') &
+                          Q(local_site_q)),
             },
         ]
 
@@ -1730,27 +1735,28 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'distinct': True,
                 'limit': 5,
             },
-            {
-                'model': ReviewRequest,
-                'select_related': {'submitter'},
-                'extra': extra,
-                'where': Q(pk__in=[5, 4, 3, 2, 1]),
-            },
         ]
 
         if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
             queries += [
                 {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'local_site',
+                        'submitter',
                     },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(5)
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
+                },
+            ]
+        else:
+            queries += [
+                {
+                    'model': ReviewRequest,
+                    'select_related': {'submitter'},
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
+                },
             ]
 
         with self.assertQueries(queries):
@@ -1928,8 +1934,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             },
             {
                 'model': Group,
-                'where': (Q(local_site=local_site) &
-                          Q(name='devgroup')),
+                'where': (Q(name='devgroup') &
+                          Q(local_site_q)),
             },
         ]
 
@@ -2011,27 +2017,30 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'distinct': True,
                 'limit': 1,
             },
-            {
-                'model': ReviewRequest,
-                'select_related': {'submitter'},
-                'extra': extra,
-                'where': Q(pk__in=[review_request.pk]),
-            },
         ]
 
         if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
             queries += [
                 {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'local_site',
+                        'submitter',
                     },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(1)
+                    'extra': extra,
+                    'where': Q(pk__in=[review_request.pk]),
+                },
+            ]
+        else:
+            queries += [
+                {
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'submitter',
+                    },
+                    'extra': extra,
+                    'where': Q(pk__in=[review_request.pk]),
+                },
             ]
 
         with self.assertQueries(queries):
@@ -2073,6 +2082,11 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
+
+        if local_sites_in_db:
+            local_site_q = Q(local_site=local_site)
+        else:
+            local_site_q = Q()
 
         self.client.login(username='doc', password='doc')
 
@@ -2138,8 +2152,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'tables': {
                     'reviews_group',
                 },
-                'where': (Q(local_site=local_site) &
-                          Q(name='devgroup')),
+                'where': (Q(name='devgroup') &
+                          Q(local_site_q)),
             },
         ]
 
@@ -2401,16 +2415,37 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': (Q(target_people__id=user.pk) &
                           Q(pk__in=[5, 4, 3, 2, 1])),
             },
-            {
-                'model': ReviewRequest,
-                'select_related': {
-                    'diffset_history',
-                    'repository',
-                    'submitter',
+        ]
+
+        if local_site:
+            queries += [
+                {
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'diffset_history',
+                        'local_site',
+                        'repository',
+                        'submitter',
+                    },
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
                 },
-                'extra': extra,
-                'where': Q(pk__in=[5, 4, 3, 2, 1]),
-            },
+            ]
+        else:
+            queries += [
+                {
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'diffset_history',
+                        'repository',
+                        'submitter',
+                    },
+                    'extra': extra,
+                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
+                },
+            ]
+
+        queries += [
             {
                 'model': DiffSet,
                 'where': Q(history__in=diffset_histories),
@@ -2448,21 +2483,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': Q(directed_review_requests__in=review_requests),
             },
         ]
-
-        if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
-            queries += [
-                {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(5)
-            ]
 
         column_ids = sorted(
             _column.id
@@ -2735,27 +2755,28 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'distinct': True,
                 'limit': 3,
             },
-            {
-                'model': ReviewRequest,
-                'select_related': {'submitter'},
-                'extra': extra,
-                'where': Q(pk__in=[3, 2, 1]),
-            },
         ]
 
         if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
             queries += [
                 {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'local_site',
+                        'submitter',
                     },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(5)
+                    'extra': extra,
+                    'where': Q(pk__in=[3, 2, 1]),
+                },
+            ]
+        else:
+            queries += [
+                {
+                    'model': ReviewRequest,
+                    'select_related': {'submitter'},
+                    'extra': extra,
+                    'where': Q(pk__in=[3, 2, 1]),
+                },
             ]
 
         with self.assertQueries(queries):
@@ -3060,21 +3081,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             },
         ]
 
-        if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
-            queries += [
-                {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(5)
-            ]
-
         with self.assertQueries(queries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
@@ -3354,31 +3360,36 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'distinct': True,
                 'limit': 3,
             },
-            {
-                'model': ReviewRequest,
-                'select_related': {'submitter'},
-                'extra': extra,
-                'where': Q(pk__in=[
-                    review_request4.pk,
-                    review_request3.pk,
-                    review_request2.pk,
-                ]),
-            },
         ]
 
         if local_site:
-            # NOTE: This represents a performance bug due to a bad query.
-            #       It's being tracked and will be resolved in a future
-            #       change.
             queries += [
                 {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
+                    'model': ReviewRequest,
+                    'select_related': {
+                        'local_site',
+                        'submitter',
                     },
-                    'where': Q(id=local_site.pk)
-                }
-                for i in range(5)
+                    'extra': extra,
+                    'where': Q(pk__in=[
+                        review_request4.pk,
+                        review_request3.pk,
+                        review_request2.pk,
+                    ]),
+                },
+            ]
+        else:
+            queries += [
+                {
+                    'model': ReviewRequest,
+                    'select_related': {'submitter'},
+                    'extra': extra,
+                    'where': Q(pk__in=[
+                        review_request4.pk,
+                        review_request3.pk,
+                        review_request2.pk,
+                    ]),
+                },
             ]
 
         # Now load the dashboard and get the sidebar items.

@@ -461,7 +461,7 @@ class UsersDataGridTests(BaseViewTestCase):
             },
         ]
 
-        if local_site:
+        if with_local_site:
             queries += [
                 {
                     'annotations': {'__count': Count('*')},
