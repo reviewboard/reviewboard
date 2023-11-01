@@ -46,13 +46,15 @@ class ReviewRequestIndex(BaseSearchIndex, indexes.Indexable):
             .public(status=None,
                     local_site=LocalSite.ALL,
                     show_inactive=True,
-                    filter_private=False)
+                    filter_private=False,
+                    distinct=False)
             .select_related('diffset_history',
                             'local_site',
                             'repository',
                             'submitter',
                             'submitter__profile')
-            .prefetch_related('diffset_history__diffsets__files',
+            .prefetch_related('diffset_history__diffsets',
+                              'diffset_history__diffsets__files',
                               'target_groups',
                               'target_people')
         )
