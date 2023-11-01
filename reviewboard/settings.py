@@ -486,6 +486,9 @@ HAYSTACK_CONNECTIONS = {
     'default': {
         'ENGINE': 'reviewboard.search.haystack_backend.ForwardingSearchEngine',
     },
+
+    # This is used internally when validating search backends.
+    'validation-test': {},
 }
 
 HAYSTACK_SIGNAL_PROCESSOR = \
