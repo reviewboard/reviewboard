@@ -336,7 +336,7 @@ class BatchOperationView(CheckRequestMethodViewMixin,
                                   % review_request.display_id),
                     },
                     status=403)
-            elif not review_request.get_draft(user):
+            elif not review_request.get_draft():
                 return JsonResponse(
                     data={
                         'stat': 'fail',

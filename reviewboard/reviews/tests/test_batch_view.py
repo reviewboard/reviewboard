@@ -748,6 +748,32 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
         self.assertTrue(rr.public)
         self.assertEqual(rr.summary, 'Updated Summary')
 
+    def test_publish_other_draft_as_admin(self) -> None:
+        """Testing BatchOperationView publish op with an admin publishing
+        a draft on another user's review request
+        """
+        self.client.login(username='admin', password='admin')
+        grumpy = User.objects.get(username='grumpy')
+
+        rr = self.create_review_request(publish=True,
+                                        target_people=[grumpy])
+        draft = self.create_review_request_draft(rr)
+        draft.summary = 'Updated Summary'
+        draft.save(update_fields=('summary',))
+
+        response = self.client.post(self.url, data={
+            'batch': json.dumps({
+                'op': 'publish',
+                'review_requests': [rr.pk],
+            }),
+        })
+        self.assertEqual(response.status_code, 200)
+
+        rr.refresh_from_db()
+
+        self.assertTrue(rr.public)
+        self.assertEqual(rr.summary, 'Updated Summary')
+
     def test_publish_permissions(self) -> None:
         """Testing BatchOperationView publish op with non-owner user"""
         self.client.login(username='grumpy', password='grumpy')
