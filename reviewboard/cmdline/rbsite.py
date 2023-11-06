@@ -17,6 +17,7 @@ import warnings
 from collections import OrderedDict
 from datetime import datetime
 from importlib import import_module
+from pprint import pformat
 from random import choice as random_choice
 from typing import Dict, List, Optional
 from urllib.request import urlopen
@@ -1516,10 +1517,9 @@ class Site(object):
             fp.write('\n')
 
             try:
-                fp.write('Connection params: %s\n' % json.dumps(
-                    connection.get_connection_params(),
-                    indent=2,
-                    sort_keys=True))
+                fp.write('Connection params:\n\n%s\n'
+                         % pformat(connection.get_connection_params(),
+                                   indent=2))
             except Exception as e:
                 fp.write('!! Failed to fetch connection params: %s\n' % e)
 
