@@ -5,7 +5,7 @@
 Review Board 6.0.1 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: November 6, 2023
 
 
 Installation/Upgrade
