@@ -40,7 +40,7 @@ RB.Dashboard = RB.DatagridPage.extend({
         return new Promise((resolve, reject) => {
             RB.apiCall({
                 prefix: localSiteName ? `s/${localSiteName}/` : null,
-                url: '/r/_batch/',
+                url: `${SITE_ROOT}r/_batch/`,
                 data: {
                     batch: JSON.stringify({
                         op: closeTypeToOp[options.closeType],
@@ -94,7 +94,7 @@ RB.Dashboard = RB.DatagridPage.extend({
         return new Promise((resolve, reject) => {
             RB.apiCall({
                 prefix: localSiteName ? `s/${localSiteName}/` : null,
-                url: '/r/_batch/',
+                url: `${SITE_ROOT}r/_batch/`,
                 data: {
                     batch: JSON.stringify({
                         op: visibility,

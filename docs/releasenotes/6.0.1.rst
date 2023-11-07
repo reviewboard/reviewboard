@@ -1,0 +1,69 @@
+.. default-intersphinx:: djblets4.x rb6.x
+
+
+================================
+Review Board 6.0.1 Release Notes
+================================
+
+**Release date**: November 6, 2023
+
+
+Installation/Upgrade
+====================
+
+Review Board 6.0.1 is compatible with Python 3.8 - 3.12.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install ReviewBoard==6.0.1
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Fixed issues that could cause failures when publishing reviews or replies.
+
+* Fixed publishing review requests, reviews, or replies on subdirectory
+  installs of Review Board or on :term:`Local Sites`.
+
+* Fixed the ability for admin users to see and edit another user's drafts.
+
+* Removed an extra margin above the "Describe your changes" field on the
+  draft banner when editing the field.
+
+
+Upgrades
+--------
+
+* Fixed a bug when reporting upgrade failures that could prevent some details
+  on the database settings from logging.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin

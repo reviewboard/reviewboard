@@ -748,6 +748,32 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
         self.assertTrue(rr.public)
         self.assertEqual(rr.summary, 'Updated Summary')
 
+    def test_publish_other_draft_as_admin(self) -> None:
+        """Testing BatchOperationView publish op with an admin publishing
+        a draft on another user's review request
+        """
+        self.client.login(username='admin', password='admin')
+        grumpy = User.objects.get(username='grumpy')
+
+        rr = self.create_review_request(publish=True,
+                                        target_people=[grumpy])
+        draft = self.create_review_request_draft(rr)
+        draft.summary = 'Updated Summary'
+        draft.save(update_fields=('summary',))
+
+        response = self.client.post(self.url, data={
+            'batch': json.dumps({
+                'op': 'publish',
+                'review_requests': [rr.pk],
+            }),
+        })
+        self.assertEqual(response.status_code, 200)
+
+        rr.refresh_from_db()
+
+        self.assertTrue(rr.public)
+        self.assertEqual(rr.summary, 'Updated Summary')
+
     def test_publish_permissions(self) -> None:
         """Testing BatchOperationView publish op with non-owner user"""
         self.client.login(username='grumpy', password='grumpy')
@@ -1085,6 +1111,54 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
         self.assertVisibility(rr1, 'doc', ReviewRequestVisit.ARCHIVED)
         self.assertVisibility(rr2, 'doc', ReviewRequestVisit.ARCHIVED)
 
+    @add_fixtures(['test_scmtools'])
+    def test_publish_with_acls(self) -> None:
+        """Testing BatchOperationView when publishing a review on a review
+        request that has multiple groups with ACLs
+        """
+        # Review Board 6.0 had a bug where the way the batch endpoint was
+        # fetching reviews could return duplicates, which would then fail
+        # length comparisons. This test case is an example of something that
+        # triggered that bug before it was fixed.
+        doc = User.objects.get(username='doc')
+        grumpy = User.objects.get(username='grumpy')
+
+        group1 = self.create_review_group(invite_only=True)
+        group1.users.add(doc, grumpy)
+
+        group2 = self.create_review_group(invite_only=True)
+        group2.users.add(doc, grumpy)
+
+        repository = self.create_repository(public=False)
+        repository.review_groups.set([group1])
+
+        review_request = self.create_review_request(
+            publish=True,
+            repository=repository,
+            target_groups=[group1, group2])
+        review = self.create_review(review_request, user='doc')
+
+        self.client.login(username='doc', password='doc')
+        response = self.client.post(self.url, data={
+            'batch': json.dumps({
+                'op': 'publish',
+                'review_requests': [],
+                'reviews': [review.pk],
+            }),
+        })
+        self.assertEqual(response.status_code, 200)
+
+        reply = self.create_reply(review, user='grumpy')
+        self.client.login(username='grumpy', password='grumpy')
+        response = self.client.post(self.url, data={
+            'batch': json.dumps({
+                'op': 'publish',
+                'review_requests': [],
+                'reviews': [reply.pk],
+            }),
+        })
+        self.assertEqual(response.status_code, 200)
+
     def assertVisibility(
         self,
         review_request: ReviewRequest,
@@ -1228,7 +1302,6 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
                 'model': ReviewRequest,
                 'distinct': True,
                 'num_joins': 3,
-                'order_by': ('pk',),
                 'tables': {
                     'auth_user',
                     'reviews_reviewrequest_target_people',

@@ -10,7 +10,7 @@ Review Board. They're largely used for packaging purposes.
 #:
 #: (Major, Minor, Micro, Patch, alpha/beta/rc/final, Release Number, Released)
 #:
-VERSION = (6, 0, 1, 0, 'alpha', 0, False)
+VERSION = (6, 0, 1, 0, 'final', 0, True)
 
 
 def get_version_string():

@@ -44,24 +44,24 @@ server {
     }
 
     location /media/ {
-      alias /var/www/reviews.example.com/htdocs/media/;
-      expires max;
-      add_header Cache-Control public;
+        alias /var/www/reviewboard/htdocs/media/;
+        expires max;
+        add_header Cache-Control public;
     }
 
     location /static/ {
-      alias /var/www/reviews.example.com/htdocs/static/;
-      expires max;
-      add_header Cache-Control public;
+        alias /var/www/reviewboard/htdocs/static/;
+        expires max;
+        add_header Cache-Control public;
     }
 
     location /errordocs/ {
-      alias /var/www/reviews.example.com/htdocs/errordocs/;
-      expires 5d;
+        alias /var/www/reviewboard/htdocs/errordocs/;
+        expires 5d;
     }
 
     location /robots.txt {
-      alias /var/www/reviews.example.com/htdocs/robots.txt;
-      expires 5d;
+        alias /var/www/reviewboard/htdocs/robots.txt;
+        expires 5d;
     }
 }

@@ -318,8 +318,9 @@ class ReviewRequestPageData(object):
             self.latest_changedesc_timestamp = self.changedescs[0].timestamp
 
         # Get the active draft (if any).
-        if self._needs_draft:
-            self.draft = self.review_request.get_draft(self.request.user)
+        if (self._needs_draft and
+            self.review_request.is_mutable_by(self.request.user)):
+            self.draft = self.review_request.get_draft()
 
         # Get diffsets.
         if self._needs_reviews:

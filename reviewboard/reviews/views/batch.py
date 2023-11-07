@@ -4,7 +4,6 @@ Version Added:
     6.0
 """
 
-import copy
 import json
 import logging
 from enum import Enum
@@ -107,7 +106,8 @@ class BatchOperationView(CheckRequestMethodViewMixin,
         """
         data = request.POST
         batch_str = data.get('batch')
-        user = copy.copy(request.user)
+        user = request.user
+        assert isinstance(user, User)
 
         if not batch_str:
             return JsonResponse(
@@ -144,94 +144,57 @@ class BatchOperationView(CheckRequestMethodViewMixin,
 
         review_request_ids = batch_data.get('review_requests')
 
-        if not (isinstance(review_request_ids, list) and
-                all(isinstance(id, int) for id in review_request_ids)):
-            return JsonResponse(
-                data={
-                    'stat': 'fail',
-                    'error': 'review_requests must be an array of integers.',
-                },
-                status=400)
-
-        if self.local_site:
-            id_field = 'local_id'
-            extra_query = Q(local_id__in=review_request_ids)
-        else:
-            id_field = 'pk'
-            extra_query = Q(pk__in=review_request_ids)
-
-        review_requests_qs = (
-            ReviewRequest.objects.public(
-                user=user,
-                status=None,
-                show_all_unpublished=True,
-                local_site=self.local_site,
-                extra_query=extra_query)
-        )
-
-        if op == BatchOperation.PUBLISH:
-            review_requests_qs = review_requests_qs.select_related('draft')
-
-        review_requests = list(review_requests_qs.order_by('pk'))
-
-        if len(review_requests) != len(review_request_ids):
-            found_ids = review_requests_qs.values_list(id_field, flat=True)
-            missing_ids = sorted(set(review_request_ids) - set(found_ids))
+        if review_request_ids:
+            if not (isinstance(review_request_ids, list) and
+                    all(isinstance(id, int) for id in review_request_ids)):
+                return JsonResponse(
+                    data={
+                        'stat': 'fail',
+                        'error': 'review_requests must be an array of integers.',
+                    },
+                    status=400)
 
             if self.local_site:
-                return JsonResponse(
-                    data={
-                        'stat': 'fail',
-                        'error': ('The following review requests are not '
-                                  'valid for the local site: %r.'
-                                  % missing_ids),
-                    },
-                    status=400)
+                id_field = 'local_id'
+                extra_query = Q(local_id__in=review_request_ids)
             else:
-                return JsonResponse(
-                    data={
-                        'stat': 'fail',
-                        'error': ('The following review requests are not '
-                                  'valid: %r.'
-                                  % missing_ids),
-                    },
-                    status=400)
+                id_field = 'pk'
+                extra_query = Q(pk__in=review_request_ids)
 
-        if op == BatchOperation.PUBLISH:
-            review_ids = batch_data.get('reviews', [])
-            trivial = batch_data.get('trivial', False)
-            archive_after_publish = batch_data.get('archive', False)
-
-            if not (isinstance(review_ids, list) and
-                    all(isinstance(id, int) for id in review_ids)):
-                return JsonResponse(
-                    data={
-                        'stat': 'fail',
-                        'error': 'reviews must be an array of integers.',
-                    },
-                    status=400)
-
-            reviews_qs = (
-                Review.objects.accessible(
-                    base_reply_to=Review.objects.ANY,
+            review_requests_qs = (
+                ReviewRequest.objects.public(
                     user=user,
+                    status=None,
+                    show_all_unpublished=True,
                     local_site=self.local_site,
-                    extra_query=Q(pk__in=review_ids))
-                .prefetch_related('comments')
-                .select_related('user', 'base_reply_to'))
+                    extra_query=extra_query)
+            )
 
-            reviews = list(reviews_qs.order_by('pk'))
+            if op == BatchOperation.PUBLISH:
+                review_requests_qs = review_requests_qs.select_related('draft')
 
-            if len(reviews) != len(review_ids):
-                found_ids = reviews_qs.values_list('pk', flat=True)
-                missing_ids = sorted(set(review_ids) - set(found_ids))
+            # We use in_bulk to deduplicate review requests. It's possible that
+            # the .public() query can return duplicates, and we don't want to
+            # use .distinct() because of performance issues with MySQL. Ideally
+            # we'd just be able to avoid using extra_query and pass in the
+            # id_field to this like we do for reviews below, but local_id isn't
+            # unique (even though in the context of the resulting queryset it
+            # is).
+            review_requests = review_requests_qs.in_bulk()
+
+            if len(review_requests) != len(review_request_ids):
+                found_ids = [
+                    getattr(rr, id_field)
+                    for rr in review_requests.values()
+                ]
+                missing_ids = sorted(set(review_request_ids) - set(found_ids))
 
                 if self.local_site:
                     return JsonResponse(
                         data={
                             'stat': 'fail',
-                            'error': ('The following reviews are not valid '
-                                      'for the local site: %r.'
+                            'error': ('The following review requests are not '
+                                      'valid for the local site: %r.'
                                       % missing_ids),
                         },
                         status=400)
@@ -239,51 +202,110 @@ class BatchOperationView(CheckRequestMethodViewMixin,
                     return JsonResponse(
                         data={
                             'stat': 'fail',
-                            'error': (
-                                'The following reviews are not valid: %r.'
-                                % missing_ids),
+                            'error': ('The following review requests are not '
+                                      'valid: %r.'
+                                      % missing_ids),
                         },
                         status=400)
 
-            reviews = list(reviews_qs)
+            ordered_review_requests = [
+                item[1]
+                for item in sorted(review_requests.items())
+            ]
+        else:
+            ordered_review_requests = []
+
+        if op == BatchOperation.PUBLISH:
+            review_ids = batch_data.get('reviews', [])
+            trivial = batch_data.get('trivial', False)
+            archive_after_publish = batch_data.get('archive', False)
+
+            if review_ids:
+                if not (isinstance(review_ids, list) and
+                        all(isinstance(id, int) for id in review_ids)):
+                    return JsonResponse(
+                        data={
+                            'stat': 'fail',
+                            'error': 'reviews must be an array of integers.',
+                        },
+                        status=400)
+
+                reviews_qs = (
+                    Review.objects.accessible(
+                        base_reply_to=Review.objects.ANY,
+                        user=user,
+                        local_site=self.local_site)
+                    .prefetch_related('comments')
+                    .select_related('user', 'base_reply_to'))
+
+                # We use in_bulk to deduplicate reviews. It's possible that the
+                # .accessible() query can return duplicates, and we don't want
+                # to use .distinct() because of performance issues with MySQL.
+                reviews = reviews_qs.in_bulk(review_ids)
+
+                if len(reviews) != len(review_ids):
+                    found_ids = reviews.keys()
+                    missing_ids = sorted(set(review_ids) - set(found_ids))
+
+                    if self.local_site:
+                        return JsonResponse(
+                            data={
+                                'stat': 'fail',
+                                'error': ('The following reviews are not valid '
+                                          'for the local site: %r.'
+                                          % missing_ids),
+                            },
+                            status=400)
+                    else:
+                        return JsonResponse(
+                            data={
+                                'stat': 'fail',
+                                'error': (
+                                    'The following reviews are not valid: %r.'
+                                    % missing_ids),
+                            },
+                            status=400)
+                review_objects = list(reviews.values())
+            else:
+                review_objects = []
 
             return self._publish(
                 request=request,
                 user=user,
-                review_requests=review_requests,
-                reviews=reviews,
+                review_requests=ordered_review_requests,
+                reviews=review_objects,
                 trivial=trivial,
                 archive_after_publish=archive_after_publish)
         elif op == BatchOperation.CLOSE:
             return self._close(
                 request=request,
                 user=user,
-                review_requests=review_requests,
+                review_requests=ordered_review_requests,
                 close_type=ReviewRequest.SUBMITTED)
         elif op == BatchOperation.DISCARD:
             return self._close(
                 request=request,
                 user=user,
-                review_requests=review_requests,
+                review_requests=ordered_review_requests,
                 close_type=ReviewRequest.DISCARDED)
         elif op == BatchOperation.ARCHIVE:
             return self._set_visibility(
                 request=request,
                 user=user,
-                review_requests=review_requests,
+                review_requests=ordered_review_requests,
                 visibility=ReviewRequestVisit.ARCHIVED)
         elif op == BatchOperation.MUTE:
             return self._set_visibility(
                 request=request,
                 user=user,
-                review_requests=review_requests,
+                review_requests=ordered_review_requests,
                 visibility=ReviewRequestVisit.MUTED)
         elif op == BatchOperation.UNARCHIVE:
             # This also means unmute.
             return self._set_visibility(
                 request=request,
                 user=user,
-                review_requests=review_requests,
+                review_requests=ordered_review_requests,
                 visibility=ReviewRequestVisit.VISIBLE)
         else:
             logger.error('Hit unknown batch operation case: %s',
@@ -336,7 +358,7 @@ class BatchOperationView(CheckRequestMethodViewMixin,
                                   % review_request.display_id),
                     },
                     status=403)
-            elif not review_request.get_draft(user):
+            elif not review_request.get_draft():
                 return JsonResponse(
                     data={
                         'stat': 'fail',
