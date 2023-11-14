@@ -108,7 +108,6 @@ class RootGeneralCommentResource(BaseReviewGeneralCommentResource):
                                              extra_query=q,
                                              local_site=local_site)
 
-    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'is-reply': {

@@ -790,7 +790,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
         return 204, {}
 
-    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(WebAPIResource)
     def get(self, request, review_request_id, *args, **kwargs):

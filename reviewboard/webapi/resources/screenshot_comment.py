@@ -24,7 +24,6 @@ class ScreenshotCommentResource(BaseScreenshotCommentResource):
         q = q.filter(screenshot=screenshot_id)
         return q
 
-    @webapi_check_local_site
     @augment_method_from(BaseScreenshotCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of screenshot comments on a screenshot.

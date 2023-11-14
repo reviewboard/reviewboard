@@ -40,7 +40,6 @@ class ReviewResource(BaseReviewResource):
         resources.review_draft,
     ]
 
-    @webapi_check_local_site
     @augment_method_from(BaseReviewResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of all public reviews on a review request."""

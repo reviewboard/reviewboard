@@ -186,7 +186,6 @@ class ReviewGroupResource(WebAPIResource):
     def has_access_permissions(self, request, group, *args, **kwargs):
         return group.is_accessible_by(request.user)
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Retrieve information on a review group.
@@ -199,7 +198,6 @@ class ReviewGroupResource(WebAPIResource):
         """
         pass
 
-    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'displayname': {

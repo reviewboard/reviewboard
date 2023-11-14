@@ -210,7 +210,6 @@ class StatusUpdateResource(WebAPIResource):
         """
         return StatusUpdate.state_to_string(obj.effective_state)
 
-    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'change': {

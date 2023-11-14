@@ -41,13 +41,11 @@ class DraftScreenshotResource(BaseScreenshotResource):
     def serialize_caption_field(self, obj, **kwargs):
         return obj.draft_caption or obj.caption
 
-    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         pass
 
-    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(WebAPIResource)
     def delete(self, *args, **kwargs):
@@ -64,7 +62,6 @@ class DraftScreenshotResource(BaseScreenshotResource):
         """
         pass
 
-    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):

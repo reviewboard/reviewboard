@@ -157,7 +157,6 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(BaseScreenshotCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of replies to screenshot comments made on a

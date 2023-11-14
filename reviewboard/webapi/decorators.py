@@ -1,4 +1,9 @@
+"""Decorators for API handlers."""
+
+from __future__ import annotations
+
 import logging
+from functools import wraps
 
 from django.http import HttpRequest
 from djblets.db.query import get_object_or_none
@@ -38,6 +43,11 @@ def webapi_check_login_required(view_func):
             return webapi_login_required(view_func)(*args, **kwargs)
         else:
             return view_func(*args, **kwargs)
+
+    assert not hasattr(view_func, 'checks_login_required'), (
+        '@webapi_check_login_required is not needed as it is already applied '
+        'on %s().'
+        % view_func.__qualname__)
 
     _check.checks_login_required = True
 
@@ -100,6 +110,7 @@ def webapi_check_local_site(view_func):
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN,
                             OAUTH_ACCESS_DENIED_ERROR,
                             OAUTH_MISSING_SCOPE_ERROR, PERMISSION_DENIED)
+    @wraps(view_func)
     def _check(*args, **kwargs):
         request = _find_httprequest(args)
         local_site_name = kwargs.get('local_site_name', None)
@@ -168,6 +179,11 @@ def webapi_check_local_site(view_func):
             kwargs['local_site'] = None
 
         return view_func(*args, **kwargs)
+
+    assert not hasattr(view_func, 'checks_local_site'), (
+        '@webapi_check_local_site is not needed as it is already applied '
+        'on %s().'
+        % view_func.__qualname__)
 
     _check.checks_local_site = True
 

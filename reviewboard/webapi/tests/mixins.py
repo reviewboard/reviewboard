@@ -572,6 +572,11 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
     @webapi_test_template
     def test_delete(self) -> None:
         """Testing the DELETE <URL> API"""
+        resource = self.resource
+
+        self.assertTrue(getattr(resource.delete, 'login_required', False))
+        self.assertTrue(getattr(resource.delete, 'checks_local_site', False))
+
         setup_state = self.setup_delete_test_state(
             with_admin=self.basic_delete_use_admin)
 
@@ -951,6 +956,13 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
     @webapi_test_template
     def test_get(self) -> None:
         """Testing the GET <URL> API"""
+        resource = self.resource
+
+        self.assertTrue(
+            getattr(resource.get, 'checks_login_required', False) or
+            getattr(resource.get, 'login_required', False))
+        self.assertTrue(getattr(resource.get, 'checks_local_site', False))
+
         setup_state = self.setup_get_item_test_state(
             with_admin=self.basic_get_use_admin)
         item = setup_state['item']
@@ -964,9 +976,9 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
 
         if self.basic_get_returns_json:
             self.assertEqual(rsp['stat'], 'ok')
-            self.assertIn(self.resource.item_result_key, rsp)
+            self.assertIn(resource.item_result_key, rsp)
 
-            item_rsp = rsp[self.resource.item_result_key]
+            item_rsp = rsp[resource.item_result_key]
             self.compare_item(item_rsp, item)
         else:
             self.compare_item(rsp, item)
@@ -1312,6 +1324,13 @@ class BasicGetListTestsMixin(BasicTestsMixin):
     @webapi_test_template
     def test_get(self) -> None:
         """Testing the GET <URL> API"""
+        resource = self.resource
+
+        self.assertTrue(
+            getattr(resource.get, 'checks_login_required', False) or
+            getattr(resource.get, 'login_required', False))
+        self.assertTrue(getattr(resource.get, 'checks_local_site', False))
+
         setup_state = self.setup_get_list_test_state(
             with_admin=self.basic_get_use_admin)
         items = setup_state['items']
@@ -1324,7 +1343,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.list_result_key, rsp)
 
-        items_rsp = rsp[self.resource.list_result_key]
+        items_rsp = rsp[resource.list_result_key]
         self.assertEqual(len(items), len(items_rsp))
 
         for i in range(len(items)):
@@ -1707,6 +1726,11 @@ class BasicPostTestsMixin(BasicTestsMixin):
     @webapi_test_template
     def test_post(self) -> None:
         """Testing the POST <URL> API"""
+        resource = self.resource
+
+        self.assertTrue(getattr(resource.create, 'login_required', False))
+        self.assertTrue(getattr(resource.create, 'checks_local_site', False))
+
         setup_state = self.setup_post_test_state(
             with_admin=self.basic_post_use_admin)
         request_data = setup_state['request_data']
@@ -2165,6 +2189,11 @@ class BasicPutTestsMixin(BasicTestsMixin):
     @webapi_test_template
     def test_put(self) -> None:
         """Testing the PUT <URL> API"""
+        resource = self.resource
+
+        self.assertTrue(getattr(resource.update, 'login_required', False))
+        self.assertTrue(getattr(resource.update, 'checks_local_site', False))
+
         setup_state = self.setup_put_test_state(
             with_admin=self.basic_put_use_admin)
         request_data = setup_state['request_data']
@@ -2176,7 +2205,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertIn(self.resource.item_result_key, rsp)
+        self.assertIn(resource.item_result_key, rsp)
 
         self.check_put_result(setup_state['user'],
                               rsp[self.resource.item_result_key],

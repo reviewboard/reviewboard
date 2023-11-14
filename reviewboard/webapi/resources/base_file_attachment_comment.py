@@ -116,7 +116,6 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
     def serialize_user_field(self, obj, **kwargs):
         return obj.review.get().user
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Returns information on the comment.

@@ -283,7 +283,6 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         """
         return user.is_superuser or user.has_perm('auth.change_user')
 
-    @webapi_check_local_site
     @webapi_response_errors(NOT_LOGGED_IN, PERMISSION_DENIED, DOES_NOT_EXIST,
                             USER_QUERY_ERROR)
     @webapi_request_fields(
@@ -349,7 +348,6 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         except UserQueryError as e:
             return USER_QUERY_ERROR.with_message(e.msg)
 
-    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'render-avatars-at': {

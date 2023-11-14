@@ -124,7 +124,6 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
                                    is_reply=True,
                                    **kwargs)
 
-    @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
     def delete(self, *args, **kwargs):
         """Deletes a comment from a draft reply.
@@ -138,7 +137,6 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
     def get(self, *args, **kwargs):
         """Returns information on a reply to a comment.
@@ -150,7 +148,6 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of replies to comments made on a review reply.

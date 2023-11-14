@@ -72,13 +72,11 @@ class DraftFileDiffResource(FileDiffResource):
 
         return draft.is_mutable_by(request.user)
 
-    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(FileDiffResource)
     def get(self, *args, **kwargs):
         pass
 
-    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(FileDiffResource)
     def get_list(self, *args, **kwargs):

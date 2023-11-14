@@ -223,7 +223,6 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                                    update_fields=('first_line', 'num_lines'),
                                    **kwargs)
 
-    @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
     def delete(self, *args, **kwargs):
         """Deletes the comment.
@@ -237,7 +236,6 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of comments made on a review.

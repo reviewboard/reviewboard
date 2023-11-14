@@ -164,7 +164,6 @@ class BaseDiffCommentResource(BaseCommentResource):
     def get_list(self, request, review_id=None, *args, **kwargs):
         pass
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Returns information on the comment."""
