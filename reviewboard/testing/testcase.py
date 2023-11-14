@@ -1,8 +1,13 @@
+"""Base test case support for Review Board."""
+
+from __future__ import annotations
+
 import os
 import re
 import warnings
 from contextlib import contextmanager
 from datetime import timedelta
+from typing import Optional, Sequence, TYPE_CHECKING
 from uuid import uuid4
 
 from django.contrib.auth.models import AnonymousUser, Permission, User
@@ -51,6 +56,9 @@ from reviewboard.testing.scmtool import (TestTool,
                                          TestToolSupportsPendingChangeSets,
                                          TestToolDiffX)
 from reviewboard.webapi.models import WebAPIToken
+
+if TYPE_CHECKING:
+    from djblets.util.typing import JSONDict
 
 
 _static_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
@@ -234,20 +242,44 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return self._local_sites[name]
 
-    def create_local_site(self, name=local_site_name, **kwargs):
+    def create_local_site(
+        self,
+        name: str = local_site_name,
+        *,
+        users: Sequence[User] = [],
+        admins: Sequence[User] = [],
+        **kwargs,
+    ) -> LocalSite:
         """Create a LocalSite for testing.
 
         To maintain compatibility with the behavior of the ``test_site``
         fixture, this will cache the created LocalSite for use in
         :py:meth:`get_local_site`.
 
+        Version Changed:
+            5.0.7:
+            * Added ``users`` and ``admins`` arguments.
+            * Added type hints.
+
         Version Added:
             5.0
 
         Args:
-            name (unicode, optional):
+            name (str, optional):
                 The local site name. This defaults to
                 :py:attr:`local_site_name`.
+
+            users (list of django.contrib.auth.models.User, optional):
+                A list of users to add to the site.
+
+                Version Added:
+                    5.0.7
+
+            admins (list of django.contrib.auth.models.User, optional):
+                A list of users to add to the site's list of administrators.
+
+                Version Added:
+                    5.0.7
 
             **kwargs (dict):
                 Keyword arguments to be passed to the
@@ -262,6 +294,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         local_site = LocalSite.objects.create(name=name, **kwargs)
         self._local_sites[name] = local_site
+
+        if users:
+            local_site.users.add(*users)
+
+        if admins:
+            local_site.admins.add(*admins)
 
         return local_site
 
@@ -1103,14 +1141,29 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return filediff
 
-    def create_repository(self, with_local_site=False, name='Test Repo',
-                          tool_name='Git', path=None, local_site=None,
-                          extra_data=None, **kwargs):
+    def create_repository(
+        self,
+        with_local_site: bool = False,
+        name: str = 'Test Repo',
+        tool_name: str = 'Git',
+        path: Optional[str] = None,
+        local_site: Optional[LocalSite] = None,
+        extra_data: Optional[JSONDict] = None,
+        *,
+        users: Sequence[User] = [],
+        review_groups: Sequence[Group] = [],
+        **kwargs,
+    ) -> Repository:
         """Create a Repository for testing.
 
         The Repository may optionally be attached to a
         :py:class:`~reviewboard.site.models.LocalSite`. It's also populated
         with default data that can be overridden by the caller.
+
+        Version Changed:
+            5.0.7:
+            * Added ``users`` and ``review_groups`` arguments.
+            * Added type hints.
 
         Args:
             with_local_site (bool, optional):
@@ -1119,13 +1172,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
                 If ``local_site`` is provided, this argument is ignored.
 
-            name (unicode, optional):
+            name (str, optional):
                 The name of the repository.
 
-            tool_name (unicode, optional):
+            tool_name (str, optional):
                 The name of the registered SCM Tool for the repository.
 
-            path (unicode, optional):
+            path (str, optional):
                 The path for the repository. If not provided, one will be
                 computed.
 
@@ -1134,6 +1187,18 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
             extra_data (dict, optional):
                 Explicit extra_data to attach to the repository.
+
+            users (list of django.contrib.auth.models.User, optional):
+                A list of users to add to the repository.
+
+                Version Added:
+                    5.0.7
+
+            review_groups (list of reviewboard.reviews.models.group.Group):
+                A list of review groups to add to the repository.
+
+                Version Added:
+                    5.0.7
 
             **kwargs (dict):
                 Additional fields to set on the repository.
@@ -1184,6 +1249,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             repository.extra_data = extra_data
 
         repository.save()
+
+        if users:
+            repository.users.add(*users)
+
+        if review_groups:
+            repository.review_groups.add(*review_groups)
 
         return repository
 
@@ -1729,24 +1800,71 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return review
 
-    def create_review_group(self, name='test-group', with_local_site=False,
-                            local_site=None, visible=True, invite_only=False,
-                            is_default_group=False, **kwargs):
-        """Creates a review group for testing.
+    def create_review_group(
+        self,
+        name: str = 'test-group',
+        with_local_site: bool = False,
+        local_site: Optional[LocalSite] = None,
+        visible: bool = True,
+        invite_only: bool = False,
+        is_default_group: bool = False,
+        *,
+        users: Sequence[User] = [],
+        **kwargs,
+    ) -> Group:
+        """Create a review group for testing.
 
         The group may optionally be attached to a LocalSite. It's also
         populated with default data that can be overridden by the caller.
+
+        Version Changed:
+            5.0.7:
+            * Added ``users`` arguments.
+            * Added type hints.
+
+        Args:
+            name (str, optional):
+                The name of the review group.
+
+            with_local_site (bool, optional):
+                Whether to create the repository using a Local Site. This
+                will choose one based on :py:attr:`local_site_name`.
+
+                If ``local_site`` is provided, this argument is ignored.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The explicit Local Site to attach.
+
+            visible (bool, optional):
+                Whether the review group should be visible.
+
+            invite_only (bool, optional):
+                Whether the review group should be invite-only.
+
+            is_default_group (bool, optional):
+                Whether this review group is a default for new users.
+
+            users (list of django.contrib.auth.models.User, optional):
+                A list of users to add to the review group.
+
+                Version Added:
+                    5.0.7
         """
         if not local_site and with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
 
-        return Group.objects.create(
+        group = Group.objects.create(
             name=name,
             local_site=local_site,
             visible=visible,
             invite_only=invite_only,
             is_default_group=is_default_group,
             **kwargs)
+
+        if users:
+            group.users.add(*users)
+
+        return group
 
     def create_reply(self, review, user='grumpy', body_top='Test Body Top',
                      timestamp=None, publish=False, **kwargs):
