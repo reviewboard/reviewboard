@@ -11,7 +11,9 @@ from djblets.webapi.fields import FileFieldType, StringFieldType
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.forms import UploadUserFileForm
 from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.webapi.decorators import webapi_check_local_site
+from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.decorators import (webapi_check_local_site,
+                                           webapi_check_login_required)
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_file_attachment import \
     BaseFileAttachmentResource
@@ -83,7 +85,18 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
         """Returns information on a user's file attachment."""
         pass
 
-    @augment_method_from(BaseFileAttachmentResource)
+    @webapi_check_login_required
+    @webapi_check_local_site
+    @webapi_response_errors(
+        DOES_NOT_EXIST,
+        NOT_LOGGED_IN,
+        PERMISSION_DENIED,
+    )
+    @webapi_request_fields(
+        optional=WebAPIResource.get_list.optional_fields,
+        required=WebAPIResource.get_list.required_fields,
+        allow_unknown=True,
+    )
     def get_list(self, request, *args, **kwargs):
         """Returns a list of file attachments that are owned by the user."""
         try:
@@ -94,7 +107,7 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
         if not self.has_list_access(request, user):
             return self.get_no_access_error(request)
 
-        pass
+        return super().get_list(request, *args, **kwargs)
 
     @webapi_check_local_site
     @webapi_login_required

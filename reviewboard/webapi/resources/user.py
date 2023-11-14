@@ -21,7 +21,8 @@ from reviewboard.accounts.errors import UserQueryError
 from reviewboard.avatars import avatar_services
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.base import WebAPIResource
-from reviewboard.webapi.decorators import webapi_check_local_site
+from reviewboard.webapi.decorators import (webapi_check_local_site,
+                                           webapi_check_login_required)
 from reviewboard.webapi.errors import USER_QUERY_ERROR
 from reviewboard.webapi.resources import resources
 
@@ -87,6 +88,9 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             try:
                 backend.populate_users(query=search_q,
                                        request=request)
+            except UserQueryError:
+                # This will get handled in get_list().
+                raise
             except Exception as e:
                 logger.exception('Error when calling populate_users for auth '
                                  'backend %r: %s',
@@ -283,10 +287,16 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         """
         return user.is_superuser or user.has_perm('auth.change_user')
 
-    @webapi_response_errors(NOT_LOGGED_IN, PERMISSION_DENIED, DOES_NOT_EXIST,
-                            USER_QUERY_ERROR)
+    @webapi_check_login_required
+    @webapi_check_local_site
+    @webapi_response_errors(
+        DOES_NOT_EXIST,
+        NOT_LOGGED_IN,
+        PERMISSION_DENIED,
+        USER_QUERY_ERROR,
+    )
     @webapi_request_fields(
-        optional={
+        optional=dict({
             'fullname': {
                 'type': BooleanFieldType,
                 'description': 'Specifies whether ``q`` should also match '
@@ -314,10 +324,10 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                                'must start with in order to be included in '
                                'the list. This is case-insensitive.',
             },
-        },
+        }, **WebAPIResource.get_list.optional_fields),
+        required=WebAPIResource.get_list.required_fields,
         allow_unknown=True
     )
-    @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
         """Retrieves the list of users on the site.
 
