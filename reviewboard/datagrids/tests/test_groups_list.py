@@ -91,10 +91,12 @@ class GroupListViewTests(BaseViewTestCase):
 
         queries = [
             {
+                '__note__': 'Fetch the logged-in user',
                 'model': User,
                 'where': Q(pk=user.pk),
             },
             {
+                '__note__': "Fetch the user's profile",
                 'model': Profile,
                 'where': Q(user=user),
             },
@@ -103,13 +105,14 @@ class GroupListViewTests(BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(name=local_site.name),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site'
+                    ),
                     'extra': {
                         'a': ('1', []),
                     },
@@ -127,6 +130,10 @@ class GroupListViewTests(BaseViewTestCase):
 
         queries += [
             {
+                '__note__': (
+                    'Check if the user has permission to view invite-only '
+                    'review groups'
+                ),
                 'model': Permission,
                 'num_joins': 2,
                 'tables': {
@@ -138,6 +145,10 @@ class GroupListViewTests(BaseViewTestCase):
                 'where': Q(user__id=user.pk),
             },
             {
+                '__note__': (
+                    'Check if the user is in a permission group with '
+                    'permission to view invite-only review groups'
+                ),
                 'model': Permission,
                 'num_joins': 4,
                 'tables': {
@@ -155,6 +166,9 @@ class GroupListViewTests(BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': (
+                        'Check if the user is an admin of the Local'
+                    ),
                     'extra': {
                         'a': ('1', []),
                     },
@@ -162,13 +176,14 @@ class GroupListViewTests(BaseViewTestCase):
                     'model': User,
                     'num_joins': 1,
                     'tables': {
-                        'site_localsite_admins',
                         'auth_user',
+                        'site_localsite_admins',
                     },
                     'where': (Q(local_site_admins__id=local_site.pk) &
                               Q(pk=user.pk)),
                 },
                 {
+                    '__note__': "Fetch the user's LocalSiteProfile",
                     'model': LocalSiteProfile,
                     'where': (Q(local_site=local_site) &
                               Q(profile=profile) &
@@ -178,33 +193,37 @@ class GroupListViewTests(BaseViewTestCase):
 
         queries += [
             {
+                '__note__': 'Update datagrid state on the user profile',
                 'model': Profile,
                 'type': 'UPDATE',
                 'where': Q(pk=profile.pk),
             },
-
-            # Fetch the number of items across all datagrid pages.
             {
+                '__note__': (
+                    'Fetch the number of items across all datagrid pages'
+                ),
                 'annotations': {'__count': Count('*')},
-                'inner_query': {
-                    'distinct': True,
-                    'model': Group,
-                    'num_joins': 1,
-                    'subquery': True,
-                    'tables': {
-                        'reviews_group',
-                        'reviews_group_users',
-                    },
-                    'where': (((Q(invite_only=False) &
-                                Q(visible=True)) |
-                               Q(users=user.pk)) &
-                              Q(local_site=local_site)),
-                },
                 'model': Group,
-            },
 
-            # Fetch the IDs of the items for one page.
+                'subqueries': [
+                    {
+                        'distinct': True,
+                        'model': Group,
+                        'num_joins': 1,
+                        'subquery': True,
+                        'tables': {
+                            'reviews_group',
+                            'reviews_group_users',
+                        },
+                        'where': (((Q(invite_only=False) &
+                                    Q(visible=True)) |
+                                   Q(users=user.pk)) &
+                                  Q(local_site=local_site)),
+                    },
+                ],
+            },
             {
+                '__note__': 'Fetch the IDs of the items for one page',
                 'distinct': True,
                 'limit': 10,
                 'model': Group,
@@ -220,9 +239,10 @@ class GroupListViewTests(BaseViewTestCase):
                            Q(users=user.pk)) &
                           Q(local_site=local_site)),
             },
-
-            # Fetch the IDs of the page's groups that are starred.
             {
+                '__note__': (
+                    "Fetch the IDs of the page's groups that are starred."
+                ),
                 'model': Group,
                 'num_joins': 1,
                 'tables': {
@@ -233,9 +253,8 @@ class GroupListViewTests(BaseViewTestCase):
                 'where': (Q(starred_by__id=profile.pk) &
                           Q(pk__in=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10])),
             },
-
-            # Fetch the data for one page based on the IDs.
             {
+                '__note__': 'Fetch the data for one page based on the IDs.',
                 'model': Group,
                 'where': Q(pk__in=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
             },
@@ -248,6 +267,7 @@ class GroupListViewTests(BaseViewTestCase):
             if local_site:
                 queries += [
                     {
+                        '__note__': f'Excess LocalSite query for row {i}',
                         'model': LocalSite,
                         'tables': {
                             'site_localsite',
@@ -258,6 +278,7 @@ class GroupListViewTests(BaseViewTestCase):
 
             queries += [
                 {
+                    '__note__': f'Excess target_groups query for row {i}',
                     'annotations': {'__count': Count('*')},
                     'model': ReviewRequest,
                     'num_joins': 1,

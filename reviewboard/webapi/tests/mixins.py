@@ -1261,26 +1261,6 @@ class BasicDeleteTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
                 'model': Application,
                 'where': Q(id=1),
             },
-            {
-                '__note__': 'Fetch the accessed Local Site',
-                'model': LocalSite,
-                'where': Q(name=self.local_site_name),
-            },
-            {
-                '__note__': 'Check if the user is a member of the Local Site',
-                'extra': {
-                    'a': ('1', []),
-                },
-                'limit': 1,
-                'model': User,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite_users',
-                    'auth_user',
-                },
-                'where': (Q(local_site__id=self.local_site_id) &
-                          Q(pk=auth_user.pk)),
-            },
         ]
 
         with self._run_api_test(expected_queries=expected_queries):
@@ -2067,26 +2047,6 @@ class BasicGetItemTestsWithLocalsSiteAndOAuthTokenMixin(_MixinsParentClass):
                 'model': Application,
                 'where': Q(id=1),
             },
-            {
-                '__note__': 'Fetch the accessed Local Site',
-                'model': LocalSite,
-                'where': Q(name=self.local_site_name),
-            },
-            {
-                '__note__': 'Check if the user is a member of the Local Site',
-                'extra': {
-                    'a': ('1', []),
-                },
-                'limit': 1,
-                'model': User,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite_users',
-                    'auth_user',
-                },
-                'where': (Q(local_site__id=self.local_site_id) &
-                          Q(pk=auth_user.pk)),
-            },
         ]
 
         with self._run_api_test(expected_queries=expected_queries):
@@ -2815,26 +2775,6 @@ class BasicGetListTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
                 '__note__': 'Fetch the OAuth2 application for the token',
                 'model': Application,
                 'where': Q(id=1),
-            },
-            {
-                '__note__': 'Fetch the accessed Local Site',
-                'model': LocalSite,
-                'where': Q(name=self.local_site_name),
-            },
-            {
-                '__note__': 'Check if the user is a member of the Local Site',
-                'extra': {
-                    'a': ('1', []),
-                },
-                'limit': 1,
-                'model': User,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite_users',
-                    'auth_user',
-                },
-                'where': (Q(local_site__id=self.local_site_id) &
-                          Q(pk=auth_user.pk)),
             },
         ]
 
@@ -3632,26 +3572,6 @@ class BasicPostTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
                 '__note__': 'Fetch the OAuth2 application for the token',
                 'model': Application,
                 'where': Q(id=1),
-            },
-            {
-                '__note__': 'Fetch the accessed Local Site',
-                'model': LocalSite,
-                'where': Q(name=self.local_site_name),
-            },
-            {
-                '__note__': 'Check if the user is a member of the Local Site',
-                'extra': {
-                    'a': ('1', []),
-                },
-                'limit': 1,
-                'model': User,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite_users',
-                    'auth_user',
-                },
-                'where': (Q(local_site__id=self.local_site_id) &
-                          Q(pk=auth_user.pk)),
             },
         ]
 
@@ -4539,26 +4459,6 @@ class BasicPutTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
                 '__note__': 'Fetch the OAuth2 application for the token',
                 'model': Application,
                 'where': Q(id=1),
-            },
-            {
-                '__note__': 'Fetch the accessed Local Site',
-                'model': LocalSite,
-                'where': Q(name=self.local_site_name),
-            },
-            {
-                '__note__': 'Check if the user is a member of the Local Site',
-                'extra': {
-                    'a': ('1', []),
-                },
-                'limit': 1,
-                'model': User,
-                'num_joins': 1,
-                'tables': {
-                    'site_localsite_users',
-                    'auth_user',
-                },
-                'where': (Q(local_site__id=self.local_site_id) &
-                          Q(pk=auth_user.pk)),
             },
         ]
 

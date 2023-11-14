@@ -373,10 +373,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries = [
             {
+                '__note__': 'Fetch the logged-in user',
                 'model': User,
                 'where': Q(pk=user.pk),
             },
             {
+                '__note__': "Fetch the user's profile",
                 'model': Profile,
                 'where': Q(user=user),
             },
@@ -385,13 +387,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(name=local_site.name),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site'
+                    ),
                     'model': User,
                     'extra': {
                         'a': ('1', []),
@@ -408,12 +411,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries += [
             {
+                '__note__': "Fetch the user's LocalSiteProfile",
                 'model': LocalSiteProfile,
                 'where': (Q(local_site=local_site) &
                           Q(profile=profile) &
                           Q(user=user)),
             },
             {
+                '__note__': "Fetch the list of a user's review groups",
                 'model': Group,
                 'num_joins': 1,
                 'values_select': ('pk',),
@@ -423,9 +428,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
                 'where': Q(users__id=user.pk),
             },
-
-            # Fetch the list of a user's review groups.
             {
+                '__note__': "Fetch the list of a user's review groups",
                 'model': Group,
                 'num_joins': 1,
                 'only_fields': {
@@ -440,15 +444,16 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': (Q(users__id=user.pk) &
                           Q(local_site_q)),
             },
-
             {
+                '__note__': 'Update datagrid state on the user profile',
                 'type': 'UPDATE',
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
-
-            # Fetch the number of items across all datagrid pages.
             {
+                '__note__': (
+                    'Fetch the number of items across all datagrid pages'
+                ),
                 'annotations': {'__count': Count('*')},
                 'model': ReviewRequest,
                 'num_joins': 4,
@@ -469,13 +474,21 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         Q(target_groups__in=[]) |
                         Q(starred_by=profile) |
                         Q(submitter=user))) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
-            },
 
-            # Fetch the IDs of the items for one page.
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
+            },
             {
+                '__note__': 'Fetch the IDs of the items for one page',
                 'model': ReviewRequest,
                 'num_joins': 4,
                 'tables': {
@@ -497,19 +510,31 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         Q(target_groups__in=[]) |
                         Q(starred_by=profile) |
                         Q(submitter=user))) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
                 'order_by': ('-last_updated',),
                 'distinct': True,
                 'limit': 5,
+
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
             },
         ]
 
         if local_site:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': (
+                        'Fetch the data for one page based on the IDs on a '
+                        'Local Site'
+                    ),
                     'model': ReviewRequest,
                     'select_related': {
                         'local_site',
@@ -521,8 +546,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': 'Fetch the data for one page based on the IDs',
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
                     'extra': extra,
@@ -656,10 +681,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries = [
             {
+                '__note__': 'Fetch the logged-in user',
                 'model': User,
                 'where': Q(pk=user.pk),
             },
             {
+                '__note__': "Fetch the user's profile",
                 'model': Profile,
                 'where': Q(user=user),
             },
@@ -668,13 +695,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(name=local_site.name),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site'
+                    ),
                     'model': User,
                     'extra': {
                         'a': ('1', []),
@@ -691,12 +719,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries += [
             {
+                '__note__': "Fetch the user's LocalSiteProfile",
                 'model': LocalSiteProfile,
                 'where': (Q(local_site=local_site) &
                           Q(profile=profile) &
                           Q(user=user)),
             },
             {
+                '__note__': 'Fetch the list of groups the user is a member of',
                 'model': Group,
                 'num_joins': 1,
                 'values_select': ('pk',),
@@ -706,9 +736,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
                 'where': Q(users__id=user.pk),
             },
-
-            # Fetch the list of a user's review groups.
             {
+                '__note__': "Fetch the list of a user's review groups",
                 'model': Group,
                 'num_joins': 1,
                 'only_fields': {
@@ -725,13 +754,15 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             },
 
             {
+                '__note__': 'Update datagrid state on the user profile',
                 'type': 'UPDATE',
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
-
-            # Fetch the number of items across all datagrid pages.
             {
+                '__note__': (
+                    'Fetch the number of items across all datagrid pages'
+                ),
                 'annotations': {'__count': Count('*')},
                 'model': ReviewRequest,
                 'num_joins': 4,
@@ -751,13 +782,21 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       Q(Q(target_people=user) |
                         Q(target_groups__in=[]) |
                         Q(starred_by=profile))) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
-            },
 
-            # Fetch the IDs of the items for one page.
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
+            },
             {
+                '__note__': 'Fetch the IDs of the items for one page',
                 'model': ReviewRequest,
                 'num_joins': 4,
                 'tables': {
@@ -778,19 +817,31 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       Q(Q(target_people=user) |
                         Q(target_groups__in=[]) |
                         Q(starred_by=profile))) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
                 'order_by': ('-last_updated',),
                 'distinct': True,
                 'limit': 5,
+
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
             },
         ]
 
         if local_site:
-            # Fetch the data for one page based on the IDs.
             queries += [
                 {
+                    '__note__': (
+                        'Fetch the data for one page based on the IDs on a '
+                        'Local Site'
+                    ),
                     'model': ReviewRequest,
                     'select_related': {
                         'local_site',
@@ -801,9 +852,9 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
             ]
         else:
-            # Fetch the data for one page based on the IDs.
             queries += [
                 {
+                    '__note__': 'Fetch the data for one page based on the IDs',
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
                     'extra': extra,
@@ -918,10 +969,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries = [
             {
+                '__note__': 'Fetch the logged-in user',
                 'model': User,
                 'where': Q(pk=user.pk),
             },
             {
+                '__note__': "Fetch the user's profile",
                 'model': Profile,
                 'where': Q(user=user),
             },
@@ -929,23 +982,21 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_site:
             queries.append({
+                '__note__': 'Fetch the accessed Local Site',
                 'model': LocalSite,
-                'tables': {
-                    'site_localsite',
-                },
                 'where': Q(name=local_site.name),
             })
 
         queries += [
             {
+                '__note__': "Fetch the user's LocalSiteProfile",
                 'model': LocalSiteProfile,
                 'where': (Q(local_site=local_site) &
                           Q(profile=profile) &
                           Q(user=user)),
             },
-
-            # Fetch the list of a user's review groups.
             {
+                '__note__': "Fetch the list of a user's review groups",
                 'model': Group,
                 'num_joins': 1,
                 'only_fields': {
@@ -960,15 +1011,16 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': (Q(users__id=user.pk) &
                           Q(local_site_q)),
             },
-
             {
+                '__note__': 'Update datagrid state on the user profile',
                 'type': 'UPDATE',
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
-
-            # Fetch the number of items across all datagrid pages.
             {
+                '__note__': (
+                    'Fetch the number of items across all datagrid pages'
+                ),
                 'annotations': {'__count': Count('*')},
                 'model': ReviewRequest,
                 'num_joins': 1,
@@ -983,13 +1035,21 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       Q(status='P') &
                       local_site_q &
                       Q(submitter=user)) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
-            },
 
-            # Fetch the IDs of the items for one page.
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
+            },
             {
+                '__note__': 'Fetch the IDs of the items for one page',
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'tables': {
@@ -1005,16 +1065,27 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       Q(status='P') &
                       local_site_q &
                       Q(submitter=user)) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
                 'order_by': ('-last_updated',),
                 'distinct': True,
                 'limit': 5,
-            },
 
-            # Fetch the IDs of the page's review requests that are starred.
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
+            },
             {
+                '__note__': (
+                    "Fetch the IDs of the page's review requests that are "
+                    "starred."
+                ),
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'tables': {
@@ -1029,8 +1100,11 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_site:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': (
+                        'Fetch the data for one page based on the IDs on a '
+                        'Local Site'
+                    ),
                     'model': ReviewRequest,
                     'select_related': {
                         'local_site',
@@ -1042,8 +1116,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': 'Fetch the data for one page based on the IDs',
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
                     'extra': extra,
@@ -1182,10 +1256,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries = [
             {
+                '__note__': 'Fetch the logged-in user',
                 'model': User,
                 'where': Q(pk=user.pk),
             },
             {
+                '__note__': "Fetch the user's profile",
                 'model': Profile,
                 'where': Q(user=user),
             },
@@ -1194,13 +1270,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(name=local_site.name),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site'
+                    ),
                     'model': User,
                     'extra': {
                         'a': ('1', []),
@@ -1217,14 +1294,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries += [
             {
+                '__note__': "Fetch the user's LocalSiteProfile",
                 'model': LocalSiteProfile,
                 'where': (Q(local_site=local_site) &
                           Q(profile=profile) &
                           Q(user=user)),
             },
-
-            # Fetch the list of a user's review groups.
             {
+                '__note__': "Fetch the list of a user's review groups",
                 'model': Group,
                 'num_joins': 1,
                 'only_fields': {
@@ -1239,15 +1316,16 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': (Q(users__id=user.pk) &
                           Q(local_site_q)),
             },
-
             {
+                '__note__': 'Update datagrid state on the user profile',
                 'type': 'UPDATE',
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
-
-            # Fetch the number of items across all datagrid pages.
             {
+                '__note__': (
+                    'Fetch the number of items across all datagrid pages'
+                ),
                 'annotations': {'__count': Count('*')},
                 'model': ReviewRequest,
                 'num_joins': 1,
@@ -1261,13 +1339,21 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       Q(submitter__is_active=True) &
                       local_site_q &
                       Q(submitter=user)) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
-            },
 
-            # Fetch the IDs of the items for one page.
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
+            },
             {
+                '__note__': 'Fetch the IDs of the items for one page.',
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'tables': {
@@ -1282,19 +1368,31 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       Q(submitter__is_active=True) &
                       local_site_q &
                       Q(submitter=user)) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
                 'order_by': ('-last_updated',),
                 'distinct': True,
                 'limit': 5,
+
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
             },
         ]
 
         if local_site:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__node__': (
+                        'Fetch the data for one page based on the IDs on a '
+                        'Local Site'
+                    ),
                     'model': ReviewRequest,
                     'select_related': {
                         'local_site',
@@ -1306,8 +1404,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__node__': 'Fetch the data for one page based on the IDs',
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
                     'extra': extra,
@@ -1447,10 +1545,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries = [
             {
+                '__note__': 'Fetch the logged-in user',
                 'model': User,
                 'where': Q(pk=user.pk),
             },
             {
+                '__note__': "Fetch the user's profile",
                 'model': Profile,
                 'where': Q(user=user),
             },
@@ -1459,13 +1559,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(name=local_site.name),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site'
+                    ),
                     'model': User,
                     'extra': {
                         'a': ('1', []),
@@ -1482,14 +1583,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries += [
             {
+                '__note__': "Fetch the user's LocalSiteProfile",
                 'model': LocalSiteProfile,
                 'where': (Q(local_site=local_site) &
                           Q(profile=profile) &
                           Q(user=user)),
             },
-
-            # Fetch the list of a user's review groups.
             {
+                '__note__': "Fetch the list of a user's review groups",
                 'model': Group,
                 'num_joins': 1,
                 'only_fields': {
@@ -1504,15 +1605,16 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': (Q(users__id=user.pk) &
                           Q(local_site_q)),
             },
-
             {
+                '__note__': 'Update datagrid state on the user profile',
                 'type': 'UPDATE',
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
-
-            # Fetch the number of items across all datagrid pages.
             {
+                '__note__': (
+                    'Fetch the number of items across all datagrid pages'
+                ),
                 'annotations': {'__count': Count('*')},
                 'model': ReviewRequest,
                 'num_joins': 3,
@@ -1530,13 +1632,21 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       local_site_q &
                       (Q(target_people=user) |
                        Q(starred_by=profile))) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
-            },
 
-            # Fetch the IDs of the items for one page.
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
+            },
             {
+                '__note__': 'Fetch the IDs of the items for one page',
                 'model': ReviewRequest,
                 'num_joins': 3,
                 'tables': {
@@ -1555,19 +1665,31 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       local_site_q &
                       (Q(target_people=user) |
                        Q(starred_by=profile))) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
                 'order_by': ('-last_updated',),
                 'distinct': True,
                 'limit': 5,
+
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
             },
         ]
 
         if local_site:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': (
+                        'Fetch the data for one page based on the IDs on a '
+                        'Local Site'
+                    ),
                     'model': ReviewRequest,
                     'select_related': {
                         'local_site',
@@ -1579,8 +1701,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': 'Fetch the data for one page based on the IDs',
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
                     'extra': extra,
@@ -1730,10 +1852,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries = [
             {
+                '__note__': 'Fetch the logged-in user',
                 'model': User,
                 'where': Q(pk=user.pk),
             },
             {
+                '__note__': "Fetch the user's profile",
                 'model': Profile,
                 'where': Q(user=user),
             },
@@ -1742,13 +1866,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(name=local_site.name),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site'
+                    ),
                     'model': User,
                     'extra': {
                         'a': ('1', []),
@@ -1765,12 +1890,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries += [
             {
+                '__note__': "Fetch the user's LocalSiteProfile",
                 'model': LocalSiteProfile,
                 'where': (Q(local_site=local_site) &
                           Q(profile=profile) &
                           Q(user=user)),
             },
             {
+                '__note__': 'Fetch the group being viewed',
                 'model': Group,
                 'where': (Q(name='devgroup') &
                           Q(local_site_q)),
@@ -1780,13 +1907,15 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site (again)',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(id=local_site.pk),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site '
+                        '(again)'
+                    ),
                     'model': User,
                     'extra': {
                         'a': ('1', []),
@@ -1803,8 +1932,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
 
         queries += [
-            # Fetch the list of a user's review groups.
             {
+                '__note__': "Fetch the list of a user's review groups",
                 'model': Group,
                 'num_joins': 1,
                 'only_fields': {
@@ -1821,13 +1950,15 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             },
 
             {
+                '__note__': 'Update datagrid state on the user profile',
                 'type': 'UPDATE',
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
-
-            # Fetch the number of items across all datagrid pages.
             {
+                '__note__': (
+                    'Fetch the number of items across all datagrid pages'
+                ),
                 'annotations': {'__count': Count('*')},
                 'model': ReviewRequest,
                 'num_joins': 3,
@@ -1845,13 +1976,21 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       local_site_q &
                       Q(target_groups__name='devgroup') &
                       target_groups_local_site_q) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
-            },
-            # Fetch the IDs of the items for one page.
 
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
+            },
             {
+                '__note__': 'Fetch the IDs of the items for one page',
                 'model': ReviewRequest,
                 'num_joins': 3,
                 'tables': {
@@ -1870,19 +2009,31 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       local_site_q &
                       Q(target_groups__name='devgroup') &
                       target_groups_local_site_q) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
                 'order_by': ('-last_updated',),
                 'distinct': True,
                 'limit': 5,
+
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
             },
         ]
 
         if local_site:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': (
+                        'Fetch the data for one page based on the IDs on a '
+                        'Local Site'
+                    ),
                     'model': ReviewRequest,
                     'select_related': {
                         'local_site',
@@ -1894,8 +2045,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': 'Fetch the data for one page based on the IDs',
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
                     'extra': extra,
@@ -2036,10 +2187,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries = [
             {
+                '__note__': 'Fetch the logged-in user',
                 'model': User,
                 'where': Q(pk=user.pk),
             },
             {
+                '__note__': "Fetch the user's profile",
                 'model': Profile,
                 'where': Q(user=user),
             },
@@ -2048,13 +2201,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(name=local_site.name),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site'
+                    ),
                     'model': User,
                     'extra': {
                         'a': ('1', []),
@@ -2071,12 +2225,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries += [
             {
+                '__note__': "Fetch the user's LocalSiteProfile",
                 'model': LocalSiteProfile,
                 'where': (Q(local_site=local_site) &
                           Q(profile=profile) &
                           Q(user=user)),
             },
             {
+                '__note__': 'Fetch the group being viewed',
                 'model': Group,
                 'where': (Q(name='devgroup') &
                           Q(local_site_q)),
@@ -2086,13 +2242,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(id=local_site.pk),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site'
+                    ),
                     'model': User,
                     'extra': {
                         'a': ('1', []),
@@ -2109,8 +2266,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
 
         queries += [
-            # Fetch the list of a user's review groups.
             {
+                '__note__': "Fetch the list of a user's review groups",
                 'model': Group,
                 'num_joins': 1,
                 'only_fields': {
@@ -2125,15 +2282,16 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': (Q(users__id=user.pk) &
                           Q(local_site_q)),
             },
-
             {
+                '__note__': 'Update datagrid state on the user profile',
                 'type': 'UPDATE',
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
-
-            # Fetch the number of items across all datagrid pages.
             {
+                '__note__': (
+                    'Fetch the number of items across all datagrid pages'
+                ),
                 'annotations': {'__count': Count('*')},
                 'model': ReviewRequest,
                 'num_joins': 3,
@@ -2151,13 +2309,21 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       local_site_q &
                       Q(target_groups__name='devgroup') &
                       target_groups_local_site_q) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
-            },
 
-            # Fetch the IDs of the items for one page.
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
+            },
             {
+                '__note__':  'Fetch the IDs of the items for one page',
                 'model': ReviewRequest,
                 'num_joins': 3,
                 'tables': {
@@ -2176,19 +2342,31 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       local_site_q &
                       Q(target_groups__name='devgroup') &
                       target_groups_local_site_q) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
                 'order_by': ('-last_updated',),
                 'distinct': True,
                 'limit': 1,
+
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
             },
         ]
 
         if local_site:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': (
+                        'Fetch the data for one page based on the IDs on a '
+                        'Local Site'
+                    ),
                     'model': ReviewRequest,
                     'select_related': {
                         'local_site',
@@ -2200,8 +2378,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': 'Fetch the data for one page based on the IDs',
                     'model': ReviewRequest,
                     'select_related': {
                         'submitter',
@@ -2275,10 +2453,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries = [
             {
+                '__note__': 'Fetch the logged-in user',
                 'model': User,
                 'where': Q(pk=user.pk),
             },
             {
+                '__note__': "Fetch the user's profile",
                 'model': Profile,
                 'where': Q(user=user),
             },
@@ -2287,13 +2467,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(name=local_site.name),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site'
+                    ),
                     'model': User,
                     'extra': {
                         'a': ('1', []),
@@ -2317,9 +2498,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             },
             {
                 'model': Group,
-                'tables': {
-                    'reviews_group',
-                },
                 'where': (Q(name='devgroup') &
                           Q(local_site_q)),
             },
@@ -2456,10 +2634,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries = [
             {
+                '__note__': 'Fetch the logged-in user',
                 'model': User,
                 'where': Q(pk=user.pk),
             },
             {
+                '__note__': "Fetch the user's profile",
                 'model': Profile,
                 'where': Q(user=user),
             },
@@ -2468,13 +2648,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(name=local_site.name),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site'
+                    ),
                     'model': User,
                     'extra': {
                         'a': ('1', []),
@@ -2491,12 +2672,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries += [
             {
+                '__note__': "Fetch the user's LocalSiteProfile",
                 'model': LocalSiteProfile,
                 'where': (Q(local_site=local_site) &
                           Q(profile=profile) &
                           Q(user=user)),
             },
             {
+                '__note__': 'Fetch the list of groups the user is a member of',
                 'model': Group,
                 'num_joins': 1,
                 'values_select': ('pk',),
@@ -2506,9 +2689,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 },
                 'where': Q(users__id=user.pk),
             },
-
-            # Fetch the list of a user's review groups.
             {
+                '__note__': "Fetch the list of a user's review groups",
                 'model': Group,
                 'num_joins': 1,
                 'only_fields': {
@@ -2523,15 +2705,16 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': (Q(users__id=user.pk) &
                           Q(local_site_q)),
             },
-
             {
+                '__note__': 'Update datagrid state on the user profile',
                 'type': 'UPDATE',
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
-
-            # Fetch the number of items across all datagrid pages.
             {
+                '__note__': (
+                    'Fetch the number of items across all datagrid pages'
+                ),
                 'annotations': {'__count': Count('*')},
                 'model': ReviewRequest,
                 'num_joins': 4,
@@ -2551,13 +2734,21 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       Q(Q(target_people=user) |
                         Q(target_groups__in=[]) |
                         Q(starred_by=profile))) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
-            },
 
-            # Fetch the IDs of the items for one page.
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
+            },
             {
+                '__note__': 'Fetch the IDs of the items for one page',
                 'model': ReviewRequest,
                 'num_joins': 4,
                 'tables': {
@@ -2578,16 +2769,27 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       Q(Q(target_people=user) |
                         Q(target_groups__in=[]) |
                         Q(starred_by=profile))) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
                 'order_by': ('-last_updated',),
                 'distinct': True,
                 'limit': 5,
-            },
 
-            # Fetch the IDs of the page's review requests that are starred.
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
+            },
             {
+                '__note__': (
+                    "Fetch the IDs of the page's review requests that are "
+                    "starred"
+                ),
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'tables': {
@@ -2598,9 +2800,11 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': (Q(starred_by__id=profile.pk) &
                           Q(pk__in=[5, 4, 3, 2, 1])),
             },
-
-            # Fetch the IDs of the page's review requests targeting the user.
             {
+                '__note__': (
+                    "Fetch the IDs of the page's review requests targeting "
+                    "the user"
+                ),
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'tables': {
@@ -2615,8 +2819,11 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_site:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': (
+                        'Fetch the data for one page based on the IDs on a '
+                        'Local Site'
+                    ),
                     'model': ReviewRequest,
                     'select_related': {
                         'diffset_history',
@@ -2630,8 +2837,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': 'Fetch the data for one page based on the IDs',
                     'model': ReviewRequest,
                     'select_related': {
                         'diffset_history',
@@ -2645,10 +2852,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries += [
             {
+                '__note__': 'Fetch the diffsets for each review request',
                 'model': DiffSet,
                 'where': Q(history__in=diffset_histories),
             },
             {
+                '__note__': 'Fetch the target groups for each review request',
                 'model': Group,
                 'num_joins': 1,
                 'tables': {
@@ -2665,6 +2874,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': Q(review_requests__in=review_requests),
             },
             {
+                '__note__': 'Fetch the target users for each review request',
                 'model': User,
                 'num_joins': 1,
                 'tables': {
@@ -2849,10 +3059,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries = [
             {
+                '__note__': 'Fetch the logged-in user',
                 'model': User,
                 'where': Q(pk=user.pk),
             },
             {
+                '__note__': "Fetch the user's profile",
                 'model': Profile,
                 'where': Q(user=user),
             },
@@ -2861,13 +3073,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(name=local_site.name),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site'
+                    ),
                     'model': User,
                     'extra': {
                         'a': ('1', []),
@@ -2884,12 +3097,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries += [
             {
+                '__note__': "Fetch the user's LocalSiteProfile",
                 'model': LocalSiteProfile,
                 'where': (Q(local_site=local_site) &
                           Q(profile=profile) &
                           Q(user=user)),
             },
             {
+                '__note__': 'Fetch the list of groups the user is a member of',
                 'model': Group,
                 'num_joins': 1,
                 'tables': {
@@ -2899,9 +3114,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': Q(users__id=user.pk),
                 'values_select': ('pk',),
             },
-
-            # Fetch the list of a user's review groups.
             {
+                '__note__': "Fetch the list of a user's review groups",
                 'model': Group,
                 'num_joins': 1,
                 'only_fields': {
@@ -2916,15 +3130,16 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': (Q(users__id=user.pk) &
                           Q(local_site_q)),
             },
-
             {
+                '__note__': 'Update datagrid state on the user profile',
                 'type': 'UPDATE',
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
-
-            # Fetch the number of items across all datagrid pages.
             {
+                '__note__': (
+                    'Fetch the number of items across all datagrid pages'
+                ),
                 'annotations': {'__count': Count('*')},
                 'model': ReviewRequest,
                 'num_joins': 4,
@@ -2947,9 +3162,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                     Q(local_site=local_site)
                 ),
             },
-
-            # Fetch the IDs of the items for one page.
             {
+                '__note__': 'Fetch the IDs of the items for one page',
                 'model': ReviewRequest,
                 'num_joins': 4,
                 'tables': {
@@ -2980,8 +3194,11 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_site:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': (
+                        'Fetch the data for one page based on the IDs on a '
+                        'Local Site'
+                    ),
                     'model': ReviewRequest,
                     'select_related': {
                         'local_site',
@@ -2993,8 +3210,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': 'Fetch the data for one page based on the IDs',
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
                     'extra': extra,
@@ -3192,10 +3409,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries = [
             {
+                '__note__': 'Fetch the logged-in user',
                 'model': User,
                 'where': Q(pk=user.pk),
             },
             {
+                '__note__': "Fetch the user's profile",
                 'model': Profile,
                 'where': Q(user=user),
             },
@@ -3204,13 +3423,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(name=local_site.name),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site'
+                    ),
                     'model': User,
                     'extra': {
                         'a': ('1', []),
@@ -3227,12 +3447,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries += [
             {
+                '__note__': "Fetch the user's LocalSiteProfile",
                 'model': LocalSiteProfile,
                 'where': (Q(local_site=local_site) &
                           Q(profile=profile) &
                           Q(user=user)),
             },
             {
+                '__note__': 'Fetch the list of groups the user is a member of',
                 'model': Group,
                 'num_joins': 1,
                 'tables': {
@@ -3242,9 +3464,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': Q(users__id=user.pk),
                 'values_select': ('pk',),
             },
-
-            # Fetch the list of a user's review groups.
             {
+                '__note__': "Fetch the list of a user's review groups",
                 'model': Group,
                 'num_joins': 1,
                 'only_fields': {
@@ -3259,15 +3480,16 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': (Q(users__id=user.pk) &
                           Q(local_site_q)),
             },
-
             {
+                '__note__': 'Update datagrid state on the user profile',
                 'type': 'UPDATE',
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
-
-            # Fetch the number of items across all datagrid pages.
             {
+                '__note__': (
+                    'Fetch the number of items across all datagrid pages'
+                ),
                 'annotations': {'__count': Count('*')},
                 'model': ReviewRequest,
                 'num_joins': 4,
@@ -3287,54 +3509,24 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       (Q(target_people=user) |
                        Q(target_groups__in=[]) |
                        Q(starred_by=profile))) &
-                    Q(pk__in=(
-                        ReviewRequestVisit.objects
-                        .filter(pk__in=[1])
-                        .values_list('pk', flat=True)
-                    )) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
-            },
 
-            # Fetch the IDs of the items for one page.
-            {
-                'model': ReviewRequest,
-                'num_joins': 4,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_people',
-                },
-                'values_select': ('pk',),
-                'extra': extra,
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      (Q(target_people=user) |
-                       Q(target_groups__in=[]) |
-                       Q(starred_by=profile))) &
-                    Q(local_site=local_site)
-                ),
-                'order_by': ('-last_updated',),
-                'distinct': True,
-                'limit': 3,
-            },
-
-            # Fetch the data for one page based on the IDs.
-            {
-                'model': ReviewRequest,
-                'select_related': {'submitter'},
-                'extra': extra,
-                'where': Q(pk__in=[3, 2, 1]),
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
             },
         ]
 
-        with self.assertQueries(queries, check_subqueries=True):
+        with self.assertQueries(queries,
+                                check_subqueries=True,
+                                with_tracebacks=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -3490,10 +3682,12 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries = [
             {
+                '__note__': 'Fetch the logged-in user',
                 'model': User,
                 'where': Q(pk=user.pk),
             },
             {
+                '__note__': "Fetch the user's profile",
                 'model': Profile,
                 'where': Q(user=user),
             },
@@ -3502,13 +3696,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         if local_site:
             queries += [
                 {
+                    '__note__': 'Fetch the accessed Local Site',
                     'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
                     'where': Q(name=local_site.name),
                 },
                 {
+                    '__note__': (
+                        'Check if the user is a member of the Local Site'
+                    ),
                     'model': User,
                     'extra': {
                         'a': ('1', []),
@@ -3525,12 +3720,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         queries += [
             {
+                '__note__': "Fetch the user's LocalSiteProfile",
                 'model': LocalSiteProfile,
                 'where': (Q(local_site=local_site) &
                           Q(profile=profile) &
                           Q(user=user)),
             },
             {
+                '__note__': 'Fetch the list of groups the user is a member of',
                 'model': Group,
                 'num_joins': 1,
                 'tables': {
@@ -3540,9 +3737,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': Q(users__id=user.pk),
                 'values_select': ('pk',),
             },
-
-            # Fetch the list of a user's review groups.
             {
+                '__note__': "Fetch the list of a user's review groups",
                 'model': Group,
                 'num_joins': 1,
                 'only_fields': {
@@ -3557,9 +3753,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 'where': (Q(users__id=user.pk) &
                           Q(local_site_q)),
             },
-
-            # Fetch the list of a user's starred review groups.
             {
+                '__note__': "Fetch the list of a user's starred review groups",
                 'model': Group,
                 'num_joins': 1,
                 'only_fields': {
@@ -3575,15 +3770,16 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                           ~Q(pk__in={devgroup.pk, privgroup.pk}) &
                           Q(local_site_q)),
             },
-
             {
+                '__note__': 'Update datagrid state on the user profile',
                 'type': 'UPDATE',
                 'model': Profile,
                 'where': Q(pk=user.pk),
             },
-
-            # Fetch the number of items across all datagrid pages.
             {
+                '__note__': (
+                    'Fetch the number of items across all datagrid pages'
+                ),
                 'annotations': {'__count': Count('*')},
                 'model': ReviewRequest,
                 'num_joins': 4,
@@ -3603,13 +3799,21 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       (Q(target_people=user) |
                        Q(target_groups__in=[devgroup.pk, privgroup.pk]) |
                        Q(starred_by=profile))) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
-            },
 
-            # Fetch the IDs of the items for one page.
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
+            },
             {
+                '__note__': 'Fetch the IDs of the items for one page',
                 'model': ReviewRequest,
                 'num_joins': 4,
                 'tables': {
@@ -3630,19 +3834,31 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                       (Q(target_people=user) |
                        Q(target_groups__in=[devgroup.pk, privgroup.pk]) |
                        Q(starred_by=profile))) &
-                    ~Q(pk__in=ReviewRequestVisit.objects.none()) &
+                    ~Q(__Q__subquery__=1) &
                     Q(local_site=local_site)
                 ),
                 'order_by': ('-last_updated',),
                 'distinct': True,
                 'limit': 3,
+
+                'subqueries': [
+                    {
+                        'model': ReviewRequestVisit,
+                        'values_select': ('review_request_id',),
+                        'where': (Q(user=user) &
+                                  ~Q(visibility='V')),
+                    },
+                ],
             },
         ]
 
         if local_site:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': (
+                        'Fetch the data for one page based on the IDs on a '
+                        'Local Site'
+                    ),
                     'model': ReviewRequest,
                     'select_related': {
                         'local_site',
@@ -3658,8 +3874,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             ]
         else:
             queries += [
-                # Fetch the data for one page based on the IDs.
                 {
+                    '__note__': 'Fetch the data for one page based on the IDs',
                     'model': ReviewRequest,
                     'select_related': {'submitter'},
                     'extra': extra,
