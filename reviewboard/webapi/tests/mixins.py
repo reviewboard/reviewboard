@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from datetime import timedelta
-from typing import (Any, Dict, List, Optional, Sequence, TYPE_CHECKING,
-                    Tuple, Union, cast)
+from typing import (Any, Dict, Iterator, List, Optional, Sequence,
+                    TYPE_CHECKING, Tuple, Union, cast)
 
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.utils import timezone
 from djblets.features.testing import override_feature_checks
 from djblets.secrets.token_generators import token_generator_registry
@@ -18,12 +20,14 @@ from oauth2_provider.generators import (generate_client_id,
 from oauth2_provider.models import AccessToken
 from typing_extensions import NotRequired, TypeAlias, TypedDict
 
+from reviewboard.accounts.models import Profile
 from reviewboard.oauth.models import Application
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.models import WebAPIToken
 
 if TYPE_CHECKING:
     from djblets.features.testing import FeatureStates
+    from djblets.testing.testcases import ExpectedQueries
     from djblets.util.typing import JSONDict, KwargsDict
     from djblets.webapi.errors import WebAPIError
 
@@ -372,6 +376,33 @@ class BasicTestsMixin(_MixinsParentClass):
         raise NotImplementedError("%s doesn't implement compare_item"
                                   % self.__class__.__name__)
 
+    @contextmanager
+    def _run_api_test(
+        self,
+        *,
+        expected_queries: Optional[ExpectedQueries],
+    ) -> Iterator[None]:
+        """Context manager for running an API unit test.
+
+        This wraps the test in common context managers that govern the
+        execution of the tested code.
+
+        Version Added:
+            3.4
+
+        Context:
+            The test environment is set up to run the test.
+        """
+        with override_feature_checks(self.override_features):
+            if expected_queries is None:
+                yield
+            else:
+                with self.assertQueries(expected_queries,
+                                        check_subqueries=True,
+                                        with_tracebacks=True,
+                                        traceback_size=30):
+                    yield
+
     def _close_file_handles(
         self,
         post_data: APIRequestData,
@@ -679,6 +710,50 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
             "%s doesn't implement setup_basic_delete_test"
             % self.__class__.__name__)
 
+    def build_basic_delete_expected_queries(
+        self,
+        *,
+        setup_state: BasicDeleteTestSetupState,
+        is_accessible: bool,
+        is_mutable: bool,
+        is_owner: bool,
+        **kwargs,
+    ) -> Optional[ExpectedQueries]:
+        """Return expected queries for a basic HTTP DELETE test.
+
+        If implemented by a subclass, query assertions will be automatically
+        enabled for the built-in tests.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            setup_state (BasicDeleteTestSetupState):
+                The setup state for the test.
+
+            is_accessible (bool):
+                Whether the resource is accessible by the current user.
+
+            is_mutable (bool):
+                Whether the resource is mutable by the current user.
+
+            is_owner (bool):
+                Whether the resource is owned by the current user.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion or
+                test-specific usage.
+
+        Returns:
+            djblets.testing.testcases.ExpectedQueries:
+            The queries to expect in a test.
+
+            If ``None``, query assertions will not be performed.
+        """
+        assert 'DELETE' in self.resource.allowed_methods
+
+        return None
+
     def check_delete_result(
         self,
         user: User,
@@ -712,7 +787,13 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         setup_state = self.setup_delete_test_state(
             with_admin=self.basic_delete_use_admin)
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_delete_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             self.api_delete(setup_state['url'])
 
         self.check_delete_result(setup_state['owner'],
@@ -727,7 +808,13 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
 
         setup_state = self.setup_delete_test_state(owner=user)
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_delete_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=False,
+            is_owner=False)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_delete(setup_state['url'],
                                   expected_status=self.not_owner_status_code)
 
@@ -810,7 +897,13 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
             with_local_site=True,
             with_admin=self.basic_delete_use_admin)
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_delete_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             self.api_delete(setup_state['url'])
 
         self.check_delete_result(setup_state['owner'],
@@ -824,11 +917,47 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
         setup_state = self.setup_delete_test_state(
             with_local_site=True,
             with_admin=self.basic_delete_use_admin)
+        local_site = setup_state['local_site']
+
+        assert local_site is not None
 
         # Undo our Local Site login, reverting back to a normal user.
-        self._login_user()
+        auth_user = self._login_user()
 
-        with override_feature_checks(self.override_features):
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'auth_user',
+                    'site_localsite_users',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_delete(setup_state['url'], expected_status=403)
 
         assert rsp is not None
@@ -855,7 +984,13 @@ class BasicDeleteTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id)
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_delete_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             self.api_delete(setup_state['url'])
 
         self.check_delete_result(setup_state['owner'],
@@ -873,8 +1008,54 @@ class BasicDeleteTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
             with_admin=self.basic_delete_use_admin,
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
+        webapi_token = setup_state['webapi_token']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the API token for the request',
+                'model': WebAPIToken,
+                'where': (Q(pk=webapi_token.pk) &
+                          Q(user=auth_user)),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': (
+                    'Check if the user is a member of the Local Site'
+                ),
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_delete(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -897,7 +1078,13 @@ class BasicDeleteTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id)
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_delete_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             self.api_delete(setup_state['url'])
 
         self.check_delete_result(setup_state['owner'],
@@ -915,8 +1102,57 @@ class BasicDeleteTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_delete_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': (
+                    'Check if the user is a member of the Local Site'
+                ),
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_delete(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -935,8 +1171,55 @@ class BasicDeleteTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id,
             oauth_application_enabled=False)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_delete(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -953,8 +1236,54 @@ class BasicDeleteTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_delete_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id)
+        auth_user = setup_state['auth_user']
 
-        with override_feature_checks(self.override_features):
+        self.assertIsNone(setup_state['local_site'])
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=self.local_site_name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=self.local_site_id) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_delete(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -972,8 +1301,55 @@ class BasicDeleteTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_delete_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=None)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_delete(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -1015,7 +1391,20 @@ class BasicDeleteNotAllowedTestsMixin(BasicTestsMixin):
         """Testing the DELETE <URL> API gives Method Not Allowed"""
         url = self.setup_http_not_allowed_item_test(self.user)
 
-        with override_feature_checks(self.override_features):
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=self.user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=self.user),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             self.api_delete(url, expected_status=405)
 
 
@@ -1128,6 +1517,50 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         raise NotImplementedError("%s doesn't implement setup_basic_get_test"
                                   % self.__class__.__name__)
 
+    def build_basic_get_item_expected_queries(
+        self,
+        *,
+        setup_state: BasicGetItemTestSetupState,
+        is_accessible: bool,
+        is_mutable: bool,
+        is_owner: bool,
+        **kwargs,
+    ) -> Optional[ExpectedQueries]:
+        """Return expected queries for a basic HTTP GET item test.
+
+        If implemented by a subclass, query assertions will be automatically
+        enabled for the built-in tests.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            setup_state (BasicGetItemTestSetupState):
+                The setup state for the test.
+
+            is_accessible (bool):
+                Whether the resource is accessible by the current user.
+
+            is_mutable (bool):
+                Whether the resource is mutable by the current user.
+
+            is_owner (bool):
+                Whether the resource is owned by the current user.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion or
+                test-specific usage.
+
+        Returns:
+            djblets.testing.testcases.ExpectedQueries:
+            The queries to expect in a test.
+
+            If ``None``, query assertions will not be performed.
+        """
+        assert 'GET' in self.resource.allowed_methods
+
+        return None
+
     @webapi_test_template
     def test_get(self) -> None:
         """Testing the GET <URL> API"""
@@ -1142,7 +1575,13 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
             with_admin=self.basic_get_use_admin)
         item = setup_state['item']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_get_item_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'],
                                expected_mimetype=setup_state['mimetype'],
                                expected_json=self.basic_get_returns_json)
@@ -1234,7 +1673,13 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
             with_admin=self.basic_get_use_admin)
         item = setup_state['item']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_get_item_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'],
                                expected_mimetype=setup_state['mimetype'],
                                expected_json=self.basic_get_returns_json)
@@ -1257,11 +1702,47 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
         setup_state = self.setup_get_item_test_state(
             with_local_site=True,
             with_admin=self.basic_get_use_admin)
+        local_site = setup_state['local_site']
+
+        assert local_site is not None
 
         # Undo our Local Site login, reverting back to a normal user.
-        self._login_user()
+        auth_user = self._login_user()
 
-        with override_feature_checks(self.override_features):
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'auth_user',
+                    'site_localsite_users',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -1289,7 +1770,13 @@ class BasicGetItemTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
             webapi_token_local_site_id=self.local_site_id)
         item = setup_state['item']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_get_item_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'],
                                expected_mimetype=setup_state['mimetype'],
                                expected_json=self.basic_get_returns_json)
@@ -1316,8 +1803,54 @@ class BasicGetItemTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
             with_admin=self.basic_get_use_admin,
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
+        webapi_token = setup_state['webapi_token']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the API token for the request',
+                'model': WebAPIToken,
+                'where': (Q(pk=webapi_token.pk) &
+                          Q(user=auth_user)),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': (
+                    'Check if the user is a member of the Local Site'
+                ),
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -1342,7 +1875,13 @@ class BasicGetItemTestsWithLocalsSiteAndOAuthTokenMixin(_MixinsParentClass):
             webapi_token_local_site_id=self.local_site_id)
         item = setup_state['item']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_get_item_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'],
                                expected_mimetype=setup_state['mimetype'],
                                expected_json=self.basic_get_returns_json)
@@ -1369,8 +1908,57 @@ class BasicGetItemTestsWithLocalsSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': (
+                    'Check if the user is a member of the Local Site'
+                ),
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -1389,8 +1977,55 @@ class BasicGetItemTestsWithLocalsSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id,
             oauth_application_enabled=False)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -1407,8 +2042,54 @@ class BasicGetItemTestsWithLocalsSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id)
+        auth_user = setup_state['auth_user']
 
-        with override_feature_checks(self.override_features):
+        self.assertIsNone(setup_state['local_site'])
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=self.local_site_name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=self.local_site_id) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -1426,8 +2107,55 @@ class BasicGetItemTestsWithLocalsSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=None)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -1542,6 +2270,50 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         raise NotImplementedError("%s doesn't implement setup_basic_get_test"
                                   % self.__class__.__name__)
 
+    def build_basic_get_list_expected_queries(
+        self,
+        *,
+        setup_state: BasicGetItemListTestSetupState,
+        is_accessible: bool,
+        is_mutable: bool,
+        is_owner: bool,
+        **kwargs,
+    ) -> Optional[ExpectedQueries]:
+        """Return expected queries for a basic HTTP GET list test.
+
+        If implemented by a subclass, query assertions will be automatically
+        enabled for the built-in tests.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            setup_state (BasicGetItemListTestSetupState):
+                The setup state for the test.
+
+            is_accessible (bool):
+                Whether the resource is accessible by the current user.
+
+            is_mutable (bool):
+                Whether the resource is mutable by the current user.
+
+            is_owner (bool):
+                Whether the resource is owned by the current user.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion or
+                test-specific usage.
+
+        Returns:
+            djblets.testing.testcases.ExpectedQueries:
+            The queries to expect in a test.
+
+            If ``None``, query assertions will not be performed.
+        """
+        assert 'GET' in self.resource.allowed_methods
+
+        return None
+
     @webapi_test_template
     def test_get(self) -> None:
         """Testing the GET <URL> API"""
@@ -1556,7 +2328,13 @@ class BasicGetListTestsMixin(BasicTestsMixin):
             with_admin=self.basic_get_use_admin)
         items = setup_state['items']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_get_list_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'],
                                expected_mimetype=setup_state['mimetype'])
 
@@ -1651,7 +2429,13 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
             with_admin=self.basic_get_use_admin)
         items = setup_state['items']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_get_list_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'],
                                expected_mimetype=setup_state['mimetype'])
 
@@ -1672,11 +2456,48 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
         setup_state = self.setup_get_list_test_state(
             with_local_site=True,
             with_admin=self.basic_get_use_admin)
+        local_site = setup_state['local_site']
+
+        assert local_site is not None
 
         # Undo our Local Site login, reverting back to a normal user.
-        self._login_user()
+        auth_user = self._login_user()
 
-        rsp = self.api_get(setup_state['url'], expected_status=403)
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'auth_user',
+                    'site_localsite_users',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
+            rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
         self.assertEqual(rsp['stat'], 'fail')
@@ -1703,7 +2524,13 @@ class BasicGetListTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
             webapi_token_local_site_id=self.local_site_id)
         items = setup_state['items']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_get_list_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'],
                                expected_mimetype=setup_state['mimetype'])
 
@@ -1728,8 +2555,54 @@ class BasicGetListTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
             with_admin=self.basic_get_use_admin,
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
+        webapi_token = setup_state['webapi_token']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the API token for the request',
+                'model': WebAPIToken,
+                'where': (Q(pk=webapi_token.pk) &
+                          Q(user=auth_user)),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': (
+                    'Check if the user is a member of the Local Site'
+                ),
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -1753,7 +2626,13 @@ class BasicGetListTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             webapi_token_local_site_id=self.local_site_id)
         items = setup_state['items']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_get_list_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'],
                                expected_mimetype=setup_state['mimetype'])
 
@@ -1778,8 +2657,57 @@ class BasicGetListTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': (
+                    'Check if the user is a member of the Local Site'
+                ),
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -1798,8 +2726,55 @@ class BasicGetListTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id,
             oauth_application_enabled=False)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -1816,8 +2791,54 @@ class BasicGetListTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id)
+        auth_user = setup_state['auth_user']
 
-        with override_feature_checks(self.override_features):
+        self.assertIsNone(setup_state['local_site'])
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=self.local_site_name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=self.local_site_id) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -1835,8 +2856,55 @@ class BasicGetListTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_get_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=None)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_get(setup_state['url'], expected_status=403)
 
         assert rsp
@@ -1971,6 +3039,50 @@ class BasicPostTestsMixin(BasicTestsMixin):
         raise NotImplementedError("%s doesn't implement setup_basic_post_test"
                                   % self.__class__.__name__)
 
+    def build_basic_post_expected_queries(
+        self,
+        *,
+        setup_state: BasicPostTestSetupState,
+        is_accessible: bool,
+        is_mutable: bool,
+        is_owner: bool,
+        **kwargs,
+    ) -> Optional[ExpectedQueries]:
+        """Return expected queries for a basic HTTP POST test.
+
+        If implemented by a subclass, query assertions will be automatically
+        enabled for the built-in tests.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            setup_state (BasicPostTestSetupState):
+                The setup state for the test.
+
+            is_accessible (bool):
+                Whether the resource is accessible by the current user.
+
+            is_mutable (bool):
+                Whether the resource is mutable by the current user.
+
+            is_owner (bool):
+                Whether the resource is owned by the current user.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion or
+                test-specific usage.
+
+        Returns:
+            djblets.testing.testcases.ExpectedQueries:
+            The queries to expect in a test.
+
+            If ``None``, query assertions will not be performed.
+        """
+        assert 'POST' in self.resource.allowed_methods
+
+        return None
+
     def check_post_result(
         self,
         user: User,
@@ -2009,7 +3121,13 @@ class BasicPostTestsMixin(BasicTestsMixin):
             with_admin=self.basic_post_use_admin)
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_post_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_post(setup_state['url'],
                                 request_data,
                                 expected_mimetype=setup_state['mimetype'],
@@ -2118,7 +3236,13 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
             with_admin=self.basic_post_use_admin)
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_post_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_post(setup_state['url'],
                                 request_data,
                                 expected_mimetype=setup_state['mimetype'],
@@ -2138,12 +3262,48 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
         setup_state = self.setup_post_test_state(
             with_local_site=True,
             with_admin=self.basic_post_use_admin)
+        local_site = setup_state['local_site']
         request_data = setup_state['request_data']
 
-        # Undo our Local Site login, reverting back to a normal user.
-        self._login_user()
+        assert local_site is not None
 
-        with override_feature_checks(self.override_features):
+        # Undo our Local Site login, reverting back to a normal user.
+        auth_user = self._login_user()
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'auth_user',
+                    'site_localsite_users',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_post(setup_state['url'],
                                 request_data,
                                 expected_status=403)
@@ -2173,7 +3333,13 @@ class BasicPostTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
             webapi_token_local_site_id=self.local_site_id)
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_post_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_post(setup_state['url'],
                                 request_data,
                                 expected_mimetype=setup_state['mimetype'],
@@ -2197,9 +3363,55 @@ class BasicPostTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
             with_admin=self.basic_post_use_admin,
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
         request_data = setup_state['request_data']
+        webapi_token = setup_state['webapi_token']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the API token for the request',
+                'model': WebAPIToken,
+                'where': (Q(pk=webapi_token.pk) &
+                          Q(user=auth_user)),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': (
+                    'Check if the user is a member of the Local Site'
+                ),
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_post(setup_state['url'],
                                 request_data,
                                 expected_status=403)
@@ -2225,7 +3437,13 @@ class BasicPostTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             webapi_token_local_site_id=self.local_site_id)
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_post_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_post(setup_state['url'],
                                 request_data,
                                 expected_mimetype=setup_state['mimetype'],
@@ -2249,9 +3467,58 @@ class BasicPostTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_post_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': (
+                    'Check if the user is a member of the Local Site'
+                ),
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_post(setup_state['url'],
                                 request_data,
                                 expected_status=403)
@@ -2272,9 +3539,56 @@ class BasicPostTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id,
             oauth_application_enabled=False)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_post(setup_state['url'],
                                 request_data,
                                 expected_status=403)
@@ -2293,9 +3607,55 @@ class BasicPostTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_post_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id)
+        auth_user = setup_state['auth_user']
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        self.assertIsNone(setup_state['local_site'])
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=self.local_site_name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=self.local_site_id) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_post(setup_state['url'],
                                 request_data,
                                 expected_status=403)
@@ -2315,9 +3675,56 @@ class BasicPostTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_post_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=None)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_post(setup_state['url'],
                                 request_data,
                                 expected_status=403)
@@ -2360,7 +3767,20 @@ class BasicPostNotAllowedTestsMixin(BasicTestsMixin):
         """Testing the POST <URL> API gives Method Not Allowed"""
         url = self.setup_http_not_allowed_list_test(self.user)
 
-        with override_feature_checks(self.override_features):
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=self.user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=self.user),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             self.api_post(url, {}, expected_status=405)
 
 
@@ -2489,6 +3909,50 @@ class BasicPutTestsMixin(BasicTestsMixin):
         raise NotImplementedError("%s doesn't implement setup_basic_put_test"
                                   % self.__class__.__name__)
 
+    def build_basic_put_expected_queries(
+        self,
+        *,
+        setup_state: BasicPutTestSetupState,
+        is_accessible: bool,
+        is_mutable: bool,
+        is_owner: bool,
+        **kwargs,
+    ) -> Optional[ExpectedQueries]:
+        """Return expected queries for a basic HTTP PUT test.
+
+        If implemented by a subclass, query assertions will be automatically
+        enabled for the built-in tests.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            setup_state (BasicPutTestSetupState):
+                The setup state for the test.
+
+            is_accessible (bool):
+                Whether the resource is accessible by the current user.
+
+            is_mutable (bool):
+                Whether the resource is mutable by the current user.
+
+            is_owner (bool):
+                Whether the resource is owned by the current user.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion or
+                test-specific usage.
+
+        Returns:
+            djblets.testing.testcases.ExpectedQueries:
+            The queries to expect in a test.
+
+            If ``None``, query assertions will not be performed.
+        """
+        assert 'PUT' in self.resource.allowed_methods
+
+        return None
+
     def check_put_result(
         self,
         user: User,
@@ -2531,7 +3995,13 @@ class BasicPutTestsMixin(BasicTestsMixin):
             with_admin=self.basic_put_use_admin)
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_put_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_put(setup_state['url'],
                                request_data,
                                expected_mimetype=setup_state['mimetype'])
@@ -2541,7 +4011,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
         self.assertIn(resource.item_result_key, rsp)
 
         self.check_put_result(setup_state['owner'],
-                              rsp[self.resource.item_result_key],
+                              rsp[resource.item_result_key],
                               setup_state['item'],
                               *setup_state.get('check_result_args', ()),
                               **setup_state.get('check_result_kwargs', {}))
@@ -2557,7 +4027,13 @@ class BasicPutTestsMixin(BasicTestsMixin):
             put_valid_data=False)
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_put_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=False,
+            is_owner=False)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_put(setup_state['url'],
                                request_data,
                                expected_status=self.not_owner_status_code)
@@ -2663,7 +4139,13 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
             with_admin=self.basic_put_use_admin)
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_put_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_put(setup_state['url'],
                                request_data,
                                expected_mimetype=setup_state['mimetype'])
@@ -2683,12 +4165,48 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
     def test_put_with_site_no_access(self) -> None:
         """Testing the PUT <URL> API without access to a local site"""
         setup_state = self.setup_put_test_state(with_local_site=True)
+        local_site = setup_state['local_site']
         request_data = setup_state['request_data']
 
-        # Undo our Local Site login, reverting back to a normal user.
-        self._login_user()
+        assert local_site is not None
 
-        with override_feature_checks(self.override_features):
+        # Undo our Local Site login, reverting back to a normal user.
+        auth_user = self._login_user()
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'auth_user',
+                    'site_localsite_users',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_put(setup_state['url'],
                                request_data,
                                expected_status=403)
@@ -2718,7 +4236,13 @@ class BasicPutTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
             webapi_token_local_site_id=self.local_site_id)
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_put_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_put(setup_state['url'],
                                request_data,
                                expected_mimetype=setup_state['mimetype'])
@@ -2744,9 +4268,55 @@ class BasicPutTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
             with_admin=self.basic_put_use_admin,
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
         request_data = setup_state['request_data']
+        webapi_token = setup_state['webapi_token']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the API token for the request',
+                'model': WebAPIToken,
+                'where': (Q(pk=webapi_token.pk) &
+                          Q(user=auth_user)),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': (
+                    'Check if the user is a member of the Local Site'
+                ),
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_put(setup_state['url'],
                                request_data,
                                expected_status=403)
@@ -2772,7 +4342,13 @@ class BasicPutTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             webapi_token_local_site_id=self.local_site_id)
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        expected_queries = self.build_basic_put_expected_queries(
+            setup_state=setup_state,
+            is_accessible=True,
+            is_mutable=True,
+            is_owner=True)
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_put(setup_state['url'],
                                request_data,
                                expected_mimetype=setup_state['mimetype'])
@@ -2798,9 +4374,58 @@ class BasicPutTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_put_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': (
+                    'Check if the user is a member of the Local Site'
+                ),
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_put(setup_state['url'],
                                request_data,
                                expected_status=403)
@@ -2821,9 +4446,56 @@ class BasicPutTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id,
             oauth_application_enabled=False)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_put(setup_state['url'],
                                request_data,
                                expected_status=403)
@@ -2842,9 +4514,55 @@ class BasicPutTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_put_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=self.local_site_id)
+        auth_user = setup_state['auth_user']
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        self.assertIsNone(setup_state['local_site'])
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=self.local_site_name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=self.local_site_id) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_put(setup_state['url'],
                                request_data,
                                expected_status=403)
@@ -2864,9 +4582,56 @@ class BasicPutTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
             with_admin=self.basic_put_use_admin,
             with_oauth_token=True,
             webapi_token_local_site_id=None)
+        auth_user = setup_state['auth_user']
+        local_site = setup_state['local_site']
         request_data = setup_state['request_data']
 
-        with override_feature_checks(self.override_features):
+        assert local_site is not None
+
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=auth_user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=auth_user),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 token for the request',
+                'model': AccessToken,
+                'where': Q(pk=1),
+            },
+            {
+                '__note__': 'Fetch the OAuth2 application for the token',
+                'model': Application,
+                'where': Q(id=1),
+            },
+            {
+                '__note__': 'Fetch the accessed Local Site',
+                'model': LocalSite,
+                'where': Q(name=local_site.name),
+            },
+            {
+                '__note__': 'Check if the user is a member of the Local Site',
+                'extra': {
+                    'a': ('1', []),
+                },
+                'limit': 1,
+                'model': User,
+                'num_joins': 1,
+                'tables': {
+                    'site_localsite_users',
+                    'auth_user',
+                },
+                'where': (Q(local_site__id=local_site.pk) &
+                          Q(pk=auth_user.pk)),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             rsp = self.api_put(setup_state['url'],
                                request_data,
                                expected_status=403)
@@ -2911,7 +4676,20 @@ class BasicPutNotAllowedTestsMixin(BasicTestsMixin):
         """Testing the PUT <URL> API gives Method Not Allowed"""
         url = self.setup_http_not_allowed_item_test(self.user)
 
-        with override_feature_checks(self.override_features):
+        expected_queries: ExpectedQueries = [
+            {
+                '__note__': 'Fetch the logged-in user',
+                'model': User,
+                'where': Q(pk=self.user.pk),
+            },
+            {
+                '__note__': "Fetch the user's profile",
+                'model': Profile,
+                'where': Q(user=self.user),
+            },
+        ]
+
+        with self._run_api_test(expected_queries=expected_queries):
             self.api_put(url, {}, expected_status=405)
 
 
