@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 from typing import (Any, Dict, List, Optional, Sequence, TYPE_CHECKING,
-                    Tuple, Union)
+                    Tuple, Union, cast)
 
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -19,6 +19,7 @@ from oauth2_provider.models import AccessToken
 from typing_extensions import NotRequired, TypeAlias, TypedDict
 
 from reviewboard.oauth.models import Application
+from reviewboard.site.models import LocalSite
 from reviewboard.webapi.models import WebAPIToken
 
 if TYPE_CHECKING:
@@ -68,20 +69,48 @@ class BasicTestSetupState(TypedDict):
         5.0.7
     """
 
+    #: The authenticated user for the test.
+    auth_user: User
+
     #: The OAuth2 access token used for the test, if any.
     oauth2_access_token: Optional[AccessToken]
 
     #: The OAuth2 application used for the test, if any.
     oauth2_application: Optional[Application]
 
-    #: The user to use for the test.
-    user: User
+    #: The Local Site tests are being performed on, if any.
+    #:
+    #: This will be ``None`` if not testing on a Local Site.
+    local_site: Optional[LocalSite]
+
+    #: The name of the Local Site tests are being performed on, if any.
+    #:
+    #: This will be ``None`` if not testing on a Local Site.
+    local_site_name: Optional[str]
+
+    #: Whether the test is being performed with Local Sites in the database.
+    local_sites_in_db: bool
+
+    #: The user intended to own any state on the resource.
+    #:
+    #: Objects should be associated with this user. This defaults to
+    #: :py:auth:`auth_user` unless explicitly overridden for the test.
+    owner: User
+
+    #: Objects used for testing.
+    #:
+    #: These are local to the unit test, and can be used however the test
+    #: suite requires.
+    test_objects: Dict[str, Any]
 
     #: The URL to the API resource.
     url: str
 
     #: The API token used for the test, if any.
     webapi_token: Optional[WebAPIToken]
+
+    #: Whether the test is being performed on a Local Site.
+    with_local_site: bool
 
     #: Custom positional arguments to pass to response-checking functions.
     check_result_args: NotRequired[Tuple[Any, ...]]
@@ -361,6 +390,71 @@ class BasicTestsMixin(_MixinsParentClass):
                 if hasattr(value, 'close'):
                     value.close()
 
+    def _build_common_setup_state(
+        self,
+        *,
+        fixtures: Sequence[str],
+        owner: Optional[User] = None,
+        with_local_site: bool = False,
+        **auth_kwargs,
+    ) -> Dict[str, Any]:
+        """Set up common state for a test.
+
+        This performs some built-in setup for all HTTP method tests. It's
+        meant to be used for the method-specific state setup functions.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            fixtures (list of str):
+                The list of fixtures to load.
+
+            owner (django.contrib.auth.models.User, optional):
+                The owner of any objects being created.
+
+                This defaults to the ``user`` value provided in
+                ``auth_kwargs``.
+
+            with_local_site (bool, optional):
+                Whether this is being tested with a Local Site.
+
+            **auth_kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`_authenticate_basic_tests`.
+
+        Returns:
+            dict:
+            The common state for testing.
+        """
+        self.load_fixtures(fixtures)
+
+        auth_setup_state = self._authenticate_basic_tests(
+            with_local_site=with_local_site,
+            **auth_kwargs)
+
+        local_site_name = self.local_site_name
+
+        if with_local_site:
+            setup_local_site_name = local_site_name
+            local_site = self.get_local_site(local_site_name)
+        else:
+            setup_local_site_name = None
+            local_site = None
+
+        return {
+            'auth_user': auth_setup_state['user'],
+            'local_site': local_site,
+            'local_site_name': setup_local_site_name,
+            'local_sites_in_db': LocalSite.objects.has_local_sites(),
+            'oauth2_access_token': auth_setup_state['oauth2_access_token'],
+            'oauth2_application': auth_setup_state['oauth2_application'],
+            'owner': owner or auth_setup_state['user'],
+            'test_objects': {},
+            'webapi_token': auth_setup_state['webapi_token'],
+            'with_local_site': with_local_site,
+        }
+
     def _authenticate_basic_tests(
         self,
         *,
@@ -415,6 +509,9 @@ class BasicTestsMixin(_MixinsParentClass):
         if user is None:
             user = self._login_user(local_site=with_local_site,
                                     admin=with_admin)
+        elif user != self.user:
+            self.assertTrue(self.client.login(username=user.username,
+                                              password=user.username))
 
         access_token: Optional[AccessToken] = None
         application: Optional[Application] = None
@@ -485,7 +582,7 @@ class BasicTestsMixin(_MixinsParentClass):
 class BasicDeleteTestsMixin(BasicTestsMixin):
     """Mixin to add basic HTTP DELETE unit tests.
 
-    The subclass must implement :py:meth:`setup_basic_delete_test` and
+    The subclass must implement :py:meth:`populate_delete_test_objects` and
     :py:meth:`check_delete_result`.
 
     It may also set :py:attr:`basic_delete_fixtures` to a list of additional
@@ -505,6 +602,36 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
     #:     bool
     basic_delete_use_admin: bool = False
 
+    def populate_delete_test_objects(
+        self,
+        *,
+        setup_state: BasicDeleteTestSetupState,
+        **kwargs,
+    ) -> None:
+        """Populate objects for a DELETE test.
+
+        Subclasses must override this to create objects that should be
+        used when creating items for this resource. They're responsible for
+        updating ``setup_state`` with the following:
+
+        * ``mimetype``
+        * ``url``
+        * ``test_objects`` (optional)
+
+        Version Added:
+            5.0.7
+
+        Args:
+            setup_state (BasicDeleteTestSetupState):
+                The setup state for the test.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion.
+        """
+        raise NotImplementedError(
+            "%s doesn't implement populate_delete_test_objects"
+            % type(self).__name__)
+
     def setup_basic_delete_test(
         self,
         user: User,
@@ -515,6 +642,11 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
 
         Subclasses must override this to create an object that should be
         deleted in this resource.
+
+        Deprecated:
+            5.0.7:
+            Subclasses should implement :py:meth:`populate_delete_test_objects`
+            instead. This is a soft-deprecation as of this release.
 
         Args:
             user (django.contrib.auth.models.User):
@@ -583,7 +715,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         with override_feature_checks(self.override_features):
             self.api_delete(setup_state['url'])
 
-        self.check_delete_result(setup_state['user'],
+        self.check_delete_result(setup_state['owner'],
                                  *setup_state.get('check_result_args', ()),
                                  **setup_state.get('check_result_kwargs', {}))
 
@@ -593,7 +725,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         user = User.objects.get(username='doc')
         self.assertNotEqual(user, self.user)
 
-        setup_state = self.setup_delete_test_state(user=user)
+        setup_state = self.setup_delete_test_state(owner=user)
 
         with override_feature_checks(self.override_features):
             rsp = self.api_delete(setup_state['url'],
@@ -626,36 +758,41 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
             BasicDeleteTestSetupState:
             The resulting setup state for the test.
         """
-        self.load_fixtures(self.basic_delete_fixtures)
+        # Note that at this point, setup_state will be missing some keys.
+        # This is considered a partial dictionary at this point. As of the
+        # time this was implemented, Python does not have any equivalent to
+        # TypeScript's Partial<T>, so we work around it and then guarantee a
+        # stable result for callers.
+        setup_state = cast(
+            BasicDeleteTestSetupState,
+            self._build_common_setup_state(fixtures=self.basic_delete_fixtures,
+                                           with_local_site=with_local_site,
+                                           **auth_kwargs))
+        local_site_name = setup_state['local_site_name']
 
-        auth_setup_state = self._authenticate_basic_tests(
-            with_local_site=with_local_site,
-            **auth_kwargs)
-        user = auth_setup_state['user']
+        try:
+            # The modern form of testing in Review Board 5.0.7+.
+            self.populate_delete_test_objects(setup_state=setup_state)
 
-        local_site_name = self.local_site_name
+            url = setup_state.get('url')
+        except NotImplementedError:
+            # The legacy form pre-5.0.7.
+            url, cb_args = self.setup_basic_delete_test(
+                user=setup_state['owner'],
+                with_local_site=with_local_site,
+                local_site_name=local_site_name)
+            setup_state.update({
+                'check_result_args': cb_args,
+                'url': url,
+            })
 
-        if with_local_site:
-            setup_local_site_name = local_site_name
-        else:
-            setup_local_site_name = None
+        assert 'mimetype' not in setup_state
+        assert url is not None
 
-        url, cb_args = \
-            self.setup_basic_delete_test(user=user,
-                                         with_local_site=with_local_site,
-                                         local_site_name=setup_local_site_name)
-
-        self.assertEqual(url.startswith(f'/s/{local_site_name}'),
+        self.assertEqual(url.startswith(f'/s/{local_site_name}/'),
                          with_local_site)
 
-        return {
-            'check_result_args': cb_args,
-            'oauth2_access_token': auth_setup_state['oauth2_access_token'],
-            'oauth2_application': auth_setup_state['oauth2_application'],
-            'url': url,
-            'user': user,
-            'webapi_token': auth_setup_state['webapi_token'],
-        }
+        return setup_state
 
 
 class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
@@ -676,7 +813,7 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
         with override_feature_checks(self.override_features):
             self.api_delete(setup_state['url'])
 
-        self.check_delete_result(setup_state['user'],
+        self.check_delete_result(setup_state['owner'],
                                  *setup_state.get('check_result_args', ()),
                                  **setup_state.get('check_result_kwargs', {}))
 
@@ -717,12 +854,11 @@ class BasicDeleteTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
             with_admin=self.basic_delete_use_admin,
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id)
-        user = setup_state['user']
 
         with override_feature_checks(self.override_features):
             self.api_delete(setup_state['url'])
 
-        self.check_delete_result(user,
+        self.check_delete_result(setup_state['owner'],
                                  *setup_state.get('check_result_args', ()),
                                  **setup_state.get('check_result_kwargs', {}))
 
@@ -764,7 +900,7 @@ class BasicDeleteTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         with override_feature_checks(self.override_features):
             self.api_delete(setup_state['url'])
 
-        self.check_delete_result(setup_state['user'],
+        self.check_delete_result(setup_state['owner'],
                                  *setup_state.get('check_result_args', ()),
                                  **setup_state.get('check_result_kwargs', {}))
 
@@ -886,7 +1022,7 @@ class BasicDeleteNotAllowedTestsMixin(BasicTestsMixin):
 class BasicGetItemTestsMixin(BasicTestsMixin):
     """Mixin to add basic HTTP GET unit tests for item resources.
 
-    The subclass must implement :py:meth:`setup_basic_get_test`.
+    The subclass must implement :py:meth:`populate_get_item_test_objects`.
 
     It may also set :py:attr:`basic_get_fixtures` to a list of additional
     fixture names to import.
@@ -910,6 +1046,39 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
     #:     bool
     basic_get_use_admin: bool = False
 
+    def populate_get_item_test_objects(
+        self,
+        *,
+        setup_state: BasicGetItemTestSetupState,
+        **kwargs,
+    ) -> None:
+        """Populate objects for a GET item test.
+
+        Subclasses must override this to create objects that should be
+        used when creating items for this resource. They're responsible for
+        updating ``setup_state`` with the following:
+
+        * ``item``
+        * ``mimetype``
+        * ``url``
+        * ``check_result_args`` (optional)
+        * ``check_result_kwargs`` (optional)
+        * ``test_objects`` (optional)
+
+        Version Added:
+            5.0.7
+
+        Args:
+            setup_state (BasicGetItemTestSetupState):
+                The setup state for the test.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion.
+        """
+        raise NotImplementedError(
+            "%s doesn't implement populate_get_item_test_objects"
+            % type(self).__name__)
+
     def setup_basic_get_test(
         self,
         user: User,
@@ -920,6 +1089,12 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
 
         Subclasses must override this to create an object that should be
         provided in results for this resource.
+
+        Deprecated:
+            5.0.7:
+            Subclasses should implement
+            :py:meth:`populate_get_item_test_objects` instead. This is a
+            soft-deprecation as of this release.
 
         Args:
             user (django.contrib.auth.models.User):
@@ -1003,37 +1178,44 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
             BasicGetItemTestSetupState:
             The resulting setup state for the test.
         """
-        self.load_fixtures(self.basic_get_fixtures)
+        # Note that at this point, setup_state will be missing some keys.
+        # This is considered a partial dictionary at this point. As of the
+        # time this was implemented, Python does not have any equivalent to
+        # TypeScript's Partial<T>, so we work around it and then guarantee a
+        # stable result for callers.
+        setup_state = cast(
+            BasicGetItemTestSetupState,
+            self._build_common_setup_state(fixtures=self.basic_get_fixtures,
+                                           with_local_site=with_local_site,
+                                           **auth_kwargs))
+        local_site_name = setup_state['local_site_name']
 
-        auth_setup_state = self._authenticate_basic_tests(
-            with_local_site=with_local_site,
-            **auth_kwargs)
-        user = auth_setup_state['user']
+        try:
+            # The modern form of testing in Review Board 5.0.7+.
+            self.populate_get_item_test_objects(setup_state=setup_state)
 
-        local_site_name = self.local_site_name
+            mimetype = setup_state.get('mimetype')
+            url = setup_state.get('url')
+        except NotImplementedError:
+            # The legacy form pre-5.0.7.
+            url, mimetype, item = \
+                self.setup_basic_get_test(user=setup_state['owner'],
+                                          with_local_site=with_local_site,
+                                          local_site_name=local_site_name)
+            setup_state.update({
+                'item': item,
+                'mimetype': mimetype,
+                'url': url,
+            })
 
-        if with_local_site:
-            setup_local_site_name = local_site_name
-        else:
-            setup_local_site_name = None
+        assert 'item' in setup_state
+        assert mimetype is not None
+        assert url is not None
 
-        url, mimetype, item = \
-            self.setup_basic_get_test(user=user,
-                                      with_local_site=with_local_site,
-                                      local_site_name=setup_local_site_name)
-
-        self.assertEqual(url.startswith(f'/s/{local_site_name}'),
+        self.assertEqual(url.startswith(f'/s/{local_site_name}/'),
                          with_local_site)
 
-        return {
-            'item': item,
-            'mimetype': mimetype,
-            'oauth2_access_token': auth_setup_state['oauth2_access_token'],
-            'oauth2_application': auth_setup_state['oauth2_application'],
-            'url': url,
-            'user': user,
-            'webapi_token': auth_setup_state['webapi_token'],
-        }
+        return setup_state
 
 
 class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
@@ -1256,7 +1438,7 @@ class BasicGetItemTestsWithLocalsSiteAndOAuthTokenMixin(_MixinsParentClass):
 class BasicGetListTestsMixin(BasicTestsMixin):
     """Mixin to add basic HTTP GET unit tests for list resources.
 
-    The subclass must implement :py:class:`setup_basic_get_test`.
+    The subclass must implement :py:class:`populate_get_list_test_objects`.
 
     It may also set :py:attr:`basic_get_fixtures` to a list of additional
     fixture names to import.
@@ -1274,6 +1456,39 @@ class BasicGetListTestsMixin(BasicTestsMixin):
     #:     bool
     basic_get_use_admin = False
 
+    def populate_get_list_test_objects(
+        self,
+        *,
+        setup_state: BasicGetItemListTestSetupState,
+        **kwargs,
+    ) -> None:
+        """Populate objects for a GET list test.
+
+        Subclasses must override this to create objects that should be
+        used when creating items for this resource. They're responsible for
+        updating ``setup_state`` with the following:
+
+        * ``items``
+        * ``mimetype``
+        * ``url``
+        * ``check_result_args`` (optional)
+        * ``check_result_kwargs`` (optional)
+        * ``test_objects`` (optional)
+
+        Version Added:
+            5.0.7
+
+        Args:
+            setup_state (BasicGetItemListTestSetupState):
+                The setup state for the test.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion.
+        """
+        raise NotImplementedError(
+            "%s doesn't implement populate_get_list_test_objects"
+            % type(self).__name__)
+
     def setup_basic_get_test(
         self,
         user: User,
@@ -1285,6 +1500,12 @@ class BasicGetListTestsMixin(BasicTestsMixin):
 
         Subclasses must override this to create objects that should be
         provided in results for this resource (if requested).
+
+        Deprecated:
+            5.0.7:
+            Subclasses should implement
+            :py:meth:`populate_get_list_test_objects` instead. This is a
+            soft-deprecation as of this release.
 
         Args:
             user (django.contrib.auth.models.User):
@@ -1370,38 +1591,48 @@ class BasicGetListTestsMixin(BasicTestsMixin):
             BasicGetItemListTestSetupState:
             The resulting setup state for the test.
         """
-        self.load_fixtures(self.basic_get_fixtures)
+        # Note that at this point, setup_state will be missing some keys.
+        # This is considered a partial dictionary at this point. As of the
+        # time this was implemented, Python does not have any equivalent to
+        # TypeScript's Partial<T>, so we work around it and then guarantee a
+        # stable result for callers.
+        setup_state = cast(
+            BasicGetItemListTestSetupState,
+            self._build_common_setup_state(fixtures=self.basic_get_fixtures,
+                                           with_local_site=with_local_site,
+                                           **auth_kwargs))
+        local_site_name = setup_state['local_site_name']
 
-        auth_setup_state = self._authenticate_basic_tests(
-            with_local_site=with_local_site,
-            **auth_kwargs)
-        user = auth_setup_state['user']
+        try:
+            # The modern form of testing in Review Board 5.0.7+.
+            self.populate_get_list_test_objects(
+                setup_state=setup_state,
+                populate_list_items=populate_items)
 
-        local_site_name = self.local_site_name
+            items = setup_state.get('items')
+            mimetype = setup_state.get('mimetype')
+            url = setup_state.get('url')
+        except NotImplementedError:
+            # The legacy form pre-5.0.7.
+            url, mimetype, items = \
+                self.setup_basic_get_test(user=setup_state['owner'],
+                                          with_local_site=with_local_site,
+                                          local_site_name=local_site_name,
+                                          populate_items=populate_items)
+            setup_state.update({
+                'items': items,
+                'mimetype': mimetype,
+                'url': url,
+            })
 
-        if with_local_site:
-            setup_local_site_name = local_site_name
-        else:
-            setup_local_site_name = None
+        assert items is not None
+        assert mimetype is not None
+        assert url is not None
 
-        url, mimetype, items = \
-            self.setup_basic_get_test(user=user,
-                                      with_local_site=with_local_site,
-                                      local_site_name=setup_local_site_name,
-                                      populate_items=populate_items)
-
-        self.assertEqual(url.startswith(f'/s/{local_site_name}'),
+        self.assertEqual(url.startswith(f'/s/{local_site_name}/'),
                          with_local_site)
 
-        return {
-            'items': items,
-            'mimetype': mimetype,
-            'oauth2_access_token': auth_setup_state['oauth2_access_token'],
-            'oauth2_application': auth_setup_state['oauth2_application'],
-            'url': url,
-            'user': user,
-            'webapi_token': auth_setup_state['webapi_token'],
-        }
+        return setup_state
 
 
 class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
@@ -1616,7 +1847,7 @@ class BasicGetListTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
 class BasicPostTestsMixin(BasicTestsMixin):
     """Mixin to add basic HTTP POST unit tests.
 
-    The subclass must implement :py:meth:`setup_basic_post_test` and
+    The subclass must implement :py:meth:`populate_post_test_objects` and
     :py:attr:`check_post_result`.
 
     It may also set :py:attr:`basic_post_fixtures` to a list of additional
@@ -1642,6 +1873,44 @@ class BasicPostTestsMixin(BasicTestsMixin):
     #:     int
     basic_post_success_status: int = 201
 
+    def populate_post_test_objects(
+        self,
+        *,
+        setup_state: BasicPostTestSetupState,
+        create_valid_request_data: bool,
+        **kwargs,
+    ) -> None:
+        """Populate objects for a POST test.
+
+        Subclasses must override this to create objects that should be
+        used when creating items for this resource. They're responsible for
+        updating ``setup_state`` with the following:
+
+        * ``mimetype``
+        * ``request_data``
+        * ``url``
+        * ``check_result_args`` (optional)
+        * ``check_result_kwargs`` (optional)
+        * ``test_objects`` (optional)
+
+        Version Added:
+            5.0.7
+
+        Args:
+            setup_state (BasicPostTestSetupState):
+                The setup state for the test.
+
+            create_valid_request_data (bool):
+                Whether ``request_data`` in ``setup_state`` should provide
+                valid data for a POST test, given the populated objects.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion.
+        """
+        raise NotImplementedError(
+            "%s doesn't implement populate_post_test_objects"
+            % type(self).__name__)
+
     def setup_basic_post_test(
         self,
         user: User,
@@ -1653,6 +1922,11 @@ class BasicPostTestsMixin(BasicTestsMixin):
 
         Subclasses must override this to create objects that should be
         used when creating items for this resource.
+
+        Deprecated:
+            5.0.7:
+            Subclasses should implement :py:meth:`populate_post_test_objects`
+            instead. This is a soft-deprecation as of this release.
 
         Args:
             user (django.contrib.auth.models.User):
@@ -1743,7 +2017,7 @@ class BasicPostTestsMixin(BasicTestsMixin):
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
-        self.check_post_result(setup_state['user'],
+        self.check_post_result(setup_state['owner'],
                                rsp,
                                *setup_state.get('check_result_args', ()),
                                **setup_state.get('check_result_kwargs', {}))
@@ -1776,41 +2050,56 @@ class BasicPostTestsMixin(BasicTestsMixin):
             BasicPostTestSetupState:
             The resulting setup state for the test.
         """
-        self.load_fixtures(self.basic_post_fixtures)
+        # Note that at this point, setup_state will be missing some keys.
+        # This is considered a partial dictionary at this point. As of the
+        # time this was implemented, Python does not have any equivalent to
+        # TypeScript's Partial<T>, so we work around it and then guarantee a
+        # stable result for callers.
+        setup_state = cast(
+            BasicPostTestSetupState,
+            self._build_common_setup_state(fixtures=self.basic_post_fixtures,
+                                           with_local_site=with_local_site,
+                                           **auth_kwargs))
+        local_site_name = setup_state['local_site_name']
 
-        auth_setup_state = self._authenticate_basic_tests(
-            with_local_site=with_local_site,
-            **auth_kwargs)
-        user = auth_setup_state['user']
+        try:
+            # The modern form of testing in Review Board 5.0.7+.
+            self.populate_post_test_objects(
+                setup_state=setup_state,
+                create_valid_request_data=post_valid_data)
 
-        local_site_name = self.local_site_name
+            mimetype = setup_state.get('mimetype')
+            request_data = setup_state.get('request_data')
+            url = setup_state.get('url')
+        except NotImplementedError:
+            # The legacy form pre-5.0.7.
+            url, mimetype, request_data, cb_args = \
+                self.setup_basic_post_test(
+                    user=setup_state['owner'],
+                    with_local_site=with_local_site,
+                    local_site_name=local_site_name,
+                    post_valid_data=post_valid_data)
+            setup_state.update({
+                'check_result_args': cb_args,
+                'mimetype': mimetype,
+                'request_data': request_data,
+                'url': url,
+            })
 
-        if with_local_site:
-            setup_local_site_name = local_site_name
-        else:
-            setup_local_site_name = None
+        assert mimetype is not None
+        assert request_data is not None
+        assert url is not None
 
-        url, mimetype, post_data, cb_args = \
-            self.setup_basic_post_test(user=user,
-                                       with_local_site=with_local_site,
-                                       local_site_name=setup_local_site_name,
-                                       post_valid_data=post_valid_data)
+        # Clean up any request data after the test. We'll reference
+        # setup_state instead of request_data directly to avoid keeping the
+        # latter in scope.
+        self.addCleanup(
+            lambda: self._close_file_handles(setup_state['request_data']))
 
-        self.addCleanup(lambda: self._close_file_handles(post_data))
-
-        self.assertEqual(url.startswith(f'/s/{local_site_name}'),
+        self.assertEqual(url.startswith(f'/s/{local_site_name}/'),
                          with_local_site)
 
-        return {
-            'check_result_args': cb_args,
-            'mimetype': mimetype,
-            'oauth2_access_token': auth_setup_state['oauth2_access_token'],
-            'oauth2_application': auth_setup_state['oauth2_application'],
-            'request_data': post_data,
-            'url': url,
-            'user': user,
-            'webapi_token': auth_setup_state['webapi_token'],
-        }
+        return setup_state
 
 
 class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
@@ -1837,7 +2126,7 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
-        self.check_post_result(setup_state['user'],
+        self.check_post_result(setup_state['owner'],
                                rsp,
                                *setup_state.get('check_result_args', ()),
                                **setup_state.get('check_result_kwargs', {}))
@@ -1892,7 +2181,7 @@ class BasicPostTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
-        self.check_post_result(setup_state['user'],
+        self.check_post_result(setup_state['owner'],
                                rsp,
                                *setup_state.get('check_result_args', ()),
                                **setup_state.get('check_result_kwargs', {}))
@@ -1944,7 +2233,7 @@ class BasicPostTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
 
         assert rsp
         self.assertEqual(rsp['stat'], 'ok')
-        self.check_post_result(setup_state['user'],
+        self.check_post_result(setup_state['owner'],
                                rsp,
                                *setup_state.get('check_result_args', ()),
                                **setup_state.get('check_result_kwargs', {}))
@@ -2078,7 +2367,7 @@ class BasicPostNotAllowedTestsMixin(BasicTestsMixin):
 class BasicPutTestsMixin(BasicTestsMixin):
     """Mixin to add basic HTTP PUT unit tests.
 
-    The subclass must implement :py:meth:`setup_basic_put_test` and
+    The subclass must implement :py:meth:`populate_put_test_objects` and
     :py:meth:`check_put_result`.
 
     It may also set :py:attr:`basic_put_fixtures` to a list of additional
@@ -2098,6 +2387,45 @@ class BasicPutTestsMixin(BasicTestsMixin):
     #:     bool
     basic_put_use_admin: bool = False
 
+    def populate_put_test_objects(
+        self,
+        *,
+        setup_state: BasicPutTestSetupState,
+        create_valid_request_data: bool,
+        **kwargs,
+    ) -> None:
+        """Populate objects for a PUT test.
+
+        Subclasses must override this to create objects that should be
+        used when creating items for this resource. They're responsible for
+        updating ``setup_state`` with the following:
+
+        * ``items``
+        * ``mimetype``
+        * ``request_data``
+        * ``url``
+        * ``check_result_args`` (optional)
+        * ``check_result_kwargs`` (optional)
+        * ``test_objects`` (optional)
+
+        Version Added:
+            5.0.7
+
+        Args:
+            setup_state (BasicPutTestSetupState):
+                The setup state for the test.
+
+            create_valid_request_data (bool):
+                Whether ``request_data`` in ``setup_state`` should provide
+                valid data for a PUT test, given the populated objects.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion.
+        """
+        raise NotImplementedError(
+            "%s doesn't implement populate_put_test_objects"
+            % type(self).__name__)
+
     def setup_basic_put_test(
         self,
         user: User,
@@ -2109,6 +2437,11 @@ class BasicPutTestsMixin(BasicTestsMixin):
 
         Subclasses must override this to create objects that should be
         used when modifying items for this resource.
+
+        Deprecated:
+            5.0.7:
+            Subclasses should implement :py:meth:`populate_put_test_objects`
+            instead. This is a soft-deprecation as of this release.
 
         Args:
             user (django.contrib.auth.models.User):
@@ -2207,7 +2540,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(resource.item_result_key, rsp)
 
-        self.check_put_result(setup_state['user'],
+        self.check_put_result(setup_state['owner'],
                               rsp[self.resource.item_result_key],
                               setup_state['item'],
                               *setup_state.get('check_result_args', ()),
@@ -2220,7 +2553,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
         self.assertNotEqual(user, self.user)
 
         setup_state = self.setup_put_test_state(
-            user=user,
+            owner=user,
             put_valid_data=False)
         request_data = setup_state['request_data']
 
@@ -2261,42 +2594,57 @@ class BasicPutTestsMixin(BasicTestsMixin):
             BasicPutTestSetupState:
             The resulting setup state for the test.
         """
-        self.load_fixtures(self.basic_put_fixtures)
+        # Note that at this point, setup_state will be missing some keys.
+        # This is considered a partial dictionary at this point. As of the
+        # time this was implemented, Python does not have any equivalent to
+        # TypeScript's Partial<T>, so we work around it and then guarantee a
+        # stable result for callers.
+        setup_state = cast(
+            BasicPutTestSetupState,
+            self._build_common_setup_state(fixtures=self.basic_put_fixtures,
+                                           with_local_site=with_local_site,
+                                           **auth_kwargs))
+        local_site_name = setup_state['local_site_name']
 
-        auth_setup_state = self._authenticate_basic_tests(
-            with_local_site=with_local_site,
-            **auth_kwargs)
-        user = auth_setup_state['user']
+        try:
+            # The modern form of testing in Review Board 5.0.7+.
+            self.populate_put_test_objects(
+                setup_state=setup_state,
+                create_valid_request_data=put_valid_data)
 
-        local_site_name = self.local_site_name
+            mimetype = setup_state.get('mimetype')
+            request_data = setup_state.get('request_data')
+            url = setup_state.get('url')
+        except NotImplementedError:
+            # The legacy form pre-5.0.7.
+            url, mimetype, request_data, item, cb_args = \
+                self.setup_basic_put_test(user=setup_state['owner'],
+                                          with_local_site=with_local_site,
+                                          local_site_name=local_site_name,
+                                          put_valid_data=put_valid_data)
+            setup_state.update({
+                'check_result_args': cb_args,
+                'item': item,
+                'mimetype': mimetype,
+                'request_data': request_data,
+                'url': url,
+            })
 
-        if with_local_site:
-            setup_local_site_name = local_site_name
-        else:
-            setup_local_site_name = None
+        assert 'item' in setup_state
+        assert mimetype is not None
+        assert request_data is not None
+        assert url is not None
 
-        url, mimetype, put_data, item, cb_args = \
-            self.setup_basic_put_test(user=user,
-                                      with_local_site=with_local_site,
-                                      local_site_name=setup_local_site_name,
-                                      put_valid_data=put_valid_data)
-
-        self.addCleanup(lambda: self._close_file_handles(put_data))
+        # Clean up any request data after the test. We'll reference
+        # setup_state instead of request_data directly to avoid keeping the
+        # latter in scope.
+        self.addCleanup(
+            lambda: self._close_file_handles(setup_state['request_data']))
 
         self.assertEqual(url.startswith(f'/s/{local_site_name}'),
                          with_local_site)
 
-        return {
-            'check_result_args': cb_args,
-            'item': item,
-            'mimetype': mimetype,
-            'oauth2_access_token': auth_setup_state['oauth2_access_token'],
-            'oauth2_application': auth_setup_state['oauth2_application'],
-            'request_data': put_data,
-            'url': url,
-            'user': user,
-            'webapi_token': auth_setup_state['webapi_token'],
-        }
+        return setup_state
 
 
 class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
@@ -2324,7 +2672,7 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.item_result_key, rsp)
 
-        self.check_put_result(setup_state['user'],
+        self.check_put_result(setup_state['owner'],
                               rsp[self.resource.item_result_key],
                               setup_state['item'],
                               *setup_state.get('check_result_args', ()),
@@ -2379,7 +2727,7 @@ class BasicPutTestsWithLocalSiteAndAPITokenMixin(_MixinsParentClass):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.item_result_key, rsp)
 
-        self.check_put_result(setup_state['user'],
+        self.check_put_result(setup_state['owner'],
                               rsp[self.resource.item_result_key],
                               setup_state['item'],
                               *setup_state.get('check_result_args', ()),
@@ -2433,7 +2781,7 @@ class BasicPutTestsWithLocalSiteAndOAuthTokenMixin(_MixinsParentClass):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.item_result_key, rsp)
 
-        self.check_put_result(setup_state['user'],
+        self.check_put_result(setup_state['owner'],
                               rsp[self.resource.item_result_key],
                               setup_state['item'],
                               *setup_state.get('check_result_args', ()),
