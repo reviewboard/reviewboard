@@ -211,8 +211,6 @@ class DiffCommitResource(WebAPIResource):
                                                              **kwargs)
         return review_request.is_mutable_by(request.user)
 
-    @webapi_check_login_required
-    @webapi_check_local_site
     @webapi_response_errors(DOES_NOT_EXIST)
     @augment_method_from(WebAPIResource)
     def get_list(self, request, *args, **kwargs):

@@ -1,3 +1,9 @@
+"""Models for WebHooks."""
+
+from __future__ import annotations
+
+from typing import ClassVar
+
 from django.core.validators import URLValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -124,7 +130,7 @@ class WebHookTarget(models.Model):
                     'registration. It will not be sent with the Webhook '
                     'request.'))
 
-    objects = WebHookTargetManager()
+    objects: ClassVar[WebHookTargetManager] = WebHookTargetManager()
 
     def __init__(self, *args, **kwargs):
         """Initialize the model.

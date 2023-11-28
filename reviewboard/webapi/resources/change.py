@@ -122,13 +122,11 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
 
         return review_request.changedescs.filter(public=True)
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
         """Returns a list of changes made on a review request."""
         pass
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Returns the information on a change to a review request."""

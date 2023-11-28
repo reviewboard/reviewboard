@@ -289,7 +289,6 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
 
         return self.update_review(request, review, *args, **kwargs)
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def delete(self, *args, **kwargs):
         """Deletes the draft review.
@@ -303,7 +302,6 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Returns information on a particular review.

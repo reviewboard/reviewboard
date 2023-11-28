@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional, Set, TYPE_CHECKING
+from typing import Any, ClassVar, Optional, Set, TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -407,8 +407,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                                    related_name='review_requests')
     local_id = models.IntegerField('site-local ID', blank=True, null=True)
 
-    # Set this up with the ReviewRequestManager
-    objects = ReviewRequestManager()
+    objects: ClassVar[ReviewRequestManager] = ReviewRequestManager()
 
     @staticmethod
     def status_to_string(status):

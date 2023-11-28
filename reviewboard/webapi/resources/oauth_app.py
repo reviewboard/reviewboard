@@ -334,7 +334,6 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
 
         return Application.objects.filter(q)
 
-    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
@@ -345,7 +344,6 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
         """
         pass
 
-    @webapi_check_local_site
     @webapi_login_required
     @webapi_request_fields(
         optional={

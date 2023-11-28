@@ -1,7 +1,10 @@
 """FileDiff model definition."""
 
+from __future__ import annotations
+
 import logging
 from itertools import chain
+from typing import ClassVar
 
 from django.db import models
 from django.db.models import Q
@@ -102,7 +105,7 @@ class FileDiff(models.Model):
 
     extra_data = JSONField(null=True)
 
-    objects = FileDiffManager()
+    objects: ClassVar[FileDiffManager] = FileDiffManager()
 
     @property
     def source_file_display(self):

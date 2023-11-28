@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import ClassVar, List, Optional, TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -133,7 +133,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         verbose_name=_('inactive file attachments count'))
 
     # Set this up with a ConcurrencyManager to help prevent race conditions.
-    objects = ConcurrencyManager()
+    objects: ClassVar[ConcurrencyManager] = ConcurrencyManager()
 
     commit = property(lambda self: self.commit_id,
                       lambda self, value: setattr(self, 'commit_id', value))

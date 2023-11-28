@@ -209,6 +209,18 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
     @webapi_login_required
     @webapi_check_local_site
     @augment_method_from(DjbletsWebAPIResource)
+    def create(self, *args, **kwargs):
+        pass
+
+    @webapi_login_required
+    @webapi_check_local_site
+    @augment_method_from(DjbletsWebAPIResource)
+    def update(self, *args, **kwargs):
+        pass
+
+    @webapi_login_required
+    @webapi_check_local_site
+    @augment_method_from(DjbletsWebAPIResource)
     def delete(self, *args, **kwargs):
         pass
 

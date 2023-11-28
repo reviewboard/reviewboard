@@ -211,16 +211,15 @@ You will need to install a handful of packages before installing Review Board:
 
    .. code-tab:: console Debian/Ubuntu
 
-      $ apt-get install build-essential python3-dev python3-pip \
-                        libffi-dev libjpeg-dev libssl-dev patch \
-                        libxml2-dev libxmlsec1-dev libxmlsec1-openssl \
-                        python3-virtualenv
+      $ apt-get install build-essential libffi-dev libjpeg-dev libssl-dev \
+                        libxml2-dev libxmlsec1-dev libxmlsec1-openssl patch \
+                        python3-dev python3-pip python3-virtualenv
 
    .. code-tab:: console RHEL/Fedora/CentOS
 
-      $ yum install gcc python3-devel libffi-devel openssl-devel patch perl \
-                    libxml2-devel xmlsec1-devel xmlsec1-openssl-devel \
-                    libtool-ltdl-devel python3-virtualenv
+      $ yum install gcc libffi-devel libtool-ltdl-devel libxml2-devel \
+                    openssl-devel patch perl python3-devel \
+                    python3-virtualenv xmlsec1-devel xmlsec1-openssl-devel
 
 
 2. Create a Virtual Environment
@@ -284,10 +283,10 @@ If you need to install a specific version:
 
    .. code-tab:: console Python Virtual Environments
 
-      $ /opt/reviewboard/pip install ReviewBoard==<version>
+      $ /opt/reviewboard/bin/pip install ReviewBoard==<version>
 
       # For example:
-      $ /opt/reviewboard/pip install ReviewBoard==5.0.3
+      $ /opt/reviewboard/bin/pip install ReviewBoard==5.0.6
 
    .. code-tab:: console System Installs
 
@@ -564,7 +563,13 @@ PySVN_ installed.
 
       .. code-tab:: console Debian/Ubuntu
 
-         $ apt-get install subversion subversion-dev
+         # Enable apt sources in /etc/apt/sources.list. You can do this by
+         # uncommenting the "deb-src" lines in that file or by running:
+         $ sed -i '/deb-src/s/^# //' /etc/apt/sources.list
+         $ apt-get update
+
+         # Now install the necessary packages.
+         $ apt-get install subversion libsvn-dev
          $ apt-get build-dep python3-svn
 
       .. code-tab:: console RHEL/Fedora/CentOS
@@ -636,15 +641,29 @@ documentation for more information.
 LDAP / Active Directory
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. tabs::
+1. Install the required system libraries:
 
-   .. code-tab:: console Python Virtual Environments
+   .. tabs::
 
-      $ /opt/reviewboard/bin/pip install -U 'ReviewBoard[ldap]'
+      .. code-tab:: console Debian/Ubuntu
 
-   .. code-tab:: console System Installs
+         $ apt-get install libldap-dev
 
-      $ pip3 install -U 'ReviewBoard[ldap]'
+      .. code-tab:: console RHEL/Fedora/CentOS
+
+         $ yum install openldap-devel
+
+2. Install the packages in Python:
+
+   .. tabs::
+
+      .. code-tab:: console Python Virtual Environments
+
+         $ /opt/reviewboard/bin/pip install -U 'ReviewBoard[ldap]'
+
+      .. code-tab:: console System Installs
+
+         $ pip3 install -U 'ReviewBoard[ldap]'
 
 
 SAML Single Sign-On

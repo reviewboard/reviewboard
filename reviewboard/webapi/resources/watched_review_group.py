@@ -60,7 +60,6 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def create(self, *args, **kwargs):
         """Marks a review group as being watched.
@@ -70,7 +69,6 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def delete(self, *args, **kwargs):
         """Deletes a watched review group entry.

@@ -142,7 +142,6 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                                    update_fields=('x', 'y', 'w', 'h'),
                                    **kwargs)
 
-    @webapi_check_local_site
     @augment_method_from(BaseScreenshotCommentResource)
     def delete(self, *args, **kwargs):
         """Deletes the comment.
@@ -156,7 +155,6 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(BaseScreenshotCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of screenshot comments made on a review."""

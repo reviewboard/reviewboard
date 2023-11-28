@@ -88,7 +88,6 @@ class ReviewGeneralCommentResource(BaseReviewGeneralCommentResource):
                                    comment=general_comment,
                                    **kwargs)
 
-    @webapi_check_local_site
     @augment_method_from(BaseReviewGeneralCommentResource)
     def delete(self, *args, **kwargs):
         """Deletes the comment.
@@ -102,7 +101,6 @@ class ReviewGeneralCommentResource(BaseReviewGeneralCommentResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(BaseReviewGeneralCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of general comments made on a review."""

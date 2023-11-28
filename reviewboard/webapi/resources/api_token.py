@@ -585,7 +585,6 @@ class APITokenResource(WebAPIResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
         """Retrieves a list of API tokens belonging to a user.
@@ -597,7 +596,6 @@ class APITokenResource(WebAPIResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Retrieves information on a particular API token.

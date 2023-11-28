@@ -18,7 +18,6 @@ class ArchivedReviewRequestResource(BaseArchivedObjectResource):
     name = 'archived_review_request'
     visibility = ReviewRequestVisit.ARCHIVED
 
-    @webapi_check_local_site
     @augment_method_from(BaseArchivedObjectResource)
     def create(self, *args, **kwargs):
         """Mark a review request as archived.
@@ -28,7 +27,6 @@ class ArchivedReviewRequestResource(BaseArchivedObjectResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(BaseArchivedObjectResource)
     def delete(self, *args, **kwargs):
         """Delete an archived review request entry.

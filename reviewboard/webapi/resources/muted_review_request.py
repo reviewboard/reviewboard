@@ -18,7 +18,6 @@ class MutedReviewRequestResource(BaseArchivedObjectResource):
     name = 'muted_review_request'
     visibility = ReviewRequestVisit.MUTED
 
-    @webapi_check_local_site
     @augment_method_from(BaseArchivedObjectResource)
     def create(self, *args, **kwargs):
         """Mark a review request as muted.
@@ -28,7 +27,6 @@ class MutedReviewRequestResource(BaseArchivedObjectResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(BaseArchivedObjectResource)
     def delete(self, *args, **kwargs):
         """Delete a muted review request entry.

@@ -1,3 +1,9 @@
+"""Models for default reviewers."""
+
+from __future__ import annotations
+
+from typing import ClassVar
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -41,7 +47,7 @@ class DefaultReviewer(models.Model):
                                    blank=True, null=True,
                                    related_name='default_reviewers')
 
-    objects = DefaultReviewerManager()
+    objects: ClassVar[DefaultReviewerManager] = DefaultReviewerManager()
 
     def is_accessible_by(self, user):
         """Returns whether the user can access this default reviewer."""

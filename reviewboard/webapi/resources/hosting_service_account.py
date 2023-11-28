@@ -93,7 +93,6 @@ class HostingServiceAccountResource(WebAPIResource):
 
         return links
 
-    @webapi_check_local_site
     @webapi_request_fields(optional={
         'username': {
             'type': StringFieldType,
@@ -115,7 +114,6 @@ class HostingServiceAccountResource(WebAPIResource):
         """
         pass
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Retrieves information on a particular account.

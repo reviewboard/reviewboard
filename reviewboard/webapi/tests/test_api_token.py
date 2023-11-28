@@ -101,14 +101,15 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                 items)
 
     @webapi_test_template
-    def test_get_with_api_token_auth_denied(self):
-        """Testing the GET <URL> API denies access when using
-        token-based authentication
+    def test_get_with_api_token_auth_denied(self) -> None:
+        """Testing the GET <URL> API denies access when using token-based
+        authentication
         """
-        user = self._authenticate_basic_tests(with_webapi_token=True)
-        url = self.setup_basic_get_test(user, False, None, True)[0]
+        setup_state = self.setup_get_list_test_state(with_webapi_token=True)
 
-        rsp = self.api_get(url, expected_status=403)
+        rsp = self.api_get(setup_state['url'], expected_status=403)
+
+        assert rsp
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -163,14 +164,15 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                          'Please try again.')
 
     @webapi_test_template
-    def test_post_with_api_token_auth_denied(self):
-        """Testing the POST <URL> API denies access when using
-        token-based authentication
+    def test_post_with_api_token_auth_denied(self) -> None:
+        """Testing the POST <URL> API denies access when using token-based
+        authentication
         """
-        user = self._authenticate_basic_tests(with_webapi_token=True)
-        url = self.setup_basic_post_test(user, False, None, True)[0]
+        setup_state = self.setup_post_test_state(with_webapi_token=True)
 
-        rsp = self.api_post(url, expected_status=403)
+        rsp = self.api_post(setup_state['url'], expected_status=403)
+
+        assert rsp
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -297,14 +299,15 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
         self.assertIsNone(get_object_or_none(WebAPIToken, pk=token_id))
 
     @webapi_test_template
-    def test_delete_with_api_token_auth_denied(self):
-        """Testing the DELETE <URL> API denies access when
-        using token-based authentication
+    def test_delete_with_api_token_auth_denied(self) -> None:
+        """Testing the DELETE <URL> API denies access when using token-based
+        authentication
         """
-        user = self._authenticate_basic_tests(with_webapi_token=True)
-        url = self.setup_basic_delete_test(user, False, None)[0]
+        setup_state = self.setup_delete_test_state(with_webapi_token=True)
 
-        rsp = self.api_delete(url, expected_status=403)
+        rsp = self.api_delete(setup_state['url'], expected_status=403)
+
+        assert rsp
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -328,14 +331,15 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
                               check_last_modified=True)
 
     @webapi_test_template
-    def test_get_with_api_token_auth_denied(self):
-        """Testing the GET <URL> API denies access when using
-        token-based authentication
+    def test_get_with_api_token_auth_denied(self) -> None:
+        """Testing the GET <URL> API denies access when using token-based
+        authentication
         """
-        user = self._authenticate_basic_tests(with_webapi_token=True)
-        url = self.setup_basic_get_test(user, False, None)[0]
+        setup_state = self.setup_get_item_test_state(with_webapi_token=True)
 
-        rsp = self.api_get(url, expected_status=403)
+        rsp = self.api_get(setup_state['url'], expected_status=403)
+
+        assert rsp
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -362,10 +366,11 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
         """Testing the PUT <URL> API denies access when using
         token-based authentication
         """
-        user = self._authenticate_basic_tests(with_webapi_token=True)
-        url = self.setup_basic_put_test(user, False, None, True)[0]
+        setup_state = self.setup_put_test_state(with_webapi_token=True)
 
-        rsp = self.api_put(url, expected_status=403)
+        rsp = self.api_put(setup_state['url'], expected_status=403)
+
+        assert rsp
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 

@@ -313,7 +313,6 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
         return super(RepositoryResource, self).get_list(
             request, show_invisible=show_invisible, *args, **kwargs)
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Retrieves information on a particular repository.
