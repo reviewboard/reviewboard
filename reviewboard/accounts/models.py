@@ -1,5 +1,8 @@
 """Models for user profiles and related objects."""
 
+from __future__ import annotations
+
+from typing import ClassVar
 from uuid import uuid4
 
 from django.contrib.auth.models import User
@@ -64,7 +67,7 @@ class ReviewRequestVisit(models.Model):
 
     # Set this up with a ReviewRequestVisitManager, which inherits from
     # ConcurrencyManager to help prevent race conditions.
-    objects = ReviewRequestVisitManager()
+    objects: ClassVar[ReviewRequestVisitManager] = ReviewRequestVisitManager()
 
     def __str__(self):
         """Return a string used for the admin site listing."""
@@ -201,7 +204,7 @@ class Profile(models.Model):
 
     extra_data = JSONField(null=True, default=dict)
 
-    objects = ProfileManager()
+    objects: ClassVar[ProfileManager] = ProfileManager()
 
     @property
     def should_use_rich_text(self):
@@ -761,7 +764,7 @@ class LocalSiteProfile(models.Model):
                 user=None, local_site=p.local_site).count()
             if p.pk else 0))
 
-    objects = LocalSiteProfileManager()
+    objects: ClassVar[LocalSiteProfileManager] = LocalSiteProfileManager()
 
     def __str__(self):
         """Return a string used for the admin site listing."""
@@ -795,7 +798,7 @@ class Trophy(models.Model):
                              on_delete=models.CASCADE,
                              related_name='trophies')
 
-    objects = TrophyManager()
+    objects: ClassVar[TrophyManager] = TrophyManager()
 
     @cached_property
     def trophy_type(self):

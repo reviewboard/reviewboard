@@ -1,7 +1,19 @@
+"""Built-in sidebar items for datagrids."""
+
+from __future__ import annotations
+
+from typing import Iterator, Optional, Sequence, TYPE_CHECKING
+
 from django.utils.translation import gettext_lazy as _
 
 from reviewboard.datagrids.sidebar import (BaseSidebarItem,
                                            BaseSidebarSection, SidebarNavItem)
+from reviewboard.site.models import LocalSite
+
+if TYPE_CHECKING:
+    from django.db.models import QuerySet
+
+    from reviewboard.reviews.models import Group
 
 
 class OverviewSection(BaseSidebarItem):
@@ -67,10 +79,17 @@ class IncomingSection(BaseSidebarSection):
 
     label = _('Incoming')
 
-    def get_items(self):
-        """Yield each of the items within this section."""
-        profile = self.datagrid.profile
-        site_profile = self.datagrid.site_profile
+    def get_items(self) -> Iterator[SidebarNavItem]:
+        """Yield each of the items within this section.
+
+        Yields:
+            reviewboard.datagrids.sidebar.SidebarNavItem:
+            Each sidebar navigation item.
+        """
+        datagrid = self.datagrid
+        profile = datagrid.profile
+        local_site = datagrid.local_site
+        site_profile = datagrid.site_profile
 
         yield SidebarNavItem(self,
                              label=_('Open'),
@@ -90,27 +109,59 @@ class IncomingSection(BaseSidebarSection):
                 icon_name='rb-icon-star-on',
                 count=site_profile.starred_public_request_count)
 
-        groups = (
-            self.datagrid.user.review_groups
-            .filter(local_site=self.datagrid.local_site)
-            .order_by('name'))
-        seen_groups = set([group.name for group in groups])
+        only_fields = ('incoming_request_count', 'name', 'pk')
 
-        for item in self._add_groups(groups, view_id='to-group'):
-            yield item
+        groups = _get_groups(
+            queryset=(
+                datagrid.user.review_groups
+                .only(*only_fields)
+            ),
+            local_site=local_site)
 
-        starred_groups = (
-            profile.starred_groups
-            .filter(local_site=self.datagrid.local_site)
-            .exclude(name__in=seen_groups)
-            .order_by('name'))
+        seen_groups = {
+            group.pk
+            for group in groups
+        }
 
-        for item in self._add_groups(starred_groups,
-                                     view_id='to-watched-group',
-                                     icon_name='rb-icon-star-on'):
-            yield item
+        yield from self._add_groups(groups, view_id='to-group')
 
-    def _add_groups(self, groups, view_id, icon_name=None):
+        if profile.has_starred_review_groups(local_site=local_site):
+            yield from self._add_groups(
+                _get_groups(
+                    queryset=(
+                        profile.starred_groups
+                        .exclude(pk__in=seen_groups)
+                        .only(*only_fields)
+                    ),
+                    local_site=local_site),
+                view_id='to-watched-group',
+                icon_name='rb-icon-star-on')
+
+    def _add_groups(
+        self,
+        groups: Sequence[Group],
+        view_id: str,
+        icon_name: Optional[str] = None,
+    ) -> Iterator[SidebarNavItem]:
+        """Add groups to the sidebar.
+
+        This will generate a sidebar navigation item for each group in the
+        list.
+
+        Args:
+            groups (list of reviewboard.reviews.models.group.Group):
+                The list of groups to add.
+
+            view_id (str):
+                The ID of the view to link to.
+
+            icon_name (str, optional):
+                The name of the icon to show.
+
+        Yields:
+            reviewboard.datagrids.sidebar.SidebarNavItem:
+            Each group navigation item.
+        """
         for i, group in enumerate(groups):
             name = group.name
 
@@ -160,16 +211,61 @@ class UserGroupsItem(BaseSidebarSection):
     label = _('Groups')
     css_classes = ['-is-desktop-only']
 
-    def get_items(self):
-        """Yield each of the items within this section."""
-        request = self.datagrid.request
+    def get_items(self) -> Iterator[SidebarNavItem]:
+        """Yield each of the items within this section.
 
-        groups = (
-            self.datagrid.user.review_groups.accessible(request.user)
-            .filter(local_site=self.datagrid.local_site)
-            .order_by('name'))
+        Yields:
+            reviewboard.datagrids.sidebar.SidebarNavItem:
+            Each sidebar navigation item.
+        """
+        datagrid = self.datagrid
+
+        groups = _get_groups(
+            queryset=(
+                datagrid.user.review_groups
+                .accessible(datagrid.request.user)
+                .only('local_site', 'name', 'pk')
+            ),
+            local_site=datagrid.local_site)
 
         for group in groups:
             yield SidebarNavItem(self,
                                  label=group.name,
                                  url=group.get_absolute_url())
+
+
+def _get_groups(
+    *,
+    queryset: QuerySet[Group],
+    local_site: Optional[LocalSite],
+) -> Sequence[Group]:
+    """Return review groups for usage in a datagrid sidebar.
+
+    This takes a queryset, conditionally applies a Local Site filter if
+    needed, and applies a sort Python-side, returning the list of results.
+
+    Callers should take care to provide a queryset that performs any
+    accessibility checks if needed, and to return the minimum number of
+    fields used for the item in the sidebar (which must always include "name").
+
+    Version Added:
+        5.0.7
+
+    Args:
+        queryset (django.db.models.QuerySet):
+            The queryset for review groups.
+
+        local_site (reviewboard.site.models.LocalSite):
+            The Local Site being viewed, if any.
+
+    Returns:
+        list of reviewboard.reviews.models.group.Group:
+        The resulting list of sorted review groups.
+    """
+    local_site_q = LocalSite.objects.build_q(local_site, allow_all=False)
+
+    if local_site_q:
+        queryset = queryset.filter(local_site_q)
+
+    return sorted(queryset,
+                  key=lambda group: group.name)

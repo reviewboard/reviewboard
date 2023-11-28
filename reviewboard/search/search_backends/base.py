@@ -4,6 +4,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 from djblets.siteconfig.models import SiteConfiguration
+from haystack import connections
 from haystack.utils.loading import load_backend
 
 
@@ -173,8 +174,14 @@ class SearchBackend(object):
         new_config = configuration.copy()
         new_config['SILENTLY_FAIL'] = False
 
-        engine = self.load_haystack_engine()
-        backend = engine.backend(engine.using, **new_config)
+        using = 'validation-test'
+        connections.connections_info[using] = dict({
+            'ENGINE': self.haystack_backend_name,
+        }, **new_config)
+        connections.reload(using)
+
+        engine = self.load_haystack_engine(using=using)
+        backend = engine.backend(using, **new_config)
 
         try:
             backend.search('___reviewboard-search-config-test___')
@@ -184,6 +191,8 @@ class SearchBackend(object):
                   'configuration is correct. The error we received from the '
                   'search backend was: %s')
                 % e)
+        finally:
+            connections.connections_info[using] = {}
 
     def get_config_form(self, data=None, **kwargs):
         """Create and return a new configuration form instance.

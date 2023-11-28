@@ -66,7 +66,10 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
                 local_site = None
 
             items = [
-                Application.objects.create(user=user, local_site=local_site),
+                # There may be one in the database due to the standard
+                # authentication setup.
+                Application.objects.get_or_create(user=user,
+                                                  local_site=local_site)[0],
             ]
         else:
             items = []

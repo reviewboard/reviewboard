@@ -74,7 +74,6 @@ class FileAttachmentResource(BaseReviewRequestFileAttachmentResource):
         """
         pass
 
-    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(BaseReviewRequestFileAttachmentResource)
     def delete(self, *args, **kwargs):

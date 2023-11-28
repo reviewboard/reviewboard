@@ -24,7 +24,6 @@ class FileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         q = q.filter(file_attachment=file_attachment_id)
         return q
 
-    @webapi_check_local_site
     @augment_method_from(BaseFileAttachmentCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of comments on a file attachment.

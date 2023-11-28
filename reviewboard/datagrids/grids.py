@@ -1,6 +1,12 @@
+"""Datagrids for the Dashboard and other pages."""
+
+from __future__ import annotations
+
 import pytz
+from typing import List, Optional, TYPE_CHECKING
 
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.http import Http404
 from django.utils.translation import gettext_lazy as _
 from djblets.datagrid.grids import (
@@ -41,7 +47,15 @@ from reviewboard.datagrids.builtin_items import (IncomingSection,
                                                  UserGroupsItem,
                                                  UserProfileItem)
 from reviewboard.reviews.models import Group, ReviewRequest, Review
+from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
+
+if TYPE_CHECKING:
+    from django.db.models import QuerySet
+    from django.http import HttpRequest
+    from djblets.util.typing import StrOrPromise
+
+    from reviewboard.accounts.models import Profile
 
 
 class ShowClosedReviewRequestsMixin(object):
@@ -255,9 +269,17 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
     status_query_field = 'status'
     site_query_field = 'local_site'
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the datagrid."""
-        super(ReviewRequestDataGrid, self).__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the datagrid.
+
+        Args:
+            *args (tuple):
+                Positional arguments to pass to the parent.
+
+            **kwargs (dict):
+                Keyword arguments to pass to the parent.
+        """
+        super().__init__(*args, **kwargs)
 
         self.listview_template = 'datagrids/review_request_listview.html'
         self.profile_sort_field = 'sort_review_request_columns'
@@ -284,10 +306,29 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
         return super(ReviewRequestDataGrid, self).load_extra_state(
             profile, allow_hide_closed)
 
-    def post_process_queryset(self, queryset):
-        """Add additional data to the queryset."""
-        q = queryset.with_counts(self.request.user)
-        return super(ReviewRequestDataGrid, self).post_process_queryset(q)
+    def post_process_queryset(
+        self,
+        queryset: QuerySet[ReviewRequest],
+    ) -> QuerySet[ReviewRequest]:
+        """Add additional data to the queryset.
+
+        Args:
+            queryset (django.db.models.QuerySet):
+                The queryset to post-process.
+
+        Returns:
+            django.db.models.QuerySet:
+            The resulting queryset.
+        """
+        queryset = queryset.with_counts(self.request.user)
+
+        if self.local_site is not None:
+            # Make sure to include the Local Site if one is specified, so
+            # that accessing it on the review request on each row won't
+            # result in extra database queries.
+            queryset = queryset.select_related('local_site')
+
+        return super().post_process_queryset(queryset)
 
     def link_to_object(self, state, obj, value):
         """Return a link to the given object."""
@@ -334,6 +375,28 @@ class ReviewDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
             profile = user.get_profile()
             self.timezone = pytz.timezone(profile.timezone)
             self.timestamp.timezone = self.timezone
+
+    def post_process_queryset(
+        self,
+        queryset: QuerySet[Review],
+    ) -> QuerySet[Review]:
+        """Add additional data to the queryset.
+
+        Args:
+            queryset (django.db.models.QuerySet):
+                The queryset to post-process.
+
+        Returns:
+            django.db.models.QuerySet:
+            The resulting queryset.
+        """
+        if self.local_site is not None:
+            # Make sure to include the Local Site if one is specified, so
+            # that accessing it on the review request on each row won't
+            # result in extra database queries.
+            queryset = queryset.select_related('review_request__local_site')
+
+        return super().post_process_queryset(queryset)
 
 
 class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
@@ -383,88 +446,140 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
         self.profile = self.user.get_profile()
         self.site_profile = self.user.get_site_profile(self.local_site)
 
-    def load_extra_state(self, profile):
-        """Load extra state for the datagrid."""
-        group_name = self.request.GET.get('group', '')
-        view = self.request.GET.get('view', self.default_view)
-        user = self.request.user
+    def load_extra_state(
+        self,
+        profile: Profile,
+    ) -> List[str]:
+        """Load extra state for the datagrid.
+
+        Args:
+            profile (reviewboard.accounts.models.Profile):
+                The profile containing state for customizing the dashboard.
+
+        Returns:
+            list of str:
+            A list of profile fields that have changed.
+        """
+        request = self.request
+        group_name = request.GET.get('group', '')
+        view = request.GET.get('view', self.default_view)
+        user = request.user
         changed_fields = []
 
+        queryset: QuerySet[ReviewRequest]
+        title: StrOrPromise
+
         if view == 'outgoing':
-            self.queryset = ReviewRequest.objects.from_user(
-                user, user, local_site=self.local_site)
-            self.title = _('All Outgoing Review Requests')
+            queryset = ReviewRequest.objects.from_user(
+                user,  # The target user
+                user,  # The accessing user
+                distinct=False,
+                local_site=self.local_site)
+            title = _('All Outgoing Review Requests')
         elif view == 'overview':
-            self.queryset = ReviewRequest.objects.to_or_from_user(
-                user, user, local_site=self.local_site)
-            self.title = _('Open Incoming and Outgoing Review Requests')
+            queryset = ReviewRequest.objects.to_or_from_user(
+                user,  # The target user
+                user,  # The accessing user
+                distinct=False,
+                local_site=self.local_site)
+            title = _('Open Incoming and Outgoing Review Requests')
         elif view == 'mine':
-            self.queryset = ReviewRequest.objects.from_user(
-                user, user, None, local_site=self.local_site)
-            self.title = _('All My Review Requests')
+            queryset = ReviewRequest.objects.from_user(
+                user,  # The target user
+                user,  # The accessing user
+                status=None,
+                distinct=False,
+                local_site=self.local_site)
+            title = _('All My Review Requests')
         elif view == 'to-me':
-            self.queryset = ReviewRequest.objects.to_user_directly(
-                user, user, local_site=self.local_site)
-            self.title = _('Incoming Review Requests to Me')
+            queryset = ReviewRequest.objects.to_user_directly(
+                user,  # The target user
+                user,  # The accessing user
+                distinct=False,
+                local_site=self.local_site)
+            title = _('Incoming Review Requests to Me')
         elif view in ('to-group', 'to-watched-group'):
             if group_name:
                 # to-group is special because we want to make sure that the
                 # group exists and show a 404 if it doesn't. Otherwise, we'll
                 # show an empty datagrid with the name.
                 try:
-                    group = Group.objects.get(name=group_name,
-                                              local_site=self.local_site)
+                    group = (
+                        Group.objects
+                        .get(Q(name=group_name) &
+                             LocalSite.objects.build_q(self.local_site,
+                                                       allow_all=False))
+                    )
 
                     if not group.is_accessible_by(user):
                         raise Http404
                 except Group.DoesNotExist:
                     raise Http404
 
-                self.queryset = ReviewRequest.objects.to_group(
-                    group_name, self.local_site, user)
-                self.title = _('Incoming Review Requests to %s') % group_name
+                queryset = ReviewRequest.objects.to_group(
+                    group_name=group_name,
+                    local_site=self.local_site,
+                    distinct=False,
+                    user=user)
+                title = _('Incoming Review Requests to %s') % group_name
             else:
-                self.queryset = ReviewRequest.objects.to_user_groups(
-                    user, user, local_site=self.local_site)
-                self.title = _('All Incoming Review Requests to My Groups')
+                queryset = ReviewRequest.objects.to_user_groups(
+                    username=user,  # The target user
+                    user=user,      # The accessing user
+                    distinct=False,
+                    local_site=self.local_site)
+                title = _('All Incoming Review Requests to My Groups')
         elif view == 'starred':
-            self.queryset = self.profile.starred_review_requests.public(
-                user=user, local_site=self.local_site, status=None)
-            self.title = _('Starred Review Requests')
+            queryset = self.profile.starred_review_requests.public(
+                user=user,
+                local_site=self.local_site,
+                distinct=False,
+                status=None)
+            title = _('Starred Review Requests')
         elif view == 'incoming':
-            self.queryset = ReviewRequest.objects.to_user(
-                user, user, local_site=self.local_site)
-            self.title = _('All Incoming Review Requests')
+            queryset = ReviewRequest.objects.to_user(
+                user,  # The target user
+                user,  # The accessing user
+                distinct=False,
+                local_site=self.local_site)
+            title = _('All Incoming Review Requests')
         else:
             raise Http404
 
         if profile and 'show_archived' in profile.extra_data:
-            self.show_archived = profile.extra_data['show_archived']
+            show_archived = profile.extra_data['show_archived']
+        else:
+            show_archived = self.show_archived
 
         try:
-            show = self.request.GET.get('show-archived', self.show_archived)
-            self.show_archived = int(show) != 0
+            show = request.GET.get('show-archived', show_archived)
+            show_archived = (int(show) != 0)
         except ValueError:
             pass
 
-        if not self.show_archived:
-            hidden_q = ReviewRequestVisit.objects.filter(
-                user=user).exclude(visibility=ReviewRequestVisit.VISIBLE)
-            hidden_q = hidden_q.values_list('review_request_id', flat=True)
-
-            self.queryset = self.queryset.exclude(pk__in=hidden_q)
+        if not show_archived:
+            # This may produce a large number of archived review requests.
+            # Rather than work with a large number of IDs, we'll use a
+            # subquery here.
+            queryset = queryset.exclude(pk__in=(
+                ReviewRequestVisit.objects
+                .filter(user=user)
+                .exclude(visibility=ReviewRequestVisit.VISIBLE)
+                .values_list('review_request_id', flat=True)
+            ))
 
         if (profile and
-            self.show_archived != profile.extra_data.get('show_archived')):
-            profile.extra_data['show_archived'] = self.show_archived
+            show_archived != profile.extra_data.get('show_archived')):
+            profile.extra_data['show_archived'] = show_archived
             changed_fields.append('extra_data')
 
-        self.extra_js_model_data['show_archived'] = self.show_archived
+        self.extra_js_model_data['show_archived'] = show_archived
+        self.show_archived = show_archived
+        self.queryset = queryset
+        self.title = title
 
-        changed_fields += (
-            super(DashboardDataGrid, self)
-            .load_extra_state(profile, allow_hide_closed=False)
-        )
+        changed_fields += super().load_extra_state(profile,
+                                                   allow_hide_closed=False)
 
         return changed_fields
 
@@ -478,19 +593,43 @@ class UsersDataGrid(AlphanumericDataGrid):
                                        field_name='directed_review_requests',
                                        shrink=True)
 
-    def __init__(self, request,
-                 queryset=User.objects.all(),
-                 title=_('All users'),
-                 local_site=None):
-        """Initialize the datagrid."""
-        if local_site:
-            qs = queryset.filter(local_site=local_site)
-        else:
-            qs = queryset
+    def __init__(
+        self,
+        request: HttpRequest,
+        queryset: QuerySet[User] = User.objects.all(),
+        title: StrOrPromise = _('All users'),
+        local_site: Optional[LocalSite] = None,
+    ) -> None:
+        """Initialize the datagrid.
 
-        super(UsersDataGrid, self).__init__(request, qs, title=title,
-                                            sortable_column='username',
-                                            extra_regex=r'^[0-9_\-\.].*')
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            queryset (django.db.models.QuerySet, optional):
+                The base queryset for this datagrid.
+
+            title (str, optional):
+                The title for this datagrid.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The Local Site being accessed.
+        """
+        # Note that if local_site is None, we want to show all users on the
+        # server, so we can't unconditionally make this part of the query.
+        #
+        # If we have a Local Site instance, we have no reason to check if
+        # Local Sites are available on the server. So we don't need to use
+        # LocalSite.objects.build_q() or has_local_sites() here.
+        if local_site:
+            queryset = queryset.filter(local_site=local_site)
+
+        super().__init__(
+            request=request,
+            queryset=queryset,
+            title=title,
+            sortable_column='username',
+            extra_regex=r'^[0-9_\-\.].*')
 
         self.listview_template = 'datagrids/user_listview.html'
         self.default_sort = ['username']
@@ -596,8 +735,8 @@ class UserPageReviewRequestDataGrid(UserPageDataGridMixin,
         queryset = ReviewRequest.objects.from_user(
             user.username,
             user=request.user,
+            distinct=False,
             status=None,
-            with_counts=True,
             local_site=kwargs.get('local_site'),
             filter_private=True,
             show_inactive=True)

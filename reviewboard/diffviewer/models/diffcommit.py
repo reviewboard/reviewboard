@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import ClassVar, Optional
 
 from dateutil.tz import tzoffset
 from django.db import models
@@ -110,7 +110,7 @@ class DiffCommit(models.Model):
 
     extra_data = JSONField(null=True)
 
-    objects = DiffCommitManager()
+    objects: ClassVar[DiffCommitManager] = DiffCommitManager()
 
     @property
     def author(self):

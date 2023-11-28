@@ -238,7 +238,6 @@ class DraftDiffCommitResource(DiffCommitResource):
         },
         allow_unknown=True
     )
-    @webapi_check_local_site
     def create(self, request, extra_fields=None, *args, **kwargs):
         """Create a new commit.
 

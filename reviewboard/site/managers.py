@@ -273,7 +273,7 @@ class LocalSiteManager(Manager):
 
             return Q()
 
-        return Q(local_site=local_site)
+        return Q(**{local_site_field: local_site})
 
     def _make_local_site_stats_acl_cache_key(self, local_site_or_id):
         """Return a cache key for per-Local Site ACL stats.

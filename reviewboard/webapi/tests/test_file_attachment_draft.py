@@ -460,20 +460,21 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         file_attachment = self.create_file_attachment(review_request)
         review_request_draft = self.create_review_request_draft(review_request)
 
-        # 12 queries:
+        # 13 queries:
         #
-        #  1. Fetch request user
-        #  2. Fetch request user's Profile
-        #  3. Fetch review request
-        #  4. Fetch review request draft
-        #  5. Fetch file attachment
-        #  6. Fetch review request draft
-        #  7. Save any file attachment updates
-        #  8. Save the review request draft last_updated field
-        #  9. Fetch the review request draft
-        # 10. Fetch review request
+        #  1. Fetch review request
+        #  2. Fetch request user
+        #  3. Fetch request user's Profile
+        #  4. Fetch review request
+        #  5. Fetch review request draft
+        #  6. Fetch  file attachments
+        #  7. Save an update to the file attachment's extra data
+        #  8. Fetch review request draft
+        #  9. Save an update to the file attachment's draft caption
+        # 10. Save the review request draft last_updated field
         # 11. Fetch review request
         # 12. Fetch review request
+        # 13. Fetch review request
         queries = [
             {
                 'model': User,
@@ -512,6 +513,11 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                            Q(drafts=review_request_draft) |
                            Q(inactive_drafts=review_request_draft)) &
                           Q(pk=str(review_request.pk)))
+            },
+            {
+                'model': FileAttachment,
+                'type': 'UPDATE',
+                'where': Q(pk=file_attachment.pk),
             },
             {
                 'model': ReviewRequestDraft,
@@ -602,8 +608,8 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         #  3. Fetch review request
         #  4. Fetch review request draft
         #  5. Fetch file attachment
-        #  6. Fetch review request draft
-        #  7. Save any file attachment updates
+        #  6. Save any file attachment updates
+        #  7. Fetch review request draft
         #  8. Fetch review request when getting file attachment state
         #  9. Fetch active file attachments when getting file attachment state
         # 10. Fetch review request draft when getting file attachment state
@@ -663,13 +669,13 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                           Q(pk=str(review_request.pk)))
             },
             {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
-            },
-            {
                 'model': FileAttachment,
                 'type': 'UPDATE',
                 'where': Q(pk=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=review_request),
             },
             {
                 'model': ReviewRequest,
@@ -834,8 +840,8 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         #  3. Fetch review request
         #  4. Fetch review request draft
         #  5. Fetch file attachment
-        #  6. Fetch review request draft
-        #  7. Save any file attachment updates
+        #  6. Save any file attachment updates
+        #  7. Fetch review request draft
         #  8. Fetch review request when getting file attachment state
         #  9. Fetch active file attachments when getting file attachment state
         # 10. Fetch review request draft when getting file attachment state
@@ -895,13 +901,13 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                           Q(pk=str(review_request.pk)))
             },
             {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
-            },
-            {
                 'model': FileAttachment,
                 'type': 'UPDATE',
                 'where': Q(pk=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=review_request),
             },
             {
                 'model': ReviewRequest,
@@ -1053,8 +1059,8 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         #  3. Fetch review request
         #  4. Fetch review request draft
         #  5. Fetch file attachment
-        #  6. Fetch review request draft
-        #  7. Save any file attachment updates
+        #  6. Save any file attachment updates
+        #  7. Fetch review request draft
         #  8. Fetch the review request
         #  9. Fetch file attachment
         # 10. Fetch review request draft
@@ -1099,13 +1105,13 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                           Q(pk=str(review_request.pk)))
             },
             {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
-            },
-            {
                 'model': FileAttachment,
                 'type': 'UPDATE',
                 'where': Q(pk=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=review_request),
             },
             {
                 'model': ReviewRequest,

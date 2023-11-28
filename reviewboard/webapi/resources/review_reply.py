@@ -281,13 +281,11 @@ class ReviewReplyResource(BaseReviewResource):
 
         return self._update_reply(request, reply, *args, **kwargs)
 
-    @webapi_check_local_site
     @augment_method_from(BaseReviewResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of all public replies on a review."""
         pass
 
-    @webapi_check_local_site
     @augment_method_from(BaseReviewResource)
     def get(self, *args, **kwargs):
         """Returns information on a particular reply.

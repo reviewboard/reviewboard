@@ -333,7 +333,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         file_attachment = self.create_file_attachment(review_request)
         review_request_draft = self.create_review_request_draft(review_request)
 
-        # 12 queries:
+        # 13 queries:
         #
         #  1. Fetch review request
         #  2. Fetch request user
@@ -341,12 +341,13 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         #  4. Fetch review request
         #  5. Fetch review request draft
         #  6. Fetch  file attachments
-        #  7. Fetch review request draft
-        #  8. Save any file attachment updates
-        #  9. Save the review request draft last_updated field
-        # 10. Fetch review request
+        #  7. Save an update to the file attachment's extra data
+        #  8. Fetch review request draft
+        #  9. Save an update to the file attachment's draft caption
+        # 10. Save the review request draft last_updated field
         # 11. Fetch review request
         # 12. Fetch review request
+        # 13. Fetch review request
         queries = [
             {
                 'model': ReviewRequest,
@@ -394,6 +395,11 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                            Q(drafts=review_request_draft) |
                            Q(inactive_drafts=review_request_draft)) &
                           Q(pk=str(review_request.pk)))
+            },
+            {
+                'model': FileAttachment,
+                'type': 'UPDATE',
+                'where': Q(pk=file_attachment.pk),
             },
             {
                 'model': ReviewRequestDraft,
@@ -481,8 +487,8 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         #  4. Fetch review request
         #  5. Fetch review request draft
         #  6. Fetch file attachment
-        #  7. Fetch review request draft
-        #  8. Save any file attachment updates
+        #  7. Save any file attachment updates
+        #  8. Fetch review request draft
         #  9. Fetch review request when getting file attachment state
         # 10. Fetch active file attachments when getting file attachment state
         # 11. Fetch review request draft when getting file attachment state
@@ -550,13 +556,13 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                           Q(pk=str(review_request.pk)))
             },
             {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
-            },
-            {
                 'model': FileAttachment,
                 'type': 'UPDATE',
                 'where': Q(pk=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=review_request),
             },
             {
                 'model': ReviewRequest,
@@ -718,8 +724,8 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         #  4. Fetch review request
         #  5. Fetch review request draft
         #  6. Fetch file attachment
-        #  7. Fetch review request draft
-        #  8. Save any file attachment updates
+        #  7. Save any file attachment updates
+        #  8. Fetch review request draft
         #  9. Fetch review request when getting file attachment state
         # 10. Fetch active file attachments when getting file attachment state
         # 11. Fetch review request draft when getting file attachment state
@@ -787,13 +793,13 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                           Q(pk=str(review_request.pk)))
             },
             {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
-            },
-            {
                 'model': FileAttachment,
                 'type': 'UPDATE',
                 'where': Q(pk=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=review_request),
             },
             {
                 'model': ReviewRequest,

@@ -274,23 +274,6 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        try:
-            draft = resources.review_request_draft.prepare_draft(
-                request,
-                review_request)
-        except PermissionDenied:
-            return self.get_no_access_error(request)
-
-        if caption is not None:
-            file.draft_caption = caption
-
-        try:
-            self.import_extra_data(file, file.extra_data, extra_fields)
-        except ImportExtraDataError as e:
-            return e.error_payload
-
-        file.save()
-
         if thumbnail is not None:
             try:
                 file.thumbnail = thumbnail
@@ -304,6 +287,35 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                         'thumbnail': [str(e)],
                     }
                 }
+
+        try:
+            self.import_extra_data(file, file.extra_data, extra_fields)
+            file.save(update_fields=('extra_data',))
+        except ImportExtraDataError as e:
+            return e.error_payload
+
+        request_fields = kwargs.get('parsed_request_fields', {})
+
+        if ('caption' not in request_fields and
+            'pending_deletion' not in request_fields):
+            # If the caption or the pending deletion is not being updated,
+            # return right away so that we avoid creating a review request
+            # draft.
+            return 200, {
+                self.item_result_key: self.serialize_object(
+                    file, request=request, *args, **kwargs),
+            }
+
+        try:
+            draft = resources.review_request_draft.prepare_draft(
+                request,
+                review_request)
+        except PermissionDenied:
+            return self.get_no_access_error(request)
+
+        if caption is not None:
+            file.draft_caption = caption
+            file.save(update_fields=('draft_caption',))
 
         if pending_deletion is True:
             return INVALID_FORM_DATA, {
@@ -344,7 +356,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
             draft.inactive_file_attachments.remove(*update_ids)
             draft.file_attachments.add(*update_ids)
 
-        # Make sure the last_updated field gets updated.
+        # Make sure the review request draft's last_updated field gets updated.
         draft.save(update_fields=('last_updated',))
 
         return 200, {

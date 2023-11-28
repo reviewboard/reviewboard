@@ -254,7 +254,6 @@ class FileDiffResource(WebAPIResource):
         return resources.review_request.has_modify_permissions(
             request, review_request, *args, **kwargs)
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of public per-file diffs on the review request.

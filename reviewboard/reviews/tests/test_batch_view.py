@@ -21,6 +21,7 @@ from reviewboard.reviews.models import (Group,
                                         ReviewRequest,
                                         ReviewRequestDraft)
 from reviewboard.scmtools.models import Repository
+from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 
@@ -84,6 +85,9 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
         user = User.objects.get(username='doc')
 
         rr1, rr2, rr3 = self.create_many_review_requests(3, public=True)
+
+        # Prime the caches.
+        LocalSite.objects.has_local_sites()
 
         # 11 queries:
         #
@@ -221,6 +225,9 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
 
         rr1, rr2, rr3 = self.create_many_review_requests(3, public=True)
 
+        # Prime the caches.
+        LocalSite.objects.has_local_sites()
+
         # 11 queries:
         #
         #  1-7. Review request list queries
@@ -357,6 +364,9 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
         ReviewRequestVisit.objects.update_visibility(
             rr3, user, ReviewRequestVisit.ARCHIVED)
 
+        # Prime the caches.
+        LocalSite.objects.has_local_sites()
+
         # 11 queries:
         #
         # 1-7. Review request list queries
@@ -433,6 +443,9 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
             self._get_review_request_close_queries(
                 user, profile, site_profile, rr2)
         )
+
+        # Prime the caches.
+        LocalSite.objects.has_local_sites()
 
         # We can't currently use this because QuerySet.update() is adding a
         # subquery that we can't test against.
@@ -579,6 +592,9 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
             self._get_review_request_close_queries(
                 user, profile, site_profile, rr2)
         )
+
+        # Prime the caches.
+        LocalSite.objects.has_local_sites()
 
         # We can't currently use this because QuerySet.update() is adding a
         # subquery that we can't test against.
@@ -1208,6 +1224,7 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
         self,
         user: User,
         review_requests: List[ReviewRequest],
+        has_local_sites_in_db: bool = False,
     ) -> List[dict]:
         """Return queries for the initial review requests list fetch.
 
@@ -1218,22 +1235,17 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
             review_requests (list of reviewboard.reviews.models.ReviewRequest):
                 The review requests being passed to the batch endpoint.
 
+            has_local_sites_in (bool, optional):
+                Whether the test expects Local Sites to be present in the
+                database.
+
         Returns:
             list:
             A list of query info appropriate for assertQueries.
         """
         review_request_pks = [rr.pk for rr in review_requests]
 
-        # 7 queries:
-        #
-        # 1. Fetch user
-        # 2. Fetch user profile
-        # 3. Fetch user's accessible repositories
-        # 4. Fetch user's auth permissions
-        # 5. Fetch user's group auth permissions
-        # 6. Fetch user's accessible groups
-        # 7. Get review requests
-        return [
+        equeries = [
             {
                 'model': User,
                 'where': Q(pk=user.pk),
@@ -1298,28 +1310,57 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
                     Q(local_site=None)
                 ),
             },
-            {
-                'model': ReviewRequest,
-                'distinct': True,
-                'num_joins': 3,
-                'tables': {
-                    'auth_user',
-                    'reviews_reviewrequest_target_people',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest',
-                },
-                'where': (
-                    Q(submitter__is_active=True) &
-                    Q(local_site=None) &
-                    Q(pk__in=review_request_pks) &
-                    Q(Q(submitter=user) |
-                      Q(Q(Q(repository=None) | Q(repository__in=[])) &
-                        Q(Q(target_people=user) |
-                          Q(target_groups=None) |
-                          Q(target_groups__in=[]))))
-                ),
-            },
         ]
+
+        if has_local_sites_in_db:
+            equeries += [
+                {
+                    'model': ReviewRequest,
+                    'distinct': True,
+                    'num_joins': 3,
+                    'tables': {
+                        'auth_user',
+                        'reviews_reviewrequest_target_people',
+                        'reviews_reviewrequest_target_groups',
+                        'reviews_reviewrequest',
+                    },
+                    'where': (
+                        Q(submitter__is_active=True) &
+                        Q(local_site=None) &
+                        Q(pk__in=review_request_pks) &
+                        Q(Q(submitter=user) |
+                          Q(Q(Q(repository=None) | Q(repository__in=[])) &
+                            Q(Q(target_people=user) |
+                              Q(target_groups=None) |
+                              Q(target_groups__in=[]))))
+                    ),
+                },
+            ]
+        else:
+            equeries += [
+                {
+                    'model': ReviewRequest,
+                    'distinct': True,
+                    'num_joins': 3,
+                    'tables': {
+                        'auth_user',
+                        'reviews_reviewrequest_target_people',
+                        'reviews_reviewrequest_target_groups',
+                        'reviews_reviewrequest',
+                    },
+                    'where': (
+                        Q(submitter__is_active=True) &
+                        Q(pk__in=review_request_pks) &
+                        Q(Q(submitter=user) |
+                          Q(Q(Q(repository=None) | Q(repository__in=[])) &
+                            Q(Q(target_people=user) |
+                              Q(target_groups=None) |
+                              Q(target_groups__in=[]))))
+                    ),
+                },
+            ]
+
+        return equeries
 
     def _get_review_request_close_queries(
         self,

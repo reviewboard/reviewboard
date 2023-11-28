@@ -1,4 +1,9 @@
+"""Models for review groups."""
+
+from __future__ import annotations
+
 import logging
+from typing import ClassVar
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -78,7 +83,7 @@ class Group(models.Model):
 
     extra_data = JSONField(null=True)
 
-    objects = ReviewGroupManager()
+    objects: ClassVar[ReviewGroupManager] = ReviewGroupManager()
 
     def is_accessible_by(self, user, request=None, silent=False):
         """Returns true if the user can access this group."""

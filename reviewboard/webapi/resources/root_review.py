@@ -130,7 +130,6 @@ class RootReviewResource(BaseReviewResource):
             'base_reply_to__isnull': True,
         }
 
-    @webapi_check_local_site
     @webapi_request_fields(
         optional=dict({
             'last-updated-from': {

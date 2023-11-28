@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from reviewboard.integrations.base import Integration
     from reviewboard.integrations.models import IntegrationConfig
     from reviewboard.reviews.models import Review, ReviewRequest, StatusUpdate
+    from reviewboard.site.models import AnyOrAllLocalSites
 
 
 logger = logging.getLogger(__name__)
@@ -655,8 +656,13 @@ class ReviewRequestManager(ConcurrencyManager):
             django.db.models.Q:
             The query object.
         """
-        return Q(target_groups__name=group_name,
-                 local_site=local_site)
+        return (
+            Q(target_groups__name=group_name) &
+            LocalSite.objects.build_q(
+                local_site,
+                local_site_field='target_groups__local_site',
+                allow_all=False)
+        )
 
     def get_to_user_groups_query(self, user_or_username):
         """Return a Q() query object targeting groups joined by a user.
@@ -1029,9 +1035,18 @@ class ReviewRequestManager(ConcurrencyManager):
             extra_query=self.get_from_user_query(user_or_username),
             *args, **kwargs)
 
-    def _query(self, user=None, status='P', with_counts=False,
-               extra_query=None, local_site=None, filter_private=False,
-               show_inactive=False, show_all_unpublished=False):
+    def _query(
+        self,
+        user: Optional[User] = None,
+        status: Optional[str] = 'P',
+        with_counts: bool = False,
+        extra_query: Optional[Q] = None,
+        local_site: AnyOrAllLocalSites = None,
+        filter_private: bool = False,
+        show_inactive: bool = False,
+        show_all_unpublished: bool = False,
+        distinct: bool = True,
+    ) -> QuerySet[ReviewRequest]:
         """Return a queryset for review requests matching the given criteria.
 
         By default, the results will not be filtered based on whether a user
@@ -1040,8 +1055,16 @@ class ReviewRequestManager(ConcurrencyManager):
         ``filter_private=True``.
 
         Version Changed:
+            6.0.2:
+            * Added the ``distinct`` argument from Review Board 5.0.7.
+
+        Version Changed:
             6.0:
             Removed the ``show_all_local_sites`` argument.
+
+        Version Changed:
+            5.0.7:
+            * Added the ``distinct`` argument.
 
         Version Changed:
             5.0:
@@ -1097,6 +1120,12 @@ class ReviewRequestManager(ConcurrencyManager):
             show_all_unpublished (bool, optional):
                 Whether to include review requests not yet published.
 
+            distinct (bool, optional):
+                Whether to return distinct results.
+
+                Version Added:
+                    5.0.7, 6.0.2
+
         Returns:
             django.db.models.query.QuerySet:
             The resulting queryset.
@@ -1119,8 +1148,7 @@ class ReviewRequestManager(ConcurrencyManager):
         if status:
             q &= Q(status=status)
 
-        if local_site is not LocalSite.ALL:
-            q &= Q(local_site=local_site)
+        q &= LocalSite.objects.build_q(local_site)
 
         if extra_query:
             q &= extra_query
@@ -1155,7 +1183,10 @@ class ReviewRequestManager(ConcurrencyManager):
 
                 q &= repo_q & group_q
 
-        queryset = self.filter(q).distinct()
+        queryset = self.filter(q)
+
+        if distinct:
+            queryset = queryset.distinct()
 
         if with_counts:
             queryset = queryset.with_counts(user)
@@ -1532,8 +1563,9 @@ class ReviewManager(ConcurrencyManager):
         if status:
             q &= Q(review_request__status=status)
 
-        if local_site is not LocalSite.ALL:
-            q &= Q(review_request__local_site=local_site)
+        q &= LocalSite.objects.build_q(
+            local_site,
+            local_site_field='review_request__local_site')
 
         if extra_query:
             q &= extra_query

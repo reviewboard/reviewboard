@@ -113,7 +113,6 @@ class BaseScreenshotCommentResource(BaseCommentResource):
     def serialize_thumbnail_url_field(self, obj, **kwargs):
         return obj.get_image_url()
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Returns information on the comment.

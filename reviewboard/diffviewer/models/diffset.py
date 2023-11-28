@@ -1,5 +1,9 @@
 """DiffSet model definition."""
 
+from __future__ import annotations
+
+from typing import ClassVar
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
@@ -45,7 +49,7 @@ class DiffSet(models.Model):
 
     extra_data = JSONField(null=True)
 
-    objects = DiffSetManager()
+    objects: ClassVar[DiffSetManager] = DiffSetManager()
 
     @property
     def is_commit_series_finalized(self):

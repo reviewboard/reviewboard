@@ -1113,7 +1113,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             self.item_result_key: review_request,
         }
 
-    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def delete(self, *args, **kwargs):
         """Deletes the review request permanently.
@@ -1130,8 +1129,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         """
         pass
 
-    @webapi_check_login_required
-    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'branch': {

@@ -203,7 +203,6 @@ class ReviewGroupUserResource(UserResource):
 
         return 204, {}
 
-    @webapi_check_local_site
     @webapi_request_fields(optional={
         'fullname': {
             'type': BooleanFieldType,

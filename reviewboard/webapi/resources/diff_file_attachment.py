@@ -93,7 +93,6 @@ class DiffFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
         else:
             return obj.repository
 
-    @webapi_check_local_site
     @webapi_request_fields(
         optional=dict({
             'repository-file-path': {
