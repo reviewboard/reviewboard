@@ -666,8 +666,7 @@ export class UnifiedBannerView extends FloatingBannerView<
                         trivial: trivial,
                     }),
                 },
-                prefix: localSitePrefix,
-                url: `${SITE_ROOT}r/_batch/`,
+                url: `${SITE_ROOT}${localSitePrefix}r/_batch/`,
 
                 error: xhr => {
                     const rsp = xhr.responseJSON;
