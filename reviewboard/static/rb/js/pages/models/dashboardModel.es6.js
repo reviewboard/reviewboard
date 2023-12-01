@@ -30,6 +30,7 @@ RB.Dashboard = RB.DatagridPage.extend({
      */
     closeReviewRequests(options) {
         const localSiteName = this.get('localSiteName');
+        const localSitePrefix = localSiteName ? `s/${localSiteName}/` : '';
         const reviewRequests = this.selection.clone();
 
         const closeTypeToOp = {
@@ -39,8 +40,7 @@ RB.Dashboard = RB.DatagridPage.extend({
 
         return new Promise((resolve, reject) => {
             RB.apiCall({
-                prefix: localSiteName ? `s/${localSiteName}/` : null,
-                url: `${SITE_ROOT}r/_batch/`,
+                url: `${SITE_ROOT}${localSitePrefix}r/_batch/`,
                 data: {
                     batch: JSON.stringify({
                         op: closeTypeToOp[options.closeType],
@@ -89,12 +89,12 @@ RB.Dashboard = RB.DatagridPage.extend({
      */
     updateVisibility(visibility) {
         const localSiteName = this.get('localSiteName');
+        const localSitePrefix = localSiteName ? `s/${localSiteName}/` : '';
         const reviewRequests = this.selection.clone();
 
         return new Promise((resolve, reject) => {
             RB.apiCall({
-                prefix: localSiteName ? `s/${localSiteName}/` : null,
-                url: `${SITE_ROOT}r/_batch/`,
+                url: `${SITE_ROOT}${localSitePrefix}r/_batch/`,
                 data: {
                     batch: JSON.stringify({
                         op: visibility,
