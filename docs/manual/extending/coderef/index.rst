@@ -273,6 +273,8 @@ Repository Communication
    reviewboard.scmtools.managers
    reviewboard.scmtools.models
    reviewboard.scmtools.signals
+   reviewboard.scmtools.testing
+   reviewboard.scmtools.testing.queries
    reviewboard.scmtools.tests.testcases
 
 
