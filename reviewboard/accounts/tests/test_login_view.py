@@ -133,3 +133,100 @@ class LoginViewTests(TestCase):
         self.assertNotEqual(context['next'],
                             (f'{client_login_url}?client-name=TestClient'
                              '&client-url=http://localhost:8080/test/'))
+
+    def test_get_with_redirect_url(self) -> None:
+        """Testing LoginView GET with a next= URL"""
+        login_url = local_site_reverse('login')
+
+        rsp = self.client.get(
+            login_url,
+            {
+                'next': '/test/',
+            })
+
+        self.assertEqual(rsp.context['next'], '/test/')
+
+    def test_get_with_redirect_login_loop(self) -> None:
+        """Testing LoginView GET breaks a redirect login loop to the same login
+        URL
+        """
+        login_url = local_site_reverse('login')
+
+        rsp = self.client.get(
+            login_url,
+            {
+                'next': login_url,
+            })
+
+        self.assertEqual(rsp.context['next'], '')
+
+    def test_get_with_redirect_logout_loop(self) -> None:
+        """Testing LoginView GET breaks a redirect login -> logout loop"""
+        rsp = self.client.get(
+            local_site_reverse('login'),
+            {
+                'next': local_site_reverse('logout'),
+            })
+
+        self.assertEqual(rsp.context['next'], '')
+
+    def test_get_with_authenticated(self) -> None:
+        """Testing LoginView GET when authenticated"""
+        client = self.client
+        client.login(username='doc',
+                     password='doc')
+
+        rsp = client.get(local_site_reverse('login'))
+        self.assertRedirects(rsp,
+                             local_site_reverse('root'),
+                             fetch_redirect_response=False)
+
+    def test_get_with_authenticated_and_next(self) -> None:
+        """Testing LoginView GET when authenticated and custom next= URL"""
+        client = self.client
+        client.login(username='doc',
+                     password='doc')
+
+        rsp = client.get(
+            local_site_reverse('login'),
+            {
+                'next': '/test/',
+            })
+
+        self.assertRedirects(rsp,
+                             '/test/',
+                             fetch_redirect_response=False)
+
+    def test_get_with_authenticated_and_login_loop(self) -> None:
+        """Testing LoginView GET when authenticated and login loop"""
+        client = self.client
+        client.login(username='doc',
+                     password='doc')
+
+        login_url = local_site_reverse('login')
+
+        rsp = client.get(
+            login_url,
+            {
+                'next': login_url,
+            })
+
+        self.assertRedirects(rsp,
+                             local_site_reverse('root'),
+                             fetch_redirect_response=False)
+
+    def test_get_with_authenticated_and_logout_loop(self) -> None:
+        """Testing LoginView GET when authenticated and logout loop"""
+        client = self.client
+        client.login(username='doc',
+                     password='doc')
+
+        rsp = client.get(
+            local_site_reverse('login'),
+            {
+                'next': local_site_reverse('logout'),
+            })
+
+        self.assertRedirects(rsp,
+                             local_site_reverse('root'),
+                             fetch_redirect_response=False)
