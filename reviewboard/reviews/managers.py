@@ -270,6 +270,11 @@ class ReviewGroupManager(Manager):
         The returned list is further filtered down based on the
         ``visible_only`` and ``local_site`` parameters.
 
+        Note:
+            This is not responsible for checking if a user has access to
+            a given ``local_site``. This function assumes that access has
+            already been checked.
+
         Version Changed:
             5.0:
             Deprecated ``show_all_local_sites`` and added support for

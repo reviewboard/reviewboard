@@ -254,6 +254,9 @@ Review Requests and Reviews
    reviewboard.reviews.models
    reviewboard.reviews.signals
    reviewboard.reviews.templatetags.reviewtags
+   reviewboard.reviews.testing
+   reviewboard.reviews.testing.queries
+   reviewboard.reviews.testing.queries.review_groups
    reviewboard.reviews.ui.base
    reviewboard.reviews.ui.image
    reviewboard.reviews.ui.markdownui
