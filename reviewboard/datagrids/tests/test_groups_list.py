@@ -163,6 +163,13 @@ class GroupListViewTests(BaseViewTestCase):
             for _group in review_groups
         ]
 
+        if local_site is not None:
+            row_data_select_related = {
+                'local_site',
+            }
+        else:
+            row_data_select_related = set()
+
         rows_q_result = get_review_groups_accessible_q(
             user=user,
             local_site=local_site)
@@ -228,39 +235,26 @@ class GroupListViewTests(BaseViewTestCase):
                           Q(pk__in=review_group_pks)),
             },
             {
-                '__note__': 'Fetch the data for one page based on the IDs.',
+                '__note__': (
+                    'Fetch the data for one page based on the IDs.'
+                ),
+                'annotations': {
+                    'column_pending_review_request_count': Count(
+                        'review_requests',
+                        filter=(Q(review_requests__public=True) &
+                                Q(review_requests__status='P'))),
+                },
+                'group_by': True,
                 'model': Group,
+                'num_joins': 2,
+                'select_related': row_data_select_related,
+                'tables': {
+                    'reviews_group',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
                 'where': Q(pk__in=review_group_pks),
             },
         ]
-
-        # NOTE: This represents a performance bug due to a bad query.
-        #       It's being tracked and will be resolved in a future
-        #       change.
-        for pk in review_group_pks:
-            if local_site:
-                equeries += [
-                    {
-                        '__note__': f'Excess LocalSite query for group {pk}',
-                        'model': LocalSite,
-                        'where': Q(id=local_site.pk)
-                    }
-                ]
-
-            equeries += [
-                {
-                    '__note__': f'Excess target_groups query for group {pk}',
-                    'annotations': {'__count': Count('*')},
-                    'model': ReviewRequest,
-                    'num_joins': 1,
-                    'tables': {
-                        'reviews_reviewrequest',
-                        'reviews_reviewrequest_target_groups',
-                    },
-                    'where': (Q(target_groups__id=pk) &
-                              Q(public=True) &
-                              Q(status='P')),
-                },
-            ]
 
         return equeries

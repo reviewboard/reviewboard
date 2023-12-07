@@ -208,7 +208,8 @@ class UsersDataGridTests(BaseViewTestCase):
             user=user,
             profile=profile,
             user_pks=[1, 2, 3, 4],
-            local_sites_in_db=False)
+            local_sites_in_db=False,
+            has_pending_count_column=False)
 
         with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get('/users/?columns=fullname')
@@ -257,7 +258,8 @@ class UsersDataGridTests(BaseViewTestCase):
             profile=profile,
             local_site=local_site,
             local_sites_in_db=False,
-            user_pks=[1, 2])
+            user_pks=[1, 2],
+            has_pending_count_column=False)
 
         with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
@@ -318,6 +320,10 @@ class UsersDataGridTests(BaseViewTestCase):
         if local_site:
             local_site.users.add(*all_users.keys())
 
+        # Make sure every user has a profile for this test.
+        for temp_user in all_users.values():
+            temp_user.get_profile()
+
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
@@ -325,44 +331,11 @@ class UsersDataGridTests(BaseViewTestCase):
             user=user,
             profile=profile,
             local_site=local_site,
-            local_sites_in_db=False,
+            local_sites_in_db=local_sites_in_db,
             user_pks=[1, 2, 3, 4, 5, 6, 7, 8, 9])
 
-        # NOTE: The following represent performance bugs due to bad
-        #       queries. It's being tracked and will be resolved in a
-        #       future change.
-        for i in range(len(all_users)):
-            query_user = all_users[i + 1]
-
-            if (query_user.username == 'dopey' or
-                query_user.username.startswith('test-user')):
-                equeries += [
-                    {
-                        'model': Profile,
-                        'where': Q(user=query_user),
-                    },
-                    {
-                        'model': Profile,
-                        'type': 'INSERT',
-                    },
-                ]
-
-            equeries += [
-                {
-                    'model': ReviewRequest,
-                    'num_joins': 1,
-                    'tables': {
-                        'reviews_reviewrequest',
-                        'reviews_reviewrequest_target_people',
-                    },
-                    'annotations': {'__count': Count('*')},
-                    'where': (Q(target_people__id=i + 1) &
-                              Q(public=True) &
-                              Q(status='P')),
-                },
-            ]
-
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries, check_subqueries=True,
+                                with_tracebacks=True, traceback_size=30):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -427,8 +400,12 @@ class UsersDataGridTests(BaseViewTestCase):
 
         all_users = User.objects.in_bulk()
 
+        # Make sure every user has a profile for this test.
         if local_site:
             local_site.users.add(*all_users.keys())
+
+        for temp_user in all_users.values():
+            temp_user.get_profile()
 
         self._prefetch_cached(local_site=local_site,
                               user=user)
@@ -443,37 +420,6 @@ class UsersDataGridTests(BaseViewTestCase):
                 for _user in matched_users
             ],
             query=Q(username__istartswith='A'))
-
-        # NOTE: The following represent performance bugs due to bad
-        #       queries. It's being tracked and will be resolved in a
-        #       future change.
-        for query_user in matched_users:
-            if query_user.username != 'admin':
-                equeries += [
-                    {
-                        'model': Profile,
-                        'where': Q(user=query_user),
-                    },
-                    {
-                        'model': Profile,
-                        'type': 'INSERT',
-                    },
-                ]
-
-            equeries += [
-                {
-                    'model': ReviewRequest,
-                    'num_joins': 1,
-                    'tables': {
-                        'reviews_reviewrequest',
-                        'reviews_reviewrequest_target_people',
-                    },
-                    'annotations': {'__count': Count('*')},
-                    'where': (Q(target_people__id=query_user.pk) &
-                              Q(public=True) &
-                              Q(status='P')),
-                },
-            ]
 
         with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
@@ -539,7 +485,8 @@ class UsersDataGridTests(BaseViewTestCase):
             profile=profile,
             local_site=local_site,
             local_sites_in_db=False,
-            user_pks=[1, 2, 3, 4])
+            user_pks=[1, 2, 3, 4],
+            has_pending_count_column=False)
 
         with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
@@ -606,7 +553,8 @@ class UsersDataGridTests(BaseViewTestCase):
             user=AnonymousUser(),
             local_site=local_site,
             local_sites_in_db=False,
-            user_pks=[1, 2, 3, 4])
+            user_pks=[1, 2, 3, 4],
+            has_pending_count_column=False)
 
         with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
@@ -679,8 +627,9 @@ class UsersDataGridTests(BaseViewTestCase):
             user=user,
             profile=profile,
             local_site=local_site,
-            local_sites_in_db=False,
-            user_pks=[1, 2, 3, 4])
+            local_sites_in_db=local_sites_in_db,
+            user_pks=[1, 2, 3, 4],
+            has_pending_count_column=False)
         equeries += [
             {
                 'model': Profile,
@@ -785,7 +734,8 @@ class UsersDataGridTests(BaseViewTestCase):
             profile=profile,
             local_site=local_site,
             local_sites_in_db=False,
-            user_pks=[1, 2, 3, 4])
+            user_pks=[1, 2, 3, 4],
+            has_pending_count_column=False)
 
         with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
@@ -871,7 +821,8 @@ class UsersDataGridTests(BaseViewTestCase):
             user=AnonymousUser(),
             local_site=local_site,
             local_sites_in_db=False,
-            user_pks=[1, 2, 3, 4])
+            user_pks=[1, 2, 3, 4],
+            has_pending_count_column=False)
 
         with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
@@ -938,7 +889,8 @@ class UsersDataGridTests(BaseViewTestCase):
             profile=profile,
             local_site=local_site,
             local_sites_in_db=local_sites_in_db,
-            user_pks=[1, 2, 3, 4])
+            user_pks=[1, 2, 3, 4],
+            has_pending_count_column=False)
 
         with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
@@ -971,6 +923,7 @@ class UsersDataGridTests(BaseViewTestCase):
         local_site: Optional[LocalSite] = None,
         local_sites_in_db: bool = False,
         query: Q = Q(),
+        has_pending_count_column: bool = True,
     ) -> ExpectedQueries:
         """Return expected queries for viewing the datagrid.
 
@@ -999,6 +952,10 @@ class UsersDataGridTests(BaseViewTestCase):
 
             query (django.db.models.Q, optional):
                 An optional query for filtering users.
+
+            has_pending_count_column (bool, optional):
+                Whether this datagrid is rendering the Pending Review Request
+                Count column.
 
         Returns:
             list of dict:
@@ -1082,15 +1039,43 @@ class UsersDataGridTests(BaseViewTestCase):
                 },
             ]
 
-        equeries += [
-            {
-                '__note__': (
-                    'Fetch the data for one page based on the IDs'
-                ),
-                'model': User,
-                'select_related': ('profile',),
-                'where': Q(pk__in=user_pks),
-            },
-        ]
+        if has_pending_count_column:
+            equeries += [
+                {
+                    '__note__': (
+                        'Fetch the data for one page based on the IDs'
+                    ),
+                    'annotations': {
+                        'column_pending_review_request_count': Count(
+                            'review_requests',
+                            filter=(Q(review_requests__public=True) &
+                                    Q(review_requests__status='P'))),
+                    },
+                    'group_by': True,
+                    'model': User,
+                    'num_joins': 1,
+                    'select_related': {
+                        'profile',
+                    },
+                    'tables': {
+                        'auth_user',
+                        'reviews_reviewrequest',
+                    },
+                    'where': Q(pk__in=user_pks),
+                },
+            ]
+        else:
+            equeries += [
+                {
+                    '__note__': (
+                        'Fetch the data for one page based on the IDs'
+                    ),
+                    'model': User,
+                    'select_related': {
+                        'profile',
+                    },
+                    'where': Q(pk__in=user_pks),
+                },
+            ]
 
         return equeries

@@ -671,6 +671,36 @@ class UsersDataGrid(AlphanumericDataGrid):
 
         return []
 
+    def post_process_queryset_for_data(
+        self,
+        queryset: QuerySet,
+        **kwargs,
+    ) -> QuerySet:
+        """Add additional lookups for the datagrid's queryset
+
+        This will add any column-specific queries to the queryset, and then
+        select-related the Local Sites so that operations that require the
+        Local Site relation can be conducted without an additional query.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting augmented QuerySet.
+        """
+        return (
+            super().post_process_queryset_for_data(queryset, **kwargs)
+            .select_related('profile')
+        )
+
 
 class GroupDataGrid(DataGrid):
     """A datagrid showing a list of review groups accessible by the user."""
@@ -690,11 +720,16 @@ class GroupDataGrid(DataGrid):
     def __init__(self, request, title=_('All groups'), *args, **kwargs):
         """Initialize the datagrid."""
         local_site = kwargs.get('local_site')
+
+        # Build the queryset for the groups.
         queryset = Group.objects.accessible(request.user,
                                             local_site=local_site)
 
-        super(GroupDataGrid, self).__init__(request, queryset=queryset,
-                                            title=title, *args, **kwargs)
+        super().__init__(request,
+                         queryset=queryset,
+                         title=title,
+                         *args,
+                         **kwargs)
 
         self.profile_sort_field = 'sort_group_columns'
         self.profile_columns_field = 'group_columns'
@@ -702,6 +737,38 @@ class GroupDataGrid(DataGrid):
         self.default_columns = [
             'star', 'name', 'displayname', 'pending_count'
         ]
+
+    def post_process_queryset_for_data(
+        self,
+        queryset: QuerySet,
+        **kwargs,
+    ) -> QuerySet:
+        """Add additional lookups for the datagrid's queryset
+
+        This will add any column-specific queries to the queryset, and then
+        select-related the Local Sites so that operations that require the
+        Local Site relation can be conducted without an additional query.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting augmented QuerySet.
+        """
+        queryset = super().post_process_queryset_for_data(queryset, **kwargs)
+
+        if self.local_site is not None:
+            queryset = queryset.select_related('local_site')
+
+        return queryset
 
     @staticmethod
     def link_to_object(state, obj, value):
