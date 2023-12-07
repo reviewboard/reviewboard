@@ -6,14 +6,17 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import List, Optional, Set, TYPE_CHECKING
+from typing import List, Optional, Sequence, TYPE_CHECKING
 
-from django.contrib.auth.models import AnonymousUser, Permission, User
+from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.reviews.models import Group, Review
-from reviewboard.scmtools.models import Repository
+from reviewboard.reviews.models import Review
+from reviewboard.reviews.testing.queries.reviews import (
+    get_reviews_accessible_equeries,
+    get_reviews_from_user_equeries,
+)
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
@@ -266,111 +269,13 @@ class ReviewManagerTests(TestCase):
         self._prime_caches(user=user,
                            local_site=local_site1)
 
-        # 6 queries:
-        #
-        # 1. Fetch user's accessible repositories
-        # 2. Fetch user's auth permissions
-        # 3. Fetch user's group's auth permissions
-        # 4. Fetch user's local site permissions
-        # 5. Fetch user's accessible groups
-        # 6. Fetch reviews
-        queries_user = [
-            {
-                'model': Repository,
-                'values_select': ('pk',),
-                'num_joins': 4,
-                'tables': {
-                    'scmtools_repository_users',
-                    'scmtools_repository',
-                    'reviews_group_users',
-                    'scmtools_repository_review_groups',
-                    'reviews_group'
-                },
-                'where': (
-                    (Q(public=True) |
-                     Q(users__pk=user.pk) |
-                     Q(review_groups__users=user.pk)) &
-                    Q(local_site=local_site1)
-                ),
-            },
-            {
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 2,
-                'tables': {
-                    'auth_permission',
-                    'auth_user_user_permissions',
-                    'django_content_type'
-                },
-                'where': Q(user__id=user.pk),
-            },
-            {
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 4,
-                'tables': {
-                    'auth_permission',
-                    'auth_group',
-                    'auth_user_groups',
-                    'auth_group_permissions',
-                    'django_content_type',
-                },
-                'where': Q(group__user=user),
-            },
-            {
-                'model': User,
-                'extra': {
-                    'a': ('1', [])
-                },
-                'limit': 1,
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': (
-                    Q(local_site_admins__id=local_site1.pk) &
-                    Q(pk=user.pk)
-                ),
-            },
-            {
-                'model': Group,
-                'values_select': ('pk',),
-                'num_joins': 1,
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (
-                    (Q(invite_only=False) |
-                     Q(users=user.pk)) &
-                    Q(local_site=local_site1)
-                ),
-            },
-            {
-                'model': Review,
-                'num_joins': 3,
-                'tables': {
-                    'reviews_reviewrequest_target_people',
-                    'reviews_review',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest',
-                },
-                'where': (
-                    Q(base_reply_to=None) &
-                    Q(review_request__local_site=local_site1) &
-                    (Q(user=user) |
-                     (Q(public=True) &
-                      (Q(review_request__repository=None) |
-                       Q(review_request__repository__in=[repo1.pk])) &
-                      (Q(review_request__target_people=user) |
-                       Q(review_request__target_groups=None) |
-                       Q(review_request__target_groups__in=[]))))
-                ),
-            },
-        ]
+        equeries = get_reviews_accessible_equeries(
+            user=user,
+            local_site=local_site1,
+            has_local_sites_in_db=True,
+            accessible_repository_ids=[repo1.pk])
 
-        with self.assertQueries(queries_user):
+        with self.assertQueries(equeries, check_subqueries=True):
             # Testing that the reviews from other local sites or the global
             # site do not leak into the results from the given local site.
             self.assertQuerysetEqual(
@@ -420,93 +325,17 @@ class ReviewManagerTests(TestCase):
         review_request4 = self.create_review_request(publish=True)
         review4 = self.create_review(review_request4, publish=True)
 
-        # 5 queries:
-        #
-        # 1. Fetch user's accessible repositories
-        # 2. Fetch user's auth permissions
-        # 3. Fetch user's group auth permissions
-        # 4. Fetch user's accessible groups
-        # 5. Fetch reviews
-        queries_user = [
-            {
-                'model': Repository,
-                'values_select': ('pk',),
-                'num_joins': 4,
-                'tables': {
-                    'scmtools_repository_users',
-                    'scmtools_repository',
-                    'reviews_group_users',
-                    'scmtools_repository_review_groups',
-                    'reviews_group',
-                },
-                'where': (
-                    Q(public=True) |
-                    Q(users__pk=user.pk) |
-                    Q(review_groups__users=user.pk)
-                ),
-            },
-            {
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 2,
-                'tables': {
-                    'auth_permission',
-                    'auth_user_user_permissions',
-                    'django_content_type',
-                },
-                'where': Q(user__id=user.pk),
-            },
-            {
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 4,
-                'tables': {
-                    'auth_permission',
-                    'auth_group',
-                    'auth_user_groups',
-                    'auth_group_permissions',
-                    'django_content_type',
-                },
-                'where': Q(group__user=user),
-            },
-            {
-                'model': Group,
-                'values_select': ('pk',),
-                'num_joins': 1,
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (
-                    Q(invite_only=False) |
-                    Q(users=user.pk)
-                ),
-            },
-            {
-                'model': Review,
-                'num_joins': 3,
-                'tables': {
-                    'reviews_reviewrequest_target_people',
-                    'reviews_review',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest',
-                },
-                'where': (
-                    Q(base_reply_to=None) &
-                    (Q(user=user) |
-                     (Q(public=True) &
-                      (Q(review_request__repository=None) |
-                       Q(review_request__repository__in=[
-                        repo1.pk, repo2.pk, repo3.pk
-                       ])) &
-                      (Q(review_request__target_people=user) |
-                       Q(review_request__target_groups=None) |
-                       Q(review_request__target_groups__in=[]))))
-                ),
-            },
-        ]
+        equeries = get_reviews_accessible_equeries(
+            user=user,
+            local_site=LocalSite.ALL,
+            has_local_sites_in_db=True,
+            accessible_repository_ids=[
+                repo1.pk,
+                repo2.pk,
+                repo3.pk,
+            ])
 
-        with self.assertQueries(queries_user):
+        with self.assertQueries(equeries, check_subqueries=True):
             # Testing that passing LocalSite.ALL returns reviews from all local
             # sites and the global site.
             #
@@ -515,8 +344,7 @@ class ReviewManagerTests(TestCase):
             # the user has access to the given local site(s).
             self.assertQuerysetEqual(
                 Review.objects.accessible(user, local_site=LocalSite.ALL),
-                [review1, review2, review3, review4],
-                ordered=False)
+                [review1, review2, review3, review4])
 
     @add_fixtures(['test_scmtools'])
     def test_accessible_with_public_true(self):
@@ -637,17 +465,11 @@ class ReviewManagerTests(TestCase):
         superuser = User.objects.get(username='admin')
 
         local_site: Optional[LocalSite]
-        review_local_site_q: Q = Q()
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
-
-        if local_sites_in_db:
-            review_local_site_q = Q(review_request__local_site=local_site)
-        else:
-            review_local_site_q = Q()
 
         # Review from a public repository.
         repo1 = self.create_repository(
@@ -769,15 +591,7 @@ class ReviewManagerTests(TestCase):
         self._check_anonymous_accessible_queries(
             user=anonymous,
             local_site=local_site,
-            accessible_q=(
-                Q(base_reply_to=None) &
-                review_local_site_q &
-                (Q(review_request__repository=None) |
-                 Q(review_request__repository__public=True)) &
-                (Q(review_request__target_groups=None) |
-                 Q(review_request__target_groups__invite_only=False)) &
-                Q(public=True)
-            ),
+            has_local_sites_in_db=local_sites_in_db,
             expected_reviews=[review1])
 
         # Testing that the user can only access reviews
@@ -786,23 +600,22 @@ class ReviewManagerTests(TestCase):
             user=user,
             local_site=local_site,
             local_sites_in_db=local_sites_in_db,
-            accessible_q=(
-                Q(base_reply_to=None) &
-                review_local_site_q &
-                (Q(user=user) |
-                 (Q(public=True) &
-                  (Q(review_request__repository=None) |
-                   Q(review_request__repository__in=[
-                       repo1.pk, repo2.pk, repo3.pk, repo5.pk, repo6.pk,
-                   ])) &
-                  (Q(review_request__target_people=user) |
-                   Q(review_request__target_groups=None) |
-                   Q(review_request__target_groups__in=[
-                       group_accessible.pk,
-                   ]))))
-            ),
+            accessible_repository_ids=[
+                repo1.pk,
+                repo2.pk,
+                repo3.pk,
+                repo5.pk,
+                repo6.pk,
+            ],
+            accessible_review_group_ids=[
+                group_accessible.pk,
+            ],
             expected_reviews=[
-                review1, review2, review3, review5, review6,
+                review1,
+                review2,
+                review3,
+                review5,
+                review6,
             ])
 
         # Testing that superusers can access any reviews.
@@ -842,17 +655,11 @@ class ReviewManagerTests(TestCase):
         superuser = User.objects.get(username='admin')
 
         local_site: Optional[LocalSite]
-        review_local_site_q: Q = Q()
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
-
-        if local_sites_in_db:
-            review_local_site_q = Q(review_request__local_site=local_site)
-        else:
-            review_local_site_q = Q()
 
         # Review that the user has access to from being in a public
         # review group that is targeted by the review request.
@@ -936,15 +743,7 @@ class ReviewManagerTests(TestCase):
         self._check_anonymous_accessible_queries(
             user=anonymous,
             local_site=local_site,
-            accessible_q=(
-                Q(base_reply_to=None) &
-                review_local_site_q &
-                (Q(review_request__repository=None) |
-                 Q(review_request__repository__public=True)) &
-                (Q(review_request__target_groups=None) |
-                 Q(review_request__target_groups__invite_only=False)) &
-                Q(public=True)
-            ),
+            has_local_sites_in_db=local_sites_in_db,
             expected_reviews=[review1, review3])
 
         # Testing that the user can only access reviews
@@ -954,22 +753,22 @@ class ReviewManagerTests(TestCase):
             user=user,
             local_site=local_site,
             local_sites_in_db=local_sites_in_db,
-            accessible_q=(
-                Q(base_reply_to=None) &
-                review_local_site_q &
-                (Q(user=user) |
-                 (Q(public=True) &
-                  (Q(review_request__repository=None) |
-                   Q(review_request__repository__in=[
-                    group1.pk, group2.pk, group3.pk, group4.pk,
-                   ])) &
-                  (Q(review_request__target_people=user) |
-                   Q(review_request__target_groups=None) |
-                   Q(review_request__target_groups__in=[
-                    group1.pk, group2.pk, group3.pk,
-                   ]))))
-            ),
-            expected_reviews=[review1, review2, review3])
+            accessible_repository_ids=[
+                repo1.pk,
+                repo2.pk,
+                repo3.pk,
+                repo4.pk,
+            ],
+            accessible_review_group_ids=[
+                group1.pk,
+                group2.pk,
+                group3.pk,
+            ],
+            expected_reviews=[
+                review1,
+                review2,
+                review3,
+            ])
 
         # Testing that superusers can access any reviews.
         self._check_superuser_accessible_queries(
@@ -1008,17 +807,11 @@ class ReviewManagerTests(TestCase):
         superuser = User.objects.get(username='admin')
 
         local_site: Optional[LocalSite]
-        review_local_site_q: Q = Q()
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
-
-        if local_sites_in_db:
-            review_local_site_q = Q(review_request__local_site=local_site)
-        else:
-            review_local_site_q = Q()
 
         # Prime the user caches.
         user.get_site_profile(local_site)
@@ -1095,15 +888,7 @@ class ReviewManagerTests(TestCase):
         self._check_anonymous_accessible_queries(
             user=anonymous,
             local_site=local_site,
-            accessible_q=(
-                Q(base_reply_to=None) &
-                review_local_site_q &
-                (Q(review_request__repository=None) |
-                 Q(review_request__repository__public=True)) &
-                (Q(review_request__target_groups=None) |
-                 Q(review_request__target_groups__invite_only=False)) &
-                Q(public=True)
-            ),
+            has_local_sites_in_db=local_sites_in_db,
             expected_reviews=[review1, review3])
 
         # Testing that the user can only access publicly-accessible
@@ -1112,19 +897,11 @@ class ReviewManagerTests(TestCase):
             user=user,
             local_site=local_site,
             local_sites_in_db=local_sites_in_db,
-            accessible_q=(
-                Q(base_reply_to=None) &
-                review_local_site_q &
-                (Q(user=user) |
-                 (Q(public=True) &
-                  (Q(review_request__repository=None) |
-                   Q(review_request__repository__in=[])) &
-                  (Q(review_request__target_people=user) |
-                   Q(review_request__target_groups=None) |
-                   Q(review_request__target_groups__in=[]))))
-            ),
             expected_reviews=[
-                review1, review3, review4, review7,
+                review1,
+                review3,
+                review4,
+                review7,
             ])
 
         # Testing that superusers can access any reviews.
@@ -1170,17 +947,11 @@ class ReviewManagerTests(TestCase):
         superuser = User.objects.get(username='admin')
 
         local_site: Optional[LocalSite]
-        review_local_site_q: Q = Q()
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
-
-        if local_sites_in_db:
-            review_local_site_q = Q(review_request__local_site=local_site)
-        else:
-            review_local_site_q = Q()
 
         # Publicly-accessible published review request.
         review_request = self.create_review_request(
@@ -1229,15 +1000,7 @@ class ReviewManagerTests(TestCase):
             self._check_anonymous_accessible_queries(
                 user=anonymous,
                 local_site=local_site,
-                accessible_q=(
-                    Q(base_reply_to=None) &
-                    review_local_site_q &
-                    (Q(review_request__repository=None) |
-                     Q(review_request__repository__public=True)) &
-                    (Q(review_request__target_groups=None) |
-                     Q(review_request__target_groups__invite_only=False)) &
-                    Q(public=True)
-                ),
+                has_local_sites_in_db=local_sites_in_db,
                 expected_reviews=[review1, review3])
         else:
             # 0 queries.
@@ -1245,50 +1008,22 @@ class ReviewManagerTests(TestCase):
                 self.assertQuerysetEqual(
                     Review.objects.accessible(anonymous,
                                               public=False),
-                    [],
-                    ordered=False)
+                    [])
 
         if expected_public:
             self._check_user_accessible_queries(
                 user=user,
                 local_site=local_site,
                 local_sites_in_db=local_sites_in_db,
-                accessible_q=(
-                    Q(base_reply_to=None) &
-                    review_local_site_q &
-                    Q(public=expected_public) &
-                    ((Q(review_request__repository=None) |
-                     Q(review_request__repository__in=[])) &
-                     (Q(review_request__target_people=user) |
-                     Q(review_request__target_groups=None) |
-                     Q(review_request__target_groups__in=[])))
-                ),
                 expected_reviews=[review1, review3],
                 accessible_kwargs={
                     'public': True,
                 })
         else:
-            if local_sites_in_db:
-                accessible_tables = {
-                    'reviews_review',
-                    'reviews_reviewrequest',
-                }
-            else:
-                accessible_tables = {
-                    'reviews_review',
-                }
-
             self._check_user_accessible_queries(
                 user=user,
                 local_site=local_site,
                 local_sites_in_db=local_sites_in_db,
-                accessible_tables=accessible_tables,
-                accessible_q=(
-                    Q(base_reply_to=None) &
-                    review_local_site_q &
-                    Q(public=expected_public) &
-                    Q(user=user)
-                ),
                 expected_reviews=[review3],
                 accessible_kwargs={
                     'public': False,
@@ -1300,7 +1035,6 @@ class ReviewManagerTests(TestCase):
             local_site=local_site,
             local_sites_in_db=local_sites_in_db,
             expected_reviews=[review1, review3, review5],
-            expected_extra_q=Q(public=expected_public),
             accessible_kwargs={
                 'public': expected_public,
             })
@@ -1340,10 +1074,6 @@ class ReviewManagerTests(TestCase):
         else:
             local_site = None
 
-        if local_sites_in_db:
-            review_local_site_q = Q(review_request__local_site=local_site)
-        else:
-            review_local_site_q = Q()
 
         user2 = self.create_user()
         repo = self.create_repository(
@@ -1360,27 +1090,14 @@ class ReviewManagerTests(TestCase):
 
         self._prime_caches(user=user)
 
-        # 1 query:
-        #
-        # 1. Fetch reviews
-        queries = [
-            {
-                'model': Review,
-                'num_joins': 1,
-                'tables': {
-                    'reviews_reviewrequest',
-                    'reviews_review',
-                },
-                'where': (
-                    Q(base_reply_to=None) &
-                    Q(review_request__status='P') &
-                    review_local_site_q &
-                    Q(user=user)
-                ),
-            },
-        ]
+        equeries = get_reviews_from_user_equeries(
+            user=AnonymousUser(),
+            from_user=user,
+            local_site=local_site,
+            has_local_sites_in_db=local_sites_in_db,
+            status='P')
 
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             # Testing that only reviews from the given user are returned.
             self.assertQuerysetEqual(
                 Review.objects.from_user(user, local_site=local_site),
@@ -1410,17 +1127,11 @@ class ReviewManagerTests(TestCase):
                 One of the checks failed.
         """
         local_site: Optional[LocalSite]
-        review_local_site_q: Q = Q()
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
         else:
             local_site = None
-
-        if local_sites_in_db:
-            review_local_site_q = Q(review_request__local_site=local_site)
-        else:
-            review_local_site_q = Q()
 
         user = User.objects.get(username='doc')
         review_request = self.create_review_request(
@@ -1439,18 +1150,6 @@ class ReviewManagerTests(TestCase):
             user=user,
             local_site=local_site,
             local_sites_in_db=local_sites_in_db,
-            accessible_q=(
-                Q(base_reply_to=None) &
-                review_local_site_q &
-                Q(body_top='hello') &
-                (Q(user=user) |
-                 (Q(public=True) &
-                  (Q(review_request__repository=None) |
-                   Q(review_request__repository__in=[])) &
-                  (Q(review_request__target_people=user) |
-                   Q(review_request__target_groups=None) |
-                   Q(review_request__target_groups__in=[]))))
-            ),
             expected_reviews=[review],
             accessible_kwargs={
                 'extra_query': Q(body_top='hello'),
@@ -1459,10 +1158,10 @@ class ReviewManagerTests(TestCase):
     def _check_anonymous_accessible_queries(
         self,
         *,
-        user: User,
+        user: AnonymousUser,
         local_site: Optional[LocalSite],
+        has_local_sites_in_db: bool,
         expected_reviews: List[Review],
-        accessible_q: Q,
     ) -> None:
         """Check the accessible queries for a standard user.
 
@@ -1470,25 +1169,18 @@ class ReviewManagerTests(TestCase):
             5.0.7
 
         Args:
-            user (django.contrib.auth.models.User):
+            user (django.contrib.auth.models.AnonymousUser):
                 The anonymous user performing the query.
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site the query is bound to.
 
+            has_local_sites_in_db (bool):
+                Whether to expect Local Sites in the database.
+
             expected_reviews (list of
                               reviewboard.reviews.models.review.Review):
                 The reviews expected to be returned.
-
-            accessible_q (django.db.models.Q):
-                The filter query for the accessibility check.
-
-            accessible_tables (set of str, optional):
-                THe tables involved in the accessible query.
-
-            accessible_kwargs (dict, optional):
-                Additional keyword arguments to pass for the accessibility
-                query.
 
         Raises:
             AssertionError:
@@ -1496,29 +1188,15 @@ class ReviewManagerTests(TestCase):
         """
         self.assertTrue(user.is_anonymous)
 
-        # 1 query:
-        #
-        # 1. Fetch reviews
-        queries = [
-            {
-                'model': Review,
-                'num_joins': 4,
-                'tables': {
-                    'reviews_group',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_review',
-                    'scmtools_repository',
-                },
-                'where': accessible_q,
-            },
-        ]
+        equeries = get_reviews_accessible_equeries(
+            user=user,
+            local_site=local_site,
+            has_local_sites_in_db=has_local_sites_in_db)
 
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             self.assertQuerysetEqual(
                 Review.objects.accessible(user, local_site=local_site),
-                expected_reviews,
-                ordered=False)
+                expected_reviews)
 
     def _check_user_accessible_queries(
         self,
@@ -1527,8 +1205,8 @@ class ReviewManagerTests(TestCase):
         local_site: Optional[LocalSite],
         local_sites_in_db: bool,
         expected_reviews: List[Review],
-        accessible_q: Q,
-        accessible_tables: Set[str] = set(),
+        accessible_repository_ids: Sequence[int] = [],
+        accessible_review_group_ids: Sequence[int] = [],
         accessible_kwargs: KwargsDict = {},
     ) -> None:
         """Check the accessible queries for a standard user.
@@ -1550,15 +1228,11 @@ class ReviewManagerTests(TestCase):
                               reviewboard.reviews.models.review.Review):
                 The reviews expected to be returned.
 
-            accessible_q (django.db.models.Q):
-                The filter query for the accessibility check.
+            accessible_repository_ids (list of int):
+                A list of IDs for accessible repositories.
 
-            accessible_num_joins (int, optional):
-                The number of tables joins expected for the accessibility
-                query.
-
-            accessible_tables (set of str, optional):
-                THe tables involved in the accessible query.
+            accessible_review_group_ids (list of int):
+                A list of IDs for accessible review groups.
 
             accessible_kwargs (dict, optional):
                 Additional keyword arguments to pass for the accessibility
@@ -1571,125 +1245,22 @@ class ReviewManagerTests(TestCase):
         self.assertTrue(user.is_authenticated)
         self.assertFalse(user.is_superuser)
 
-        if not accessible_tables:
-            accessible_tables = {
-                'reviews_reviewrequest_target_people',
-                'reviews_review',
-                'reviews_reviewrequest_target_groups',
-                'reviews_reviewrequest',
-            }
+        equeries = get_reviews_accessible_equeries(
+            user=user,
+            local_site=local_site,
+            has_local_sites_in_db=local_sites_in_db,
+            accessible_repository_ids=accessible_repository_ids,
+            accessible_review_group_ids=accessible_review_group_ids,
+            **accessible_kwargs)
 
-        # 5 queries for the global site:
-        #
-        #   1. Fetch user's accessible repositories
-        #   2. Fetch user's auth permissions
-        #   3. Fetch user's group auth permissions
-        #   4. Fetch user's accessible groups
-        #   5. Fetch reviews
-        #
-        # 6 queries for a Local Site:
-        #
-        #   1. Fetch user's accessible repositories
-        #   2. Fetch user's auth permissions
-        #   3. Check if the user admins the Local Site
-        #   4. Fetch user's group auth permissions
-        #   5. Fetch user's accessible groups
-        #   6. Fetch reviews
-        queries = [
-            {
-                'model': Repository,
-                'values_select': ('pk',),
-                'num_joins': 4,
-                'tables': {
-                    'scmtools_repository_users',
-                    'scmtools_repository',
-                    'reviews_group_users',
-                    'scmtools_repository_review_groups',
-                    'reviews_group',
-                },
-                'where': (
-                    (Q(public=True) |
-                     Q(users__pk=user.pk) |
-                     Q(review_groups__users=user.pk)) &
-                    Q(local_site=local_site)
-                ),
-            },
-            {
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 2,
-                'tables': {
-                    'auth_permission',
-                    'auth_user_user_permissions',
-                    'django_content_type',
-                },
-                'where': Q(user__id=user.pk),
-            },
-            {
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 4,
-                'tables': {
-                    'auth_permission',
-                    'auth_group',
-                    'auth_user_groups',
-                    'auth_group_permissions',
-                    'django_content_type',
-                },
-                'where': Q(group__user=user),
-            },
-        ]
-
-        if local_site:
-            queries.append({
-                'model': User,
-                'extra': {
-                    'a': ('1', []),
-                },
-                'limit': 1,
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': (
-                    Q(local_site_admins__id=local_site.pk) &
-                    Q(pk=user.pk)
-                ),
-            })
-
-        queries += [
-            {
-                'model': Group,
-                'values_select': ('pk',),
-                'num_joins': 1,
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (
-                    (Q(invite_only=False) |
-                     Q(users=user.pk)) &
-                    Q(local_site=local_site)
-                ),
-            },
-            {
-                'model': Review,
-                'num_joins': len(accessible_tables) - 1,
-                'tables': accessible_tables,
-                'where': accessible_q,
-            },
-        ]
-
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             # Testing that the user can only access reviews
             # from repositories that they have access to.
             self.assertQuerysetEqual(
                 Review.objects.accessible(user,
                                           local_site=local_site,
                                           **accessible_kwargs),
-                expected_reviews,
-                ordered=False)
+                expected_reviews)
 
     def _check_superuser_accessible_queries(
         self,
@@ -1698,7 +1269,6 @@ class ReviewManagerTests(TestCase):
         local_site: Optional[LocalSite],
         local_sites_in_db: bool,
         expected_reviews: List[Review],
-        expected_extra_q: Q = Q(),
         accessible_kwargs: KwargsDict = {},
     ) -> None:
         """Check the accessible queries for a superuser.
@@ -1720,9 +1290,6 @@ class ReviewManagerTests(TestCase):
                               reviewboard.reviews.models.review.Review):
                 The reviews expected to be returned.
 
-            expected_extra_q (django.db.models.Q, optional):
-                Any expected extra filter queries.
-
             accessible_kwargs (dict, optional):
                 Additional keyword arguments to pass for the accessibility
                 query.
@@ -1733,42 +1300,19 @@ class ReviewManagerTests(TestCase):
         """
         self.assertTrue(user.is_superuser)
 
-        if local_sites_in_db:
-            local_site_q = Q(review_request__local_site=local_site)
-            tables = {
-                'reviews_reviewrequest',
-                'reviews_review',
-            }
-        else:
-            local_site_q = Q()
-            tables = {
-                'reviews_review',
-            }
+        equeries = get_reviews_accessible_equeries(
+            user=user,
+            local_site=local_site,
+            has_local_sites_in_db=local_sites_in_db,
+            **accessible_kwargs)
 
-        # 1 query:
-        #
-        # 1. Fetch reviews
-        queries = [
-            {
-                'model': Review,
-                'num_joins': len(tables) - 1,
-                'tables': tables,
-                'where': (
-                    Q(base_reply_to=None) &
-                    local_site_q &
-                    expected_extra_q
-                ),
-            },
-        ]
-
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             # Testing that superusers can acess any reviews.
             self.assertQuerysetEqual(
                 Review.objects.accessible(user,
                                           local_site=local_site,
                                           **accessible_kwargs),
-                expected_reviews,
-                ordered=False)
+                expected_reviews)
 
     def _prime_caches(
         self,
