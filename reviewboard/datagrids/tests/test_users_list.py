@@ -6,9 +6,9 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import List, Optional, TYPE_CHECKING, Union
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Count, Q
 from djblets.testing.decorators import add_fixtures
 
@@ -16,6 +16,10 @@ from reviewboard.accounts.models import Profile
 from reviewboard.datagrids.tests.base import BaseViewTestCase
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.site.models import LocalSite
+from reviewboard.testing.queries.http import get_http_request_start_equeries
+
+if TYPE_CHECKING:
+    from djblets.db.query_comparator import ExpectedQueries
 
 
 class UsersDataGridTests(BaseViewTestCase):
@@ -189,7 +193,7 @@ class UsersDataGridTests(BaseViewTestCase):
     @add_fixtures(['test_users', 'test_site'])
     def test_all_profile_private_local_site_admin(self):
         """Testing UsersDataGrid when all profiles are private for a LocalSite
-        admin
+        admin on a non-Local Site
         """
         Profile.objects.create(user_id=3)
         Profile.objects.all().update(is_private=True)
@@ -200,49 +204,13 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self._prefetch_cached(user=user)
 
-        # 6 queries:
-        #
-        # 1. Fetch logged-in user
-        # 2. Fetch logged-in user's profile
-        # 3. Set profile's sort_submitter_columns and submitter_columns
-        # 4. Fetch total number of users for datagrid
-        # 5. Fetch IDs of users for datagrid
-        # 6. Fetch users + profiles from IDs
-        queries = [
-            {
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=user),
-            },
-            {
-                'model': Profile,
-                'type': 'UPDATE',
-                'where': Q(pk=profile.pk),
-            },
-            {
-                'annotations': {'__count': Count('*')},
-                'model': User,
-                'where': Q(is_active=True),
-            },
-            {
-                'distinct': True,
-                'limit': 4,
-                'model': User,
-                'order_by': ('username',),
-                'values_select': ('pk',),
-                'where': Q(is_active=True),
-            },
-            {
-                'model': User,
-                'select_related': ('profile',),
-                'where': Q(pk__in=[1, 2, 3, 4]),
-            },
-        ]
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            user_pks=[1, 2, 3, 4],
+            local_sites_in_db=False)
 
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -284,78 +252,14 @@ class UsersDataGridTests(BaseViewTestCase):
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        # 8 queries:
-        #
-        # 1. Fetch logged-in user
-        # 2. Fetch logged-in user's profile
-        # 3. Fetch LocalSite
-        # 4. Check LocalSite membership
-        # 5. Set profile's sort_submitter_columns and submitter_columns
-        # 6. Fetch total number of users for datagrid
-        # 7. Fetch IDs of users for datagrid
-        # 8. Fetch users + profiles from IDs
-        queries = [
-            {
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=user),
-            },
-            {
-                'model': LocalSite,
-                'where': Q(name='local-site-2'),
-            },
-            {
-                'extra': {
-                    'a': ('1', []),
-                },
-                'limit': 1,
-                'model': User,
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site__id=local_site.pk) & Q(pk=user.pk),
-            },
-            {
-                'model': Profile,
-                'type': 'UPDATE',
-                'where': Q(pk=profile.pk),
-            },
-            {
-                'annotations': {'__count': Count('*')},
-                'model': User,
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'where': Q(local_site=local_site) & Q(is_active=True),
-            },
-            {
-                'distinct': True,
-                'limit': 2,
-                'model': User,
-                'num_joins': 1,
-                'order_by': ('username',),
-                'tables': {
-                    'auth_user',
-                    'site_localsite_users',
-                },
-                'values_select': ('pk',),
-                'where': Q(local_site=local_site) & Q(is_active=True),
-            },
-            {
-                'model': User,
-                'select_related': ('profile',),
-                'where': Q(pk__in=[1, 2]),
-            },
-        ]
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=False,
+            user_pks=[1, 2])
 
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 '/s/local-site-2/users/?columns=fullname')
 
@@ -417,102 +321,12 @@ class UsersDataGridTests(BaseViewTestCase):
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        queries = [
-            {
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'model': User,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site__id=local_site.pk) &
-                              Q(pk=user.pk)),
-                },
-            ]
-
-        queries += [
-            {
-                'model': Profile,
-                'type': 'UPDATE',
-                'where': Q(pk=profile.pk),
-            },
-        ]
-
-        if with_local_site:
-            queries += [
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-                {
-                    'distinct': True,
-                    'limit': 9,
-                    'model': User,
-                    'num_joins': 1,
-                    'order_by': ('username',),
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'values_select': ('pk',),
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    'model': User,
-                    'annotations': {'__count': Count('*')},
-                    'where': Q(is_active=True),
-                },
-                {
-                    'model': User,
-                    'values_select': ('pk',),
-                    'order_by': ('username',),
-                    'where': Q(is_active=True),
-                    'distinct': True,
-                    'limit': 9,
-                },
-            ]
-
-        queries += [
-            {
-                'model': User,
-                'select_related': {'profile'},
-                'where': Q(pk__in=[1, 2, 3, 4, 5, 6, 7, 8, 9]),
-            },
-        ]
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=False,
+            user_pks=[1, 2, 3, 4, 5, 6, 7, 8, 9])
 
         # NOTE: The following represent performance bugs due to bad
         #       queries. It's being tracked and will be resolved in a
@@ -522,7 +336,7 @@ class UsersDataGridTests(BaseViewTestCase):
 
             if (query_user.username == 'dopey' or
                 query_user.username.startswith('test-user')):
-                queries += [
+                equeries += [
                     {
                         'model': Profile,
                         'where': Q(user=query_user),
@@ -533,7 +347,7 @@ class UsersDataGridTests(BaseViewTestCase):
                     },
                 ]
 
-            queries += [
+            equeries += [
                 {
                     'model': ReviewRequest,
                     'num_joins': 1,
@@ -548,7 +362,7 @@ class UsersDataGridTests(BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -619,113 +433,23 @@ class UsersDataGridTests(BaseViewTestCase):
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        queries = [
-            {
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site__id=local_site.pk) &
-                              Q(pk=user.pk)),
-                },
-            ]
-
-        queries += [
-            {
-                'type': 'UPDATE',
-                'model': Profile,
-                'where': Q(pk=profile.pk),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site=local_site) &
-                              Q(username__istartswith='A') &
-                              Q(is_active=True)),
-                },
-                {
-                    'distinct': True,
-                    'limit': 4,
-                    'model': User,
-                    'num_joins': 1,
-                    'order_by': ('username',),
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'values_select': ('pk',),
-                    'where': (Q(local_site=local_site) &
-                              Q(username__istartswith='A') &
-                              Q(is_active=True)),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'where': (Q(username__istartswith='A') &
-                              Q(is_active=True)),
-                },
-                {
-                    'distinct': True,
-                    'limit': 4,
-                    'model': User,
-                    'order_by': ('username',),
-                    'values_select': ('pk',),
-                    'where': (Q(username__istartswith='A') &
-                              Q(is_active=True)),
-                },
-            ]
-
-        queries += [
-            {
-                'model': User,
-                'select_related': {'profile'},
-                'where': Q(pk__in=[5, 6, 7, 1]),
-            },
-        ]
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=False,
+            user_pks=[
+                _user.pk
+                for _user in matched_users
+            ],
+            query=Q(username__istartswith='A'))
 
         # NOTE: The following represent performance bugs due to bad
         #       queries. It's being tracked and will be resolved in a
         #       future change.
         for query_user in matched_users:
             if query_user.username != 'admin':
-                queries += [
+                equeries += [
                     {
                         'model': Profile,
                         'where': Q(user=query_user),
@@ -736,7 +460,7 @@ class UsersDataGridTests(BaseViewTestCase):
                     },
                 ]
 
-            queries += [
+            equeries += [
                 {
                     'model': ReviewRequest,
                     'num_joins': 1,
@@ -751,7 +475,7 @@ class UsersDataGridTests(BaseViewTestCase):
                 },
             ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 '%s?letter=A' % self.get_datagrid_url(local_site=local_site))
 
@@ -810,104 +534,14 @@ class UsersDataGridTests(BaseViewTestCase):
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        queries = [
-            {
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=False,
+            user_pks=[1, 2, 3, 4])
 
-        if local_site:
-            queries += [
-                {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site__id=local_site.pk) &
-                              Q(pk=user.pk)),
-                },
-            ]
-
-        queries += [
-            {
-                'type': 'UPDATE',
-                'model': Profile,
-                'where': Q(pk=profile.pk),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-                {
-                    'distinct': True,
-                    'limit': 4,
-                    'model': User,
-                    'num_joins': 1,
-                    'order_by': ('username',),
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'values_select': ('pk',),
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'where': Q(is_active=True),
-                },
-                {
-                    'distinct': True,
-                    'limit': 4,
-                    'model': User,
-                    'order_by': ('username',),
-                    'values_select': ('pk',),
-                    'where': Q(is_active=True),
-                },
-            ]
-
-        queries += [
-            {
-                'model': User,
-                'select_related': ('profile',),
-                'where': Q(pk__in=[1, 2, 3, 4]),
-            },
-        ]
-
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -968,69 +602,13 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self._prefetch_cached(local_site=local_site)
 
-        queries = []
+        equeries = self._build_datagrid_equeries(
+            user=AnonymousUser(),
+            local_site=local_site,
+            local_sites_in_db=False,
+            user_pks=[1, 2, 3, 4])
 
-        if local_site:
-            queries += [
-                {
-                    'model': LocalSite,
-                    'tables': {
-                        'site_localsite',
-                    },
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-                {
-                    'distinct': True,
-                    'limit': 4,
-                    'model': User,
-                    'num_joins': 1,
-                    'order_by': ('username',),
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'values_select': ('pk',),
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    'model': User,
-                    'annotations': {'__count': Count('*')},
-                    'where': Q(is_active=True),
-                },
-                {
-                    'model': User,
-                    'distinct': True,
-                    'values_select': ('pk',),
-                    'where': Q(is_active=True),
-                    'order_by': ('username',),
-                    'limit': 4,
-                },
-            ]
-
-        queries += [
-            {
-                'model': User,
-                'select_related': ('profile',),
-                'where': Q(pk__in=[1, 2, 3, 4]),
-            },
-        ]
-
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -1097,98 +675,13 @@ class UsersDataGridTests(BaseViewTestCase):
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        queries = [
-            {
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'model': User,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site__id=local_site.pk) &
-                              Q(pk=user.pk)),
-                },
-            ]
-
-        queries += [
-            {
-                'model': Profile,
-                'type': 'UPDATE',
-                'where': Q(pk=profile.pk),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-                {
-                    'distinct': True,
-                    'limit': 4,
-                    'model': User,
-                    'num_joins': 1,
-                    'order_by': ('username',),
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'values_select': ('pk',),
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'where': Q(is_active=True),
-                },
-                {
-                    'distinct': True,
-                    'limit': 4,
-                    'model': User,
-                    'order_by': ('username',),
-                    'values_select': ('pk',),
-                    'where': Q(is_active=True),
-                },
-            ]
-
-        queries += [
-            {
-                'model': User,
-                'select_related': ('profile',),
-                'where': Q(pk__in=[1, 2, 3, 4]),
-            },
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=False,
+            user_pks=[1, 2, 3, 4])
+        equeries += [
             {
                 'model': Profile,
                 'where': Q(user=dopey),
@@ -1199,7 +692,7 @@ class UsersDataGridTests(BaseViewTestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -1287,101 +780,14 @@ class UsersDataGridTests(BaseViewTestCase):
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        queries = [
-            {
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=False,
+            user_pks=[1, 2, 3, 4])
 
-        if local_site:
-            queries += [
-                {
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'model': User,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site__id=local_site.pk) &
-                              Q(pk=user.pk)),
-                },
-            ]
-
-        queries += [
-            {
-                'model': Profile,
-                'type': 'UPDATE',
-                'where': Q(pk=profile.pk),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-                {
-                    'distinct': True,
-                    'limit': 4,
-                    'model': User,
-                    'num_joins': 1,
-                    'order_by': ('username',),
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'values_select': ('pk',),
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'where': Q(is_active=True),
-                },
-                {
-                    'distinct': True,
-                    'limit': 4,
-                    'model': User,
-                    'order_by': ('username',),
-                    'values_select': ('pk',),
-                    'where': Q(is_active=True),
-                },
-            ]
-
-        queries += [
-            {
-                'model': User,
-                'select_related': ('profile',),
-                'where': Q(pk__in=[1, 2, 3, 4]),
-            },
-        ]
-
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -1461,66 +867,13 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self._prefetch_cached(local_site=local_site)
 
-        queries = []
+        equeries = self._build_datagrid_equeries(
+            user=AnonymousUser(),
+            local_site=local_site,
+            local_sites_in_db=False,
+            user_pks=[1, 2, 3, 4])
 
-        if local_site:
-            queries += [
-                {
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-                {
-                    'distinct': True,
-                    'limit': 4,
-                    'model': User,
-                    'num_joins': 1,
-                    'order_by': ('username',),
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'values_select': ('pk',),
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'where': Q(is_active=True),
-                },
-                {
-                    'distinct': True,
-                    'limit': 4,
-                    'model': User,
-                    'order_by': ('username',),
-                    'values_select': ('pk',),
-                    'where': Q(is_active=True),
-                },
-            ]
-
-        queries += [
-            {
-                'model': User,
-                'select_related': ('profile',),
-                'where': Q(pk__in=[1, 2, 3, 4]),
-            },
-        ]
-
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -1580,87 +933,14 @@ class UsersDataGridTests(BaseViewTestCase):
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        queries = [
-            {
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=local_sites_in_db,
+            user_pks=[1, 2, 3, 4])
 
-        if local_site:
-            queries += [
-                {
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-            ]
-
-        queries += [
-            {
-                'model': Profile,
-                'type': 'UPDATE',
-                'where': Q(pk=profile.pk),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-                {
-                    'distinct': True,
-                    'limit': 4,
-                    'model': User,
-                    'num_joins': 1,
-                    'order_by': ('username',),
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'values_select': ('pk',),
-                    'where': (Q(local_site=local_site) &
-                              Q(is_active=True)),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    'annotations': {'__count': Count('*')},
-                    'model': User,
-                    'where': Q(is_active=True),
-                },
-                {
-                    'distinct': True,
-                    'limit': 4,
-                    'model': User,
-                    'order_by': ('username',),
-                    'values_select': ('pk',),
-                    'where': Q(is_active=True),
-                },
-            ]
-
-        queries += [
-            {
-                'model': User,
-                'select_related': ('profile',),
-                'where': Q(pk__in=[1, 2, 3, 4]),
-            },
-        ]
-
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -1669,10 +949,148 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self.assertEqual(len(datagrid.rows), 4)
 
-        for row in datagrid.rows:
-            row_user = row['object']
-            self.assertInHTML('<a href="%s%s/">%s</a>'
-                              % (datagrid_url,
-                                 row_user.username,
-                                 row_user.get_full_name()),
-                              row['cells'][0])
+        self.assertInHTML(
+            f'<a href="{datagrid_url}admin/">Admin User</a>',
+            datagrid.rows[0]['cells'][0])
+        self.assertInHTML(
+            f'<a href="{datagrid_url}doc/">Doc Dwarf</a>',
+            datagrid.rows[1]['cells'][0])
+        self.assertInHTML(
+            f'<a href="{datagrid_url}dopey/">Dopey Dwarf</a>',
+            datagrid.rows[2]['cells'][0])
+        self.assertInHTML(
+            f'<a href="{datagrid_url}grumpy/">Grumpy Dwarf</a>',
+            datagrid.rows[3]['cells'][0])
+
+    def _build_datagrid_equeries(
+        self,
+        *,
+        user: Union[AnonymousUser, User],
+        user_pks: List[int],
+        profile: Optional[Profile] = None,
+        local_site: Optional[LocalSite] = None,
+        local_sites_in_db: bool = False,
+        query: Q = Q(),
+    ) -> ExpectedQueries:
+        """Return expected queries for viewing the datagrid.
+
+        This assumes that the user has access to the datagrid, and that any
+        cacheable state is already cached.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user accessing the datagrid.
+
+            user_pks (list of int):
+                The list of user IDs that are expected to be listed, in result
+                order.
+
+            profile (reviewboard.accounts.models.Profile):
+                The user's profile.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The Local Site that's being accessed, if any.
+
+            local_sites_in_db (bool, optional):
+                Whether the database contains any Local Sites.
+
+            query (django.db.models.Q, optional):
+                An optional query for filtering users.
+
+        Returns:
+            list of dict:
+            The list of expected queries.
+        """
+        equeries = get_http_request_start_equeries(
+            user=user,
+            local_site=local_site)
+
+        if user.is_authenticated:
+            assert profile is not None
+
+            equeries += [
+                {
+                    'model': Profile,
+                    'type': 'UPDATE',
+                    'where': Q(pk=profile.pk),
+                },
+            ]
+
+        if local_site:
+            equeries += [
+                {
+                    '__note__': (
+                        'Fetch the number of items across all datagrid pages '
+                        'on a Local Site'
+                    ),
+                    'annotations': {'__count': Count('*')},
+                    'model': User,
+                    'num_joins': 1,
+                    'tables': {
+                        'auth_user',
+                        'site_localsite_users',
+                    },
+                    'where': (Q(local_site=local_site) &
+                              query &
+                              Q(is_active=True)),
+                },
+                {
+                    '__note__': (
+                        'Fetch the IDs of the items for one page on a '
+                        'Local Site'
+                    ),
+                    'distinct': True,
+                    'limit': len(user_pks),
+                    'model': User,
+                    'num_joins': 1,
+                    'order_by': ('username',),
+                    'tables': {
+                        'auth_user',
+                        'site_localsite_users',
+                    },
+                    'values_select': ('pk',),
+                    'where': (Q(local_site=local_site) &
+                              query &
+                              Q(is_active=True)),
+                },
+            ]
+        else:
+            equeries += [
+                {
+                    '__note__': (
+                        'Fetch the number of items across all datagrid pages'
+                    ),
+                    'annotations': {'__count': Count('*')},
+                    'model': User,
+                    'where': (query &
+                              Q(is_active=True)),
+                },
+                {
+                    '__note__': (
+                        'Fetch the IDs of the items for one page on Local Site'
+                    ),
+                    'distinct': True,
+                    'limit': len(user_pks),
+                    'model': User,
+                    'order_by': ('username',),
+                    'values_select': ('pk',),
+                    'where': (query &
+                              Q(is_active=True)),
+                },
+            ]
+
+        equeries += [
+            {
+                '__note__': (
+                    'Fetch the data for one page based on the IDs'
+                ),
+                'model': User,
+                'select_related': ('profile',),
+                'where': Q(pk__in=user_pks),
+            },
+        ]
+
+        return equeries
