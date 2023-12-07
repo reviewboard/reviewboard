@@ -6,23 +6,39 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING
 
 import kgb
 from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.accounts.models import (LocalSiteProfile,
-                                         Profile,
+from reviewboard.accounts.models import (Profile,
                                          ReviewRequestVisit)
+from reviewboard.accounts.testing.queries import \
+    get_user_local_site_profile_equeries
 from reviewboard.datagrids.grids import DashboardDataGrid
 from reviewboard.datagrids.tests.base import BaseViewTestCase
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import (Group,
                                         ReviewRequest,
                                         ReviewRequestDraft)
+from reviewboard.reviews.testing.queries.review_requests import (
+    get_review_requests_from_user_q,
+    get_review_requests_to_group_q,
+    get_review_requests_to_or_from_user_q,
+    get_review_requests_to_user_directly_q,
+    get_review_requests_to_user_q,
+)
 from reviewboard.site.models import LocalSite
+from reviewboard.site.testing.queries import \
+    get_local_site_is_accessible_by_equeries
+from reviewboard.testing.queries.http import get_http_request_start_equeries
+
+if TYPE_CHECKING:
+    from djblets.db.query_comparator import ExpectedQueries
+
+    from reviewboard.testing.queries.base import ExpectedQResult
 
 
 class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
@@ -286,11 +302,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         else:
             local_site = None
 
-        if local_sites_in_db:
-            local_site_q = Q(local_site=local_site)
-        else:
-            local_site_q = Q()
-
         self.client.login(username='doc', password='doc')
 
         user = User.objects.get(username='doc')
@@ -299,6 +310,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         profile.starred_groups.clear()
 
         grumpy = User.objects.get(username='grumpy')
+
+        review_request_pks: List[int] = []
 
         for i in range(10):
             if i < 5:
@@ -315,247 +328,29 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
             if i < 5:
                 review_request.target_people.add(user)
+                review_request_pks.append(review_request.pk)
+
+        # This will be ordered with newest at the top.
+        review_request_pks.reverse()
 
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        extra = {
-            'new_review_count': ("""
-                SELECT COUNT(*)
-                  FROM reviews_review, accounts_reviewrequestvisit
-                  WHERE reviews_review.public
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.user_id = 2
-                    AND reviews_review.timestamp >
-                        accounts_reviewrequestvisit.timestamp
-                    AND reviews_review.user_id != 2
-            """, []),
-            'mycomments_my_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'mycomments_private_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND NOT reviews_review.public
-            """, []),
-            'mycomments_shipit_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND reviews_review.ship_it
-            """, []),
-            'draft_summary': ("""
-                SELECT reviews_reviewrequestdraft.summary
-                  FROM reviews_reviewrequestdraft
-                  WHERE reviews_reviewrequestdraft.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'visibility': ("""
-                SELECT accounts_reviewrequestvisit.visibility
-                  FROM accounts_reviewrequestvisit
-                 WHERE accounts_reviewrequestvisit.review_request_id =
-                       reviews_reviewrequest.id
-                   AND accounts_reviewrequestvisit.user_id = 2
-            """, []),
-        }
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=local_sites_in_db,
+            review_request_pks=review_request_pks,
+            rows_q_result=get_review_requests_to_or_from_user_q(
+                user=user,
+                to_or_from_user=user,
+                to_or_from_user_profile=profile,
+                local_site=local_site,
+                has_local_sites_in_db=local_sites_in_db,
+                status='P'))
 
-        queries = [
-            {
-                '__note__': 'Fetch the logged-in user',
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': "Fetch the user's profile",
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': 'Fetch the accessed Local Site',
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    '__note__': (
-                        'Check if the user is a member of the Local Site'
-                    ),
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': Q(local_site__id=local_site.pk) & Q(pk=user.pk),
-                },
-            ]
-
-        queries += [
-            {
-                '__note__': "Fetch the user's LocalSiteProfile",
-                'model': LocalSiteProfile,
-                'where': (Q(local_site=local_site) &
-                          Q(profile=profile) &
-                          Q(user=user)),
-            },
-            {
-                '__note__': "Fetch the list of a user's review groups",
-                'model': Group,
-                'num_joins': 1,
-                'values_select': ('pk',),
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': Q(users__id=user.pk),
-            },
-            {
-                '__note__': "Fetch the list of a user's review groups",
-                'model': Group,
-                'num_joins': 1,
-                'only_fields': {
-                    'id',
-                    'incoming_request_count',
-                    'name',
-                },
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (Q(users__id=user.pk) &
-                          Q(local_site_q)),
-            },
-            {
-                '__note__': 'Update datagrid state on the user profile',
-                'type': 'UPDATE',
-                'model': Profile,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': (
-                    'Fetch the number of items across all datagrid pages'
-                ),
-                'annotations': {'__count': Count('*')},
-                'model': ReviewRequest,
-                'num_joins': 4,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest_target_people',
-                },
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      Q(Q(target_people=user) |
-                        Q(target_groups__in=[]) |
-                        Q(starred_by=profile) |
-                        Q(submitter=user))) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-            {
-                '__note__': 'Fetch the IDs of the items for one page',
-                'model': ReviewRequest,
-                'num_joins': 4,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest_target_people',
-                },
-                'values_select': ('pk',),
-                'extra': extra,
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      Q(Q(target_people=user) |
-                        Q(target_groups__in=[]) |
-                        Q(starred_by=profile) |
-                        Q(submitter=user))) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-                'order_by': ('-last_updated',),
-                'distinct': True,
-                'limit': 5,
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': (
-                        'Fetch the data for one page based on the IDs on a '
-                        'Local Site'
-                    ),
-                    'model': ReviewRequest,
-                    'select_related': {
-                        'local_site',
-                        'submitter',
-                    },
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    '__note__': 'Fetch the data for one page based on the IDs',
-                    'model': ReviewRequest,
-                    'select_related': {'submitter'},
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-
-        with self.assertQueries(queries, check_subqueries=True):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -602,17 +397,14 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         else:
             local_site = None
 
-        if local_sites_in_db:
-            local_site_q = Q(local_site=local_site)
-        else:
-            local_site_q = Q()
-
         self.client.login(username='doc', password='doc')
 
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
         profile.starred_groups.clear()
+
+        review_request_pks: List[int] = []
 
         for i in range(10):
             review_request = self.create_review_request(
@@ -623,246 +415,29 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
             if i < 5:
                 review_request.target_people.add(user)
+                review_request_pks.append(review_request.pk)
+
+        # This will be ordered with newest at the top.
+        review_request_pks.reverse()
 
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        extra = {
-            'new_review_count': ("""
-                SELECT COUNT(*)
-                  FROM reviews_review, accounts_reviewrequestvisit
-                  WHERE reviews_review.public
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.user_id = 2
-                    AND reviews_review.timestamp >
-                        accounts_reviewrequestvisit.timestamp
-                    AND reviews_review.user_id != 2
-            """, []),
-            'mycomments_my_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'mycomments_private_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND NOT reviews_review.public
-            """, []),
-            'mycomments_shipit_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND reviews_review.ship_it
-            """, []),
-            'draft_summary': ("""
-                SELECT reviews_reviewrequestdraft.summary
-                  FROM reviews_reviewrequestdraft
-                  WHERE reviews_reviewrequestdraft.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'visibility': ("""
-                SELECT accounts_reviewrequestvisit.visibility
-                  FROM accounts_reviewrequestvisit
-                 WHERE accounts_reviewrequestvisit.review_request_id =
-                       reviews_reviewrequest.id
-                   AND accounts_reviewrequestvisit.user_id = 2
-            """, []),
-        }
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=local_sites_in_db,
+            review_request_pks=review_request_pks,
+            rows_q_result=get_review_requests_to_user_q(
+                user=user,
+                to_user=user,
+                to_user_profile=profile,
+                local_site=local_site,
+                has_local_sites_in_db=local_sites_in_db,
+                status='P'))
 
-        queries = [
-            {
-                '__note__': 'Fetch the logged-in user',
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': "Fetch the user's profile",
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': 'Fetch the accessed Local Site',
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    '__note__': (
-                        'Check if the user is a member of the Local Site'
-                    ),
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': Q(local_site__id=local_site.pk) & Q(pk=user.pk),
-                },
-            ]
-
-        queries += [
-            {
-                '__note__': "Fetch the user's LocalSiteProfile",
-                'model': LocalSiteProfile,
-                'where': (Q(local_site=local_site) &
-                          Q(profile=profile) &
-                          Q(user=user)),
-            },
-            {
-                '__note__': 'Fetch the list of groups the user is a member of',
-                'model': Group,
-                'num_joins': 1,
-                'values_select': ('pk',),
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': Q(users__id=user.pk),
-            },
-            {
-                '__note__': "Fetch the list of a user's review groups",
-                'model': Group,
-                'num_joins': 1,
-                'only_fields': {
-                    'id',
-                    'incoming_request_count',
-                    'name',
-                },
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (Q(users__id=user.pk) &
-                          Q(local_site_q)),
-            },
-
-            {
-                '__note__': 'Update datagrid state on the user profile',
-                'type': 'UPDATE',
-                'model': Profile,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': (
-                    'Fetch the number of items across all datagrid pages'
-                ),
-                'annotations': {'__count': Count('*')},
-                'model': ReviewRequest,
-                'num_joins': 4,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest_target_people',
-                },
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      Q(Q(target_people=user) |
-                        Q(target_groups__in=[]) |
-                        Q(starred_by=profile))) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-            {
-                '__note__': 'Fetch the IDs of the items for one page',
-                'model': ReviewRequest,
-                'num_joins': 4,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest_target_people',
-                },
-                'values_select': ('pk',),
-                'extra': extra,
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      Q(Q(target_people=user) |
-                        Q(target_groups__in=[]) |
-                        Q(starred_by=profile))) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-                'order_by': ('-last_updated',),
-                'distinct': True,
-                'limit': 5,
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': (
-                        'Fetch the data for one page based on the IDs on a '
-                        'Local Site'
-                    ),
-                    'model': ReviewRequest,
-                    'select_related': {
-                        'local_site',
-                        'submitter',
-                    },
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    '__note__': 'Fetch the data for one page based on the IDs',
-                    'model': ReviewRequest,
-                    'select_related': {'submitter'},
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-
-        with self.assertQueries(queries, check_subqueries=True):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -909,11 +484,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         else:
             local_site = None
 
-        if local_sites_in_db:
-            local_site_q = Q(local_site=local_site)
-        else:
-            local_site_q = Q()
-
         self.client.login(username='admin', password='admin')
 
         user = User.objects.get(username='admin')
@@ -922,210 +492,47 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         profile = user.get_profile()
         profile.starred_groups.clear()
 
+        review_request_pks: List[int] = []
+
         for i in range(10):
             if i < 5:
                 submitter = user
             else:
                 submitter = grumpy
 
-            self.create_review_request(
+            review_request = self.create_review_request(
                 local_site=local_site,
                 local_id=i + 1,
                 summary='Test %s' % (i + 1),
                 submitter=submitter,
                 publish=True)
 
+            if submitter is user:
+                review_request_pks.append(review_request.pk)
+
+        # This will be ordered with newest at the top.
+        review_request_pks.reverse()
+
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        extra = {
-            'new_review_count': ("""
-                SELECT COUNT(*)
-                  FROM reviews_review, accounts_reviewrequestvisit
-                  WHERE reviews_review.public
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.user_id = 1
-                    AND reviews_review.timestamp >
-                        accounts_reviewrequestvisit.timestamp
-                    AND reviews_review.user_id != 1
-            """, []),
-            'draft_summary': ("""
-                SELECT reviews_reviewrequestdraft.summary
-                  FROM reviews_reviewrequestdraft
-                  WHERE reviews_reviewrequestdraft.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'visibility': ("""
-                SELECT accounts_reviewrequestvisit.visibility
-                  FROM accounts_reviewrequestvisit
-                 WHERE accounts_reviewrequestvisit.review_request_id =
-                       reviews_reviewrequest.id
-                   AND accounts_reviewrequestvisit.user_id = 1
-            """, []),
-        }
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=local_sites_in_db,
+            review_request_pks=review_request_pks,
+            extra=self._build_extra(user=user,
+                                    include_new_review_count=True),
+            include_star_column=True,
+            rows_q_result=get_review_requests_from_user_q(
+                user=user,
+                from_user=user,
+                local_site=local_site,
+                has_local_sites_in_db=local_sites_in_db,
+                status='P'))
 
-        queries = [
-            {
-                '__note__': 'Fetch the logged-in user',
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': "Fetch the user's profile",
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries.append({
-                '__note__': 'Fetch the accessed Local Site',
-                'model': LocalSite,
-                'where': Q(name=local_site.name),
-            })
-
-        queries += [
-            {
-                '__note__': "Fetch the user's LocalSiteProfile",
-                'model': LocalSiteProfile,
-                'where': (Q(local_site=local_site) &
-                          Q(profile=profile) &
-                          Q(user=user)),
-            },
-            {
-                '__note__': "Fetch the list of a user's review groups",
-                'model': Group,
-                'num_joins': 1,
-                'only_fields': {
-                    'id',
-                    'incoming_request_count',
-                    'name',
-                },
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (Q(users__id=user.pk) &
-                          Q(local_site_q)),
-            },
-            {
-                '__note__': 'Update datagrid state on the user profile',
-                'type': 'UPDATE',
-                'model': Profile,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': (
-                    'Fetch the number of items across all datagrid pages'
-                ),
-                'annotations': {'__count': Count('*')},
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'reviews_reviewrequest',
-                },
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      Q(submitter=user)) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-            {
-                '__note__': 'Fetch the IDs of the items for one page',
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'reviews_reviewrequest',
-                },
-                'values_select': ('pk',),
-                'extra': extra,
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      Q(submitter=user)) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-                'order_by': ('-last_updated',),
-                'distinct': True,
-                'limit': 5,
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-            {
-                '__note__': (
-                    "Fetch the IDs of the page's review requests that are "
-                    "starred."
-                ),
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'values_select': ('pk',),
-                'where': (Q(starred_by__id=profile.pk) &
-                          Q(pk__in=[5, 4, 3, 2, 1])),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': (
-                        'Fetch the data for one page based on the IDs on a '
-                        'Local Site'
-                    ),
-                    'model': ReviewRequest,
-                    'select_related': {
-                        'local_site',
-                        'submitter',
-                    },
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    '__note__': 'Fetch the data for one page based on the IDs',
-                    'model': ReviewRequest,
-                    'select_related': {'submitter'},
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-
-        with self.assertQueries(queries, check_subqueries=True):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1172,11 +579,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         else:
             local_site = None
 
-        if local_sites_in_db:
-            local_site_q = Q(local_site=local_site)
-        else:
-            local_site_q = Q()
-
         self.client.login(username='doc', password='doc')
 
         user = User.objects.get(username='doc')
@@ -1186,234 +588,44 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         grumpy = User.objects.get(username='grumpy')
 
+        review_request_pks: List[int] = []
+
         for i in range(10):
             if i < 5:
                 submitter = user
             else:
                 submitter = grumpy
 
-            self.create_review_request(
+            review_request = self.create_review_request(
                 summary='Test %s' % (i + 1),
                 submitter=submitter,
                 local_site=local_site,
                 local_id=i + 1,
                 publish=True)
 
+            if submitter is user:
+                review_request_pks.append(review_request.pk)
+
+        # This will be ordered with newest at the top.
+        review_request_pks.reverse()
+
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        extra = {
-            'new_review_count': ("""
-                SELECT COUNT(*)
-                  FROM reviews_review, accounts_reviewrequestvisit
-                  WHERE reviews_review.public
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.user_id = 2
-                    AND reviews_review.timestamp >
-                        accounts_reviewrequestvisit.timestamp
-                    AND reviews_review.user_id != 2
-            """, []),
-            'mycomments_my_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'mycomments_private_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND NOT reviews_review.public
-            """, []),
-            'mycomments_shipit_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND reviews_review.ship_it
-            """, []),
-            'draft_summary': ("""
-                SELECT reviews_reviewrequestdraft.summary
-                  FROM reviews_reviewrequestdraft
-                  WHERE reviews_reviewrequestdraft.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'visibility': ("""
-                SELECT accounts_reviewrequestvisit.visibility
-                  FROM accounts_reviewrequestvisit
-                 WHERE accounts_reviewrequestvisit.review_request_id =
-                       reviews_reviewrequest.id
-                   AND accounts_reviewrequestvisit.user_id = 2
-            """, []),
-        }
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=local_sites_in_db,
+            review_request_pks=review_request_pks,
+            rows_q_result=get_review_requests_from_user_q(
+                user=user,
+                from_user=user,
+                local_site=local_site,
+                has_local_sites_in_db=local_sites_in_db,
+                status=None))
 
-        queries = [
-            {
-                '__note__': 'Fetch the logged-in user',
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': "Fetch the user's profile",
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': 'Fetch the accessed Local Site',
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    '__note__': (
-                        'Check if the user is a member of the Local Site'
-                    ),
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': Q(local_site__id=local_site.pk) & Q(pk=user.pk),
-                },
-            ]
-
-        queries += [
-            {
-                '__note__': "Fetch the user's LocalSiteProfile",
-                'model': LocalSiteProfile,
-                'where': (Q(local_site=local_site) &
-                          Q(profile=profile) &
-                          Q(user=user)),
-            },
-            {
-                '__note__': "Fetch the list of a user's review groups",
-                'model': Group,
-                'num_joins': 1,
-                'only_fields': {
-                    'id',
-                    'incoming_request_count',
-                    'name',
-                },
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (Q(users__id=user.pk) &
-                          Q(local_site_q)),
-            },
-            {
-                '__note__': 'Update datagrid state on the user profile',
-                'type': 'UPDATE',
-                'model': Profile,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': (
-                    'Fetch the number of items across all datagrid pages'
-                ),
-                'annotations': {'__count': Count('*')},
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'reviews_reviewrequest',
-                },
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      local_site_q &
-                      Q(submitter=user)) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-            {
-                '__note__': 'Fetch the IDs of the items for one page.',
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'reviews_reviewrequest',
-                },
-                'values_select': ('pk',),
-                'extra': extra,
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      local_site_q &
-                      Q(submitter=user)) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-                'order_by': ('-last_updated',),
-                'distinct': True,
-                'limit': 5,
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__node__': (
-                        'Fetch the data for one page based on the IDs on a '
-                        'Local Site'
-                    ),
-                    'model': ReviewRequest,
-                    'select_related': {
-                        'local_site',
-                        'submitter',
-                    },
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    '__node__': 'Fetch the data for one page based on the IDs',
-                    'model': ReviewRequest,
-                    'select_related': {'submitter'},
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-
-        with self.assertQueries(queries, check_subqueries=True):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1461,11 +673,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         else:
             local_site = None
 
-        if local_sites_in_db:
-            local_site_q = Q(local_site=local_site)
-        else:
-            local_site_q = Q()
-
         self.client.login(username='doc', password='doc')
 
         user = User.objects.get(username='doc')
@@ -1476,6 +683,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         group = self.create_review_group(local_site=local_site)
         group.users.add(user)
 
+        review_request_pks: List[int] = []
+
         for i in range(15):
             review_request = self.create_review_request(
                 summary='Test %s' % (i + 1),
@@ -1485,232 +694,31 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
             if i < 5:
                 review_request.target_people.add(user)
+                review_request_pks.append(review_request.pk)
             elif i < 10:
                 review_request.target_groups.add(group)
+
+        # This will be ordered with newest at the top.
+        review_request_pks.reverse()
 
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        extra = {
-            'new_review_count': ("""
-                SELECT COUNT(*)
-                  FROM reviews_review, accounts_reviewrequestvisit
-                  WHERE reviews_review.public
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.user_id = 2
-                    AND reviews_review.timestamp >
-                        accounts_reviewrequestvisit.timestamp
-                    AND reviews_review.user_id != 2
-            """, []),
-            'mycomments_my_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'mycomments_private_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND NOT reviews_review.public
-            """, []),
-            'mycomments_shipit_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND reviews_review.ship_it
-            """, []),
-            'draft_summary': ("""
-                SELECT reviews_reviewrequestdraft.summary
-                  FROM reviews_reviewrequestdraft
-                  WHERE reviews_reviewrequestdraft.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'visibility': ("""
-                SELECT accounts_reviewrequestvisit.visibility
-                  FROM accounts_reviewrequestvisit
-                 WHERE accounts_reviewrequestvisit.review_request_id =
-                       reviews_reviewrequest.id
-                   AND accounts_reviewrequestvisit.user_id = 2
-            """, []),
-        }
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=local_sites_in_db,
+            review_request_pks=review_request_pks,
+            rows_q_result=get_review_requests_to_user_directly_q(
+                user=user,
+                to_user=user,
+                to_user_profile=profile,
+                local_site=local_site,
+                status='P',
+                has_local_sites_in_db=local_sites_in_db))
 
-        queries = [
-            {
-                '__note__': 'Fetch the logged-in user',
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': "Fetch the user's profile",
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': 'Fetch the accessed Local Site',
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    '__note__': (
-                        'Check if the user is a member of the Local Site'
-                    ),
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': Q(local_site__id=local_site.pk) & Q(pk=user.pk),
-                },
-            ]
-
-        queries += [
-            {
-                '__note__': "Fetch the user's LocalSiteProfile",
-                'model': LocalSiteProfile,
-                'where': (Q(local_site=local_site) &
-                          Q(profile=profile) &
-                          Q(user=user)),
-            },
-            {
-                '__note__': "Fetch the list of a user's review groups",
-                'model': Group,
-                'num_joins': 1,
-                'only_fields': {
-                    'id',
-                    'incoming_request_count',
-                    'name',
-                },
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (Q(users__id=user.pk) &
-                          Q(local_site_q)),
-            },
-            {
-                '__note__': 'Update datagrid state on the user profile',
-                'type': 'UPDATE',
-                'model': Profile,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': (
-                    'Fetch the number of items across all datagrid pages'
-                ),
-                'annotations': {'__count': Count('*')},
-                'model': ReviewRequest,
-                'num_joins': 3,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_people',
-                },
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      (Q(target_people=user) |
-                       Q(starred_by=profile))) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-            {
-                '__note__': 'Fetch the IDs of the items for one page',
-                'model': ReviewRequest,
-                'num_joins': 3,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_people',
-                },
-                'values_select': ('pk',),
-                'extra': extra,
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      (Q(target_people=user) |
-                       Q(starred_by=profile))) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-                'order_by': ('-last_updated',),
-                'distinct': True,
-                'limit': 5,
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': (
-                        'Fetch the data for one page based on the IDs on a '
-                        'Local Site'
-                    ),
-                    'model': ReviewRequest,
-                    'select_related': {
-                        'local_site',
-                        'submitter',
-                    },
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    '__note__': 'Fetch the data for one page based on the IDs',
-                    'model': ReviewRequest,
-                    'select_related': {'submitter'},
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-
-        with self.assertQueries(queries, check_subqueries=True):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1760,11 +768,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_sites_in_db:
             local_site_q = Q(local_site=local_site)
-            target_groups_local_site_q = \
-                Q(target_groups__local_site=local_site)
         else:
             local_site_q = Q()
-            target_groups_local_site_q = Q()
 
         self.client.login(username='doc', password='doc')
 
@@ -1782,6 +787,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             name='test-group',
             local_site=local_site)
 
+        review_request_pks: List[int] = []
+
         for i in range(15):
             review_request = self.create_review_request(
                 summary='Test %s' % (i + 1),
@@ -1791,270 +798,51 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
             if i < 5:
                 review_request.target_groups.add(group1)
+                review_request_pks.append(review_request.pk)
             elif i < 10:
                 review_request.target_groups.add(group2)
 
-        user.get_site_profile(local_site=local_site)
+        # This will be ordered with newest at the top.
+        review_request_pks.reverse()
+
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        extra = {
-            'new_review_count': ("""
-                SELECT COUNT(*)
-                  FROM reviews_review, accounts_reviewrequestvisit
-                  WHERE reviews_review.public
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.user_id = 2
-                    AND reviews_review.timestamp >
-                        accounts_reviewrequestvisit.timestamp
-                    AND reviews_review.user_id != 2
-            """, []),
-            'mycomments_my_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'mycomments_private_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND NOT reviews_review.public
-            """, []),
-            'mycomments_shipit_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND reviews_review.ship_it
-            """, []),
-            'draft_summary': ("""
-                SELECT reviews_reviewrequestdraft.summary
-                  FROM reviews_reviewrequestdraft
-                  WHERE reviews_reviewrequestdraft.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'visibility': ("""
-                SELECT accounts_reviewrequestvisit.visibility
-                  FROM accounts_reviewrequestvisit
-                 WHERE accounts_reviewrequestvisit.review_request_id =
-                       reviews_reviewrequest.id
-                   AND accounts_reviewrequestvisit.user_id = 2
-            """, []),
-        }
-
-        queries = [
-            {
-                '__note__': 'Fetch the logged-in user',
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': "Fetch the user's profile",
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': 'Fetch the accessed Local Site',
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    '__note__': (
-                        'Check if the user is a member of the Local Site'
-                    ),
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': Q(local_site__id=local_site.pk) & Q(pk=user.pk),
-                },
-            ]
-
-        queries += [
-            {
-                '__note__': "Fetch the user's LocalSiteProfile",
-                'model': LocalSiteProfile,
-                'where': (Q(local_site=local_site) &
-                          Q(profile=profile) &
-                          Q(user=user)),
-            },
+        load_state_equeries: ExpectedQueries = [
             {
                 '__note__': 'Fetch the group being viewed',
                 'model': Group,
                 'where': (Q(name='devgroup') &
-                          Q(local_site_q)),
+                          local_site_q),
             },
         ]
 
         if local_site:
-            queries += [
+            load_state_equeries += [
                 {
                     '__note__': 'Fetch the accessed Local Site (again)',
                     'model': LocalSite,
                     'where': Q(id=local_site.pk),
                 },
-                {
-                    '__note__': (
-                        'Check if the user is a member of the Local Site '
-                        '(again)'
-                    ),
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site__id=local_site.pk) &
-                              Q(pk=user.pk)),
-                },
-            ]
+            ] + get_local_site_is_accessible_by_equeries(
+                user=user,
+                local_site=local_site)
 
-        queries += [
-            {
-                '__note__': "Fetch the list of a user's review groups",
-                'model': Group,
-                'num_joins': 1,
-                'only_fields': {
-                    'id',
-                    'incoming_request_count',
-                    'name',
-                },
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (Q(users__id=user.pk) &
-                          Q(local_site_q)),
-            },
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=local_sites_in_db,
+            review_request_pks=review_request_pks,
+            load_state_equeries=load_state_equeries,
+            rows_q_result=get_review_requests_to_group_q(
+                to_group_name='devgroup',
+                user=user,
+                local_site=local_site,
+                status='P',
+                has_local_sites_in_db=local_sites_in_db))
 
-            {
-                '__note__': 'Update datagrid state on the user profile',
-                'type': 'UPDATE',
-                'model': Profile,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': (
-                    'Fetch the number of items across all datagrid pages'
-                ),
-                'annotations': {'__count': Count('*')},
-                'model': ReviewRequest,
-                'num_joins': 3,
-                'tables': {
-                    'auth_user',
-                    'reviews_group',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_groups',
-                },
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      Q(target_groups__name='devgroup') &
-                      target_groups_local_site_q) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-            {
-                '__note__': 'Fetch the IDs of the items for one page',
-                'model': ReviewRequest,
-                'num_joins': 3,
-                'tables': {
-                    'auth_user',
-                    'reviews_group',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_groups',
-                },
-                'values_select': ('pk',),
-                'extra': extra,
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      Q(target_groups__name='devgroup') &
-                      target_groups_local_site_q) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-                'order_by': ('-last_updated',),
-                'distinct': True,
-                'limit': 5,
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': (
-                        'Fetch the data for one page based on the IDs on a '
-                        'Local Site'
-                    ),
-                    'model': ReviewRequest,
-                    'select_related': {
-                        'local_site',
-                        'submitter',
-                    },
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    '__note__': 'Fetch the data for one page based on the IDs',
-                    'model': ReviewRequest,
-                    'select_related': {'submitter'},
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-
-        with self.assertQueries(queries, check_subqueries=True):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -2106,11 +894,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         if local_sites_in_db:
             local_site_q = Q(local_site=local_site)
-            target_groups_local_site_q = \
-                Q(target_groups__local_site=local_site)
         else:
             local_site_q = Q()
-            target_groups_local_site_q = Q()
 
         self.client.login(username='doc', password='doc')
 
@@ -2133,263 +918,41 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        extra = {
-            'new_review_count': ("""
-                SELECT COUNT(*)
-                  FROM reviews_review, accounts_reviewrequestvisit
-                  WHERE reviews_review.public
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.user_id = 2
-                    AND reviews_review.timestamp >
-                        accounts_reviewrequestvisit.timestamp
-                    AND reviews_review.user_id != 2
-            """, []),
-            'mycomments_my_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'mycomments_private_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND NOT reviews_review.public
-            """, []),
-            'mycomments_shipit_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND reviews_review.ship_it
-            """, []),
-            'draft_summary': ("""
-                SELECT reviews_reviewrequestdraft.summary
-                  FROM reviews_reviewrequestdraft
-                  WHERE reviews_reviewrequestdraft.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'visibility': ("""
-                SELECT accounts_reviewrequestvisit.visibility
-                  FROM accounts_reviewrequestvisit
-                 WHERE accounts_reviewrequestvisit.review_request_id =
-                       reviews_reviewrequest.id
-                   AND accounts_reviewrequestvisit.user_id = 2
-            """, []),
-        }
-
-        queries = [
-            {
-                '__note__': 'Fetch the logged-in user',
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': "Fetch the user's profile",
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': 'Fetch the accessed Local Site',
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    '__note__': (
-                        'Check if the user is a member of the Local Site'
-                    ),
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': Q(local_site__id=local_site.pk) & Q(pk=user.pk),
-                },
-            ]
-
-        queries += [
-            {
-                '__note__': "Fetch the user's LocalSiteProfile",
-                'model': LocalSiteProfile,
-                'where': (Q(local_site=local_site) &
-                          Q(profile=profile) &
-                          Q(user=user)),
-            },
+        load_state_equeries: ExpectedQueries = [
             {
                 '__note__': 'Fetch the group being viewed',
                 'model': Group,
                 'where': (Q(name='devgroup') &
-                          Q(local_site_q)),
+                          local_site_q),
             },
         ]
 
         if local_site:
-            queries += [
+            load_state_equeries += [
                 {
-                    '__note__': 'Fetch the accessed Local Site',
+                    '__note__': 'Fetch the accessed Local Site (again)',
                     'model': LocalSite,
                     'where': Q(id=local_site.pk),
                 },
-                {
-                    '__note__': (
-                        'Check if the user is a member of the Local Site'
-                    ),
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site__id=local_site.pk) &
-                              Q(pk=user.pk)),
-                },
-            ]
+            ] + get_local_site_is_accessible_by_equeries(
+                user=user,
+                local_site=local_site)
 
-        queries += [
-            {
-                '__note__': "Fetch the list of a user's review groups",
-                'model': Group,
-                'num_joins': 1,
-                'only_fields': {
-                    'id',
-                    'incoming_request_count',
-                    'name',
-                },
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (Q(users__id=user.pk) &
-                          Q(local_site_q)),
-            },
-            {
-                '__note__': 'Update datagrid state on the user profile',
-                'type': 'UPDATE',
-                'model': Profile,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': (
-                    'Fetch the number of items across all datagrid pages'
-                ),
-                'annotations': {'__count': Count('*')},
-                'model': ReviewRequest,
-                'num_joins': 3,
-                'tables': {
-                    'auth_user',
-                    'reviews_group',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_groups',
-                },
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      Q(target_groups__name='devgroup') &
-                      target_groups_local_site_q) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=local_sites_in_db,
+            review_request_pks=[review_request.pk],
+            load_state_equeries=load_state_equeries,
+            rows_q_result=get_review_requests_to_group_q(
+                to_group_name='devgroup',
+                user=user,
+                local_site=local_site,
+                status='P',
+                has_local_sites_in_db=local_sites_in_db))
 
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-            {
-                '__note__':  'Fetch the IDs of the items for one page',
-                'model': ReviewRequest,
-                'num_joins': 3,
-                'tables': {
-                    'auth_user',
-                    'reviews_group',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_groups',
-                },
-                'values_select': ('pk',),
-                'extra': extra,
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      Q(target_groups__name='devgroup') &
-                      target_groups_local_site_q) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-                'order_by': ('-last_updated',),
-                'distinct': True,
-                'limit': 1,
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': (
-                        'Fetch the data for one page based on the IDs on a '
-                        'Local Site'
-                    ),
-                    'model': ReviewRequest,
-                    'select_related': {
-                        'local_site',
-                        'submitter',
-                    },
-                    'extra': extra,
-                    'where': Q(pk__in=[review_request.pk]),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    '__note__': 'Fetch the data for one page based on the IDs',
-                    'model': ReviewRequest,
-                    'select_related': {
-                        'submitter',
-                    },
-                    'extra': extra,
-                    'where': Q(pk__in=[review_request.pk]),
-                },
-            ]
-
-        with self.assertQueries(queries, check_subqueries=True):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -2451,59 +1014,22 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             local_id=1)
         review_request.target_groups.add(group)
 
-        queries = [
-            {
-                '__note__': 'Fetch the logged-in user',
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': "Fetch the user's profile",
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': 'Fetch the accessed Local Site',
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    '__note__': (
-                        'Check if the user is a member of the Local Site'
-                    ),
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': Q(local_site__id=local_site.pk) & Q(pk=user.pk),
-                },
-            ]
-
-        queries += [
-            {
-                'model': LocalSiteProfile,
-                'where': (Q(local_site=local_site) &
-                          Q(profile=profile) &
-                          Q(user=user)),
-            },
+        equeries = get_http_request_start_equeries(
+            user=user,
+            local_site=local_site)
+        equeries += get_user_local_site_profile_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site)
+        equeries += [
             {
                 'model': Group,
                 'where': (Q(name='devgroup') &
-                          Q(local_site_q)),
+                          local_site_q),
             },
         ]
 
-        with self.assertQueries(queries, check_subqueries=True):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -2542,11 +1068,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         else:
             local_site = None
 
-        if local_sites_in_db:
-            local_site_q = Q(local_site=local_site)
-        else:
-            local_site_q = Q()
-
         self.client.login(username='doc', password='doc')
 
         user = User.objects.get(username='doc')
@@ -2556,6 +1077,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         review_requests = []
         diffset_histories = []
+
+        review_request_pks: List[int] = []
 
         for i in range(10):
             review_request = self.create_review_request(
@@ -2568,289 +1091,39 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 review_request.target_people.add(user)
                 diffset_histories.append(review_request.diffset_history)
                 review_requests.append(review_request)
+                review_request_pks.append(review_request.pk)
+
+        # This will be ordered with newest at the top.
+        review_request_pks.reverse()
 
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        extra = {
-            'new_review_count': ("""
-                SELECT COUNT(*)
-                  FROM reviews_review, accounts_reviewrequestvisit
-                  WHERE reviews_review.public
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.user_id = 2
-                    AND reviews_review.timestamp >
-                        accounts_reviewrequestvisit.timestamp
-                    AND reviews_review.user_id != 2
-            """, []),
-            'mycomments_my_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'mycomments_private_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND NOT reviews_review.public
-            """, []),
-            'mycomments_shipit_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND reviews_review.ship_it
-            """, []),
-            'publicreviewcount_count': ("""
-                SELECT COUNT(*)
-                  FROM reviews_review
-                 WHERE reviews_review.public
-                   AND reviews_review.base_reply_to_id is NULL
-                   AND reviews_review.review_request_id =
-                       reviews_reviewrequest.id
-            """, []),
-            'draft_summary': ("""
-                SELECT reviews_reviewrequestdraft.summary
-                  FROM reviews_reviewrequestdraft
-                  WHERE reviews_reviewrequestdraft.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'visibility': ("""
-                SELECT accounts_reviewrequestvisit.visibility
-                  FROM accounts_reviewrequestvisit
-                 WHERE accounts_reviewrequestvisit.review_request_id =
-                       reviews_reviewrequest.id
-                   AND accounts_reviewrequestvisit.user_id = 2
-            """, []),
-        }
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            extra=self._build_extra(user=user,
+                                    include_new_review_count=True,
+                                    include_mycomments=True,
+                                    include_publicreviewcount=True),
+            local_site=local_site,
+            local_sites_in_db=local_sites_in_db,
+            review_request_pks=review_request_pks,
+            include_star_column=True,
+            include_to_me_column=True,
+            column_data_select_related={
+                'diffset_history',
+                'repository',
+            },
+            rows_q_result=get_review_requests_to_user_q(
+                user=user,
+                to_user=user,
+                to_user_profile=profile,
+                local_site=local_site,
+                has_local_sites_in_db=local_sites_in_db,
+                status='P'))
 
-        queries = [
-            {
-                '__note__': 'Fetch the logged-in user',
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': "Fetch the user's profile",
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': 'Fetch the accessed Local Site',
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    '__note__': (
-                        'Check if the user is a member of the Local Site'
-                    ),
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': Q(local_site__id=local_site.pk) & Q(pk=user.pk),
-                },
-            ]
-
-        queries += [
-            {
-                '__note__': "Fetch the user's LocalSiteProfile",
-                'model': LocalSiteProfile,
-                'where': (Q(local_site=local_site) &
-                          Q(profile=profile) &
-                          Q(user=user)),
-            },
-            {
-                '__note__': 'Fetch the list of groups the user is a member of',
-                'model': Group,
-                'num_joins': 1,
-                'values_select': ('pk',),
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': Q(users__id=user.pk),
-            },
-            {
-                '__note__': "Fetch the list of a user's review groups",
-                'model': Group,
-                'num_joins': 1,
-                'only_fields': {
-                    'id',
-                    'incoming_request_count',
-                    'name',
-                },
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (Q(users__id=user.pk) &
-                          Q(local_site_q)),
-            },
-            {
-                '__note__': 'Update datagrid state on the user profile',
-                'type': 'UPDATE',
-                'model': Profile,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': (
-                    'Fetch the number of items across all datagrid pages'
-                ),
-                'annotations': {'__count': Count('*')},
-                'model': ReviewRequest,
-                'num_joins': 4,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest_target_people',
-                },
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      Q(Q(target_people=user) |
-                        Q(target_groups__in=[]) |
-                        Q(starred_by=profile))) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-            {
-                '__note__': 'Fetch the IDs of the items for one page',
-                'model': ReviewRequest,
-                'num_joins': 4,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest_target_people',
-                },
-                'values_select': ('pk',),
-                'extra': extra,
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      Q(Q(target_people=user) |
-                        Q(target_groups__in=[]) |
-                        Q(starred_by=profile))) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-                'order_by': ('-last_updated',),
-                'distinct': True,
-                'limit': 5,
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-            {
-                '__note__': (
-                    "Fetch the IDs of the page's review requests that are "
-                    "starred"
-                ),
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'values_select': ('pk',),
-                'where': (Q(starred_by__id=profile.pk) &
-                          Q(pk__in=[5, 4, 3, 2, 1])),
-            },
-            {
-                '__note__': (
-                    "Fetch the IDs of the page's review requests targeting "
-                    "the user"
-                ),
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_people',
-                },
-                'values_select': ('pk',),
-                'where': (Q(target_people__id=user.pk) &
-                          Q(pk__in=[5, 4, 3, 2, 1])),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': (
-                        'Fetch the data for one page based on the IDs on a '
-                        'Local Site'
-                    ),
-                    'model': ReviewRequest,
-                    'select_related': {
-                        'diffset_history',
-                        'local_site',
-                        'repository',
-                        'submitter',
-                    },
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    '__note__': 'Fetch the data for one page based on the IDs',
-                    'model': ReviewRequest,
-                    'select_related': {
-                        'diffset_history',
-                        'repository',
-                        'submitter',
-                    },
-                    'extra': extra,
-                    'where': Q(pk__in=[5, 4, 3, 2, 1]),
-                },
-            ]
-
-        queries += [
+        equeries += [
             {
                 '__note__': 'Fetch the diffsets for each review request',
                 'model': DiffSet,
@@ -2897,7 +1170,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             for _column in DashboardDataGrid.get_columns()
         )
 
-        with self.assertQueries(queries, check_subqueries=True):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -2952,11 +1225,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         else:
             local_site = None
 
-        if local_sites_in_db:
-            local_site_q = Q(local_site=local_site)
-        else:
-            local_site_q = Q()
-
         dashboard_url = self.get_datagrid_url(local_site=local_site)
 
         self.client.login(username='doc', password='doc')
@@ -3005,221 +1273,26 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        extra = {
-            'new_review_count': ("""
-                SELECT COUNT(*)
-                  FROM reviews_review, accounts_reviewrequestvisit
-                  WHERE reviews_review.public
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.user_id = 2
-                    AND reviews_review.timestamp >
-                        accounts_reviewrequestvisit.timestamp
-                    AND reviews_review.user_id != 2
-            """, []),
-            'mycomments_my_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'mycomments_private_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND NOT reviews_review.public
-            """, []),
-            'mycomments_shipit_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND reviews_review.ship_it
-            """, []),
-            'draft_summary': ("""
-                SELECT reviews_reviewrequestdraft.summary
-                  FROM reviews_reviewrequestdraft
-                  WHERE reviews_reviewrequestdraft.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'visibility': ("""
-                SELECT accounts_reviewrequestvisit.visibility
-                  FROM accounts_reviewrequestvisit
-                 WHERE accounts_reviewrequestvisit.review_request_id =
-                       reviews_reviewrequest.id
-                   AND accounts_reviewrequestvisit.user_id = 2
-            """, []),
-        }
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=local_sites_in_db,
+            review_request_pks=[
+                muted.pk,
+                archived.pk,
+                visible.pk,
+            ],
+            include_archived=True,
+            rows_q_result=get_review_requests_to_user_q(
+                user=user,
+                to_user=user,
+                to_user_profile=profile,
+                local_site=local_site,
+                has_local_sites_in_db=local_sites_in_db,
+                status='P'))
 
-        queries = [
-            {
-                '__note__': 'Fetch the logged-in user',
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': "Fetch the user's profile",
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': 'Fetch the accessed Local Site',
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    '__note__': (
-                        'Check if the user is a member of the Local Site'
-                    ),
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': Q(local_site__id=local_site.pk) & Q(pk=user.pk),
-                },
-            ]
-
-        queries += [
-            {
-                '__note__': "Fetch the user's LocalSiteProfile",
-                'model': LocalSiteProfile,
-                'where': (Q(local_site=local_site) &
-                          Q(profile=profile) &
-                          Q(user=user)),
-            },
-            {
-                '__note__': 'Fetch the list of groups the user is a member of',
-                'model': Group,
-                'num_joins': 1,
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': Q(users__id=user.pk),
-                'values_select': ('pk',),
-            },
-            {
-                '__note__': "Fetch the list of a user's review groups",
-                'model': Group,
-                'num_joins': 1,
-                'only_fields': {
-                    'id',
-                    'incoming_request_count',
-                    'name',
-                },
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (Q(users__id=user.pk) &
-                          Q(local_site_q)),
-            },
-            {
-                '__note__': 'Update datagrid state on the user profile',
-                'type': 'UPDATE',
-                'model': Profile,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': (
-                    'Fetch the number of items across all datagrid pages'
-                ),
-                'annotations': {'__count': Count('*')},
-                'model': ReviewRequest,
-                'num_joins': 4,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_people',
-                },
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      (Q(target_people=user) |
-                       Q(target_groups__in=[]) |
-                       Q(starred_by=profile))) &
-                    Q(local_site=local_site)
-                ),
-            },
-            {
-                '__note__': 'Fetch the IDs of the items for one page',
-                'model': ReviewRequest,
-                'num_joins': 4,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_people',
-                },
-                'values_select': ('pk',),
-                'extra': extra,
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      (Q(target_people=user) |
-                       Q(target_groups__in=[]) |
-                       Q(starred_by=profile))) &
-                    Q(local_site=local_site)
-                ),
-                'order_by': ('-last_updated',),
-                'distinct': True,
-                'limit': 3,
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': (
-                        'Fetch the data for one page based on the IDs on a '
-                        'Local Site'
-                    ),
-                    'model': ReviewRequest,
-                    'select_related': {
-                        'local_site',
-                        'submitter',
-                    },
-                    'extra': extra,
-                    'where': Q(pk__in=[3, 2, 1]),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    '__note__': 'Fetch the data for one page based on the IDs',
-                    'model': ReviewRequest,
-                    'select_related': {'submitter'},
-                    'extra': extra,
-                    'where': Q(pk__in=[3, 2, 1]),
-                },
-            ]
-
-        with self.assertQueries(queries, check_subqueries=True):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 dashboard_url,
                 {
@@ -3319,11 +1392,6 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         else:
             local_site = None
 
-        if local_sites_in_db:
-            local_site_q = Q(local_site=local_site)
-        else:
-            local_site_q = Q()
-
         # We encountered a bug where the archived state in the dashboard was
         # assuming that Profile.extra_data was always a dictionary. In modern
         # versions of Review Board, the default value for that field is an
@@ -3355,178 +1423,21 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        extra = {
-            'new_review_count': ("""
-                SELECT COUNT(*)
-                  FROM reviews_review, accounts_reviewrequestvisit
-                  WHERE reviews_review.public
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.user_id = 2
-                    AND reviews_review.timestamp >
-                        accounts_reviewrequestvisit.timestamp
-                    AND reviews_review.user_id != 2
-            """, []),
-            'mycomments_my_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'mycomments_private_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND NOT reviews_review.public
-            """, []),
-            'mycomments_shipit_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND reviews_review.ship_it
-            """, []),
-            'draft_summary': ("""
-                SELECT reviews_reviewrequestdraft.summary
-                  FROM reviews_reviewrequestdraft
-                  WHERE reviews_reviewrequestdraft.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'visibility': ("""
-                SELECT accounts_reviewrequestvisit.visibility
-                  FROM accounts_reviewrequestvisit
-                 WHERE accounts_reviewrequestvisit.review_request_id =
-                       reviews_reviewrequest.id
-                   AND accounts_reviewrequestvisit.user_id = 2
-            """, []),
-        }
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=local_sites_in_db,
+            review_request_pks=[],
+            rows_q_result=get_review_requests_to_user_q(
+                user=user,
+                to_user=user,
+                to_user_profile=profile,
+                local_site=local_site,
+                has_local_sites_in_db=local_sites_in_db,
+                status='P'))
 
-        queries = [
-            {
-                '__note__': 'Fetch the logged-in user',
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': "Fetch the user's profile",
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': 'Fetch the accessed Local Site',
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    '__note__': (
-                        'Check if the user is a member of the Local Site'
-                    ),
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': Q(local_site__id=local_site.pk) & Q(pk=user.pk),
-                },
-            ]
-
-        queries += [
-            {
-                '__note__': "Fetch the user's LocalSiteProfile",
-                'model': LocalSiteProfile,
-                'where': (Q(local_site=local_site) &
-                          Q(profile=profile) &
-                          Q(user=user)),
-            },
-            {
-                '__note__': 'Fetch the list of groups the user is a member of',
-                'model': Group,
-                'num_joins': 1,
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': Q(users__id=user.pk),
-                'values_select': ('pk',),
-            },
-            {
-                '__note__': "Fetch the list of a user's review groups",
-                'model': Group,
-                'num_joins': 1,
-                'only_fields': {
-                    'id',
-                    'incoming_request_count',
-                    'name',
-                },
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (Q(users__id=user.pk) &
-                          Q(local_site_q)),
-            },
-            {
-                '__note__': 'Update datagrid state on the user profile',
-                'type': 'UPDATE',
-                'model': Profile,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': (
-                    'Fetch the number of items across all datagrid pages'
-                ),
-                'annotations': {'__count': Count('*')},
-                'model': ReviewRequest,
-                'num_joins': 4,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_people',
-                },
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      (Q(target_people=user) |
-                       Q(target_groups__in=[]) |
-                       Q(starred_by=profile))) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-        ]
-
-        with self.assertQueries(queries,
-                                check_subqueries=True,
-                                with_tracebacks=True):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -3628,267 +1539,51 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         self._prefetch_cached(local_site=local_site,
                               user=user)
 
-        extra = {
-            'new_review_count': ("""
-                SELECT COUNT(*)
-                  FROM reviews_review, accounts_reviewrequestvisit
-                  WHERE reviews_review.public
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.review_request_id =
-                        reviews_reviewrequest.id
-                    AND accounts_reviewrequestvisit.user_id = 2
-                    AND reviews_review.timestamp >
-                        accounts_reviewrequestvisit.timestamp
-                    AND reviews_review.user_id != 2
-            """, []),
-            'mycomments_my_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'mycomments_private_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND NOT reviews_review.public
-            """, []),
-            'mycomments_shipit_reviews': ("""
-                SELECT COUNT(1)
-                  FROM reviews_review
-                  WHERE reviews_review.user_id = 2
-                    AND reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND reviews_review.ship_it
-            """, []),
-            'draft_summary': ("""
-                SELECT reviews_reviewrequestdraft.summary
-                  FROM reviews_reviewrequestdraft
-                  WHERE reviews_reviewrequestdraft.review_request_id =
-                        reviews_reviewrequest.id
-            """, []),
-            'visibility': ("""
-                SELECT accounts_reviewrequestvisit.visibility
-                  FROM accounts_reviewrequestvisit
-                 WHERE accounts_reviewrequestvisit.review_request_id =
-                       reviews_reviewrequest.id
-                   AND accounts_reviewrequestvisit.user_id = 2
-            """, []),
-        }
-
-        queries = [
-            {
-                '__note__': 'Fetch the logged-in user',
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': "Fetch the user's profile",
-                'model': Profile,
-                'where': Q(user=user),
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': 'Fetch the accessed Local Site',
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=local_sites_in_db,
+            review_request_pks=[
+                review_request4.pk,
+                review_request3.pk,
+                review_request2.pk,
+            ],
+            sidebar_equeries=[
                 {
                     '__note__': (
-                        'Check if the user is a member of the Local Site'
+                        "Fetch the list of a user's starred review groups"
                     ),
-                    'model': User,
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
+                    'model': Group,
                     'num_joins': 1,
+                    'only_fields': {
+                        'id',
+                        'incoming_request_count',
+                        'name',
+                    },
                     'tables': {
-                        'auth_user',
-                        'site_localsite_users',
+                        'accounts_profile_starred_groups',
+                        'reviews_group',
                     },
-                    'where': Q(local_site__id=local_site.pk) & Q(pk=user.pk),
+                    'where': (Q(starred_by__id=profile.pk) &
+                              ~Q(pk__in={devgroup.pk, privgroup.pk}) &
+                              Q(local_site_q)),
                 },
-            ]
-
-        queries += [
-            {
-                '__note__': "Fetch the user's LocalSiteProfile",
-                'model': LocalSiteProfile,
-                'where': (Q(local_site=local_site) &
-                          Q(profile=profile) &
-                          Q(user=user)),
-            },
-            {
-                '__note__': 'Fetch the list of groups the user is a member of',
-                'model': Group,
-                'num_joins': 1,
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': Q(users__id=user.pk),
-                'values_select': ('pk',),
-            },
-            {
-                '__note__': "Fetch the list of a user's review groups",
-                'model': Group,
-                'num_joins': 1,
-                'only_fields': {
-                    'id',
-                    'incoming_request_count',
-                    'name',
-                },
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
-                'where': (Q(users__id=user.pk) &
-                          Q(local_site_q)),
-            },
-            {
-                '__note__': "Fetch the list of a user's starred review groups",
-                'model': Group,
-                'num_joins': 1,
-                'only_fields': {
-                    'id',
-                    'incoming_request_count',
-                    'name',
-                },
-                'tables': {
-                    'accounts_profile_starred_groups',
-                    'reviews_group',
-                },
-                'where': (Q(starred_by__id=profile.pk) &
-                          ~Q(pk__in={devgroup.pk, privgroup.pk}) &
-                          Q(local_site_q)),
-            },
-            {
-                '__note__': 'Update datagrid state on the user profile',
-                'type': 'UPDATE',
-                'model': Profile,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': (
-                    'Fetch the number of items across all datagrid pages'
-                ),
-                'annotations': {'__count': Count('*')},
-                'model': ReviewRequest,
-                'num_joins': 4,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_people',
-                },
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      (Q(target_people=user) |
-                       Q(target_groups__in=[devgroup.pk, privgroup.pk]) |
-                       Q(starred_by=profile))) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
+            ],
+            rows_q_result=get_review_requests_to_user_q(
+                user=user,
+                to_user=user,
+                to_user_profile=profile,
+                local_site=local_site,
+                has_local_sites_in_db=local_sites_in_db,
+                target_groups=[
+                    devgroup,
+                    privgroup,
                 ],
-            },
-            {
-                '__note__': 'Fetch the IDs of the items for one page',
-                'model': ReviewRequest,
-                'num_joins': 4,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'auth_user',
-                    'reviews_reviewrequest_target_groups',
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_target_people',
-                },
-                'values_select': ('pk',),
-                'extra': extra,
-                'where': (
-                    Q(Q(Q(public=True) |
-                        Q(submitter=user)) &
-                      Q(submitter__is_active=True) &
-                      Q(status='P') &
-                      local_site_q &
-                      (Q(target_people=user) |
-                       Q(target_groups__in=[devgroup.pk, privgroup.pk]) |
-                       Q(starred_by=profile))) &
-                    ~Q(__Q__subquery__=1) &
-                    Q(local_site=local_site)
-                ),
-                'order_by': ('-last_updated',),
-                'distinct': True,
-                'limit': 3,
-
-                'subqueries': [
-                    {
-                        'model': ReviewRequestVisit,
-                        'values_select': ('review_request_id',),
-                        'where': (Q(user=user) &
-                                  ~Q(visibility='V')),
-                    },
-                ],
-            },
-        ]
-
-        if local_site:
-            queries += [
-                {
-                    '__note__': (
-                        'Fetch the data for one page based on the IDs on a '
-                        'Local Site'
-                    ),
-                    'model': ReviewRequest,
-                    'select_related': {
-                        'local_site',
-                        'submitter',
-                    },
-                    'extra': extra,
-                    'where': Q(pk__in=[
-                        review_request4.pk,
-                        review_request3.pk,
-                        review_request2.pk,
-                    ]),
-                },
-            ]
-        else:
-            queries += [
-                {
-                    '__note__': 'Fetch the data for one page based on the IDs',
-                    'model': ReviewRequest,
-                    'select_related': {'submitter'},
-                    'extra': extra,
-                    'where': Q(pk__in=[
-                        review_request4.pk,
-                        review_request3.pk,
-                        review_request2.pk,
-                    ]),
-                },
-            ]
+                status='P'))
 
         # Now load the dashboard and get the sidebar items.
-        with self.assertQueries(queries, check_subqueries=True):
+        with self.assertQueries(equeries, check_subqueries=True):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -3930,3 +1625,388 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         self.assertEqual(section.items[3].count, 1)
         self.assertEqual(str(section.items[4].label), 'privgroup')
         self.assertEqual(section.items[4].count, 1)
+
+    def _build_datagrid_equeries(
+        self,
+        *,
+        user: User,
+        profile: Profile,
+        review_request_pks: List[int],
+        rows_q_result: ExpectedQResult,
+        extra: Dict[str, Any] = {},
+        load_state_equeries: ExpectedQueries = [],
+        sidebar_equeries: ExpectedQueries = [],
+        local_site: Optional[LocalSite] = None,
+        local_sites_in_db: bool = False,
+        include_archived: bool = False,
+        include_star_column: bool = False,
+        include_to_me_column: bool = False,
+        column_data_select_related: Set[str] = set(),
+    ) -> ExpectedQueries:
+        """Return expected queries for viewing the datagrid.
+
+        This assumes that the user has access to the datagrid, and that any
+        cacheable state is already cached.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user accessing the datagrid.
+
+            profile (reviewboard.accounts.models.Profile):
+                The user's profile.
+
+            review_request_pks (list of int):
+                The list of review request IDs that are expected to be
+                listed, in result order.
+
+            rows_q_result (dict):
+                The result for a Q-expression for the datagrid rows queryset.
+
+            extra (dict, optional):
+                Extra queries to add to the rows queryset.
+
+            load_state_equeries (list of dict, optional):
+                Additional expected queries to add to the datagrid
+                state-loading phase.
+
+            sidebar_equeries (list of dict, optional):
+                Additional expected queries to add to the sidebar-rendering
+                phase.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The Local Site that's being accessed, if any.
+
+            local_sites_in_db (bool, optional):
+                Whether the database contains any Local Sites.
+
+            include_archived (bool, optional):
+                Whether archived review requests will be returned in results.
+
+            include_star_column (bool, optional):
+                Whether the star column will be included in the list of
+                enabled dashboard columns.
+
+            include_to_me_column (bool, optional):
+                Whether the To Me column will be included in the list of
+                enabled dashboard columns.
+
+            column_data_select_related (set of str, optional):
+                Any additional relations included when selecting related
+                models for the columns.
+
+        Returns:
+            list of dict:
+            The list of expected queries.
+        """
+        if local_sites_in_db:
+            local_site_q = Q(local_site=local_site)
+        else:
+            local_site_q = Q()
+
+        if not extra:
+            extra = self._build_extra(user=user,
+                                      include_new_review_count=True,
+                                      include_mycomments=True)
+
+        rows_q = rows_q_result['q']
+        rows_q_tables = rows_q_result['tables']
+        rows_q_num_joins = len(rows_q_tables) - 1
+
+        equeries = get_http_request_start_equeries(
+            user=user,
+            local_site=local_site)
+        equeries += get_user_local_site_profile_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site)
+        equeries += load_state_equeries
+        equeries += rows_q_result.get('prep_equeries', [])
+        equeries += [
+            {
+                '__note__': "Fetch the list of a user's review groups",
+                'model': Group,
+                'num_joins': 1,
+                'only_fields': {
+                    'id',
+                    'incoming_request_count',
+                    'name',
+                },
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                },
+                'where': (Q(users__id=user.pk) &
+                          Q(local_site_q)),
+            },
+        ]
+        equeries += sidebar_equeries
+        equeries += [
+            {
+                '__note__': 'Update datagrid state on the user profile',
+                'type': 'UPDATE',
+                'model': Profile,
+                'where': Q(pk=user.pk),
+            },
+        ]
+
+        if include_archived:
+            equeries += [
+                {
+                    '__note__': (
+                        'Fetch the number of items across all datagrid pages '
+                        'with archived review requests shown'
+                    ),
+                    'annotations': {'__count': Count('*')},
+                    'model': ReviewRequest,
+                    'num_joins': rows_q_num_joins,
+                    'tables': rows_q_tables,
+                    'where': (Q(rows_q) &
+                              Q(local_site=local_site)),
+                },
+            ]
+
+            if review_request_pks:
+                equeries += [
+                    {
+                        '__note__': (
+                            'Fetch the IDs of the items for one page with '
+                            'archived review requests shown'
+                        ),
+                        'model': ReviewRequest,
+                        'num_joins': rows_q_num_joins,
+                        'tables': rows_q_tables,
+                        'values_select': ('pk',),
+                        'extra': extra,
+                        'where': (Q(rows_q) &
+                                  Q(local_site=local_site)),
+                        'order_by': ('-last_updated',),
+                        'distinct': True,
+                        'limit': len(review_request_pks),
+                    },
+                ]
+        else:
+            equeries += [
+                {
+                    '__note__': (
+                        'Fetch the number of items across all datagrid pages'
+                    ),
+                    'annotations': {'__count': Count('*')},
+                    'model': ReviewRequest,
+                    'num_joins': rows_q_num_joins,
+                    'tables': rows_q_tables,
+                    'where': (Q(rows_q) &
+                              ~Q(__Q__subquery__=1) &
+                              Q(local_site=local_site)),
+
+                    'subqueries': [
+                        {
+                            'model': ReviewRequestVisit,
+                            'values_select': ('review_request_id',),
+                            'where': (Q(user=user) &
+                                      ~Q(visibility='V')),
+                        },
+                    ],
+                },
+            ]
+
+            if review_request_pks:
+                equeries += [
+                    {
+                        '__note__': 'Fetch the IDs of the items for one page',
+                        'model': ReviewRequest,
+                        'num_joins': rows_q_num_joins,
+                        'tables': rows_q_tables,
+                        'values_select': ('pk',),
+                        'extra': extra,
+                        'where': (Q(rows_q) &
+                                  ~Q(__Q__subquery__=1) &
+                                  Q(local_site=local_site)),
+                        'order_by': ('-last_updated',),
+                        'distinct': True,
+                        'limit': len(review_request_pks),
+
+                        'subqueries': [
+                            {
+                                'model': ReviewRequestVisit,
+                                'values_select': ('review_request_id',),
+                                'where': (Q(user=user) &
+                                          ~Q(visibility='V')),
+                            },
+                        ],
+                    },
+                ]
+
+        if include_star_column:
+            equeries += [
+                {
+                    '__note__': (
+                        "Starred column: Fetch the IDs of the page's review "
+                        "requests that are starred"
+                    ),
+                    'model': ReviewRequest,
+                    'num_joins': 1,
+                    'tables': {
+                        'accounts_profile_starred_review_requests',
+                        'reviews_reviewrequest',
+                    },
+                    'values_select': ('pk',),
+                    'where': (Q(starred_by__id=profile.pk) &
+                              Q(pk__in=review_request_pks)),
+                },
+            ]
+
+        if include_to_me_column:
+            equeries += [
+                {
+                    '__note__': (
+                        "To Me column: Fetch the IDs of the page's review "
+                        "requests that are targeting the user"
+                    ),
+                    'model': ReviewRequest,
+                    'num_joins': 1,
+                    'tables': {
+                        'reviews_reviewrequest',
+                        'reviews_reviewrequest_target_people',
+                    },
+                    'values_select': ('pk',),
+                    'where': (Q(target_people__id=user.pk) &
+                              Q(pk__in=[5, 4, 3, 2, 1])),
+                },
+            ]
+
+        if review_request_pks:
+            if local_site is not None:
+                equeries += [
+                    {
+                        '__note__': (
+                            'Fetch the data for one page based on the IDs '
+                            'on the Local Site'
+                        ),
+                        'model': ReviewRequest,
+                        'select_related': column_data_select_related | {
+                            'local_site',
+                            'submitter',
+                        },
+                        'extra': extra,
+                        'where': Q(pk__in=review_request_pks),
+                    },
+                ]
+            else:
+                equeries += [
+                    {
+                        '__note__': (
+                            'Fetch the data for one page based on the IDs'
+                        ),
+                        'model': ReviewRequest,
+                        'select_related': column_data_select_related | {
+                            'submitter'
+                        },
+                        'extra': extra,
+                        'where': Q(pk__in=review_request_pks),
+                    },
+                ]
+
+        return equeries
+
+    def _build_extra(
+        self,
+        *,
+        user: User,
+        include_new_review_count: bool = False,
+        include_mycomments: bool = False,
+        include_publicreviewcount: bool = False,
+    ) -> Dict[str, Any]:
+        """Return data for the extra queries for the datagrid querysets.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user performing the request.
+
+            include_new_review_count (bool, optional):
+                Whether to include the ``new_review_count`` column information.
+
+            include_mycomments (bool, optional):
+                Whether to include the ``mycomments`` column information.
+
+            include_publicreviewcount (bool, optional):
+                Whether to include the ``publicreviewcount`` column
+                information.
+
+        Returns:
+            dict:
+            The resulting extra query dictionary.
+        """
+        user_id = user.pk
+
+        extra: Dict[str, Any] = {
+            'draft_summary': ("""
+                SELECT reviews_reviewrequestdraft.summary
+                  FROM reviews_reviewrequestdraft
+                  WHERE reviews_reviewrequestdraft.review_request_id =
+                        reviews_reviewrequest.id
+            """, []),
+            'visibility': (f"""
+                SELECT accounts_reviewrequestvisit.visibility
+                  FROM accounts_reviewrequestvisit
+                 WHERE accounts_reviewrequestvisit.review_request_id =
+                       reviews_reviewrequest.id
+                   AND accounts_reviewrequestvisit.user_id = {user_id}
+            """, []),
+        }
+
+        if include_new_review_count:
+            extra['new_review_count'] = (f"""
+                SELECT COUNT(*)
+                  FROM reviews_review, accounts_reviewrequestvisit
+                  WHERE reviews_review.public
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.user_id = {user_id}
+                    AND reviews_review.timestamp >
+                        accounts_reviewrequestvisit.timestamp
+                    AND reviews_review.user_id != {user_id}
+            """, [])
+
+        if include_mycomments:
+            extra.update({
+                'mycomments_my_reviews': (f"""
+                    SELECT COUNT(1)
+                      FROM reviews_review
+                      WHERE reviews_review.user_id = {user_id}
+                        AND reviews_review.review_request_id =
+                            reviews_reviewrequest.id
+                """, []),
+                'mycomments_private_reviews': (f"""
+                    SELECT COUNT(1)
+                      FROM reviews_review
+                      WHERE reviews_review.user_id = {user_id}
+                        AND reviews_review.review_request_id =
+                            reviews_reviewrequest.id
+                        AND NOT reviews_review.public
+                """, []),
+                'mycomments_shipit_reviews': (f"""
+                    SELECT COUNT(1)
+                      FROM reviews_review
+                      WHERE reviews_review.user_id = {user_id}
+                        AND reviews_review.review_request_id =
+                            reviews_reviewrequest.id
+                        AND reviews_review.ship_it
+                """, []),
+            })
+
+        if include_publicreviewcount:
+            extra['publicreviewcount_count'] = ("""
+                SELECT COUNT(*)
+                  FROM reviews_review
+                 WHERE reviews_review.public
+                   AND reviews_review.base_reply_to_id is NULL
+                   AND reviews_review.review_request_id =
+                       reviews_reviewrequest.id
+            """, [])
+
+        return extra
