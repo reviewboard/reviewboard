@@ -211,7 +211,7 @@ class UsersDataGridTests(BaseViewTestCase):
             local_sites_in_db=False,
             has_pending_count_column=False)
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -261,7 +261,7 @@ class UsersDataGridTests(BaseViewTestCase):
             user_pks=[1, 2],
             has_pending_count_column=False)
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 '/s/local-site-2/users/?columns=fullname')
 
@@ -334,8 +334,7 @@ class UsersDataGridTests(BaseViewTestCase):
             local_sites_in_db=local_sites_in_db,
             user_pks=[1, 2, 3, 4, 5, 6, 7, 8, 9])
 
-        with self.assertQueries(equeries, check_subqueries=True,
-                                with_tracebacks=True, traceback_size=30):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -421,7 +420,7 @@ class UsersDataGridTests(BaseViewTestCase):
             ],
             query=Q(username__istartswith='A'))
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 '%s?letter=A' % self.get_datagrid_url(local_site=local_site))
 
@@ -488,7 +487,7 @@ class UsersDataGridTests(BaseViewTestCase):
             user_pks=[1, 2, 3, 4],
             has_pending_count_column=False)
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -556,7 +555,7 @@ class UsersDataGridTests(BaseViewTestCase):
             user_pks=[1, 2, 3, 4],
             has_pending_count_column=False)
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -641,7 +640,7 @@ class UsersDataGridTests(BaseViewTestCase):
             },
         ]
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -737,7 +736,7 @@ class UsersDataGridTests(BaseViewTestCase):
             user_pks=[1, 2, 3, 4],
             has_pending_count_column=False)
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -824,7 +823,7 @@ class UsersDataGridTests(BaseViewTestCase):
             user_pks=[1, 2, 3, 4],
             has_pending_count_column=False)
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -892,7 +891,7 @@ class UsersDataGridTests(BaseViewTestCase):
             user_pks=[1, 2, 3, 4],
             has_pending_count_column=False)
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -984,6 +983,9 @@ class UsersDataGridTests(BaseViewTestCase):
                         'on a Local Site'
                     ),
                     'annotations': {'__count': Count('*')},
+                    'join_types': {
+                        'site_localsite_users': 'INNER JOIN',
+                    },
                     'model': User,
                     'num_joins': 1,
                     'tables': {
@@ -1001,6 +1003,9 @@ class UsersDataGridTests(BaseViewTestCase):
                     ),
                     'distinct': True,
                     'limit': len(user_pks),
+                    'join_types': {
+                        'site_localsite_users': 'INNER JOIN',
+                    },
                     'model': User,
                     'num_joins': 1,
                     'order_by': ('username',),
@@ -1052,6 +1057,9 @@ class UsersDataGridTests(BaseViewTestCase):
                                     Q(review_requests__status='P'))),
                     },
                     'group_by': True,
+                    'join_types': {
+                        'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                    },
                     'model': User,
                     'num_joins': 1,
                     'select_related': {

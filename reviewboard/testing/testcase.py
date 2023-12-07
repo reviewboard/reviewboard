@@ -7,7 +7,7 @@ import re
 import warnings
 from contextlib import contextmanager
 from datetime import timedelta
-from typing import (Any, Callable, Iterator, List, Optional, Sequence,
+from typing import (Any, Callable, Dict, Iterator, List, Optional, Sequence,
                     TYPE_CHECKING, Tuple, Type, Union)
 from uuid import uuid4
 
@@ -62,6 +62,7 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     from django.http import HttpRequest
+    from djblets.db.query_comparator import ExpectedQuery
     from djblets.util.typing import JSONDict
 
     from reviewboard.changedescs.models import ChangeDescription
@@ -567,6 +568,80 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             token_generator_id=token_generator_id,
             token_info=token_info,
             **kwargs)
+
+    @contextmanager
+    def assertQueries(
+        self,
+        queries: Sequence[Union[ExpectedQuery,
+                                Dict[str, Any]]],
+        num_statements: Optional[int] = None,
+        *,
+        with_tracebacks: bool = False,
+        traceback_size: int = 15,
+        check_join_types: Optional[bool] = True,
+        check_subqueries: Optional[bool] = True,
+    ) -> Iterator[None]:
+        """Assert the number and complexity of queries.
+
+        This is a wrapper around :py:meth:`assertQueries()
+        <djblets.testing.testcases.TestCase.assertQueries>` in Djblets that
+        forces an opt-in to checking join types and subqueries.
+
+        This wrapper can go away when those are enabled by default.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            queries (list of ExpectedQuery):
+                The list of query dictionaries to compare executed queries
+                against.
+
+            num_statements (int, optional):
+                The number of SQL statements executed.
+
+                This defaults to the length of ``queries``, but callers may
+                need to provide an explicit number, as some operations may add
+                additional database-specific statements (such as
+                transaction-related SQL) that won't be covered in ``queries``.
+
+            with_tracebacks (bool, optional):
+                If enabled, tracebacks for queries will be included in
+                results.
+
+            tracebacks_size (int, optional):
+                The size of any tracebacks, in number of lines.
+
+                The default is 15.
+
+            check_join_types (bool, optional):
+                Whether to check join types.
+
+                If enabled, table join types (``join_types`` on queries) will
+                be checked. This is currently disabled by default, in order
+                to avoid breaking tests, but will be enabled by default in
+                Djblets 5.
+
+            check_subqueries (bool, optional):
+                Whether to check subqueries.
+
+                If enabled, ``inner_query`` on queries with subqueries will
+                be checked. This is currently disabled by default, in order
+                to avoid breaking tests, but will be enabled by default in
+                Djblets 5.
+
+        Raises:
+            AssertionError:
+                The parameters passed, or the queries compared, failed
+                expectations.
+        """
+        with super().assertQueries(queries=queries,
+                                   num_statements=num_statements,
+                                   with_tracebacks=with_tracebacks,
+                                   traceback_size=traceback_size,
+                                   check_join_types=check_join_types,
+                                   check_subqueries=check_subqueries):
+            yield
 
     @contextmanager
     def assert_warns(

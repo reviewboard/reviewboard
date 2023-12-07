@@ -906,6 +906,9 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                         [],
                     ),
                 },
+                'join_types': {
+                    'reviews_reviewrequest_changedescs': 'INNER JOIN',
+                },
                 'model': ChangeDescription,
                 'num_joins': 1,
                 'tables': {
@@ -930,7 +933,6 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                 ]),
             },
             {
-                'model': ReviewRequest,
                 'extra': {
                     '_prefetch_related_val_to_reviewrequest_id': (
                         ('"reviews_reviewrequest_depends_on".'
@@ -938,6 +940,10 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                         [],
                     ),
                 },
+                'join_types': {
+                    'reviews_reviewrequest_depends_on': 'INNER JOIN',
+                },
+                'model': ReviewRequest,
                 'num_joins': 1,
                 'tables': {
                     'reviews_reviewrequest',
@@ -950,7 +956,6 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                 ]),
             },
             {
-                'model': ReviewRequest,
                 'extra': {
                     '_prefetch_related_val_from_reviewrequest_id': (
                         ('"reviews_reviewrequest_depends_on".'
@@ -958,6 +963,10 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                         [],
                     ),
                 },
+                'join_types': {
+                    'reviews_reviewrequest_depends_on': 'INNER JOIN',
+                },
+                'model': ReviewRequest,
                 'num_joins': 1,
                 'tables': {
                     'reviews_reviewrequest',
@@ -970,7 +979,6 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                 ]),
             },
             {
-                'model': Group,
                 'extra': {
                     '_prefetch_related_val_reviewrequest_id': (
                         ('"reviews_reviewrequest_target_groups".'
@@ -978,6 +986,10 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                         [],
                     ),
                 },
+                'join_types': {
+                    'reviews_reviewrequest_target_groups': 'INNER JOIN',
+                },
+                'model': Group,
                 'num_joins': 1,
                 'tables': {
                     'reviews_group',
@@ -990,7 +1002,6 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                 ]),
             },
             {
-                'model': User,
                 'extra': {
                     '_prefetch_related_val_reviewrequest_id': (
                         ('"reviews_reviewrequest_target_people".'
@@ -998,6 +1009,10 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                         [],
                     ),
                 },
+                'join_types': {
+                    'reviews_reviewrequest_target_people': 'INNER JOIN',
+                },
+                'model': User,
                 'num_joins': 1,
                 'tables': {
                     'auth_user',

@@ -806,9 +806,7 @@ class AccessibleTests(AccessibleTestsMixin, TestCase):
             visible_only=visible_only,
             local_site=local_site)
 
-        with self.assertQueries(equeries,
-                                check_subqueries=True,
-                                with_tracebacks=True):
+        with self.assertQueries(equeries):
             accessible = list(Repository.objects.accessible(
                 user,
                 visible_only=visible_only,
@@ -1484,9 +1482,7 @@ class AccessibleIDsTests(AccessibleTestsMixin, TestCase):
             visible_only=visible_only,
             local_site=local_site)
 
-        with self.assertQueries(equeries,
-                                check_subqueries=True,
-                                with_tracebacks=True):
+        with self.assertQueries(equeries):
             accessible_ids = Repository.objects.accessible_ids(
                 user,
                 visible_only=visible_only,

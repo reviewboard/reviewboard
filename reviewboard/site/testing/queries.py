@@ -79,6 +79,9 @@ def get_local_site_is_accessible_by_equeries(
             'extra': {
                 'a': ('1', []),
             },
+            'join_types': {
+                'site_localsite_users': 'INNER JOIN',
+            },
             'limit': 1,
             'num_joins': 1,
             'tables': {
@@ -130,6 +133,9 @@ def get_local_site_is_mutable_by_equeries(
             'model': User,
             'extra': {
                 'a': ('1', []),
+            },
+            'join_types': {
+                'site_localsite_admins': 'INNER JOIN',
             },
             'limit': 1,
             'num_joins': 1,

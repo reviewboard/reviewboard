@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, Set, TYPE_CHECKING, Union
+from typing import Dict, Optional, Sequence, Set, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
@@ -144,10 +144,12 @@ def get_reviews_accessible_q(
     init_q: Q
     access_q: Q
     tables: Set[str] = {'reviews_review'}
+    join_types: Dict[str, str] = {}
 
     # Stage 1: Initial filtering Q-expression.
     if status:
         tables.add('reviews_reviewrequest')
+        join_types['reviews_reviewrequest'] = 'INNER JOIN'
 
         if include_local_site_q:
             init_q = (Q(base_reply_to=base_reply_to) &
@@ -161,6 +163,7 @@ def get_reviews_accessible_q(
     else:
         if include_local_site_q:
             tables.add('reviews_reviewrequest')
+            join_types['reviews_reviewrequest'] = 'INNER JOIN'
 
             init_q = (Q(base_reply_to=base_reply_to) &
                       Q(review_request__local_site=local_site) &
@@ -183,6 +186,11 @@ def get_reviews_accessible_q(
                     'reviews_reviewrequest_target_groups',
                     'reviews_reviewrequest_target_people',
                 })
+                join_types.update({
+                    'reviews_reviewrequest': 'INNER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_people': 'LEFT OUTER JOIN',
+                })
 
                 access_q = (
                     Q(user=user) |
@@ -200,6 +208,11 @@ def get_reviews_accessible_q(
                     'reviews_reviewrequest',
                     'reviews_reviewrequest_target_groups',
                     'reviews_reviewrequest_target_people',
+                })
+                join_types.update({
+                    'reviews_reviewrequest': 'INNER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_people': 'LEFT OUTER JOIN',
                 })
 
                 access_q = (
@@ -230,6 +243,12 @@ def get_reviews_accessible_q(
                 'reviews_reviewrequest_target_groups',
                 'scmtools_repository',
             })
+            join_types.update({
+                'reviews_group': 'LEFT OUTER JOIN',
+                'reviews_reviewrequest': 'INNER JOIN',
+                'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                'scmtools_repository': 'LEFT OUTER JOIN',
+            })
 
             access_q = (
                 (Q(review_request__repository=None) |
@@ -245,6 +264,7 @@ def get_reviews_accessible_q(
             access_q = Q(public=public)
 
     return {
+        'join_types': join_types,
         'prep_equeries': prep_equeries,
         'q': init_q & access_q,
         'tables': tables,
@@ -278,6 +298,7 @@ def get_reviews_from_user_q(
         The list of expected queries.
     """
     extra_tables: Set[str] = set()
+    extra_join_types: Dict[str, str] = {}
 
     if isinstance(from_user, User):
         extra_query = Q(user=from_user)
@@ -286,10 +307,12 @@ def get_reviews_from_user_q(
 
         extra_query = Q(user__username=from_user)
         extra_tables.add('auth_user')
+        extra_join_types['auth_user'] = 'INNER JOIN'
 
     kwargs['extra_query'] = extra_query
 
     q_result = get_reviews_accessible_q(**kwargs)
+    q_result.setdefault('join_types', {}).update(extra_join_types)
     q_result['tables'].update(extra_tables)
 
     return q_result
@@ -334,6 +357,7 @@ def get_reviews_accessible_equeries(
         {
             '__note__': 'Fetch accessible reviews',
             'distinct': distinct,
+            'join_types': q_result.get('join_types', {}),
             'num_joins': len(q_tables) - 1,
             'model': Review,
             'tables': q_tables,
@@ -382,6 +406,7 @@ def get_reviews_from_user_equeries(
         {
             '__note__': f'Fetch accessible reviews from user "{username}"',
             'distinct': False,
+            'join_types': q_result.get('join_types', {}),
             'num_joins': len(q_tables) - 1,
             'model': Review,
             'tables': q_tables,

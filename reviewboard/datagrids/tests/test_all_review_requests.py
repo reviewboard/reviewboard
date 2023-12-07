@@ -164,7 +164,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 review_request_1.pk,
             ])
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -292,7 +292,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
             repositories_pks=[repository1.pk],
             target_groups_pks=[group1.pk])
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -374,7 +374,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 review_request_1.pk,
             ])
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -477,6 +477,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
         rows_q = rows_q_result['q']
         rows_q_tables = rows_q_result['tables']
         rows_q_num_joins = len(rows_q_tables) - 1
+        rows_q_join_types = rows_q_result.get('join_types', {})
 
         equeries = get_http_request_start_equeries(
             user=user,
@@ -494,6 +495,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                     'Fetch the number of items across all datagrid pages'
                 ),
                 'annotations': {'__count': Count('*')},
+                'join_types': rows_q_join_types,
                 'model': ReviewRequest,
                 'num_joins': rows_q_num_joins,
                 'tables': rows_q_tables,
@@ -504,6 +506,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 '__note__': 'Fetch the IDs of the items for one page',
                 'distinct': True,
                 'extra': extra,
+                'join_types': rows_q_join_types,
                 'limit': len(review_request_pks),
                 'model': ReviewRequest,
                 'num_joins': rows_q_num_joins,
@@ -518,6 +521,9 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                     "Fetch the IDs of the page's review requests that are "
                     "starred."
                 ),
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'tables': {

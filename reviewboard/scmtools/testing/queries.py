@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import Dict, Set, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -55,7 +55,8 @@ def get_repositories_accessible_equeries(
     # objects more dynamically (like the accessible() implementation does),
     # we want to have each case build up the full query, so each combination
     # is explicitly defined.
-    repositories_tables = {'scmtools_repository'}
+    repositories_tables: Set[str] = {'scmtools_repository'}
+    join_types: Dict[str, str] = {}
 
     if user.is_superuser:
         if visible_only:
@@ -75,6 +76,12 @@ def get_repositories_accessible_equeries(
             'reviews_group_users',
             'scmtools_repository_review_groups',
             'scmtools_repository_users',
+        })
+        join_types.update({
+            'reviews_group': 'LEFT OUTER JOIN',
+            'reviews_group_users': 'LEFT OUTER JOIN',
+            'scmtools_repository_review_groups': 'LEFT OUTER JOIN',
+            'scmtools_repository_users': 'LEFT OUTER JOIN',
         })
 
         if visible_only:
@@ -121,6 +128,7 @@ def get_repositories_accessible_equeries(
         {
             '__note__': 'Fetch a list of accessible repositories',
             'distinct': distinct,
+            'join_types': join_types,
             'model': Repository,
             'num_joins': len(repositories_tables) - 1,
             'tables': repositories_tables,

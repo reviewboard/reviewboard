@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Set, TYPE_CHECKING, Union
+from typing import Dict, Set, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, Permission, User
 from django.db.models import Q
@@ -34,6 +34,7 @@ def get_review_groups_accessible_q(
     has_view_invite_only_groups_perm: bool = False,
     needs_local_site_profile_query: bool = False,
     needs_user_permission_queries: bool = True,
+    users_join_type: str = 'INNER JOIN',
 ) -> ExpectedQResult:
     """Return a Q expression for accessible review group queries.
 
@@ -69,11 +70,19 @@ def get_review_groups_accessible_q(
 
             Set to ``False`` if this is already cached at this point.
 
+        users_join_type (str, optional):
+            The join type expected for any users relations.
+
+            This defaults to `INNER JOIN`, as that's more likely in cases where
+            this is being embedded in another query, outside of the manager's
+            own methods.
+
     Returns:
         dict:
         The expected Q results.
     """
     tables: Set[str] = {'reviews_group'}
+    join_types: Dict[str, str] = {}
 
     if user.is_superuser:
         if visible_only:
@@ -90,6 +99,7 @@ def get_review_groups_accessible_q(
     elif user.is_authenticated:
         if has_view_invite_only_groups_perm and visible_only:
             tables.add('reviews_group_users')
+            join_types['reviews_group_users'] = users_join_type
 
             if local_site is LocalSite.ALL:
                 q = (Q(visible=True) |
@@ -105,6 +115,7 @@ def get_review_groups_accessible_q(
                 q = Q(local_site=local_site)
         elif not has_view_invite_only_groups_perm and visible_only:
             tables.add('reviews_group_users')
+            join_types['reviews_group_users'] = users_join_type
 
             if local_site is LocalSite.ALL:
                 q = ((Q(invite_only=False) &
@@ -117,6 +128,7 @@ def get_review_groups_accessible_q(
                      Q(local_site=local_site))
         else:
             tables.add('reviews_group_users')
+            join_types['reviews_group_users'] = users_join_type
 
             if local_site is LocalSite.ALL:
                 q = (Q(invite_only=False) |
@@ -144,6 +156,7 @@ def get_review_groups_accessible_q(
                      Q(local_site=local_site))
 
     return {
+        'join_types': join_types,
         'prep_equeries': get_review_groups_accessible_prep_equeries(
             user=user,
             local_site=local_site,
@@ -271,6 +284,7 @@ def get_review_groups_accessible_equeries(
         local_site=local_site,
         visible_only=visible_only,
         has_view_invite_only_groups_perm=has_view_invite_only_groups_perm,
+        users_join_type='LEFT OUTER JOIN',
         needs_local_site_profile_query=needs_local_site_profile_query,
         needs_user_permission_queries=needs_user_permission_queries)
     q_tables = q_result['tables']
@@ -279,6 +293,7 @@ def get_review_groups_accessible_equeries(
         {
             '__note__': 'Fetch a list of accessible review groups',
             'distinct': True,
+            'join_types': q_result.get('join_types', {}),
             'model': Group,
             'num_joins': len(q_tables) - 1,
             'tables': q_tables,

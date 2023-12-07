@@ -350,7 +350,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 has_local_sites_in_db=local_sites_in_db,
                 status='P'))
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -437,7 +437,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 has_local_sites_in_db=local_sites_in_db,
                 status='P'))
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -532,7 +532,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 has_local_sites_in_db=local_sites_in_db,
                 status='P'))
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -625,7 +625,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 has_local_sites_in_db=local_sites_in_db,
                 status=None))
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -718,7 +718,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 status='P',
                 has_local_sites_in_db=local_sites_in_db))
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -842,7 +842,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 status='P',
                 has_local_sites_in_db=local_sites_in_db))
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -952,7 +952,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 status='P',
                 has_local_sites_in_db=local_sites_in_db))
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1029,7 +1029,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             },
         ]
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1131,6 +1131,9 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             },
             {
                 '__note__': 'Fetch the target groups for each review request',
+                'join_types': {
+                    'reviews_reviewrequest_target_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'tables': {
@@ -1148,6 +1151,9 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             },
             {
                 '__note__': 'Fetch the target users for each review request',
+                'join_types': {
+                    'reviews_reviewrequest_target_people': 'INNER JOIN',
+                },
                 'model': User,
                 'num_joins': 1,
                 'tables': {
@@ -1170,7 +1176,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             for _column in DashboardDataGrid.get_columns()
         )
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1292,7 +1298,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 has_local_sites_in_db=local_sites_in_db,
                 status='P'))
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 dashboard_url,
                 {
@@ -1437,7 +1443,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 has_local_sites_in_db=local_sites_in_db,
                 status='P'))
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1554,6 +1560,9 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                     '__note__': (
                         "Fetch the list of a user's starred review groups"
                     ),
+                    'join_types': {
+                        'accounts_profile_starred_groups': 'INNER JOIN',
+                    },
                     'model': Group,
                     'num_joins': 1,
                     'only_fields': {
@@ -1583,7 +1592,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 status='P'))
 
         # Now load the dashboard and get the sidebar items.
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1714,6 +1723,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         rows_q = rows_q_result['q']
         rows_q_tables = rows_q_result['tables']
         rows_q_num_joins = len(rows_q_tables) - 1
+        rows_q_join_types = rows_q_result.get('join_types', {})
 
         equeries = get_http_request_start_equeries(
             user=user,
@@ -1727,6 +1737,9 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         equeries += [
             {
                 '__note__': "Fetch the list of a user's review groups",
+                'join_types': {
+                    'reviews_group_users': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'only_fields': {
@@ -1760,6 +1773,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         'with archived review requests shown'
                     ),
                     'annotations': {'__count': Count('*')},
+                    'join_types': rows_q_join_types,
                     'model': ReviewRequest,
                     'num_joins': rows_q_num_joins,
                     'tables': rows_q_tables,
@@ -1775,6 +1789,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                             'Fetch the IDs of the items for one page with '
                             'archived review requests shown'
                         ),
+                        'join_types': rows_q_join_types,
                         'model': ReviewRequest,
                         'num_joins': rows_q_num_joins,
                         'tables': rows_q_tables,
@@ -1794,6 +1809,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         'Fetch the number of items across all datagrid pages'
                     ),
                     'annotations': {'__count': Count('*')},
+                    'join_types': rows_q_join_types,
                     'model': ReviewRequest,
                     'num_joins': rows_q_num_joins,
                     'tables': rows_q_tables,
@@ -1816,6 +1832,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 equeries += [
                     {
                         '__note__': 'Fetch the IDs of the items for one page',
+                        'join_types': rows_q_join_types,
                         'model': ReviewRequest,
                         'num_joins': rows_q_num_joins,
                         'tables': rows_q_tables,
@@ -1846,6 +1863,10 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         "Starred column: Fetch the IDs of the page's review "
                         "requests that are starred"
                     ),
+                    'join_types': {
+                        'accounts_profile_starred_review_requests':
+                            'INNER JOIN',
+                    },
                     'model': ReviewRequest,
                     'num_joins': 1,
                     'tables': {
@@ -1865,6 +1886,9 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         "To Me column: Fetch the IDs of the page's review "
                         "requests that are targeting the user"
                     ),
+                    'join_types': {
+                        'reviews_reviewrequest_target_people': 'INNER JOIN',
+                    },
                     'model': ReviewRequest,
                     'num_joins': 1,
                     'tables': {

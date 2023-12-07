@@ -105,7 +105,7 @@ class GroupListViewTests(BaseViewTestCase):
             local_sites_in_db=local_sites_in_db,
             review_groups=review_groups)
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -201,6 +201,9 @@ class GroupListViewTests(BaseViewTestCase):
                 'subqueries': [
                     {
                         'distinct': True,
+                        'join_types': {
+                            'reviews_group_users': 'LEFT OUTER JOIN',
+                        },
                         'model': Group,
                         'num_joins': rows_q_num_joins,
                         'subquery': True,
@@ -212,6 +215,9 @@ class GroupListViewTests(BaseViewTestCase):
             {
                 '__note__': 'Fetch the IDs of the items for one page',
                 'distinct': True,
+                'join_types': {
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                },
                 'limit': 10,
                 'model': Group,
                 'num_joins': rows_q_num_joins,
@@ -224,6 +230,9 @@ class GroupListViewTests(BaseViewTestCase):
                 '__note__': (
                     "Fetch the IDs of the page's groups that are starred."
                 ),
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'tables': {
@@ -245,6 +254,10 @@ class GroupListViewTests(BaseViewTestCase):
                                 Q(review_requests__status='P'))),
                 },
                 'group_by': True,
+                'join_types': {
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                },
                 'model': Group,
                 'num_joins': 2,
                 'select_related': row_data_select_related,

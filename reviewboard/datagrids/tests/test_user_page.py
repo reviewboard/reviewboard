@@ -185,7 +185,7 @@ class SubmitterViewTests(BaseViewTestCase):
             review_request_pks=review_request_pks,
             accessible_review_group_ids=[group1.pk])
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -262,7 +262,7 @@ class SubmitterViewTests(BaseViewTestCase):
             accessible_review_group_ids=[group1.pk])
 
         # Now load the page and get the sidebar items.
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -389,7 +389,7 @@ class SubmitterViewTests(BaseViewTestCase):
             local_sites_in_db=local_sites_in_db,
             review_pks=review_pks)
 
-        with self.assertQueries(equeries, check_subqueries=True):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 '%sreviews/' % self.get_datagrid_url(local_site=local_site))
 
@@ -490,6 +490,7 @@ class SubmitterViewTests(BaseViewTestCase):
         groups_q = groups_q_result['q']
         groups_q_tables = groups_q_result['tables']
         groups_q_num_joins = len(groups_q_tables) - 1
+        groups_q_join_types = groups_q_result.get('join_types', {})
 
         rows_q_result = get_review_requests_from_user_q(
             user=user,
@@ -504,6 +505,7 @@ class SubmitterViewTests(BaseViewTestCase):
         rows_q = rows_q_result['q']
         rows_q_tables = rows_q_result['tables']
         rows_q_num_joins = len(rows_q_tables) - 1
+        rows_q_join_types = rows_q_result.get('join_types', {})
 
         equeries = get_http_request_start_equeries(
             user=user,
@@ -513,6 +515,9 @@ class SubmitterViewTests(BaseViewTestCase):
             equeries += [
                 {
                     '__note__': 'Fetch the viewed user on the Local Site',
+                    'join_types': {
+                        'site_localsite_users': 'INNER JOIN',
+                    },
                     'model': User,
                     'num_joins': 1,
                     'tables': {
@@ -542,6 +547,7 @@ class SubmitterViewTests(BaseViewTestCase):
                     "Fetch the list of the viewed user's review groups"
                 ),
                 'distinct': True,
+                'join_types': groups_q_join_types,
                 'model': Group,
                 'num_joins': groups_q_num_joins,
                 'only_fields': {
@@ -564,6 +570,7 @@ class SubmitterViewTests(BaseViewTestCase):
                     'Fetch the number of items across all datagrid pages'
                 ),
                 'annotations': {'__count': Count('*')},
+                'join_types': rows_q_join_types,
                 'model': ReviewRequest,
                 'num_joins': rows_q_num_joins,
                 'tables': rows_q_tables,
@@ -578,6 +585,7 @@ class SubmitterViewTests(BaseViewTestCase):
                     '__note__': 'Fetch the IDs of the items for one page',
                     'distinct': True,
                     'extra': extra,
+                    'join_types': rows_q_join_types,
                     'limit': len(review_request_pks),
                     'model': ReviewRequest,
                     'num_joins': rows_q_num_joins,
@@ -592,6 +600,10 @@ class SubmitterViewTests(BaseViewTestCase):
                         "Fetch the IDs of the page's review requests that "
                         "are starred."
                     ),
+                    'join_types': {
+                        'accounts_profile_starred_review_requests':
+                            'INNER JOIN',
+                    },
                     'model': ReviewRequest,
                     'num_joins': 1,
                     'tables': {
@@ -693,6 +705,7 @@ class SubmitterViewTests(BaseViewTestCase):
         groups_q = groups_q_result['q']
         groups_q_tables = groups_q_result['tables']
         groups_q_num_joins = len(groups_q_tables) - 1
+        groups_q_join_types = groups_q_result.get('join_types', {})
 
         rows_q_result = get_reviews_from_user_q(
             user=user,
@@ -706,6 +719,7 @@ class SubmitterViewTests(BaseViewTestCase):
         rows_q = rows_q_result['q']
         rows_q_tables = rows_q_result['tables']
         rows_q_num_joins = len(rows_q_tables) - 1
+        rows_q_join_types = rows_q_result.get('join_types', {})
 
         equeries = get_http_request_start_equeries(
             user=user,
@@ -715,6 +729,9 @@ class SubmitterViewTests(BaseViewTestCase):
             equeries += [
                 {
                     '__note__': 'Fetch the viewed user on the Local Site',
+                    'join_types': {
+                        'site_localsite_users': 'INNER JOIN',
+                    },
                     'model': User,
                     'num_joins': 1,
                     'tables': {
@@ -744,6 +761,7 @@ class SubmitterViewTests(BaseViewTestCase):
                     "Fetch the list of the viewed user's review groups"
                 ),
                 'distinct': True,
+                'join_types': groups_q_join_types,
                 'model': Group,
                 'num_joins': groups_q_num_joins,
                 'only_fields': {
@@ -761,6 +779,7 @@ class SubmitterViewTests(BaseViewTestCase):
                     'Fetch the number of items across all datagrid pages'
                 ),
                 'annotations': {'__count': Count('*')},
+                'join_types': rows_q_join_types,
                 'model': Review,
                 'num_joins': rows_q_num_joins,
                 'tables': rows_q_tables,
@@ -775,6 +794,7 @@ class SubmitterViewTests(BaseViewTestCase):
                     '__note__': 'Fetch the IDs of the items for one page',
                     'distinct': True,
                     'extra': extra,
+                    'join_types': rows_q_join_types,
                     'limit': len(review_pks),
                     'model': Review,
                     'num_joins': rows_q_num_joins,

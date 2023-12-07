@@ -401,8 +401,6 @@ class BasicTestsMixin(_MixinsParentClass):
                 yield
             else:
                 with self.assertQueries(expected_queries,
-                                        check_subqueries=True,
-                                        with_tracebacks=True,
                                         traceback_size=30):
                     yield
 

@@ -100,6 +100,14 @@ class CommentManagerTests(TestCase):
         # 1. Fetch comments
         queries_anonymous = [
             {
+                'join_types': {
+                    'reviews_group': 'LEFT OUTER JOIN',
+                    'reviews_review': 'INNER JOIN',
+                    'reviews_review_general_comments': 'INNER JOIN',
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                    'scmtools_repository': 'LEFT OUTER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 6,
                 'tables': {
@@ -140,6 +148,12 @@ class CommentManagerTests(TestCase):
         # 5. Fetch comments
         queries_user = [
             {
+                'join_types': {
+                    'reviews_group': 'LEFT OUTER JOIN',
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                    'scmtools_repository_review_groups': 'LEFT OUTER JOIN',
+                    'scmtools_repository_users': 'LEFT OUTER JOIN',
+                },
                 'model': Repository,
                 'values_select': ('pk',),
                 'num_joins': 4,
@@ -158,6 +172,10 @@ class CommentManagerTests(TestCase):
                 ),
             },
             {
+                'join_types': {
+                    'auth_user_user_permissions': 'INNER JOIN',
+                    'django_content_type': 'INNER JOIN',
+                },
                 'model': Permission,
                 'values_select': ('content_type__app_label', 'codename',),
                 'num_joins': 2,
@@ -169,6 +187,12 @@ class CommentManagerTests(TestCase):
                 'where': Q(user__id=user.pk),
             },
             {
+                'join_types': {
+                    'auth_group': 'INNER JOIN',
+                    'auth_group_permissions': 'INNER JOIN',
+                    'auth_user_groups': 'INNER JOIN',
+                    'django_content_type': 'INNER JOIN',
+                },
                 'model': Permission,
                 'values_select': ('content_type__app_label', 'codename',),
                 'num_joins': 4,
@@ -182,6 +206,9 @@ class CommentManagerTests(TestCase):
                 'where': Q(group__user=user),
             },
             {
+                'join_types': {
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                },
                 'model': Group,
                 'values_select': ('pk',),
                 'num_joins': 1,
@@ -196,6 +223,13 @@ class CommentManagerTests(TestCase):
                 ),
             },
             {
+                'join_types': {
+                    'reviews_review': 'INNER JOIN',
+                    'reviews_review_general_comments': 'INNER JOIN',
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_people': 'LEFT OUTER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 5,
                 'tables': {
@@ -232,6 +266,11 @@ class CommentManagerTests(TestCase):
         # 1. Fetch comments
         queries_superuser = [
             {
+                'join_types': {
+                    'reviews_review': 'LEFT OUTER JOIN',
+                    'reviews_review_general_comments': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 3,
                 'tables': {
@@ -340,6 +379,14 @@ class CommentManagerTests(TestCase):
         # 1. Fetch comments
         queries_anonymous = [
             {
+                'join_types': {
+                    'reviews_group': 'LEFT OUTER JOIN',
+                    'reviews_review': 'INNER JOIN',
+                    'reviews_review_general_comments': 'INNER JOIN',
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                    'scmtools_repository': 'LEFT OUTER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 6,
                 'tables': {
@@ -379,6 +426,12 @@ class CommentManagerTests(TestCase):
         # 5. Fetch comments
         queries_user = [
             {
+                'join_types': {
+                    'reviews_group': 'LEFT OUTER JOIN',
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                    'scmtools_repository_review_groups': 'LEFT OUTER JOIN',
+                    'scmtools_repository_users': 'LEFT OUTER JOIN',
+                },
                 'model': Repository,
                 'values_select': ('pk',),
                 'num_joins': 4,
@@ -397,6 +450,10 @@ class CommentManagerTests(TestCase):
                 ),
             },
             {
+                'join_types': {
+                    'auth_user_user_permissions': 'INNER JOIN',
+                    'django_content_type': 'INNER JOIN',
+                },
                 'model': Permission,
                 'values_select': ('content_type__app_label', 'codename',),
                 'num_joins': 2,
@@ -408,6 +465,12 @@ class CommentManagerTests(TestCase):
                 'where': Q(user__id=user.pk),
             },
             {
+                'join_types': {
+                    'auth_group': 'INNER JOIN',
+                    'auth_group_permissions': 'INNER JOIN',
+                    'auth_user_groups': 'INNER JOIN',
+                    'django_content_type': 'INNER JOIN',
+                },
                 'model': Permission,
                 'values_select': ('content_type__app_label', 'codename',),
                 'num_joins': 4,
@@ -421,6 +484,9 @@ class CommentManagerTests(TestCase):
                 'where': Q(group__user=user),
             },
             {
+                'join_types': {
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                },
                 'model': Group,
                 'values_select': ('pk',),
                 'num_joins': 1,
@@ -435,6 +501,13 @@ class CommentManagerTests(TestCase):
                 ),
             },
             {
+                'join_types': {
+                    'reviews_review': 'INNER JOIN',
+                    'reviews_review_general_comments': 'INNER JOIN',
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_people': 'LEFT OUTER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 5,
                 'tables': {
@@ -475,6 +548,11 @@ class CommentManagerTests(TestCase):
         # 1. Fetch comments
         queries_superuser = [
             {
+                'join_types': {
+                    'reviews_review': 'LEFT OUTER JOIN',
+                    'reviews_review_general_comments': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 3,
                 'tables': {
@@ -550,6 +628,14 @@ class CommentManagerTests(TestCase):
         # 1. Fetch comments
         queries_anonymous = [
             {
+                'join_types': {
+                    'reviews_group': 'LEFT OUTER JOIN',
+                    'reviews_review': 'INNER JOIN',
+                    'reviews_review_general_comments': 'INNER JOIN',
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                    'scmtools_repository': 'LEFT OUTER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 6,
                 'tables': {
@@ -590,6 +676,12 @@ class CommentManagerTests(TestCase):
         # 5. Fetch comments
         queries_user = [
             {
+                'join_types': {
+                    'reviews_group': 'LEFT OUTER JOIN',
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                    'scmtools_repository_review_groups': 'LEFT OUTER JOIN',
+                    'scmtools_repository_users': 'LEFT OUTER JOIN',
+                },
                 'model': Repository,
                 'values_select': ('pk',),
                 'num_joins': 4,
@@ -608,6 +700,10 @@ class CommentManagerTests(TestCase):
                 ),
             },
             {
+                'join_types': {
+                    'auth_user_user_permissions': 'INNER JOIN',
+                    'django_content_type': 'INNER JOIN',
+                },
                 'model': Permission,
                 'values_select': ('content_type__app_label', 'codename',),
                 'num_joins': 2,
@@ -619,6 +715,12 @@ class CommentManagerTests(TestCase):
                 'where': Q(user__id=user.pk),
             },
             {
+                'join_types': {
+                    'auth_group': 'INNER JOIN',
+                    'auth_group_permissions': 'INNER JOIN',
+                    'auth_user_groups': 'INNER JOIN',
+                    'django_content_type': 'INNER JOIN',
+                },
                 'model': Permission,
                 'values_select': ('content_type__app_label', 'codename',),
                 'num_joins': 4,
@@ -632,6 +734,9 @@ class CommentManagerTests(TestCase):
                 'where': Q(group__user=user),
             },
             {
+                'join_types': {
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                },
                 'model': Group,
                 'values_select': ('pk',),
                 'num_joins': 1,
@@ -646,6 +751,13 @@ class CommentManagerTests(TestCase):
                 ),
             },
             {
+                'join_types': {
+                    'reviews_review': 'INNER JOIN',
+                    'reviews_review_general_comments': 'INNER JOIN',
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_people': 'LEFT OUTER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 5,
                 'tables': {
@@ -687,6 +799,11 @@ class CommentManagerTests(TestCase):
         # 1. Fetch comments
         queries_superuser = [
             {
+                'join_types': {
+                    'reviews_review': 'LEFT OUTER JOIN',
+                    'reviews_review_general_comments': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 3,
                 'tables': {
@@ -765,6 +882,12 @@ class CommentManagerTests(TestCase):
         # 6. Fetch comments
         queries_user = [
             {
+                'join_types': {
+                    'reviews_group': 'LEFT OUTER JOIN',
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                    'scmtools_repository_review_groups': 'LEFT OUTER JOIN',
+                    'scmtools_repository_users': 'LEFT OUTER JOIN',
+                },
                 'model': Repository,
                 'values_select': ('pk',),
                 'num_joins': 4,
@@ -783,6 +906,10 @@ class CommentManagerTests(TestCase):
                 ),
             },
             {
+                'join_types': {
+                    'auth_user_user_permissions': 'INNER JOIN',
+                    'django_content_type': 'INNER JOIN',
+                },
                 'model': Permission,
                 'values_select': ('content_type__app_label', 'codename',),
                 'num_joins': 2,
@@ -794,6 +921,12 @@ class CommentManagerTests(TestCase):
                 'where': Q(user__id=user.pk),
             },
             {
+                'join_types': {
+                    'auth_group': 'INNER JOIN',
+                    'auth_group_permissions': 'INNER JOIN',
+                    'auth_user_groups': 'INNER JOIN',
+                    'django_content_type': 'INNER JOIN',
+                },
                 'model': Permission,
                 'values_select': ('content_type__app_label', 'codename',),
                 'num_joins': 4,
@@ -807,6 +940,9 @@ class CommentManagerTests(TestCase):
                 'where': Q(group__user=user),
             },
             {
+                'join_types': {
+                    'site_localsite_admins': 'INNER JOIN',
+                },
                 'model': User,
                 'extra': {
                     'a': ('1', [])
@@ -823,6 +959,9 @@ class CommentManagerTests(TestCase):
                 ),
             },
             {
+                'join_types': {
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                },
                 'model': Group,
                 'values_select': ('pk',),
                 'num_joins': 1,
@@ -837,6 +976,13 @@ class CommentManagerTests(TestCase):
                 ),
             },
             {
+                'join_types': {
+                    'reviews_review': 'INNER JOIN',
+                    'reviews_review_general_comments': 'INNER JOIN',
+                    'reviews_reviewrequest': 'INNER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_people': 'LEFT OUTER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 5,
                 'tables': {
@@ -930,6 +1076,12 @@ class CommentManagerTests(TestCase):
         # 6. Fetch comments
         queries_user = [
             {
+                'join_types': {
+                    'reviews_group': 'LEFT OUTER JOIN',
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                    'scmtools_repository_review_groups': 'LEFT OUTER JOIN',
+                    'scmtools_repository_users': 'LEFT OUTER JOIN',
+                },
                 'model': Repository,
                 'values_select': ('pk',),
                 'num_joins': 4,
@@ -947,6 +1099,10 @@ class CommentManagerTests(TestCase):
                 ),
             },
             {
+                'join_types': {
+                    'auth_user_user_permissions': 'INNER JOIN',
+                    'django_content_type': 'INNER JOIN',
+                },
                 'model': Permission,
                 'values_select': ('content_type__app_label', 'codename',),
                 'num_joins': 2,
@@ -958,6 +1114,12 @@ class CommentManagerTests(TestCase):
                 'where': Q(user__id=user.pk),
             },
             {
+                'join_types': {
+                    'auth_group': 'INNER JOIN',
+                    'auth_group_permissions': 'INNER JOIN',
+                    'auth_user_groups': 'INNER JOIN',
+                    'django_content_type': 'INNER JOIN',
+                },
                 'model': Permission,
                 'values_select': ('content_type__app_label', 'codename',),
                 'num_joins': 4,
@@ -971,6 +1133,9 @@ class CommentManagerTests(TestCase):
                 'where': Q(group__user=user),
             },
             {
+                'join_types': {
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                },
                 'model': Group,
                 'values_select': ('pk',),
                 'num_joins': 1,
@@ -984,6 +1149,13 @@ class CommentManagerTests(TestCase):
                 ),
             },
             {
+                'join_types': {
+                    'reviews_review': 'INNER JOIN',
+                    'reviews_review_general_comments': 'INNER JOIN',
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_people': 'LEFT OUTER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 5,
                 'tables': {
@@ -1040,6 +1212,12 @@ class CommentManagerTests(TestCase):
         # 5. Fetch comments
         queries = [
             {
+                'join_types': {
+                    'reviews_group': 'LEFT OUTER JOIN',
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                    'scmtools_repository_review_groups': 'LEFT OUTER JOIN',
+                    'scmtools_repository_users': 'LEFT OUTER JOIN'
+                },
                 'model': Repository,
                 'values_select': ('pk',),
                 'num_joins': 4,
@@ -1058,6 +1236,10 @@ class CommentManagerTests(TestCase):
                 ),
             },
             {
+                'join_types': {
+                    'auth_user_user_permissions': 'INNER JOIN',
+                    'django_content_type': 'INNER JOIN',
+                },
                 'model': Permission,
                 'values_select': ('content_type__app_label', 'codename',),
                 'num_joins': 2,
@@ -1069,6 +1251,12 @@ class CommentManagerTests(TestCase):
                 'where': Q(user__id=user.pk),
             },
             {
+                'join_types': {
+                    'auth_group': 'INNER JOIN',
+                    'auth_group_permissions': 'INNER JOIN',
+                    'auth_user_groups': 'INNER JOIN',
+                    'django_content_type': 'INNER JOIN',
+                },
                 'model': Permission,
                 'values_select': ('content_type__app_label', 'codename',),
                 'num_joins': 4,
@@ -1082,6 +1270,9 @@ class CommentManagerTests(TestCase):
                 'where': Q(group__user=user),
             },
             {
+                'join_types': {
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                },
                 'model': Group,
                 'values_select': ('pk',),
                 'num_joins': 1,
@@ -1096,6 +1287,13 @@ class CommentManagerTests(TestCase):
                 ),
             },
             {
+                'join_types': {
+                    'reviews_review': 'INNER JOIN',
+                    'reviews_review_general_comments': 'INNER JOIN',
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_people': 'LEFT OUTER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 5,
                 'tables': {
@@ -1144,6 +1342,11 @@ class CommentManagerTests(TestCase):
         # 1. Fetch comments
         queries = [
             {
+                'join_types': {
+                    'reviews_review': 'INNER JOIN',
+                    'reviews_review_general_comments': 'INNER JOIN',
+                    'reviews_reviewrequest': 'INNER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 3,
                 'tables': {
@@ -1188,6 +1391,11 @@ class CommentManagerTests(TestCase):
         # 1. Fetch comments
         queries = [
             {
+                'join_types': {
+                    'reviews_review': 'INNER JOIN',
+                    'reviews_review_general_comments': 'INNER JOIN',
+                    'reviews_reviewrequest': 'INNER JOIN',
+                },
                 'model': GeneralComment,
                 'num_joins': 3,
                 'tables': {
