@@ -257,6 +257,7 @@ Review Requests and Reviews
    reviewboard.reviews.testing
    reviewboard.reviews.testing.queries
    reviewboard.reviews.testing.queries.review_groups
+   reviewboard.reviews.testing.queries.review_requests
    reviewboard.reviews.ui.base
    reviewboard.reviews.ui.image
    reviewboard.reviews.ui.markdownui
