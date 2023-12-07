@@ -39,6 +39,7 @@ if TYPE_CHECKING:
         accessible_repository_ids: NotRequired[Sequence[int]]
         accessible_review_group_ids: NotRequired[Sequence[int]]
         needs_local_site_profile_query: NotRequired[bool]
+        needs_user_permission_queries: NotRequired[bool]
 
 
 ##########################
@@ -58,6 +59,7 @@ def get_review_requests_accessible_q(
     accessible_repository_ids: Sequence[int] = [],
     accessible_review_group_ids: Sequence[int] = [],
     needs_local_site_profile_query: bool = False,
+    needs_user_permission_queries: bool = True,
 ) -> ExpectedQResult:
     """Return a Q expression for accessible review request queries.
 
@@ -106,6 +108,12 @@ def get_review_requests_accessible_q(
 
             Set this to ``False`` if this should be cached at this point.
 
+        needs_user_permission_queries (bool, optional):
+            Whether the query should check for the
+            ``reviews.can_view_invite_only_groups`` permission.
+
+            Set to ``False`` if this is already cached at this point.
+
     Returns:
         dict:
         The expected Q results.
@@ -125,16 +133,12 @@ def get_review_requests_accessible_q(
         is_authenticated = True
         is_superuser = user.is_superuser
 
-        if filter_private and not is_superuser:
-            prep_equeries += get_repositories_accessible_ids_equeries(
+        if filter_private:
+            prep_equeries = get_review_requests_accessible_prep_equeries(
                 user=user,
                 local_site=local_site,
-                visible_only=False)
-            prep_equeries += get_review_groups_accessible_ids_equeries(
-                user=user,
-                local_site=local_site,
-                visible_only=False,
-                needs_local_site_profile_query=needs_local_site_profile_query)
+                needs_local_site_profile_query=needs_local_site_profile_query,
+                needs_user_permission_queries=needs_user_permission_queries)
 
     # This is intended to be verbose, to ensure we're matching exactly the
     # queries we expect. We want to minimize building of queries.
@@ -945,8 +949,9 @@ def get_review_requests_to_or_from_user_q(
 def get_review_requests_accessible_prep_equeries(
     *,
     user: Union[AnonymousUser, User],
-    local_site: Optional[LocalSite],
+    local_site: AnyOrAllLocalSites = None,
     needs_local_site_profile_query: bool = True,
+    needs_user_permission_queries: bool = True,
 ) -> ExpectedQueries:
     """Return expected review request accessibility preparation queries.
 
@@ -970,13 +975,19 @@ def get_review_requests_accessible_prep_equeries(
 
             Set to ``False`` if this should be cached at this point.
 
+        needs_user_permission_queries (bool, optional):
+            Whether the query should check for the
+            ``reviews.can_view_invite_only_groups`` permission.
+
+            Set to ``False`` if this is already cached at this point.
+
     Returns:
         list of dict:
         The list of expected queries.
     """
     equeries: ExpectedQueries = []
 
-    if user.is_authenticated:
+    if user.is_authenticated and not user.is_superuser:
         equeries += get_repositories_accessible_ids_equeries(
             user=user,
             local_site=local_site,
@@ -985,7 +996,8 @@ def get_review_requests_accessible_prep_equeries(
             user=user,
             local_site=local_site,
             visible_only=False,
-            needs_local_site_profile_query=needs_local_site_profile_query)
+            needs_local_site_profile_query=needs_local_site_profile_query,
+            needs_user_permission_queries=needs_user_permission_queries)
 
     return equeries
 

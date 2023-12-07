@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
 from django.db.models import Q
 from djblets.db.query_comparator import ExpectedQueries
 
@@ -85,6 +85,70 @@ def get_user_local_site_profile_equeries(
                       Q(profile=profile) &
                       Q(user=user)),
         }
+    ]
+
+
+def get_user_permissions_equeries(
+    *,
+    user: User,
+) -> ExpectedQueries:
+    """Return expected queries for fetching a user's permissions.
+
+    This corresponds to a call to :py:meth:`StandardAuthBackend.has_perm()
+    <reviewboard.accounts.backends.standard.StandardAuthBackend>`, without
+    passing a Local Site.
+
+    Version Added:
+        5.0.7
+
+    Args:
+        user (django.contrib.auth.models.AnonymousUser or
+              django.contrib.auth.models.User):
+            The user with the profile.
+
+    Returns:
+        list of dict:
+        The list of expected queries.
+    """
+    username = user.username
+
+    return [
+        {
+            '__note__': f'Fetch the user "{username}"\'s permissions',
+            'join_types': {
+                'auth_user_user_permissions': 'INNER JOIN',
+                'django_content_type': 'INNER JOIN',
+            },
+            'model': Permission,
+            'num_joins': 2,
+            'tables': {
+                'auth_permission',
+                'auth_user_user_permissions',
+                'django_content_type',
+            },
+            'values_select': ('content_type__app_label', 'codename'),
+            'where': Q(user__id=user.pk),
+        },
+        {
+            '__note__': f'Fetch the user "{username}"\'s permission groups',
+            'join_types': {
+                'auth_group': 'INNER JOIN',
+                'auth_group_permissions': 'INNER JOIN',
+                'auth_user_groups': 'INNER JOIN',
+                'django_content_type': 'INNER JOIN',
+            },
+            'model': Permission,
+            'num_joins': 4,
+            'tables': {
+                'auth_group',
+                'auth_group_permissions',
+                'auth_permission',
+                'auth_user_groups',
+                'django_content_type',
+            },
+            'values_select': ('content_type__app_label', 'codename'),
+            'where': Q(group__user=user),
+        },
     ]
 
 

@@ -12,8 +12,10 @@ from django.contrib.auth.models import AnonymousUser, Permission, User
 from django.db.models import Q
 from djblets.db.query_comparator import ExpectedQueries
 
-from reviewboard.accounts.testing.queries import \
-    get_user_local_site_profile_equeries
+from reviewboard.accounts.testing.queries import (
+    get_user_local_site_profile_equeries,
+    get_user_permissions_equeries,
+)
 from reviewboard.reviews.models import Group
 from reviewboard.site.models import LocalSite
 from reviewboard.site.testing.queries import \
@@ -30,6 +32,7 @@ def get_review_groups_accessible_q(
     local_site: AnyOrAllLocalSites = None,
     visible_only: bool = True,
     has_view_invite_only_groups_perm: bool = False,
+    needs_local_site_profile_query: bool = False,
     needs_user_permission_queries: bool = True,
 ) -> ExpectedQResult:
     """Return a Q expression for accessible review group queries.
@@ -51,6 +54,12 @@ def get_review_groups_accessible_q(
         has_view_invite_only_groups_perm (bool, optional):
             Whether to expect the ``reviews.has_view_invite_only_groups_perm``
             permission to be set.
+
+            Set to ``True`` if this is not cached at this point.
+
+        needs_local_site_profile_query (bool, optional):
+            Whether the query should fetch a
+            :py:class:`~reviewboard.accounts.models.LocalSiteProfile`.
 
             Set to ``True`` if this is not cached at this point.
 
@@ -135,12 +144,13 @@ def get_review_groups_accessible_q(
                      Q(local_site=local_site))
 
     return {
-        'q': q,
-        'tables': tables,
         'prep_equeries': get_review_groups_accessible_prep_equeries(
             user=user,
             local_site=local_site,
+            needs_local_site_profile_query=needs_local_site_profile_query,
             needs_user_permission_queries=needs_user_permission_queries),
+        'q': q,
+        'tables': tables,
     }
 
 
@@ -191,40 +201,7 @@ def get_review_groups_accessible_prep_equeries(
         # This starts out by checking for user permissions, both on the
         # User/Group and on the Local Site.
         if needs_user_permission_queries:
-            equeries += [
-                {
-                    '__note__': (
-                        'Check if the user has the '
-                        'reviews.can_view_invite_only_groups permission'
-                    ),
-                    'model': Permission,
-                    'num_joins': 2,
-                    'tables': {
-                        'auth_permission',
-                        'auth_user_user_permissions',
-                        'django_content_type',
-                    },
-                    'values_select': ('content_type__app_label', 'codename'),
-                    'where': Q(user__id=user.pk),
-                },
-                {
-                    '__note__': (
-                        'Check if the user is part of a permission group with '
-                        'the reviews.can_view_invite_only_groups permission'
-                    ),
-                    'model': Permission,
-                    'num_joins': 4,
-                    'tables': {
-                        'auth_group',
-                        'auth_group_permissions',
-                        'auth_permission',
-                        'auth_user_groups',
-                        'django_content_type',
-                    },
-                    'values_select': ('content_type__app_label', 'codename'),
-                    'where': Q(group__user=user),
-                },
-            ]
+            equeries += get_user_permissions_equeries(user=user)
 
         if local_site is not None and local_site is not LocalSite.ALL:
             equeries += get_local_site_is_mutable_by_equeries(
@@ -247,6 +224,7 @@ def get_review_groups_accessible_equeries(
     visible_only: bool = True,
     has_view_invite_only_groups_perm: bool = False,
     needs_local_site_profile_query: bool = False,
+    needs_user_permission_queries: bool = True,
 ) -> ExpectedQueries:
     """Return Group accessibility preparation queries.
 
@@ -278,23 +256,26 @@ def get_review_groups_accessible_equeries(
 
             Set to ``False`` if this should be cached at this point.
 
+        needs_user_permission_queries (bool, optional):
+            Whether the query should check for the
+            ``reviews.can_view_invite_only_groups`` permission.
+
+            Set to ``False`` if this is already cached at this point.
+
     Returns:
         list of dict:
         The list of expected queries.
     """
-    equeries = get_review_groups_accessible_prep_equeries(
-        user=user,
-        local_site=local_site,
-        needs_local_site_profile_query=needs_local_site_profile_query)
-
     q_result = get_review_groups_accessible_q(
         user=user,
         local_site=local_site,
         visible_only=visible_only,
-        has_view_invite_only_groups_perm=has_view_invite_only_groups_perm)
+        has_view_invite_only_groups_perm=has_view_invite_only_groups_perm,
+        needs_local_site_profile_query=needs_local_site_profile_query,
+        needs_user_permission_queries=needs_user_permission_queries)
     q_tables = q_result['tables']
 
-    equeries += [
+    equeries: ExpectedQueries = q_result.get('prep_equeries', []) + [
         {
             '__note__': 'Fetch a list of accessible review groups',
             'distinct': True,
@@ -315,6 +296,7 @@ def get_review_groups_accessible_ids_equeries(
     visible_only: bool = True,
     has_view_invite_only_groups_perm: bool = False,
     needs_local_site_profile_query: bool = False,
+    needs_user_permission_queries: bool = True,
 ) -> ExpectedQueries:
     """Return expected queries for Group.objects.accessible_ids().
 
@@ -342,6 +324,12 @@ def get_review_groups_accessible_ids_equeries(
 
             Set to ``False`` if this should be cached at this point.
 
+        needs_user_permission_queries (bool, optional):
+            Whether the query should check for the
+            ``reviews.can_view_invite_only_groups`` permission.
+
+            Set to ``False`` if this is already cached at this point.
+
     Returns:
         list of dict:
         The list of expected queries.
@@ -351,7 +339,8 @@ def get_review_groups_accessible_ids_equeries(
         local_site=local_site,
         visible_only=visible_only,
         has_view_invite_only_groups_perm=has_view_invite_only_groups_perm,
-        needs_local_site_profile_query=needs_local_site_profile_query)
+        needs_local_site_profile_query=needs_local_site_profile_query,
+        needs_user_permission_queries=needs_user_permission_queries)
     equeries[-1].update({
         '__note__': 'Fetch a list of accessible review group IDs',
         'distinct': False,
