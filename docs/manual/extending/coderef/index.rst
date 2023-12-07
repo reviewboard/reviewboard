@@ -39,6 +39,9 @@ User Accounts
    reviewboard.accounts.backends.x509
    reviewboard.accounts.decorators
    reviewboard.accounts.errors
+   reviewboard.accounts.forms.auth
+   reviewboard.accounts.forms.pages
+   reviewboard.accounts.forms.registration
    reviewboard.accounts.managers
    reviewboard.accounts.middleware
    reviewboard.accounts.mixins
@@ -46,10 +49,9 @@ User Accounts
    reviewboard.accounts.pages
    reviewboard.accounts.privacy
    reviewboard.accounts.templatetags.accounts
+   reviewboard.accounts.testing
+   reviewboard.accounts.testing.queries
    reviewboard.accounts.trophies
-   reviewboard.accounts.forms.auth
-   reviewboard.accounts.forms.pages
-   reviewboard.accounts.forms.registration
 
 
 Actions
@@ -283,6 +285,11 @@ Review Requests and Reviews
    reviewboard.reviews.models
    reviewboard.reviews.signals
    reviewboard.reviews.templatetags.reviewtags
+   reviewboard.reviews.testing
+   reviewboard.reviews.testing.queries
+   reviewboard.reviews.testing.queries.review_groups
+   reviewboard.reviews.testing.queries.review_requests
+   reviewboard.reviews.testing.queries.reviews
    reviewboard.reviews.ui.base
    reviewboard.reviews.ui.image
    reviewboard.reviews.ui.markdownui
@@ -316,6 +323,8 @@ Repository Communication
    reviewboard.scmtools.managers
    reviewboard.scmtools.models
    reviewboard.scmtools.signals
+   reviewboard.scmtools.testing
+   reviewboard.scmtools.testing.queries
    reviewboard.scmtools.tests.testcases
 
 
@@ -350,6 +359,8 @@ Local Sites
    reviewboard.site.models
    reviewboard.site.signals
    reviewboard.site.templatetags.localsite
+   reviewboard.site.testing
+   reviewboard.site.testing.queries
    reviewboard.site.urlresolvers
    reviewboard.site.validation
 
@@ -374,6 +385,9 @@ Unit Test Helpers
    :toctree: python
 
    reviewboard.testing.hosting_services
+   reviewboard.testing.queries
+   reviewboard.testing.queries.base
+   reviewboard.testing.queries.http
    reviewboard.testing.scmtool
    reviewboard.testing.testcase
 
@@ -391,6 +405,8 @@ Web API
    reviewboard.webapi.mixins
    reviewboard.webapi.models
    reviewboard.webapi.server_info
+   reviewboard.webapi.testing
+   reviewboard.webapi.testing.queries
    reviewboard.webapi.tests.base
 
 

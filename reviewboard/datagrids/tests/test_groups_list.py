@@ -6,16 +6,24 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Sequence, TYPE_CHECKING
 
-from django.contrib.auth.models import Permission, User
+from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.accounts.models import LocalSiteProfile, Profile
+from reviewboard.accounts.models import Profile
 from reviewboard.datagrids.tests.base import BaseViewTestCase
 from reviewboard.reviews.models import Group, ReviewRequest
+from reviewboard.reviews.testing.queries.review_groups import (
+    get_review_groups_accessible_prep_equeries,
+    get_review_groups_accessible_q,
+)
 from reviewboard.site.models import LocalSite
+from reviewboard.testing.queries.http import get_http_request_start_equeries
+
+if TYPE_CHECKING:
+    from djblets.db.query_comparator import ExpectedQueries
 
 
 class GroupListViewTests(BaseViewTestCase):
@@ -82,116 +90,101 @@ class GroupListViewTests(BaseViewTestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
 
-        for i in range(10):
-            self.create_review_group(
-                local_site=local_site,
-                name='group-%02d' % (i + 1))
+        review_groups = [
+            self.create_review_group(local_site=local_site,
+                                     name='group-%02d' % (i + 1))
+            for i in range(10)
+        ]
 
         self._prefetch_cached()
 
-        queries = [
-            {
-                '__note__': 'Fetch the logged-in user',
-                'model': User,
-                'where': Q(pk=user.pk),
-            },
-            {
-                '__note__': "Fetch the user's profile",
-                'model': Profile,
-                'where': Q(user=user),
-            },
+        equeries = self._build_datagrid_equeries(
+            user=user,
+            profile=profile,
+            local_site=local_site,
+            local_sites_in_db=local_sites_in_db,
+            review_groups=review_groups)
+
+        with self.assertQueries(equeries):
+            response = self.client.get(
+                self.get_datagrid_url(local_site=local_site))
+
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        assert datagrid is not None
+        self.assertEqual(
+            [
+                row['object']
+                for row in datagrid.rows
+            ],
+            review_groups)
+
+    def _build_datagrid_equeries(
+        self,
+        *,
+        user: User,
+        profile: Profile,
+        local_site: Optional[LocalSite] = None,
+        local_sites_in_db: bool = False,
+        review_groups: Sequence[Group],
+    ) -> ExpectedQueries:
+        """Return expected queries for viewing the datagrid.
+
+        This assumes that the user has access to the datagrid, and that any
+        cacheable state is already cached.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user accessing the datagrid.
+
+            profile (reviewboard.accounts.models.Profile):
+                The user's profile.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The Local Site that's being accessed, if any.
+
+            local_sites_in_db (bool, optional):
+                Whether the database contains any Local Sites.
+
+            review_groups (list of reviewboard.reviews.models.group.Group):
+                The list of review groups that should be returned in the
+                results, in display order.
+
+        Returns:
+            list of dict:
+            The list of expected queries.
+        """
+        review_group_pks = [
+            _group.pk
+            for _group in review_groups
         ]
 
-        if local_site:
-            queries += [
-                {
-                    '__note__': 'Fetch the accessed Local Site',
-                    'model': LocalSite,
-                    'where': Q(name=local_site.name),
-                },
-                {
-                    '__note__': (
-                        'Check if the user is a member of the Local Site'
-                    ),
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'model': User,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_users',
-                    },
-                    'where': (Q(local_site__id=local_site.pk) &
-                              Q(pk=user.pk)),
-                },
-            ]
+        if local_site is not None:
+            row_data_select_related = {
+                'local_site',
+            }
+        else:
+            row_data_select_related = set()
 
-        queries += [
-            {
-                '__note__': (
-                    'Check if the user has permission to view invite-only '
-                    'review groups'
-                ),
-                'model': Permission,
-                'num_joins': 2,
-                'tables': {
-                    'auth_permission',
-                    'auth_user_user_permissions',
-                    'django_content_type',
-                },
-                'values_select': ('content_type__app_label', 'codename'),
-                'where': Q(user__id=user.pk),
-            },
-            {
-                '__note__': (
-                    'Check if the user is in a permission group with '
-                    'permission to view invite-only review groups'
-                ),
-                'model': Permission,
-                'num_joins': 4,
-                'tables': {
-                    'auth_group',
-                    'auth_group_permissions',
-                    'auth_permission',
-                    'auth_user_groups',
-                    'django_content_type',
-                },
-                'values_select': ('content_type__app_label', 'codename'),
-                'where': Q(group__user=user),
-            },
-        ]
+        rows_q_result = get_review_groups_accessible_q(
+            user=user,
+            local_site=local_site)
+        rows_q = rows_q_result['q']
+        rows_q_tables = rows_q_result['tables']
+        rows_q_num_joins = len(rows_q_tables) - 1
 
-        if local_site:
-            queries += [
-                {
-                    '__note__': (
-                        'Check if the user is an admin of the Local'
-                    ),
-                    'extra': {
-                        'a': ('1', []),
-                    },
-                    'limit': 1,
-                    'model': User,
-                    'num_joins': 1,
-                    'tables': {
-                        'auth_user',
-                        'site_localsite_admins',
-                    },
-                    'where': (Q(local_site_admins__id=local_site.pk) &
-                              Q(pk=user.pk)),
-                },
-                {
-                    '__note__': "Fetch the user's LocalSiteProfile",
-                    'model': LocalSiteProfile,
-                    'where': (Q(local_site=local_site) &
-                              Q(profile=profile) &
-                              Q(user=user)),
-                },
-            ]
-
-        queries += [
+        equeries = get_http_request_start_equeries(
+            user=user,
+            local_site=local_site)
+        equeries += get_review_groups_accessible_prep_equeries(
+            user=user,
+            local_site=local_site,
+            needs_local_site_profile_query=True)
+        equeries += [
             {
                 '__note__': 'Update datagrid state on the user profile',
                 'model': Profile,
@@ -208,41 +201,38 @@ class GroupListViewTests(BaseViewTestCase):
                 'subqueries': [
                     {
                         'distinct': True,
-                        'model': Group,
-                        'num_joins': 1,
-                        'subquery': True,
-                        'tables': {
-                            'reviews_group',
-                            'reviews_group_users',
+                        'join_types': {
+                            'reviews_group_users': 'LEFT OUTER JOIN',
                         },
-                        'where': (((Q(invite_only=False) &
-                                    Q(visible=True)) |
-                                   Q(users=user.pk)) &
-                                  Q(local_site=local_site)),
+                        'model': Group,
+                        'num_joins': rows_q_num_joins,
+                        'subquery': True,
+                        'tables': rows_q_tables,
+                        'where': rows_q,
                     },
                 ],
             },
             {
                 '__note__': 'Fetch the IDs of the items for one page',
                 'distinct': True,
+                'join_types': {
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                },
                 'limit': 10,
                 'model': Group,
-                'num_joins': 1,
+                'num_joins': rows_q_num_joins,
                 'order_by': ('name',),
-                'tables': {
-                    'reviews_group',
-                    'reviews_group_users',
-                },
+                'tables': rows_q_tables,
                 'values_select': ('pk',),
-                'where': (((Q(invite_only=False) &
-                            Q(visible=True)) |
-                           Q(users=user.pk)) &
-                          Q(local_site=local_site)),
+                'where': rows_q,
             },
             {
                 '__note__': (
                     "Fetch the IDs of the page's groups that are starred."
                 ),
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'tables': {
@@ -251,63 +241,33 @@ class GroupListViewTests(BaseViewTestCase):
                 },
                 'values_select': ('pk',),
                 'where': (Q(starred_by__id=profile.pk) &
-                          Q(pk__in=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10])),
+                          Q(pk__in=review_group_pks)),
             },
             {
-                '__note__': 'Fetch the data for one page based on the IDs.',
+                '__note__': (
+                    'Fetch the data for one page based on the IDs.'
+                ),
+                'annotations': {
+                    'column_pending_review_request_count': Count(
+                        'review_requests',
+                        filter=(Q(review_requests__public=True) &
+                                Q(review_requests__status='P'))),
+                },
+                'group_by': True,
+                'join_types': {
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                },
                 'model': Group,
-                'where': Q(pk__in=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
+                'num_joins': 2,
+                'select_related': row_data_select_related,
+                'tables': {
+                    'reviews_group',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'where': Q(pk__in=review_group_pks),
             },
         ]
 
-        # NOTE: This represents a performance bug due to a bad query.
-        #       It's being tracked and will be resolved in a future
-        #       change.
-        for i in range(10):
-            if local_site:
-                queries += [
-                    {
-                        '__note__': f'Excess LocalSite query for row {i}',
-                        'model': LocalSite,
-                        'tables': {
-                            'site_localsite',
-                        },
-                        'where': Q(id=local_site.pk)
-                    }
-                ]
-
-            queries += [
-                {
-                    '__note__': f'Excess target_groups query for row {i}',
-                    'annotations': {'__count': Count('*')},
-                    'model': ReviewRequest,
-                    'num_joins': 1,
-                    'tables': {
-                        'reviews_reviewrequest',
-                        'reviews_reviewrequest_target_groups',
-                    },
-                    'where': (Q(target_groups__id=i + 1) &
-                              Q(public=True) &
-                              Q(status='P')),
-                },
-            ]
-
-        with self.assertQueries(queries, check_subqueries=True):
-            response = self.client.get(
-                self.get_datagrid_url(local_site=local_site))
-
-        self.assertEqual(response.status_code, 200)
-
-        datagrid = self._get_context_var(response, 'datagrid')
-        assert datagrid is not None
-        self.assertEqual(len(datagrid.rows), 10)
-        self.assertEqual(datagrid.rows[0]['object'].name, 'group-01')
-        self.assertEqual(datagrid.rows[1]['object'].name, 'group-02')
-        self.assertEqual(datagrid.rows[2]['object'].name, 'group-03')
-        self.assertEqual(datagrid.rows[3]['object'].name, 'group-04')
-        self.assertEqual(datagrid.rows[4]['object'].name, 'group-05')
-        self.assertEqual(datagrid.rows[5]['object'].name, 'group-06')
-        self.assertEqual(datagrid.rows[6]['object'].name, 'group-07')
-        self.assertEqual(datagrid.rows[7]['object'].name, 'group-08')
-        self.assertEqual(datagrid.rows[8]['object'].name, 'group-09')
-        self.assertEqual(datagrid.rows[9]['object'].name, 'group-10')
+        return equeries
