@@ -1531,7 +1531,7 @@ class ReviewRequest(BaseReviewRequestDetails):
     class Meta:
         app_label = 'reviews'
         db_table = 'reviews_reviewrequest'
-        ordering = ['-last_updated', 'submitter', 'summary']
+        ordering = ['-last_updated']
         unique_together = (('commit_id', 'repository'),
                            ('changenum', 'repository'),
                            ('local_site', 'local_id'))

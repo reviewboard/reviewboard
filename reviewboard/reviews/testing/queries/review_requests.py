@@ -9,12 +9,13 @@ from __future__ import annotations
 from typing import Dict, Optional, Sequence, Set, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
-from django.db.models import Q
+from django.db.models import OuterRef, Q
 
 from reviewboard.accounts.testing.queries import get_user_profile_equeries
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.testing.queries.review_groups import \
     get_review_groups_accessible_ids_equeries
+from reviewboard.scmtools.models import Repository
 from reviewboard.scmtools.testing.queries import \
     get_repositories_accessible_ids_equeries
 from reviewboard.site.models import LocalSite
@@ -122,6 +123,7 @@ def get_review_requests_accessible_q(
                             local_site is not LocalSite.ALL)
 
     prep_equeries: ExpectedQueries = []
+    subqueries: ExpectedQueries = []
 
     is_authenticated: bool
     is_superuser: bool
@@ -395,35 +397,61 @@ def get_review_requests_accessible_q(
         if is_superuser:
             access_q = Q()
         else:
-            tables.add('reviews_reviewrequest_target_groups')
-            join_types['reviews_reviewrequest_target_groups'] = \
-                'LEFT OUTER JOIN'
-
             if is_authenticated:
-                tables.add('reviews_reviewrequest_target_people')
-                join_types['reviews_reviewrequest_target_people'] = \
-                    'LEFT OUTER JOIN'
-
                 access_q = (Q(submitter=user) |
                             (Q(repository=None) |
                              Q(repository__in=accessible_repository_ids)) &
-                            (Q(target_people=user) |
-                             Q(target_groups=None) |
-                             Q(target_groups__in=accessible_review_group_ids)))
-            else:
-                tables.update({
-                    'reviews_group',
-                    'scmtools_repository',
-                })
-                join_types.update({
-                    'reviews_group': 'LEFT OUTER JOIN',
-                    'scmtools_repository': 'LEFT OUTER JOIN',
-                })
+                            (Q(__Exists__subquery__=1) |
+                             Q(
+                                 ~Q(__Exists__subquery__=2) |
+                                 Q(__Exists__subquery__=3))))
 
+                subqueries += [
+                    {
+                        'model': ReviewRequest.target_people.through,
+                        'where': (Q(reviewrequest_id=OuterRef('pk')) &
+                                  Q(user=user)),
+                    },
+                    {
+                        'model': ReviewRequest.target_groups.through,
+                        'where': Q(reviewrequest_id=OuterRef('pk')),
+                    },
+                    {
+                        'model': ReviewRequest.target_groups.through,
+                        'where': (Q(reviewrequest_id=OuterRef('pk')) &
+                                  Q(group__in=accessible_review_group_ids)),
+                    },
+                ]
+            else:
                 access_q = ((Q(repository=None) |
-                             Q(repository__public=True)) &
-                            (Q(target_groups=None) |
-                             Q(target_groups__invite_only=False)))
+                             Q(__Exists__subquery__=1)) &
+                            (~Q(__Exists__subquery__=2) |
+                             Q(__Exists__subquery__=3)))
+
+                subqueries += [
+                    {
+                        'model': Repository,
+                        'where': (Q(pk=OuterRef('repository_id')) &
+                                  Q(public=True)),
+                    },
+                    {
+                        'model': ReviewRequest.target_groups.through,
+                        'where': Q(reviewrequest_id=OuterRef('pk')),
+                    },
+                    {
+                        'join_types': {
+                            'reviews_group': 'INNER JOIN',
+                        },
+                        'model': ReviewRequest.target_groups.through,
+                        'num_joins': 1,
+                        'tables': {
+                            'reviews_group',
+                            'reviews_reviewrequest_target_groups',
+                        },
+                        'where': (Q(reviewrequest_id=OuterRef('pk')) &
+                                  Q(group__invite_only=False)),
+                    },
+                ]
     else:
         access_q = Q()
 
@@ -431,6 +459,7 @@ def get_review_requests_accessible_q(
         'join_types': join_types,
         'prep_equeries': prep_equeries,
         'q': init_q & access_q,
+        'subqueries': subqueries,
         'tables': tables,
     }
 
@@ -579,14 +608,8 @@ def get_review_requests_to_user_q(
         dict:
         The expected Q results.
     """
-    extra_tables: Set[str] = {
-        'reviews_reviewrequest_target_people',
-        'reviews_reviewrequest_target_groups',
-    }
-    extra_join_types: Dict[str, str] = {
-        'reviews_reviewrequest_target_people': 'LEFT OUTER JOIN',
-        'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
-    }
+    extra_join_types: Dict[str, str] = {}
+    extra_tables: Set[str] = set()
 
     target_group_ids = [
         _group.pk
@@ -619,11 +642,11 @@ def get_review_requests_to_user_q(
         ]
 
     if to_user_profile is None:
-        extra_query = (Q(target_people=to_user) |
-                       Q(target_groups__in=target_group_ids))
+        extra_query = (Q(__Exists__subquery__=1) |
+                       Q(__Exists__subquery__=2))
     else:
-        extra_query = (Q(target_people=to_user) |
-                       Q(target_groups__in=target_group_ids) |
+        extra_query = (Q(__Exists__subquery__=1) |
+                       Q(__Exists__subquery__=2) |
                        Q(starred_by=to_user_profile))
         extra_tables.add('accounts_profile_starred_review_requests')
         extra_join_types['accounts_profile_starred_review_requests'] = \
@@ -658,6 +681,18 @@ def get_review_requests_to_user_q(
     q_result['tables'].update(extra_tables)
     q_result['prep_equeries'] = prep_equeries
     q_result.setdefault('join_types', {}).update(extra_join_types)
+    q_result.setdefault('subqueries', []).extend([
+        {
+            'model': ReviewRequest.target_people.through,
+            'where': (Q(reviewrequest_id=OuterRef('pk')) &
+                      Q(user=to_user)),
+        },
+        {
+            'model': ReviewRequest.target_groups.through,
+            'where': (Q(reviewrequest_id=OuterRef('pk')) &
+                      Q(group__in=target_group_ids)),
+        }
+    ])
 
     return q_result
 
@@ -666,6 +701,7 @@ def get_review_requests_to_user_directly_q(
     *,
     to_user: Union[str, User],
     to_user_profile: Optional[Profile],
+    subquery_start_index: int = 1,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQResult:
     """Return a Q expression for review requests directly to a user.
@@ -687,6 +723,10 @@ def get_review_requests_to_user_directly_q(
         to_user_profile (reviewboard.accounts.models.Profile):
             The profile of the user that review requests would be assigned to.
 
+        subquery_start_index (int, optional):
+            The starting index for any subquery markers, to ease embedding
+            in another query.
+
         **kwargs (dict):
             Keyword arguments to pass to
             :py:func:`get_review_requests_accessible_q`.
@@ -695,11 +735,8 @@ def get_review_requests_to_user_directly_q(
         dict:
         The expected Q results.
     """
-    extra_tables: Set[str] = {'reviews_reviewrequest_target_people'}
-    extra_join_types: Dict[str, str] = {
-        'reviews_reviewrequest_target_people': 'LEFT OUTER JOIN',
-    }
-
+    extra_join_types: Dict[str, str] = {}
+    extra_tables: Set[str] = set()
     prep_equeries: ExpectedQueries = []
 
     if isinstance(to_user, User):
@@ -726,9 +763,9 @@ def get_review_requests_to_user_directly_q(
         ]
 
     if to_user_profile is None:
-        extra_query = Q(target_people=to_user)
+        extra_query = Q(__Exists__subquery__=subquery_start_index)
     else:
-        extra_query = (Q(target_people=to_user) |
+        extra_query = (Q(__Exists__subquery__=subquery_start_index) |
                        Q(starred_by=to_user_profile))
         extra_tables.add('accounts_profile_starred_review_requests')
         extra_join_types['accounts_profile_starred_review_requests'] = \
@@ -743,9 +780,14 @@ def get_review_requests_to_user_directly_q(
     if needs_profile:
         prep_equeries += get_user_profile_equeries(user=to_user)
 
-    q_result['tables'].update(extra_tables)
     q_result['prep_equeries'] = prep_equeries
+    q_result['tables'].update(extra_tables)
     q_result.setdefault('join_types', {}).update(extra_join_types)
+    q_result.setdefault('subqueries', []).append({
+        'model': ReviewRequest.target_people.through,
+        'where': (Q(reviewrequest_id=OuterRef('pk')) &
+                  Q(user=to_user)),
+    })
 
     return q_result
 
@@ -894,14 +936,8 @@ def get_review_requests_to_or_from_user_q(
         dict:
         The expected Q results.
     """
-    extra_tables: Set[str] = {
-        'reviews_reviewrequest_target_people',
-        'reviews_reviewrequest_target_groups',
-    }
-    extra_join_types: Dict[str, str] = {
-        'reviews_reviewrequest_target_people': 'LEFT OUTER JOIN',
-        'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
-    }
+    extra_tables: Set[str] = set()
+    extra_join_types: Dict[str, str] = {}
 
     target_group_ids = [
         _group.pk
@@ -938,14 +974,14 @@ def get_review_requests_to_or_from_user_q(
 
     if to_or_from_user_profile is None:
         if has_user_obj:
-            extra_query = (Q(target_people=to_or_from_user) |
-                           Q(target_groups__in=target_group_ids) |
+            extra_query = (Q(__Exists__subquery__=1) |
+                           Q(__Exists__subquery__=2) |
                            Q(submitter=to_or_from_user))
         else:
             extra_tables.add('auth_user')
             extra_join_types['auth_user'] = 'INNER JOIN'
-            extra_query = (Q(target_people=to_or_from_user) |
-                           Q(target_groups__in=target_group_ids) |
+            extra_query = (Q(__Exists__subquery__=1) |
+                           Q(__Exists__subquery__=2) |
                            Q(submitter__username=to_or_from_username))
     else:
         extra_tables.add('accounts_profile_starred_review_requests')
@@ -953,15 +989,15 @@ def get_review_requests_to_or_from_user_q(
             'LEFT OUTER JOIN'
 
         if has_user_obj:
-            extra_query = (Q(target_people=to_or_from_user) |
-                           Q(target_groups__in=target_group_ids) |
+            extra_query = (Q(__Exists__subquery__=1) |
+                           Q(__Exists__subquery__=2) |
                            Q(starred_by=to_or_from_user_profile) |
                            Q(submitter=to_or_from_user))
         else:
             extra_tables.add('auth_user')
             extra_join_types['auth_user'] = 'INNER JOIN'
-            extra_query = (Q(target_people=to_or_from_user) |
-                           Q(target_groups__in=target_group_ids) |
+            extra_query = (Q(__Exists__subquery__=1) |
+                           Q(__Exists__subquery__=2) |
                            Q(starred_by=to_or_from_user_profile) |
                            Q(submitter__username=to_or_from_username))
 
@@ -992,9 +1028,21 @@ def get_review_requests_to_or_from_user_q(
     if needs_profile:
         prep_equeries += get_user_profile_equeries(user=to_or_from_user)
 
-    q_result.setdefault('join_types', {}).update(extra_join_types)
     q_result['tables'].update(extra_tables)
     q_result['prep_equeries'] = prep_equeries
+    q_result.setdefault('join_types', {}).update(extra_join_types)
+    q_result.setdefault('subqueries', []).extend([
+        {
+            'model': ReviewRequest.target_people.through,
+            'where': (Q(reviewrequest_id=OuterRef('pk')) &
+                      Q(user=to_or_from_user)),
+        },
+        {
+            'model': ReviewRequest.target_groups.through,
+            'where': (Q(reviewrequest_id=OuterRef('pk')) &
+                      Q(group__in=target_group_ids)),
+        }
+    ])
 
     return q_result
 
@@ -1061,7 +1109,7 @@ def get_review_requests_accessible_prep_equeries(
 
 def get_review_requests_accessible_equeries(
     *,
-    distinct: bool = True,
+    distinct: bool = False,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQueries:
     """Return queries for accessible review requests.
@@ -1098,6 +1146,7 @@ def get_review_requests_accessible_equeries(
             'join_types': q_result.get('join_types', {}),
             'num_joins': len(q_tables) - 1,
             'model': ReviewRequest,
+            'subqueries': q_result.get('subqueries', []),
             'tables': q_tables,
             'where': q_result['q'],
         }
@@ -1109,7 +1158,7 @@ def get_review_requests_accessible_equeries(
 def get_review_requests_from_user_equeries(
     *,
     from_user: Union[str, User],
-    distinct: bool = True,
+    distinct: bool = False,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQueries:
     """Return queries for review requests from a user.
@@ -1153,6 +1202,7 @@ def get_review_requests_from_user_equeries(
             'join_types': q_result.get('join_types', {}),
             'num_joins': 1,
             'model': ReviewRequest,
+            'subqueries': q_result.get('subqueries', []),
             'tables': {
                 'auth_user',
                 'reviews_reviewrequest',
@@ -1167,7 +1217,7 @@ def get_review_requests_from_user_equeries(
 def get_review_requests_to_group_equeries(
     *,
     to_group_name: str,
-    distinct: bool = True,
+    distinct: bool = False,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQueries:
     """Return queries for review requests to a group.
@@ -1206,6 +1256,7 @@ def get_review_requests_to_group_equeries(
             'join_types': q_result.get('join_types', {}),
             'num_joins': len(q_tables) - 1,
             'model': ReviewRequest,
+            'subqueries': q_result.get('subqueries', []),
             'tables': q_tables,
             'where': q_result['q'],
         }
@@ -1219,7 +1270,7 @@ def get_review_requests_to_user_equeries(
     to_user: Union[str, User],
     to_user_profile: Optional[Profile] = None,
     target_groups: Sequence[Group] = [],
-    distinct: bool = True,
+    distinct: bool = False,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQueries:
     """Return queries for review requests to a user.
@@ -1273,6 +1324,7 @@ def get_review_requests_to_user_equeries(
             'join_types': q_result.get('join_types', {}),
             'num_joins': len(q_tables) - 1,
             'model': ReviewRequest,
+            'subqueries': q_result.get('subqueries', []),
             'tables': q_tables,
             'where': q_result['q'],
         }
@@ -1285,7 +1337,7 @@ def get_review_requests_to_user_directly_equeries(
     *,
     to_user: Union[str, User],
     to_user_profile: Optional[Profile] = None,
-    distinct: bool = True,
+    distinct: bool = False,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQueries:
     """Return queries for review requests directly to a user.
@@ -1338,6 +1390,7 @@ def get_review_requests_to_user_directly_equeries(
             'join_types': q_result.get('join_types', {}),
             'num_joins': len(q_tables) - 1,
             'model': ReviewRequest,
+            'subqueries': q_result.get('subqueries', []),
             'tables': q_tables,
             'where': q_result['q'],
         }
@@ -1351,7 +1404,7 @@ def get_review_requests_to_user_groups_equeries(
     to_user: Union[str, User],
     to_user_profile: Optional[Profile] = None,
     target_groups: Sequence[Group] = [],
-    distinct: bool = True,
+    distinct: bool = False,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQueries:
     """Return queries for review requests to a user's groups.
@@ -1407,6 +1460,7 @@ def get_review_requests_to_user_groups_equeries(
             'join_types': q_result.get('join_types', {}),
             'num_joins': len(q_tables) - 1,
             'model': ReviewRequest,
+            'subqueries': q_result.get('subqueries', []),
             'tables': q_tables,
             'where': q_result['q'],
         }
@@ -1420,7 +1474,7 @@ def get_review_requests_to_or_from_user_equeries(
     to_or_from_user: Union[str, User],
     to_or_from_user_profile: Optional[Profile] = None,
     target_groups: Sequence[Group] = [],
-    distinct: bool = True,
+    distinct: bool = False,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQueries:
     """Return queries for review requests to/from a user.
@@ -1476,6 +1530,7 @@ def get_review_requests_to_or_from_user_equeries(
             'join_types': q_result.get('join_types', {}),
             'num_joins': len(q_tables) - 1,
             'model': ReviewRequest,
+            'subqueries': q_result.get('subqueries', []),
             'tables': q_tables,
             'where': q_result['q'],
         }

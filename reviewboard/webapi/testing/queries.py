@@ -161,27 +161,49 @@ def get_webapi_response_start_equeries(
     items_q_tables = items_q_result['tables']
     items_q_join_types = items_q_result.get('join_types', {})
     items_q_num_joins = len(items_q_tables) - 1
+    items_q_subqueries = items_q_result.get('subqueries', [])
 
-    return items_q_result.get('prep_equeries', []) + [
-        {
-            '__note__': 'Fetch the total number of items',
-            'annotations': {
-                '__count': Count('*'),
-            },
-            'model': model,
+    equeries = items_q_result.get('prep_equeries', [])
 
-            'subqueries': [
-                {
-                    'distinct': items_distinct,
-                    'join_types': items_q_join_types,
-                    'model': model,
-                    'num_joins': items_q_num_joins,
-                    'subquery': True,
-                    'tables': items_q_tables,
-                    'where': items_q_result['q'],
+    if items_distinct:
+        equeries += [
+            {
+                '__note__': 'Fetch the total number of items',
+                'annotations': {
+                    '__count': Count('*'),
                 },
-            ],
-        },
+                'model': model,
+
+                'subqueries': [
+                    {
+                        'distinct': True,
+                        'join_types': items_q_join_types,
+                        'model': model,
+                        'num_joins': items_q_num_joins,
+                        'subquery': True,
+                        'tables': items_q_tables,
+                        'where': items_q_result['q'],
+                    },
+                ],
+            },
+        ]
+    else:
+        equeries += [
+            {
+                '__note__': 'Fetch the total number of items',
+                'annotations': {
+                    '__count': Count('*'),
+                },
+                'join_types': items_q_join_types,
+                'model': model,
+                'num_joins': items_q_num_joins,
+                'subqueries': items_q_subqueries,
+                'tables': items_q_tables,
+                'where': items_q_result['q'],
+            },
+        ]
+
+    equeries += [
         {
             '__note__': 'Fetch a page of items',
             'distinct': items_distinct,
@@ -190,7 +212,10 @@ def get_webapi_response_start_equeries(
             'model': model,
             'num_joins': items_q_num_joins,
             'select_related': items_select_related,
+            'subqueries': items_q_subqueries,
             'tables': items_q_tables,
             'where': items_q_result['q'],
         },
     ]
+
+    return equeries

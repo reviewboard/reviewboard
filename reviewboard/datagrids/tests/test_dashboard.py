@@ -1724,6 +1724,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         rows_q_tables = rows_q_result['tables']
         rows_q_num_joins = len(rows_q_tables) - 1
         rows_q_join_types = rows_q_result.get('join_types', {})
+        rows_q_subqueries = rows_q_result.get('subqueries', [])
+        next_subquery_i = len(rows_q_subqueries) + 1
 
         equeries = get_http_request_start_equeries(
             user=user,
@@ -1776,6 +1778,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                     'join_types': rows_q_join_types,
                     'model': ReviewRequest,
                     'num_joins': rows_q_num_joins,
+                    'subqueries': rows_q_subqueries,
                     'tables': rows_q_tables,
                     'where': (Q(rows_q) &
                               Q(local_site=local_site)),
@@ -1792,6 +1795,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         'join_types': rows_q_join_types,
                         'model': ReviewRequest,
                         'num_joins': rows_q_num_joins,
+                        'subqueries': rows_q_subqueries,
                         'tables': rows_q_tables,
                         'values_select': ('pk',),
                         'extra': extra,
@@ -1814,10 +1818,10 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                     'num_joins': rows_q_num_joins,
                     'tables': rows_q_tables,
                     'where': (Q(rows_q) &
-                              ~Q(__Q__subquery__=1) &
+                              ~Q(__Q__subquery__=next_subquery_i) &
                               Q(local_site=local_site)),
 
-                    'subqueries': [
+                    'subqueries': rows_q_subqueries + [
                         {
                             'model': ReviewRequestVisit,
                             'values_select': ('review_request_id',),
@@ -1839,13 +1843,13 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         'values_select': ('pk',),
                         'extra': extra,
                         'where': (Q(rows_q) &
-                                  ~Q(__Q__subquery__=1) &
+                                  ~Q(__Q__subquery__=next_subquery_i) &
                                   Q(local_site=local_site)),
                         'order_by': ('-last_updated',),
                         'distinct': True,
                         'limit': len(review_request_pks),
 
-                        'subqueries': [
+                        'subqueries': rows_q_subqueries + [
                             {
                                 'model': ReviewRequestVisit,
                                 'values_select': ('review_request_id',),

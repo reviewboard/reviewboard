@@ -478,6 +478,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
         rows_q_tables = rows_q_result['tables']
         rows_q_num_joins = len(rows_q_tables) - 1
         rows_q_join_types = rows_q_result.get('join_types', {})
+        rows_q_subqueries = rows_q_result.get('subqueries', [])
 
         equeries = get_http_request_start_equeries(
             user=user,
@@ -498,6 +499,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 'join_types': rows_q_join_types,
                 'model': ReviewRequest,
                 'num_joins': rows_q_num_joins,
+                'subqueries': rows_q_subqueries,
                 'tables': rows_q_tables,
                 'where': (Q(rows_q) &
                           Q(local_site=local_site)),
@@ -511,6 +513,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 'model': ReviewRequest,
                 'num_joins': rows_q_num_joins,
                 'order_by': ('-last_updated',),
+                'subqueries': rows_q_subqueries,
                 'tables': rows_q_tables,
                 'values_select': ('pk',),
                 'where': (Q(rows_q) &

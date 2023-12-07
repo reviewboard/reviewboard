@@ -886,7 +886,6 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
         equeries += get_user_permissions_equeries(user=user)
         equeries += get_webapi_response_start_equeries(
             model=ReviewRequest,
-            items_distinct=True,
             items_q_result=get_review_requests_accessible_q(
                 user=user,
                 filter_private=True,
