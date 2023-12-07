@@ -7,7 +7,8 @@ import re
 import warnings
 from contextlib import contextmanager
 from datetime import timedelta
-from typing import Optional, Sequence, TYPE_CHECKING
+from typing import (Any, Callable, Iterator, List, Optional, Sequence,
+                    TYPE_CHECKING, Tuple, Type, Union)
 from uuid import uuid4
 
 from django.contrib.auth.models import AnonymousUser, Permission, User
@@ -58,7 +59,12 @@ from reviewboard.testing.scmtool import (TestTool,
 from reviewboard.webapi.models import WebAPIToken
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
+    from django.http import HttpRequest
     from djblets.util.typing import JSONDict
+
+    from reviewboard.changedescs.models import ChangeDescription
 
 
 _static_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
@@ -229,14 +235,49 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return doc
 
-    def get_local_site_or_none(self, name):
-        """Returns a LocalSite matching the name, if provided, or None."""
+    def get_local_site_or_none(
+        self,
+        name: Optional[str],
+    ) -> Optional[LocalSite]:
+        """Return a LocalSite matching the name, if provided, or None.
+
+        Args:
+            name (str):
+                The name of the Local Site.
+
+        Returns:
+            reviewboard.site.models.LocalSite:
+            The Local Site, or ``None`` if ``name`` is ``None``.
+
+        Raises:
+            django.core.exceptions.ObjectDoesNotExist:
+                The Local Site was specified but could not be found.
+        """
         if name:
             return self.get_local_site(name=name)
         else:
             return None
 
-    def get_local_site(self, name):
+    def get_local_site(
+        self,
+        name: str,
+    ) -> LocalSite:
+        """Return a LocalSite matching the name, if provided.
+
+        The Local Site will be cached for future lookups in the test.
+
+        Args:
+            name (str):
+                The name of the Local Site.
+
+        Returns:
+            reviewboard.site.models.LocalSite:
+            The Local Site.
+
+        Raises:
+            django.core.exceptions.ObjectDoesNotExist:
+                The Local Site could not be found.
+        """
         if name not in self._local_sites:
             self._local_sites[name] = LocalSite.objects.get(name=name)
 
@@ -259,7 +300,6 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         Version Changed:
             5.0.7:
             * Added ``users`` and ``admins`` arguments.
-            * Added type hints.
 
         Version Added:
             5.0
@@ -303,10 +343,17 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return local_site
 
-    def create_http_request(self, path='/', user=None, method='get',
-                            with_local_site=False, local_site=None,
-                            resolver_match=None,
-                            view=None, **kwargs):
+    def create_http_request(
+        self,
+        path: str = '/',
+        user: Optional[Union[AnonymousUser, User]] = None,
+        method: str = 'get',
+        with_local_site: bool = False,
+        local_site: Optional[LocalSite] = None,
+        resolver_match: Optional[ResolverMatch] = None,
+        view: Optional[Callable[..., Any]] = None,
+        **kwargs,
+    ) -> HttpRequest:
         """Create an HttpRequest for testing.
 
         This wraps :py:class:`~django.test.client.RequestFactory`,
@@ -314,7 +361,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         including the user, resolver match, and Local Site.
 
         Args:
-            path (unicode, optional):
+            path (str, optional):
                 The path for the HTTP request, relative to the server root.
 
             user (django.contrib.auth.models.User, optional):
@@ -322,7 +369,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 :py:class:`~django.contrib.auth.models.AnonymousUser` will
                 be used.
 
-            method (unicode, optional):
+            method (str, optional):
                 The method on :py:class:`~django.test.client.RequestFactory`
                 used to create the request.
 
@@ -369,12 +416,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 local_site = None
 
         if resolver_match is None:
-            resolver_match = ResolverMatch(func=view,
-                                           args=[],
-                                           kwargs={})
+            resolver_match = ResolverMatch(
+                func=view or (lambda *args, **kwargs: None),
+                args=(),
+                kwargs={})
 
-        request = factory_method(path, **kwargs)
-        request.local_site = local_site
+        request: HttpRequest = factory_method(path, **kwargs)
+        request.local_site = local_site  # type: ignore
         request.resolver_match = resolver_match
         request.user = user or AnonymousUser()
 
@@ -385,18 +433,24 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return request
 
-    def create_user(self, username='test-user', password='',
-                    email='test@example.com', perms=None, **kwargs):
+    def create_user(
+        self,
+        username: str = 'test-user',
+        password: str = '',
+        email: str = 'test@example.com',
+        perms: Optional[Sequence[Tuple[str, str]]] = None,
+        **kwargs,
+    ) -> User:
         """Create a User for testing.
 
         Args:
-            username (unicode, optional):
+            username (str, optional):
                 The username.
 
-            password (unicode, optional):
+            password (str, optional):
                 The user's password.
 
-            email (unicode, optional):
+            email (str, optional):
                 The user's e-mail address.
 
             perms (list of tuple, optional):
@@ -428,15 +482,17 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return user
 
-    def create_webapi_token(self,
-                            user,
-                            note='Sample note',
-                            policy={'access': 'rw'},
-                            with_local_site=False,
-                            token_generator_id=None,
-                            token_info={'token_type': 'rbp'},
-                            local_site=None,
-                            **kwargs):
+    def create_webapi_token(
+        self,
+        user: User,
+        note: str = 'Sample note',
+        policy: JSONDict = {'access': 'rw'},
+        with_local_site: bool = False,
+        token_generator_id: Optional[str] = None,
+        token_info: JSONDict = {'token_type': 'rbp'},
+        local_site: Optional[LocalSite] = None,
+        **kwargs,
+    ) -> WebAPIToken:
         """Create a WebAPIToken for testing.
 
         Version Changed:
@@ -513,7 +569,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             **kwargs)
 
     @contextmanager
-    def assert_warns(self, cls=DeprecationWarning, message=None):
+    def assert_warns(
+        self,
+        cls: Type[DeprecationWarning] = DeprecationWarning,
+        message: Optional[str] = None,
+    ) -> Iterator[None]:
         """A context manager for asserting code generates a warning.
 
         This will check that the code ran in the context will generate a
@@ -524,7 +584,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             cls (type, optional):
                 The type of warning that should be generated.
 
-            message (unicode, optional):
+            message (str, optional):
                 The message that should be generated in the warning.
 
         Context:
@@ -559,16 +619,48 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                           '%r'
                           % (cls, message))
 
-    def create_diff_file_attachment(self, filediff, from_modified=True,
-                                    review_request=None,
-                                    orig_filename='filename.png',
-                                    caption='My Caption',
-                                    mimetype='image/png',
-                                    **kwargs):
-        """Creates a diff-based FileAttachment for testing.
+    def create_diff_file_attachment(
+        self,
+        filediff: FileDiff,
+        from_modified: bool = True,
+        review_request: Optional[ReviewRequest] = None,
+        orig_filename: str = 'filename.png',
+        caption: str = 'My Caption',
+        mimetype: str = 'image/png',
+        **kwargs,
+    ) -> FileAttachment:
+        """Create a diff-based FileAttachment for testing.
 
         The FileAttachment is tied to the given FileDiff. It's populated
         with default data that can be overridden by the caller.
+
+        Args:
+            filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+                The FileDiff that the attachment is associated with.
+
+            from_modified (bool, optional):
+                Whether this file attachment is associated with the modified
+                version of the file.
+
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest, optional):
+                The optional review request that owns this file attachment.
+
+            orig_filename (str, optional):
+                The original filename as shown in the diff.
+
+            caption (str, optional):
+                The caption of the file.
+
+            mimetype (str, optional):
+                The file's mimetype.
+
+            **kwargs (dict):
+                Additional model attributes to set on the file attachment.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The newly-created file attachment.
         """
         file_attachment = FileAttachment.objects.create_from_filediff(
             filediff=filediff,
@@ -589,23 +681,25 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return file_attachment
 
-    def create_diffcommit(self,
-                          repository=None,
-                          diffset=None,
-                          commit_id='r1',
-                          parent_id='r0',
-                          diff_contents=DEFAULT_GIT_FILEDIFF_DATA_DIFF,
-                          parent_diff_contents=None,
-                          author_name='Author',
-                          author_email='author@example.com',
-                          author_date=None,
-                          commit_message='Commit message',
-                          committer_name='Committer',
-                          committer_email='committer@example.com',
-                          committer_date=None,
-                          with_diff=True,
-                          extra_data=None,
-                          **kwargs):
+    def create_diffcommit(
+        self,
+        repository: Optional[Repository] = None,
+        diffset: Optional[DiffSet] = None,
+        commit_id: str = 'r1',
+        parent_id: str = 'r0',
+        diff_contents: bytes = DEFAULT_GIT_FILEDIFF_DATA_DIFF,
+        parent_diff_contents: Optional[bytes] = None,
+        author_name: str = 'Author',
+        author_email: str = 'author@example.com',
+        author_date: Optional[datetime] = None,
+        commit_message: str = 'Commit message',
+        committer_name: str = 'Committer',
+        committer_email: str = 'committer@example.com',
+        committer_date: Optional[datetime] = None,
+        with_diff: bool = True,
+        extra_data: Optional[JSONDict] = None,
+        **kwargs,
+    ) -> DiffCommit:
         """Create a DiffCommit for testing.
 
         By default, this also parses the provided diff data and creates a
@@ -623,10 +717,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             diffset (reviewboard.diffviewer.models.diffset.DiffSet, optional):
                 The parent diffset.
 
-            commit_id (unicode, optional):
+            commit_id (str, optional):
                 The commit ID.
 
-            parent_id (unicode, optional):
+            parent_id (str, optional):
                 The commit ID of the parent commit.
 
             diff_contents (bytes, optional):
@@ -635,22 +729,22 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             parent_diff_contents (bytes, optional):
                 The contents of the parent diff, if any.
 
-            author_name (unicode, optional):
+            author_name (str, optional):
                 The name of the commit's author.
 
-            author_email (unicode, optional):
+            author_email (str, optional):
                 The e-mail address of the commit's author.
 
             author_date (datetime.datetime, optional):
                 The date the commit was authored.
 
-            commit_message (unicode, optional):
+            commit_message (str, optional):
                 The commit message.
 
-            committer_name (unicode, optional):
+            committer_name (str, optional):
                 The name of the committer, if any.
 
-            committer_email (unicode, optional):
+            committer_email (str, optional):
                 The e-mail address of the committer, if any.
 
             committer_date (datetime.datetime, optional):
@@ -726,6 +820,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 check_existence=False,
                 **kwargs)
 
+            assert diff_commit is not None
+
             if extra_data:
                 diff_commit.extra_data.update(extra_data)
 
@@ -744,14 +840,45 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 committer_date=committer_date,
                 **kwargs)
 
-    def create_diffset(self, review_request=None, revision=1, repository=None,
-                       draft=False, name='diffset', **kwargs):
-        """Creates a DiffSet for testing.
+    def create_diffset(
+        self,
+        review_request: Optional[ReviewRequest] = None,
+        revision: int = 1,
+        repository: Optional[Repository] = None,
+        draft: bool = False,
+        name: str = 'diffset',
+        **kwargs,
+    ) -> DiffSet:
+        """Create a DiffSet for testing.
 
         The DiffSet defaults to revision 1. This can be overridden by the
         caller.
 
         DiffSets generally are tied to a ReviewRequest, but it's optional.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest, optional):
+                The only review request that owns the DiffSet.
+
+            revision (int, optional):
+                The revision of the DiffSet.
+
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository that backs files in the DiffSet.
+
+            draft (bool, optional):
+                Whether this is a draft DiffSet.
+
+            name (str, optional):
+                The name of the DiffSet.
+
+            **kwargs (dict):
+                Additional model attributes to set on the DiffSet.
+
+        Returns:
+            reviewboard.diffviewer.models.diffset.DiffSet:
+            The newly-created DiffSet.
         """
         if review_request:
             repository = review_request.repository
@@ -774,11 +901,21 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return diffset
 
-    def create_diff_comment(self, review, filediff, interfilediff=None,
-                            text='My comment', issue_opened=False,
-                            issue_status=None, first_line=1, num_lines=5,
-                            extra_fields=None, reply_to=None,
-                            timestamp=None, **kwargs):
+    def create_diff_comment(
+        self,
+        review: Review,
+        filediff: FileDiff,
+        interfilediff: Optional[FileDiff] = None,
+        text: str = 'My comment',
+        issue_opened: bool = False,
+        issue_status: Optional[str] = None,
+        first_line: int = 1,
+        num_lines: int = 5,
+        extra_fields: Optional[JSONDict] = None,
+        reply_to: Optional[Comment] = None,
+        timestamp: Optional[datetime] = None,
+        **kwargs,
+    ) -> Comment:
         """Create a Comment for testing.
 
         The comment is tied to the given Review and FileDiff (and, optionally,
@@ -797,13 +934,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 The FileDiff used for the end of an interdiff range associated
                 with the comment.
 
-            text (unicode):
+            text (str):
                 The text for the comment.
 
             issue_opened (bool, optional):
                 Whether an issue is to be opened for the comment.
 
-            issue_status (unicode, optional):
+            issue_status (str, optional):
                 The issue status to set, if an issue is opened. Defaults to
                 being an open issue.
 
@@ -859,11 +996,14 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return comment
 
-    def create_file_attachment(self, review_request,
-                               attachment_history=None,
-                               draft=False,
-                               active=True,
-                               **kwargs):
+    def create_file_attachment(
+        self,
+        review_request: ReviewRequest,
+        attachment_history: Optional[FileAttachmentHistory] = None,
+        draft: bool = False,
+        active: bool = True,
+        **kwargs,
+    ) -> FileAttachment:
         """Create a FileAttachment for testing.
 
         The attachment is tied to the given
@@ -923,7 +1063,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return file_attachment
 
-    def create_user_file_attachment(self, user, has_file=False, **kwargs):
+    def create_user_file_attachment(
+        self,
+        user: User,
+        has_file: bool = False,
+        **kwargs,
+    ) -> FileAttachment:
         """Create a user FileAttachment for testing.
 
         The :py:class:`reviewboard.attachments.models.FileAttachment` is tied
@@ -952,12 +1097,19 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                                                 has_file=has_file,
                                                 **kwargs)
 
-    def create_file_attachment_comment(self, review, file_attachment,
-                                       diff_against_file_attachment=None,
-                                       text='My comment', issue_opened=False,
-                                       issue_status=None, extra_fields=None,
-                                       reply_to=None, timestamp=None,
-                                       **kwargs):
+    def create_file_attachment_comment(
+        self,
+        review: Review,
+        file_attachment: FileAttachment,
+        diff_against_file_attachment: Optional[FileAttachment] = None,
+        text: str = 'My comment',
+        issue_opened: bool = False,
+        issue_status: Optional[str] = None,
+        extra_fields: Optional[JSONDict] = None,
+        reply_to: Optional[FileAttachmentComment] = None,
+        timestamp: Optional[datetime] = None,
+        **kwargs,
+    ) -> FileAttachmentComment:
         """Create a FileAttachmentComment for testing.
 
         The comment is tied to the given Review and FileAttachment. It's
@@ -975,13 +1127,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 The file attachment being diff against, for comments on
                 attachment diffs.
 
-            text (unicode):
+            text (str, optional):
                 The text for the comment.
 
             issue_opened (bool, optional):
                 Whether an issue is to be opened for the comment.
 
-            issue_status (unicode, optional):
+            issue_status (str, optional):
                 The issue status to set, if an issue is opened. Defaults to
                 being an open issue.
 
@@ -1030,8 +1182,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return comment
 
-    def create_file_attachment_history(self, review_request=None,
-                                       display_position=None, **kwargs):
+    def create_file_attachment_history(
+        self,
+        review_request: Optional[ReviewRequest] = None,
+        display_position: Optional[int] = None,
+        **kwargs,
+    ) -> FileAttachmentHistory:
         """Create a FileAttachmentHistory for testing.
 
         Args:
@@ -1067,11 +1223,20 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return attachment_history
 
-    def create_filediff(self, diffset, source_file='/test-file',
-                        dest_file='/test-file', source_revision='123',
-                        dest_detail='124', status=FileDiff.MODIFIED,
-                        diff=DEFAULT_FILEDIFF_DATA_DIFF, commit=None,
-                        encoding=None, save=True, **kwargs):
+    def create_filediff(
+        self,
+        diffset: DiffSet,
+        source_file: str = '/test-file',
+        dest_file: str = '/test-file',
+        source_revision: str = '123',
+        dest_detail: str = '124',
+        status: str = FileDiff.MODIFIED,
+        diff: bytes = DEFAULT_FILEDIFF_DATA_DIFF,
+        commit: Optional[DiffCommit] = None,
+        encoding: Optional[str] = None,
+        save: bool = True,
+        **kwargs,
+    ) -> FileDiff:
         """Create a FileDiff for testing.
 
         The FileDiff is tied to the given DiffSet. It's populated with
@@ -1081,21 +1246,21 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             diffset (reviewboard.diffviewer.models.diffset.DiffSet):
                 The parent diff set that will own this file.
 
-            source_file (unicode, optional):
+            source_file (str, optional):
                 The source filename.
 
-            dest_file (unicode, optional):
+            dest_file (str, optional):
                 The destination filename, which will be the same as
                 ``source_file`` unless the file was moved/renamed/copied.
 
-            source_revision (unicode, optional):
+            source_revision (str, optional):
                 The source revision.
 
-            dest_detail (unicode, optional):
+            dest_detail (str, optional):
                 The destination revision or other detail as found in the
                 parsed diff. This may be a timestamp or some other value.
 
-            status (unicode, optional):
+            status (str, optional):
                 The status of the file. This is the operation performed
                 as indicated in the diff.
 
@@ -1106,7 +1271,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                     optional):
                 The commit to attach the FileDiff to.
 
-            encoding (unicode, optional):
+            encoding (str, optional):
                 An explicit encoding to set for the file.
 
             save (bool, optional):
@@ -1163,7 +1328,6 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         Version Changed:
             5.0.7:
             * Added ``users`` and ``review_groups`` arguments.
-            * Added type hints.
 
         Args:
             with_local_site (bool, optional):
@@ -1258,27 +1422,29 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return repository
 
-    def create_review_request(self,
-                              with_local_site=False,
-                              create_repository=False,
-                              create_with_history=False,
-                              publish=False,
-                              id=None,
-                              local_id=1001,
-                              local_site=None,
-                              repository=None,
-                              time_added=None,
-                              last_updated=None,
-                              status=ReviewRequest.PENDING_REVIEW,
-                              submitter='doc',
-                              summary='Test Summary',
-                              description='Test Description',
-                              testing_done='Testing',
-                              branch='my-branch',
-                              depends_on=None,
-                              target_people=None,
-                              target_groups=None,
-                              **kwargs):
+    def create_review_request(
+        self,
+        with_local_site: bool = False,
+        create_repository: bool = False,
+        create_with_history: bool = False,
+        publish: bool = False,
+        id: Optional[int] = None,
+        local_id: Optional[int] = 1001,
+        local_site: Optional[LocalSite] = None,
+        repository: Optional[Repository] = None,
+        time_added: Optional[datetime] = None,
+        last_updated: Optional[datetime] = None,
+        status: str = ReviewRequest.PENDING_REVIEW,
+        submitter: Union[str, User] = 'doc',
+        summary: str = 'Test Summary',
+        description: str = 'Test Description',
+        testing_done: Optional[str] = 'Testing',
+        branch: Optional[str] = 'my-branch',
+        depends_on: Optional[Sequence[ReviewRequest]] = None,
+        target_people: Optional[Sequence[User]] = None,
+        target_groups: Optional[Sequence[Group]] = None,
+        **kwargs,
+    ) -> ReviewRequest:
         """Create a ReviewRequest for testing.
 
         The :py:class:`~reviewboard.reviews.models.review_request.
@@ -1328,25 +1494,25 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 An explicit last updated timestamp to set for the review
                 request.
 
-            status (unicode, optional):
+            status (str, optional):
                 The status of the review request. This must be one of the
                 values listed in :py:attr:`~reviewboard.reviews.models.
                 review_request.ReviewRequest.STATUSES`.
 
-            submitter (unicode or django.contrib.auth.models.User, optional):
+            submitter (str or django.contrib.auth.models.User, optional):
                 The submitter of the review request. This can be a username
                 (which will be looked up) or an explicit user.
 
-            summary (unicode, optional):
+            summary (str, optional):
                 The summary for the review request.
 
-            description (unicode, optional):
+            description (str, optional):
                 The description for the review request.
 
-            testing_done (unicode, optional):
+            testing_done (str, optional):
                 The Testing Done text for the review request.
 
-            branch (unicode, optional):
+            branch (str, optional):
                 The branch for the review request.
 
             depends_on (list of reviewboard.reviews.models.review_request.
@@ -1404,7 +1570,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         review_request.created_with_history = create_with_history
 
         # Set this separately to avoid issues with CounterField updates.
-        review_request.id = id
+        review_request.id = id  # type: ignore
 
         review_request.save()
 
@@ -1437,26 +1603,28 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return review_request
 
-    def create_many_review_requests(self,
-                                    count,
-                                    with_local_site=False,
-                                    create_repository=False,
-                                    create_with_history=True,
-                                    start_id=None,
-                                    start_local_id=1001,
-                                    local_site=None,
-                                    repository=None,
-                                    public=False,
-                                    status=ReviewRequest.PENDING_REVIEW,
-                                    submitter='doc',
-                                    summary='Test Summary %s',
-                                    description='Test Description %s',
-                                    testing_done='Testing %s',
-                                    branch='my-branch',
-                                    depends_on=None,
-                                    target_people=None,
-                                    target_groups=None,
-                                    **kwargs):
+    def create_many_review_requests(
+        self,
+        count: int,
+        with_local_site: bool = False,
+        create_repository: bool = False,
+        create_with_history: bool = True,
+        start_id: Optional[int] = None,
+        start_local_id: Optional[int] = 1001,
+        local_site: Optional[LocalSite] = None,
+        repository: Optional[Repository] = None,
+        public: bool = False,
+        status: str = ReviewRequest.PENDING_REVIEW,
+        submitter: Union[str, User] = 'doc',
+        summary: str = 'Test Summary %s',
+        description: str = 'Test Description %s',
+        testing_done: str = 'Testing %s',
+        branch: Optional[str] = 'my-branch',
+        depends_on: Optional[Sequence[ReviewRequest]] = None,
+        target_people: Optional[Sequence[User]] = None,
+        target_groups: Optional[Sequence[Group]] = None,
+        **kwargs,
+    ) -> List[ReviewRequest]:
         """Batch-create multiple ReviewRequests for testing.
 
         This will execute the minimum number of SQL statements needed to
@@ -1595,7 +1763,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         # Create the DiffSetHistories, one per ReviewRequest.
         next_diffset_history_id = DiffSetHistory.objects.count() + 1
 
-        diffset_histories = [
+        diffset_histories: List[DiffSetHistory] = [
             DiffSetHistory(id=next_diffset_history_id + i)
             for i in range(count)
         ]
@@ -1606,8 +1774,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         if start_id is None:
             start_id = ReviewRequest.objects.count() + 1
 
-        review_requests = []
-        review_request_ids = []
+        review_requests: List[ReviewRequest] = []
+        review_request_ids: List[int] = []
 
         for i in range(count):
             if start_local_id is None:
@@ -1689,6 +1857,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             local_site_profile = submitter.get_site_profile(
                 local_site,
                 create_if_missing=False)
+        else:
+            local_site_profile = None
 
         if local_site_profile is not None:
             local_site_profile.increment_total_outgoing_request_count(
@@ -1700,12 +1870,16 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return review_requests
 
-    def create_review_request_draft(self, review_request, **kwargs):
+    def create_review_request_draft(
+        self,
+        review_request: ReviewRequest,
+        **kwargs,
+    ) -> ReviewRequestDraft:
         """Create a ReviewRequestDraft for testing.
 
         Args:
             review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest)
+                            ReviewRequest):
                 The review request for the draft.
 
             **kwargs (dict):
@@ -1720,17 +1894,52 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         """
         return ReviewRequestDraft.create(review_request, **kwargs)
 
-    def create_visit(self, review_request, visibility, user='doc',
-                     username=None, timestamp=None, **kwargs):
+    def create_visit(
+        self,
+        review_request: ReviewRequest,
+        visibility: str,
+        user: Union[str, User] = 'doc',
+        timestamp: Optional[datetime] = None,
+        **kwargs,
+    ) -> ReviewRequestVisit:
         """Create a ReviewRequestVisit for testing.
 
         The ReviewRequestVisit is tied to the given ReviewRequest and User.
         It's populated with default data that can be overridden by the caller.
 
         The provided user may either be a username or a User object.
+
+        Version Changed:
+            5.0.7:
+            * ``timestamp`` and ``user`` are now processed and set correctly.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request that was visited.
+
+            visibility (str):
+                The visibility state for the visit.
+
+            user (str or django.contrib.auth.models.User):
+                The user that visited the review request.
+
+            timestamp (datetime.datetime, optional):
+                The timestamp of the visit.
+
+            **kwargs (dict):
+                Additional fields to set on the visit.
+
+        Returns:
+            reviewboard.accounts.models.ReviewRequestVisit:
+            The newly-created visit object.
         """
-        if not isinstance(user, str):
+        if not isinstance(user, User):
             user = User.objects.get(username=user)
+
+        if timestamp is not None:
+            # Avoid passing in a None directly, and use the model's handling.
+            kwargs['timestamp'] = timestamp
 
         return ReviewRequestVisit.objects.create(
             review_request=review_request,
@@ -1738,10 +1947,18 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             user=user,
             **kwargs)
 
-    def create_review(self, review_request, user='dopey',
-                      body_top='Test Body Top', body_bottom='Test Body Bottom',
-                      ship_it=False, publish=False, timestamp=None, **kwargs):
-        """Creates a Review for testing.
+    def create_review(
+        self,
+        review_request: ReviewRequest,
+        user: Union[str, User] = 'dopey',
+        body_top: Optional[str] = 'Test Body Top',
+        body_bottom: Optional[str] = 'Test Body Bottom',
+        ship_it: bool = False,
+        publish: bool = False,
+        timestamp: Optional[datetime] = None,
+        **kwargs,
+    ) -> Review:
+        """Create a Review for testing.
 
         The Review is tied to the given ReviewRequest. It's populated with
         default data that can be overridden by the caller.
@@ -1755,13 +1972,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                             ReviewRequest):
                 The review request the review is filed against.
 
-            user (unicode or django.contrib.auth.models.User, optional):
+            user (str or django.contrib.auth.models.User, optional):
                 The username or User object owning the review.
 
-            body_top (unicode, optional):
+            body_top (str, optional):
                 The text for the ``body_top`` field.
 
-            body_bottom (unicode, optional):
+            body_bottom (str, optional):
                 The text for the ``body_bottom`` field.
 
             ship_it (bool, optional):
@@ -1820,7 +2037,6 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         Version Changed:
             5.0.7:
             * Added ``users`` arguments.
-            * Added type hints.
 
         Args:
             name (str, optional):
@@ -1866,8 +2082,15 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return group
 
-    def create_reply(self, review, user='grumpy', body_top='Test Body Top',
-                     timestamp=None, publish=False, **kwargs):
+    def create_reply(
+        self,
+        review: Review,
+        user: Union[str, User] = 'grumpy',
+        body_top: Optional[str] = 'Test Body Top',
+        timestamp: Optional[datetime] = None,
+        publish: bool = False,
+        **kwargs,
+    ) -> Review:
         """Create a review reply for testing.
 
         The reply is tied to the given Review. It's populated with default
@@ -1881,11 +2104,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             review (reviewboard.reviews.models.review.Review):
                 The review being replied to.
 
-            user (django.contrib.auth.models.User or unicode, optional):
+            user (django.contrib.auth.models.User or str, optional):
                 Either the user model or the username of the user who is
                 replying to the review.
 
-            body_top (unicode, optional):
+            body_top (str, optional):
                 The body top text.
 
             timestamp (datetime.datetime, optional):
@@ -1926,8 +2149,14 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return reply
 
-    def create_screenshot(self, review_request, caption='My caption',
-                          draft=False, active=True, **kwargs):
+    def create_screenshot(
+        self,
+        review_request: ReviewRequest,
+        caption: str = 'My caption',
+        draft: bool = False,
+        active: bool = True,
+        **kwargs,
+    ) -> Screenshot:
         """Create a Screenshot for testing.
 
         The screenshot is tied to the given
@@ -1939,7 +2168,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                             ReviewRequest):
                 The review request that ultimately owns the screenshot.
 
-            caption (unicode, optional):
+            caption (str, optional):
                 The caption to use for the screenshot.
 
             draft (bool or
@@ -1987,10 +2216,22 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return screenshot
 
-    def create_screenshot_comment(self, review, screenshot, text='My comment',
-                                  x=1, y=1, w=5, h=5, issue_opened=False,
-                                  issue_status=None, extra_fields=None,
-                                  reply_to=None, timestamp=None, **kwargs):
+    def create_screenshot_comment(
+        self,
+        review: Review,
+        screenshot: Screenshot,
+        text: str = 'My comment',
+        x: int = 1,
+        y: int = 1,
+        w: int = 5,
+        h: int = 5,
+        issue_opened: bool = False,
+        issue_status: Optional[str] = None,
+        extra_fields: Optional[JSONDict] = None,
+        reply_to: Optional[ScreenshotComment] = None,
+        timestamp: Optional[datetime] = None,
+        **kwargs,
+    ) -> ScreenshotComment:
         """Create a ScreenshotComment for testing.
 
         The comment is tied to the given Review and Screenshot. It's
@@ -2003,7 +2244,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             screenshot (reviewboard.reviews.models.screenshot.Screenshot):
                 The screenshot associated with the comment.
 
-            text (unicode):
+            text (str):
                 The text for the comment.
 
             x (int, optional):
@@ -2021,15 +2262,15 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             issue_opened (bool, optional):
                 Whether an issue is to be opened for the comment.
 
-            issue_status (unicode, optional):
+            issue_status (str, optional):
                 The issue status to set, if an issue is opened. Defaults to
                 being an open issue.
 
             extra_fields (dict, optional):
                 Extra data to set on the comment.
 
-            reply_to (reviewboard.reviews.models.general_comment.
-                      GeneralComment, optional):
+            reply_to (reviewboard.reviews.models.screenshot_comment.
+                      ScreenshotComment, optional):
                 The comment this comment replies to.
 
             timestamp (datetime.datetime, optional):
@@ -2073,18 +2314,20 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return comment
 
-    def create_file_attachment_base(self,
-                                    caption='My Caption',
-                                    orig_filename='logo.png',
-                                    mimetype='image/png',
-                                    uuid=None,
-                                    has_file=True,
-                                    file_content=None,
-                                    user=None,
-                                    with_local_site=False,
-                                    local_site_name=None,
-                                    local_site=None,
-                                    **kwargs):
+    def create_file_attachment_base(
+        self,
+        caption: str = 'My Caption',
+        orig_filename: str = 'logo.png',
+        mimetype: str = 'image/png',
+        uuid: Optional[str] = None,
+        has_file: bool = True,
+        file_content: Optional[bytes] = None,
+        user: Optional[User] = None,
+        with_local_site: bool = False,
+        local_site_name: Optional[str] = None,
+        local_site: Optional[LocalSite] = None,
+        **kwargs,
+    ) -> FileAttachment:
         """Base helper to create a FileAttachment object.
 
         When creating a
@@ -2099,16 +2342,16 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         * :py:meth:`create_user_file_attachment`
 
         Args:
-            caption (unicode, optional):
+            caption (str, optional):
                 The caption for the file attachment.
 
-            orig_filename (unicode, optional):
+            orig_filename (str, optional):
                 The original name of the file to set in the model.
 
-            mimetype (unicode, optional):
+            mimetype (str, optional):
                 The mimetype of the file attachment.
 
-            uuid (unicode, optional):
+            uuid (str, optional):
                 The UUID used to prefix the filename and reference the
                 file attachment.
 
@@ -2132,7 +2375,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 local site. If this is set, one of ``local_site_name`` or
                 ``local_site`` should be provided as well.
 
-            local_site_name (unicode, optional):
+            local_site_name (str, optional):
                 The name of the local site to associate this attachment with.
 
             local_site (reviewboard.site.models.LocalSite, optional):
@@ -2150,9 +2393,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             local_site = self.get_local_site(name=local_site_name)
 
         if not uuid:
-            uuid = uuid4()
+            uuid = str(uuid4())
 
-        filename = kwargs.get('filename', '%s-%s' % (uuid, orig_filename))
+        filename = kwargs.get('filename', f'{uuid}-{orig_filename}')
 
         file_attachment = FileAttachment(
             caption=caption,
@@ -2183,10 +2426,17 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return file_attachment
 
-    def create_general_comment(self, review, text='My comment',
-                               issue_opened=False, issue_status=None,
-                               extra_fields=None, reply_to=None,
-                               timestamp=None, **kwargs):
+    def create_general_comment(
+        self,
+        review: Review,
+        text: str = 'My comment',
+        issue_opened: bool = False,
+        issue_status: Optional[str] = None,
+        extra_fields: Optional[JSONDict] = None,
+        reply_to: Optional[GeneralComment] = None,
+        timestamp: Optional[datetime] = None,
+        **kwargs,
+    ) -> GeneralComment:
         """Create a GeneralComment for testing.
 
         The comment is tied to the given Review. It is populated with
@@ -2196,13 +2446,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             review (reviewboard.reviews.models.review.Review):
                 The review associated with the comment.
 
-            text (unicode):
+            text (str):
                 The text for the comment.
 
             issue_opened (bool, optional):
                 Whether an issue is to be opened for the comment.
 
-            issue_status (unicode, optional):
+            issue_status (str, optional):
                 The issue status to set, if an issue is opened. Defaults to
                 being an open issue.
 
@@ -2249,11 +2499,18 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return comment
 
-    def create_status_update(self, review_request, user='dopey',
-                             service_id='service', summary='Status Update',
-                             state=StatusUpdate.PENDING,
-                             review=None, change_description=None,
-                             timestamp=None, **kwargs):
+    def create_status_update(
+        self,
+        review_request: ReviewRequest,
+        user: Union[str, User] = 'dopey',
+        service_id: str = 'service',
+        summary: str = 'Status Update',
+        state: str = StatusUpdate.PENDING,
+        review: Optional[Review] = None,
+        change_description: Optional[ChangeDescription] = None,
+        timestamp: Optional[datetime] = None,
+        **kwargs,
+    ) -> StatusUpdate:
         """Create a status update for testing.
 
         It is populated with default data that can be overridden by the caller.
@@ -2262,17 +2519,17 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             review_request (reviewboard.reviews.models.ReviewRequest):
                 The review request to associate with the new status update.
 
-            user (django.contrib.auth.models.User or unicode):
+            user (django.contrib.auth.models.User or str):
                 Either the user model or the username of the user who should
                 own the status update.
 
-            service_id (unicode):
+            service_id (str):
                 The ID to fill in for the new model.
 
-            summary (unicode):
+            summary (str):
                 The summary to fill in for the new model.
 
-            state (unicode):
+            state (str):
                 The state for the new model. This must be one of the valid
                 choices for the state field.
 
@@ -2316,13 +2573,22 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return status_update
 
-    def create_webhook(self, enabled=False, events=WebHookTarget.ALL_EVENTS,
-                       url='http://example.com',
-                       encoding=WebHookTarget.ENCODING_JSON,
-                       use_custom_content=False, custom_content='',
-                       secret='', apply_to=WebHookTarget.APPLY_TO_ALL,
-                       repositories=None, with_local_site=False,
-                       local_site=None, extra_fields=None, **kwargs):
+    def create_webhook(
+        self,
+        enabled: bool = False,
+        events: str = WebHookTarget.ALL_EVENTS,
+        url: str = 'http://example.com',
+        encoding: str = WebHookTarget.ENCODING_JSON,
+        use_custom_content: bool = False,
+        custom_content: str = '',
+        secret: str = '',
+        apply_to: str = WebHookTarget.APPLY_TO_ALL,
+        repositories: Optional[Sequence[Repository]] = None,
+        with_local_site: bool = False,
+        local_site: Optional[LocalSite] = None,
+        extra_fields: Optional[JSONDict] = None,
+        **kwargs,
+    ) -> WebHookTarget:
         """Create a webhook for testing.
 
         It is populated with default data that can be overridden by the caller.
@@ -2331,28 +2597,28 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             enabled (bool):
                 Whether or not the webhook is enabled when it is created.
 
-            events (unicode):
+            events (str):
                 A comma-separated list of events that the webhook will trigger
                 on.
 
-            url (unicode):
+            url (str):
                 The URL that requests will be made against.
 
-            encoding (unicode):
+            encoding (str):
                 The encoding of the payload to send.
 
             use_custom_content (bool):
                 Determines if custom content will be sent for the payload (if
                 ``True``) or if it will be auto-generated (if ``False``).
 
-            custom_content (unicode):
+            custom_content (str):
                 The custom content to send when ``use_custom_content`` is
                 ``True``.
 
-            secret (unicode):
+            secret (str):
                 An HMAC secret to sign the payload with.
 
-            apply_to (unicode):
+            apply_to (str):
                 The types of repositories the webhook will apply to.
 
             repositories (list):
@@ -2377,7 +2643,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                     4.0.5
 
         Returns:
-            WebHookTarget: A webhook constructed with the given arguments.
+            WebHookTarget:
+            A webhook constructed with the given arguments.
         """
         if not local_site:
             if with_local_site:
@@ -2407,11 +2674,15 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         return webhook
 
     def create_oauth_application(
-        self, user, local_site=None, with_local_site=False,
-        redirect_uris='http://example.com',
-        authorization_grant_type=Application.GRANT_CLIENT_CREDENTIALS,
-        client_type=Application.CLIENT_PUBLIC,
-        **kwargs):
+        self,
+        user: User,
+        local_site: Optional[LocalSite] = None,
+        with_local_site: bool = False,
+        redirect_uris: str = 'http://example.com',
+        authorization_grant_type: str = Application.GRANT_CLIENT_CREDENTIALS,
+        client_type: str = Application.CLIENT_PUBLIC,
+        **kwargs,
+    ) -> Application:
         """Create an OAuth application.
 
         Args:
@@ -2422,13 +2693,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 The LocalSite for the application to be associated with, if
                 any.
 
-            redirect_uris (unicode, optional):
+            redirect_uris (str, optional):
                 A whitespace-separated list of allowable redirect URIs.
 
-            authorization_grant_type (unicode, optional):
+            authorization_grant_type (str, optional):
                 The grant type for the application.
 
-            client_type (unicode, optional):
+            client_type (str, optional):
                 The application client type.
 
             **kwargs (dict):
@@ -2454,8 +2725,14 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             extra_data='{}',
             **kwargs)
 
-    def create_oauth_token(self, application, user, scope='', expires=None,
-                           **kwargs):
+    def create_oauth_token(
+        self,
+        application: Application,
+        user: User,
+        scope: str = '',
+        expires: Optional[timedelta] = None,
+        **kwargs,
+    ) -> AccessToken:
         """Create an OAuth2 access token for testing.
 
         Args:
@@ -2465,7 +2742,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             user (django.contrib.auth.models.User):
                 The user who should own the token.
 
-            scope (unicode, optional):
+            scope (str, optional):
                 The scopes of the token. This argument defaults to the empty
                 scope.
 
@@ -2497,7 +2774,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         )
 
     @contextmanager
-    def siteconfig_settings(self, settings, reload_settings=True):
+    def siteconfig_settings(
+        self,
+        settings: JSONDict,
+        reload_settings: bool = True,
+    ) -> Iterator[None]:
         """Temporarily sets siteconfig settings for a test.
 
         Args:
