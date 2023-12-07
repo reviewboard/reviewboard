@@ -39,6 +39,9 @@ User Accounts
    reviewboard.accounts.backends.x509
    reviewboard.accounts.decorators
    reviewboard.accounts.errors
+   reviewboard.accounts.forms.auth
+   reviewboard.accounts.forms.pages
+   reviewboard.accounts.forms.registration
    reviewboard.accounts.managers
    reviewboard.accounts.middleware
    reviewboard.accounts.mixins
@@ -46,10 +49,9 @@ User Accounts
    reviewboard.accounts.pages
    reviewboard.accounts.privacy
    reviewboard.accounts.templatetags.accounts
+   reviewboard.accounts.testing
+   reviewboard.accounts.testing.queries
    reviewboard.accounts.trophies
-   reviewboard.accounts.forms.auth
-   reviewboard.accounts.forms.pages
-   reviewboard.accounts.forms.registration
 
 
 Administration and Server
@@ -309,6 +311,8 @@ Local Sites
    reviewboard.site.models
    reviewboard.site.signals
    reviewboard.site.templatetags.localsite
+   reviewboard.site.testing
+   reviewboard.site.testing.queries
    reviewboard.site.urlresolvers
    reviewboard.site.validation
 
@@ -333,6 +337,9 @@ Unit Test Helpers
    :toctree: python
 
    reviewboard.testing.hosting_services
+   reviewboard.testing.queries
+   reviewboard.testing.queries.base
+   reviewboard.testing.queries.http
    reviewboard.testing.scmtool
    reviewboard.testing.testcase
 
