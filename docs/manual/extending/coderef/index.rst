@@ -362,6 +362,8 @@ Web API
    reviewboard.webapi.mixins
    reviewboard.webapi.models
    reviewboard.webapi.server_info
+   reviewboard.webapi.testing
+   reviewboard.webapi.testing.queries
    reviewboard.webapi.tests.base
 
 
