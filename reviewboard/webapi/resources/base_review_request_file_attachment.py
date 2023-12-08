@@ -289,6 +289,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                 }
 
         try:
+            # TODO PERFORMANCE: We need to only conditionally save.
             self.import_extra_data(file, file.extra_data, extra_fields)
             file.save(update_fields=('extra_data',))
         except ImportExtraDataError as e:

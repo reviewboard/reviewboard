@@ -1239,6 +1239,9 @@ class FileAttachmentsFieldTests(FieldsTestCase):
         # 3. Fetch the review request draft
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1248,6 +1251,10 @@ class FileAttachmentsFieldTests(FieldsTestCase):
                 'where': Q(review_request__id=review_request.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1324,6 +1331,9 @@ class FileAttachmentsFieldTests(FieldsTestCase):
         # 3. Fetch the review request draft
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1333,6 +1343,10 @@ class FileAttachmentsFieldTests(FieldsTestCase):
                 'where': Q(review_request__id=review_request.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {

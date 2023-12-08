@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from django.contrib.auth.models import User
 from django.db.models import Q
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
@@ -12,6 +14,9 @@ from reviewboard.reviews.models import (
     ReviewRequestDraft)
 from reviewboard.reviews.models.review_request import FileAttachmentState
 from reviewboard.webapi.resources import resources
+from reviewboard.webapi.testing.queries import (
+    get_webapi_request_start_equeries,
+)
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (file_attachment_item_mimetype,
                                                 file_attachment_list_mimetype)
@@ -22,6 +27,9 @@ from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
                                                         ExtraDataListMixin)
 from reviewboard.webapi.tests.urls import (get_file_attachment_item_url,
                                            get_file_attachment_list_url)
+
+if TYPE_CHECKING:
+    from djblets.db.query_comparator import ExpectedQueries
 
 
 class ResourceListTests(ReviewRequestChildListMixin,
@@ -329,27 +337,19 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/
         with setting a new caption and when a draft already exists
         """
-        review_request = self.create_review_request(submitter=self.user)
+        user = self.user
+        assert user is not None
+
+        review_request = self.create_review_request(submitter=user)
         file_attachment = self.create_file_attachment(review_request)
         review_request_draft = self.create_review_request_draft(review_request)
 
-        # 13 queries:
-        #
-        #  1. Fetch review request
-        #  2. Fetch request user
-        #  3. Fetch request user's Profile
-        #  4. Fetch review request
-        #  5. Fetch review request draft
-        #  6. Fetch  file attachments
-        #  7. Save an update to the file attachment's extra data
-        #  8. Fetch review request draft
-        #  9. Save an update to the file attachment's draft caption
-        # 10. Save the review request draft last_updated field
-        # 11. Fetch review request
-        # 12. Fetch review request
-        # 13. Fetch review request
-        queries = [
+        # TODO PERFORMANCE: Too many unnecessary queries
+        equeries: ExpectedQueries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'tables': {
@@ -358,14 +358,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 },
                 'where': Q(file_attachments__id=file_attachment.pk),
             },
-            {
-                'model': User,
-                'where': Q(pk=self.user.pk),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=self.user),
-            },
+        ]
+        equeries += get_webapi_request_start_equeries(user=user)
+        equeries += [
             {
                 'model': ReviewRequest,
                 'select_related': {'submitter', 'repository'},
@@ -378,6 +373,16 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(review_request=review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments':
+                        'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_inactive_file_attachments':
+                        'LEFT OUTER JOIN',
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'LEFT OUTER JOIN',
+                    'reviews_reviewrequestdraft_inactive_file_attachments':
+                        'LEFT OUTER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 4,
                 'tables': {
@@ -416,6 +421,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(pk=review_request_draft.pk)
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'limit': 1,
                 'num_joins': 1,
@@ -426,6 +434,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(file_attachments__id=file_attachment.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'limit': 1,
                 'num_joins': 1,
@@ -436,6 +447,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(file_attachments__id=file_attachment.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'limit': 1,
                 'num_joins': 1,
@@ -450,7 +464,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         # The purpose of this test is to see what queries are being executed,
         # to compare against the queries executed during ``pending_deletion``
         # updates.
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries):
             rsp = self.api_put(
                 get_file_attachment_item_url(file_attachment),
                 {
@@ -465,7 +479,10 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         with setting pending_deletion to False for a file attachment that
         is currently pending deletion
         """
-        review_request = self.create_review_request(submitter=self.user)
+        user = self.user
+        assert user is not None
+
+        review_request = self.create_review_request(submitter=user)
         file_attachment = self.create_file_attachment(review_request)
         review_request_draft = self.create_review_request_draft(review_request)
 
@@ -479,36 +496,12 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
 
         del review_request._file_attachments_data
 
-        # 25 queries:
-        #
-        #  1. Fetch review request
-        #  2. Fetch request user
-        #  3. Fetch request user's Profile
-        #  4. Fetch review request
-        #  5. Fetch review request draft
-        #  6. Fetch file attachment
-        #  7. Save any file attachment updates
-        #  8. Fetch review request draft
-        #  9. Fetch review request when getting file attachment state
-        # 10. Fetch active file attachments when getting file attachment state
-        # 11. Fetch review request draft when getting file attachment state
-        # 12. Fetch inactive draft file attachments when getting file
-        #     attachment state
-        # 13. Fetch file attachment IDs matching history ID
-        # 14. Fetch inactive draft file attachments
-        # 15. Remove file attachment from inactive draft file attachments
-        # 16. Update inactive draft file attachments count
-        # 17. Fetch inactive draft file attachments count
-        # 18. Fetch active draft file attachments
-        # 19. Add file attachment to active draft file attachments
-        # 20. Update active draft file attachments count
-        # 21. Fetch active draft file attachments count
-        # 22. Save the review request draft last_updated field
-        # 23. Fetch review request
-        # 24. Fetch review request
-        # 25. Fetch review request
-        queries = [
+        # TODO PERFORMANCE: Too many unnecessary queries
+        equeries: ExpectedQueries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'tables': {
@@ -517,14 +510,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 },
                 'where': Q(file_attachments__id=file_attachment.pk),
             },
-            {
-                'model': User,
-                'where': Q(pk=self.user.pk),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=self.user),
-            },
+        ]
+        equeries += get_webapi_request_start_equeries(user=user)
+        equeries += [
             {
                 'model': ReviewRequest,
                 'select_related': {'submitter', 'repository'},
@@ -537,6 +525,16 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(review_request=review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments':
+                        'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_inactive_file_attachments':
+                        'LEFT OUTER JOIN',
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'LEFT OUTER JOIN',
+                    'reviews_reviewrequestdraft_inactive_file_attachments':
+                        'LEFT OUTER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 4,
                 'tables': {
@@ -569,6 +567,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(id=review_request.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -582,6 +583,10 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(review_request=review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -644,6 +649,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(pk=review_request_draft.pk)
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'limit': 1,
                 'num_joins': 1,
@@ -654,6 +662,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(file_attachments__id=file_attachment.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'limit': 1,
                 'num_joins': 1,
@@ -664,6 +675,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(file_attachments__id=file_attachment.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'limit': 1,
                 'num_joins': 1,
@@ -675,7 +689,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
             },
         ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries):
             rsp = self.api_put(
                 get_file_attachment_item_url(file_attachment),
                 {
@@ -693,7 +707,10 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         with setting pending_deletion to False for a file attachment that
         is currently pending deletion and has a history of revisions
         """
-        review_request = self.create_review_request(submitter=self.user)
+        user = self.user
+        assert user is not None
+
+        review_request = self.create_review_request(submitter=user)
         file_attachment = self.create_file_attachment(review_request)
         file_attachment_2 = self.create_file_attachment(
             review_request,
@@ -716,36 +733,12 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
 
         del review_request._file_attachments_data
 
-        # 25 queries:
-        #
-        #  1. Fetch review request
-        #  2. Fetch request user
-        #  3. Fetch request user's Profile
-        #  4. Fetch review request
-        #  5. Fetch review request draft
-        #  6. Fetch file attachment
-        #  7. Save any file attachment updates
-        #  8. Fetch review request draft
-        #  9. Fetch review request when getting file attachment state
-        # 10. Fetch active file attachments when getting file attachment state
-        # 11. Fetch review request draft when getting file attachment state
-        # 12. Fetch inactive draft file attachments when getting file
-        #     attachment state
-        # 13. Fetch file attachment IDs matching history ID
-        # 14. Fetch inactive draft file attachments
-        # 15. Remove file attachment from inactive draft file attachments
-        # 16. Update inactive draft file attachments count
-        # 17. Fetch inactive draft file attachments count
-        # 18. Fetch active draft file attachments
-        # 19. Add file attachment to active draft file attachments
-        # 20. Update active draft file attachments count
-        # 21. Fetch active draft file attachments count
-        # 22. Save the review request draft last_updated field
-        # 23. Fetch review request
-        # 24. Fetch review request
-        # 25. Fetch review request
-        queries = [
+        # TODO PERFORMANCE: Too many unnecessary queries
+        equeries: ExpectedQueries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'tables': {
@@ -754,14 +747,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 },
                 'where': Q(file_attachments__id=file_attachment.pk),
             },
-            {
-                'model': User,
-                'where': Q(pk=self.user.pk),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=self.user),
-            },
+        ]
+        equeries += get_webapi_request_start_equeries(user=user)
+        equeries += [
             {
                 'model': ReviewRequest,
                 'select_related': {'submitter', 'repository'},
@@ -774,6 +762,16 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(review_request=review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments':
+                        'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_inactive_file_attachments':
+                        'LEFT OUTER JOIN',
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'LEFT OUTER JOIN',
+                    'reviews_reviewrequestdraft_inactive_file_attachments':
+                        'LEFT OUTER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 4,
                 'tables': {
@@ -806,6 +804,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(id=review_request.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -819,6 +820,10 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(review_request=review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -883,6 +888,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(pk=review_request_draft.pk)
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'limit': 1,
                 'num_joins': 1,
@@ -893,6 +901,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(file_attachments__id=file_attachment.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'limit': 1,
                 'num_joins': 1,
@@ -903,6 +914,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'where': Q(file_attachments__id=file_attachment.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'limit': 1,
                 'num_joins': 1,
@@ -914,7 +928,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
             },
         ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries):
             rsp = self.api_put(
                 get_file_attachment_item_url(file_attachment),
                 {

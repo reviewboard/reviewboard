@@ -1267,8 +1267,11 @@ class GetFileAttachmentsDataTests(TestCase):
         # 3. Fetch the review request draft
         # 4. Fetch active draft file attachments
         # 5. Fetch the inactive draft file attachments
-        queries = [
+        equeries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1278,6 +1281,10 @@ class GetFileAttachmentsDataTests(TestCase):
                 'where': Q(review_request__id=self.review_request.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1291,6 +1298,10 @@ class GetFileAttachmentsDataTests(TestCase):
                 'where': Q(review_request=self.review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1300,6 +1311,10 @@ class GetFileAttachmentsDataTests(TestCase):
                 'where': Q(drafts__id=draft.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1310,7 +1325,7 @@ class GetFileAttachmentsDataTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries):
             self._assert_data_equals(
                 active_ids={
                     active.pk,
@@ -1368,6 +1383,9 @@ class GetFileAttachmentsDataTests(TestCase):
         # 3. Fetch the review request draft
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1377,6 +1395,10 @@ class GetFileAttachmentsDataTests(TestCase):
                 'where': Q(review_request__id=self.review_request.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1445,6 +1467,9 @@ class GetFileAttachmentsDataTests(TestCase):
         # 5. Fetch the inactive draft file attachments
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1454,6 +1479,10 @@ class GetFileAttachmentsDataTests(TestCase):
                 'where': Q(review_request__id=self.review_request.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1467,6 +1496,10 @@ class GetFileAttachmentsDataTests(TestCase):
                 'where': Q(review_request=self.review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1476,6 +1509,10 @@ class GetFileAttachmentsDataTests(TestCase):
                 'where': Q(drafts__id=draft.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1541,8 +1578,11 @@ class GetFileAttachmentsDataTests(TestCase):
         #       attachments. Same as above, these queries won't happen in
         #       practice
         #   13. Fetch the inactive draft file attachments
-        queries = [
+        equeries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1552,6 +1592,10 @@ class GetFileAttachmentsDataTests(TestCase):
                 'where': Q(review_request__id=self.review_request.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachment_histories':
+                        'INNER JOIN',
+                },
                 'model': FileAttachmentHistory,
                 'annotations': {
                     'display_position__max': Max('display_position'),
@@ -1577,6 +1621,10 @@ class GetFileAttachmentsDataTests(TestCase):
                 'where': Q(pk=active.pk)
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1590,6 +1638,10 @@ class GetFileAttachmentsDataTests(TestCase):
                 'where': Q(review_request=self.review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1599,6 +1651,10 @@ class GetFileAttachmentsDataTests(TestCase):
                 'where': Q(drafts__id=draft.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachment_histories':
+                        'INNER JOIN',
+                },
                 'model': FileAttachmentHistory,
                 'annotations': {
                     'display_position__max': Max('display_position'),
@@ -1624,6 +1680,10 @@ class GetFileAttachmentsDataTests(TestCase):
                 'where': Q(pk=draft_active.pk)
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1634,7 +1694,7 @@ class GetFileAttachmentsDataTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with self.assertQueries(equeries):
             self._assert_data_equals(
                 active_ids={
                     active.pk,
@@ -1716,6 +1776,9 @@ class GetFileAttachmentStateTests(TestCase):
         # 2. Fetch the review request draft
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1751,6 +1814,9 @@ class GetFileAttachmentStateTests(TestCase):
         # 3. Fetch the active draft file attachments
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1764,6 +1830,10 @@ class GetFileAttachmentStateTests(TestCase):
                 'where': Q(review_request=self.review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1798,6 +1868,9 @@ class GetFileAttachmentStateTests(TestCase):
         # 3. Fetch active draft file attachments
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1811,6 +1884,10 @@ class GetFileAttachmentStateTests(TestCase):
                 'where': Q(review_request=self.review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1841,6 +1918,10 @@ class GetFileAttachmentStateTests(TestCase):
         # 2. Fetch the review request draft
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1878,6 +1959,10 @@ class GetFileAttachmentStateTests(TestCase):
         # 2. Fetch the review request draft
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1891,6 +1976,10 @@ class GetFileAttachmentStateTests(TestCase):
                 'where': Q(review_request=self.review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1925,6 +2014,9 @@ class GetFileAttachmentStateTests(TestCase):
         # 3. Fetch inactive draft file attachments
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1938,6 +2030,10 @@ class GetFileAttachmentStateTests(TestCase):
                 'where': Q(review_request=self.review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -1974,6 +2070,10 @@ class GetFileAttachmentStateTests(TestCase):
                 'where': Q(review_request=self.review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -2011,6 +2111,9 @@ class GetFileAttachmentStateTests(TestCase):
         # 3. Fetch active draft file attachments
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -2024,6 +2127,10 @@ class GetFileAttachmentStateTests(TestCase):
                 'where': Q(review_request=self.review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -2087,6 +2194,9 @@ class GetFileAttachmentStateTests(TestCase):
         # 5. Fetch the inactive draft file attachments
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -2096,6 +2206,10 @@ class GetFileAttachmentStateTests(TestCase):
                 'where': Q(review_request__id=self.review_request.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -2109,6 +2223,10 @@ class GetFileAttachmentStateTests(TestCase):
                 'where': Q(review_request=self.review_request),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -2118,6 +2236,10 @@ class GetFileAttachmentStateTests(TestCase):
                 'where': Q(drafts__id=review_request_draft.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequestdraft_inactive_file_attachments':
+                        'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
