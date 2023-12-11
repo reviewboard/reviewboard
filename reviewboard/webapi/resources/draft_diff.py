@@ -1,3 +1,7 @@
+"""The resource for a draft DiffSet."""
+
+from __future__ import annotations
+
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
@@ -14,6 +18,7 @@ from djblets.webapi.fields import (BooleanFieldType,
 
 from reviewboard.diffviewer.commit_utils import deserialize_validation_info
 from reviewboard.diffviewer.features import dvcs_feature
+from reviewboard.reviews.signals import review_request_diffset_uploaded
 from reviewboard.webapi.base import ImportExtraDataError
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
@@ -160,10 +165,19 @@ class DraftDiffResource(DiffResource):
                 if error_rsp is not None:
                     return error_rsp
 
+                review_request_draft = diffset.review_request_draft.get()
+
                 # Only add default reviewers if this is the first time we've
                 # published any diffsets.
                 if review_request.can_add_default_reviewers():
-                    diffset.review_request_draft.get().add_default_reviewers()
+                    review_request_draft.add_default_reviewers()
+
+                # Now that the commit series for the diffset is finalized,
+                # emit a signal that a diffset has been uploaded.
+                review_request_diffset_uploaded.send(
+                    sender=self.__class__,
+                    diffset=diffset,
+                    review_request_draft=review_request_draft)
             elif dvcs_feature.is_enabled(request=request):
                 return INVALID_ATTRIBUTE, {
                     'reason': 'This review request was not created with '

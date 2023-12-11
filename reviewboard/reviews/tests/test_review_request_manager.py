@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import kgb
 from django.contrib.auth.models import AnonymousUser, User
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.models import (DefaultReviewer, ReviewRequest,
                                         ReviewRequestDraft)
+from reviewboard.reviews.signals import review_request_diffset_uploaded
 from reviewboard.reviews.testing.queries.review_requests import (
     get_review_requests_accessible_equeries,
     get_review_requests_from_user_equeries,
@@ -22,7 +24,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 
-class ReviewRequestManagerTests(TestCase):
+class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
     """Unit tests for reviewboard.reviews.managers.ReviewRequestManager."""
 
     fixtures = ['test_users']
@@ -185,6 +187,83 @@ class ReviewRequestManagerTests(TestCase):
         self.assertIsNotNone(draft)
         self.assertEqual(draft.target_people.count(), 1)
         self.assertEqual(draft.target_groups.count(), 1)
+
+    @add_fixtures(['test_scmtools'])
+    def test_create_with_create_from_commit_id_diffset_uploaded(self) -> None:
+        """Testing ReviewRequest.objects.create with commit ID from a comitted
+        change and create_from_commit_id=True emits a
+        review_request_diffset_uploaded signal
+        """
+        def on_diffset_uploaded(diffset, review_request_draft, **kwargs):
+            pass
+
+        review_request_diffset_uploaded.connect(on_diffset_uploaded)
+        self.spy_on(on_diffset_uploaded)
+
+        user = User.objects.get(username='doc')
+        repository = self.create_repository(tool_name='Test')
+
+        review_request = ReviewRequest.objects.create(
+            user,
+            repository,
+            commit_id='123',
+            create_from_commit_id=True)
+        self.assertEqual(review_request.repository, repository)
+        self.assertEqual(review_request.diffset_history.diffsets.count(), 0)
+        self.assertEqual(review_request.commit_id, '123')
+        self.assertEqual(review_request.changenum, 123)
+
+        draft = review_request.get_draft()
+        diffset = draft.diffset
+        self.assertIsNotNone(draft)
+        self.assertIsNotNone(diffset)
+        self.assertEqual(draft.commit_id, '123')
+        self.assertSpyCalledWith(
+            on_diffset_uploaded,
+            diffset=diffset,
+            review_request_draft=draft)
+
+        review_request_diffset_uploaded.disconnect(on_diffset_uploaded)
+
+    @add_fixtures(['test_scmtools'])
+    def test_create_with_create_from_commit_id_no_diffset_uploaded(
+        self,
+    ) -> None:
+        """Testing ReviewRequest.objects.create with commit ID from a pending
+        change and create_from_commit_id=True does not emit a
+        review_request_diffset_uploaded signal
+        """
+        def on_diffset_uploaded(diffset, review_request_draft, **kwargs):
+            pass
+
+        review_request_diffset_uploaded.connect(on_diffset_uploaded)
+        self.spy_on(on_diffset_uploaded)
+
+        user = User.objects.get(username='doc')
+        repository = self.create_repository(
+            tool_name='TestToolSupportsPendingChangeSets')
+
+        review_request = ReviewRequest.objects.create(
+            user,
+            repository,
+            commit_id=123,
+            create_from_commit_id=True)
+        self.assertEqual(review_request.repository, repository)
+        self.assertEqual(review_request.diffset_history.diffsets.count(), 0)
+        self.assertEqual(review_request.commit_id, 123)
+        self.assertEqual(review_request.changenum, 123)
+
+        draft = review_request.get_draft()
+        diffset = draft.diffset
+        self.assertIsNotNone(draft)
+        self.assertEqual(draft.commit_id, '123')
+
+        # Since this was created from a pending change, there is no diff to
+        # fetch from the repository and no diffset has been created.
+        self.assertIsNone(diffset)
+        self.assertSpyNotCalled(on_diffset_uploaded)
+
+        review_request_diffset_uploaded.disconnect(on_diffset_uploaded)
 
     def test_public(self) -> None:
         """Testing ReviewRequest.objects.public"""

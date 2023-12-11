@@ -15,6 +15,7 @@ from djblets.db.managers import ConcurrencyManager
 
 from reviewboard.deprecation import RemovedInReviewBoard60Warning
 from reviewboard.diffviewer.models import DiffSetHistory
+from reviewboard.reviews.signals import review_request_diffset_uploaded
 from reviewboard.scmtools.errors import ChangeNumberInUseError
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
@@ -610,6 +611,16 @@ class ReviewRequestManager(ConcurrencyManager):
             draft.save()
 
             draft.add_default_reviewers()
+
+            if draft.diffset and create_from_commit_id:
+                # A diffset has been created from an existing commit. Now that
+                # the review request draft, diffset and all of its related
+                # objects have been created and saved to the database, we can
+                # emit this signal.
+                review_request_diffset_uploaded.send(
+                    sender=self.__class__,
+                    diffset=draft.diffset,
+                    review_request_draft=draft)
 
         if local_site:
             # We want to atomically set the local_id to be a monotonically
