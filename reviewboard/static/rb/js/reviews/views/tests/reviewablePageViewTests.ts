@@ -34,7 +34,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
     let pageView;
 
     beforeEach(function() {
-        const $container = $('<div/>')
+        const $container = $('<div>')
             .html(pageTemplate)
             .appendTo($testsScratch);
 

@@ -347,7 +347,7 @@ const ImageDifferenceDiffView = BaseImageView.extend({
                 height: this._maxHeight * scale + 'px'
             });
 
-        const $modifiedCanvas = $('<canvas/>')
+        const $modifiedCanvas = $('<canvas>')
             .attr({
                 width: this._maxWidth,
                 height: this._maxHeight
@@ -427,10 +427,10 @@ const ImageOnionDiffView = BaseImageView.extend({
     template: _.template([
         '<div class="image-containers">',
         ' <div class="orig-image">',
-        '  <img title="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- diffAgainstImageURL %>">',
         ' </div>',
         ' <div class="modified-image">',
-        '  <img title="<%- caption %>" src="<%- imageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- imageURL %>">',
         ' </div>',
         '</div>',
         '<div class="image-slider"></div>'
@@ -570,12 +570,12 @@ const ImageSplitDiffView = BaseImageView.extend({
         '<div class="image-containers">',
         ' <div class="image-diff-split-container-orig">',
         '  <div class="orig-image">',
-        '   <img title="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
+        '   <img title="<%- caption %>" src="<%- diffAgainstImageURL %>">',
         '  </div>',
         ' </div>',
         ' <div class="image-diff-split-container-modified">',
         '  <div class="modified-image">',
-        '   <img title="<%- caption %>" src="<%- imageURL %>" />',
+        '   <img title="<%- caption %>" src="<%- imageURL %>">',
         '  </div>',
         ' </div>',
         '</div>',
@@ -738,12 +738,12 @@ const ImageTwoUpDiffView = BaseImageView.extend({
     template: _.template([
         '<div class="image-container image-container-orig">',
         ' <div class="orig-image">',
-        '  <img title="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- diffAgainstImageURL %>">',
         ' </div>',
         '</div>',
         '<div class="image-container image-container-modified">',
         ' <div class="modified-image">',
-        '  <img title="<%- caption %>" src="<%- imageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- imageURL %>">',
         ' </div>',
         '</div>'
     ].join('')),
@@ -900,12 +900,12 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
     renderContent() {
         const hasDiff = !!this.model.get('diffAgainstFileAttachmentID');
 
-        this._$selectionArea = $('<div/>')
+        this._$selectionArea = $('<div>')
             .addClass('selection-container')
             .hide()
             .proxyTouchEvents();
 
-        this._$selectionRect = $('<div/>')
+        this._$selectionRect = $('<div>')
             .addClass('selection-rect')
             .prependTo(this._$selectionArea)
             .proxyTouchEvents()
@@ -928,7 +928,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                     }
                 });
 
-        const $wrapper = $('<div class="image-content" />')
+        const $wrapper = $('<div class="image-content">')
             .append(this._$selectionArea);
 
         if (this.model.get('diffTypeMismatch')) {
@@ -936,10 +936,10 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                 errorStr: gettext('These revisions cannot be compared because they are different file types.')
             }));
         } else if (hasDiff) {
-            this._$modeBar = $('<ul class="image-diff-modes"/>')
+            this._$modeBar = $('<ul class="image-diff-modes">')
                 .appendTo(this.$el);
 
-            this._$imageDiffs = $('<div class="image-diffs"/>');
+            this._$imageDiffs = $('<div class="image-diffs">');
 
             this._addDiffMode(ImageTwoUpDiffView);
             this._addDiffMode(ImageDifferenceDiffView);
@@ -972,27 +972,29 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             'resize': this._adjustPos,
         });
 
-        const $header = $('<div />')
+        const $header = $('<div>')
             .addClass('review-ui-header')
             .prependTo(this.$el);
 
         if (this.model.get('numRevisions') > 1) {
-            const $revisionLabel = $('<div id="revision_label" />')
+            const $revisionLabel = $('<div id="revision_label">')
                 .appendTo($header);
             this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
                 el: $revisionLabel,
-                model: this.model
+                model: this.model,
             });
             this._revisionLabelView.render();
             this.listenTo(this._revisionLabelView, 'revisionSelected',
                           this._onRevisionSelected);
 
-            const $revisionSelector = $('<div id="attachment_revision_selector" />')
+            const $revisionSelector =
+                $('<div id="attachment_revision_selector">')
                 .appendTo($header);
-            this._revisionSelectorView = new RB.FileAttachmentRevisionSelectorView({
-                el: $revisionSelector,
-                model: this.model
-            });
+            this._revisionSelectorView =
+                new RB.FileAttachmentRevisionSelectorView({
+                    el: $revisionSelector,
+                    model: this.model,
+                });
             this._revisionSelectorView.render();
             this.listenTo(this._revisionSelectorView, 'revisionSelected',
                           this._onRevisionSelected);
@@ -1005,34 +1007,35 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                                 gettext('%(caption)s (revision %(revision)s)'),
                                 {
                                     caption: this.model.get('diffCaption'),
-                                    revision: this.model.get('diffRevision')
+                                    revision: this.model.get('diffRevision'),
                                 },
-                                true)
+                                true),
                         }),
                         this.captionItemTemplate({
                             caption: interpolate(
                                 gettext('%(caption)s (revision %(revision)s)'),
                                 {
                                     caption: this.model.get('caption'),
-                                    revision: this.model.get('fileRevision')
+                                    revision: this.model.get('fileRevision'),
                                 },
-                                true)
-                        })
+                                true),
+                        }),
                     ];
 
                     $header.append(this.captionTableTemplate({
-                        items: captionItems.join('')
+                        items: captionItems.join(''),
                     }));
                 } else {
-                    const $captionBar = $('<div class="image-single-revision">')
+                    const $captionBar =
+                        $('<div class="image-single-revision">')
                         .appendTo($header);
 
-                    $('<h1 class="caption" />')
+                    $('<h1 class="caption">')
                         .text(interpolate(
                             gettext('%(caption)s (revision %(revision)s)'),
                             {
                                 caption: this.model.get('caption'),
-                                revision: this.model.get('fileRevision')
+                                revision: this.model.get('fileRevision'),
                             },
                             true))
                         .appendTo($captionBar);
@@ -1042,26 +1045,26 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             if (!this.renderedInline) {
                 $header.addClass('image-single-revision');
 
-                $('<h1 class="caption" />')
+                $('<h1 class="caption">')
                     .text(this.model.get('caption'))
                     .appendTo($header);
             }
         }
 
         const $resolutionMenu = $([
-          '<li class="image-resolution-menu has-menu">',
-          ' <a href="#" class="menu-header">',
-          '  <span class="fa fa-search-plus"></span>',
-          '  <span class="image-resolution-menu-current">100%</span>',
-          '  <span class="rb-icon rb-icon-dropdown-arrow">',
-          ' </a>',
-          ' <ul class="menu" />',
-          '</li>',
+            '<li class="image-resolution-menu has-menu">',
+            ' <a href="#" class="menu-header">',
+            '  <span class="fa fa-search-plus"></span>',
+            '  <span class="image-resolution-menu-current">100%</span>',
+            '  <span class="rb-icon rb-icon-dropdown-arrow">',
+            ' </a>',
+            ' <ul class="menu"></ul>',
+            '</li>',
         ].join(''));
         const $menu = $resolutionMenu.find('.menu');
 
         scalingFactors.forEach((text, scale) => {
-            $(`<li class="menu-item" data-image-scale="${scale}" />`)
+            $(`<li class="menu-item" data-image-scale="${scale}">`)
                 .text(text)
                 .appendTo($menu);
         });
@@ -1124,7 +1127,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
     _addDiffMode(ViewClass) {
         const mode = ViewClass.prototype.mode;
         const view = new ViewClass({
-            model: this.model
+            model: this.model,
         });
 
         this._diffModeViews[mode] = view;

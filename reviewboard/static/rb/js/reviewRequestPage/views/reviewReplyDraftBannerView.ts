@@ -49,13 +49,13 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
         <p>${gettext('Be sure to publish when finished.')}</p>
         <span class="banner-actions">
          <input type="button" value="${gettext('Publish')}"
-                class="publish-button" />
+                class="publish-button">
          <input type="button" value="${gettext('Discard')}"
-                class="discard-button" />
+                class="discard-button">
         </span>
         <% if (showSendEmail) { %>
          <label>
-          <input type="checkbox" class="send-email" checked />
+          <input type="checkbox" class="send-email" checked>
           ${gettext('Send E-Mail')}
         </label>
         <% } %>

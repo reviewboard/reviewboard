@@ -680,8 +680,8 @@ export class DeleteActionView extends Actions.MenuItemActionView {
             `)
             .modalBox({
                 buttons: [
-                    $(`<input type="button" value="${gettext('Cancel')}"/>`),
-                    $(`<input type="button" value="${gettext('Delete')}"/>`)
+                    $(`<input type="button" value="${gettext('Cancel')}">`),
+                    $(`<input type="button" value="${gettext('Delete')}">`)
                         .click(() => reviewRequest
                             .destroy({
                                 buttons: $('input', $dlg.modalBox('buttons')),

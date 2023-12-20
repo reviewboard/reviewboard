@@ -359,7 +359,7 @@ suite('rb/views/reviewRequestFieldViews', function() {
             let $el;
 
             beforeEach(function() {
-                $el = $('<span data-allow-markdown="true"/>')
+                $el = $('<span data-allow-markdown="true">')
                     .text('DOM text value');
             });
 

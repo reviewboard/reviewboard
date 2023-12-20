@@ -183,7 +183,7 @@ RB.DialogView = Backbone.View.extend({
     _makeButtons() {
         this.$buttonsMap = {};
         this.$buttonsList = this.buttons.map(buttonInfo => {
-            const $button = $('<input type="button" />')
+            const $button = $('<input type="button">')
                 .val(buttonInfo.label)
                 .attr('id', buttonInfo.id);
 

@@ -35,9 +35,9 @@ RB.WebhookFormView = Backbone.View.extend({
         });
 
         this._$customContentRow.find('p.help')
-            .append('<br/>')
+            .append('<br>')
             .append(
-                $('<a/>')
+                $('<a>')
                     .attr('href', MANUAL_URL + 'admin/configuration/webhooks/'
                           + '#custom-payloads')
                     .text(gettext('Custom payload reference'))

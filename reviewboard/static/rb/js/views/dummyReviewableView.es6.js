@@ -25,12 +25,12 @@ RB.DummyReviewableView = RB.FileAttachmentReviewableView.extend({
      * Render the view.
      */
     renderContent() {
-        const $header = $('<div/>')
+        const $header = $('<div>')
             .addClass('review-ui-header')
             .prependTo(this.$el);
 
         if (this.model.get('numRevisions') > 1) {
-            const $revisionLabel = $('<div id="revision_label"/>')
+            const $revisionLabel = $('<div id="revision_label">')
                 .appendTo($header);
 
             this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
@@ -41,12 +41,14 @@ RB.DummyReviewableView = RB.FileAttachmentReviewableView.extend({
             this.listenTo(this._revisionLabelView, 'revisionSelected',
                           this._onRevisionSelected);
 
-            const $revisionSelector = $('<div id="attachment_revision_selector" />')
+            const $revisionSelector =
+                $('<div id="attachment_revision_selector">')
                 .appendTo($header);
-            this._revisionSelectorView = new RB.FileAttachmentRevisionSelectorView({
-                el: $revisionSelector,
-                model: this.model,
-            });
+            this._revisionSelectorView =
+                new RB.FileAttachmentRevisionSelectorView({
+                    el: $revisionSelector,
+                    model: this.model,
+                });
             this._revisionSelectorView.render();
             this.listenTo(this._revisionSelectorView, 'revisionSelected',
                           this._onRevisionSelected);
@@ -60,7 +62,7 @@ RB.DummyReviewableView = RB.FileAttachmentReviewableView.extend({
                         caption: this.model.get('caption'),
                         revision: this.model.get('fileRevision'),
                     },
-                    true)
+                    true),
             }));
 
             if (this.model.get('diffAgainstFileAttachmentID') !== null) {
@@ -71,12 +73,12 @@ RB.DummyReviewableView = RB.FileAttachmentReviewableView.extend({
                             caption: this.model.get('diffCaption'),
                             revision: this.model.get('diffRevision'),
                         },
-                        true)
+                        true),
                 }));
             }
 
             $header.append(this.captionTableTemplate({
-                items: captionItems.join('')
+                items: captionItems.join(''),
             }));
         } else {
             $('<h1 class="caption file-attachment-single-revision">')

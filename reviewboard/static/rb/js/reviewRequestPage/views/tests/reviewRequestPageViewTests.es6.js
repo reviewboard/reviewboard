@@ -42,7 +42,7 @@ suite('rb/reviewRequestPage/views/ReviewRequestPageView', function() {
     let entry2;
 
     beforeEach(function() {
-        const $el = $('<div/>')
+        const $el = $('<div>')
             .html(template)
             .appendTo($testsScratch);
 

@@ -59,7 +59,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
         }
 
         it('Using existing elements', function() {
-            const $el = $('<div/>')
+            const $el = $('<div>')
                 .addClass(FileAttachmentThumbnailView.prototype.className)
                 .html(FileAttachmentThumbnailView.prototype.template(
                     _.defaults({

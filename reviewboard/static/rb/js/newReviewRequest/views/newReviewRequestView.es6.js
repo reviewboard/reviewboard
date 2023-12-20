@@ -24,7 +24,7 @@ const FilesOnlyPreCommitView = Backbone.View.extend({
     template: _.template(dedent`
         <p><%- description %></p>
         <input type="submit" class="primary large" id="files-only-create"
-               value="<%- buttonText %>" />
+               value="<%- buttonText %>">
     `),
 
     events: {

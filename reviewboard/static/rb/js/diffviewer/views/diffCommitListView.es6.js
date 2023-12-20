@@ -143,7 +143,7 @@ RB.DiffCommitListView = Backbone.View.extend({
                 commonContext
             )));
 
-        const $tbody = $('<tbody />');
+        const $tbody = $('<tbody>');
 
         if (isInterdiff) {
             this.model.get('historyDiff').each(historyDiffEntry => {

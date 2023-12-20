@@ -175,7 +175,7 @@ export class DiffComplexityIconView extends BaseView<
      */
     static getIconColors(): DiffComplexityIconColors {
         if (!DiffComplexityIconView._iconColors) {
-            const $iconColor = $('<div/>')
+            const $iconColor = $('<div>')
                 .hide()
                 .appendTo(document.body);
 

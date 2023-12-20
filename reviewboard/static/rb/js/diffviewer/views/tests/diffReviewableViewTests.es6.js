@@ -19,24 +19,24 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
              <th>
               <a href="#" class="diff-expand-btn tests-expand-above"
                  data-chunk-index="<%= index %>"
-                 data-lines-of-context="20,0"><img /></a>
+                 data-lines-of-context="20,0"><img></a>
              </th>
              <th colspan="3">
               <a href="#" class="diff-expand-btn tests-expand-chunk"
-                 data-chunk-index="<%= index %>"><img /> Expand</a>
+                 data-chunk-index="<%= index %>"><img> Expand</a>
              </th>
             </tr>
             <tr>
              <th>
               <a href="#" class="diff-expand-btn tests-expand-below"
                  data-chunk-index="<%= index %>"
-                 data-lines-of-context="0,20"><img /></a>
+                 data-lines-of-context="0,20"><img></a>
              </th>
              <th colspan="3">
               <a href="#" class="diff-expand-btn tests-expand-header"
                  data-chunk-index="<%= index %>"
                  data-lines-of-context="0,<%= chunk.expandHeaderLines %>">
-               <img /> <code>Some Function</code>
+               <img> <code>Some Function</code>
               </a>
              </th>
             </tr>
@@ -87,7 +87,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
     let view;
 
     beforeEach(function() {
-        $container = $('<div/>').appendTo($testsScratch);
+        $container = $('<div>').appendTo($testsScratch);
 
         reviewRequest = new RB.ReviewRequest();
     });
@@ -315,7 +315,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     it('And existing comment', function() {
                         var onClick = jasmine.createSpy('onClick');
 
-                        $('<a class="commentflag" />')
+                        $('<a class="commentflag">')
                             .click(onClick)
                             .appendTo(cell);
 
@@ -393,7 +393,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     xit('And existing comment', function() {
                         const onClick = jasmine.createSpy('onClick');
 
-                        $('<a class="commentflag" />')
+                        $('<a class="commentflag">')
                             .click(onClick)
                             .appendTo(startCell);
 
@@ -513,7 +513,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     });
 
                     it('With existing comment on row', function() {
-                        $(cell).append('<a class="commentflag" />');
+                        $(cell).append('<a class="commentflag">');
                         selector._onMouseOver({
                             target: cell
                         });
@@ -751,8 +751,8 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                      * chunks. These should end up being removed when
                      * expanding the chunk.
                      */
-                    $('<tbody class="equal loaded"/>')
-                        .append($('<div class="rb-c-diff-collapse-button"/>'))
+                    $('<tbody class="equal loaded">')
+                        .append($('<div class="rb-c-diff-collapse-button">'))
                         .insertAfter(view.$('tbody')[1])
                         .clone().insertBefore(view.$('tbody')[1]);
 
@@ -880,8 +880,8 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                      * chunks. These should end up being removed when
                      * expanding the chunk.
                      */
-                    $('<tbody class="equal loaded"/>')
-                        .append($('<div class="rb-c-diff-collapse-button" />'))
+                    $('<tbody class="equal loaded">')
+                        .append($('<div class="rb-c-diff-collapse-button">'))
                         .insertAfter(view.$('tbody')[1])
                         .clone().insertBefore(view.$('tbody')[1]);
 
@@ -1114,7 +1114,8 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     contentHTML: dedent`
                         <button class="rb-o-toggle-ducs"
                                 data-hide-chars-label="Hide chars"
-                                data-show-chars-label="Show chars" />
+                                data-show-chars-label="Show chars">
+                        </button>
                     `,
                 }));
 
@@ -1197,7 +1198,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
                 it('Whitespace-only file classes', function() {
                     const $tbodies = view.$el.children('tbody');
-                    const $whitespaceChunk = $('<tbody/>')
+                    const $whitespaceChunk = $('<tbody>')
                             .addClass('whitespace-file')
                             .hide()
                             .html('<tr><td></td></tr>')
@@ -1245,7 +1246,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
                 it('Whitespace-only file classes', function() {
                     const $tbodies = view.$el.children('tbody');
-                    const $whitespaceChunk = $('<tbody/>')
+                    const $whitespaceChunk = $('<tbody>')
                             .addClass('whitespace-file')
                             .html('<tr><td></td></tr>')
                             .hide()

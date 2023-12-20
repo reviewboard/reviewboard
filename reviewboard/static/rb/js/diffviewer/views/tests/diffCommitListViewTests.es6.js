@@ -52,7 +52,7 @@ suite('rb/diffviewer/views/DiffCommitListView', function() {
     let $container;
 
     beforeEach(function() {
-        $container = $('<div class="diff-commit-list" />')
+        $container = $('<div class="diff-commit-list">')
             .appendTo($testsScratch);
     });
 

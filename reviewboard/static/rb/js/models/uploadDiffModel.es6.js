@@ -221,7 +221,7 @@ RB.UploadDiffModel = Backbone.Model.extend({
                 case RB.APIErrors.REPO_FILE_NOT_FOUND:
                     if (this.get('repository').get('scmtoolName') === 'Git' &&
                         rsp.revision.length !== 40) {
-                        error = gettext('The uploaded diff uses short revisions, but Review Board requires full revisions.<br />Please generate a new diff using the <code>--full-index</code> parameter.');
+                        error = gettext('The uploaded diff uses short revisions, but Review Board requires full revisions.<br>Please generate a new diff using the <code>--full-index</code> parameter.');
                     } else {
                         error = interpolate(
                             gettext('The file "%(file)s" (revision %(revision)s) was not found in the repository.'),
@@ -241,7 +241,7 @@ RB.UploadDiffModel = Backbone.Model.extend({
 
                 case RB.APIErrors.DIFF_PARSE_ERROR:
                     error = interpolate(
-                        gettext('%(error)s<br />Line %(line)s: %(reason)s'),
+                        gettext('%(error)s<br>Line %(line)s: %(reason)s'),
                         {
                             error: rsp.err.msg,
                             line: rsp.linenum,

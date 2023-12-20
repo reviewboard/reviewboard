@@ -13,7 +13,7 @@ RB.PostCommitView = Backbone.View.extend({
         <div class="error">
          <p><%- errorLoadingText %></p>
          <p class="error-text">
-          <% _.each(errorLines, function(line) { %><%- line %><br /><% }); %>
+          <% _.each(errorLines, function(line) { %><%- line %><br><% }); %>
          </p>
          <p>
           <%- temporaryFailureText %>
@@ -70,9 +70,9 @@ RB.PostCommitView = Backbone.View.extend({
     render() {
         this._rendered = true;
 
-        $('<div/>')
+        $('<div>')
             .addClass('branches section-header')
-            .append($('<span/>')
+            .append($('<span>')
                 .text(gettext('Create from an existing commit on:')))
             .append(this._branchesView.render().el)
             .appendTo(this.$el);
