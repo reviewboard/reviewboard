@@ -20,7 +20,7 @@ RB.PreCommitView = RB.UploadDiffView.extend({
         </div>
         <div class="input dnd" id="prompt-for-parent-diff">
          <form>
-          <div id="parent-diff-error-contents" />
+          <div id="parent-diff-error-contents"></div>
           <%= selectParentDiff %>
          </form>
          <a href="#" class="startover"><%- startOver %></a>
@@ -28,16 +28,16 @@ RB.PreCommitView = RB.UploadDiffView.extend({
         <div class="input" id="prompt-for-basedir">
          <form id="basedir-form">
           <%- baseDir %>
-          <input id="basedir-input" />
-          <input type="submit" value="<%- ok %>" />
+          <input id="basedir-input">
+          <input type="submit" value="<%- ok %>">
          </form>
          <a href="#" class="startover"><%- startOver %></a>
         </div>
         <div class="input" id="prompt-for-change-number">
          <form id="changenum-form">
           <%- changeNum %>
-          <input type="number" step="1" id="changenum-input" />
-          <input type="submit" value="<%- ok %>" />
+          <input type="number" step="1" id="changenum-input">
+          <input type="submit" value="<%- ok %>">
          </form>
          <a href="#" class="startover"><%- startOver %></a>
         </div>
@@ -48,7 +48,7 @@ RB.PreCommitView = RB.UploadDiffView.extend({
          <div><span class="djblets-o-spinner"></div>
         </div>
         <div class="input" id="error-indicator">
-         <div id="error-contents" />
+         <div id="error-contents"></div>
          <a href="#" class="startover"><%- startOver %></a>
         </div>
     `),
