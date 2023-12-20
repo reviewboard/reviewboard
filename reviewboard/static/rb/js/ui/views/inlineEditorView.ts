@@ -305,7 +305,7 @@ export class InlineEditorView<
 
         this._$form = $form;
 
-        const $fieldWrapper = $('<div class="rb-c-inline-editor__field"/>')
+        const $fieldWrapper = $('<div class="rb-c-inline-editor__field">')
             .appendTo($form);
         this._$fieldWrapper = $fieldWrapper;
 
@@ -1068,7 +1068,7 @@ export class DateInlineEditorView<
      *     The newly created date input element.
      */
     createField(): JQuery {
-        this._$datePickerInput = $('<input type="date"/>')
+        this._$datePickerInput = $('<input type="date">')
             .attr({
                 'max': this.options.maxDate,
                 'min': this.options.minDate,
@@ -1118,7 +1118,7 @@ export class DateTimeInlineEditorView extends DateInlineEditorView {
      *     The newly created datetime input element.
      */
     createField(): JQuery {
-        this._$datePickerInput = $('<input type="datetime-local"/>')
+        this._$datePickerInput = $('<input type="datetime-local">')
             .attr({
                 'max': this.options.maxDate,
                 'min': this.options.minDate,

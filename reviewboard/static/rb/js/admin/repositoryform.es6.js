@@ -32,7 +32,7 @@ function updatePlanEl($row, $plan, serviceType, isFake) {
     } else {
         for (let i = 0; i < planTypes.length; i++) {
             const planType = planTypes[i];
-            const opt = $('<option/>')
+            const opt = $('<option>')
                 .val(planType.type)
                 .text(planType.label)
                 .appendTo($plan);
@@ -71,7 +71,7 @@ function updateRepositoryType() {
         if (newRepoTypes.length === 0 ||
             newRepoTypes.indexOf(repoType.text) !== -1 ||
             newRepoTypes.indexOf(repoType.value) !== -1) {
-            $('<option/>')
+            $('<option>')
                 .text(repoType.text)
                 .val(repoType.value)
                 .appendTo($repoTypes);
@@ -114,7 +114,7 @@ function updateAccountList() {
             text += ` (${account.hosting_url})`;
         }
 
-        const $opt = $('<option/>')
+        const $opt = $('<option>')
             .val(account.pk)
             .text(text)
             .data('account', account)
@@ -135,7 +135,7 @@ $(document).ready(function() {
     const $hostingRepoForms = $('.hosting-repo-form');
     const $hostingAccount = $('#id_hosting_account');
     const $hostingAccountRow = $('#row-hosting_account');
-    const $hostingAccountRelink = $('<p/>')
+    const $hostingAccountRelink = $('<p>')
         .text(gettext('The authentication requirements for this account have changed. You will need to re-authenticate.'))
         .addClass('errornote')
         .hide()
@@ -169,15 +169,15 @@ $(document).ready(function() {
     const $editHostingCredentialsLabel =
         $('#repo-edit-hosting-credentials-label');
     const $forceAuth = $('#id_force_authorize');
-    const $hostingPowerPackAdvert = $('<div class="powerpack-advert" />')
+    const $hostingPowerPackAdvert = $('<div class="powerpack-advert">')
         .html(powerPackTemplate)
         .hide()
         .appendTo($hostingType.closest('fieldset'));
-    const $toolPowerPackAdvert = $('<div class="powerpack-advert" />')
+    const $toolPowerPackAdvert = $('<div class="powerpack-advert">')
         .html(powerPackTemplate)
         .hide()
         .appendTo($tool.closest('fieldset'));
-    const $gerritPluginInfo = $('<div class="gerrit-plugin-advert" />')
+    const $gerritPluginInfo = $('<div class="gerrit-plugin-advert">')
         .html(gerritPluginRequiredTemplate)
         .hide()
         .appendTo($('#row-hosting_type'));

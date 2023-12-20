@@ -26,8 +26,8 @@ suite('rb/ui/views/InfoboxManagerView', function() {
         let $els;
 
         beforeEach(function() {
-            $el1 = $('<div/>');
-            $el2 = $('<div/>');
+            $el1 = $('<div>');
+            $el2 = $('<div>');
             $els = $([$el1[0], $el2[0]]);
         });
 
@@ -117,7 +117,7 @@ suite('rb/ui/views/InfoboxManagerView', function() {
         beforeEach(function() {
             spyOn(window, 'setTimeout').and.callFake(cb => cb());
 
-            $el = $('<a href="/foo/" />');
+            $el = $('<a href="/foo/">');
             infoboxManagerView.addTargets(DummyInfoboxView, $el);
         });
 
@@ -187,7 +187,7 @@ suite('rb/ui/views/InfoboxManagerView', function() {
         beforeEach(function() {
             spyOn(window, 'setTimeout').and.callFake(cb => cb());
 
-            $el = $('<a href="/foo/" />');
+            $el = $('<a href="/foo/">');
             infoboxManagerView.addTargets(DummyInfoboxView, $el);
         });
 

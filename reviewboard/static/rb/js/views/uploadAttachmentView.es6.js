@@ -42,7 +42,7 @@ RB.UploadAttachmentView = RB.DialogView.extend({
           </table>
           <% if (attachmentHistoryID >= 0) { %>
             <input type="hidden" name="attachment_history"
-                   value="<%- attachmentHistoryID %>" />
+                   value="<%- attachmentHistoryID %>">
           <% } %>
          </form>
         </div>

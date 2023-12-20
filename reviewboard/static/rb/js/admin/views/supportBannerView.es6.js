@@ -41,7 +41,7 @@ RB.SupportBannerView = Backbone.View.extend({
 
         window.addEventListener('error', this._onError, true);
 
-        this._script = $('<script />')
+        this._script = $('<script>')
             .attr('src', RB.SupportBannerView.supportURL + '?' + $.param({
                 'support-data': options.supportData,
                 callback: 'RB.SupportBannerView.instance.receive',

@@ -167,8 +167,8 @@ const DashboardActionsView = Backbone.View.extend({
      *         Number of unsuccessfully closed review requests.
      */
     _showCloseResults(successes, failures) {
-        const $dlg = $('<div/>')
-            .append($('<p/>')
+        const $dlg = $('<div>')
+            .append($('<p>')
                 .text(interpolate(
                     ngettext('%s review request has been closed.',
                              '%s review requests have been closed.',
@@ -177,13 +177,13 @@ const DashboardActionsView = Backbone.View.extend({
 
         if (failures > 0) {
             $dlg
-                .append($('<p/>').text(
+                .append($('<p>').text(
                     interpolate(
                         ngettext('%s review request could not be closed.',
                                  '%s review requests could not be closed.',
                                  failures),
                         [failures])))
-                .append($('<p/>').text(
+                .append($('<p>').text(
                     _`You may not have permission to close them.`));
         }
 
@@ -191,7 +191,7 @@ const DashboardActionsView = Backbone.View.extend({
             .modalBox({
                 title: _`Close review requests`,
                 buttons: [
-                    $('<input type="button"/>').val(_`Close`),
+                    $('<input type="button">').val(_`Close`),
                 ],
             })
             .on('close', () => $dlg.modalBox('destroy'));
@@ -209,19 +209,19 @@ const DashboardActionsView = Backbone.View.extend({
      */
     _confirmClose: function() {
         return new Promise((resolve, reject) => {
-            const $dialog = $('<div/>')
-                .append($('<p/>')
+            const $dialog = $('<div>')
+                .append($('<p>')
                     .text(_`If these review requests have unpublished drafts, they will be discarded.`))
-                .append($('<p/>')
+                .append($('<p>')
                     .text(_`Are you sure you want to close these review requests?`))
                 .modalBox({
                     title: _`Close review requests`,
                     buttons: [
-                        $('<input type="button"/>')
+                        $('<input type="button">')
                             .val(_`Cancel`)
                             .click(() => resolve(false)),
 
-                        $('<input type="button"/>')
+                        $('<input type="button">')
                             .val(_`Close Review Requests`)
                             .click(() => resolve(true)),
                     ],
@@ -275,16 +275,16 @@ const DashboardActionsView = Backbone.View.extend({
         ev.stopPropagation();
         ev.preventDefault();
 
-        const $dialog = $('<div/>')
-            .append($('<p/>')
+        const $dialog = $('<div>')
+            .append($('<p>')
                 .text(_`Are you sure you want to mute these review requests?`))
             .modalBox({
                 title: _`Mute review requests`,
                 buttons: [
-                    $('<input type="button"/>')
+                    $('<input type="button">')
                         .val(_`Cancel`),
 
-                    $('<input type="button"/>')
+                    $('<input type="button">')
                         .val(_`Mute Review Requests`)
                         .click(() => this.model.updateVisibility('mute')),
                 ],

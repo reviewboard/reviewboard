@@ -87,10 +87,10 @@ suite('rb/pages/views/DiffViewerPageView', function() {
           <div class="banner">
            <h1>You have a pending review.</h1>
            <input id="review-banner-edit" type="button"
-                  value="Edit Review" />
+                  value="Edit Review">
            <div id="review-banner-publish-container"></div>
            <input id="review-banner-discard" type="button"
-                  value="Discard" />
+                  value="Discard">
           </div>
          </div>
          <div id="unified-banner">
@@ -1149,7 +1149,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             });
 
             it('Anchor selection', function() {
-                const $anchor = $('<a name="test"/>');
+                const $anchor = $('<a name="test">');
 
                 pageView.selectAnchor($anchor);
 

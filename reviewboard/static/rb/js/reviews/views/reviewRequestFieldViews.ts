@@ -421,7 +421,7 @@ export class TextFieldView extends BaseFieldView {
             return $();
         }
 
-        const $link = $('<a/>')
+        const $link = $('<a>')
             .attr('href', (options.makeItemURL
                            ? options.makeItemURL(item)
                            : item))
@@ -502,7 +502,7 @@ export class TextFieldView extends BaseFieldView {
                                       ':has(.ui-autocomplete-footer))');
 
                 if (resultsPane.length > 0) {
-                    $('<div/>')
+                    $('<div>')
                         .addClass('ui-autocomplete-footer')
                         .text(gettext('Press Tab to auto-complete.'))
                         .appendTo(resultsPane);

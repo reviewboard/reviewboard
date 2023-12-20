@@ -82,12 +82,12 @@ RB.RevisionSelectorView = Backbone.View.extend({
             .width(this._positions[i - 1]);
 
         _.each(revisionLabels, (label, i) => {
-            $('<div/>')
+            $('<div>')
                 .addClass('revision-selector-tick')
                 .css('left', this._positions[i] + 'px')
                 .appendTo(this._$ticks);
 
-            const $label = $('<div/>')
+            const $label = $('<div>')
                 .text(label)
                 .addClass('revision-selector-label')
                 .appendTo(this._$labels);
@@ -103,8 +103,9 @@ RB.RevisionSelectorView = Backbone.View.extend({
         });
 
         for (i = 0; i < this._numHandles; i++) {
-            $('<div/>')
-                .addClass('revision-selector-handle rb-icon rb-icon-range-slider')
+            $('<div>')
+                .addClass(
+                    'revision-selector-handle rb-icon rb-icon-range-slider')
                 .data('handle-id', i)
                 .appendTo(this._$handles);
         }

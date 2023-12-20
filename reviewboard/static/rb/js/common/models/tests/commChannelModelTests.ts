@@ -33,11 +33,11 @@ suite('rb/models/CommChannel', () => {
         let pageView;
 
         beforeEach(() => {
-            const $body = $('<div/>').appendTo($testsScratch);
-            const $headerBar = $('<div/>').appendTo($body);
-            const $pageContainer = $('<div/>').appendTo($body);
-            const $pageContent = $('<div/>').appendTo($pageContainer);
-            const $pageSidebar = $('<div/>').appendTo($body);
+            const $body = $('<div>').appendTo($testsScratch);
+            const $headerBar = $('<div>').appendTo($body);
+            const $pageContainer = $('<div>').appendTo($body);
+            const $pageContent = $('<div>').appendTo($pageContainer);
+            const $pageSidebar = $('<div>').appendTo($body);
 
             pageView = new PageView({
                 $body: $body,
