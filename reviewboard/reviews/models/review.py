@@ -385,14 +385,28 @@ class Review(models.Model):
                     'This review cannot be published until the review request '
                     'is published.')
 
-            for comment in self.comments.all():
+            diff_comments = list(self.comments.all())
+            file_attachment_comments = list(
+                self.file_attachment_comments.all())
+
+            if (not self.body_bottom and
+                not self.body_top and
+                not self.ship_it and
+                not diff_comments and
+                not file_attachment_comments and
+                not self.screenshot_comments.exists() and
+                not self.general_comments.exists()):
+                return False, gettext(
+                    'This review cannot be published, because it is empty.')
+
+            for comment in diff_comments:
                 if not comment.diff_is_public():
                     return False, gettext(
                         'This review cannot be published, because it includes '
                         'a comment on a diff which has not yet been '
                         'published.')
 
-            for comment in self.file_attachment_comments.all():
+            for comment in file_attachment_comments:
                 if not comment.attachment_is_public():
                     return False, gettext(
                         'This review cannot be published, because it includes '
