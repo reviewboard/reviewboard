@@ -178,11 +178,11 @@ class LoginView(DjangoLoginView):
         self.client_auth_flow = client_auth_flow
         client_redirect_param_str = ''
         redirect_field_name = self.redirect_field_name
-        redirect_to = quote(self.get_redirect_url())
+        redirect_to = self.get_redirect_url()
 
         if redirect_to and client_auth_flow:
             client_redirect_param_str = (
-                '&%s=%s' % (redirect_field_name, redirect_to))
+                '&%s=%s' % (redirect_field_name, quote(redirect_to)))
 
         client_login_url = (
             '%s?client-name=%s&client-url=%s%s'
@@ -228,7 +228,56 @@ class LoginView(DjangoLoginView):
                 logging.error('Unable to find sso_auto_login_backend "%s".',
                               sso_auto_login_backend)
 
+        if request.method == 'GET' and request.user.is_authenticated:
+            # If this is a normal GET request and not part of any flow, and
+            # the user is already logged in, just redirect them. Otherwise
+            # if they're on the Log In page, click Log In, and get a redirect
+            # URL back to the Log In page, a successful login will look like
+            # failure, as they'll just get taken back here. This has come up
+            # with a user, and is indeed confusing.
+            #
+            # Note that Django lets us set `redirect_authenticated_user = True`
+            # to get this behavior, but it will handle a redirect URL of the
+            # login page ungracefully (raising an exception that becomes a
+            # HTTP 500). We're handling it ourselves instead.
+            return HttpResponseRedirect(self.get_success_url())
+
         return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self) -> str:
+        """Return the direct URL for a successful login.
+
+        This overrides the default behavior to fall back to the root for the
+        global site or the accessed Local Site.
+
+        Returns:
+            str:
+            The resulting redirect URL.
+        """
+        return (self.get_redirect_url() or
+                local_site_reverse('root', request=self.request))
+
+    def get_redirect_url(self) -> str:
+        """Return the user-provided redirect URL for this request.
+
+        This will determine the requested redirect URL, if any, and then
+        normalize it to avoid any login -> logout redirects or login -> login
+        redirects.
+
+        Returns:
+            str:
+            The resulting redirect URL.
+        """
+        redirect_to = super().get_redirect_url()
+        request = self.request
+
+        if (redirect_to == request.path or
+            redirect_to == local_site_reverse('logout', request=request)):
+            # We're in a redirect loop or a login -> logout loop. Just ignore
+            # the user-supplied redirect URL.
+            redirect_to = ''
+
+        return redirect_to
 
     def get_context_data(self, **kwargs):
         """Return extra data for rendering the template.

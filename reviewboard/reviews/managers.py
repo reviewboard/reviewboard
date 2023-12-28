@@ -8,7 +8,7 @@ from typing import Dict, Optional, TYPE_CHECKING, Union
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import connections, router, transaction, IntegrityError
-from django.db.models import Manager, Q
+from django.db.models import Exists, Manager, OuterRef, Q
 from django.db.models.query import QuerySet
 from django.utils.text import slugify
 from djblets.db.managers import ConcurrencyManager
@@ -275,6 +275,11 @@ class ReviewGroupManager(Manager):
 
         The returned list is further filtered down based on the
         ``visible_only`` and ``local_site`` parameters.
+
+        Note:
+            This is not responsible for checking if a user has access to
+            a given ``local_site``. This function assumes that access has
+            already been checked.
 
         Version Changed:
             6.0:
@@ -712,9 +717,17 @@ class ReviewRequestManager(ConcurrencyManager):
         """
         query_user = self._get_query_user(user_or_username)
 
-        q = Q(target_people=query_user)
+        q = Q(Exists(
+            self.model.target_people.through.objects
+            .filter(
+                Q(reviewrequest_id=OuterRef('pk')) &
+                Q(user=query_user)
+            )
+        ))
 
         try:
+            # Note that this should be a LEFT OUTER JOIN, so we'll be matching
+            # the profiles but they shouldn't result in duplicates.
             profile = query_user.get_profile()
             q |= Q(starred_by=profile)
         except ObjectDoesNotExist:
@@ -748,7 +761,19 @@ class ReviewRequestManager(ConcurrencyManager):
         query_user = self._get_query_user(user_or_username)
         groups = list(query_user.review_groups.values_list('pk', flat=True))
 
-        q = Q(target_people=query_user) | Q(target_groups__in=groups)
+        q = Q(Exists(
+            self.model.target_people.through.objects
+            .filter(
+                Q(reviewrequest_id=OuterRef('pk')) &
+                Q(user=query_user)
+            )
+        )) | Q(Exists(
+            self.model.target_groups.through.objects
+            .filter(
+                Q(reviewrequest_id=OuterRef('pk')) &
+                Q(group__in=groups)
+            )
+        ))
 
         try:
             profile = query_user.get_profile()
@@ -1045,7 +1070,7 @@ class ReviewRequestManager(ConcurrencyManager):
         filter_private: bool = False,
         show_inactive: bool = False,
         show_all_unpublished: bool = False,
-        distinct: bool = True,
+        distinct: bool = False,
     ) -> QuerySet[ReviewRequest]:
         """Return a queryset for review requests matching the given criteria.
 
@@ -1123,6 +1148,8 @@ class ReviewRequestManager(ConcurrencyManager):
             distinct (bool, optional):
                 Whether to return distinct results.
 
+                This is off by default, and rarely would need to be enabled.
+
                 Version Added:
                     5.0.7, 6.0.2
 
@@ -1155,31 +1182,128 @@ class ReviewRequestManager(ConcurrencyManager):
 
         if filter_private and (not user or not user.is_superuser):
             # This must always be kept in sync with RBSearchForm.search.
-            repo_q = Q(repository=None)
-            group_q = Q(target_groups=None)
+            model = self.model
+            target_groups_m2m = model.target_groups.through.objects
 
             if is_authenticated:
                 accessible_repo_ids = Repository.objects.accessible_ids(
                     user=user,
                     visible_only=False,
                     local_site=local_site)
+
+                # This is not a subquery, and will operate directly on the
+                # repository relation field on the review request.
+                repo_q = (
+                    Q(repository=None) |
+                    Q(repository__in=accessible_repo_ids)
+                )
+
+                # This subquery will match if any target_people m2m entries
+                # exist where the user is a target reviewer for the review
+                # request. If there are no entries, this will not match.
+                #
+                # We use a subquery to avoid a JOIN here because we'd be
+                # joining a one-to-many (review request to any through tables
+                # matching it), which would lead to duplicates, and we don't
+                # want to use DISTINCT.
+                people_q = Q(Exists(
+                    model.target_people.through.objects
+                    .filter(
+                        Q(reviewrequest_id=OuterRef('pk')) &
+                        Q(user=user)
+                    )
+                ))
+
+                # For the groups subquery, we need to match under any of the
+                # following conditions:
+                #
+                # 1. There are no review groups.
+                # 2. There are only accessible review groups.
+                # 3. There are both accessible and inaccessible review groups.
+                #
+                # For this, we can't just check for the existence of
+                # accessible review groups, because we'd fail case #1.
+                #
+                # We also can't exclude the existence of inaccessible review
+                # groups (e.g., `~Exists(...~Q(group__in...))`), because
+                # of case #3.
+                #
+                # So we have to factor in both pieces of information by using
+                # two subqueries, we can do this by saying it's a match if
+                # either of the following is true:
+                #
+                # 1. There are no review groups OR
+                # 2. There's at least one accessible review group
+                #
+                # The SQL engine should short-circuit the second subquery if
+                # the first says there are no review groups.
+                #
+                # Like above, we want to use a subquery for performance and
+                # to avoid duplicates. The original (pre-5.0.7/6.0.2 code)
+                # used two INNER JOINs (through table and reviews_group table)
+                # and a DISTINCT to counteract those duplicates, which is slow.
+                #
+                # Since we're using Exists(), we stop on the first match of
+                # either, so in the worst case, it should still be faster than
+                # using those two INNER JOINs + DISTINCT.
                 accessible_group_ids = Group.objects.accessible_ids(
                     user=user,
                     visible_only=False,
                     local_site=local_site)
 
-                repo_q |= Q(repository__in=accessible_repo_ids)
-                group_q |= Q(target_groups__in=accessible_group_ids)
+                group_q = Q(
+                    Q(~Exists(
+                        target_groups_m2m
+                        .filter(reviewrequest_id=OuterRef('pk'))
+                    )) |
+                    Q(Exists(
+                        target_groups_m2m
+                        .filter(
+                            Q(reviewrequest_id=OuterRef('pk')) &
+                            Q(group__in=accessible_group_ids)
+                        )
+                    ))
+                )
 
                 q &= (
                     Q(submitter=user) |
                     (repo_q &
-                     (Q(target_people=user) |
+                     (people_q |
                       group_q))
                 )
             else:
-                repo_q |= Q(repository__public=True)
-                group_q |= Q(target_groups__invite_only=False)
+                # This subquery will kick in for any non-NULL repositories,
+                # and will check if the repository is public.
+                repo_q = (
+                    Q(repository=None) |
+                    Q(Exists(
+                        Repository.objects
+                        .filter(
+                            Q(pk=OuterRef('repository_id')) &
+                            Q(public=True)
+                        )
+                    ))
+                )
+
+                # Same as above, we need to effectively perform two subqueries
+                # in order to detect the "no review groups" case. Here, we
+                # say it's a match if one of the following is true:
+                #
+                # 1. There are no review groups OR
+                # 2. There's at least one public review group
+                group_q = Q(
+                    Q(~Exists(
+                        target_groups_m2m
+                        .filter(reviewrequest_id=OuterRef('pk'))
+                    )) |
+                    Q(Exists(
+                        target_groups_m2m
+                        .filter(
+                            Q(reviewrequest_id=OuterRef('pk')) &
+                            Q(group__invite_only=False)
+                        )
+                    ))
+                )
 
                 q &= repo_q & group_q
 

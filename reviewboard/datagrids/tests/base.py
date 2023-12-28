@@ -14,7 +14,7 @@ from django.test.client import RequestFactory
 from djblets.datagrid.grids import Column, DataGrid
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.accounts.models import Profile
+from reviewboard.accounts.models import LocalSiteProfile, Profile
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
@@ -127,6 +127,12 @@ class BaseViewTestCase(TestCase):
                 profile = user.get_profile(create_if_missing=False)
                 profile.has_starred_review_groups(local_site=local_site)
             except Profile.DoesNotExist:
+                pass
+
+            try:
+                user.get_site_profile(local_site=local_site,
+                                      create_if_missing=False)
+            except LocalSiteProfile.DoesNotExist:
                 pass
 
     def _get_context_var(self, response, varname):

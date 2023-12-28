@@ -203,6 +203,9 @@ class BaseReviewRequestDetailsTests(TestCase):
         # 3. Fetch display position for the second attachment
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -243,6 +246,9 @@ class BaseReviewRequestDetailsTests(TestCase):
         # 1. Fetch active file attachments.
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -281,6 +287,9 @@ class BaseReviewRequestDetailsTests(TestCase):
         # 6-9. Create a FileAttachmentHistory for the second attachment.
         queries = [
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
                 'model': FileAttachment,
                 'num_joins': 1,
                 'tables': {
@@ -290,6 +299,10 @@ class BaseReviewRequestDetailsTests(TestCase):
                 'where': Q(review_request__id=review_request.pk),
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachment_histories':
+                        'INNER JOIN',
+                },
                 'model': FileAttachmentHistory,
                 'annotations': {
                     'display_position__max': Max('display_position'),
@@ -315,6 +328,10 @@ class BaseReviewRequestDetailsTests(TestCase):
                 'where': Q(pk=active.pk)
             },
             {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachment_histories':
+                        'INNER JOIN',
+                },
                 'model': FileAttachmentHistory,
                 'annotations': {
                     'display_position__max': Max('display_position'),

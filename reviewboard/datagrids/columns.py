@@ -1,5 +1,11 @@
-from functools import reduce
+"""Columns for datagrids."""
 
+from __future__ import annotations
+
+from functools import reduce
+from typing import TYPE_CHECKING
+
+from django.db.models import Count, Q
 from django.template.defaultfilters import date
 from django.urls import NoReverseMatch
 from django.utils.html import (conditional_escape, escape, format_html,
@@ -14,6 +20,12 @@ from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.reviews.templatetags.reviewtags import render_star
 from reviewboard.site.urlresolvers import local_site_reverse
+
+if TYPE_CHECKING:
+    from django.db.models import QuerySet
+    from djblets.datagrid.grids import StatefulColumn
+
+    from reviewboard.reviews.models import Group
 
 
 class BaseStarColumn(Column):
@@ -391,9 +403,54 @@ class GroupMemberCountColumn(Column):
             link_func=self.link_to_object,
             *args, **kwargs)
 
-    def render_data(self, state, group):
-        """Return the rendered contents of the column."""
-        return str(group.users.count())
+    def augment_queryset_for_data(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+        **kwargs,
+    ) -> QuerySet:
+        """Augment a queryset for data-rendering purposes.
+
+        This will count the number of group members for display.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting augmented QuerySet.
+        """
+        return queryset.annotate(column_group_member_count=Count('users'))
+
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: Group,
+    ) -> str:
+        """Return the rendered contents of the column.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.group.Group):
+                The object being rendered for this row.
+
+        Returns:
+            str:
+            The rendered data as HTML.
+        """
+        return str(getattr(obj, 'column_group_member_count', ''))
 
     def link_to_object(self, state, group, value):
         """Return the link to the object in the column."""
@@ -541,11 +598,59 @@ class PendingCountColumn(Column):
     review group or user. It only applies to group or user lists.
     """
 
-    def render_data(self, state, obj):
-        """Return the rendered contents of the column."""
-        return str(
-            getattr(obj, self.field_name).filter(
-                public=True, status='P').count())
+    def augment_queryset_for_data(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+        **kwargs,
+    ) -> QuerySet:
+        """Augment a queryset for data-rendering purposes.
+
+        This will count the number of accessible open review requests.
+
+        Version Added:
+            5.0.7
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting augmented QuerySet.
+        """
+        return queryset.annotate(
+            column_pending_review_request_count=Count(
+                'review_requests',
+                filter=(Q(review_requests__public=True) &
+                        Q(review_requests__status='P'))))
+
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: Group,
+    ) -> str:
+        """Return the rendered contents of the column.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the datagrid.
+
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The rendered column.
+        """
+        return str(getattr(obj, 'column_pending_review_request_count', ''))
 
 
 class PeopleColumn(Column):
@@ -961,7 +1066,7 @@ class SummaryColumn(Column):
         """Return the rendered contents of the column.
 
         Args:
-            state (djblets.datagrids.grids.StatefulColumn):
+            state (djblets.datagrid.grids.StatefulColumn):
                 The state for the datagrid.
 
             review_request (reviewboard.reviews.models.review_request.

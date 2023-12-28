@@ -199,6 +199,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review group count.
         global_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'annotations': {'__count': Count('*')},
                 'num_joins': 1,
@@ -223,6 +226,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review group count.
         local_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'annotations': {'__count': Count('*')},
                 'num_joins': 1,
@@ -326,6 +332,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review group count.
         local_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'annotations': {'__count': Count('*')},
                 'num_joins': 1,
@@ -354,6 +363,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review group count.
         global_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'annotations': {'__count': Count('*')},
                 'num_joins': 1,
@@ -487,6 +499,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred group count.
         global_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -511,6 +526,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred group count.
         local_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -617,6 +635,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred group count.
         local_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -645,6 +666,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred group count.
         global_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -886,6 +910,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review request count.
         global_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -910,6 +937,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review request count.
         local_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -1013,6 +1043,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review request count.
         local_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -1043,6 +1076,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review request count.
         global_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -1310,6 +1346,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review request count.
         global_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -1334,6 +1373,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review request count.
         local_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -1441,6 +1483,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review request count.
         local_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -1471,6 +1516,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review request count.
         global_site_queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -1586,6 +1634,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review groups count.
         queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -1640,6 +1691,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review groups count.
         queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -1804,6 +1858,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review requests count.
         queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -1859,6 +1916,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review requests count.
         queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -2025,6 +2085,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review groups count.
         queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -2080,6 +2143,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review groups count.
         queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -2232,6 +2298,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review requests count.
         queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -2286,6 +2355,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review requests count.
         queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -2464,6 +2536,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review requests count.
         queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -2494,6 +2569,9 @@ class ProfileTests(TestCase):
         # 2. starred_review_requests lookup
         queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
                 'model': ReviewRequest,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -2624,6 +2702,9 @@ class ProfileTests(TestCase):
         # 1. Fetch user's starred review groups count.
         queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
@@ -2654,6 +2735,9 @@ class ProfileTests(TestCase):
         # 2. starred_groups lookup
         queries = [
             {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
                 'model': Group,
                 'num_joins': 1,
                 'annotations': {'__count': Count('*')},
