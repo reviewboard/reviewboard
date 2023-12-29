@@ -95,7 +95,7 @@ RB.HeaderView = Backbone.View.extend({
         this._$window = $(window);
         this._$body = options.body || $(document.body);
         this._$navToggle = $('#nav_toggle');
-        this._$mobileMenuMask = $('<div id="mobile_menu_mask"/>')
+        this._$mobileMenuMask = $('<div id="mobile_menu_mask">')
             .on('click touchstart', this._closeMobileMenu.bind(this))
             .insertAfter(options.$pageSidebar || $('#page-sidebar'));
 

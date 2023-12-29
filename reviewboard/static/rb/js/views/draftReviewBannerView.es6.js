@@ -241,7 +241,7 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      *     false, always.
      */
     _onDiscardClicked() {
-        $('<p/>')
+        $('<p>')
             .text(_`If you discard this review, all related comments will be permanently deleted.`)
             .modalBox({
                 buttons: [

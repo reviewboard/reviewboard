@@ -262,11 +262,11 @@ RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
         if (this.model.canUpdateBounds()) {
             this.$el.addClass('can-update-bound');
 
-            this._$resizeIcon = $('<div class="resize-icon" />')
+            this._$resizeIcon = $('<div class="resize-icon">')
                 .appendTo(this.$el);
         }
 
-        this._$flag = $('<div class="selection-flag" />')
+        this._$flag = $('<div class="selection-flag">')
             .appendTo(this.$el);
 
         this._updateCount();

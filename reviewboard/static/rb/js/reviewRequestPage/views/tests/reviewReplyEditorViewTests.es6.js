@@ -4,7 +4,7 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
     let view;
 
     beforeEach(function() {
-        const $container = $('<div/>').appendTo($testsScratch);
+        const $container = $('<div>').appendTo($testsScratch);
 
         reviewReply = new RB.ReviewReply({
             id: 121
@@ -31,7 +31,7 @@ suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
         });
 
         /* Necessary to do pre-render so we can use makeCommentElement. */
-        view._$commentsList = $('<ul class="reply-comments"/>');
+        view._$commentsList = $('<ul class="reply-comments">');
 
         $container
             .append(view._$commentsList)

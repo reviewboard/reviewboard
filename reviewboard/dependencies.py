@@ -86,9 +86,6 @@ package_dependencies = {
     # These should be removed in future versions of Review Board as
     # dependencies change.
 
-    # asana dependencies:
-    'requests-oauthlib': '>=0.8,<=1.0',
-
     # django-oauth-toolkit dependencies:
     'django-braces': '==1.13.0',
 }

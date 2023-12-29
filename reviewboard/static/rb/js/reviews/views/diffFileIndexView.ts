@@ -310,7 +310,7 @@ export class DiffFileIndexView extends BaseView<
      */
     #renderDiffError($item: JQuery) {
         $item.find('.diff-file-icon')
-            .html('<div class="rb-icon rb-icon-warning" />')
+            .html('<div class="rb-icon rb-icon-warning">')
             .attr('title',
                   _`There was an error loading this diff. See the details below.`);
     }

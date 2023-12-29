@@ -164,10 +164,10 @@ RB.apiCall = function(options) {
     const url = options.url || (SITE_ROOT + prefix + 'api' + options.path);
 
     function showErrorPage(xhr, data) {
-        const $iframe = $('<iframe/>').width('100%');
+        const $iframe = $('<iframe>').width('100%');
         const requestData = options.data ? $.param(options.data) : '(none)';
 
-        $('<div class="server-error-box"/>')
+        $('<div class="server-error-box">')
             .appendTo(document.body)
             .append('<p><b>' + gettext('Error Code:') + '</b> ' + xhr.status + '</p>')
             .append('<p><b>' + gettext('Error Text:') + '</b> ' + xhr.statusText + '</p>')
@@ -283,12 +283,12 @@ RB.apiCall = function(options) {
                     .addClass('error')
                     .text(gettext('A server error occurred.'))
                     .append(
-                        $('<a href="#" />')
+                        $('<a href="#">')
                             .text(gettext('Show Details'))
                             .click(() => showErrorPage(xhr, responseText))
                     )
                     .append(
-                        $('<a href="#" />')
+                        $('<a href="#">')
                             .text(gettext('Dismiss'))
                             .click(function() {
                                 $activityIndicator.fadeOut('fast');

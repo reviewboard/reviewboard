@@ -2,7 +2,7 @@ suite('rb/ui/views/ScrollManagerView', function() {
     function makeElement(dimensions={}) {
         const scratchOffset = $testsScratch.offset();
 
-        return $('<div/>')
+        return $('<div>')
             .css({
                 position: 'absolute',
                 left: -scratchOffset.left + (dimensions.left || 0),

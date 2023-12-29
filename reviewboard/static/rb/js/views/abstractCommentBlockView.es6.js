@@ -134,7 +134,7 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
      * the draft comment, if any.
      */
     _updateTooltip() {
-        const $list = $('<ul/>');
+        const $list = $('<ul>');
         const draftComment = this.model.get('draftComment');
         const tooltipTemplate = _.template(dedent`
             <li>

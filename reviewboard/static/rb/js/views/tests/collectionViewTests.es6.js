@@ -60,7 +60,7 @@ suite('rb/views/CollectionView', function() {
         });
 
         it('With custom element container', function() {
-            const $container = $('<div class="rb-test-main-container"/>')
+            const $container = $('<div class="rb-test-main-container">')
                 .appendTo(view.$el);
 
             view.$container = $container;

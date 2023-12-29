@@ -21,7 +21,7 @@ suite('rb/ui/views/DateTimeInlineEditorView', function() {
     let $container;
 
     beforeEach(function() {
-        $container = $('<div/>').appendTo($testsScratch);
+        $container = $('<div>').appendTo($testsScratch);
     });
 
     describe('Construction', function() {

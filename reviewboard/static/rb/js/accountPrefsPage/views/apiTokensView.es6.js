@@ -271,7 +271,7 @@ const PolicyEditorView = Backbone.View.extend({
 
     template: _.template([
         '<p><%= instructions %></p>',
-        '<textarea/>'
+        '<textarea></textarea>'
     ].join('')),
 
     /**
@@ -324,16 +324,16 @@ const PolicyEditorView = Backbone.View.extend({
         this.$el.modalBox({
             title: gettext('Custom Token Access Policy'),
             buttons: [
-                $('<input type="button"/>')
+                $('<input type="button">')
                     .val(gettext('Cancel'))
                     .click(_.bind(this.cancel, this)),
-                $('<input type="button" class="save-button"/>')
+                $('<input type="button" class="save-button">')
                     .val(gettext('Save and continue editing'))
                     .click(() => {
                         this.save(false);
                         return false;
                     }),
-                $('<input type="button" class="btn primary save-button"/>')
+                $('<input type="button" class="btn primary save-button">')
                     .val(gettext('Save'))
                     .click(() => {
                         this.save(true);
@@ -698,14 +698,14 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
      * the server.
      */
     _onRemoveClicked() {
-        $('<p/>')
+        $('<p>')
             .html(gettext('This will prevent clients using this token when authenticating.'))
             .modalBox({
                 title: gettext('Are you sure you want to remove this token?'),
                 buttons: [
-                    $('<input type="button"/>')
+                    $('<input type="button">')
                         .val(gettext('Cancel')),
-                    $('<input type="button" class="danger" />')
+                    $('<input type="button" class="danger">')
                         .val(gettext('Remove'))
                         .click(() => this.model.resource.destroy())
                 ]

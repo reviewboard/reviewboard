@@ -465,7 +465,7 @@ export class ReviewablePageView<
             .find('link[rel="shortcut icon"]')
                 .remove()
             .end()
-            .append($('<link/>')
+            .append($('<link>')
                 .attr({
                     href: url,
                     rel: 'shortcut icon',

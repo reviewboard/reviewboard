@@ -74,11 +74,11 @@ class BannerView extends BaseView<
         <span class="banner-actions">
         <% _.each(actions, function(action) { %>
          <input type="button" id="<%= action.id %>"
-                value="<%- action.label %>" />
+                value="<%- action.label %>">
         <% }); %>
         <% if (showSendEmail) { %>
          <label>
-          <input type="checkbox" class="send-email" checked />
+          <input type="checkbox" class="send-email" checked>
           ${gettext('Send E-Mail')}
         </label>
         <% } %>

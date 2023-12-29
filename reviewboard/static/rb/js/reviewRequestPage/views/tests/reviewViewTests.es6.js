@@ -4,8 +4,8 @@ suite('rb/reviewRequestPage/views/ReviewView', function() {
          <div class="review-request-page-entry-contents">
           <div class="collapse-button"></div>
           <div class="banners">
-           <input type="button" value="Publish" />
-           <input type="button" value="Discard" />
+           <input type="button" value="Publish">
+           <input type="button" value="Discard">
           </div>
           <div class="body">
            <ol class="review-comments">

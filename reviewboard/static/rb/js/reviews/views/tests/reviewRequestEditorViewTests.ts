@@ -136,10 +136,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
           </div>
           <div id="review-request-extra">
            <div>
-            <div id="file-list"><br /></div>
+            <div id="file-list"><br></div>
            </div>
            <div>
-            <div id="screenshot-thumbnails"><br /></div>
+            <div id="screenshot-thumbnails"><br></div>
            </div>
           </div>
          </div>
@@ -330,7 +330,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
              * Actions are rendered server-side, not client-side, so we won't
              * get the action added through the hook above.
              */
-            const $action = $('<a href="#" id="my-action" />')
+            const $action = $('<a href="#" id="my-action">')
                 .appendTo(view.$('.actions'));
 
             view.render();

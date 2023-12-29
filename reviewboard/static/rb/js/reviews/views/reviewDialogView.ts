@@ -294,7 +294,7 @@ class BaseCommentView<
 
             this.#hookViews.push(hookView);
 
-            $('<div class="edit-field"/>')
+            $('<div class="edit-field">')
                 .append(hookView.$el)
                 .appendTo($editFields);
             hookView.render();
@@ -564,8 +564,8 @@ class ScreenshotCommentView extends BaseCommentView<
          <span class="filename">
           <a href="<%- screenshot.reviewURL %>"><%- displayName %></a>
          </span>
-         <img src="<%= thumbnailURL %>" width="<%= width %>"
-              height="<%= height %>" alt="<%- displayName %>" />
+         <img src="<%- thumbnailURL %>" width="<%- width %>"
+              height="<%- height %>" alt="<%- displayName %>">
         </div>
     `);
 
@@ -1049,7 +1049,7 @@ export class ReviewDialogView extends BaseView<
 
     static template = _.template(dedent`
         <div class="edit-field">
-         <input id="id_shipit" type="checkbox" />
+         <input id="id_shipit" type="checkbox">
          <label for="id_shipit"><%- shipItText %></label>
         </div>
         <div class="review-dialog-hooks-container"></div>
@@ -1516,13 +1516,13 @@ export class ReviewDialogView extends BaseView<
      * this view's element as the child.
      */
     _renderDialog() {
-        const $leftButtons = $('<div class="review-dialog-buttons-left"/>');
-        const $rightButtons = $('<div class="review-dialog-buttons-right"/>');
+        const $leftButtons = $('<div class="review-dialog-buttons-left">');
+        const $rightButtons = $('<div class="review-dialog-buttons-right">');
         const buttons = [$leftButtons, $rightButtons];
 
         if (EnabledFeatures.generalComments) {
             $leftButtons.append(
-                $('<input type="button" />')
+                $('<input type="button">')
                     .val(_`Add General Comment`)
                     .attr('title',
                           _`Add a new general comment to the review`)
@@ -1531,15 +1531,15 @@ export class ReviewDialogView extends BaseView<
         }
 
         $rightButtons.append(
-            $('<div id="review-form-publish-split-btn-container" />'));
+            $('<div id="review-form-publish-split-btn-container">'));
 
         $rightButtons.append(
-            $('<input type="button"/>')
+            $('<input type="button">')
                 .val(_`Discard Review`)
                 .click(() => this._onDiscardClicked()));
 
         $rightButtons.append(
-            $('<input type="button"/>')
+            $('<input type="button">')
                 .val(_`Close`)
                 .click(() => {
                     this._saveReview(false);
@@ -1548,7 +1548,7 @@ export class ReviewDialogView extends BaseView<
 
         const reviewRequest = this.model.get('parentObject');
 
-        this.#$dlg = $('<div/>')
+        this.#$dlg = $('<div>')
             .attr('id', 'review-form')
             .append(this.$el)
             .modalBox({
@@ -1655,7 +1655,7 @@ export class ReviewDialogView extends BaseView<
                 }
             });
 
-        $('<p/>')
+        $('<p>')
             .text(_`
                 If you discard this review, all related comments will be
                 permanently deleted.

@@ -47,7 +47,7 @@ RB.DiffCommentsHintView = Backbone.View.extend({
             const $ul = this.$('ul');
 
             this.model.get('diffsetsWithComments').forEach(diffset => {
-                const $li = $('<li/>')
+                const $li = $('<li>')
                     .addClass('revision')
                     .data('revision', diffset.revision)
                     .text(interpolate(revisionText, [diffset.revision]))
@@ -59,7 +59,7 @@ RB.DiffCommentsHintView = Backbone.View.extend({
             });
 
             this.model.get('interdiffsWithComments').forEach(interdiff => {
-                const $li = $('<li/>')
+                const $li = $('<li>')
                     .addClass('interdiff')
                     .data({
                         'first-revision': interdiff.oldRevision,

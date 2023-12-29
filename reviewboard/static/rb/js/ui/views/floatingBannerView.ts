@@ -124,7 +124,7 @@ export class FloatingBannerView<
         }
 
         if (this.#$floatSpacer === null) {
-            this.#$floatSpacer = this.$el.wrap($('<div/>')).parent();
+            this.#$floatSpacer = this.$el.wrap($('<div>')).parent();
             this.#updateSize();
         }
 

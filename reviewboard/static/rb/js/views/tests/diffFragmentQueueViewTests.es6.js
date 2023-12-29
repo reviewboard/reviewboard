@@ -18,13 +18,13 @@ suite('rb/views/DiffFragmentQueueView', function() {
         let $container4;
 
         beforeEach(function() {
-            $container1 = $('<div id="container1_123"/>')
+            $container1 = $('<div id="container1_123">')
                 .appendTo(window.$testsScratch);
-            $container2 = $('<div id="container1_124"/>')
+            $container2 = $('<div id="container1_124">')
                 .appendTo(window.$testsScratch);
-            $container3 = $('<div id="container1_125"/>')
+            $container3 = $('<div id="container1_125">')
                 .appendTo(window.$testsScratch);
-            $container4 = $('<div id="container1_126"/>')
+            $container4 = $('<div id="container1_126">')
                 .appendTo(window.$testsScratch);
 
             fragmentQueue.queueLoad('123', 'key1');

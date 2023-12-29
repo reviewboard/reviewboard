@@ -34,12 +34,12 @@ suite('rb/pages/views/PageView', function() {
     let pageView;
 
     beforeEach(function() {
-        $body = $('<body/>').appendTo($testsScratch);
-        $headerBar = $('<div/>').appendTo($body);
-        $pageContainer = $('<div id="page-container"/>')
+        $body = $('<body>').appendTo($testsScratch);
+        $headerBar = $('<div>').appendTo($body);
+        $pageContainer = $('<div id="page-container">')
             .css('padding', 0)  // Normalize padding for some tests.
             .appendTo($body);
-        $pageContent = $('<div/>').appendTo($pageContainer);
+        $pageContent = $('<div>').appendTo($pageContainer);
         $pageSidebar = $(pageSidebarTemplate).appendTo($body);
 
         spyOn(RB.HeaderView.prototype, '_ensureSingleton');

@@ -747,8 +747,8 @@ suite('rb/resources/models/BaseResource', function() {
             });
 
             it('Overriding toJSON attributes', async function() {
-                const form = $('<form/>')
-                    .append($('<input name="foo"/>'));
+                const form = $('<form>')
+                    .append($('<input name="foo">'));
 
                 model.toJSON = () => ({
                     myfield: 'myvalue',
@@ -770,8 +770,8 @@ suite('rb/resources/models/BaseResource', function() {
             });
 
             it('Overriding file attributes', async function() {
-                const form = $('<form/>')
-                    .append($('<input name="foo"/>'));
+                const form = $('<form>')
+                    .append($('<input name="foo">'));
 
                 model.payloadFileKey = 'file';
 
