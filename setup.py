@@ -173,11 +173,13 @@ class DevelopCommand(develop):
 
         # Install the dependencies using pip instead of easy_install. This
         # will use wheels instead of legacy eggs.
-        self._run_pip(['install', '-e', '.'])
-        self._run_pip(['install', '-r', 'dev-requirements.txt'])
+        self._run_pip(['install', '--no-build-isolation', '-e', '.'])
+        self._run_pip(['install', '--no-build-isolation',
+                       '-r', 'dev-requirements.txt'])
 
         if self.with_doc_deps:
-            self._run_pip(['install', '-r', 'doc-requirements.txt'])
+            self._run_pip(['install', '--no-build-isolation',
+                           '-r', 'doc-requirements.txt'])
 
         if not self.no_npm:
             # Install node.js dependencies, needed for packaging.
