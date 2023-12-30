@@ -127,8 +127,8 @@ class DevelopCommand(develop):
         # Install the latest pip and setuptools. Note that the order here
         # matters, as otherwise a stale setuptools can be left behind,
         # causing installation errors.
-        self._run_pip(['install', '-U', 'setuptools'])
-        self._run_pip(['install', '-U', 'pip'])
+        self._run_pip(['install', '--no-build-isolation', '-U', 'setuptools'])
+        self._run_pip(['install', '--no-build-isolation', '-U', 'pip'])
 
         # Install the dependencies using pip instead of easy_install. This
         # will use wheels instead of eggs, which are ideal for our users.
@@ -138,11 +138,13 @@ class DevelopCommand(develop):
             # in some cases), so we want to force the proper compiler.
             os.putenv(b'CC', b'clang')
 
-        self._run_pip(['install', '-e', '.'])
-        self._run_pip(['install', '-r', 'dev-requirements.txt'])
+        self._run_pip(['install', '--no-build-isolation', '-e', '.'])
+        self._run_pip(['install', '--no-build-isolation',
+                       '-r', 'dev-requirements.txt'])
 
         if self.with_doc_deps:
-            self._run_pip(['install', '-r', 'doc-requirements.txt'])
+            self._run_pip(['install', '--no-build-isolation',
+                           '-r', 'doc-requirements.txt'])
 
         if not self.no_npm:
             if self.use_npm_cache:
