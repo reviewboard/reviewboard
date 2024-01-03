@@ -6,7 +6,7 @@ import base64
 import logging
 import os
 import subprocess
-from typing import (Any, Dict, List, Mapping, Optional, Sequence,
+from typing import (Any, ClassVar, Dict, List, Mapping, Optional, Sequence,
                     TYPE_CHECKING, Type, Tuple, Union)
 from urllib.error import HTTPError
 from urllib.parse import urlparse
@@ -737,6 +737,15 @@ class SCMTool:
     #: Users will see this when they go to select a repository type. Some
     #: examples would be "Subversion" or "Perforce".
     name: Optional[str] = None
+
+    #: The class name for the tool.
+    #:
+    #: This is populated automatically once the tool is registered, and
+    #: should not be set by subclasses.
+    #:
+    #: Version Added:
+    #:     5.0
+    class_name: ClassVar[Optional[str]] = None
 
     #: Whether or not the SCMTool supports review requests with history.
     supports_history: bool = False
