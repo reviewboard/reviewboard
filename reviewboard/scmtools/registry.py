@@ -41,7 +41,7 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
 
     lookup_attrs = [
         'class_name',
-        'name',
+        'lookup_name',
         'scmtool_id',
     ]
     errors = {
@@ -117,21 +117,27 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
         # If the user has a modified setup, they may have pointed a tool
         # to a different class path. We want to catch this and warn.
         for scmtool_cls in self:
-            tool_by_name = registered_by_name.get(scmtool_cls.name)
-            tool_by_class = registered_by_class.get(scmtool_cls.class_name)
+            lookup_name = scmtool_cls.lookup_name
+            class_name = scmtool_cls.class_name
+
+            assert lookup_name
+            assert class_name
+
+            tool_by_name = registered_by_name.get(lookup_name)
+            tool_by_class = registered_by_class.get(class_name)
 
             if tool_by_name is None and tool_by_class is None:
                 # This is a brand-new Tool. Schedule it for population in the
                 # database.
-                new_tools.append(Tool(name=scmtool_cls.name,
-                                      class_name=scmtool_cls.class_name))
+                new_tools.append(Tool(name=lookup_name,
+                                      class_name=class_name))
             elif (tool_by_class is not None and
-                  tool_by_class.name != scmtool_cls.name):
+                  tool_by_class.name != lookup_name):
                 # This tool matches another by class name, but isn't the same
                 # tool.
                 conflicting_tools.append((scmtool_cls, tool_by_class))
             elif (tool_by_name is not None and
-                  tool_by_name.class_name != scmtool_cls.class_name):
+                  tool_by_name.class_name != class_name):
                 # This tool matches another by name, but isn't the same tool.
                 conflicting_tools.append((scmtool_cls, tool_by_name))
             else:
@@ -147,12 +153,12 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
             for scmtool_cls, conflict_tool in conflicting_tools:
                 logger.warning(
                     'Tool ID %d (name=%r, class_name=%r) conflicts with '
-                    'SCMTool %r (name=%r, class_name=%r)',
+                    'SCMTool %r (lookup_name=%r, class_name=%r)',
                     conflict_tool.pk,
                     conflict_tool.name,
                     conflict_tool.class_name,
                     scmtool_cls.scmtool_id,
-                    scmtool_cls.name,
+                    scmtool_cls.lookup_name,
                     scmtool_cls.class_name)
 
         if new_tools:
@@ -223,7 +229,7 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
         if self._initial_populate_done:
             # Make sure the new tool exists in the Tool table as well.
             if not Tool.objects.filter(class_name=class_name).exists():
-                Tool.objects.create(name=scmtool_class.name,
+                Tool.objects.create(name=scmtool_class.lookup_name,
                                     class_name=class_name)
 
     def get_by_id(
@@ -246,17 +252,17 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
         self,
         name: str,
     ) -> Optional[Type[SCMTool]]:
-        """Return the SCMTool with the given name.
+        """Return the SCMTool with the given lookup name.
 
         Args:
             name (str):
-                The name of the SCMTool to fetch.
+                The lookup name of the SCMTool to fetch.
 
         Returns:
             reviewboard.scmtools.core.SCMTool:
             The SCMTool subclass.
         """
-        return self.get('name', name)
+        return self.get('lookup_name', name)
 
     def get_by_class_name(
         self,

@@ -7,13 +7,14 @@ import logging
 import os
 import subprocess
 from typing import (Any, ClassVar, Dict, List, Mapping, Optional, Sequence,
-                    TYPE_CHECKING, Type, Tuple, Union)
+                    TYPE_CHECKING, Type, Tuple, Union, cast)
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
 
 import importlib_metadata
 from django.utils.encoding import force_bytes, force_str
+from django.utils.functional import classproperty
 from django.utils.translation import gettext_lazy as _
 from djblets.util.properties import TypedProperty
 from typing_extensions import TypeAlias
@@ -737,6 +738,18 @@ class SCMTool:
     #: Users will see this when they go to select a repository type. Some
     #: examples would be "Subversion" or "Perforce".
     name: Optional[str] = None
+
+    #: The name used for SCMTool registration and lookup.
+    #:
+    #: This allows a SCMTool to specify the name used for both registration
+    #: and lookup in both the SCMTool registry and database. It defaults to
+    #: :py:attr:`name`, and should be changed in subcalsses if setting a new
+    #: name for display purposes.
+    #:
+    #: Version Added:
+    #:     6.0.3
+    lookup_name: ClassVar[Optional[str]] = \
+        cast(Optional[str], classproperty(lambda _cls: _cls.name))
 
     #: The class name for the tool.
     #:
