@@ -5,7 +5,7 @@ Version Added:
 """
 
 from django.contrib.auth.models import AnonymousUser, Permission, User
-from django.db.models import Q
+from django.db.models import Q, Value
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.reviews.models import GeneralComment, Group
@@ -944,8 +944,8 @@ class CommentManagerTests(TestCase):
                     'site_localsite_admins': 'INNER JOIN',
                 },
                 'model': User,
-                'extra': {
-                    'a': ('1', [])
+                'annotations': {
+                    'a': Value(1),
                 },
                 'limit': 1,
                 'num_joins': 1,

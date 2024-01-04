@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Dict, Optional, Sequence, Set, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
-from django.db.models import OuterRef, Q
+from django.db.models import OuterRef, Q, Value
 
 from reviewboard.accounts.testing.queries import get_user_profile_equeries
 from reviewboard.reviews.models import Group, ReviewRequest
@@ -409,15 +409,30 @@ def get_review_requests_accessible_q(
                 subqueries += [
                     {
                         'model': ReviewRequest.target_people.through,
+                        'annotations': {
+                            'a': Value(1),
+                        },
+                        'limit': 1,
+                        'subquery': True,
                         'where': (Q(reviewrequest_id=OuterRef('pk')) &
                                   Q(user=user)),
                     },
                     {
                         'model': ReviewRequest.target_groups.through,
+                        'annotations': {
+                            'a': Value(1),
+                        },
+                        'limit': 1,
+                        'subquery': True,
                         'where': Q(reviewrequest_id=OuterRef('pk')),
                     },
                     {
                         'model': ReviewRequest.target_groups.through,
+                        'annotations': {
+                            'a': Value(1),
+                        },
+                        'limit': 1,
+                        'subquery': True,
                         'where': (Q(reviewrequest_id=OuterRef('pk')) &
                                   Q(group__in=accessible_review_group_ids)),
                     },
@@ -431,11 +446,21 @@ def get_review_requests_accessible_q(
                 subqueries += [
                     {
                         'model': Repository,
+                        'annotations': {
+                            'a': Value(1),
+                        },
+                        'limit': 1,
+                        'subquery': True,
                         'where': (Q(pk=OuterRef('repository_id')) &
                                   Q(public=True)),
                     },
                     {
                         'model': ReviewRequest.target_groups.through,
+                        'annotations': {
+                            'a': Value(1),
+                        },
+                        'limit': 1,
+                        'subquery': True,
                         'where': Q(reviewrequest_id=OuterRef('pk')),
                     },
                     {
@@ -443,6 +468,11 @@ def get_review_requests_accessible_q(
                             'reviews_group': 'INNER JOIN',
                         },
                         'model': ReviewRequest.target_groups.through,
+                        'annotations': {
+                            'a': Value(1),
+                        },
+                        'limit': 1,
+                        'subquery': True,
                         'num_joins': 1,
                         'tables': {
                             'reviews_group',
@@ -684,11 +714,21 @@ def get_review_requests_to_user_q(
     q_result.setdefault('subqueries', []).extend([
         {
             'model': ReviewRequest.target_people.through,
+            'annotations': {
+                'a': Value(1),
+            },
+            'limit': 1,
+            'subquery': True,
             'where': (Q(reviewrequest_id=OuterRef('pk')) &
                       Q(user=to_user)),
         },
         {
             'model': ReviewRequest.target_groups.through,
+            'annotations': {
+                'a': Value(1),
+            },
+            'limit': 1,
+            'subquery': True,
             'where': (Q(reviewrequest_id=OuterRef('pk')) &
                       Q(group__in=target_group_ids)),
         }
@@ -785,6 +825,11 @@ def get_review_requests_to_user_directly_q(
     q_result.setdefault('join_types', {}).update(extra_join_types)
     q_result.setdefault('subqueries', []).append({
         'model': ReviewRequest.target_people.through,
+        'annotations': {
+            'a': Value(1),
+        },
+        'limit': 1,
+        'subquery': True,
         'where': (Q(reviewrequest_id=OuterRef('pk')) &
                   Q(user=to_user)),
     })
@@ -1034,11 +1079,21 @@ def get_review_requests_to_or_from_user_q(
     q_result.setdefault('subqueries', []).extend([
         {
             'model': ReviewRequest.target_people.through,
+            'annotations': {
+                'a': Value(1),
+            },
+            'limit': 1,
+            'subquery': True,
             'where': (Q(reviewrequest_id=OuterRef('pk')) &
                       Q(user=to_or_from_user)),
         },
         {
             'model': ReviewRequest.target_groups.through,
+            'annotations': {
+                'a': Value(1),
+            },
+            'limit': 1,
+            'subquery': True,
             'where': (Q(reviewrequest_id=OuterRef('pk')) &
                       Q(group__in=target_group_ids)),
         }

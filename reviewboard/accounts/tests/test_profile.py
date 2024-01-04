@@ -2,7 +2,7 @@
 
 from django.core.cache import cache
 from django.contrib.auth.models import AnonymousUser, User
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Value
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import LocalSiteProfile, Profile
@@ -2490,8 +2490,8 @@ class ProfileTests(TestCase):
             },
             {
                 'model': Profile.starred_review_requests.through,
-                'extra': {
-                    'a': ('1', []),
+                'annotations': {
+                    'a': Value(1),
                 },
                 'where': (Q(profile=profile.pk) &
                           Q(reviewrequest=review_request.pk)),
@@ -2506,8 +2506,8 @@ class ProfileTests(TestCase):
         queries = [
             {
                 'model': Profile.starred_review_requests.through,
-                'extra': {
-                    'a': ('1', []),
+                'annotations': {
+                    'a': Value(1),
                 },
                 'where': (Q(profile=profile.pk) &
                           Q(reviewrequest=review_request.pk)),
@@ -2583,8 +2583,8 @@ class ProfileTests(TestCase):
             },
             {
                 'model': Profile.starred_review_requests.through,
-                'extra': {
-                    'a': ('1', []),
+                'annotations': {
+                    'a': Value(1),
                 },
                 'where': (Q(profile=profile.pk) &
                           Q(reviewrequest=review_request.pk)),
@@ -2599,8 +2599,8 @@ class ProfileTests(TestCase):
         queries = [
             {
                 'model': Profile.starred_review_requests.through,
-                'extra': {
-                    'a': ('1', []),
+                'annotations': {
+                    'a': Value(1),
                 },
                 'where': (Q(profile=profile.pk) &
                           Q(reviewrequest=review_request.pk)),
@@ -2657,8 +2657,8 @@ class ProfileTests(TestCase):
             },
             {
                 'model': Profile.starred_groups.through,
-                'extra': {
-                    'a': ('1', []),
+                'annotations': {
+                    'a': Value(1),
                 },
                 'where': (Q(profile=profile.pk) &
                           Q(group=review_group.pk)),
@@ -2673,8 +2673,8 @@ class ProfileTests(TestCase):
         queries = [
             {
                 'model': Profile.starred_groups.through,
-                'extra': {
-                    'a': ('1', []),
+                'annotations': {
+                    'a': Value(1),
                 },
                 'where': (Q(profile=profile.pk) &
                           Q(group=review_group.pk)),
@@ -2749,8 +2749,8 @@ class ProfileTests(TestCase):
             },
             {
                 'model': Profile.starred_groups.through,
-                'extra': {
-                    'a': ('1', []),
+                'annotations': {
+                    'a': Value(1),
                 },
                 'where': (Q(profile=profile.pk) &
                           Q(group=review_group.pk)),
@@ -2765,8 +2765,8 @@ class ProfileTests(TestCase):
         queries = [
             {
                 'model': Profile.starred_groups.through,
-                'extra': {
-                    'a': ('1', []),
+                'annotations': {
+                    'a': Value(1),
                 },
                 'where': (Q(profile=profile.pk) &
                           Q(group=review_group.pk)),

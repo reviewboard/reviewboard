@@ -1,6 +1,6 @@
 import kgb
 from django.contrib.auth.models import User
-from django.db.models import Max, Q
+from django.db.models import Max, Q, Value
 from django.utils import timezone
 from djblets.testing.decorators import add_fixtures
 
@@ -621,8 +621,8 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             {
                 'model': DiffSet,
                 'limit': 1,
-                'extra': {
-                    'a': ('1', []),
+                'annotations': {
+                    'a': Value(1),
                 },
                 'where': Q(history=DiffSetHistory.objects.get(
                     review_request=review_request)),
@@ -645,8 +645,8 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             {
                 'model': DiffSet,
                 'limit': 1,
-                'extra': {
-                    'a': ('1', []),
+                'annotations': {
+                    'a': Value(1),
                 },
                 'where': Q(history=DiffSetHistory.objects.get(
                     review_request=review_request)),
@@ -668,8 +668,8 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             {
                 'model': DiffSet,
                 'limit': 1,
-                'extra': {
-                    'a': ('1', []),
+                'annotations': {
+                    'a': Value(1),
                 },
                 'where': Q(history=1),
             },
@@ -688,8 +688,8 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             {
                 'model': DiffSet,
                 'limit': 1,
-                'extra': {
-                    'a': ('1', []),
+                'annotations': {
+                    'a': Value(1),
                 },
                 'where': Q(history=2),
             },

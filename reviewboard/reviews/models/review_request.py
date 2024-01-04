@@ -1175,7 +1175,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         if update_counts or self.id is None:
             self._update_counts(old_submitter)
 
-        if self.status != self.PENDING_REVIEW:
+        if self.pk and self.status != self.PENDING_REVIEW:
             # If this is not a pending review request now, delete any
             # and all ReviewRequestVisit objects.
             self.visits.all().delete()

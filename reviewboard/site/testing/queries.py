@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
-from django.db.models import Q
+from django.db.models import Q, Value
 from djblets.db.query_comparator import ExpectedQueries
 
 from reviewboard.site.models import LocalSite
@@ -76,8 +76,8 @@ def get_local_site_is_accessible_by_equeries(
         {
             '__note__': 'Check if the user is a member of the Local Site',
             'model': User,
-            'extra': {
-                'a': ('1', []),
+            'annotations': {
+                'a': Value(1),
             },
             'join_types': {
                 'site_localsite_users': 'INNER JOIN',
@@ -131,8 +131,8 @@ def get_local_site_is_mutable_by_equeries(
                 'Check if the user is an admin of the Local Site'
             ),
             'model': User,
-            'extra': {
-                'a': ('1', []),
+            'annotations': {
+                'a': Value(1),
             },
             'join_types': {
                 'site_localsite_admins': 'INNER JOIN',
