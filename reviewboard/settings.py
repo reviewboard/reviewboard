@@ -153,7 +153,6 @@ RB_BUILTIN_APPS = [
     'djblets.datagrid',
     'djblets.extensions',
     'djblets.features',
-    'djblets.feedview',
     'djblets.forms',
     'djblets.gravatars',
     'djblets.integrations',
