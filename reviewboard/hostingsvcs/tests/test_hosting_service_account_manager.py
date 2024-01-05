@@ -41,7 +41,7 @@ class HostingServiceAccountManagerTests(TestCase):
         ]
 
         with self.assertQueries(queries):
-            self.assertQuerysetEqual(
+            self.assertQuerySetEqual(
                 HostingServiceAccount.objects.accessible().order_by('pk'),
                 [account1, account2])
 
@@ -77,7 +77,7 @@ class HostingServiceAccountManagerTests(TestCase):
         ]
 
         with self.assertQueries(queries):
-            self.assertQuerysetEqual(
+            self.assertQuerySetEqual(
                 (
                     HostingServiceAccount.objects
                     .accessible(visible_only=False)
@@ -121,7 +121,7 @@ class HostingServiceAccountManagerTests(TestCase):
         ]
 
         with self.assertQueries(queries):
-            self.assertQuerysetEqual(
+            self.assertQuerySetEqual(
                 HostingServiceAccount.objects.accessible(),
                 [account1])
 
@@ -161,7 +161,7 @@ class HostingServiceAccountManagerTests(TestCase):
         ]
 
         with self.assertQueries(queries):
-            self.assertQuerysetEqual(
+            self.assertQuerySetEqual(
                 (
                     HostingServiceAccount.objects
                     .accessible(local_site=local_site)
@@ -207,7 +207,7 @@ class HostingServiceAccountManagerTests(TestCase):
         ]
 
         with self.assertQueries(queries):
-            self.assertQuerysetEqual(
+            self.assertQuerySetEqual(
                 (
                     HostingServiceAccount.objects
                     .accessible(local_site=LocalSite.ALL)

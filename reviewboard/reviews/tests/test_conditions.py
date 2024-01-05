@@ -95,7 +95,7 @@ class ReviewGroupsChoiceTests(TestCase):
         self.create_review_group(name='group3',
                                  visible=False)
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset(),
             [group1.pk, group2.pk],
             transform=lambda group: group.pk)
@@ -120,7 +120,7 @@ class ReviewGroupsChoiceTests(TestCase):
 
         self.choice.extra_state['local_site'] = good_site
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset(),
             [group1.pk, group2.pk],
             transform=lambda group: group.pk)
@@ -147,7 +147,7 @@ class ReviewGroupsChoiceTests(TestCase):
             'matching': True,
         })
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset(),
             [group1.pk, group2.pk, group3.pk, group4.pk],
             transform=lambda group: group.pk)
@@ -180,7 +180,7 @@ class ReviewGroupsChoiceTests(TestCase):
             'matching': True,
         })
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset(),
             [group1.pk, group2.pk, group3.pk, group4.pk],
             transform=lambda group: group.pk)
@@ -806,7 +806,7 @@ class ReviewRequestReviewGroupsChoiceTests(TestCase):
         group1 = self.create_review_group(name='group1')
         group2 = self.create_review_group(name='group2')
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset(),
             [group1.pk, group2.pk],
             transform=lambda group: group.pk)
@@ -828,7 +828,7 @@ class ReviewRequestReviewGroupsChoiceTests(TestCase):
 
         self.choice.extra_state['local_site'] = good_site
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset(),
             [group1.pk, group2.pk],
             transform=lambda group: group.pk)
@@ -968,7 +968,7 @@ class ReviewRequestOwnerChoiceTests(TestCase):
 
     def test_get_queryset(self):
         """Testing ReviewRequestOwnerChoice.get_queryset"""
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset(),
             User.objects.values_list('pk', flat=True),
             transform=lambda user: user.pk)
@@ -983,7 +983,7 @@ class ReviewRequestOwnerChoiceTests(TestCase):
 
         self.choice.extra_state['local_site'] = good_site
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset(),
             [self.user2.pk],
             transform=lambda user: user.pk)
@@ -1038,7 +1038,7 @@ class ReviewRequestReviewerChoiceTests(TestCase):
 
     def test_get_queryset(self):
         """Testing ReviewRequestReviewerChoice.get_queryset"""
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset(),
             User.objects.values_list('pk', flat=True),
             transform=lambda user: user.pk)
@@ -1053,7 +1053,7 @@ class ReviewRequestReviewerChoiceTests(TestCase):
 
         self.choice.extra_state['local_site'] = good_site
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset(),
             [self.user2.pk],
             transform=lambda user: user.pk)
@@ -1112,7 +1112,7 @@ class ReviewRequestParticipantChoiceTests(TestCase):
 
     def test_get_queryset(self):
         """Testing ReviewRequestParticipantChoice.get_queryset"""
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset(),
             User.objects.values_list('pk', flat=True),
             transform=lambda user: user.pk)
@@ -1129,7 +1129,7 @@ class ReviewRequestParticipantChoiceTests(TestCase):
 
         self.choice.extra_state['local_site'] = good_site
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset(),
             [self.user2.pk],
             transform=lambda user: user.pk)

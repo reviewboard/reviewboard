@@ -87,7 +87,7 @@ class RepositoriesChoiceTests(TestCase):
                                archived=True,
                                public=False)
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset().order_by('id'),
             [repo1.pk, repo2.pk],
             transform=lambda repo: repo.pk)
@@ -118,7 +118,7 @@ class RepositoriesChoiceTests(TestCase):
 
         self.choice.extra_state['local_site'] = good_site
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset().order_by('id'),
             [repo1.pk, repo2.pk, repo3.pk],
             transform=lambda repo: repo.pk)
@@ -147,7 +147,7 @@ class RepositoriesChoiceTests(TestCase):
             'matching': True,
         })
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset().order_by('id'),
             [repo1.pk, repo2.pk, repo3.pk, repo4.pk],
             transform=lambda repo: repo.pk)
@@ -184,7 +184,7 @@ class RepositoriesChoiceTests(TestCase):
             'matching': True,
         })
 
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.choice.get_queryset().order_by('id'),
             [repo1.pk, repo2.pk, repo3.pk, repo4.pk, repo5.pk],
             transform=lambda repo: repo.pk)

@@ -278,13 +278,13 @@ class ReviewManagerTests(TestCase):
         with self.assertQueries(equeries):
             # Testing that the reviews from other local sites or the global
             # site do not leak into the results from the given local site.
-            self.assertQuerysetEqual(
+            self.assertQuerySetEqual(
                 Review.objects.accessible(user, local_site=local_site1),
                 [review1])
 
         # Testing that the reviews from local sites
         # do not leak into the results from the global site.
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             Review.objects.accessible(user),
             [review4])
 
@@ -342,7 +342,7 @@ class ReviewManagerTests(TestCase):
             # Note that this does not test for local site access, since callers
             # of Review.objects.accessible are responsible for ensuring that
             # the user has access to the given local site(s).
-            self.assertQuerysetEqual(
+            self.assertQuerySetEqual(
                 Review.objects.accessible(user, local_site=LocalSite.ALL),
                 [review1, review2, review3, review4])
 
@@ -1005,7 +1005,7 @@ class ReviewManagerTests(TestCase):
         else:
             # 0 queries.
             with self.assertNumQueries(0):
-                self.assertQuerysetEqual(
+                self.assertQuerySetEqual(
                     Review.objects.accessible(anonymous,
                                               public=False),
                     [])
@@ -1099,7 +1099,7 @@ class ReviewManagerTests(TestCase):
 
         with self.assertQueries(equeries):
             # Testing that only reviews from the given user are returned.
-            self.assertQuerysetEqual(
+            self.assertQuerySetEqual(
                 Review.objects.from_user(user, local_site=local_site),
                 [review])
 
@@ -1194,7 +1194,7 @@ class ReviewManagerTests(TestCase):
             has_local_sites_in_db=has_local_sites_in_db)
 
         with self.assertQueries(equeries):
-            self.assertQuerysetEqual(
+            self.assertQuerySetEqual(
                 Review.objects.accessible(user, local_site=local_site),
                 expected_reviews)
 
@@ -1256,7 +1256,7 @@ class ReviewManagerTests(TestCase):
         with self.assertQueries(equeries):
             # Testing that the user can only access reviews
             # from repositories that they have access to.
-            self.assertQuerysetEqual(
+            self.assertQuerySetEqual(
                 Review.objects.accessible(user,
                                           local_site=local_site,
                                           **accessible_kwargs),
@@ -1308,7 +1308,7 @@ class ReviewManagerTests(TestCase):
 
         with self.assertQueries(equeries):
             # Testing that superusers can acess any reviews.
-            self.assertQuerysetEqual(
+            self.assertQuerySetEqual(
                 Review.objects.accessible(user,
                                           local_site=local_site,
                                           **accessible_kwargs),
