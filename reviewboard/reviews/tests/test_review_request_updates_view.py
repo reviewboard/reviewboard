@@ -3,10 +3,9 @@
 
 import json
 import struct
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from django.urls import reverse
-from django.utils.timezone import utc
 
 from reviewboard.reviews.views import ReviewRequestUpdatesView
 from reviewboard.testing import TestCase
@@ -22,8 +21,8 @@ class ReviewRequestUpdatesViewTests(TestCase):
 
         self.review_request = self.create_review_request(
             publish=True,
-            time_added=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc),
-            last_updated=datetime(2017, 9, 7, 23, 10, 0, tzinfo=utc))
+            time_added=datetime(2017, 9, 7, 17, 0, 0, tzinfo=timezone.utc),
+            last_updated=datetime(2017, 9, 7, 23, 10, 0, tzinfo=timezone.utc))
 
         # Create the first review.
         self.review1 = self.create_review(

@@ -10,7 +10,7 @@ import logging
 import os
 import re
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, TYPE_CHECKING, Type, TypeVar
 from uuid import uuid4
@@ -18,7 +18,7 @@ from uuid import uuid4
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.x509.oid import NameOID
-from django.utils import timezone
+from django.utils import timezone as django_timezone
 from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 from djblets.util.symbols import UNSET, Unsettable
@@ -570,10 +570,11 @@ class Certificate:
                 If not provided, this will be loaded from ``cert_data`` when
                 needed (and if ``cert_data`` is provided).
         """
-        if valid_from is not UNSET and timezone.is_naive(valid_from):
+        if valid_from is not UNSET and django_timezone.is_naive(valid_from):
             raise ValueError('valid_from must contain a timezone.')
 
-        if valid_through is not UNSET and timezone.is_naive(valid_through):
+        if (valid_through is not UNSET and
+            django_timezone.is_naive(valid_through)):
             raise ValueError('valid_through must contain a timezone.')
 
         self.cert_data = cert_data
@@ -709,7 +710,7 @@ class Certificate:
 
         return (valid_from is not None and
                 valid_through is not None and
-                valid_from <= timezone.now() <= valid_through)
+                valid_from <= django_timezone.now() <= valid_through)
 
     @property
     def is_wildcard(self) -> bool:
@@ -876,9 +877,9 @@ class Certificate:
                     .value
                 )
             elif (isinstance(x509_value, datetime) and
-                  timezone.is_naive(x509_value)):
-                x509_value = timezone.make_aware(x509_value,
-                                                 timezone=timezone.utc)
+                  django_timezone.is_naive(x509_value)):
+                x509_value = django_timezone.make_aware(x509_value,
+                                                        timezone=timezone.utc)
 
             assert isinstance(x509_value, attr_type)
 

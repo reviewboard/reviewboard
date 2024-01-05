@@ -1,13 +1,12 @@
 """Main review request page view."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple
 
 from django.conf import settings
 from django.http import HttpRequest
-from django.utils import timezone
-from django.utils.timezone import utc
+from django.utils import timezone as django_timezone
 from django.views.generic.base import TemplateView
 from djblets.views.generic.etag import ETagViewMixin
 
@@ -171,7 +170,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
                 visited, visited_is_new = \
                     ReviewRequestVisit.objects.get_or_create(
                         user=user, review_request=review_request)
-                last_visited = visited.timestamp.replace(tzinfo=utc)
+                last_visited = visited.timestamp.replace(tzinfo=timezone.utc)
             except ReviewRequestVisit.DoesNotExist:
                 # Somehow, this visit was seen as created but then not
                 # accessible. We need to log this and then continue on.
@@ -186,7 +185,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
             if (visited and
                 review_request.public and
                 review_request.status == review_request.PENDING_REVIEW):
-                visited.timestamp = timezone.now()
+                visited.timestamp = django_timezone.now()
                 visited.save()
 
         return visited, last_visited

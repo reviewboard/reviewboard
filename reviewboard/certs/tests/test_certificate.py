@@ -9,11 +9,10 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import kgb
 from cryptography.x509.oid import NameOID
-from django.utils import timezone
 from djblets.util.serializers import DjbletsJSONEncoder
 
 from reviewboard.certs.cert import Certificate, CertificateFingerprints

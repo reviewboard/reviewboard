@@ -6,9 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from datetime import datetime
-
-from django.utils import timezone
+from datetime import datetime, timezone
 
 from reviewboard.certs.cert import Certificate, CertificateFingerprints
 from reviewboard.certs.errors import (CertificateVerificationError,

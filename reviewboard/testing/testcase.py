@@ -6,7 +6,7 @@ import os
 import re
 import warnings
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import (Any, Callable, Dict, Iterator, List, Optional, Sequence,
                     TYPE_CHECKING, Tuple, Type, Union)
 from uuid import uuid4
@@ -21,7 +21,7 @@ from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.test.client import RequestFactory
 from django.urls import ResolverMatch
-from django.utils import timezone
+from django.utils.timezone import now
 from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
 from djblets.secrets.token_generators import token_generator_registry
 from djblets.testing.testcases import (FixturesCompilerMixin,
@@ -877,7 +877,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             repository = diffset.repository
 
         if author_date is None:
-            author_date = timezone.now()
+            author_date = now()
 
         if not committer_date and committer_name and committer_email:
             committer_date = author_date
@@ -2888,7 +2888,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         return AccessToken.objects.create(
             application=application,
             token=generate_token(),
-            expires=timezone.now() + expires,
+            expires=now() + expires,
             scope=scope,
             user=user,
             **kwargs

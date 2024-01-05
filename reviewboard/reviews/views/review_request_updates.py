@@ -4,6 +4,7 @@ import io
 import json
 import logging
 import struct
+from datetime import timezone
 from typing import Optional
 
 import dateutil.parser
@@ -13,7 +14,7 @@ from django.http import (Http404,
                          HttpResponse,
                          HttpResponseBadRequest)
 from django.template.loader import render_to_string
-from django.utils.timezone import is_aware, make_aware, utc
+from django.utils.timezone import is_aware, make_aware
 from django.views.generic.base import ContextMixin, View
 from djblets.util.serializers import DjbletsJSONEncoder
 from djblets.views.generic.etag import ETagViewMixin
@@ -238,7 +239,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
             since = dateutil.parser.parse(since)
 
             if not is_aware(since):
-                since = make_aware(since, utc)
+                since = make_aware(since, timezone.utc)
 
             entries = (
                 entry

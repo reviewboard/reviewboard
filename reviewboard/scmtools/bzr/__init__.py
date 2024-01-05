@@ -2,10 +2,10 @@
 
 import os
 import urllib.parse
+from datetime import timezone
 
 import dateutil.parser
 from django.utils.encoding import force_str
-from django.utils.timezone import utc
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools.core import SCMClient, SCMTool, HEAD, PRE_CREATION
@@ -259,7 +259,8 @@ class BZRTool(SCMTool):
             # Attempt to parse this as a timestamp into a Bazaar date revision
             # specifier.
             try:
-                timestamp = dateutil.parser.parse(revision).astimezone(utc)
+                timestamp = dateutil.parser.parse(revision).astimezone(
+                    timezone.utc)
                 revspec = 'date:%s' % timestamp.strftime('%Y-%m-%d,%H:%M:%S')
             except ValueError:
                 revspec = None

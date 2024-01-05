@@ -1,11 +1,11 @@
 """Unit tests for reviewboard.accounts.middleware.UpdateLastLoginMiddleware."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from django.contrib.auth.models import User
 from django.http import HttpResponse
 from django.test.client import RequestFactory
-from django.utils import timezone
+from django.utils import timezone as django_timezone
 from kgb import SpyAgency
 
 from reviewboard.accounts.middleware import update_last_login_middleware
@@ -27,12 +27,12 @@ class UpdateLastLoginMiddlewareTests(SpyAgency, TestCase):
         self.request = RequestFactory().get('/')
         self.request.user = self.user
 
-        self.spy_on(timezone.now,
+        self.spy_on(django_timezone.now,
                     call_fake=lambda: datetime(year=2018, month=3, day=3,
                                                hour=19, minute=30, second=0,
                                                tzinfo=timezone.utc))
 
-        self.now = timezone.now()
+        self.now = django_timezone.now()
 
     def test_process_request_with_gt_30_mins(self):
         """Testing update_last_login_middleware with last login time > 30

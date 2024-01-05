@@ -1,9 +1,9 @@
 """Unit tests for reviewboard.reviews.views.ReviewRequestViewMixin."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytz
-from django.utils import timezone
+from django.utils import timezone as django_timezone
 
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.reviews.models.review_request import ReviewRequestCloseInfo
@@ -30,7 +30,7 @@ class ReviewRequestViewMixinTests(TestCase):
         mixin = ReviewRequestViewMixin()
         mixin.review_request = review_request
 
-        with timezone.override(_local_timezone):
+        with django_timezone.override(_local_timezone):
             html = mixin.get_review_request_status_html(
                 review_request_details=review_request,
                 close_info=ReviewRequestCloseInfo(
@@ -56,7 +56,7 @@ class ReviewRequestViewMixinTests(TestCase):
         mixin = ReviewRequestViewMixin()
         mixin.review_request = review_request
 
-        with timezone.override(_local_timezone):
+        with django_timezone.override(_local_timezone):
             html = mixin.get_review_request_status_html(
                 review_request_details=review_request,
                 close_info=ReviewRequestCloseInfo(
@@ -77,7 +77,7 @@ class ReviewRequestViewMixinTests(TestCase):
         mixin = ReviewRequestViewMixin()
         mixin.review_request = review_request
 
-        with timezone.override(_local_timezone):
+        with django_timezone.override(_local_timezone):
             html = mixin.get_review_request_status_html(
                 review_request_details=review_request,
                 close_info=ReviewRequestCloseInfo(
@@ -103,7 +103,7 @@ class ReviewRequestViewMixinTests(TestCase):
         mixin = ReviewRequestViewMixin()
         mixin.review_request = review_request
 
-        with timezone.override(_local_timezone):
+        with django_timezone.override(_local_timezone):
             html = mixin.get_review_request_status_html(
                 review_request_details=review_request,
                 close_info=ReviewRequestCloseInfo(
@@ -126,7 +126,7 @@ class ReviewRequestViewMixinTests(TestCase):
         mixin = ReviewRequestViewMixin()
         mixin.review_request = review_request
 
-        with timezone.override(_local_timezone):
+        with django_timezone.override(_local_timezone):
             html = mixin.get_review_request_status_html(
                 review_request_details=review_request,
                 close_info=ReviewRequestCloseInfo(
@@ -153,7 +153,7 @@ class ReviewRequestViewMixinTests(TestCase):
         mixin = ReviewRequestViewMixin()
         mixin.review_request = review_request
 
-        with timezone.override(_local_timezone):
+        with django_timezone.override(_local_timezone):
             html = mixin.get_review_request_status_html(
                 review_request_details=review_request,
                 close_info=ReviewRequestCloseInfo(

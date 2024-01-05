@@ -3,12 +3,11 @@
 import hashlib
 import logging
 from collections import Counter, defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from itertools import chain
 from typing import Optional
 
 from django.db.models import Q
-from django.utils.timezone import utc
 from django.utils.translation import gettext as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
                                          ATTRIBUTE_REGISTERED,
@@ -305,7 +304,8 @@ class ReviewRequestPageData(object):
             )
 
         if len(self.reviews) == 0:
-            self.latest_review_timestamp = datetime.fromtimestamp(0, utc)
+            self.latest_review_timestamp = \
+                datetime.fromtimestamp(0, timezone.utc)
         else:
             self.latest_review_timestamp = self.reviews[0].timestamp
 
@@ -378,7 +378,7 @@ class ReviewRequestPageData(object):
             parent_id = review.base_reply_to_id
 
             if parent_id is not None:
-                new_timestamp = review.timestamp.replace(tzinfo=utc)
+                new_timestamp = review.timestamp.replace(tzinfo=timezone.utc)
 
                 if parent_id in self.latest_timestamps_by_review_id:
                     old_timestamp = \
@@ -560,7 +560,8 @@ class ReviewRequestPageData(object):
                 comment.timestamp
                 for comment in self.all_comments)
         else:
-            self.latest_issue_timestamp = datetime.fromtimestamp(0, utc)
+            self.latest_issue_timestamp = \
+                datetime.fromtimestamp(0, timezone.utc)
 
         if self.review_request.created_with_history:
             pks = [diffset.pk for diffset in self.diffsets]

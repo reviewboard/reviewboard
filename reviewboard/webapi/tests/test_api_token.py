@@ -1,6 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
-from django.utils import timezone
+from django.utils import timezone as django_timezone
 from djblets.db.query import get_object_or_none
 from djblets.webapi.errors import (INVALID_FORM_DATA,
                                    PERMISSION_DENIED)
@@ -204,7 +204,7 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
         """
         expires = datetime(
             2022, 9, 20, 13, 42, 0,
-            tzinfo=timezone.get_fixed_timezone(timedelta(hours=5)))
+            tzinfo=django_timezone.get_fixed_timezone(timedelta(hours=5)))
         utc_expires = '2022-09-20T08:42:00+00:00'
 
         token_data = self.token_data.copy()
@@ -432,7 +432,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
 
         expires = datetime(
             2022, 9, 20, 13, 42, 0,
-            tzinfo=timezone.get_fixed_timezone(timedelta(hours=5)))
+            tzinfo=django_timezone.get_fixed_timezone(timedelta(hours=5)))
         utc_expires = '2022-09-20T08:42:00+00:00'
 
         token_data = self.token_data.copy()

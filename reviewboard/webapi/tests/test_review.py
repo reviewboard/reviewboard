@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from django.core import mail
-from django.utils import timezone
+from django.utils import timezone as django_timezone
 from djblets.util.dates import get_tz_aware_utcnow
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
@@ -402,16 +402,17 @@ class ResourceItemTests(SpyAgency, ReviewItemMixin,
         # Unfortunately, we cannot spy on datetime.utcnow since it is a
         # builtin. So we replace get_tz_aware_utcnow with timezone.now and we
         # will replace that with a constant function in the spy_on calls below.
-        self.spy_on(get_tz_aware_utcnow, call_fake=lambda: timezone.now())
+        self.spy_on(get_tz_aware_utcnow,
+                    call_fake=lambda: django_timezone.now())
         creation_timestamp = datetime.fromtimestamp(0, timezone.utc)
         review_timestamp = creation_timestamp + timedelta(hours=1)
         revoke_timestamp = review_timestamp + timedelta(hours=1)
 
-        with spy_on(timezone.now, call_fake=lambda: creation_timestamp):
+        with spy_on(django_timezone.now, call_fake=lambda: creation_timestamp):
             review_request = self.create_review_request(publish=True,
                                                         submitter=self.user)
 
-        with spy_on(timezone.now, call_fake=lambda: review_timestamp):
+        with spy_on(django_timezone.now, call_fake=lambda: review_timestamp):
             review = self.create_review(review_request,
                                         body_top=Review.SHIP_IT_TEXT,
                                         ship_it=True,
@@ -424,7 +425,7 @@ class ResourceItemTests(SpyAgency, ReviewItemMixin,
         self.assertEqual(review_request.last_updated, review_timestamp)
         self.assertEqual(review.timestamp, review_timestamp)
 
-        with spy_on(timezone.now, call_fake=lambda: revoke_timestamp):
+        with spy_on(django_timezone.now, call_fake=lambda: revoke_timestamp):
             rsp = self.api_put(
                 get_review_item_url(review_request, review.pk),
                 {'ship_it': False},
