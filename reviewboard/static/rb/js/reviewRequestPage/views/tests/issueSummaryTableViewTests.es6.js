@@ -344,7 +344,7 @@ suite('rb/reviewRequestPage/views/IssueSummaryTable', function() {
 
                             const $noIssues = view.$(NO_ISSUES_SEL);
                             expect($noIssues.length).toBe(1);
-                            expect($noIssues.text().strip()).toBe(
+                            expect($noIssues.text().trim()).toBe(
                                 `There are no ${state} issues from user1`);
                         });
                     }
@@ -403,7 +403,7 @@ suite('rb/reviewRequestPage/views/IssueSummaryTable', function() {
 
                         const $noIssues = view.$(NO_ISSUES_SEL);
                         expect($noIssues.length).toBe(1);
-                        expect($noIssues.text().strip())
+                        expect($noIssues.text().trim())
                             .toBe(options.noIssuesText);
                     });
                 });

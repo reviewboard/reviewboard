@@ -125,7 +125,7 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
     async resetStateIfEmpty() {
         const text = this.get('text');
 
-        if (text.strip() !== '') {
+        if (text.trim() !== '') {
             return;
         }
 

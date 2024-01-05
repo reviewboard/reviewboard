@@ -108,32 +108,32 @@ suite('rb/admin/views/NewsWidgetView', function() {
             let $item = $items.eq(0);
             expect($item.attr('href')).toBe('http://example.com/news/post6');
             expect(
-                $item.find('.rb-c-admin-news-widget__item-date').text().strip()
+                $item.find('.rb-c-admin-news-widget__item-date').text().trim()
             ).toBe('Oct 20');
             expect(
-                $item.find('.rb-c-admin-news-widget__item-title').text().strip()
+                $item.find('.rb-c-admin-news-widget__item-title').text().trim()
             ).toBe('Headline 6');
 
             $item = $items.eq(1);
             expect($item.attr('href')).toBe('http://example.com/news/post5');
             expect(
                 $item.find('.rb-c-admin-news-widget__item-date')
-                .text().strip()
+                .text().trim()
             ).toBe('Oct 01');
             expect(
                 $item.find('.rb-c-admin-news-widget__item-title')
-                .text().strip()
+                .text().trim()
             ).toBe('Headline 5');
 
             $item = $items.eq(2);
             expect($item.attr('href')).toBe('http://example.com/news/post4');
             expect(
                 $item.find('.rb-c-admin-news-widget__item-date')
-                .text().strip()
+                .text().trim()
             ).toBe('Sep 26');
             expect(
                 $item.find('.rb-c-admin-news-widget__item-title')
-                .text().strip()
+                .text().trim()
             ).toBe('Headline 4');
         });
 
@@ -148,7 +148,7 @@ suite('rb/admin/views/NewsWidgetView', function() {
             const $error = $els.eq(0);
             expect($error.hasClass('rb-c-admin-news-widget__error'))
                 .toBeTrue();
-            expect($error.html().strip()).toBe(
+            expect($error.html().trim()).toBe(
                 'There was an error loading the news. Please ' +
                 '<a href="http://example.com/news/">visit the news page</a> ' +
                 'directly, or try again later.');

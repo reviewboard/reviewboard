@@ -282,8 +282,8 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
                 value1 = $columnB.children('time').attr('datetime');
                 value2 = $columnA.children('time').attr('datetime');
             } else {
-                value1 = $columnA.text().strip().toLowerCase();
-                value2 = $columnB.text().strip().toLowerCase();
+                value1 = $columnA.text().trim().toLowerCase();
+                value2 = $columnB.text().trim().toLowerCase();
             }
 
             /*

@@ -148,7 +148,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
                 expect(view._$error).toBeTruthy();
                 expect(view._$error.length).toBe(1);
                 expect(view._commitsView).toBeFalsy();
-                expect(view._$error.find('.error-text').text().strip())
+                expect(view._$error.find('.error-text').text().trim())
                     .toBe('Oh no');
                 expect(view._$error.find('a')[0].id).toBe('reload_branches');
             });
@@ -205,7 +205,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
                 expect(view._$error.length).toBe(1);
                 expect(view._commitsView).toBeTruthy();
                 expect(view._commitsView.$el.css('display')).toBe('none');
-                expect(view._$error.find('.error-text').text().strip())
+                expect(view._$error.find('.error-text').text().trim())
                     .toBe('Oh no');
                 expect(view._$error.find('a')[0].id).toBe('reload_commits');
             });

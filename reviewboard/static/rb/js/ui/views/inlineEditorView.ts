@@ -208,14 +208,14 @@ export class InlineEditorView<
         fieldLabel: null,
         focusOnOpen: true,
         formClass: '',
-        formatResult: value => value.htmlEncode(),
+        formatResult: value => _.escape(value),
         getFieldValue: editor => editor.$field.val(),
         hasRawValue: false,
         isFieldDirty: (editor, initialValue) => {
             const value = editor.getValue() || '';
             const normValue = (editor.options.hasRawValue
                                ? value
-                               : value.htmlEncode()) || '';
+                               : _.escape(value)) || '';
             initialValue = editor.normalizeText(initialValue);
 
             return (normValue.length !== initialValue.length ||
@@ -556,7 +556,7 @@ export class InlineEditorView<
             value = this._initialValue;
         } else {
             this._initialValue = this.$el.text();
-            value = this.normalizeText(this._initialValue).htmlDecode();
+            value = _.unescape(this.normalizeText(this._initialValue));
         }
 
         this._editing = true;
@@ -845,7 +845,8 @@ export class InlineEditorView<
              * some legacy data.
              */
             text = text.replace(/<br>/g, '\n');
-            text = text.stripTags().strip();
+            text = text.replace(/<\/?[^>]+>/gi, '');
+            text = text.trim();
         }
 
         if (!this.options.multiline) {

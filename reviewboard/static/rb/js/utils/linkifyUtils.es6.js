@@ -155,7 +155,7 @@ RB.LinkifyUtils = {
      */
     linkifyText(text, bugTrackerURL, isHTMLEncoded) {
         if (!isHTMLEncoded) {
-            text = text.htmlEncode();
+            text = _.escape(text);
         }
 
         text = RB.LinkifyUtils.linkifyURLs(text);

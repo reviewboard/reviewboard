@@ -26,7 +26,7 @@ suite('rb/newReviewRequest/views/RepositorySelectionView', function() {
 
             for (let i = 0; i < children.length; i++) {
                 const name = collection.models[i].get('name');
-                expect($(children[i]).text().strip()).toBe(name);
+                expect($(children[i]).text().trim()).toBe(name);
             }
         });
     });

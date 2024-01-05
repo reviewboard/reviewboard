@@ -383,7 +383,7 @@ const PolicyEditorView = Backbone.View.extend({
      *         Whether the editor should close after saving.
      */
     async save(closeOnSave) {
-        const policyStr = this._codeMirror.getValue().strip();
+        const policyStr = this._codeMirror.getValue().trim();
         let policy;
 
         try {
