@@ -278,8 +278,6 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
                 .timesince()
             .end();
 
-        Djblets.enableRetinaImages($el);
-
         if (options.text) {
             RB.formatText($el.find('.reviewtext'), {
                 newText: options.text,

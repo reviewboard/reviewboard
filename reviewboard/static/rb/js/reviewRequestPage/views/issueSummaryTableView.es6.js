@@ -129,7 +129,6 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
 
         this.$('.user').user_infobox();
         this.$('time.timesince').timesince();
-        Djblets.enableRetinaImages(this.$el);
 
         return this;
     },

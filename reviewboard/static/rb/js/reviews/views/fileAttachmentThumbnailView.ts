@@ -595,8 +595,6 @@ export class FileAttachmentThumbnailView extends BaseView<
         this.#$thumbnailContainer.html(
             this.thumbnailContainerTemplate(this.model.attributes));
 
-        Djblets.enableRetinaImages(this.#$thumbnailContainer);
-
         // Disable tabbing to any <a> elements inside the thumbnail.
         this.#$thumbnailContainer.find('a').each((i, el) => {
             el.tabIndex = -1;
