@@ -564,7 +564,7 @@ export class DiffViewerPageView extends ReviewablePageView<
                  * unnecessary. It's much faster to just set innerHTML
                  * directly.
                  */
-                $container[0].innerHTML = html;
+                $container.eq(0).html(html);
                 this.#renderFileDiff(diffReviewable);
             }
         });
