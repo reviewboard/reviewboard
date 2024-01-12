@@ -651,7 +651,8 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             The rendered review UI HTML, if available. ``None`` if not.
         """
         if review_ui and (not inline_only or review_ui.allow_inline):
-            return mark_safe(review_ui.render_to_string(self.request))
+            return mark_safe(review_ui.render_to_string(self.request,
+                                                        inline=True))
 
         return None
 
