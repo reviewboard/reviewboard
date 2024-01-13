@@ -40,7 +40,11 @@ def _on_file_attachment_deleted(
         **kwargs (dict, unused):
             Unused additional keyword arguments.
     """
-    instance.mimetype_handler.delete_associated_files()
+    handler = instance.mimetype_handler
+
+    if handler:
+        handler.delete_associated_files()
+
     instance.file.delete(save=False)
 
 
