@@ -435,6 +435,9 @@ class FileDiffResource(WebAPIResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
+        if not self.has_access_permissions(request, filediff, *args, **kwargs):
+            return self.get_no_access_error(request)
+
         resp = HttpResponse(filediff.diff, content_type='text/x-patch')
         filename = '%s.patch' % urllib_quote(filediff.source_file)
         resp['Content-Disposition'] = 'inline; filename=%s' % filename
@@ -448,6 +451,9 @@ class FileDiffResource(WebAPIResource):
             filediff = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
+
+        if not self.has_access_permissions(request, filediff, *args, **kwargs):
+            return self.get_no_access_error(request)
 
         highlighting = request.GET.get('syntax-highlighting', False)
 
