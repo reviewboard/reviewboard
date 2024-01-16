@@ -3,7 +3,9 @@ import base64
 import kgb
 from django.core.files.uploadedfile import SimpleUploadedFile
 from djblets.features.testing import override_feature_check
-from djblets.webapi.errors import INVALID_ATTRIBUTE, INVALID_FORM_DATA
+from djblets.webapi.errors import (INVALID_ATTRIBUTE,
+                                   INVALID_FORM_DATA,
+                                   PERMISSION_DENIED)
 from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.diffviewer.commit_utils import (serialize_validation_info,
@@ -340,6 +342,35 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
         self.api_get(
             get_draft_diff_item_url(review_request, diffset.revision),
             expected_status=403)
+
+    @webapi_test_template
+    def test_get_patch_and_inaccessible(self) -> None:
+        """Testing the GET <URL> API with Accept: text/x-patch and
+        inaccessible diff
+        """
+        repository = self.create_repository(public=False)
+
+        review_request = self.create_review_request(repository=repository)
+        self.assertNotEqual(review_request.submitter, self.user)
+
+        diffset = self.create_diffset(review_request, draft=True)
+        self.create_filediff(diffset)
+
+        rsp = self.api_get(
+            get_draft_diff_item_url(review_request, diffset.revision),
+            HTTP_ACCEPT='text/x-patch',
+            expected_status=403)
+
+        self.assertEqual(
+            rsp,
+            {
+                'err': {
+                    'code': PERMISSION_DENIED.code,
+                    'msg': PERMISSION_DENIED.msg,
+                    'type': 'resource-permission-denied',
+                },
+                'stat': 'fail',
+            })
 
     #
     # HTTP PUT tests

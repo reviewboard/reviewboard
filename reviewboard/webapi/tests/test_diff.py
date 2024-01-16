@@ -556,10 +556,41 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         self.assertEqual(
             diff,
-            b'--- README\trevision 123\n+++ README\trevision 123\n@@ -1 +1 @@\n'
-            b'-Hello, world!\n+Hello, everybody!\n')
+            b'--- README\trevision 123\n'
+            b'+++ README\trevision 123\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hello, world!\n'
+            b'+Hello, everybody!\n')
         self.assertEqual(response['Content-Disposition'],
                          'inline; filename=diffset')
+
+    @webapi_test_template
+    def test_get_patch_and_inaccessible(self) -> None:
+        """Testing the GET <URL> API with Accept: text/x-patch and
+        inaccessible diff
+        """
+        repository = self.create_repository(public=False)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        self.create_filediff(diffset)
+
+        rsp = self.api_get(
+            get_diff_item_url(review_request, diffset.revision),
+            HTTP_ACCEPT='text/x-patch',
+            expected_status=403)
+
+        self.assertEqual(
+            rsp,
+            {
+                'err': {
+                    'code': PERMISSION_DENIED.code,
+                    'msg': PERMISSION_DENIED.msg,
+                    'type': 'resource-permission-denied',
+                },
+                'stat': 'fail',
+            })
 
     @webapi_test_template
     def test_get_patch_with_bugs_closed(self):
@@ -580,8 +611,11 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         self.assertEqual(
             diff,
-            b'--- README\trevision 123\n+++ README\trevision 123\n@@ -1 +1 @@\n'
-            b'-Hello, world!\n+Hello, everybody!\n')
+            b'--- README\trevision 123\n'
+            b'+++ README\trevision 123\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hello, world!\n'
+            b'+Hello, everybody!\n')
         self.assertEqual(response['Content-Disposition'],
                          'inline; filename=bug123_456.patch')
 
@@ -608,8 +642,11 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         self.assertEqual(
             diff,
-            b'--- README\trevision 123\n+++ README\trevision 123\n@@ -1 +1 @@\n'
-            b'-Hello, world!\n+Hello, everybody!\n')
+            b'--- README\trevision 123\n'
+            b'+++ README\trevision 123\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hello, world!\n'
+            b'+Hello, everybody!\n')
         self.assertEqual(response['Content-Disposition'],
                          'inline; filename=bug123_456.patch')
 
