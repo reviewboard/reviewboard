@@ -31,6 +31,8 @@ from reviewboard.testing import TestCase
 class BaseFileAttachmentTestCase(TestCase):
     """Base functionality for FileAttachment test cases."""
 
+    fixtures = ['test_users', 'test_scmtools', 'test_site']
+
     def make_uploaded_file(self):
         """Create a return a file to use for mocking in forms."""
         filename = os.path.join(settings.STATIC_ROOT,
@@ -56,7 +58,10 @@ class BaseFileAttachmentTestCase(TestCase):
         repository = self.create_repository()
 
         if not diffset_history:
-            diffset_history = DiffSetHistory.objects.create(name='testhistory')
+            user = User.objects.get(username='doc')
+            review_request = self.create_review_request(repository=repository,
+                                                        submitter=user)
+            diffset_history = review_request.diffset_history
 
         diffset = DiffSet.objects.create(name='test',
                                          revision=diffset_revision,
@@ -870,7 +875,7 @@ class MimetypeHandlerTests(TestCase):
 class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
     """Tests for FileAttachmentManager."""
 
-    fixtures = ['test_scmtools']
+    fixtures = ['test_users', 'test_scmtools', 'test_site']
 
     def test_create_from_filediff_with_new_and_modified_true(self):
         """Testing FileAttachmentManager.create_from_filediff
@@ -1005,8 +1010,6 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
 
 class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
     """Tests for inline diff file attachments in the diff viewer."""
-
-    fixtures = ['test_users', 'test_scmtools', 'test_site']
 
     def setUp(self):
         """Set up this test case."""

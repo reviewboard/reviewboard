@@ -39,9 +39,11 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     def setup_basic_get_test(self, user, with_local_site, local_site_name,
                              populate_items):
         repository = self.create_repository(with_local_site=with_local_site)
+        review_request = self.create_review_request(repository=repository)
 
         if populate_items:
-            diffset = self.create_diffset(repository=repository)
+            diffset = self.create_diffset(review_request=review_request,
+                                          repository=repository)
             filediff = self.create_filediff(diffset)
             items = [self.create_diff_file_attachment(filediff)]
         else:
@@ -56,7 +58,9 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         with ?mimetype=
         """
         repository = self.create_repository()
-        diffset = self.create_diffset(repository=repository)
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request,
+                                      repository=repository)
         filediff = self.create_filediff(diffset)
         attachment = self.create_diff_file_attachment(
             filediff,
@@ -89,7 +93,9 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         with ?repository-file-path=
         """
         repository = self.create_repository()
-        diffset = self.create_diffset(repository=repository)
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request,
+                                      repository=repository)
         filediff1 = self.create_filediff(diffset,
                                          source_file='/test-file-1.png',
                                          dest_file='/test-file-1.png')
@@ -125,7 +131,9 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         with ?repository-revision=
         """
         repository = self.create_repository()
-        diffset = self.create_diffset(repository=repository)
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request,
+                                      repository=repository)
         filediff1 = self.create_filediff(diffset,
                                          source_file='/test-file-1.png',
                                          dest_file='/test-file-1.png',
@@ -175,16 +183,22 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
 
     def setup_http_not_allowed_item_test(self, user):
         repository = self.create_repository()
-        diffset = self.create_diffset(repository=repository)
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request,
+                                      repository=repository)
         filediff = self.create_filediff(diffset)
         attachment = self.create_diff_file_attachment(filediff)
 
         return get_diff_file_attachment_item_url(repository, attachment)
 
     def setup_http_not_allowed_list_test(self, user):
+        assert self.user is not None
+
         repository = self.create_repository(public=False)
         repository.users.add(self.user)
-        diffset = self.create_diffset(repository=repository)
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request,
+                                      repository=repository)
         filediff = self.create_filediff(diffset)
         attachment = self.create_diff_file_attachment(filediff)
 
@@ -196,7 +210,9 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
 
     def setup_basic_get_test(self, user, with_local_site, local_site_name):
         repository = self.create_repository(with_local_site=with_local_site)
-        diffset = self.create_diffset(repository=repository)
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request,
+                                      repository=repository)
         filediff = self.create_filediff(diffset)
         attachment = self.create_diff_file_attachment(filediff)
 
@@ -209,9 +225,13 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the GET repositories/<id>/diff-file-attachments/<id>/ API
         with access to an invite-only repository
         """
+        assert self.user is not None
+
         repository = self.create_repository(public=False)
         repository.users.add(self.user)
-        diffset = self.create_diffset(repository=repository)
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request,
+                                      repository=repository)
         filediff = self.create_filediff(diffset)
         attachment = self.create_diff_file_attachment(filediff)
 
@@ -233,7 +253,9 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         without access to an invite-only repository
         """
         repository = self.create_repository(public=False)
-        diffset = self.create_diffset(repository=repository)
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request,
+                                      repository=repository)
         filediff = self.create_filediff(diffset)
         attachment = self.create_diff_file_attachment(filediff)
 

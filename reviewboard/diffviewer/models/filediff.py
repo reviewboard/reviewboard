@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import logging
 from itertools import chain
-from typing import ClassVar
+from typing import ClassVar, Optional, TYPE_CHECKING
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
@@ -17,6 +18,9 @@ from reviewboard.diffviewer.models.legacy_file_diff_data import \
     LegacyFileDiffData
 from reviewboard.diffviewer.models.raw_file_diff_data import RawFileDiffData
 from reviewboard.scmtools.core import PRE_CREATION
+
+if TYPE_CHECKING:
+    from reviewboard.reviews.models import ReviewRequest
 
 
 logger = logging.getLogger(__name__)
@@ -1039,6 +1043,35 @@ class FileDiff(models.Model):
                 The raw data to recalculate line counts for.
         """
         diff_hash.recalculate_line_counts(self.get_repository().get_scmtool())
+
+    def get_review_request(self) -> Optional[ReviewRequest]:
+        """Return the ReviewRequest that this filediff is attached to.
+
+        Version Added:
+            7.0
+
+        Returns:
+            reviewboard.reviews.models.review_request.ReviewRequest:
+            The review request.
+        """
+        if not hasattr(self, '_review_request'):
+            diffset = self.diffset
+
+            if diffset.history:
+                self._review_request = diffset.history.review_request.get()
+            else:
+                try:
+                    draft = diffset.review_request_draft.get()
+                    self._review_request = draft.review_request
+                except ObjectDoesNotExist:
+                    # This should not be hit in real-world usage, since
+                    # FileDiffs really ought to be connected to a review
+                    # request in some form or another. In any case, we don't
+                    # cache the result for this because maybe we'll attach the
+                    # FileDiff to a ReviewRequest later in this same request.
+                    return None
+
+        return self._review_request
 
     def __str__(self):
         """Return a human-readable representation of the model.
