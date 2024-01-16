@@ -540,8 +540,11 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         self.assertEqual(
             diff,
-            b'--- README\trevision 123\n+++ README\trevision 123\n@@ -1 +1 @@\n'
-            b'-Hello, world!\n+Hello, everybody!\n')
+            b'--- README\trevision 123\n'
+            b'+++ README\trevision 123\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hello, world!\n'
+            b'+Hello, everybody!\n')
         self.assertEqual(response['Content-Disposition'],
                          'inline; filename=diffset')
 
@@ -591,8 +594,11 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         self.assertEqual(
             diff,
-            b'--- README\trevision 123\n+++ README\trevision 123\n@@ -1 +1 @@\n'
-            b'-Hello, world!\n+Hello, everybody!\n')
+            b'--- README\trevision 123\n'
+            b'+++ README\trevision 123\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hello, world!\n'
+            b'+Hello, everybody!\n')
         self.assertEqual(response['Content-Disposition'],
                          'inline; filename=bug123_456.patch')
 
@@ -619,8 +625,11 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         self.assertEqual(
             diff,
-            b'--- README\trevision 123\n+++ README\trevision 123\n@@ -1 +1 @@\n'
-            b'-Hello, world!\n+Hello, everybody!\n')
+            b'--- README\trevision 123\n'
+            b'+++ README\trevision 123\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hello, world!\n'
+            b'+Hello, everybody!\n')
         self.assertEqual(response['Content-Disposition'],
                          'inline; filename=bug123_456.patch')
 
