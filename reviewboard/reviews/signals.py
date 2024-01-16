@@ -1,6 +1,22 @@
 """Signals related to review requests, reviews, and replies."""
 
+from __future__ import annotations
+
 from django.dispatch import Signal
+
+
+#: Emitted when a diffset has been uploaded to a review request.
+#:
+#: Version Added:
+#:     5.0.7
+#:
+#: Args:
+#:     diffset (reviewboard.diffviewer.models.DiffSet):
+#:         The diffset that has been uploaded.
+#:
+#:     review_request_draft (reviewboard.reviews.models.ReviewRequestDraft):
+#:         The review request draft that the diffset has been uploaded to.
+review_request_diffset_uploaded = Signal()
 
 
 #: Emitted when a review request is publishing.

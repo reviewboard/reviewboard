@@ -1,9 +1,15 @@
+"""Unit tests for the DraftDiffResource."""
+
+from __future__ import annotations
+
 import base64
 
 import kgb
 from django.core.files.uploadedfile import SimpleUploadedFile
 from djblets.features.testing import override_feature_check
-from djblets.webapi.errors import INVALID_ATTRIBUTE, INVALID_FORM_DATA
+from djblets.webapi.errors import (INVALID_ATTRIBUTE,
+                                   INVALID_FORM_DATA,
+                                   PERMISSION_DENIED)
 from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.diffviewer.commit_utils import (serialize_validation_info,
@@ -11,6 +17,7 @@ from reviewboard.diffviewer.commit_utils import (serialize_validation_info,
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.reviews.models import DefaultReviewer
+from reviewboard.reviews.signals import review_request_diffset_uploaded
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.errors import DIFF_TOO_BIG
 from reviewboard.webapi.resources import resources
@@ -24,7 +31,7 @@ from reviewboard.webapi.tests.urls import (get_draft_diff_item_url,
                                            get_draft_diff_list_url)
 
 
-class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
+class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                         metaclass=BasicTestsMetaclass):
     """Testing the DraftDiffResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
@@ -275,6 +282,69 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
         draft = review_request.get_draft()
         self.assertEqual(list(draft.target_groups.all()), [group])
 
+    @webapi_test_template
+    def test_post_emits_review_request_diffset_uploaded(self) -> None:
+        """Testing the POST <URL> API emits a review_request_diffset_uploaded
+        signal
+        """
+        def on_diffset_uploaded(diffset, review_request_draft, **kwargs):
+            pass
+
+        review_request_diffset_uploaded.connect(on_diffset_uploaded)
+        self.spy_on(on_diffset_uploaded)
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True)
+
+        diff = SimpleUploadedFile('diff',
+                                  self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
+
+        rsp = self.api_post(
+            get_draft_diff_list_url(review_request),
+            {
+                'path': diff,
+                'basedir': '/trunk',
+                'base_commit_id': '1234',
+            },
+            expected_mimetype=diff_item_mimetype)
+
+        draft = review_request.get_draft()
+        diffset = DiffSet.objects.get(pk=rsp['diff']['id'])
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertSpyCalledWith(
+            on_diffset_uploaded,
+            diffset=diffset,
+            review_request_draft=draft)
+
+        review_request_diffset_uploaded.disconnect(on_diffset_uploaded)
+
+    @webapi_test_template
+    def test_post_with_history_review_request_diffset_uploaded(self) -> None:
+        """Testing the POST <URL> API does not emit a
+        review_request_diffset_uploaded signal for a review request created
+        with history support
+        """
+        def on_diffset_uploaded(diffset, review_request_draft, **kwargs):
+            pass
+
+        review_request_diffset_uploaded.connect(on_diffset_uploaded)
+        self.spy_on(on_diffset_uploaded)
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True,
+                                                    create_with_history=True)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            rsp = self.api_post(get_draft_diff_list_url(review_request), {},
+                                expected_mimetype=diff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertSpyNotCalled(on_diffset_uploaded)
+
+        review_request_diffset_uploaded.disconnect(on_diffset_uploaded)
+
 
 class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
                         metaclass=BasicTestsMetaclass):
@@ -340,6 +410,35 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
         self.api_get(
             get_draft_diff_item_url(review_request, diffset.revision),
             expected_status=403)
+
+    @webapi_test_template
+    def test_get_patch_and_inaccessible(self) -> None:
+        """Testing the GET <URL> API with Accept: text/x-patch and
+        inaccessible diff
+        """
+        repository = self.create_repository(public=False)
+
+        review_request = self.create_review_request(repository=repository)
+        self.assertNotEqual(review_request.submitter, self.user)
+
+        diffset = self.create_diffset(review_request, draft=True)
+        self.create_filediff(diffset)
+
+        rsp = self.api_get(
+            get_draft_diff_item_url(review_request, diffset.revision),
+            HTTP_ACCEPT='text/x-patch',
+            expected_status=403)
+
+        self.assertEqual(
+            rsp,
+            {
+                'err': {
+                    'code': PERMISSION_DENIED.code,
+                    'msg': PERMISSION_DENIED.msg,
+                    'type': 'resource-permission-denied',
+                },
+                'stat': 'fail',
+            })
 
     #
     # HTTP PUT tests
@@ -1009,3 +1108,97 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
                 ],
             }
         })
+
+    @webapi_test_template
+    def test_put_finalize_emits_review_request_diffset_uploaded(self) -> None:
+        """Testing the PUT <URL> API with finalize_commit_series=1 emits a
+        review_request_diffset_uploaded signal
+        """
+        @self.spy_for(Repository.get_file_exists,
+                      owner=Repository)
+        def _get_file_exists(repository, path, revision, **kwargs):
+            self.assertEqual(path, 'README')
+            self.assertEqual(revision, '94bdd3e')
+
+            return True
+
+        def on_diffset_uploaded(diffset, review_request_draft, **kwargs):
+            pass
+
+        review_request_diffset_uploaded.connect(on_diffset_uploaded)
+        self.spy_on(on_diffset_uploaded)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_repository=True,
+                create_with_history=True,
+                submitter=self.user)
+            diffset = self.create_diffset(review_request=review_request,
+                                          draft=True)
+            commit = self.create_diffcommit(diffset=diffset)
+
+            filediff = FileDiff.objects.get()
+
+            cumulative_diff = SimpleUploadedFile('diff', filediff.diff,
+                                                 content_type='text/x-patch')
+
+            validation_info = update_validation_info(
+                {},
+                commit_id=commit.commit_id,
+                parent_id=commit.parent_id,
+                filediffs=[filediff])
+
+            rsp = self.api_put(
+                get_draft_diff_item_url(review_request, diffset.revision),
+                {
+                    'finalize_commit_series': True,
+                    'cumulative_diff': cumulative_diff,
+                    'validation_info': serialize_validation_info(
+                        validation_info),
+                },
+                expected_mimetype=diff_item_mimetype)
+
+            draft = review_request.get_draft()
+            diffset = DiffSet.objects.get(pk=rsp['diff']['id'])
+
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertSpyCalledWith(
+                on_diffset_uploaded,
+                diffset=diffset,
+                review_request_draft=draft)
+
+        review_request_diffset_uploaded.disconnect(on_diffset_uploaded)
+
+    @webapi_test_template
+    def test_put_not_finalize_review_request_diffset_uploaded(self) -> None:
+        """Testing the PUT <URL> API with finalize_commit_series=0 does not
+        emit a review_request_diffset_uploaded signal
+        """
+        def on_diffset_uploaded(diffset, review_request_draft, **kwargs):
+            pass
+
+        review_request_diffset_uploaded.connect(on_diffset_uploaded)
+        self.spy_on(on_diffset_uploaded)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            review_request = self.create_review_request(
+                create_repository=True,
+                create_with_history=True,
+                submitter=self.user)
+            diffset = self.create_diffset(review_request=review_request,
+                                          draft=True)
+
+            rsp = self.api_put(
+                get_draft_diff_item_url(review_request, diffset.revision),
+                {
+                    'finalize_commit_series': False,
+                    'extra_data': {
+                        'foo': 'bar',
+                    },
+                },
+                expected_mimetype=diff_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertSpyNotCalled(on_diffset_uploaded)
+
+        review_request_diffset_uploaded.disconnect(on_diffset_uploaded)

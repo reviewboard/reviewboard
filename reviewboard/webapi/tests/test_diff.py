@@ -1,3 +1,8 @@
+"""Unit tests for the DiffResource."""
+
+from __future__ import annotations
+
+import kgb
 from django.core.files.uploadedfile import SimpleUploadedFile
 from djblets.features.testing import override_feature_check
 from djblets.webapi.errors import (INVALID_ATTRIBUTE, INVALID_FORM_DATA,
@@ -7,6 +12,7 @@ from djblets.webapi.testing.decorators import webapi_test_template
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import DefaultReviewer
+from reviewboard.reviews.signals import review_request_diffset_uploaded
 from reviewboard.webapi.errors import DIFF_TOO_BIG
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -21,8 +27,9 @@ from reviewboard.webapi.tests.urls import (get_diff_item_url,
                                            get_diff_list_url)
 
 
-class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
-                        BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
+class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin,
+                        ReviewRequestChildListMixin, BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Testing the DiffResource list APIs."""
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'review-requests/<id>/diffs/'
@@ -347,6 +354,67 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         draft = review_request.get_draft()
         self.assertEqual(list(draft.target_groups.all()), [])
 
+    @webapi_test_template
+    def test_post_emits_review_request_diffset_uploaded(self) -> None:
+        """Testing the POST <URL> API emits a review_request_diffset_uploaded
+        signal
+        """
+        def on_diffset_uploaded(diffset, review_request_draft, **kwargs):
+            pass
+
+        review_request_diffset_uploaded.connect(on_diffset_uploaded)
+        self.spy_on(on_diffset_uploaded)
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True)
+
+        diff = SimpleUploadedFile('diff',
+                                  self.DEFAULT_GIT_README_DIFF,
+                                  content_type='text/x-patch')
+
+        rsp = self.api_post(
+            get_diff_list_url(review_request),
+            {
+                'path': diff
+            },
+            expected_mimetype=diff_item_mimetype)
+
+        draft = review_request.get_draft()
+        diffset = DiffSet.objects.get(pk=rsp['diff']['id'])
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertSpyCalledWith(
+            on_diffset_uploaded,
+            diffset=diffset,
+            review_request_draft=draft)
+
+        review_request_diffset_uploaded.disconnect(on_diffset_uploaded)
+
+    @webapi_test_template
+    def test_post_with_history_review_request_diffset_uploaded(self) -> None:
+        """Testing the POST <URL> API does not emit a
+        review_request_diffset_uploaded signal for a review request created
+        with history support
+        """
+        def on_diffset_uploaded(diffset, review_request_draft, **kwargs):
+            pass
+
+        review_request_diffset_uploaded.connect(on_diffset_uploaded)
+        self.spy_on(on_diffset_uploaded)
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True,
+                                                    create_with_history=True)
+
+        with override_feature_check(dvcs_feature.feature_id, enabled=True):
+            rsp = self.api_post(get_diff_list_url(review_request), {},
+                                expected_mimetype=diff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertSpyNotCalled(on_diffset_uploaded)
+
+        review_request_diffset_uploaded.disconnect(on_diffset_uploaded)
+
 
 class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
                         BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
@@ -556,10 +624,41 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         self.assertEqual(
             diff,
-            b'--- README\trevision 123\n+++ README\trevision 123\n@@ -1 +1 @@\n'
-            b'-Hello, world!\n+Hello, everybody!\n')
+            b'--- README\trevision 123\n'
+            b'+++ README\trevision 123\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hello, world!\n'
+            b'+Hello, everybody!\n')
         self.assertEqual(response['Content-Disposition'],
                          'inline; filename=diffset')
+
+    @webapi_test_template
+    def test_get_patch_and_inaccessible(self) -> None:
+        """Testing the GET <URL> API with Accept: text/x-patch and
+        inaccessible diff
+        """
+        repository = self.create_repository(public=False)
+
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        self.create_filediff(diffset)
+
+        rsp = self.api_get(
+            get_diff_item_url(review_request, diffset.revision),
+            HTTP_ACCEPT='text/x-patch',
+            expected_status=403)
+
+        self.assertEqual(
+            rsp,
+            {
+                'err': {
+                    'code': PERMISSION_DENIED.code,
+                    'msg': PERMISSION_DENIED.msg,
+                    'type': 'resource-permission-denied',
+                },
+                'stat': 'fail',
+            })
 
     @webapi_test_template
     def test_get_patch_with_bugs_closed(self):
@@ -580,8 +679,11 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         self.assertEqual(
             diff,
-            b'--- README\trevision 123\n+++ README\trevision 123\n@@ -1 +1 @@\n'
-            b'-Hello, world!\n+Hello, everybody!\n')
+            b'--- README\trevision 123\n'
+            b'+++ README\trevision 123\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hello, world!\n'
+            b'+Hello, everybody!\n')
         self.assertEqual(response['Content-Disposition'],
                          'inline; filename=bug123_456.patch')
 
@@ -608,8 +710,11 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         self.assertEqual(
             diff,
-            b'--- README\trevision 123\n+++ README\trevision 123\n@@ -1 +1 @@\n'
-            b'-Hello, world!\n+Hello, everybody!\n')
+            b'--- README\trevision 123\n'
+            b'+++ README\trevision 123\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hello, world!\n'
+            b'+Hello, everybody!\n')
         self.assertEqual(response['Content-Disposition'],
                          'inline; filename=bug123_456.patch')
 

@@ -1,3 +1,7 @@
+"""The resource for a DiffSet."""
+
+from __future__ import annotations
+
 import logging
 
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
@@ -21,6 +25,7 @@ from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.reviews.signals import review_request_diffset_uploaded
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
@@ -185,6 +190,9 @@ class DiffResource(WebAPIResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
+        if not self.has_access_permissions(request, diffset, *args, **kwargs):
+            return self.get_no_access_error(request)
+
         tool = review_request.repository.get_scmtool()
         data = tool.get_parser(b'').raw_diff(diffset)
 
@@ -291,12 +299,14 @@ class DiffResource(WebAPIResource):
         if not review_request.is_mutable_by(request.user):
             return self.get_no_access_error(request)
 
+        created_with_history = review_request.created_with_history
+
         if review_request.repository is None:
             return INVALID_ATTRIBUTE, {
                 'reason': 'This review request was created as attachments-'
                           'only, with no repository.',
             }
-        elif review_request.created_with_history:
+        elif created_with_history:
             assert dvcs_feature.is_enabled(request=request)
 
             if 'path' in request.FILES:
@@ -373,6 +383,19 @@ class DiffResource(WebAPIResource):
         # We only want to add default reviewers the first time.  Was bug 318.
         if review_request.can_add_default_reviewers():
             draft.add_default_reviewers()
+
+        if not created_with_history:
+            # If this is a non-commit series diffset, emit a signal that a
+            # diffset has been uploaded.
+            #
+            # For commit series diffsets, we'll emit this signal after the
+            # commit series has been finalized, because before this the
+            # diffset is only partially initialized and doesn't have any
+            # file diffs attached to it.
+            review_request_diffset_uploaded.send(
+                sender=self.__class__,
+                diffset=diffset,
+                review_request_draft=draft)
 
         draft.save()
 

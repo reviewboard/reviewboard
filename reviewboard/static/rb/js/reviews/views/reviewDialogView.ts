@@ -1747,6 +1747,14 @@ export class ReviewDialogView extends BaseView<
                     .then(() => $.funcQueue('reviewForm').next())
                     .catch(err => {
                         console.error('Failed to save review', err);
+
+                        this.model.set({
+                            public: false,
+                            publishAndArchive: false,
+                            publishToOwnerOnly: false,
+                        });
+
+                        alert(err.message);
                     });
             }
         });

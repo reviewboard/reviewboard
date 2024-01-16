@@ -1029,11 +1029,13 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         review_request.publish(User.objects.get(username='doc'))
 
         review = Review.objects.create(review_request=review_request,
-                                       user=site_user4)
+                                       user=site_user4,
+                                       body_top='Test review')
         review.publish()
 
         review = Review.objects.create(review_request=review_request,
-                                       user=non_site_user2)
+                                       user=non_site_user2,
+                                       body_top='Test review 2')
         review.publish()
 
         from_email = build_email_address_for_user(review_request.submitter)

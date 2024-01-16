@@ -786,6 +786,9 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         self.assertTrue(getattr(resource.delete, 'login_required', False))
         self.assertTrue(getattr(resource.delete, 'checks_local_site', False))
 
+        self.load_fixtures(self.basic_delete_fixtures)
+        self._login_user(admin=self.basic_delete_use_admin)
+
         setup_state = self.setup_delete_test_state(
             with_admin=self.basic_delete_use_admin)
 
@@ -1351,6 +1354,9 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
             getattr(resource.get, 'login_required', False))
         self.assertTrue(getattr(resource.get, 'checks_local_site', False))
 
+        self.load_fixtures(self.basic_get_fixtures)
+        self._login_user(admin=self.basic_get_use_admin)
+
         setup_state = self.setup_get_item_test_state(
             with_admin=self.basic_get_use_admin)
         item = setup_state['item']
@@ -1900,6 +1906,9 @@ class BasicGetListTestsMixin(BasicTestsMixin):
             getattr(resource.get, 'checks_login_required', False) or
             getattr(resource.get, 'login_required', False))
         self.assertTrue(getattr(resource.get, 'checks_local_site', False))
+
+        self.load_fixtures(self.basic_get_fixtures)
+        self._login_user(admin=self.basic_get_use_admin)
 
         setup_state = self.setup_get_list_test_state(
             with_admin=self.basic_get_use_admin)
@@ -2471,6 +2480,9 @@ class BasicPostTestsMixin(BasicTestsMixin):
 
         self.assertTrue(getattr(resource.create, 'login_required', False))
         self.assertTrue(getattr(resource.create, 'checks_local_site', False))
+
+        self.load_fixtures(self.basic_post_fixtures)
+        self._login_user(admin=self.basic_post_use_admin)
 
         setup_state = self.setup_post_test_state(
             with_admin=self.basic_post_use_admin)
@@ -3142,6 +3154,9 @@ class BasicPutTestsMixin(BasicTestsMixin):
 
         self.assertTrue(getattr(resource.update, 'login_required', False))
         self.assertTrue(getattr(resource.update, 'checks_local_site', False))
+
+        self.load_fixtures(self.basic_put_fixtures)
+        self._login_user(admin=self.basic_put_use_admin)
 
         setup_state = self.setup_put_test_state(
             with_admin=self.basic_put_use_admin)
