@@ -1,0 +1,144 @@
+.. default-intersphinx:: djblets4.x rb6.x
+
+
+================================
+Review Board 6.0.2 Release Notes
+================================
+
+**Release date**: January 16, 2024
+
+
+Installation/Upgrade
+====================
+
+Review Board 6.0.2 is compatible with Python 3.8 - 3.12.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install ReviewBoard==6.0.2
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Security Fixes
+==============
+
+* Fixed a security vulnerability allowing users with legitimate access to a
+  server to craft API requests for private diff content.
+
+  During an internal audit of our API, we discovered it was possible for a
+  user to construct an HTTP request to diff-related APIs and retrieve diff
+  content when the user lacked permission to access the review request (such
+  as when the review request is in a draft or on a private repository). This
+  was due to a logic error preventing common access checks from being skipped
+  for these APIs.
+
+  Only users with legitimate access to a server could access this diff
+  content. Non-draft diffs required use of internal database IDs in order to
+  be accessed.
+
+  We are not aware of any incidents regarding this issue, but we consider it a
+  **severe issue** for companies utilizing private repositories and recommend
+  that *all server administrators upgrade immediately.*
+
+  To address this, and prevent future issues, we've done the following:
+
+  1. We've fixed this issue across Review Board 3, 4, 5, and 6.
+
+  2. We've reached out to affected customers with `Premium Support contracts
+     <Review Board Support>`_ to send patches for their versions.
+
+  3. We've enhanced our test suite to check for these kinds of issues across
+     all APIs, automatically.
+
+  4. We've completed an audit of all the API resources we provide.
+
+  5. We're in the process of reworking how our APIs are implemented so that
+     access checks are handled by the common API layer and not per-API
+     implementation, making this kind of issue impossible.
+
+
+Packaging
+=========
+
+* Removed the specific pinned dependency on :pypi:`requests-oauthlib`.
+
+  This was previously needed to work around an issue with older releases of
+  the :pypi:`asana` library.
+
+
+Bug Fixes
+=========
+
+Authentication
+--------------
+
+* Clicking :guilabel:`Log In` on the Log Out page will no longer redirect back
+  to the Log Out page.
+
+  This previously would log the user back out again. Now the user is taken to
+  their dashboard.
+
+  Similarly, logging in from the Log In page will no longer take you back to
+  that page.
+
+
+Dashboard
+---------
+
+* Fixed batch review request operations in the Dashboard on servers using
+  :term:`Local Sites`.
+
+
+Review Requests
+---------------
+
+* Empty reviews will no longer be published.
+
+  Now any draft reviews that were created but never populated with comments or
+  any text will be silently discarded when publishing. This restores the
+  original behavior of reviews prior to Review Board 6.
+
+* Fixed posting diffs against some repository types on the New Review Request
+  page. (:bug:`5013`)
+
+* Fixed uploading diffs against some repository types in the Update Diff
+  dialog. (:bug:`5013`)
+
+* Fixed publishing drafts on servers using :term:`Local Sites`.
+
+
+Administration
+--------------
+
+* Fixed validation issues when switching search backends.
+
+* Fixed text alignment in the Server Cache administration dashboard widget.
+
+* Fixed wrapping of long repository names in the Repositories administration
+  dashboard widget.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin

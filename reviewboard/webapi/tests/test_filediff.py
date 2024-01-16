@@ -1,4 +1,9 @@
+"""Unit tests for reviewboard.webapi.resources.filediff."""
+
+from __future__ import annotations
+
 from djblets.features.testing import override_feature_check
+from djblets.webapi.errors import PERMISSION_DENIED
 from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.diffviewer.features import dvcs_feature
@@ -410,4 +415,100 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
                     'num_changes': 1,
                 },
                 'stat': 'ok',
+            })
+
+    @webapi_test_template
+    def test_get_with_diff_data_and_inaccessible(self) -> None:
+        """Testing the GET <URL> API with diff data result and inaccessible
+        FileDiff
+        """
+        repository = self.create_repository(tool_name='Git',
+                                            public=False)
+        review_request = self.create_review_request(
+            repository=repository,
+            publish=True)
+
+        self.assertNotEqual(self.user, review_request.owner)
+        self.assertFalse(review_request.is_accessible_by(self.user))
+
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(
+            diffset,
+            source_file='newfile.py',
+            source_revision=PRE_CREATION,
+            dest_file='newfile.py',
+            dest_detail='20e43bb7c2d9f3a31768404ac71121804d806f7c',
+            diff=(
+                b"diff --git a/newfile.py b/newfile.py\n"
+                b"new file mode 100644\n"
+                b"index 0000000000000000000000000000000000000000.."
+                b"8eaa5c1eacb55c43f5e00ed9dcd0c8da901f0c85\n"
+                b"--- /dev/null\n"
+                b"+++ b/newfile.py\n"
+                b"@@ -0,0 +1 @@\n"
+                b"+print('hello, world!')\n"
+            ))
+
+        rsp = self.api_get(
+            get_filediff_item_url(filediff, review_request),
+            HTTP_ACCEPT='application/vnd.reviewboard.org.diff.data+json',
+            expected_status=403)
+
+        self.assertEqual(
+            rsp,
+            {
+                'err': {
+                    'code': PERMISSION_DENIED.code,
+                    'msg': PERMISSION_DENIED.msg,
+                    'type': 'resource-permission-denied',
+                },
+                'stat': 'fail',
+            })
+
+    @webapi_test_template
+    def test_get_with_patch_and_inaccessible(self) -> None:
+        """Testing the GET <URL> API with patch result and inaccessible
+        FileDiff
+        """
+        repository = self.create_repository(tool_name='Git',
+                                            public=False)
+        review_request = self.create_review_request(
+            repository=repository,
+            publish=True)
+
+        self.assertNotEqual(self.user, review_request.owner)
+        self.assertFalse(review_request.is_accessible_by(self.user))
+
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(
+            diffset,
+            source_file='newfile.py',
+            source_revision=PRE_CREATION,
+            dest_file='newfile.py',
+            dest_detail='20e43bb7c2d9f3a31768404ac71121804d806f7c',
+            diff=(
+                b"diff --git a/newfile.py b/newfile.py\n"
+                b"new file mode 100644\n"
+                b"index 0000000000000000000000000000000000000000.."
+                b"8eaa5c1eacb55c43f5e00ed9dcd0c8da901f0c85\n"
+                b"--- /dev/null\n"
+                b"+++ b/newfile.py\n"
+                b"@@ -0,0 +1 @@\n"
+                b"+print('hello, world!')\n"
+            ))
+
+        rsp = self.api_get(
+            get_filediff_item_url(filediff, review_request),
+            HTTP_ACCEPT='text/x-patch',
+            expected_status=403)
+
+        self.assertEqual(
+            rsp,
+            {
+                'err': {
+                    'code': PERMISSION_DENIED.code,
+                    'msg': PERMISSION_DENIED.msg,
+                    'type': 'resource-permission-denied',
+                },
+                'stat': 'fail',
             })
