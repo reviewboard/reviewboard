@@ -1,0 +1,93 @@
+.. default-intersphinx:: djblets4.x rb6.x
+
+
+=================================
+Review Board 3.0.26 Release Notes
+=================================
+
+**Release date**: January 16, 2024
+
+
+Installation/Upgrade
+====================
+
+Review Board 3.0.26 is compatible with Python 2.7.
+
+Follow our `installation guide`_ to prepare your system for Review Board or to
+upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install ReviewBoard==3.0.26
+
+If you're using an older Egg-based install, run:
+
+.. code-block:: console
+
+    $ easy_install ReviewBoard==3.0.26
+
+To learn more, see:
+
+* Documentation_.
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Documentation: https://www.reviewboard.org/docs/manual/3.0/
+.. _Review Board Support: https://www.reviewboard.org/support/
+.. _installation guide: https://www.reviewboard.org/docs/manual/3.0/admin/
+
+
+Security Fixes
+==============
+
+* Fixed a security vulnerability allowing users with legitimate access to a
+  server to craft API requests for private diff content.
+
+  During an internal audit of our API, we discovered it was possible for a
+  user to construct an HTTP request to diff-related APIs and retrieve diff
+  content when the user lacked permission to access the review request (such
+  as when the review request is in a draft or on a private repository). This
+  was due to a logic error preventing common access checks from being skipped
+  for these APIs.
+
+  Only users with legitimate access to a server could access this diff
+  content. Non-draft diffs required use of internal database IDs in order to
+  be accessed.
+
+  We are not aware of any incidents regarding this issue, but we consider it a
+  **severe issue** for companies utilizing private repositories and recommend
+  that *all server administrators upgrade immediately.*
+
+  To address this, and prevent future issues, we've done the following:
+
+  1. We've fixed this issue across Review Board 3, 4, 5, and 6.
+
+  2. We've reached out to affected customers with `Premium Support contracts
+     <Review Board Support>`_ to send patches for their versions.
+
+  3. We've enhanced our test suite to check for these kinds of issues across
+     all APIs, automatically.
+
+  4. We've completed an audit of all the API resources we provide.
+
+  5. We're in the process of reworking how our APIs are implemented so that
+     access checks are handled by the common API layer and not per-API
+     implementation, making this kind of issue impossible.
+
+This fix is present in Review Board :doc:`6.0.2 <6.0.2>`,
+:doc:`5.0.7 <5.0.7>`, :doc:`4.0.13 <4.0.13>`, and :doc:`3.0.26 <3.0.26>`.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin
