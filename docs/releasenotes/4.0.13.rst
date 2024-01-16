@@ -1,4 +1,4 @@
-.. default-intersphinx:: djblets4.x rb6.x
+.. default-intersphinx:: djblets2.x rb4.0
 
 
 =================================
@@ -13,8 +13,8 @@ Installation/Upgrade
 
 Review Board 4.0.13 is compatible with Python 2.7 and 3.6-3.10.
 
-Follow our `installation guide`_ to prepare your system for Review Board or to
-upgrade your existing install.
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
 
 To install this release, run:
 
@@ -30,7 +30,7 @@ If you're using an older Egg-based install, run:
 
 To learn more, see:
 
-* Documentation_.
+* :ref:`Documentation <reviewboard-docs>`
 * `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
 * :pypi:`Review Board on PyPI <reviewboard>`
 * `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
@@ -39,9 +39,7 @@ For assistance with your server, `talk to us about support <Review Board
 Support_>`_.
 
 
-.. _Documentation: https://www.reviewboard.org/docs/manual/3.0/
 .. _Review Board Support: https://www.reviewboard.org/support/
-.. _installation guide: https://www.reviewboard.org/docs/manual/3.0/admin/
 
 
 Security Fixes
