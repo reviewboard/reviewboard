@@ -842,19 +842,19 @@ class FileAttachmentReviewUI(ReviewUI):
             could not be found.
         """
         if attachment.mimetype:
-            try:
-                mimetype = mimeparse.parse_mime_type(attachment.mimetype)
-            except Exception:
-                logger.error('Unable to parse MIME type "%s" for %s',
-                             attachment.mimetype, attachment)
-                return None
-
             # Override the mimetype if mimeparse is known to misinterpret this
             # type of file as 'octet-stream'
             extension = os.path.splitext(attachment.filename)[1]
 
             if extension in MIMETYPE_EXTENSIONS:
                 mimetype = MIMETYPE_EXTENSIONS[extension]
+            else:
+                try:
+                    mimetype = mimeparse.parse_mime_type(attachment.mimetype)
+                except Exception:
+                    logger.error('Unable to parse MIME type "%s" for %s',
+                                 attachment.mimetype, attachment)
+                    return None
 
             score, handler = cls.get_best_handler(mimetype)
 
