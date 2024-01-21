@@ -13,6 +13,7 @@ from difflib import SequenceMatcher
 from functools import cmp_to_key
 from typing import Any, AnyStr, Iterator, Optional, TYPE_CHECKING
 
+from django.core.files.base import ContentFile
 from django.utils.encoding import force_str
 from django.utils.translation import gettext as _
 from djblets.log import log_timed
@@ -22,6 +23,7 @@ from djblets.util.contextmanagers import controlled_subprocess
 from housekeeping.functions import deprecate_non_keyword_only_args
 from typing_extensions import NotRequired, TypedDict
 
+from reviewboard.attachments.mimetypes import guess_mimetype
 from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
 from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
@@ -557,39 +559,39 @@ def get_original_file(filediff, request=None):
     # If the FileDiff has a parent diff, it must be the case that it has no
     # ancestor FileDiffs. We can fall back to the no history case here.
     if filediff.parent_diff:
-        return get_original_file_from_repo(filediff=filediff,
-                                           request=request)
-
-    # Otherwise, there may be one or more ancestors that we have to apply.
-    ancestors = filediff.get_ancestors(minimal=True)
-
-    if ancestors:
-        oldest_ancestor = ancestors[0]
-
-        # If the file was created outside this history, fetch it from the
-        # repository and apply the parent diff if it exists.
-        if not oldest_ancestor.is_new:
-            data = get_original_file_from_repo(filediff=oldest_ancestor,
-                                               request=request)
-
-        if not oldest_ancestor.is_diff_empty:
-            data = patch(diff=oldest_ancestor.diff,
-                         orig_file=data,
-                         filename=oldest_ancestor.source_file,
-                         request=request)
-
-        for ancestor in ancestors[1:]:
-            # TODO: Cache these results so that if this ``filediff`` is an
-            # ancestor of another FileDiff, computing that FileDiff's original
-            # file will be cheaper. This will also allow an ancestor filediff's
-            # original file to be computed cheaper.
-            data = patch(diff=ancestor.diff,
-                         orig_file=data,
-                         filename=ancestor.source_file,
-                         request=request)
-    elif not filediff.is_new:
         data = get_original_file_from_repo(filediff=filediff,
                                            request=request)
+    else:
+        # Otherwise, there may be one or more ancestors that we have to apply.
+        ancestors = filediff.get_ancestors(minimal=True)
+
+        if ancestors:
+            oldest_ancestor = ancestors[0]
+
+            # If the file was created outside this history, fetch it from the
+            # repository and apply the parent diff if it exists.
+            if not oldest_ancestor.is_new:
+                data = get_original_file_from_repo(filediff=oldest_ancestor,
+                                                   request=request)
+
+            if not oldest_ancestor.is_diff_empty:
+                data = patch(diff=oldest_ancestor.diff,
+                             orig_file=data,
+                             filename=oldest_ancestor.source_file,
+                             request=request)
+
+            for ancestor in ancestors[1:]:
+                # TODO: Cache these results so that if this ``filediff`` is an
+                # ancestor of another FileDiff, computing that FileDiff's
+                # original file will be cheaper. This will also allow an
+                # ancestor filediff's original file to be computed cheaper.
+                data = patch(diff=ancestor.diff,
+                             orig_file=data,
+                             filename=ancestor.source_file,
+                             request=request)
+        elif not filediff.is_new:
+            data = get_original_file_from_repo(filediff=filediff,
+                                               request=request)
 
     return data
 
@@ -623,6 +625,72 @@ def get_patched_file(source_data, filediff, request=None):
                  orig_file=source_data,
                  filename=filediff.dest_file,
                  request=request)
+
+
+def get_original_and_patched_files(
+    filediff: FileDiff,
+    request: Optional[HttpRequest] = None,
+    update_mimetypes: bool = True,
+) -> Tuple[Optional[bytes], Optional[bytes]]:
+    """Return the original and patched version of a file.
+
+    Args:
+        filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+            The filediff to fetch versions for.
+
+        request (django.http.HttpRequest, optional):
+            The request object.
+
+        update_mimetypes (bool, optional):
+            Whether to store the detected mimetypes of the old and new
+            versions in the filediff extra_data.
+
+    Returns:
+        tuple:
+        A 2-tuple with the following items:
+
+        Tuple:
+            0 (bytes):
+                The original version of the file.
+
+            1 (bytes):
+                The patched version of the file.
+    """
+    old = get_original_file(filediff=filediff,
+                            request=request)
+    new = get_patched_file(source_data=old,
+                           filediff=filediff,
+                           request=request)
+
+    if update_mimetypes:
+        needs_update = False
+
+        if old and 'source_mimetype' not in filediff.extra_data:
+            logger.debug('Detecting MIME type for old version of FileDiff %d',
+                         filediff.pk,
+                         extra={'request': request})
+
+            with ContentFile(old) as f:
+                mimetype = guess_mimetype(f)
+
+            filediff.extra_data['source_mimetype'] = mimetype
+            needs_update = True
+
+        if new and 'dest_mimetype' not in filediff.extra_data:
+            logger.debug('Detecting MIME type for new version of FileDiff %d',
+                         filediff.pk,
+                         extra={'request': request})
+
+            with ContentFile(new) as f:
+                mimetype = guess_mimetype(f)
+
+            filediff.extra_data['dest_mimetype'] = mimetype
+            needs_update = True
+
+        if needs_update:
+            filediff.save(update_fields=['extra_data'])
+
+    return (old, new)
 
 
 def get_revision_str(revision):
