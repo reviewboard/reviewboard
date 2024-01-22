@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import json
 import logging
 import os
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 from uuid import uuid4
 
 import mimeparse
@@ -19,13 +22,28 @@ from reviewboard.reviews.models import FileAttachmentComment, Review
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
+    from django.http import HttpRequest
+    from django.utils.safestring import SafeText
+    from djblets.util.typing import JSONDict
+
+    from reviewboard.reviews.models import (
+        BaseComment,
+        ReviewRequest,
+        ReviewRequestDraft,
+    )
+    from reviewboard.reviews.models.base_review_request_details import \
+        BaseReviewRequestDetails
+
+
 _file_attachment_review_uis = []
 
 
 logger = logging.getLogger(__name__)
 
 
-class ReviewUI(object):
+class ReviewUI:
     """Base class for a Review UI.
 
     Review UIs are interfaces for reviewing content of some type. They take a
@@ -59,7 +77,7 @@ class ReviewUI(object):
     """
 
     #: The display name for the Review UI.
-    name = None
+    name: Optional[str] = None
 
     #: The template that renders the Review UI.
     #:
@@ -83,24 +101,28 @@ class ReviewUI(object):
     supports_diffing = False
 
     #: A list of CSS bundle names to include on the Review UI's page.
-    css_bundle_names = []
+    css_bundle_names: List[str] = []
 
     #: A list of JavaScript bundle names to include on the Review UI's page.
-    js_bundle_names = []
+    js_bundle_names: List[str] = []
 
     #: A list of specific JavaScript URLs to include on the page.
     #:
     #: It is recommended that :py:attr:`js_bundle_names` be used instead
     #: where possible.
-    js_files = []
+    js_files: List[str] = []
 
     #: The name of the JavaScript model class to use for the Review UI.
-    js_model_class = None
+    js_model_class: Optional[str] = None
 
     #: The name of the JavaScript view class to use for the Review UI.
-    js_view_class = None
+    js_view_class: Optional[str] = None
 
-    def __init__(self, review_request, obj):
+    def __init__(
+        self,
+        review_request: ReviewRequest,
+        obj: object,
+    ) -> None:
         """Initialize the Review UI.
 
         Args:
@@ -116,7 +138,10 @@ class ReviewUI(object):
         self.diff_against_obj = None
         self.request = None
 
-    def set_diff_against(self, obj):
+    def set_diff_against(
+        self,
+        obj: object,
+    ) -> None:
         """Set the object to generate a diff against.
 
         This can only be called on Review UIs that support diffing,
@@ -130,7 +155,12 @@ class ReviewUI(object):
 
         self.diff_against_obj = obj
 
-    def is_enabled_for(self, user=None, review_request=None, **kwargs):
+    def is_enabled_for(
+        self,
+        user: Optional[User] = None,
+        review_request: Optional[ReviewRequest] = None,
+        **kwargs,
+    ) -> bool:
         """Return whether the Review UI is enabled under the given criteria.
 
         This can enable or disable a Review UI's functionality depending on
@@ -161,7 +191,10 @@ class ReviewUI(object):
         """
         return True
 
-    def render_to_response(self, request):
+    def render_to_response(
+        self,
+        request: HttpRequest,
+    ) -> HttpResponse:
         """Render the Review UI to a response.
 
         This is used to render a page dedicated to the Review UI, complete
@@ -179,7 +212,11 @@ class ReviewUI(object):
             request=request,
             inline=request.GET.get('inline', '0') in ('1', 'true')))
 
-    def render_to_string(self, request, inline=True):
+    def render_to_string(
+        self,
+        request: HttpRequest,
+        inline: bool = True,
+    ) -> SafeText:
         """Render the Review UI to an HTML string.
 
         This renders the Review UI to a string for use in embedding into
@@ -211,7 +248,12 @@ class ReviewUI(object):
                              extra={'request': request})
             raise
 
-    def build_render_context(self, request, inline=False, **kwargs):
+    def build_render_context(
+        self,
+        request: HttpRequest,
+        inline: bool = False,
+        **kwargs,
+    ) -> Dict[str, Any]:
         """Build context for rendering the page.
 
         This computes the standard template context to use when rendering the
@@ -283,7 +325,7 @@ class ReviewUI(object):
 
         return context
 
-    def get_page_cover_image_url(self):
+    def get_page_cover_image_url(self) -> Optional[str]:
         """Return the URL to an image used to depict this on other sites.
 
         The returned image URL will be used for services like Facebook, Slack,
@@ -293,12 +335,12 @@ class ReviewUI(object):
         By default, no image URL is returned.
 
         Returns:
-            unicode:
+            str:
             The absolute URL to an image used to depict the reviewable object.
         """
         return None
 
-    def get_comments(self):
+    def get_comments(self) -> List[BaseComment]:
         """Return all existing comments on the reviewable object.
 
         Subclasses must override this.
@@ -309,7 +351,10 @@ class ReviewUI(object):
         """
         raise NotImplementedError
 
-    def get_caption(self, draft=None):
+    def get_caption(
+        self,
+        draft: Optional[ReviewRequestDraft] = None,
+    ) -> str:
         """Return the caption to show for the reviewable object.
 
         This defaults to requiring ``caption`` and ``draft_caption`` attributes
@@ -322,12 +367,15 @@ class ReviewUI(object):
                 The active review request draft for the user, if any.
 
         Returns:
-            unicode:
+            str:
             The caption for the reviewable object.
         """
         raise NotImplementedError
 
-    def get_comment_thumbnail(self, comment):
+    def get_comment_thumbnail(
+        self,
+        comment: BaseComment,
+    ) -> Optional[SafeText]:
         """Return an HTML thumbnail for a comment.
 
         If comment thumbnails are possible for the reviewable object, this
@@ -345,7 +393,10 @@ class ReviewUI(object):
         """
         return None
 
-    def get_comment_link_url(self, comment):
+    def get_comment_link_url(
+        self,
+        comment: BaseComment,
+    ) -> str:
         """Return a URL for linking to a comment.
 
         Subclasses must override this.
@@ -355,12 +406,15 @@ class ReviewUI(object):
                 The comment to return a link for.
 
         Returns:
-            unicode:
+            str:
             The URL to link to the comment.
         """
         raise NotImplementedError
 
-    def get_comment_link_text(self, comment):
+    def get_comment_link_text(
+        self,
+        comment: BaseComment,
+    ) -> str:
         """Return the text to link to a comment.
 
         This must be implemented by subclasses.
@@ -370,12 +424,15 @@ class ReviewUI(object):
                 The comment to return text for.
 
         Returns:
-            unicode:
+            str:
             The text used to link to the comment.
         """
         raise NotImplementedError
 
-    def get_extra_context(self, request):
+    def get_extra_context(
+        self,
+        request: HttpRequest,
+    ) -> Dict[str, Any]:
         """Return extra context to use when rendering the Review UI.
 
         Args:
@@ -388,7 +445,7 @@ class ReviewUI(object):
         """
         return {}
 
-    def get_js_model_data(self):
+    def get_js_model_data(self) -> JSONDict:
         """Return data to pass to the JavaScript Model during instantiation.
 
         This data will be passed as attributes to the reviewable model
@@ -400,7 +457,7 @@ class ReviewUI(object):
         """
         return {}
 
-    def get_js_view_data(self):
+    def get_js_view_data(self) -> JSONDict:
         """Return data to pass to the JavaScript View during instantiation.
 
         This data will be passed as options to the reviewable view
@@ -412,14 +469,14 @@ class ReviewUI(object):
         """
         return {}
 
-    def get_comments_json(self):
+    def get_comments_json(self) -> str:
         """Return a JSON-serialized representation of comments for a template.
 
         The result of this can be used directly in a template to provide
         comments to JavaScript functions.
 
         Returns:
-            unicode:
+            str:
             Serialized JSON content representing the comments on the reviewable
             object.
         """
@@ -434,7 +491,10 @@ class ReviewUI(object):
                              extra={'request': self.request})
             raise
 
-    def serialize_comments(self, comments):
+    def serialize_comments(
+        self,
+        comments: List[BaseComment],
+    ) -> List[JSONDict]:
         """Serialize the comments for the Review UI target.
 
         By default, this will return a list of serialized comments,
@@ -452,6 +512,7 @@ class ReviewUI(object):
             list of dict:
             The list of serialized comment data.
         """
+        assert self.request is not None
         user = self.request.user
 
         result = []
@@ -476,7 +537,10 @@ class ReviewUI(object):
 
         return result
 
-    def serialize_comment(self, comment):
+    def serialize_comment(
+        self,
+        comment: BaseComment,
+    ) -> JSONDict:
         """Serialize a comment.
 
         This will provide information on the comment that may be useful
@@ -494,6 +558,8 @@ class ReviewUI(object):
             The serialized comment data.
         """
         review = comment.get_review()
+
+        assert self.request is not None
         user = self.request.user
 
         return {
@@ -538,8 +604,13 @@ class FileAttachmentReviewUI(ReviewUI):
     js_model_class = 'RB.DummyReviewable'
     js_view_class = 'RB.DummyReviewableView'
 
-    def is_enabled_for(self, user=None, review_request=None,
-                       file_attachment=None, **kwargs):
+    def is_enabled_for(
+        self,
+        user: Optional[User] = None,
+        review_request: Optional[ReviewRequest] = None,
+        file_attachment: Optional[FileAttachment] = None,
+        **kwargs,
+    ) -> bool:
         """Return whether the Review UI is enabled under the given criteria.
 
         This can enable or disable a Review UI's functionality, both on the
@@ -584,10 +655,12 @@ class FileAttachmentReviewUI(ReviewUI):
             list of reviewboard.reviews.models.file_attachment_comment.FileAttachmentComment:
             The list of comments on the file attachment or the diff.
         """
+        assert isinstance(self.obj, FileAttachment)
         comments = FileAttachmentComment.objects.filter(
             file_attachment_id=self.obj.pk)
 
         if self.diff_against_obj:
+            assert isinstance(self.diff_against_obj, FileAttachment)
             comments = comments.filter(
                 diff_against_file_attachment_id=self.diff_against_obj.pk)
         else:
@@ -596,7 +669,10 @@ class FileAttachmentReviewUI(ReviewUI):
 
         return comments
 
-    def get_caption(self, draft=None):
+    def get_caption(
+        self,
+        draft: Optional[ReviewRequestDraft] = None,
+    ) -> str:
         """Return the caption to show for the file attachment.
 
         Args:
@@ -605,15 +681,20 @@ class FileAttachmentReviewUI(ReviewUI):
                 The active review request draft for the user, if any.
 
         Returns:
-            unicode:
+            str:
             The caption for the file attachment.
         """
+        assert isinstance(self.obj, FileAttachment)
+
         if draft and self.obj.draft_caption:
             return self.obj.draft_caption
 
         return self.obj.caption
 
-    def get_comment_link_url(self, comment):
+    def get_comment_link_url(
+        self,
+        comment: FileAttachmentComment,
+    ) -> str:
         """Return a URL for linking to a comment.
 
         This will normally just link to the Review UI itself, but subclasses
@@ -625,13 +706,15 @@ class FileAttachmentReviewUI(ReviewUI):
                 The comment to return a link for.
 
         Returns:
-            unicode:
+            str:
             The URL to link to the comment.
         """
         local_site_name = None
 
         if self.review_request.local_site:
             local_site_name = self.review_request.local_site.name
+
+        assert isinstance(self.obj, FileAttachment)
 
         return local_site_reverse(
             'file-attachment',
@@ -641,7 +724,10 @@ class FileAttachmentReviewUI(ReviewUI):
                 'file_attachment_id': self.obj.pk,
             })
 
-    def get_comment_link_text(self, comment):
+    def get_comment_link_text(
+        self,
+        comment: FileAttachmentComment,
+    ) -> Optional[str]:
         """Return the text to link to a comment.
 
         This will normally just return the file attachment's display name, but
@@ -654,12 +740,16 @@ class FileAttachmentReviewUI(ReviewUI):
                 The comment to return text for.
 
         Returns:
-            unicode:
+            str:
             The text used to link to the comment.
         """
+        assert isinstance(self.obj, FileAttachment)
         return self.obj.display_name
 
-    def serialize_comment(self, comment):
+    def serialize_comment(
+        self,
+        comment: FileAttachmentComment,
+    ) -> JSONDict:
         """Serialize a comment.
 
         This will provide information on the comment that may be useful
@@ -675,9 +765,15 @@ class FileAttachmentReviewUI(ReviewUI):
         """
         data = super(FileAttachmentReviewUI, self).serialize_comment(comment)
         data.update(comment.extra_data)
+
         return data
 
-    def build_render_context(self, request, inline, **kwargs):
+    def build_render_context(
+        self,
+        request: HttpRequest,
+        inline: bool = False,
+        **kwargs,
+    ) -> Dict[str, Any]:
         """Return extra context to use when rendering the Review UI.
 
         Args:
@@ -718,7 +814,7 @@ class FileAttachmentReviewUI(ReviewUI):
 
         return context
 
-    def get_js_model_data(self):
+    def get_js_model_data(self) -> JSONDict:
         """Return model data for the JavaScript AbstractReviewable subclass.
 
         This will return information on the file attachment, its history,
@@ -731,6 +827,7 @@ class FileAttachmentReviewUI(ReviewUI):
             The attributes to pass to the model.
         """
         obj = self.obj
+        assert isinstance(obj, FileAttachment)
 
         data = {
             'fileAttachmentID': obj.pk,
@@ -748,16 +845,22 @@ class FileAttachmentReviewUI(ReviewUI):
             data['numRevisions'] = attachments.count()
 
         if self.diff_against_obj:
-            data['diffCaption'] = self.diff_against_obj.display_name
-            data['diffAgainstFileAttachmentID'] = self.diff_against_obj.pk
-            data['diffRevision'] = self.diff_against_obj.attachment_revision
+            diff_against_obj = self.diff_against_obj
+            assert isinstance(diff_against_obj, FileAttachment)
 
-            if type(self) != type(self.diff_against_obj.review_ui):
+            data['diffCaption'] = diff_against_obj.display_name
+            data['diffAgainstFileAttachmentID'] = diff_against_obj.pk
+            data['diffRevision'] = diff_against_obj.attachment_revision
+
+            if type(self) is not type(diff_against_obj.review_ui):
                 data['diffTypeMismatch'] = True
 
         return data
 
-    def _get_adjacent_file_attachments(self, review_request_details):
+    def _get_adjacent_file_attachments(
+        self,
+        review_request_details: BaseReviewRequestDetails,
+    ) -> Tuple[Optional[FileAttachment], Optional[FileAttachment]]:
         """Return the next and previous file attachments.
 
         The next and previous file attachments are the file attachments that
@@ -777,6 +880,8 @@ class FileAttachmentReviewUI(ReviewUI):
             :py:class:`~reviewboard.attachments.models.FileAttachment`
             instances.
         """
+        assert isinstance(self.obj, FileAttachment)
+
         file_attachments = iter(get_latest_file_attachments(
             review_request_details.get_file_attachments()))
 
@@ -797,7 +902,10 @@ class FileAttachmentReviewUI(ReviewUI):
         return prev_obj, next_obj
 
     @classmethod
-    def get_best_handler(cls, mimetype):
+    def get_best_handler(
+        cls,
+        mimetype: Tuple[str, str, str],
+    ) -> Tuple[float, Optional[type[ReviewUI]]]:
         """Return the Review UI and score that that best fit the mimetype.
 
         Args:
@@ -829,7 +937,10 @@ class FileAttachmentReviewUI(ReviewUI):
         return best_score, best_fit
 
     @classmethod
-    def for_type(cls, attachment):
+    def for_type(
+        cls,
+        attachment: FileAttachment,
+    ) -> Optional[ReviewUI]:
         """Return the Review UI that is the best fit for a file attachment.
 
         Args:
@@ -844,6 +955,7 @@ class FileAttachmentReviewUI(ReviewUI):
         if attachment.mimetype:
             # Override the mimetype if mimeparse is known to misinterpret this
             # type of file as 'octet-stream'
+            assert attachment.filename is not None
             extension = os.path.splitext(attachment.filename)[1]
 
             if extension in MIMETYPE_EXTENSIONS:
@@ -872,7 +984,7 @@ class FileAttachmentReviewUI(ReviewUI):
         return None
 
 
-def register_ui(review_ui):
+def register_ui(review_ui: type[ReviewUI]) -> None:
     """Register a Review UI class.
 
     This will register a Review UI. Review Board will use it to display a UI
@@ -894,7 +1006,7 @@ def register_ui(review_ui):
     _file_attachment_review_uis.append(review_ui)
 
 
-def unregister_ui(review_ui):
+def unregister_ui(review_ui: type[ReviewUI]) -> None:
     """Unregister a Review UI class.
 
     This will unregister a previously registered Review UI.

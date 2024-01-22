@@ -1,4 +1,17 @@
+"""A Review UI for text-based files."""
+
+from __future__ import annotations
+
 import logging
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+    cast)
 
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
@@ -15,6 +28,14 @@ from reviewboard.diffviewer.chunk_generator import (NoWrapperHtmlFormatter,
 from reviewboard.diffviewer.diffutils import get_chunks_in_range
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
+
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+    from djblets.util.typing import JSONDict
+    from pygments.lexers import Lexer
+
+    from reviewboard.reviews.models import FileAttachmentComment
 
 
 logger = logging.getLogger(__name__)
@@ -38,12 +59,22 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
     source_chunk_generator_cls = RawDiffChunkGenerator
     rendered_chunk_generator_cls = RawDiffChunkGenerator
 
-    extra_css_classes = []
+    #: Extra classes to apply to the Review UI element.
+    extra_css_classes: List[str] = []
 
     js_model_class = 'RB.TextBasedReviewable'
     js_view_class = 'RB.TextBasedReviewableView'
 
-    def get_js_model_data(self):
+    def get_js_model_data(self) -> JSONDict:
+        """Return data to pass to the JavaScript Model during instantiation.
+
+        This data will be passed as attributes to the reviewable model
+        when constructed.
+
+        Returns:
+            dict:
+            The attributes to pass to the model.
+        """
         data = super(TextBasedReviewUI, self).get_js_model_data()
         data['hasRenderedView'] = self.can_render_text
 
@@ -54,11 +85,26 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
 
         return data
 
-    def get_extra_context(self, request):
+    def get_extra_context(
+        self,
+        request: HttpRequest,
+    ) -> Dict[str, Any]:
+        """Return extra context to use when rendering the Review UI.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            dict:
+            The context to provide to the template.
+        """
+        assert isinstance(self.obj, FileAttachment)
         context = {}
         diff_type_mismatch = False
 
         if self.diff_against_obj:
+            assert isinstance(self.diff_against_obj, FileAttachment)
             diff_against_review_ui = self.diff_against_obj.review_ui
 
             context.update({
@@ -107,40 +153,65 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
 
         return context
 
-    def get_text(self):
+    def get_text(self) -> str:
         """Return the file contents as a string.
 
         This will fetch the file and then cache it for future renders.
-        """
-        return cache_memoize('text-attachment-%d-string' % self.obj.pk,
-                             self._get_text_uncached)
 
-    def get_text_lines(self):
+        Returns:
+            str:
+            The file contents as a text string.
+        """
+        assert isinstance(self.obj, FileAttachment)
+
+        return cast(
+            str,
+            cache_memoize('text-attachment-%d-string' % self.obj.pk,
+                          self._get_text_uncached))
+
+    def get_text_lines(self) -> List[str]:
         """Return the file contents as syntax-highlighted lines.
 
         This will fetch the file, render it however appropriate for the review
         UI, and split it into reviewable lines. It will then cache it for
         future renders.
         """
-        return cache_memoize('text-attachment-%d-lines' % self.obj.pk,
-                             lambda: list(self.generate_highlighted_text()))
+        assert isinstance(self.obj, FileAttachment)
 
-    def get_rendered_lines(self):
-        """Returns the file contents as a render, based on the raw text.
+        return cast(
+            List[str],
+            cache_memoize('text-attachment-%d-lines' % self.obj.pk,
+                          lambda: list(self.generate_highlighted_text())))
+
+    def get_rendered_lines(self) -> List[str]:
+        """Return the file contents as a render, based on the raw text.
 
         If a subclass sets ``can_render_text = True`` and implements
         ``generate_render``, then this will render the contents in some
         specialized form, cache it as a list of lines, and return it.
+
+        Returns:
+            list of str:
+            The rendered lines.
         """
+        assert isinstance(self.obj, FileAttachment)
+
         if self.can_render_text:
-            return cache_memoize(
-                'text-attachment-%d-rendered' % self.obj.pk,
-                lambda: list(self.generate_render()))
+            return cast(
+                List[str],
+                cache_memoize('text-attachment-%d-rendered' % self.obj.pk,
+                              lambda: list(self.generate_render())))
         else:
             return []
 
-    def _get_text_uncached(self):
-        """Return the text from the file."""
+    def _get_text_uncached(self) -> str:
+        """Return the text from the file.
+
+        Returns:
+            str:
+            The text of the file.
+        """
+        assert isinstance(self.obj, FileAttachment)
         self.obj.file.open()
 
         with self.obj.file as f:
@@ -148,13 +219,20 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
 
         return data
 
-    def generate_highlighted_text(self):
-        """Generates syntax-highlighted text for the file.
+    def generate_highlighted_text(self) -> List[str]:
+        """Generate syntax-highlighted text for the file.
 
         This will render the text file to HTML, applying any syntax
         highlighting that's appropriate. The contents will be split into
         reviewable lines and will be cached for future renders.
+
+        Returns:
+            list of str:
+            The syntax-highlighted text, split into lines.
         """
+        assert isinstance(self.obj, FileAttachment)
+        assert self.obj.filename is not None
+
         data = self.get_text()
 
         lexer = self.get_source_lexer(self.obj.filename, data)
@@ -165,29 +243,51 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
             for line in lines
         ]
 
-    def get_source_lexer(self, filename, data):
-        """Returns the lexer that should be used for the text.
+    def get_source_lexer(
+        self,
+        filename: str,
+        data: str,
+    ) -> Lexer:
+        """Return the lexer that should be used for the text.
 
         By default, this will attempt to guess the lexer based on the
         filename, falling back to a plain-text lexer.
 
         Subclasses can override this to choose a more specific lexer.
+
+        Args:
+            filename (str):
+                The filename of the file.
+
+            data (str):
+                The contents of the file.
+
+        Returns:
+            pygments.lexers.Lexer:
+            The lexer to use for highlighting the source.
         """
         try:
             return guess_lexer_for_filename(filename, data)
         except ClassNotFound:
             return TextLexer()
 
-    def generate_render(self):
-        """Generates a render of the text.
+    def generate_render(self) -> Iterator[str]:
+        """Generate a render of the text.
 
         By default, this won't do anything. Subclasses should override it
         to turn the raw text into some form of rendered content. For
         example, rendering Markdown.
+
+        Yields:
+            str:
+            The rendered lines of content.
         """
         raise NotImplementedError
 
-    def serialize_comments(self, comments):
+    def serialize_comments(
+        self,
+        comments: List[FileAttachmentComment],
+    ) -> Dict[str, Any]:
         """Return a dictionary of the comments for this file attachment."""
         result = {}
 
@@ -206,12 +306,25 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
 
         return result
 
-    def get_comment_thumbnail(self, comment):
-        """Generates and returns a thumbnail representing this comment.
+    def get_comment_thumbnail(
+        self,
+        comment: FileAttachmentComment,
+    ) -> Optional[str]:
+        """Generate and return a thumbnail representing this comment.
 
         This will find the appropriate lines the comment applies to and
         return it as HTML suited for rendering in reviews.
+
+        Args:
+            comment (reviewboard.reviews.models.FileAttachmentComment):
+                The comment to render the thumbnail for.
+
+        Returns:
+            str:
+            The rendered comment thumbnail.
         """
+        assert isinstance(self.obj, FileAttachment)
+
         try:
             begin_line_num = int(comment.extra_data['beginLineNum'])
             end_line_num = int(comment.extra_data['endLineNum'])
@@ -221,26 +334,54 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
             # corrupted data. Either way, don't display anything.
             return None
 
-        return cache_memoize(
-            'text-review-ui-comment-thumbnail-%s-%s' % (self.obj.pk,
-                                                        comment.pk),
-            lambda: self.render_comment_thumbnail(comment, begin_line_num,
-                                                  end_line_num, view_mode))
+        cache_key = 'text-review-ui-comment-thumbnail-%s-%s' % (
+            self.obj.pk, comment.pk),
 
-    def render_comment_thumbnail(self, comment, begin_line_num, end_line_num,
-                                 view_mode):
-        """Renders the content of a comment thumbnail.
+        return cast(
+            Optional[str],
+            cache_memoize(
+                cache_key,
+                lambda: self.render_comment_thumbnail(
+                    comment, begin_line_num, end_line_num, view_mode)))
+
+    def render_comment_thumbnail(
+        self,
+        comment: FileAttachmentComment,
+        begin_line_num: int,
+        end_line_num: int,
+        view_mode: str,
+    ) -> str:
+        """Render the content of a comment thumbnail.
 
         This will, by default, call render() and then pull out the lines
         that were commented on.
 
         Subclasses can override to do more specialized thumbnail rendering.
+
+        Args:
+            comment (reviewboard.reviews.models.FileAttachmentComment):
+                The comment to render the thumbnail for.
+
+            begin_line_num (int):
+                The starting line number for the comment.
+
+            end_line_num (int):
+                The end line number for the comment.
+
+            view_mode (str):
+                The view mode. One of ``source`` or ``rendered``.
+
+        Returns:
+            str:
+            The rendered comment thumbnail.
         """
         if view_mode not in ('source', 'rendered'):
             logger.warning('Unexpected view mode "%s" when rendering '
                            'comment thumbnail.',
                            view_mode)
             return ''
+
+        assert isinstance(self.obj, FileAttachment)
 
         context = {
             'is_diff': self.diff_against_obj is not None,
@@ -249,6 +390,8 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
         }
 
         if self.diff_against_obj:
+            assert isinstance(self.diff_against_obj, FileAttachment)
+
             if view_mode == 'source':
                 chunk_generator = self._get_source_diff_chunk_generator()
             elif view_mode == 'rendered':
@@ -291,11 +434,22 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
             template_name=self.comment_thumbnail_template_name,
             context=context)
 
-    def get_comment_link_url(self, comment):
-        """Returns the URL to the file and line commented on.
+    def get_comment_link_url(
+        self,
+        comment: FileAttachmentComment,
+    ) -> str:
+        """Return the URL to the file and line commented on.
 
         This will link to the correct file, view mode, and line for the
         given comment.
+
+        Args:
+            comment (reviewboard.reviews.models.FileAttachmentComment):
+                The comment to link to.
+
+        Returns:
+            str:
+            The URL to link the comment to.
         """
         base_url = super(TextBasedReviewUI, self).get_comment_link_url(comment)
 
@@ -309,7 +463,12 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
 
         return '%s#%s/line%s' % (base_url, view_mode, begin_line_num)
 
-    def _get_diff_chunk_generator(self, chunk_generator_cls, orig, modified):
+    def _get_diff_chunk_generator(
+        self,
+        chunk_generator_cls: type[RawDiffChunkGenerator],
+        orig: Union[bytes, List[bytes]],
+        modified: Union[bytes, List[bytes]],
+    ) -> RawDiffChunkGenerator:
         """Return a chunk generator showing a diff for the text.
 
         The chunk generator will diff the text of this attachment against
@@ -334,7 +493,8 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
             reviewboard.diffviewer.chunk_generator.RawDiffChunkGenerator:
             The chunk generator used to diff source or rendered text.
         """
-        assert self.diff_against_obj
+        assert isinstance(self.obj, FileAttachment)
+        assert isinstance(self.diff_against_obj, FileAttachment)
 
         return chunk_generator_cls(
             old=orig,
@@ -343,26 +503,33 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
             modified_filename=self.diff_against_obj.filename,
             diff_settings=DiffSettings.create(request=self.request))
 
-    def _get_source_diff_chunk_generator(self):
+    def _get_source_diff_chunk_generator(self) -> RawDiffChunkGenerator:
         """Return a chunk generator for diffing source text.
 
         Returns:
             reviewboard.diffviewer.chunk_generator.RawDiffChunkGenerator:
             The chunk generator used to diff source text.
         """
+        assert isinstance(self.obj, FileAttachment)
+        assert isinstance(self.diff_against_obj, FileAttachment)
+        assert isinstance(self.diff_against_obj.review_ui, TextBasedReviewUI)
+
         return self._get_diff_chunk_generator(
             self.source_chunk_generator_cls,
             force_bytes(self.diff_against_obj.review_ui.get_text()),
             force_bytes(self.get_text()))
 
-    def _get_rendered_diff_chunk_generator(self):
+    def _get_rendered_diff_chunk_generator(self) -> RawDiffChunkGenerator:
         """Return a chunk generator for diffing rendered text.
 
         Returns:
             reviewboard.diffviewer.chunk_generator.RawDiffChunkGenerator:
             The chunk generator used to diff rendered text.
         """
+        assert isinstance(self.diff_against_obj, FileAttachment)
+
         diff_against_review_ui = self.diff_against_obj.review_ui
+        assert isinstance(diff_against_review_ui, TextBasedReviewUI)
 
         return self._get_diff_chunk_generator(
             self.rendered_chunk_generator_cls,

@@ -55,6 +55,14 @@ class Screenshot(models.Model):
             src_2x=thumbnail(self.image, '800x200'),
             caption=self.caption)
 
+    @property
+    def display_name(self):
+        """Return a display name for the file."""
+        if self.caption:
+            return self.caption
+        else:
+            return self.image.filename
+
     def __str__(self):
         return "%s (%s)" % (self.caption, self.image)
 

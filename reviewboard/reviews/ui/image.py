@@ -1,13 +1,29 @@
+"""A Review UI for image files."""
+
+from __future__ import annotations
+
+from typing import List, Optional, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.utils.html import escape
 from djblets.util.templatetags.djblets_images import crop_image
 
 from reviewboard.admin.server import build_server_url
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 
 
+if TYPE_CHECKING:
+    from djblets.util.typing import JSONDict
+
+    from reviewboard.reviews.models import (
+        BaseComment,
+        FileAttachmentComment)
+
+
 class ImageReviewUI(FileAttachmentReviewUI):
+    """A Review UI for image files."""
+
     name = 'Image'
     supported_mimetypes = ['image/*']
 
@@ -24,21 +40,55 @@ class ImageReviewUI(FileAttachmentReviewUI):
         Twitter, etc. when linking to this file attachment.
 
         Returns:
-            unicode:
+            str:
             The absolute URL to an image used to depict this file attachment.
         """
+        assert isinstance(self.obj, FileAttachment)
+
         return self.obj.get_absolute_url()
 
-    def get_js_model_data(self):
+    def get_js_model_data(self) -> JSONDict:
+        """Return data to pass to the JavaScript Model during instantiation.
+
+        This data will be passed as attributes to the reviewable model when
+        constructed.
+
+        Returns:
+            dict:
+            The attributes to pass to the model.
+        """
+        assert isinstance(self.obj, FileAttachment)
+
         data = super(ImageReviewUI, self).get_js_model_data()
         data['imageURL'] = self.obj.file.url
 
         if self.diff_against_obj:
+            assert isinstance(self.diff_against_obj, FileAttachment)
             data['diffAgainstImageURL'] = self.diff_against_obj.file.url
 
         return data
 
-    def serialize_comments(self, comments):
+    def serialize_comments(
+        self,
+        comments: List[BaseComment],
+    ) -> JSONDict:
+        """Serialize the comments for the Review UI target.
+
+        By default, this will return a list of serialized comments,
+        but it can be overridden to return other list or dictionary-based
+        representations, such as comments grouped by an identifier or region.
+        These representations must be serializable into JSON.
+
+        Args:
+            comments (list of reviewboard.reviews.models.base_comment.
+                      BaseComment):
+                The list of objects to serialize. This will be the result of
+                :py:meth:`get_comments`.
+
+        Returns:
+            dict:
+            The serialized comment data.
+        """
         result = {}
         serialized_comments = \
             super(ImageReviewUI, self).serialize_comments(comments)
@@ -58,7 +108,23 @@ class ImageReviewUI(FileAttachmentReviewUI):
 
         return result
 
-    def get_comment_thumbnail(self, comment):
+    def get_comment_thumbnail(
+        self,
+        comment: FileAttachmentComment,
+    ) -> Optional[str]:
+        """Generate and return a thumbnail representing this comment.
+
+        This will find the appropriate lines the comment applies to and
+        return it as HTML suited for rendering in reviews.
+
+        Args:
+            comment (reviewboard.reviews.models.FileAttachmentComment):
+                The comment to render the thumbnail for.
+
+        Returns:
+            str:
+            The rendered comment thumbnail.
+        """
         try:
             x = int(comment.extra_data['x'])
             y = int(comment.extra_data['y'])
