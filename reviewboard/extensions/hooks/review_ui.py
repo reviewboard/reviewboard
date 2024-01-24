@@ -25,7 +25,7 @@ class ReviewUIHook(ExtensionHook, metaclass=ExtensionHookPoint):
             review_uis (list of type):
                 The list of review UI classes to register. Each must be a
                 subclass of
-                :py:class:`~reviewboard.reviews.ui.base.FileAttachmentReviewUI`.
+                :py:class:`~reviewboard.reviews.ui.base.ReviewUI`.
 
         Raises:
             TypeError:

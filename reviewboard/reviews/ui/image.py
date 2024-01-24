@@ -10,7 +10,7 @@ from djblets.util.templatetags.djblets_images import crop_image
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.reviews.ui.base import FileAttachmentReviewUI
+from reviewboard.reviews.ui.base import ReviewUI
 
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
         FileAttachmentComment)
 
 
-class ImageReviewUI(FileAttachmentReviewUI):
+class ImageReviewUI(ReviewUI):
     """A Review UI for image files."""
 
     name = 'Image'
@@ -29,9 +29,10 @@ class ImageReviewUI(FileAttachmentReviewUI):
 
     allow_inline = True
     supports_diffing = True
+    supports_file_attachments = True
 
-    js_model_class = 'RB.ImageReviewable'
-    js_view_class = 'RB.ImageReviewableView'
+    js_model_class: str = 'RB.ImageReviewable'
+    js_view_class: str = 'RB.ImageReviewableView'
 
     def get_page_cover_image_url(self):
         """Return the URL to an image used to depict this on other sites.

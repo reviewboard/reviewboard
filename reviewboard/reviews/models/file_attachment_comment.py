@@ -37,12 +37,7 @@ class FileAttachmentComment(BaseComment):
         one will be returned that's associated with this comment's
         FileAttachment and the one being diffed against (if any).
         """
-        from reviewboard.reviews.ui.base import FileAttachmentReviewUI
-
-        # Note that we need to create our own instance here, so that we don't
-        # end up altering the state of another ReviewUI's file attachment
-        # (particularly with calling set_diff_against below).
-        review_ui = FileAttachmentReviewUI.for_type(self.file_attachment)
+        review_ui = self.file_attachment.review_ui
 
         if not review_ui:
             return None
@@ -66,7 +61,7 @@ class FileAttachmentComment(BaseComment):
                 return review_ui.get_comment_thumbnail(self)
             except Exception as e:
                 logger.error('Error when calling get_comment_thumbnail for '
-                             'FileAttachmentReviewUI %r: %s',
+                             'ReviewUI %r: %s',
                              review_ui, e, exc_info=True)
         else:
             return ''
@@ -80,7 +75,7 @@ class FileAttachmentComment(BaseComment):
                 return review_ui.get_comment_link_url(self)
             except Exception as e:
                 logger.error('Error when calling get_comment_thumbnail for '
-                             'FileAttachmentReviewUI %r: %s',
+                             'ReviewUI %r: %s',
                              review_ui, e, exc_info=True)
         else:
             return self.file_attachment.get_absolute_url()
@@ -94,7 +89,7 @@ class FileAttachmentComment(BaseComment):
                 return review_ui.get_comment_link_text(self)
             except Exception as e:
                 logger.error('Error when calling get_comment_link_text for '
-                             'FileAttachmentReviewUI %r: %s',
+                             'ReviewUI %r: %s',
                              review_ui, e, exc_info=True)
         else:
             return self.file_attachment.display_name

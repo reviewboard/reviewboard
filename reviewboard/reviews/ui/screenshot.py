@@ -24,8 +24,8 @@ class LegacyScreenshotReviewUI(ReviewUI):
     model = Screenshot
     comment_model = ScreenshotComment
 
-    js_model_class = 'RB.ScreenshotReviewable'
-    js_view_class = 'RB.ImageReviewableView'
+    js_model_class: str = 'RB.ScreenshotReviewable'
+    js_view_class: str = 'RB.ImageReviewableView'
 
     def get_comments(self) -> List[ScreenshotComment]:
         """Return all existing comments on the screenshot.

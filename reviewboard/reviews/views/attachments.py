@@ -10,6 +10,7 @@ from django.views.generic.base import View
 
 from reviewboard.accounts.mixins import UserProfileRequiredViewMixin
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.reviews.models import Screenshot
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
@@ -83,13 +84,27 @@ class ReviewFileAttachmentView(ReviewRequestViewMixin,
             review_ui.set_diff_against(file_attachment_revision)
 
         try:
-            is_enabled_for = review_ui.is_enabled_for(
-                user=request.user,
-                review_request=review_request,
-                file_attachment=file_attachment)
+            from inspect import signature
+            params = signature(review_ui.is_enabled_for).parameters
+
+            if 'file_attachment' in params:
+                RemovedInReviewBoard80Warning.warn(
+                    'The file_attachment parameter to ReviewUI.is_enabled_for '
+                    'has been removed. Please use obj= instead in Review UI %r'
+                    % review_ui)
+
+                is_enabled_for = review_ui.is_enabled_for(
+                    user=request.user,
+                    review_request=review_request,
+                    file_attachment=file_attachment)
+            else:
+                is_enabled_for = review_ui.is_enabled_for(
+                    user=request.user,
+                    review_request=review_request,
+                    obj=file_attachment)
         except Exception as e:
             logger.error('Error when calling is_enabled_for for '
-                         'FileAttachmentReviewUI %r: %s',
+                         'ReviewUI %r: %s',
                          review_ui, e, exc_info=True,
                          extra={'request': request})
             is_enabled_for = False

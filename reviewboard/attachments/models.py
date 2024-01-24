@@ -147,8 +147,22 @@ class FileAttachment(models.Model):
     def review_ui(self):
         """Return the review UI for this file."""
         if not hasattr(self, '_review_ui'):
-            from reviewboard.reviews.ui.base import FileAttachmentReviewUI
-            self._review_ui = FileAttachmentReviewUI.for_type(self)
+            self._review_ui = None
+
+            from reviewboard.reviews.ui.base import ReviewUI
+            review_ui_class = ReviewUI.for_object(self)
+
+            if review_ui_class:
+                try:
+                    self._review_ui = review_ui_class(
+                        obj=self,
+                        review_request=self.get_review_request())
+                except ObjectDoesNotExist as e:
+                    logger.error('Unable to load Review UI %r for %s: %s',
+                                 review_ui_class, self, e)
+                except Exception as e:
+                    logger.exception('Error instantiating Review UI %r" %s',
+                                     review_ui_class, e)
 
         return self._review_ui
 

@@ -15,6 +15,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.diffutils import get_sorted_filediffs
 from reviewboard.diffviewer.models import DiffCommit, DiffSet
 from reviewboard.reviews.fields import (BaseCommaEditableField,
@@ -1279,15 +1280,31 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
         """
         review_ui = file_attachment.review_ui
 
+        if not review_ui:
+            return False
+
         try:
-            return (
-                review_ui and
-                review_ui.is_enabled_for(user=self.request.user,
-                                         review_request=review_request,
-                                         file_attachment=file_attachment))
+            from inspect import signature
+            params = signature(review_ui.is_enabled_for).parameters
+
+            if 'file_attachment' in params:
+                RemovedInReviewBoard80Warning.warn(
+                    'The file_attachment parameter to ReviewUI.is_enabled_for '
+                    'has been removed. Please use obj= instead in Review UI %r'
+                    % review_ui)
+
+                return review_ui.is_enabled_for(
+                    user=self.request.user,
+                    review_request=review_request,
+                    file_attachment=file_attachment)
+            else:
+                return review_ui.is_enabled_for(
+                    user=self.request.user,
+                    review_request=review_request,
+                    obj=file_attachment)
         except Exception as e:
             logger.exception('Error when calling is_enabled_for with '
-                             'FileAttachmentReviewUI %r: %s',
+                             'ReviewUI %r: %s',
                              review_ui, e)
             return False
 

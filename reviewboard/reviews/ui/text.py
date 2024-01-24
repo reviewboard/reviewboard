@@ -27,7 +27,7 @@ from reviewboard.diffviewer.chunk_generator import (NoWrapperHtmlFormatter,
                                                     RawDiffChunkGenerator)
 from reviewboard.diffviewer.diffutils import get_chunks_in_range
 from reviewboard.diffviewer.settings import DiffSettings
-from reviewboard.reviews.ui.base import FileAttachmentReviewUI
+from reviewboard.reviews.ui.base import ReviewUI
 
 
 if TYPE_CHECKING:
@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class TextBasedReviewUI(FileAttachmentReviewUI):
+class TextBasedReviewUI(ReviewUI):
     """A Review UI for text-based files.
 
     This renders the text file, applying syntax highlighting, and allows users
@@ -49,12 +49,13 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
     """
 
     name = 'Text'
-    object_key = 'text'
+    object_key: str = 'text'
     supported_mimetypes = TextMimetype.supported_mimetypes
     template_name = 'reviews/ui/text.html'
     comment_thumbnail_template_name = 'reviews/ui/text_comment_thumbnail.html'
     can_render_text = False
     supports_diffing = True
+    supports_file_attachments = True
 
     source_chunk_generator_cls = RawDiffChunkGenerator
     rendered_chunk_generator_cls = RawDiffChunkGenerator
@@ -62,8 +63,8 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
     #: Extra classes to apply to the Review UI element.
     extra_css_classes: List[str] = []
 
-    js_model_class = 'RB.TextBasedReviewable'
-    js_view_class = 'RB.TextBasedReviewableView'
+    js_model_class: str = 'RB.TextBasedReviewable'
+    js_view_class: str = 'RB.TextBasedReviewableView'
 
     def get_js_model_data(self) -> JSONDict:
         """Return data to pass to the JavaScript Model during instantiation.

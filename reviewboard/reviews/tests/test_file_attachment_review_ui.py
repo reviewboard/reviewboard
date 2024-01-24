@@ -1,53 +1,61 @@
-"""Unit tests for reviewboard.reviews.ui.base.FileAttachmentReviewUI."""
+"""Unit tests for a ReviewUI for file attachments."""
+
+from __future__ import annotations
 
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard.reviews.models.review_request import FileAttachmentState
-from reviewboard.reviews.ui.base import (FileAttachmentReviewUI,
+from reviewboard.reviews.ui.base import (ReviewUI,
                                          register_ui,
                                          unregister_ui)
 from reviewboard.testing import TestCase
 
 
-class MyReviewUI(FileAttachmentReviewUI):
+class MyReviewUI(ReviewUI):
     """A basic file attachment Review UI used for testing."""
 
     supported_mimetypes = ['application/rbtest']
     supports_diffing = True
+    supports_file_attachments = True
 
 
 class FileAttachmentReviewUITests(SpyAgency, TestCase):
-    """Unit tests for reviewboard.reviews.ui.base.FileAttachmentReviewUI."""
+    """Unit tests for a ReviewUI for file attachments."""
 
     fixtures = ['test_users']
 
     @classmethod
-    def setUpClass(cls):
-        super(FileAttachmentReviewUITests, cls).setUpClass()
+    def setUpClass(cls) -> None:
+        super().setUpClass()
 
         register_ui(MyReviewUI)
 
     @classmethod
-    def tearDownClass(cls):
-        super(FileAttachmentReviewUITests, cls).tearDownClass()
+    def tearDownClass(cls) -> None:
+        super().tearDownClass()
 
         unregister_ui(MyReviewUI)
 
-    def setUp(self):
-        super(FileAttachmentReviewUITests, self).setUp()
+    def setUp(self) -> None:
+        super().setUp()
 
         self.review_request = self.create_review_request()
 
-    def test_for_type(self):
-        """Testing FileAttachmentReviewUI.for_type with match"""
+    def test_for_object(self) -> None:
+        """Testing ReviewUI.for_object"""
+        attachment = self.create_file_attachment(self.review_request,
+                                                 mimetype='application/rbtest')
+        review_ui = attachment.review_ui
 
-    def test_for_type_with_exception(self):
-        """Testing FileAttachmentReviewUI.for_type sandboxes ReviewUI
-        instantiation
+        self.assertIsInstance(review_ui, MyReviewUI)
+
+    def test_for_object_with_exception(self) -> None:
+        """Testing ReviewUI.for_object sandboxes ReviewUI instantiation
         """
-        class BrokenReviewUI(FileAttachmentReviewUI):
+        class BrokenReviewUI(ReviewUI):
             supported_mimetypes = ['image/broken']
+            supports_file_attachments = True
 
             def __init__(self, *args, **kwargs):
                 raise Exception('Oh no')
@@ -60,17 +68,17 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             attachment = self.create_file_attachment(self.review_request,
                                                      mimetype='image/broken')
 
-            review_ui = FileAttachmentReviewUI.for_type(attachment)
+            review_ui = attachment.review_ui
 
             self.assertIsNone(review_ui)
             self.assertTrue(BrokenReviewUI.__init__.called_with(
-                self.review_request,
-                attachment))
+                review_request=self.review_request,
+                obj=attachment))
         finally:
             unregister_ui(BrokenReviewUI)
 
-    def test_build_render_context_with_inline_true(self):
-        """Testing FileAttachmentReviewUI.build_render_context with inline=True
+    def test_build_render_context_with_inline_true(self) -> None:
+        """Testing ReviewUI.build_render_context with inline=True
         """
         self.create_file_attachment(
             self.review_request,
@@ -88,6 +96,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
         review_ui = attachment.review_ui
         request = self.create_http_request(path='/r/1/file/2/')
 
+        assert review_ui is not None
         self.assertIsInstance(review_ui, MyReviewUI)
 
         context = review_ui.build_render_context(request=request, inline=True)
@@ -97,9 +106,8 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
         self.assertNotIn('prev_file_attachment', context)
         self.assertNotIn('next_file_attachment', context)
 
-    def test_build_render_context_with_inline_false(self):
-        """Testing FileAttachmentReviewUI.build_render_context with
-        inline=False
+    def test_build_render_context_with_inline_false(self) -> None:
+        """Testing ReviewUI.build_render_context with inline=False
         """
         attachment1 = self.create_file_attachment(
             self.review_request,
@@ -117,6 +125,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
         review_ui = attachment2.review_ui
         request = self.create_http_request(path='/r/1/file/2/')
 
+        assert review_ui is not None
         self.assertIsInstance(review_ui, MyReviewUI)
 
         context = review_ui.build_render_context(request=request, inline=False)
@@ -139,8 +148,8 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 },
             ])
 
-    def test_get_caption(self):
-        """Testing FileAttachmentReviewUI.get_caption"""
+    def test_get_caption(self) -> None:
+        """Testing ReviewUI.get_caption"""
         attachment = self.create_file_attachment(
             self.review_request,
             mimetype='application/rbtest',
@@ -148,11 +157,12 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             draft_caption='My Draft Caption')
         review_ui = attachment.review_ui
 
+        assert review_ui is not None
         self.assertIsInstance(review_ui, MyReviewUI)
         self.assertEqual(review_ui.get_caption(), 'My Published Caption')
 
-    def test_get_caption_with_draft(self):
-        """Testing FileAttachmentReviewUI.get_caption with draft"""
+    def test_get_caption_with_draft(self) -> None:
+        """Testing ReviewUI.get_caption with draft"""
         draft = self.create_review_request_draft(self.review_request)
         attachment = self.create_file_attachment(
             self.review_request,
@@ -162,11 +172,12 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             draft=True)
         review_ui = attachment.review_ui
 
+        assert review_ui is not None
         self.assertIsInstance(review_ui, MyReviewUI)
         self.assertEqual(review_ui.get_caption(draft), 'My Draft Caption')
 
-    def test_get_comments(self):
-        """Testing FileAttachmentReviewUI.get_comments"""
+    def test_get_comments(self) -> None:
+        """Testing ReviewUI.get_comments"""
         attachment1 = self.create_file_attachment(
             self.review_request,
             mimetype='application/rbtest')
@@ -205,11 +216,12 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
         review_ui = attachment1.review_ui
         self.assertIsInstance(review_ui, MyReviewUI)
 
+        assert review_ui is not None
         comments = review_ui.get_comments()
         self.assertEqual(list(comments), [comment1, comment2, comment3])
 
-    def test_get_comments_with_diff(self):
-        """Testing FileAttachmentReviewUI.get_comments with diff"""
+    def test_get_comments_with_diff(self) -> None:
+        """Testing ReviewUI.get_comments with diff"""
         attachment1 = self.create_file_attachment(
             self.review_request,
             mimetype='application/rbtest')
@@ -248,20 +260,23 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             text='Comment 5')
 
         review_ui = attachment2.review_ui
+        assert review_ui is not None
         self.assertIsInstance(review_ui, MyReviewUI)
+
         review_ui.set_diff_against(attachment1)
 
         comments = review_ui.get_comments()
         self.assertEqual(list(comments), [comment1, comment2, comment3])
 
-    def test_get_comment_link_text(self):
-        """Testing FileAttachmentReviewUI.get_comment_link_text"""
+    def test_get_comment_link_text(self) -> None:
+        """Testing ReviewUI.get_comment_link_text"""
         attachment = self.create_file_attachment(
             self.review_request,
             mimetype='application/rbtest',
             caption='Test Caption')
         review_ui = attachment.review_ui
 
+        assert review_ui is not None
         self.assertIsInstance(review_ui, MyReviewUI)
 
         review = self.create_review(self.review_request)
@@ -270,12 +285,13 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
         self.assertEqual(review_ui.get_comment_link_text(comment),
                          'Test Caption')
 
-    def test_get_comment_link_url(self):
-        """Testing FileAttachmentReviewUI.get_comment_link_url"""
+    def test_get_comment_link_url(self) -> None:
+        """Testing ReviewUI.get_comment_link_url"""
         attachment = self.create_file_attachment(self.review_request,
                                                  mimetype='application/rbtest')
         review_ui = attachment.review_ui
 
+        assert review_ui is not None
         self.assertIsInstance(review_ui, MyReviewUI)
 
         review = self.create_review(self.review_request)
@@ -285,14 +301,15 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                          '/r/1/file/1/')
 
     @add_fixtures(['test_site'])
-    def test_get_comment_link_url_with_local_site(self):
-        """Testing FileAttachmentReviewUI.get_comment_link_url with LocalSite
+    def test_get_comment_link_url_with_local_site(self) -> None:
+        """Testing ReviewUI.get_comment_link_url with LocalSite
         """
         review_request = self.create_review_request(with_local_site=True)
         attachment = self.create_file_attachment(review_request,
                                                  mimetype='application/rbtest')
         review_ui = attachment.review_ui
 
+        assert review_ui is not None
         self.assertIsInstance(review_ui, MyReviewUI)
 
         review = self.create_review(review_request)
@@ -301,8 +318,8 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
         self.assertEqual(review_ui.get_comment_link_url(comment),
                          '/s/local-site-1/r/1001/file/1/')
 
-    def test_get_js_model_data(self):
-        """Testing FileAttachmentReviewUI.get_js_model_data"""
+    def test_get_js_model_data(self) -> None:
+        """Testing ReviewUI.get_js_model_data"""
         attachment = self.create_file_attachment(
             self.review_request,
             mimetype='application/rbtest',
@@ -310,6 +327,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             with_history=False)
         review_ui = attachment.review_ui
 
+        assert review_ui is not None
         self.assertIsInstance(review_ui, MyReviewUI)
         self.assertEqual(
             review_ui.get_js_model_data(),
@@ -320,8 +338,8 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'state': FileAttachmentState.PUBLISHED.value,
             })
 
-    def test_get_js_model_data_with_draft_attachment(self):
-        """Testing FileAttachmentReviewUI.get_js_model_data with a draft
+    def test_get_js_model_data_with_draft_attachment(self) -> None:
+        """Testing ReviewUI.get_js_model_data with a draft
         FileAttachment
         """
         attachment = self.create_file_attachment(
@@ -332,6 +350,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             with_history=False)
         review_ui = attachment.review_ui
 
+        assert review_ui is not None
         self.assertIsInstance(review_ui, MyReviewUI)
         self.assertEqual(
             review_ui.get_js_model_data(),
@@ -342,8 +361,8 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'state': FileAttachmentState.NEW.value,
             })
 
-    def test_get_js_model_data_with_history(self):
-        """Testing FileAttachmentReviewUI.get_js_model_data with
+    def test_get_js_model_data_with_history(self) -> None:
+        """Testing ReviewUI.get_js_model_data with
         FileAttachmentHistory
         """
         attachment1 = self.create_file_attachment(
@@ -358,6 +377,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             orig_filename='filename.txt')
         review_ui = attachment2.review_ui
 
+        assert review_ui is not None
         self.assertIsInstance(review_ui, MyReviewUI)
         self.assertEqual(
             review_ui.get_js_model_data(),
@@ -370,8 +390,8 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'state': FileAttachmentState.PUBLISHED.value,
             })
 
-    def test_get_js_model_data_with_history_and_draft(self):
-        """Testing FileAttachmentReviewUI.get_js_model_data with
+    def test_get_js_model_data_with_history_and_draft(self) -> None:
+        """Testing ReviewUI.get_js_model_data with
         FileAttachmentHistory and draft attachment
         """
         attachment1 = self.create_file_attachment(
@@ -387,6 +407,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             draft=True)
         review_ui = attachment2.review_ui
 
+        assert review_ui is not None
         self.assertIsInstance(review_ui, MyReviewUI)
         self.assertEqual(
             review_ui.get_js_model_data(),
@@ -399,8 +420,8 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'state': FileAttachmentState.NEW_REVISION.value,
             })
 
-    def test_get_js_model_data_with_diff(self):
-        """Testing FileAttachmentReviewUI.get_js_model_data with diff"""
+    def test_get_js_model_data_with_diff(self) -> None:
+        """Testing ReviewUI.get_js_model_data with diff"""
         attachment1 = self.create_file_attachment(
             self.review_request,
             mimetype='application/rbtest',
@@ -415,6 +436,8 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             caption='My attachment 2')
 
         review_ui = attachment2.review_ui
+        assert review_ui is not None
+
         review_ui.set_diff_against(attachment1)
 
         self.assertIsInstance(review_ui, MyReviewUI)
@@ -432,8 +455,8 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'state': FileAttachmentState.PUBLISHED.value,
             })
 
-    def test_get_js_model_data_with_diff_type_mismatch(self):
-        """Testing FileAttachmentReviewUI.get_js_model_data with diff type
+    def test_get_js_model_data_with_diff_type_mismatch(self) -> None:
+        """Testing ReviewUI.get_js_model_data with diff type
         mismatch
         """
         attachment1 = self.create_file_attachment(
@@ -450,6 +473,8 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             caption='My attachment 2')
 
         review_ui = attachment2.review_ui
+        assert review_ui is not None
+
         review_ui.set_diff_against(attachment1)
 
         self.assertIsInstance(review_ui, MyReviewUI)
@@ -468,11 +493,13 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'state': FileAttachmentState.PUBLISHED.value,
             })
 
-    def test_serialize_comment(self):
-        """Testing FileAttachmentReviewUI.serialize_comment"""
+    def test_serialize_comment(self) -> None:
+        """Testing ReviewUI.serialize_comment"""
         attachment = self.create_file_attachment(self.review_request,
                                                  mimetype='application/rbtest')
         review_ui = attachment.review_ui
+        assert review_ui is not None
+
         review_ui.request = self.create_http_request()
 
         self.assertIsInstance(review_ui, MyReviewUI)

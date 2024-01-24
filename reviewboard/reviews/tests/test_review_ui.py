@@ -1,11 +1,17 @@
-"""Unit tests for reviewboard.reviews.ui.base.FileAttachmentReviewUI."""
+"""Unit tests for reviewboard.reviews.ui.base.RevieUII."""
+
+from __future__ import annotations
 
 from django.utils.safestring import SafeText
 from kgb import SpyAgency
+from typing import Any, Dict, List, TYPE_CHECKING
 
 from reviewboard.reviews.models import FileAttachmentComment
 from reviewboard.reviews.ui.base import ReviewUI
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from reviewboard.reviews.models.base_comment import BaseComment
 
 
 class DummyReviewableObject(object):
@@ -17,31 +23,32 @@ class MyReviewUI(ReviewUI):
 
     supported_mimetypes = ['application/rbtest']
     supports_diffing = True
-    js_model_class = 'RB.Test.ReviewUI'
-    js_view_class = 'RB.Test.ReviewUIView'
+    supports_file_attachments = True
+    js_model_class: str = 'RB.Test.ReviewUI'
+    js_view_class: str = 'RB.Test.ReviewUIView'
 
-    def get_caption(self, draft=None):
+    def get_caption(self, draft=None) -> str:
         return 'Test Caption'
 
-    def get_comments(self):
-        return FileAttachmentComment.objects.order_by('pk')
+    def get_comments(self) -> List[BaseComment]:
+        return list(FileAttachmentComment.objects.order_by('pk'))
 
-    def get_page_cover_image_url(self):
+    def get_page_cover_image_url(self) -> str:
         return '/cover-image.png'
 
-    def get_extra_context(self, request):
+    def get_extra_context(self, request) -> Dict[str, Any]:
         return {
             'custom_key': '123',
         }
 
 
-class FileAttachmentReviewUITests(SpyAgency, TestCase):
-    """Unit tests for reviewboard.reviews.ui.base.FileAttachmentReviewUI."""
+class ReviewUITests(SpyAgency, TestCase):
+    """Unit tests for reviewboard.reviews.ui.base.ReviewUI."""
 
     fixtures = ['test_users']
 
-    def setUp(self):
-        super(FileAttachmentReviewUITests, self).setUp()
+    def setUp(self) -> None:
+        super().setUp()
 
         self.review_request = self.create_review_request()
         self.attachment = self.create_file_attachment(self.review_request)
@@ -54,7 +61,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                                             text='Comment 2',
                                             issue_opened=True)
 
-    def test_build_render_context(self):
+    def test_build_render_context(self) -> None:
         """Testing ReviewUI.build_render_context"""
         reviewable_obj1 = DummyReviewableObject()
         reviewable_obj2 = DummyReviewableObject()
@@ -90,7 +97,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
         self.assertEqual(context['comments'][0].text, 'Comment 1')
         self.assertEqual(context['comments'][1].text, 'Comment 2')
 
-    def test_build_render_context_with_inline_true(self):
+    def test_build_render_context_with_inline_true(self) -> None:
         """Testing ReviewUI.build_render_context"""
         reviewable_obj1 = DummyReviewableObject()
         reviewable_obj2 = DummyReviewableObject()
@@ -129,7 +136,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
         self.assertEqual(context['comments'][0].text, 'Comment 1')
         self.assertEqual(context['comments'][1].text, 'Comment 2')
 
-    def test_get_comments_json(self):
+    def test_get_comments_json(self) -> None:
         """Testing ReviewUI.get_comments_json"""
         review_ui = MyReviewUI(review_request=self.review_request,
                                obj=DummyReviewableObject())
@@ -166,7 +173,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             '}]'
         )
 
-    def test_render_to_response_with_inline_false(self):
+    def test_render_to_response_with_inline_false(self) -> None:
         """Testing ReviewUI.render_to_response with inline=0"""
         review_ui = MyReviewUI(review_request=self.review_request,
                                obj=DummyReviewableObject())
@@ -182,7 +189,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                       response.content)
         self.assertIn(b'renderedInline: false', response.content)
 
-    def test_render_to_response_with_inline_true(self):
+    def test_render_to_response_with_inline_true(self) -> None:
         """Testing ReviewUI.render_to_response with inline=1"""
         review_ui = MyReviewUI(review_request=self.review_request,
                                obj=DummyReviewableObject())
@@ -198,7 +205,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                       response.content)
         self.assertIn(b'renderedInline: true', response.content)
 
-    def test_render_to_string_with_inline_false(self):
+    def test_render_to_string_with_inline_false(self) -> None:
         """Testing ReviewUI.render_to_string with inline=False"""
         review_ui = MyReviewUI(review_request=self.review_request,
                                obj=DummyReviewableObject())
@@ -210,7 +217,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
         self.assertIn('view = new RB.Test.ReviewUIView(', content)
         self.assertIn('renderedInline: false', content)
 
-    def test_render_to_string_with_inline_true(self):
+    def test_render_to_string_with_inline_true(self) -> None:
         """Testing ReviewUI.render_to_string with inline=True"""
         review_ui = MyReviewUI(review_request=self.review_request,
                                obj=DummyReviewableObject())
@@ -222,7 +229,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
         self.assertIn('view = new RB.Test.ReviewUIView(', content)
         self.assertIn('renderedInline: true', content)
 
-    def test_serialize_comments(self):
+    def test_serialize_comments(self) -> None:
         """Testing ReviewUI.serialize_comments"""
         # Note that this test is factoring in both the user-owned draft
         # review created in setUp() and the ones created in this test.
@@ -245,14 +252,14 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                                obj=DummyReviewableObject())
         review_ui.request = self.create_http_request(user=review1.user)
 
-        comments = review_ui.serialize_comments(review_ui.get_comments())
+        comments = review_ui.serialize_comments(list(review_ui.get_comments()))
 
         self.assertEqual(len(comments), 3)
         self.assertEqual(comments[0]['text'], 'Comment 1')
         self.assertEqual(comments[1]['text'], 'Comment 2')
         self.assertEqual(comments[2]['text'], 'Comment 3')
 
-    def test_serialize_comment(self):
+    def test_serialize_comment(self) -> None:
         """Testing ReviewUI.serialize_comment"""
         review_ui = MyReviewUI(review_request=self.review_request,
                                obj=DummyReviewableObject())

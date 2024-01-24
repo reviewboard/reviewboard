@@ -67,7 +67,7 @@ ReviewUI Class
 --------------
 
 Each Review UI must be defined by its own ReviewUI class that subclasses
-:py:class:`reviewboard.reviews.ui.base.FileAttachmentReviewUI`. It must also
+:py:class:`reviewboard.reviews.ui.base.ReviewUI`. It must also
 define the following class variables and properties:
 
 *
@@ -76,6 +76,10 @@ define the following class variables and properties:
 *
     **supported_mimetypes**: a list of mimetypes of the files that this Review
     UI will be responsible for rendering.
+
+*
+    **supports_file_attachments**: A flag indicating that the ReviewUI should
+    be used for file attachments.
 
 *
     **js_model_class**: The JavaScript model name that will store information
@@ -104,13 +108,14 @@ Example: **XMLReviewUI**:
     from django.utils.functional import cached_property
     import pygments
 
-    from reviewboard.reviews.ui.base import FileAttachmentReviewUI
+    from reviewboard.reviews.ui.base import ReviewUI
 
 
-    class XMLReviewUI(FileAttachmentReviewUI):
+    class XMLReviewUI(ReviewUI):
         """ReviewUI for XML mimetypes"""
         name = 'XML'
         supported_mimetypes = ['application/xml', 'text/xml']
+        supports_file_attachments = True
 
         js_model_class = 'MyVendor.XMLReviewable'
         js_view_class = 'MyVendor.XMLReviewableView'

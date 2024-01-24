@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 from uuid import uuid4
 
 import mimeparse
+from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -15,6 +16,7 @@ from django.utils.translation import gettext as _
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.reviews.context import make_review_request_context
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
@@ -23,7 +25,6 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 
 if TYPE_CHECKING:
-    from django.contrib.auth.models import User
     from django.http import HttpRequest
     from django.utils.safestring import SafeText
     from djblets.util.typing import JSONDict
@@ -37,7 +38,8 @@ if TYPE_CHECKING:
         BaseReviewRequestDetails
 
 
-_file_attachment_review_uis = []
+# TODO: replace with a registry
+_review_uis = []
 
 
 logger = logging.getLogger(__name__)
@@ -57,9 +59,6 @@ class ReviewUI:
     JavaScript side should interface with the API to create/update reviews and
     comments for the object being reviewed.
 
-    Extensions providing Review UIs for file attachments should subclass
-    :py:class:`FileAttachmentReviewUI`.
-
     Attributes:
         diff_against_obj (object):
             The object being diffed against, if any.
@@ -77,19 +76,13 @@ class ReviewUI:
     """
 
     #: The display name for the Review UI.
-    name: Optional[str] = None
+    name = 'Unknown file type'
 
     #: The template that renders the Review UI.
     #:
     #: Generally, subclasses should use the default template and render the
     #: UI using JavaScript.
     template_name = 'reviews/ui/default.html'
-
-    #: The key passed to the template representing the object.
-    object_key = 'obj'
-
-    #: The key passed to the template representing an object to diff against.
-    diff_object_key = 'diff_against_obj'
 
     #: Whether the Review UI can be rendered inline in diffs and other places.
     #:
@@ -112,11 +105,59 @@ class ReviewUI:
     #: where possible.
     js_files: List[str] = []
 
-    #: The name of the JavaScript model class to use for the Review UI.
-    js_model_class: Optional[str] = None
+    #: The list of MIME types that this Review UI supports.
+    supported_mimetypes: List[str] = []
 
-    #: The name of the JavaScript view class to use for the Review UI.
-    js_view_class: Optional[str] = None
+    #: Whether this Review UI supports reviewing FileAttachment objects.
+    supports_file_attachments = False
+
+    @property
+    def js_model_class(self) -> str:
+        """The name of the JavaScript model class to use for the Review UI.
+
+        Type:
+            str
+        """
+        if isinstance(self.obj, FileAttachment):
+            return 'RB.DummyReviewable'
+        else:
+            return 'RB.AbstractReviewable'
+
+    @property
+    def js_view_class(self) -> str:
+        """The name of the JavaScript view class to use for the Review UI.
+
+        Type:
+            str
+        """
+        if isinstance(self.obj, FileAttachment):
+            return 'RB.DummyReviewableView'
+        else:
+            return 'RB.AbstractReviewableView'
+
+    @property
+    def object_key(self) -> str:
+        """The key passed to the template representing the object.
+
+        Type:
+            str
+        """
+        if isinstance(self.obj, FileAttachment):
+            return 'file'
+        else:
+            return 'obj'
+
+    @property
+    def diff_object_key(self) -> str:
+        """The key passed to the template for an object to diff against.
+
+        Type:
+            str
+        """
+        if isinstance(self.obj, FileAttachment):
+            return 'diff_against_file'
+        else:
+            return 'diff_against_obj'
 
     def __init__(
         self,
@@ -159,6 +200,7 @@ class ReviewUI:
         self,
         user: Optional[User] = None,
         review_request: Optional[ReviewRequest] = None,
+        obj: object = None,
         **kwargs,
     ) -> bool:
         """Return whether the Review UI is enabled under the given criteria.
@@ -179,6 +221,9 @@ class ReviewUI:
                             ReviewRequest):
                 The review request to check.
 
+            obj (object):
+                The object being reviewed.
+
             **kwargs (dict):
                 Additional keyword arguments, for future expansion.
 
@@ -189,6 +234,11 @@ class ReviewUI:
 
             By default, Review UIs are always enabled.
         """
+        if 'file_attachment' in kwargs:
+            RemovedInReviewBoard80Warning.warn(
+                'The file_attachment argument to ReviewUI.is_enabled_for is '
+                'deprecated. Please pass obj= instead.')
+
         return True
 
     def render_to_response(
@@ -281,26 +331,30 @@ class ReviewUI:
         close_info = self.review_request.get_close_info()
         caption = self.get_caption(draft)
 
-        context = make_review_request_context(request, self.review_request, {
-            'caption': caption,
-            'close_description': close_info['close_description'],
-            'close_description_rich_text': close_info['is_rich_text'],
-            'close_timestamp': close_info['timestamp'],
-            'comments': self.get_comments(),
-            'draft': draft,
-            'last_activity_time': last_activity_time,
-            'social_page_image_url': self.get_page_cover_image_url(),
-            'social_page_title': (
-                'Reviewable for Review Request #%s: %s'
-                % (self.review_request.display_id, caption)
-            ),
-            'review_request_details': review_request_details,
-            'review_request': self.review_request,
-            'review_ui': self,
-            'review_ui_uuid': str(uuid4()),
-            self.object_key: self.obj,
-            self.diff_object_key: self.diff_against_obj,
-        })
+        context: Dict[str, Any] = make_review_request_context(
+            request,
+            self.review_request,
+            {
+                'caption': caption,
+                'close_description': close_info['close_description'],
+                'close_description_rich_text': close_info['is_rich_text'],
+                'close_timestamp': close_info['timestamp'],
+                'comments': self.get_comments(),
+                'draft': draft,
+                'last_activity_time': last_activity_time,
+                'social_page_image_url': self.get_page_cover_image_url(),
+                'social_page_title': (
+                    'Reviewable for Review Request #%s: %s'
+                    % (self.review_request.display_id, caption)
+                ),
+                'review_request_details': review_request_details,
+                'review_request': self.review_request,
+                'review_ui': self,
+                'review_ui_uuid': str(uuid4()),
+                self.object_key: self.obj,
+                self.diff_object_key: self.diff_against_obj,
+            }
+        )
 
         if inline:
             context.update({
@@ -322,6 +376,26 @@ class ReviewUI:
                              self, e,
                              extra={'request': request})
             raise
+
+        if isinstance(self.obj, FileAttachment):
+            context['social_page_title'] = (
+                'Attachment for Review Request #%s: %s'
+                % (self.review_request.display_id, context['caption'])
+            )
+
+            if not inline:
+                context['tabs'].append({
+                    'url': request.path,
+                    'text': _('File'),
+                })
+
+                prev_file_attachment, next_file_attachment = \
+                    self._get_adjacent_file_attachments(review_request_details)
+
+                context.update({
+                    'next_file_attachment': next_file_attachment,
+                    'prev_file_attachment': prev_file_attachment,
+                })
 
         return context
 
@@ -346,9 +420,23 @@ class ReviewUI:
         Subclasses must override this.
 
         Returns:
-            list of object:
+            list of reviewboard.reviews.models.base_comment.BaseComment:
             The list of comments for the page.
         """
+        if isinstance(self.obj, FileAttachment):
+            comments = FileAttachmentComment.objects.filter(
+                file_attachment_id=self.obj.pk)
+
+            if self.diff_against_obj:
+                assert isinstance(self.diff_against_obj, FileAttachment)
+                comments = comments.filter(
+                    diff_against_file_attachment_id=self.diff_against_obj.pk)
+            else:
+                comments = comments.filter(
+                    diff_against_file_attachment_id__isnull=True)
+
+            return list(comments)
+
         raise NotImplementedError
 
     def get_caption(
@@ -370,6 +458,12 @@ class ReviewUI:
             str:
             The caption for the reviewable object.
         """
+        if isinstance(self.obj, FileAttachment):
+            if draft and self.obj.draft_caption:
+                return self.obj.draft_caption
+            else:
+                return self.obj.caption
+
         raise NotImplementedError
 
     def get_comment_thumbnail(
@@ -409,12 +503,23 @@ class ReviewUI:
             str:
             The URL to link to the comment.
         """
+        if isinstance(comment, FileAttachmentComment):
+            assert isinstance(self.obj, FileAttachment)
+
+            return local_site_reverse(
+                'file-attachment',
+                local_site=self.review_request.local_site,
+                kwargs={
+                    'review_request_id': self.review_request.display_id,
+                    'file_attachment_id': self.obj.pk,
+                })
+
         raise NotImplementedError
 
     def get_comment_link_text(
         self,
         comment: BaseComment,
-    ) -> str:
+    ) -> Optional[str]:
         """Return the text to link to a comment.
 
         This must be implemented by subclasses.
@@ -427,6 +532,9 @@ class ReviewUI:
             str:
             The text used to link to the comment.
         """
+        if isinstance(self.obj, FileAttachment):
+            return self.obj.display_name
+
         raise NotImplementedError
 
     def get_extra_context(
@@ -455,7 +563,38 @@ class ReviewUI:
             dict:
             The attributes to pass to the model.
         """
-        return {}
+        data: Dict[str, Any] = {}
+        obj = self.obj
+
+        if isinstance(obj, FileAttachment):
+            state = self.review_request.get_file_attachment_state(obj)
+            data.update({
+                'fileAttachmentID': obj.pk,
+                'fileRevision': obj.attachment_revision,
+                'filename': obj.orig_filename,
+                'state': state.value,
+            })
+
+            if obj.attachment_history is not None:
+                attachments = FileAttachment.objects.filter(
+                    attachment_history=obj.attachment_history)
+                data['attachmentRevisionIDs'] = list(
+                    attachments.order_by('attachment_revision')
+                    .values_list('pk', flat=True))
+                data['numRevisions'] = attachments.count()
+
+            if self.diff_against_obj:
+                diff_against_obj = self.diff_against_obj
+                assert isinstance(diff_against_obj, FileAttachment)
+
+                data['diffCaption'] = diff_against_obj.display_name
+                data['diffAgainstFileAttachmentID'] = diff_against_obj.pk
+                data['diffRevision'] = diff_against_obj.attachment_revision
+
+                if type(self) != type(diff_against_obj.review_ui):
+                    data['diffTypeMismatch'] = True
+
+        return data
 
     def get_js_view_data(self) -> JSONDict:
         """Return data to pass to the JavaScript View during instantiation.
@@ -562,7 +701,7 @@ class ReviewUI:
         assert self.request is not None
         user = self.request.user
 
-        return {
+        data = {
             'comment_id': comment.pk,
             'text': normalize_text_for_edit(user, comment.text,
                                             comment.rich_text),
@@ -582,278 +721,8 @@ class ReviewUI:
                 comment.issue_status),
         }
 
-
-class FileAttachmentReviewUI(ReviewUI):
-    """Base class for Review UIs for file attachments.
-
-    Review UIs that deal with
-    :py:class:`~reviewboard.attachments.models.FileAttachment` objects can
-    subclass this to provide the common functionality for their Review UI.
-
-    This class handles fetching and serializing comments, locating a correct
-    subclass for a given mimetype, and feeding data to the JavaScript
-    :js:class:`RB.AbstractReviewable` model.
-
-    This also handles much of the work for diffing file attachments.
-    """
-
-    name = 'Unknown file type'
-    object_key = 'file'
-    diff_object_key = 'diff_against_file'
-    supported_mimetypes = []
-    js_model_class = 'RB.DummyReviewable'
-    js_view_class = 'RB.DummyReviewableView'
-
-    def is_enabled_for(
-        self,
-        user: Optional[User] = None,
-        review_request: Optional[ReviewRequest] = None,
-        file_attachment: Optional[FileAttachment] = None,
-        **kwargs,
-    ) -> bool:
-        """Return whether the Review UI is enabled under the given criteria.
-
-        This can enable or disable a Review UI's functionality, both on the
-        file attachment thumbnail and Review UI page, depending on the
-        user, review request, file attachment, or some state associated with
-        one or more of those.
-
-        When this is called, the arguments are always passed as keyword
-        arguments. Subclasses don't need to accept all the arguments, as
-        long as they take a ``**kwargs``.
-
-        Args:
-            user (django.contrib.auth.models.User, optional):
-                The user to check.
-
-            review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest):
-                The review request to check.
-
-            file_attachment (reviewboard.attachments.models.FileAttachment):
-                The file attachment to check.
-
-            **kwargs (dict):
-                Additional keyword arguments, for future expansion.
-
-        Returns:
-            bool:
-            ``True`` if the Review UI is enabled for the given criteria.
-            ``False`` otherwise.
-
-            By default, Review UIs are always enabled.
-        """
-        return True
-
-    def get_comments(self):
-        """Return a list of comments made on the file attachment.
-
-        If this Review UI is showing a diff between two attachments, the
-        comments returned will be specific to that diff.
-
-        Returns:
-            list of reviewboard.reviews.models.file_attachment_comment.FileAttachmentComment:
-            The list of comments on the file attachment or the diff.
-        """
-        assert isinstance(self.obj, FileAttachment)
-        comments = FileAttachmentComment.objects.filter(
-            file_attachment_id=self.obj.pk)
-
-        if self.diff_against_obj:
-            assert isinstance(self.diff_against_obj, FileAttachment)
-            comments = comments.filter(
-                diff_against_file_attachment_id=self.diff_against_obj.pk)
-        else:
-            comments = comments.filter(
-                diff_against_file_attachment_id__isnull=True)
-
-        return comments
-
-    def get_caption(
-        self,
-        draft: Optional[ReviewRequestDraft] = None,
-    ) -> str:
-        """Return the caption to show for the file attachment.
-
-        Args:
-            draft (reviewboard.reviews.models.review_request_draft.
-                   ReviewRequestDraft, optional):
-                The active review request draft for the user, if any.
-
-        Returns:
-            str:
-            The caption for the file attachment.
-        """
-        assert isinstance(self.obj, FileAttachment)
-
-        if draft and self.obj.draft_caption:
-            return self.obj.draft_caption
-
-        return self.obj.caption
-
-    def get_comment_link_url(
-        self,
-        comment: FileAttachmentComment,
-    ) -> str:
-        """Return a URL for linking to a comment.
-
-        This will normally just link to the Review UI itself, but subclasses
-        may want to override this to provide a more specialized URL.
-
-        Args:
-            comment (reviewboard.reviews.models.file_attachment_comment.
-                     FileAttachmentComment):
-                The comment to return a link for.
-
-        Returns:
-            str:
-            The URL to link to the comment.
-        """
-        local_site_name = None
-
-        if self.review_request.local_site:
-            local_site_name = self.review_request.local_site.name
-
-        assert isinstance(self.obj, FileAttachment)
-
-        return local_site_reverse(
-            'file-attachment',
-            local_site_name=local_site_name,
-            kwargs={
-                'review_request_id': self.review_request.display_id,
-                'file_attachment_id': self.obj.pk,
-            })
-
-    def get_comment_link_text(
-        self,
-        comment: FileAttachmentComment,
-    ) -> Optional[str]:
-        """Return the text to link to a comment.
-
-        This will normally just return the file attachment's display name, but
-        some may want to specialize to list things like page numbers or
-        sections.
-
-        Args:
-            comment (reviewboard.reviews.models.file_attachment_comment.
-                     FileAttachmentComment):
-                The comment to return text for.
-
-        Returns:
-            str:
-            The text used to link to the comment.
-        """
-        assert isinstance(self.obj, FileAttachment)
-        return self.obj.display_name
-
-    def serialize_comment(
-        self,
-        comment: FileAttachmentComment,
-    ) -> JSONDict:
-        """Serialize a comment.
-
-        This will provide information on the comment that may be useful
-        to the JavaScript code.
-
-        Args:
-            comment (reviewboard.reviews.models.base_comment.BaseComment):
-                The comment to serialize.
-
-        Returns:
-            dict:
-            The serialized comment data.
-        """
-        data = super(FileAttachmentReviewUI, self).serialize_comment(comment)
-        data.update(comment.extra_data)
-
-        return data
-
-    def build_render_context(
-        self,
-        request: HttpRequest,
-        inline: bool = False,
-        **kwargs,
-    ) -> Dict[str, Any]:
-        """Return extra context to use when rendering the Review UI.
-
-        Args:
-            request (django.http.HttpRequest):
-                The HTTP request from the client.
-
-            inline (bool, optional):
-                Whether to render this such that it can be embedded into an
-                existing page, instead of as a standalone page.
-
-        Returns:
-            dict:
-            The context to use in the template.
-        """
-        context = super(FileAttachmentReviewUI, self).build_render_context(
-            request=request,
-            inline=inline)
-
-        context['social_page_title'] = (
-            'Attachment for Review Request #%s: %s'
-            % (self.review_request.display_id, context['caption'])
-        )
-
-        if not inline:
-            context['tabs'].append({
-                'url': request.path,
-                'text': _('File'),
-            })
-
-            prev_file_attachment, next_file_attachment = \
-                self._get_adjacent_file_attachments(
-                    context['review_request_details'])
-
-            context.update({
-                'next_file_attachment': next_file_attachment,
-                'prev_file_attachment': prev_file_attachment,
-            })
-
-        return context
-
-    def get_js_model_data(self) -> JSONDict:
-        """Return model data for the JavaScript AbstractReviewable subclass.
-
-        This will return information on the file attachment, its history,
-        and any information on an attachment being diffed against.
-
-        Subclasses can override this to return additional data.
-
-        Returns:
-            dict:
-            The attributes to pass to the model.
-        """
-        obj = self.obj
-        assert isinstance(obj, FileAttachment)
-
-        data = {
-            'fileAttachmentID': obj.pk,
-            'fileRevision': obj.attachment_revision,
-            'filename': obj.orig_filename,
-            'state': self.review_request.get_file_attachment_state(obj).value,
-        }
-
-        if obj.attachment_history is not None:
-            attachments = FileAttachment.objects.filter(
-                attachment_history=obj.attachment_history)
-            data['attachmentRevisionIDs'] = list(
-                attachments.order_by('attachment_revision')
-                .values_list('pk', flat=True))
-            data['numRevisions'] = attachments.count()
-
-        if self.diff_against_obj:
-            diff_against_obj = self.diff_against_obj
-            assert isinstance(diff_against_obj, FileAttachment)
-
-            data['diffCaption'] = diff_against_obj.display_name
-            data['diffAgainstFileAttachmentID'] = diff_against_obj.pk
-            data['diffRevision'] = diff_against_obj.attachment_revision
-
-            if type(self) is not type(diff_against_obj.review_ui):
-                data['diffTypeMismatch'] = True
+        if isinstance(comment, FileAttachmentComment):
+            data.update(comment.extra_data)
 
         return data
 
@@ -902,6 +771,84 @@ class FileAttachmentReviewUI(ReviewUI):
         return prev_obj, next_obj
 
     @classmethod
+    def for_object(
+        cls,
+        obj: object,
+    ) -> Optional[type[ReviewUI]]:
+        """Return the Review UI that is the best fit for a given object.
+
+        Args:
+            obj (object):
+                The object to review.
+
+        Returns:
+            class:
+            The Review UI class for the given object, or ``None`` if a
+            suitable one could not be found.
+        """
+        is_file_attachment = isinstance(obj, FileAttachment)
+        mime_str: Optional[str] = None
+        extension: Optional[str] = None
+
+        if is_file_attachment:
+            mime_str = obj.mimetype
+
+            assert obj.filename is not None
+            extension = os.path.splitext(obj.filename)[1]
+
+        if not mime_str:
+            return None
+
+        if extension and extension in MIMETYPE_EXTENSIONS:
+            mimetype = MIMETYPE_EXTENSIONS[extension]
+        else:
+            try:
+                mimetype = mimeparse.parse_mime_type(mime_str)
+            except Exception as e:
+                logger.error('Unable to parse MIME type "%s" for '
+                             'reviewable object %s: %s',
+                             mime_str, obj, e)
+                return None
+
+        best_score = 0
+        best_fit: Optional[type[ReviewUI]] = None
+
+        for review_ui in _review_uis:
+            if not (is_file_attachment and
+                    review_ui.supports_file_attachments):
+                continue
+
+            for mt in review_ui.supported_mimetypes:
+                try:
+                    score = score_match(mimeparse.parse_mime_type(mt),
+                                        mimetype)
+
+                    if score > best_score:
+                        best_score = score
+                        best_fit = review_ui
+                except ValueError:
+                    continue
+
+        return best_fit
+
+
+class FileAttachmentReviewUI(ReviewUI):
+    """Base class for Review UIs for file attachments.
+
+    Review UIs that deal with
+    :py:class:`~reviewboard.attachments.models.FileAttachment` objects can
+    subclass this to provide the common functionality for their Review UI.
+
+    This class handles fetching and serializing comments, locating a correct
+    subclass for a given mimetype, and feeding data to the JavaScript
+    :js:class:`RB.AbstractReviewable` model.
+
+    This also handles much of the work for diffing file attachments.
+    """
+
+    supports_file_attachments = True
+
+    @classmethod
     def get_best_handler(
         cls,
         mimetype: Tuple[str, str, str],
@@ -919,10 +866,14 @@ class FileAttachmentReviewUI(ReviewUI):
             A tuple of ``(best_score, review_ui)``, or ``(0, None)`` if one
             could not be found.
         """
+        RemovedInReviewBoard80Warning.warn(
+            'FileAttachmentReviewUI.get_best_handler is deprecated and will '
+            'be removed in Review Board 8.0.')
+
         best_score = 0
         best_fit = None
 
-        for review_ui in _file_attachment_review_uis:
+        for review_ui in _review_uis:
             for mt in review_ui.supported_mimetypes:
                 try:
                     score = score_match(mimeparse.parse_mime_type(mt),
@@ -952,6 +903,11 @@ class FileAttachmentReviewUI(ReviewUI):
             The Review UI for the attachment, or ``None`` if a suitable one
             could not be found.
         """
+        RemovedInReviewBoard80Warning.warn(
+            'FileAttachmentReviewUI.for_type is deprecated and will '
+            'be removed in Review Board 8.0. Callers should instead use '
+            'ReviewUI.for_object')
+
         if attachment.mimetype:
             # Override the mimetype if mimeparse is known to misinterpret this
             # type of file as 'octet-stream'
@@ -993,17 +949,16 @@ def register_ui(review_ui: type[ReviewUI]) -> None:
     Args:
         review_ui (type):
             The Review UI to register. This must be a subclass of
-            :py:class:`FileAttachmentReviewUI`.
+            :py:class:`ReviewUI`.
 
     Raises:
         TypeError:
             The provided Review UI class is not of a compatible type.
     """
-    if not issubclass(review_ui, FileAttachmentReviewUI):
-        raise TypeError('Only FileAttachmentReviewUI subclasses can be '
-                        'registered')
+    if not issubclass(review_ui, ReviewUI):
+        raise TypeError('Only ReviewUI subclasses can be registered')
 
-    _file_attachment_review_uis.append(review_ui)
+    _review_uis.append(review_ui)
 
 
 def unregister_ui(review_ui: type[ReviewUI]) -> None:
@@ -1011,14 +966,13 @@ def unregister_ui(review_ui: type[ReviewUI]) -> None:
 
     This will unregister a previously registered Review UI.
 
-    Only FileAttachmentReviewUI subclasses are supported. The class must
-    have been registered beforehand or a ValueError will be thrown.
+    Only ReviewUI subclasses are supported. The class must have been registered
+    beforehand or a ValueError will be thrown.
 
     Args:
         review_ui (type):
             The Review UI to unregister. This must be a subclass of
-            :py:class:`FileAttachmentReviewUI`, and must have been registered
-            before.
+            :py:class:`ReviewUI`, and must have been registered before.
 
     Raises:
         TypeError:
@@ -1027,12 +981,12 @@ def unregister_ui(review_ui: type[ReviewUI]) -> None:
         ValueError:
             The provided Review UI was not previously registered.
     """
-    if not issubclass(review_ui, FileAttachmentReviewUI):
-        raise TypeError('Only FileAttachmentReviewUI subclasses can be '
+    if not issubclass(review_ui, ReviewUI):
+        raise TypeError('Only ReviewUI subclasses can be '
                         'unregistered')
 
     try:
-        _file_attachment_review_uis.remove(review_ui)
+        _review_uis.remove(review_ui)
     except ValueError:
         logger.error('Failed to unregister missing review UI %r',
                      review_ui)
