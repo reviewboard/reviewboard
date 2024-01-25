@@ -10,6 +10,7 @@ import {
 
 import {
     EnabledFeatures,
+    ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
 import {
@@ -123,7 +124,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 reviewRequestData: {
                     id: 123,
                     loaded: true,
-                    state: RB.ReviewRequest.PENDING,
+                    state: ReviewRequest.PENDING,
                 },
                 revision: {
                     interdiff_revision: null,
@@ -1203,7 +1204,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 reviewRequestData: {
                     id: 123,
                     loaded: true,
-                    state: RB.ReviewRequest.PENDING,
+                    state: ReviewRequest.PENDING,
                 },
                 revision: {
                     interdiff_revision: null,

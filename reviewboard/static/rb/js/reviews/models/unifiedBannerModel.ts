@@ -6,6 +6,7 @@ import { BaseModel, spina } from '@beanbag/spina';
 import {
     Review,
     ReviewReply,
+    ReviewRequest,
 } from 'reviewboard/common';
 
 import { ReviewRequestEditor } from './reviewRequestEditorModel';
@@ -61,7 +62,7 @@ interface UnifiedBannerAttrs {
     reviewReplyDrafts: Review[];
 
     /** The current review request. */
-    reviewRequest: RB.ReviewRequest;
+    reviewRequest: ReviewRequest;
 
     /** The review request editor. */
     reviewRequestEditor: ReviewRequestEditor;
@@ -101,8 +102,8 @@ export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
     initialize() {
         const reviewRequest = this.get('reviewRequest');
         const pendingReview = this.get('pendingReview');
-        console.assert(reviewRequest, 'reviewRequest must be provided');
-        console.assert(pendingReview, 'pendingReview must be provided');
+        console.assert(!!reviewRequest, 'reviewRequest must be provided');
+        console.assert(!!pendingReview, 'pendingReview must be provided');
 
         this.listenTo(reviewRequest.draft, 'saved destroyed',
                       this.#updateDraftModes);

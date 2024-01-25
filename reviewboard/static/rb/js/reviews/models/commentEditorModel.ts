@@ -4,6 +4,7 @@ import { BaseModel, spina } from '@beanbag/spina';
 import {
     BaseComment,
     ExtraDataMixin,
+    ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
 
@@ -48,7 +49,7 @@ interface CommentEditorAttrs {
     requireVerification: boolean;
 
     /** The review request that this comment is on. */
-    reviewRequest: RB.ReviewRequest;
+    reviewRequest: ReviewRequest;
 
     /** The review request editor for the review request. */
     reviewRequestEditor: ReviewRequestEditor;

@@ -7,6 +7,7 @@ import {
     spyOn,
 } from 'jasmine-core';
 
+import { ReviewRequest } from 'reviewboard/common';
 import { DiffViewerPage } from 'reviewboard/reviews';
 
 
@@ -120,7 +121,7 @@ suite('rb/pages/models/DiffViewerPage', function() {
             expect(reviewRequest.get('public')).toBe(true);
             expect(reviewRequest.get('reviewURL')).toBe('/s/foo/r/123/');
             expect(reviewRequest.get('state'))
-                .toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
+                .toBe(ReviewRequest.CLOSE_SUBMITTED);
             expect(reviewRequest.get('summary'))
                 .toBe('This is a summary');
             expect(reviewRequest.get('targetGroups')).toEqual([{
@@ -135,7 +136,7 @@ suite('rb/pages/models/DiffViewerPage', function() {
                 .toBe('This is testing done');
             expect(reviewRequest.get('testingDoneRichText')).toBe(true);
             expect(reviewRequest.get('visibility'))
-                .toBe(RB.ReviewRequest.VISIBILITY_ARCHIVED);
+                .toBe(ReviewRequest.VISIBILITY_ARCHIVED);
 
             /* Check the review request's repository. */
             const repository = reviewRequest.get('repository');

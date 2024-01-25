@@ -6,7 +6,10 @@ import {
     it,
 } from 'jasmine-core';
 
-import { Review } from 'reviewboard/common';
+import {
+    Review,
+    ReviewRequest,
+} from 'reviewboard/common';
 
 
 suite('rb/resources/models/Review', function() {
@@ -14,7 +17,7 @@ suite('rb/resources/models/Review', function() {
 
     beforeEach(function() {
         model = new Review({
-            parentObject: new RB.ReviewRequest(),
+            parentObject: new ReviewRequest(),
         });
     });
 

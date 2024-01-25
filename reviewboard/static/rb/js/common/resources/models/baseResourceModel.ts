@@ -143,8 +143,10 @@ type DeserializerMap = {
     ],
 })
 export class BaseResource<
-    TDefaults extends BaseResourceAttrs = BaseResourceAttrs
-> extends BaseModel<TDefaults> {
+    TDefaults extends BaseResourceAttrs = BaseResourceAttrs,
+    TOptions = Backbone.ModelSetOptions,
+    TExtraOptions = unknown
+> extends BaseModel<TDefaults, TOptions, TExtraOptions> {
     static strings: { [key: string]: string } = {
         INVALID_EXTRADATA_TYPE:
             'extraData must be an object or undefined',
@@ -227,8 +229,19 @@ export class BaseResource<
 
     /**
      * Initialize the model.
+     *
+     * Args:
+     *     attributes (object):
+     *         Initial attribute values for the model.
+     *
+     *     options (object):
+     *         Options for the model.
      */
-    initialize() {
+    initialize(
+        attributes?: Partial<BaseResourceAttrs>,
+        options?: Backbone.CombinedModelConstructorOptions<
+            TExtraOptions, this>,
+    ) {
         if (this.supportsExtraData) {
             this._setupExtraData();
         }

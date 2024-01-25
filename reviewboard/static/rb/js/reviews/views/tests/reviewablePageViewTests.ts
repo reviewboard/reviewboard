@@ -9,7 +9,10 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { EnabledFeatures } from 'reviewboard/common';
+import {
+    EnabledFeatures,
+    ReviewRequest,
+} from 'reviewboard/common';
 import {
     ReviewablePage,
     ReviewDialogView,
@@ -51,7 +54,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
             reviewRequestData: {
                 id: 123,
                 loaded: true,
-                state: RB.ReviewRequest.PENDING,
+                state: ReviewRequest.PENDING,
             },
         }, {
             parse: true,

@@ -10,6 +10,7 @@ import {
 import {
     FileAttachment,
     FileAttachmentStates,
+    ReviewRequest,
 } from 'reviewboard/common';
 import { FileAttachmentThumbnailView } from 'reviewboard/reviews';
 
@@ -18,12 +19,12 @@ declare const $testsScratch: JQuery;
 
 
 suite('rb/views/FileAttachmentThumbnailView', function() {
-    let reviewRequest: RB.ReviewRequest;
+    let reviewRequest: ReviewRequest;
     let model: FileAttachment;
     let view: FileAttachmentThumbnailView;
 
     beforeEach(function() {
-        reviewRequest = new RB.ReviewRequest();
+        reviewRequest = new ReviewRequest();
         model = new FileAttachment({
             downloadURL: 'http://example.com/file.png',
             filename: 'file.png',

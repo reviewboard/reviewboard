@@ -11,6 +11,7 @@ import {
     BaseCollection,
     ResourceCollection,
     Review,
+    ReviewRequest,
 } from 'reviewboard/common';
 
 
@@ -19,7 +20,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
     let reviewRequest;
 
     beforeEach(function() {
-        reviewRequest = new RB.ReviewRequest({
+        reviewRequest = new ReviewRequest({
             id: 123,
             links: {
                 reviews: {

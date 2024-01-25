@@ -183,7 +183,9 @@ class StoredItems extends BaseResource<StoredItemsAttrs> {
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    addImmediately(obj: Backbone.Model) {
+    addImmediately(
+        obj: Backbone.Model,
+    ): Promise<JQuery.jqXHR> {
         const url = this.url();
 
         if (url) {
@@ -218,7 +220,9 @@ class StoredItems extends BaseResource<StoredItemsAttrs> {
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    removeImmediately(obj: Backbone.Model) {
+    removeImmediately(
+        obj: Backbone.Model,
+    ): Promise<void> {
         const url = this.url();
 
         return new Promise((resolve, reject) => {

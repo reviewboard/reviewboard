@@ -4,6 +4,7 @@ import {
     Actions,
     BaseResource,
     Review,
+    ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
 import { OverlayView } from 'reviewboard/ui';
@@ -37,7 +38,7 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
      * Instance variables *
      **********************/
     #activationKeyDown = false;
-    #reviewRequest: RB.ReviewRequest;
+    #reviewRequest: ReviewRequest;
 
     /**
      * Initialize the view.
@@ -59,7 +60,7 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
         super.onRender();
 
         const visibility = this.#reviewRequest.get('visibility');
-        const visible = (visibility === RB.ReviewRequest.VISIBILITY_VISIBLE);
+        const visible = (visibility === ReviewRequest.VISIBILITY_VISIBLE);
 
         this.$('.rb-icon')
             .toggleClass('rb-icon-archive-on', !visible)
@@ -84,9 +85,9 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
 
             const visibility = this.#reviewRequest.get('visibility');
             const visible = (
-                visibility === RB.ReviewRequest.VISIBILITY_VISIBLE);
+                visibility === ReviewRequest.VISIBILITY_VISIBLE);
             const collection = (
-                visibility === RB.ReviewRequest.VISIBILITY_MUTED
+                visibility === ReviewRequest.VISIBILITY_MUTED
                 ? UserSession.instance.mutedReviewRequests
                 : UserSession.instance.archivedReviewRequests)
 
@@ -98,8 +99,8 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
 
             this.#reviewRequest.set('visibility',
                                     visible
-                                    ? RB.ReviewRequest.VISIBILITY_ARCHIVED
-                                    : RB.ReviewRequest.VISIBILITY_VISIBLE);
+                                    ? ReviewRequest.VISIBILITY_ARCHIVED
+                                    : ReviewRequest.VISIBILITY_VISIBLE);
         }
     }
 
@@ -184,9 +185,9 @@ abstract class BaseVisibilityActionView extends Actions.ActionView {
     collection: BaseResource;
 
     /** The visibility type controlled by this action. */
-    visibilityType = RB.ReviewRequest.VISIBILITY_ARCHIVED;
+    visibilityType = ReviewRequest.VISIBILITY_ARCHIVED;
 
-    #reviewRequest: RB.ReviewRequest;
+    #reviewRequest: ReviewRequest;
 
     /**
      * Initialize the view.
@@ -251,7 +252,7 @@ abstract class BaseVisibilityActionView extends Actions.ActionView {
         this.#reviewRequest.set('visibility',
                                 visible
                                 ? this.visibilityType
-                                : RB.ReviewRequest.VISIBILITY_VISIBLE);
+                                : ReviewRequest.VISIBILITY_VISIBLE);
     }
 }
 
@@ -308,7 +309,7 @@ export class MuteActionView extends BaseVisibilityActionView {
     collection = UserSession.instance.mutedReviewRequests;
 
     /** The visibility type controlled by this action. */
-    visibilityType = RB.ReviewRequest.VISIBILITY_MUTED;
+    visibilityType = ReviewRequest.VISIBILITY_MUTED;
 
     /**
      * Return the label to use for the menu item.
@@ -608,7 +609,7 @@ export class CloseDiscardedActionView extends Actions.MenuItemActionView {
         if (confirm(confirmText)) {
             reviewRequest
                 .close({
-                    type: RB.ReviewRequest.CLOSE_DISCARDED,
+                    type: ReviewRequest.CLOSE_DISCARDED,
                 })
                 .catch(err => this.model.trigger('closeError', err.message));
         }
@@ -649,7 +650,7 @@ export class CloseCompletedActionView extends Actions.MenuItemActionView {
         if (submit) {
             reviewRequest
                 .close({
-                    type: RB.ReviewRequest.CLOSE_SUBMITTED,
+                    type: ReviewRequest.CLOSE_SUBMITTED,
                 })
                 .catch(err => this.model.trigger('closeError', err.message));
         }

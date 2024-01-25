@@ -8,7 +8,10 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { UserSession } from 'reviewboard/common';
+import {
+    ReviewRequest,
+    UserSession,
+} from 'reviewboard/common';
 import {
     CommentEditor,
     CommentDialogView,
@@ -27,7 +30,7 @@ suite('rb/views/CommentDialogView', function() {
     beforeEach(function() {
         DnDUploader.create();
 
-        reviewRequest = new RB.ReviewRequest();
+        reviewRequest = new ReviewRequest();
         reviewRequestEditor = new ReviewRequestEditor({
             reviewRequest: reviewRequest,
         });

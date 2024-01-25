@@ -12,6 +12,7 @@ import {
 import {
     EnabledFeatures,
     Review,
+    ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
 import {
@@ -110,7 +111,7 @@ suite('rb/views/ReviewDialogView', function() {
 
     beforeEach(function() {
         const origMove = $.fn.move;
-        const reviewRequest = new RB.ReviewRequest({
+        const reviewRequest = new ReviewRequest({
             summary: 'My Review Request',
         });
 

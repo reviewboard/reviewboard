@@ -1,5 +1,134 @@
 /**
  * A review request.
+ */
+
+import { Collection, spina } from '@beanbag/spina';
+
+import { UserSession } from '../../models/userSessionModel';
+import { BaseResource, BaseResourceAttrs } from './baseResourceModel';
+import { FileAttachment, FileAttachmentAttrs } from './fileAttachmentModel';
+import { Review, ReviewAttrs } from './reviewModel';
+
+
+/**
+ * Attributes for the ReviewRequest model.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface ReviewRequestAttrs extends BaseResourceAttrs {
+    /** The reason why the review request is not approved. */
+    approvalFailure: string;
+
+    /** Whether the review request is approved. */
+    approved: boolean;
+
+    /** The branch field content. */
+    branch: string;
+
+    /** The URL template to use for linking to bugs. */
+    bugTrackerURL: string;
+
+    /** The list of bugs addressed by this change. */
+    bugsClosed: string[];
+
+    /** The commit ID of the change. */
+    commitID: string;
+
+    /** The close description for the review request. */
+    closeDescription: string;
+
+    /** Whether the ``closeDescription`` field is in Markdown. */
+    closeDescriptionRichText: boolean;
+
+    /** A list of other review requests that this one depends on. */
+    dependsOn: ReviewRequest[];
+
+    /** The review request description */
+    description: string;
+
+    /** Whether the ``description`` field is in Markdown. */
+    descriptionRichText: boolean;
+
+    /** The current draft review, if any. */
+    draftReview: Review;
+
+    /** The last updated timestamp for the review request. */
+    lastUpdated: string;
+
+    /** The local site prefix for URLs related to the review request. */
+    localSitePrefix: string;
+
+    /** Whether the review request has been published. */
+    public: boolean;
+
+    /** The repository for this review request. */
+    repository: RB.Repository;
+
+    /** The URL to the review request. */
+    reviewURL: string;
+
+    /**
+     * The state of the review request.
+     *
+     * This is one of ``ReviewRequest.CLOSE_DISCARDED``,
+     * ``ReviewRequest.CLOSE_SUBMITTED``, or ``ReviewRequest.PENDING``.
+     */
+    state: number;
+
+    /** The summary for the review request. */
+    summary: string;
+
+    /** A list of group names that this review request is assigned to. */
+    targetGroups: string[];
+
+    /** A list of user names that this review request is assigned to. */
+    targetPeople: string[];
+
+    /** The testing done field for the review request. */
+    testingDone: string;
+
+    /** Whether the ``testingDone`` field is in Markdown. */
+    testingDoneRichText: boolean;
+}
+
+
+interface ReviewRequestResourceData {
+    absolute_url: string;
+    approvalFailure: string;
+    approved: boolean;
+    blocks: object[];
+    branch: string;
+    bugTrackerURL: string;
+    bugs_closed: string[];
+    depends_on: object[];
+    public: boolean;
+    raw_text_fields: { [key: string]: string };
+    ship_it_count: number;
+    status: string;
+    summary: string;
+    target_groups: object[];
+    target_people: object[];
+    testing_done: string;
+    testing_done_text_type: string;
+    time_added: string;
+    url: string;
+}
+
+
+/**
+ * Options for the ReviewRequest model.
+ *
+ * Version Added:
+ *     7.0
+ */
+interface ReviewRequestOptions {
+    extraDraftAttrs?: { [key: string]: unknown };
+}
+
+
+/**
+ * A review request.
  *
  * ReviewRequest is the starting point for much of the resource API. Through
  * it, the caller can create drafts, diffs, file attachments, and screenshots.
@@ -11,17 +140,26 @@
  * A review request can be closed by using the close() function, reopened
  * through reopen(), or even permanently destroyed by calling destroy().
  */
-RB.ReviewRequest = RB.BaseResource.extend({
-    defaults() {
+@spina
+export class ReviewRequest extends BaseResource<
+    ReviewRequestAttrs, Backbone.ModelSetOptions, ReviewRequestOptions> {
+    /**
+     * Return default values for the model attributes.
+     *
+     * Returns:
+     *     ReviewRequestAttrs:
+     *     Default values for the model attributes.
+     */
+    defaults(): ReviewRequestAttrs {
         return _.defaults({
-            approved: false,
             approvalFailure: null,
+            approved: false,
             branch: null,
             bugTrackerURL: null,
             bugsClosed: null,
-            commitID: null,
             closeDescription: null,
             closeDescriptionRichText: false,
+            commitID: null,
             dependsOn: [],
             description: null,
             descriptionRichText: false,
@@ -36,18 +174,18 @@ RB.ReviewRequest = RB.BaseResource.extend({
             targetGroups: [],
             targetPeople: [],
             testingDone: null,
-            testingDoneRichText: false
-        }, RB.BaseResource.prototype.defaults());
-    },
+            testingDoneRichText: false,
+        }, super.defaults());
+    }
 
-    rspNamespace: 'review_request',
+    static rspNamespace = 'review_request';
 
-    extraQueryArgs: {
+    static extraQueryArgs = {
         'force-text-type': 'html',
-        'include-text-types': 'raw'
-    },
+        'include-text-types': 'raw',
+    };
 
-    attrToJsonMap: {
+    static attrToJsonMap = {
         approvalFailure: 'approval_failure',
         bugsClosed: 'bugs_closed',
         closeDescription: 'close_description',
@@ -59,10 +197,10 @@ RB.ReviewRequest = RB.BaseResource.extend({
         targetGroups: 'target_groups',
         targetPeople: 'target_people',
         testingDone: 'testing_done',
-        testingDoneRichText: 'testing_done_text_type'
-    },
+        testingDoneRichText: 'testing_done_text_type',
+    };
 
-    deserializedAttrs: [
+    static deserializedAttrs = [
         'approved',
         'approvalFailure',
         'branch',
@@ -76,8 +214,30 @@ RB.ReviewRequest = RB.BaseResource.extend({
         'summary',
         'targetGroups',
         'targetPeople',
-        'testingDone'
-    ],
+        'testingDone',
+    ];
+
+    static CHECK_UPDATES_MSECS = 5 * 60 * 1000; // Every 5 minutes
+
+    static CLOSE_DISCARDED = 1;
+    static CLOSE_SUBMITTED = 2;
+    static PENDING = 3;
+
+    static VISIBILITY_VISIBLE = 1;
+    static VISIBILITY_ARCHIVED = 2;
+    static VISIBILITY_MUTED = 3;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The current draft of the review request, if any. */
+    draft: RB.DraftReviewRequest;
+
+    /** The collection of reviews for this review request. */
+    reviews = new Collection<Review>([], {
+        model: Review,
+    });
 
     /**
      * Initialize the model.
@@ -94,27 +254,26 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *         Additional attributes to include when creating a review request
      *         draft.
      */
-    initialize(attrs, options={}) {
-        RB.BaseResource.prototype.initialize.call(this, attrs, options);
-
-        this.reviews = new Backbone.Collection([], {
-            model: RB.Review
-        });
+    initialize(
+        attrs?: ReviewRequestAttrs,
+        options: Backbone.CombinedModelConstructorOptions<
+            ReviewRequestOptions, this> = {}) {
+        super.initialize();
 
         this.draft = new RB.DraftReviewRequest(_.defaults({
-            parentObject: this,
             branch: this.get('branch'),
             bugsClosed: this.get('bugsClosed'),
             dependsOn: this.get('dependsOn'),
             description: this.get('description'),
             descriptionRichText: this.get('descriptionRichText'),
+            parentObject: this,
             summary: this.get('summary'),
             targetGroups: this.get('targetGroups'),
             targetPeople: this.get('targetPeople'),
             testingDone: this.get('testingDone'),
-            testingDoneRichText: this.get('testingDoneRichText')
+            testingDoneRichText: this.get('testingDoneRichText'),
         }, options.extraDraftAttrs));
-    },
+    }
 
     /**
      * Return the URL for syncing this model.
@@ -123,12 +282,12 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     string:
      *     The URL for the API resource.
      */
-    url() {
+    url(): string {
         const url = SITE_ROOT + (this.get('localSitePrefix') || '') +
                     'api/review-requests/';
 
         return this.isNew() ? url : `${url}${this.id}/`;
-    },
+    }
 
     /**
      * Create the review request from an existing commit.
@@ -137,40 +296,33 @@ RB.ReviewRequest = RB.BaseResource.extend({
      * a commitID option.
      *
      * Version Changed:
+     *     7.0:
+     *     Removed the old callback usage.
+     *
+     * Version Changed:
      *     5.0:
      *     Changed the arguments to take the commit ID directly, and return a
      *     promise rather than use callbacks.
      *
      * Args:
-     *     optionsOrCommitID (object or string):
-     *         If invoking in a legacy mode, this is an object with callbacks.
-     *         For new-style callers, this should be a string containing only
-     *         the commit ID to create the review request from.
-     *
-     *     context (object, optional):
-     *         Context to bind when calling callbacks.
+     *     commitID (string):
+     *         A string containing the commit ID to create the review
+     *         request from.
      *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    createFromCommit(optionsOrCommitID={}, context={}) {
-        if (_.isObject(optionsOrCommitID)) {
-            console.assert(optionsOrCommitID.commitID);
-            console.warn('RB.ReviewRequest.createFromCommit was called ' +
-                         'using callbacks. Callers should be updated to ' +
-                         'use promises instead.');
-            return RB.promiseToCallbacks(optionsOrCommitID, context, () =>
-                this.createFromCommit(optionsOrCommitID.commitID));
-        }
-
-        console.assert(optionsOrCommitID);
+    createFromCommit(
+        commitID: string,
+    ): Promise<JQuery.jqXHR> {
+        console.assert(!!commitID);
         console.assert(this.isNew());
 
-        this.set('commitID', optionsOrCommitID);
+        this.set('commitID', commitID);
 
         return this.save({ createFromCommit: true });
-    },
+    }
 
     /**
      * Create a Diff object for this review request.
@@ -179,11 +331,11 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     RB.Diff:
      *     The new diff model.
      */
-    createDiff() {
+    createDiff(): RB.Diff {
         return new RB.Diff({
-            parentObject: this
+            parentObject: this,
         });
-    },
+    }
 
     /**
      * Create a Review object for this review request.
@@ -204,7 +356,10 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     RB.Review:
      *     The new review object.
      */
-    createReview(reviewID, extraAttrs={}) {
+    createReview(
+        reviewID?: number,
+        extraAttrs: Partial<ReviewAttrs> = {},
+    ): Review {
         let review;
 
         if (reviewID === undefined) {
@@ -212,7 +367,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
 
             if (review === null) {
                 review = new RB.DraftReview({
-                    parentObject: this
+                    parentObject: this,
                 });
 
                 this.set('draftReview', review);
@@ -221,9 +376,9 @@ RB.ReviewRequest = RB.BaseResource.extend({
             review = this.reviews.get(reviewID);
 
             if (!review) {
-                review = new RB.Review(_.defaults({
+                review = new Review(_.defaults({
+                    id: reviewID,
                     parentObject: this,
-                    id: reviewID
                 }, extraAttrs));
                 this.reviews.add(review);
             }
@@ -231,7 +386,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
         }
 
         return review;
-    },
+    }
 
     /**
      * Create a Screenshot object for this review request.
@@ -244,12 +399,14 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     RB.Screenshot:
      *     The new screenshot object.
      */
-    createScreenshot(screenshotID) {
+    createScreenshot(
+        screenshotID: number,
+    ): RB.Screenshot {
         return new RB.Screenshot({
+            id: screenshotID,
             parentObject: this,
-            id: screenshotID
         });
-    },
+    }
 
     /**
      * Create a FileAttachment object for this review request.
@@ -262,14 +419,20 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     RB.FileAttachment:
      *     The new file attachment object.
      */
-    createFileAttachment(attributes) {
-        return new RB.FileAttachment(_.defaults({
-            parentObject: this
+    createFileAttachment(
+        attributes: Partial<FileAttachmentAttrs>,
+    ): FileAttachment {
+        return new FileAttachment(_.defaults({
+            parentObject: this,
         }, attributes));
-    },
+    }
 
     /**
      * Mark a review request as starred or unstarred.
+     *
+     * Version Changed:
+     *     7.0:
+     *     Got rid of old callbacks-style invocation.
      *
      * Args:
      *     starred (boolean):
@@ -285,21 +448,17 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    setStarred(starred, options={}, context=undefined) {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.ReviewRequest.setStarred was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.setStarred(starred));
-        }
+    async setStarred(
+        starred: boolean,
+    ): Promise<void> {
+        const watched = UserSession.instance.watchedReviewRequests;
 
-        const watched = RB.UserSession.instance.watchedReviewRequests;
-        return starred ? watched.addImmediately(this)
-                       : watched.removeImmediately(this);
-    },
+        if (starred) {
+            await watched.addImmediately(this)
+        } else {
+            await watched.removeImmediately(this);
+        }
+    }
 
     /**
      * Close the review request.
@@ -309,6 +468,10 @@ RB.ReviewRequest = RB.BaseResource.extend({
      * ReviewRequest.CLOSE_SUBMITTED).
      *
      * An optional description can be set by passing a 'description' option.
+     *
+     * Version Changed:
+     *     7.0:
+     *     Got rid of old callbacks-style invocation.
      *
      * Version Changed:
      *     5.0:
@@ -325,24 +488,16 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    async close(options, context=undefined) {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.ReviewRequest.close was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.close(newOptions));
-        }
-
+    async close(
+        options,
+    ): Promise<void> {
         const data = {};
 
         console.assert(options);
 
-        if (options.type === RB.ReviewRequest.CLOSE_DISCARDED) {
+        if (options.type === ReviewRequest.CLOSE_DISCARDED) {
             data.status = 'discarded';
-        } else if (options.type === RB.ReviewRequest.CLOSE_SUBMITTED) {
+        } else if (options.type === ReviewRequest.CLOSE_SUBMITTED) {
             data.status = 'submitted';
         } else {
             return Promise.reject(new Error('Invalid close type'));
@@ -377,37 +532,24 @@ RB.ReviewRequest = RB.BaseResource.extend({
         }
 
         this.markUpdated(this.get('lastUpdated'));
-    },
+    }
 
     /**
      * Reopen the review request.
      *
      * Version Changed:
+     *     7.0:
+     *     Got rid of old callbacks-style invocation.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and changed to return a promise.
-     *
-     * Args:
-     *     options (object, optional):
-     *         Options for the save operation.
-     *
-     *     context (object, optional):
-     *         Context to bind when calling callbacks.
      *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    async reopen(options={}, context=undefined) {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.ReviewRequest.reopen was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.reopen());
-        }
-
+    async reopen(): Promise<void> {
         await this.save({
             data: {
                 status: 'pending',
@@ -416,7 +558,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
 
         this.trigger('reopened');
         this.markUpdated(this.get('lastUpdated'));
-    },
+    }
 
     /**
      * Marks the review request as having been updated at the given timestamp.
@@ -430,9 +572,9 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     timestamp (string):
      *         The timestamp to store.
      */
-    markUpdated(timestamp) {
+    markUpdated(timestamp: string) {
         this._lastUpdateTimestamp = timestamp;
-    },
+    }
 
     /**
      * Begin checking for server-side updates to the review request.
@@ -440,20 +582,23 @@ RB.ReviewRequest = RB.BaseResource.extend({
      * The 'updated' event will be triggered when there's a new update.
      *
      * Args:
-     *     type (string):
+     *     updateType (string):
      *         The type of updates to check for.
      *
      *     lastUpdateTimestamp (string):
      *         The timestamp of the last known update.
      */
-    async beginCheckForUpdates(type, lastUpdateTimestamp) {
-        this._checkUpdatesType = type;
+    async beginCheckForUpdates(
+        updateType: string,
+        lastUpdateTimestamp: string,
+    ) {
+        this._checkUpdatesType = updateType;
         this._lastUpdateTimestamp = lastUpdateTimestamp;
 
         await this.ready();
         setTimeout(this._checkForUpdates.bind(this),
-                   RB.ReviewRequest.CHECK_UPDATES_MSECS);
-    },
+                   ReviewRequest.CHECK_UPDATES_MSECS);
+    }
 
     /**
      * Check for updates.
@@ -464,10 +609,8 @@ RB.ReviewRequest = RB.BaseResource.extend({
      */
     _checkForUpdates() {
         RB.apiCall({
-            type: 'GET',
-            prefix: this.get('sitePrefix'),
             noActivityIndicator: true,
-            url: this.get('links').last_update.href,
+            prefix: this.get('sitePrefix'),
             success: rsp => {
                 const lastUpdate = rsp.last_update;
 
@@ -480,10 +623,12 @@ RB.ReviewRequest = RB.BaseResource.extend({
                 this._lastUpdateTimestamp = lastUpdate.timestamp;
 
                 setTimeout(this._checkForUpdates.bind(this),
-                           RB.ReviewRequest.CHECK_UPDATES_MSECS);
-            }
+                           ReviewRequest.CHECK_UPDATES_MSECS);
+            },
+            type: 'GET',
+            url: this.get('links').last_update.href,
         });
-    },
+    }
 
     /**
      * Serialize for sending to the server.
@@ -501,7 +646,11 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     object:
      *     Data suitable for passing to JSON.stringify.
      */
-    toJSON(options={}) {
+    toJSON(
+        options: {
+            createFromCommit?: boolean;
+        } = {},
+    ): object {
         if (this.isNew()) {
             const commitID = this.get('commitID');
             const repository = this.get('repository');
@@ -521,9 +670,9 @@ RB.ReviewRequest = RB.BaseResource.extend({
 
             return result;
         } else {
-            return _super(this).toJSON.apply(this, arguments);
+            return super.toJSON(options);
         }
-    },
+    }
 
     /**
      * Parse the response from the server.
@@ -536,34 +685,25 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     object:
      *     Attribute values to set on the model.
      */
-    parseResourceData(rsp) {
+    parseResourceData(
+        rsp: ReviewRequestResourceData,
+    ): Partial<ReviewRequestAttrs> {
         const state = {
-            pending: RB.ReviewRequest.PENDING,
-            discarded: RB.ReviewRequest.CLOSE_DISCARDED,
-            submitted: RB.ReviewRequest.CLOSE_SUBMITTED
+            discarded: ReviewRequest.CLOSE_DISCARDED,
+            pending: ReviewRequest.PENDING,
+            submitted: ReviewRequest.CLOSE_SUBMITTED,
         }[rsp.status];
         const rawTextFields = rsp.raw_text_fields || rsp;
-        const data = RB.BaseResource.prototype.parseResourceData.call(
-            this, rsp);
+        const data = super.parseResourceData(rsp);
 
         data.state = state;
         data.closeDescriptionRichText =
-            (rawTextFields.close_description_text_type === 'markdown');
+            (rawTextFields['close_description_text_type'] === 'markdown');
         data.descriptionRichText =
-            (rawTextFields.description_text_type === 'markdown');
+            (rawTextFields['description_text_type'] === 'markdown');
         data.testingDoneRichText =
-            (rawTextFields.testing_done_text_type === 'markdown');
+            (rawTextFields['testing_done_text_type'] === 'markdown');
 
         return data;
     }
-}, {
-    CHECK_UPDATES_MSECS: 5 * 60 * 1000, // Every 5 minutes
-
-    CLOSE_DISCARDED: 1,
-    CLOSE_SUBMITTED: 2,
-    PENDING: 3,
-
-    VISIBILITY_VISIBLE: 1,
-    VISIBILITY_ARCHIVED: 2,
-    VISIBILITY_MUTED: 3
-});
+}

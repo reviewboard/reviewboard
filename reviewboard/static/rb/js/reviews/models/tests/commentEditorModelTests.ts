@@ -10,6 +10,7 @@ import {
 import {
     BaseComment,
     BaseResource,
+    ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
 import { CommentEditor } from 'reviewboard/reviews';
@@ -29,7 +30,7 @@ suite('rb/models/CommentEditor', function() {
     }
 
     beforeEach(function() {
-        reviewRequest = new RB.ReviewRequest();
+        reviewRequest = new ReviewRequest();
 
         editor = new CommentEditor({
             canEdit: true,

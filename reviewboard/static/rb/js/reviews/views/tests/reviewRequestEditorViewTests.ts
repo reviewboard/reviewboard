@@ -9,7 +9,10 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { EnabledFeatures } from 'reviewboard/common';
+import {
+    EnabledFeatures,
+    ReviewRequest,
+} from 'reviewboard/common';
 import {
     FileAttachmentThumbnailView,
     ReviewRequestEditor,
@@ -162,10 +165,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
     beforeEach(function() {
         DnDUploader.create();
 
-        reviewRequest = new RB.ReviewRequest({
+        reviewRequest = new ReviewRequest({
             id: 123,
             'public': true,
-            state: RB.ReviewRequest.PENDING,
+            state: ReviewRequest.PENDING,
         });
 
         editor = new ReviewRequestEditor({
@@ -411,7 +414,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                     spyOn(reviewRequest, 'close').and.callFake(options => {
                         expect(options.type)
-                            .toBe(RB.ReviewRequest.CLOSE_DISCARDED);
+                            .toBe(ReviewRequest.CLOSE_DISCARDED);
 
                         return Promise.resolve();
                     });
@@ -540,7 +543,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         describe('Discarded banner', function() {
             beforeEach(function() {
-                reviewRequest.set('state', RB.ReviewRequest.CLOSE_DISCARDED);
+                reviewRequest.set('state', ReviewRequest.CLOSE_DISCARDED);
             });
 
             it('Visibility', function() {
@@ -594,7 +597,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                                 spyOn(reviewRequest, 'close')
                                     .and.callFake(options => {
                                         expect(options.type).toBe(
-                                            RB.ReviewRequest.CLOSE_DISCARDED);
+                                            ReviewRequest.CLOSE_DISCARDED);
                                         expect(options.description)
                                             .toBe('My description');
                                         expect(options.richText)
@@ -621,7 +624,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         describe('Submitted banner', function() {
             beforeEach(function() {
-                reviewRequest.set('state', RB.ReviewRequest.CLOSE_SUBMITTED);
+                reviewRequest.set('state', ReviewRequest.CLOSE_SUBMITTED);
             });
 
             it('Visibility', function() {
@@ -638,7 +641,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 beforeEach(function() {
                     expect(view.banner).toBe(null);
                     reviewRequest.set('state',
-                                      RB.ReviewRequest.CLOSE_SUBMITTED);
+                                      ReviewRequest.CLOSE_SUBMITTED);
                     view.showBanner();
                 });
 
@@ -677,7 +680,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                                 spyOn(reviewRequest, 'close')
                                     .and.callFake(options => {
                                         expect(options.type).toBe(
-                                            RB.ReviewRequest.CLOSE_SUBMITTED);
+                                            ReviewRequest.CLOSE_SUBMITTED);
                                         expect(options.description)
                                             .toBe('My description');
                                         expect(options.richText)
@@ -1081,7 +1084,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             describe('Discarded review requests', function() {
                 closeDescriptionTests({
                     bannerSel: '#discard-banner',
-                    closeType: RB.ReviewRequest.CLOSE_DISCARDED,
+                    closeType: ReviewRequest.CLOSE_DISCARDED,
                     jsonCloseType: 'discarded',
                     jsonFieldName: 'close_description',
                     jsonTextTypeFieldName: 'close_description_text_type',
@@ -1122,7 +1125,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             describe('Submitted review requests', function() {
                 closeDescriptionTests({
                     bannerSel: '#submitted-banner',
-                    closeType: RB.ReviewRequest.CLOSE_SUBMITTED,
+                    closeType: ReviewRequest.CLOSE_SUBMITTED,
                     jsonCloseType: 'submitted',
                     jsonFieldName: 'close_description',
                     jsonTextTypeFieldName: 'close_description_text_type',

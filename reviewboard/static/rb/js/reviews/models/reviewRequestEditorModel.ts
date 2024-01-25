@@ -8,6 +8,7 @@ import {
     ResourceCollection,
     FileAttachment,
     FileAttachmentStates,
+    ReviewRequest,
 } from 'reviewboard/common';
 import {
     FileAttachmentAttrs,
@@ -65,7 +66,7 @@ export interface ReviewRequestEditorAttrs extends ModelAttributes {
     publishing: boolean;
 
     /** The review request model. */
-    reviewRequest: RB.ReviewRequest;
+    reviewRequest: ReviewRequest;
 
     /** The legacy screenshots attached to this review request. */
     screenshots: Backbone.Collection<RB.Screenshot>;

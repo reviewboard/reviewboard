@@ -7,6 +7,7 @@ import {
     EnabledFeatures,
     FileAttachment,
     ResourceCollection,
+    ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
 import { DnDUploader } from 'reviewboard/ui';
@@ -107,7 +108,7 @@ class BannerView extends BaseView<
     reviewRequestEditorView: ReviewRequestEditorView;
 
     /** The review request model. */
-    reviewRequest: RB.ReviewRequest;
+    reviewRequest: ReviewRequest;
 
     /** Whether to show the "Send E-mail" checkbox. */
     showSendEmail = false;
@@ -259,7 +260,7 @@ class ClosedBannerView extends BannerView {
     ],
 })
 class DiscardedBannerView extends ClosedBannerView {
-    static closeType = RB.ReviewRequest.CLOSE_DISCARDED;
+    static closeType = ReviewRequest.CLOSE_DISCARDED;
     static describeText = _`Describe the reason it's discarded (optional):`;
     static id = 'discard-banner';
     static title = _`This change has been discarded.`;
@@ -278,7 +279,7 @@ class DiscardedBannerView extends ClosedBannerView {
     ],
 })
 class CompletedBannerView extends ClosedBannerView {
-    static closeType = RB.ReviewRequest.CLOSE_SUBMITTED;
+    static closeType = ReviewRequest.CLOSE_SUBMITTED;
     static describeText = _`Describe the completed change (optional):`;
     static id = 'submitted-banner';
     static title = _`This change has been marked as completed.`;
@@ -410,7 +411,7 @@ class DraftBannerView extends BannerView {
     _onCloseDiscardedClicked() {
         this.reviewRequest
             .close({
-                type: RB.ReviewRequest.CLOSE_DISCARDED,
+                type: ReviewRequest.CLOSE_DISCARDED,
             })
             .catch(err => alert(err.message));
 
@@ -686,11 +687,11 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
         const state = reviewRequest.get('state');
         let BannerClass;
 
-        if (state === RB.ReviewRequest.CLOSE_SUBMITTED) {
+        if (state === ReviewRequest.CLOSE_SUBMITTED) {
             BannerClass = CompletedBannerView;
-        } else if (state === RB.ReviewRequest.CLOSE_DISCARDED) {
+        } else if (state === ReviewRequest.CLOSE_DISCARDED) {
             BannerClass = DiscardedBannerView;
-        } else if (state === RB.ReviewRequest.PENDING &&
+        } else if (state === ReviewRequest.PENDING &&
                    this.model.get('hasDraft') &&
                    !EnabledFeatures.unifiedBanner) {
             BannerClass = DraftBannerView;

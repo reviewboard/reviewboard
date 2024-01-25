@@ -6,14 +6,17 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { Review } from 'reviewboard/common';
+import {
+    Review,
+    ReviewRequest,
+} from 'reviewboard/common';
 import { ReviewablePage } from 'reviewboard/reviews';
 
 
 suite('rb/pages/models/ReviewablePage', function() {
     describe('Construction', function() {
         it('Child objects created', function() {
-            const reviewRequest = new RB.ReviewRequest();
+            const reviewRequest = new ReviewRequest();
             const page = new ReviewablePage({
                 editorData: {
                     hasDraft: true,
@@ -124,7 +127,7 @@ suite('rb/pages/models/ReviewablePage', function() {
             expect(reviewRequest.get('public')).toBe(true);
             expect(reviewRequest.get('reviewURL')).toBe('/s/foo/r/123/');
             expect(reviewRequest.get('state'))
-                .toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
+                .toBe(ReviewRequest.CLOSE_SUBMITTED);
             expect(reviewRequest.get('summary'))
                 .toBe('This is a summary');
             expect(reviewRequest.get('targetGroups')).toEqual([{
@@ -139,7 +142,7 @@ suite('rb/pages/models/ReviewablePage', function() {
                 .toBe('This is testing done');
             expect(reviewRequest.get('testingDoneRichText')).toBe(true);
             expect(reviewRequest.get('visibility'))
-                .toBe(RB.ReviewRequest.VISIBILITY_ARCHIVED);
+                .toBe(ReviewRequest.VISIBILITY_ARCHIVED);
 
             /* Check the review request's repository. */
             const repository = reviewRequest.get('repository');

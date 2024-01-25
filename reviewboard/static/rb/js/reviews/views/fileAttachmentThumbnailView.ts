@@ -7,6 +7,7 @@ import { BaseView, spina } from '@beanbag/spina';
 import {
     FileAttachment,
     FileAttachmentStates,
+    ReviewRequest,
 } from 'reviewboard/common';
 import {
     FieldStateLabelThemes,
@@ -26,7 +27,7 @@ import { CommentDialogView } from './commentDialogView';
  */
 interface FileAttachmentThumbnailViewOptions {
     /** The review request model. */
-    reviewRequest: RB.ReviewRequest;
+    reviewRequest: ReviewRequest;
 
     /** The review request editor. */
     reviewRequestEditor: ReviewRequestEditor;

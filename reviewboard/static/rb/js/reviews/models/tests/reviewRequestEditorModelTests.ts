@@ -8,6 +8,7 @@ import {
     spyOn,
 } from 'jasmine-core';
 
+import { ReviewRequest } from 'reviewboard/common';
 import { ReviewRequestEditor } from 'reviewboard/reviews';
 
 
@@ -16,7 +17,7 @@ suite('rb/models/ReviewRequestEditor', function() {
     let editor;
 
     beforeEach(function() {
-        reviewRequest = new RB.ReviewRequest({
+        reviewRequest = new ReviewRequest({
             id: 1,
         });
 

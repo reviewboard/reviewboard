@@ -8,6 +8,7 @@ import {
     Page,
     ResourceCollection,
     Review,
+    ReviewRequest,
 } from 'reviewboard/common';
 
 import {
@@ -47,7 +48,7 @@ export interface ReviewablePageAttrs extends ModelAttributes {
     /**
      * The review request that this page is for.
      */
-    reviewRequest?: RB.ReviewRequest;
+    reviewRequest?: ReviewRequest;
 }
 
 
@@ -209,9 +210,9 @@ export class ReviewablePage<
 
         if (rsp.reviewRequestData) {
             reviewRequestData = _.defaults({
-                state: RB.ReviewRequest[rsp.reviewRequestData.state],
-                visibility: RB.ReviewRequest['VISIBILITY_' +
-                                             rsp.reviewRequestData.visibility],
+                state: ReviewRequest[rsp.reviewRequestData.state],
+                visibility: ReviewRequest['VISIBILITY_' +
+                                          rsp.reviewRequestData.visibility],
             }, rsp.reviewRequestData);
 
             if (reviewRequestData.repository) {
@@ -222,7 +223,7 @@ export class ReviewablePage<
             }
         }
 
-        const reviewRequest = new RB.ReviewRequest(
+        const reviewRequest = new ReviewRequest(
             reviewRequestData,
             {
                 extraDraftAttrs: rsp.extraReviewRequestDraftData,

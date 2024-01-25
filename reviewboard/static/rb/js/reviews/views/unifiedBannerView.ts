@@ -5,6 +5,7 @@ import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
 import {
     ClientCommChannel,
+    ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
 import {
@@ -715,7 +716,7 @@ export class UnifiedBannerView extends FloatingBannerView<
             } else if (draftMode.hasReviewRequest) {
                 if (!reviewRequest.get('public')) {
                     await reviewRequest.close({
-                        type: RB.ReviewRequest.CLOSE_DISCARDED,
+                        type: ReviewRequest.CLOSE_DISCARDED,
                     });
                 } else if (!reviewRequest.draft.isNew()) {
                     await reviewRequest.draft.destroy();

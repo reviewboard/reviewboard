@@ -1,9 +1,25 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    expectAsync,
+    it,
+    spyOn,
+} from 'jasmine-core';
+
+import {
+    ReviewRequest,
+    UserSession,
+} from 'reviewboard/common';
+
+
 suite('rb/resources/models/ReviewRequest', function() {
     let reviewRequest;
 
     describe('Create from commit ID', function() {
         beforeEach(function() {
-            reviewRequest = new RB.ReviewRequest();
+            reviewRequest = new ReviewRequest();
 
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.data.commit_id).toBe('test');
@@ -16,24 +32,11 @@ suite('rb/resources/models/ReviewRequest', function() {
         it('With promises', async function() {
             await reviewRequest.createFromCommit('test');
         });
-
-        it('With callbacks', function(done) {
-            spyOn(console, 'warn');
-
-            reviewRequest.createFromCommit({
-                commitID: 'test',
-                success: () => {
-                    expect(console.warn).toHaveBeenCalled();
-                    done();
-                },
-                error: () => done.fail(),
-            });
-        });
     });
 
     describe('Existing instance', function() {
         beforeEach(function() {
-            reviewRequest = new RB.ReviewRequest({
+            reviewRequest = new ReviewRequest({
                 id: 1,
             });
 
@@ -64,15 +67,14 @@ suite('rb/resources/models/ReviewRequest', function() {
 
         it('parse', function() {
             const data = reviewRequest.parse({
-                stat: 'ok',
                 review_request: {
-                    id: 1,
                     branch: 'branch',
                     bugs_closed: 'bugsClosed',
                     close_description: 'closeDescription',
                     close_description_text_type: 'markdown',
                     description: 'description',
                     description_text_type: 'markdown',
+                    id: 1,
                     last_updated: 'lastUpdated',
                     'public': 'public',
                     summary: 'summary',
@@ -81,6 +83,7 @@ suite('rb/resources/models/ReviewRequest', function() {
                     testing_done: 'testingDone',
                     testing_done_text_type: 'plain',
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);
@@ -108,11 +111,11 @@ suite('rb/resources/models/ReviewRequest', function() {
                     expect(request.data.status).toBe('pending');
 
                     request.success({
-                        stat: 'ok',
                         review_request: {
                             id: 1,
                             links: {},
                         },
+                        stat: 'ok',
                     });
                 });
 
@@ -120,34 +123,6 @@ suite('rb/resources/models/ReviewRequest', function() {
 
                 expect(RB.apiCall).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
-            });
-
-            it('With callbacks', function(done) {
-                spyOn(RB, 'apiCall').and.callThrough();
-                spyOn($, 'ajax').and.callFake(request => {
-                    expect(request.type).toBe('PUT');
-                    expect(request.data.status).toBe('pending');
-
-                    request.success({
-                        stat: 'ok',
-                        review_request: {
-                            id: 1,
-                            links: {},
-                        },
-                    });
-                });
-                spyOn(console, 'warn');
-
-                reviewRequest.reopen({
-                    success: () => {
-                        expect(RB.apiCall).toHaveBeenCalled();
-                        expect($.ajax).toHaveBeenCalled();
-                        expect(console.warn).toHaveBeenCalled();
-
-                        done();
-                    },
-                    error: () => done.fail(),
-                });
             });
         });
 
@@ -179,8 +154,8 @@ suite('rb/resources/models/ReviewRequest', function() {
             let session;
 
             beforeEach(function() {
-                RB.UserSession.instance = null;
-                session = RB.UserSession.create({
+                UserSession.instance = null;
+                session = UserSession.create({
                     username: 'testuser',
                     watchedReviewRequestsURL: url,
                 });
@@ -227,31 +202,6 @@ suite('rb/resources/models/ReviewRequest', function() {
                 expect(RB.apiCall).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
             });
-
-            it('With callbacks', function(done) {
-                spyOn($, 'ajax').and.callFake(request => {
-                    expect(request.type).toBe('POST');
-                    expect(request.url).toBe(url);
-
-                    request.success({
-                        stat: 'ok',
-                    });
-                });
-                spyOn(console, 'warn');
-
-                reviewRequest.setStarred(true, {
-                    success: () => {
-                        expect(session.watchedReviewRequests.addImmediately)
-                            .toHaveBeenCalled();
-                        expect(RB.apiCall).toHaveBeenCalled();
-                        expect($.ajax).toHaveBeenCalled();
-                        expect(console.warn).toHaveBeenCalled();
-
-                        done();
-                    },
-                    error: () => done.fail(),
-                });
-            });
         });
 
         describe('close', function() {
@@ -263,16 +213,16 @@ suite('rb/resources/models/ReviewRequest', function() {
                     expect(request.data.description).toBe(undefined);
 
                     request.success({
-                        stat: 'ok',
                         review_request: {
                             id: 1,
                             links: {},
                         },
+                        stat: 'ok',
                     });
                 });
 
                 await reviewRequest.close({
-                    type: RB.ReviewRequest.CLOSE_DISCARDED,
+                    type: ReviewRequest.CLOSE_DISCARDED,
                 });
 
                 expect(RB.apiCall).toHaveBeenCalled();
@@ -287,16 +237,16 @@ suite('rb/resources/models/ReviewRequest', function() {
                     expect(request.data.description).toBe(undefined);
 
                     request.success({
-                        stat: 'ok',
                         review_request: {
                             id: 1,
                             links: {},
-                        }
+                        },
+                        stat: 'ok',
                     });
                 });
 
                 await reviewRequest.close({
-                    type: RB.ReviewRequest.CLOSE_SUBMITTED,
+                    type: ReviewRequest.CLOSE_SUBMITTED,
                 });
 
                 expect(RB.apiCall).toHaveBeenCalled();
@@ -322,17 +272,17 @@ suite('rb/resources/models/ReviewRequest', function() {
                     expect(request.data.close_description).toBe('test');
 
                     request.success({
-                        stat: 'ok',
                         review_request: {
                             id: 1,
                             links: {},
                         },
+                        stat: 'ok',
                     });
                 });
 
                 await reviewRequest.close({
-                    type: RB.ReviewRequest.CLOSE_SUBMITTED,
                     description: 'test',
+                    type: ReviewRequest.CLOSE_SUBMITTED,
                 });
 
                 expect(RB.apiCall).toHaveBeenCalled();
@@ -347,17 +297,17 @@ suite('rb/resources/models/ReviewRequest', function() {
                     expect(request.data.description).toBe(undefined);
 
                     request.success({
-                        stat: 'ok',
                         review_request: {
                             id: 1,
                             links: {},
                         },
+                        stat: 'ok',
                     });
                 });
                 spyOn(console, 'warn');
 
                 reviewRequest.close({
-                    type: RB.ReviewRequest.CLOSE_DISCARDED,
+                    error: () => done.fail(),
                     success: () => {
                         expect(RB.apiCall).toHaveBeenCalled();
                         expect($.ajax).toHaveBeenCalled();
@@ -365,7 +315,7 @@ suite('rb/resources/models/ReviewRequest', function() {
 
                         done();
                     },
-                    error: () => done.fail(),
+                    type: ReviewRequest.CLOSE_DISCARDED,
                 });
             });
         });

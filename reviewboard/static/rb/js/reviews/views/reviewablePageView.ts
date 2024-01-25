@@ -9,6 +9,9 @@ import {
     UserSession,
 } from 'reviewboard/common';
 import { PageViewOptions } from 'reviewboard/common/views/pageView';
+import {
+    ReviewRequestAttrs,
+} from 'reviewboard/common/resources/models/reviewRequestModel';
 import { DnDUploader } from 'reviewboard/ui';
 
 import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
@@ -161,8 +164,8 @@ class UpdatesBubbleView extends BaseView<
  * Options for the ReviewablePageView.
  */
 export interface ReviewablePageViewOptions extends PageViewOptions {
-    /** The model attributes for a new RB.ReviewRequest instance. */
-    reviewRequestData?: object; // TODO: update once ReviewRequest is TS
+    /** The model attributes for a new ReviewRequest instance. */
+    reviewRequestData?: ReviewRequestAttrs;
 
     /** The model attributes for a new ReviewRequestEditor instance. */
     editorData?: Partial<ReviewRequestEditorAttrs>;
