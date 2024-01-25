@@ -1,14 +1,29 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+} from 'jasmine-core';
+
+import {
+    BaseComment,
+    BaseResource,
+} from 'reviewboard/common';
+
+
 suite('rb/resources/models/BaseComment', function() {
-    const strings = RB.BaseComment.strings;
+    const strings = BaseComment.strings;
     let parentObject;
     let model;
 
     beforeEach(function() {
-        parentObject = new RB.BaseResource({
+        parentObject = new BaseResource({
             'public': true,
         });
 
-        model = new RB.BaseComment({
+        model = new BaseComment({
             parentObject: parentObject,
         });
 
@@ -17,15 +32,15 @@ suite('rb/resources/models/BaseComment', function() {
 
     describe('State values', function() {
         it('STATE_DROPPED', function() {
-            expect(RB.BaseComment.STATE_DROPPED).toBe('dropped');
+            expect(BaseComment.STATE_DROPPED).toBe('dropped');
         });
 
         it('STATE_OPEN', function() {
-            expect(RB.BaseComment.STATE_OPEN).toBe('open');
+            expect(BaseComment.STATE_OPEN).toBe('open');
         });
 
         it('STATE_RESOLVED', function() {
-            expect(RB.BaseComment.STATE_RESOLVED).toBe('resolved');
+            expect(BaseComment.STATE_RESOLVED).toBe('resolved');
         });
     });
 
@@ -54,19 +69,19 @@ suite('rb/resources/models/BaseComment', function() {
 
         it('API payloads', function() {
             const data = model.parse({
-                stat: 'ok',
                 my_comment: {
                     id: 42,
                     issue_opened: true,
                     issue_status: 'resolved',
                     text: 'foo',
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);
             expect(data.id).toBe(42);
             expect(data.issueOpened).toBe(true);
-            expect(data.issueStatus).toBe(RB.BaseComment.STATE_RESOLVED);
+            expect(data.issueStatus).toBe(BaseComment.STATE_RESOLVED);
             expect(data.text).toBe('foo');
         });
     });
@@ -118,7 +133,7 @@ suite('rb/resources/models/BaseComment', function() {
 
         describe('issue_status field', function() {
             it('When not loaded', function() {
-                model.set('issueStatus', RB.BaseComment.STATE_DROPPED);
+                model.set('issueStatus', BaseComment.STATE_DROPPED);
                 const data = model.toJSON();
                 expect(data.issue_status).toBe(undefined);
             });
@@ -127,8 +142,8 @@ suite('rb/resources/models/BaseComment', function() {
                 parentObject.set('public', false);
 
                 model.set({
+                    issueStatus: BaseComment.STATE_DROPPED,
                     loaded: true,
-                    issueStatus: RB.BaseComment.STATE_DROPPED,
                     parentObject: parentObject,
                 });
 
@@ -140,13 +155,13 @@ suite('rb/resources/models/BaseComment', function() {
                 parentObject.set('public', true);
 
                 model.set({
+                    issueStatus: BaseComment.STATE_DROPPED,
                     loaded: true,
-                    issueStatus: RB.BaseComment.STATE_DROPPED,
                     parentObject: parentObject,
                 });
 
                 const data = model.toJSON();
-                expect(data.issue_status).toBe(RB.BaseComment.STATE_DROPPED);
+                expect(data.issue_status).toBe(BaseComment.STATE_DROPPED);
             });
         });
 
@@ -177,19 +192,19 @@ suite('rb/resources/models/BaseComment', function() {
         describe('issueState', function() {
             it('STATE_DROPPED', function() {
                 expect(model.validate({
-                    issueStatus: RB.BaseComment.STATE_DROPPED,
+                    issueStatus: BaseComment.STATE_DROPPED,
                 })).toBe(undefined);
             });
 
             it('STATE_OPEN', function() {
                 expect(model.validate({
-                    issueStatus: RB.BaseComment.STATE_OPEN,
+                    issueStatus: BaseComment.STATE_OPEN,
                 })).toBe(undefined);
             });
 
             it('STATE_RESOLVED', function() {
                 expect(model.validate({
-                    issueStatus: RB.BaseComment.STATE_RESOLVED,
+                    issueStatus: BaseComment.STATE_RESOLVED,
                 })).toBe(undefined);
             });
 
@@ -224,7 +239,7 @@ suite('rb/resources/models/BaseComment', function() {
             it('Unset', function() {
                 expect(model.validate({
                     parentObject: null,
-                })).toBe(RB.BaseResource.strings.UNSET_PARENT_OBJECT);
+                })).toBe(BaseResource.strings.UNSET_PARENT_OBJECT);
             });
         });
     });

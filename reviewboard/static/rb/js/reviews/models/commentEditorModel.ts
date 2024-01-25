@@ -2,6 +2,7 @@
 import { BaseModel, spina } from '@beanbag/spina';
 
 import {
+    BaseComment,
     ExtraDataMixin,
     UserSession,
 } from 'reviewboard/common';
@@ -29,7 +30,7 @@ interface CommentEditorAttrs {
     extraData: object;
 
     /** The comment model. */
-    comment: RB.BaseComment;
+    comment: BaseComment;
 
     /** Whether the draft comment has been edited but not saved. */
     dirty: boolean;
@@ -38,7 +39,7 @@ interface CommentEditorAttrs {
     openIssue: boolean;
 
     /** The thread of previous comments that this draft is a reply to. */
-    publishedComments: RB.BaseComment[];
+    publishedComments: BaseComment[];
 
     /** The type of comment that this draft is a reply to, if applicable. */
     publishedCommentsType: string;

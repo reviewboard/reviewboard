@@ -397,7 +397,7 @@ suite('rb/resources/models/BaseResource', function() {
         it('With isNew=true and no parentObject', async function() {
             spyOn(Backbone.Model.prototype, 'save').and.callThrough();
             spyOn(RB, 'apiCall').and.callThrough();
-            spyOn($, 'ajax').and.callFake(function() {});
+            spyOn($, 'ajax');
 
             try {
                 await model.save();
@@ -511,8 +511,8 @@ suite('rb/resources/models/BaseResource', function() {
             spyOn(console, 'warn');
 
             model.save({
-                success: () => {
                 error: () => done.fail(),
+                success: () => {
                     expect(Backbone.Model.prototype.save).toHaveBeenCalled();
                     expect(parentObject.ensureCreated).toHaveBeenCalled();
                     expect(RB.apiCall).toHaveBeenCalled();
@@ -726,10 +726,10 @@ suite('rb/resources/models/BaseResource', function() {
                         'application/x-www-form-urlencoded');
 
                     request.success({
-                        stat: 'ok',
                         foo: {
                             id: 42,
                         },
+                        stat: 'ok',
                     });
                 });
 

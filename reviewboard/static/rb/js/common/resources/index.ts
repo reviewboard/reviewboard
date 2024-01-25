@@ -1,7 +1,10 @@
 export { ResourceCollection } from './collections/resourceCollection';
+export { BaseComment } from './models/baseCommentModel';
 export { BaseResource } from './models/baseResourceModel';
 export { DraftFileAttachment } from './models/draftFileAttachmentModel';
-export { DraftResourceChildModelMixin } from './models/draftResourceChildModelMixin';
+export {
+    DraftResourceChildModelMixin,
+} from './models/draftResourceChildModelMixin';
 export { DraftResourceModelMixin } from './models/draftResourceModelMixin';
 export { DraftReview } from './models/draftReviewModel';
 export {

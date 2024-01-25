@@ -28,7 +28,7 @@ export interface ResourceLink {
  */
 export interface BaseResourceAttrs extends ModelAttributes {
     /** Extra data storage. */
-    extraData: object;
+    extraData: { [key: string]: unknown };
 
     /** The resource links. */
     links: {
@@ -145,7 +145,7 @@ type DeserializerMap = {
 export class BaseResource<
     TDefaults extends BaseResourceAttrs = BaseResourceAttrs
 > extends BaseModel<TDefaults> {
-    static strings = {
+    static strings: { [key: string]: string } = {
         INVALID_EXTRADATA_TYPE:
             'extraData must be an object or undefined',
         INVALID_EXTRADATA_VALUE_TYPE:

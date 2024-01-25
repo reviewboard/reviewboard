@@ -1,3 +1,4 @@
+import './baseCommentModelTests';
 import './baseResourceModelTests';
 import './draftReviewModelTests';
 import './fileAttachmentModelTests';

@@ -4,6 +4,7 @@
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 
 import {
+    BaseComment,
     EnabledFeatures,
     UserSession,
 } from 'reviewboard/common';
@@ -191,7 +192,7 @@ interface CommentDialogViewCreationOptions {
     animate?: boolean;
 
     /** The comment text. */
-    comment: RB.BaseComment;
+    comment: BaseComment;
 
     /** The issue manager. */
     commentIssueManager?: RB.CommentIssueManager;
@@ -227,7 +228,7 @@ interface CommentDialogViewCreationOptions {
      *
      * This only applies if the comment is a reply.
      */
-    publishedComments?: RB.BaseComment[];
+    publishedComments?: BaseComment[];
 
     /**
      * The type of comment that this draft is a reply to.
