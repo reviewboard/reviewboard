@@ -1,5 +1,71 @@
 /**
  * Represents a region of reviewable content that contains comments.
+ */
+
+import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
+
+import {
+    BaseComment,
+    Review,
+    ReviewRequest,
+} from 'reviewboard/common';
+import {
+    BaseCommentAttrs,
+} from 'reviewboard/common/resources/models/baseCommentModel';
+
+
+/**
+ * Serialized data for a comment block.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface SerializedComment {
+    comment_id: number;
+    html: string;
+    issue_opened: boolean;
+    issue_status: string;
+    localdraft: boolean;
+    rich_text: boolean;
+    text: string;
+    user: {
+        name: string;
+    };
+}
+
+
+/**
+ * Attributes for the AbstractCommentBlock model.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface AbstractCommentBlockAttrs extends ModelAttributes {
+    /** Whether or not the comment can be deleted. */
+    canDelete: boolean;
+
+    /** The total number of comments, including a draft comment. */
+    count: number;
+
+    /** The draft comment that this block is associated with. */
+    draftComment: BaseComment;
+
+    /** Whether or not the review request has a draft. */
+    hasDraft: boolean;
+
+    /** The review that the associated comment is a part of. */
+    review: Review;
+
+    /** The review request that this comment is on. */
+    reviewRequest: ReviewRequest;
+
+    /** An array of serialized comments for display. */
+    serializedComments: SerializedComment[];
+}
+
+
+/**
+ * Represents a region of reviewable content that contains comments.
  *
  * This stores all comments that match a given region, as defined by a
  * subclass of AbstractCommentBlock.
@@ -9,47 +75,30 @@
  *
  * The total number of comments in the block (including any draft comment)
  * will be stored, which may be useful for display.
- *
- * Model Attributes:
- *     canDelete (boolean):
- *         Whether or not the comment can be deleted.
- *
- *     count (number):
- *         The total number of comments, including a draft comment.
- *
- *     draftComment (RB.BaseComment):
- *         The draft comment that this block is associated with.
- *
- *     hasDraft (boolean):
- *         Whether or not the review request has a draft.
- *
- *     review (RB.Review):
- *         The review that the associated comment is a part of.
- *
- *     reviewRequest (RB.ReviewRequest):
- *         The review request that this comment is on.
- *
- *     serializedComments (Array of object):
- *         An array of serialized comments for display.
  */
-RB.AbstractCommentBlock = Backbone.Model.extend({
-    defaults: {
-        hasDraft: false,
+@spina
+export class AbstractCommentBlock<
+    TAttributes extends AbstractCommentBlockAttrs
+        = AbstractCommentBlockAttrs
+> extends BaseModel<TAttributes> {
+    /** Default values for the model attributes. */
+    static defaults: AbstractCommentBlockAttrs = {
         canDelete: false,
+        count: 0,
         draftComment: null,
-        reviewRequest: null,
+        hasDraft: false,
         review: null,
+        reviewRequest: null,
         serializedComments: [],
-        count: 0
-    },
+    };
 
     /**
      * Initialize the AbstractCommentBlock.
      */
     initialize() {
-        console.assert(this.get('reviewRequest'),
+        console.assert(!!this.get('reviewRequest'),
                        'reviewRequest must be provided');
-        console.assert(this.get('review'),
+        console.assert(!!this.get('review'),
                        'review must be provided');
 
         /*
@@ -66,11 +115,11 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
 
                 if (comment.localdraft) {
                     this.ensureDraftComment(comment.comment_id, {
-                        text: comment.text,
-                        richText: comment.rich_text,
+                        html: comment.html,
                         issueOpened: comment.issue_opened,
                         issueStatus: comment.issue_status,
-                        html: comment.html,
+                        richText: comment.rich_text,
+                        text: comment.text,
                     });
                 } else {
                     newSerializedComments.push(comment);
@@ -84,7 +133,7 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
 
         this.on('change:draftComment', this._updateCount, this);
         this._updateCount();
-    },
+    }
 
     /**
      * Return whether or not the comment block is empty.
@@ -96,10 +145,10 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
      *     boolean:
      *     Whether the comment block is empty.
      */
-    isEmpty() {
+    isEmpty(): boolean {
         return (this.get('serializedComments').length === 0 &&
                 !this.has('draftComment'));
-    },
+    }
 
     /**
      * Create a draft comment, optionally with a given ID and text.
@@ -115,9 +164,13 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
      *     RB.BaseComment:
      *     The new comment model.
      */
-    createComment(id) {
+    createComment(
+        id: number,
+    ): BaseComment | null {
         console.assert(false, 'This must be implemented by a subclass');
-    },
+
+        return null;
+    }
 
     /**
      * Create a draft comment in this comment block.
@@ -134,7 +187,10 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
      *     comment_attr (object):
      *         Attributes to set on the comment model.
      */
-    ensureDraftComment(id, comment_attr) {
+    ensureDraftComment(
+        id?: number,
+        comment_attr?: BaseCommentAttrs,
+    ) {
         if (this.has('draftComment')) {
             return;
         }
@@ -148,7 +204,7 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
         });
 
         this.set('draftComment', comment);
-    },
+    }
 
     /**
      * Update the displayed number of comments in the comment block.
@@ -164,7 +220,7 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
         }
 
         this.set('count', count);
-    },
+    }
 
     /**
      * Return a warning about commenting on a deleted object.
@@ -177,9 +233,9 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
      *     A warning to display to the user if they're commenting on a deleted
      *     object. Return null if there's no warning.
      */
-    getDeletedWarning() {
+    getDeletedWarning(): string | null {
         return null;
-    },
+    }
 
     /**
      * Return a warning about commenting on a draft object.
@@ -189,7 +245,7 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
      *     A warning to display to the user if they're commenting on a draft
      *     object. Return null if there's no warning.
      */
-    getDraftWarning() {
+    getDraftWarning(): string | null {
         return null;
-    },
-});
+    }
+}

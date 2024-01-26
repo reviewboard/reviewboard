@@ -1,21 +1,56 @@
 /**
  * Represents the comments on a region of an image or document.
+ */
+
+import { spina } from '@beanbag/spina';
+
+import {
+    FileAttachmentCommentBlock,
+    FileAttachmentCommentBlockAttrs,
+} from './fileAttachmentCommentBlockModel';
+
+
+/**
+ * Attributes for the RegionCommentBlock model.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface RegionCommentBlockAttrs
+    extends FileAttachmentCommentBlockAttrs {
+    /** The height of the region being commented upon. */
+    height: number;
+
+    /** The width of the region being commented upon. */
+    width: number;
+
+    /** The X position of the region being commented upon. */
+    x: number;
+
+    /** The Y position of the region being commented upon. */
+    y: number;
+}
+
+
+/**
+ * The serialized comment data.
+ *
+ * Version Added:
+ *     7.0
+ */
+interface SerializedRegionCommentFields {
+    height: string;
+    width: string;
+    x: string;
+    y: string;
+}
+
+
+/**
+ * Represents the comments on a region of an image or document.
  *
  * RegionCommentBlock deals with creating and representing comments
  * that exist in a specific region of some content.
- *
- * Model Attributes:
- *     x (number):
- *         The X position of the region being commented upon.
- *
- *     y (number):
- *         The Y position of the region being commented upon.
- *
- *     width (number):
- *         The width of the region being commented upon.
- *
- *     height (number):
- *         The height of the region being commented upon.
  *
  * See Also:
  *     :js:class:`RB.FileAttachmentCommentBlock`:
@@ -24,15 +59,19 @@
  *     :js:class:`RB.AbstractCommentBlock`:
  *         For attributes defined on all comment block models.
  */
-RB.RegionCommentBlock = RB.FileAttachmentCommentBlock.extend({
-    defaults: _.defaults({
+@spina
+export class RegionCommentBlock<
+    TAttributes extends RegionCommentBlockAttrs = RegionCommentBlockAttrs
+> extends FileAttachmentCommentBlock<TAttributes> {
+    /** Default values for the model attributes. */
+    static defaults: RegionCommentBlockAttrs = _.defaults({
+        height: null,
+        width: null,
         x: null,
         y: null,
-        width: null,
-        height: null,
-    }, RB.AbstractCommentBlock.prototype.defaults),
+    }, super.defaults);
 
-    serializedFields: ['x', 'y', 'width', 'height'],
+    static serializedFields = ['x', 'y', 'width', 'height'];
 
     /**
      * Parse the incoming attributes for the comment block.
@@ -48,14 +87,16 @@ RB.RegionCommentBlock = RB.FileAttachmentCommentBlock.extend({
      *     object:
      *     The parsed data.
      */
-    parse(fields) {
-        fields.x = parseInt(fields.x, 10) || undefined;
-        fields.y = parseInt(fields.y, 10) || undefined;
-        fields.width = parseInt(fields.width, 10) || undefined;
-        fields.height = parseInt(fields.height, 10) || undefined;
-
-        return fields;
-    },
+    parse(
+        fields: SerializedRegionCommentFields,
+    ): Partial<RegionCommentBlockAttrs> {
+        return {
+            height: parseInt(fields.height, 10) || undefined,
+            width: parseInt(fields.width, 10) || undefined,
+            x: parseInt(fields.x, 10) || undefined,
+            y: parseInt(fields.y, 10) || undefined,
+        };
+    }
 
     /**
      * Return whether the bounds of this region can be updated.
@@ -67,9 +108,9 @@ RB.RegionCommentBlock = RB.FileAttachmentCommentBlock.extend({
      *     boolean:
      *     A value indicating whether new bounds can be set for this region.
      */
-    canUpdateBounds() {
+    canUpdateBounds(): boolean {
         return _.isEmpty(this.get('serializedComments'));
-    },
+    }
 
     /**
      * Save the new bounds of the draft comment to the server.
@@ -98,5 +139,5 @@ RB.RegionCommentBlock = RB.FileAttachmentCommentBlock.extend({
             ],
             boundsUpdated: true,
         });
-    },
-});
+    }
+}
