@@ -7,7 +7,21 @@ import { spina } from '@beanbag/spina';
 import {
     AbstractCommentBlock,
     AbstractCommentBlockAttrs,
+    SerializedComment,
 } from './abstractCommentBlockModel';
+
+
+/**
+ * Serialized data for a diff comment block.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface SerializedDiffComment {
+    linenum: number;
+    num_lines: number;
+    comments: SerializedComment[];
+}
 
 
 /**

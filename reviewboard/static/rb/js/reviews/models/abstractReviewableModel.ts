@@ -1,5 +1,50 @@
 /**
  * Abstract model for reviewable content.
+ */
+
+import {
+    BaseModel,
+    Collection,
+    ModelAttributes,
+    spina,
+} from '@beanbag/spina';
+
+import {
+    Review,
+    ReviewRequest,
+} from 'reviewboard/common';
+import {
+    AbstractCommentBlock,
+    SerializedComment,
+} from './abstractCommentBlockModel';
+
+
+/**
+ * Attributes for the AbstractReviewable model.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface AbstractReviewableAttrs extends ModelAttributes {
+    /** The caption for the item being reviewed. */
+    caption: string;
+
+    /** Whether the review UI is rendered inline. */
+    renderedInline: boolean;
+
+    /** The review request. */
+    reviewRequest: ReviewRequest;
+
+    /** The current review object. */
+    review: Review;
+
+    /** The set of serialized comment threads. */
+    serializedCommentBlocks: SerializedComment[];
+}
+
+
+/**
+ * Abstract model for reviewable content.
  *
  * This is the basis for subclasses that handle review capabilities for
  * some form of content, such as a file attachment.
@@ -24,20 +69,20 @@
  *     serializedCommentBlocks (Array of object):
  *         Serialized comment blocks.
  */
-RB.AbstractReviewable = Backbone.Model.extend({
-    defaults: {
+@spina({
+    prototypeAttrs: ['commentBlockModel', 'defaultCommentBlockFields'],
+})
+export class AbstractReviewable<
+    TAttributes extends AbstractReviewableAttrs = AbstractReviewableAttrs,
+    TCommentBlockType extends AbstractCommentBlock = null
+> extends BaseModel<TAttributes> {
+    static defaults: AbstractReviewableAttrs = {
         caption: null,
         renderedInline: false,
-        reviewRequest: null,
         review: null,
+        reviewRequest: null,
         serializedCommentBlocks: [],
-    },
-
-    /**
-     * The AbstractCommentBlock subclass for this content type's comment
-     * blocks.
-     */
-    commentBlockModel: null,
+    };
 
     /**
      * The list of fields from this model to populate in each new instance
@@ -45,7 +90,22 @@ RB.AbstractReviewable = Backbone.Model.extend({
      *
      * This can also be a function, if anything more custom is required.
      */
-    defaultCommentBlockFields: [],
+    static defaultCommentBlockFields: string[] = [];
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /**
+     * The AbstractCommentBlock subclass for this content type's comment
+     * blocks.
+     */
+    static commentBlockModel = null;
+
+    /**
+     * The collection of comment blocks.
+     */
+    commentBlocks: Collection<TCommentBlockType>;
 
     /**
      * Initialize the reviewable.
@@ -53,19 +113,20 @@ RB.AbstractReviewable = Backbone.Model.extend({
     initialize() {
         const reviewRequest = this.get('reviewRequest');
 
-        console.assert(this.commentBlockModel,
+        console.assert(!!this.commentBlockModel,
                        "'commentBlockModel' must be defined in the " +
                        "reviewable's object definition");
-        console.assert(reviewRequest,
-                       "'reviewRequest' must be provided when constructing " +
-                       "the reviewable");
+        console.assert(!!reviewRequest,
+                       '"reviewRequest" must be provided when constructing ' +
+                       'the reviewable');
 
         if (!this.get('review')) {
             this.set('review', reviewRequest.createReview());
         }
 
-        this.commentBlocks = new Backbone.Collection();
-        this.commentBlocks.model = this.commentBlockModel;
+        this.commentBlocks = new Collection<TCommentBlockType>([], {
+            model: this.commentBlockModel,
+        });
 
         /*
          * Add all existing comment regions to the page.
@@ -77,7 +138,7 @@ RB.AbstractReviewable = Backbone.Model.extend({
         _.each(this.get('serializedCommentBlocks'),
                this.loadSerializedCommentBlock,
                this);
-    },
+    }
 
     /**
      * Create a CommentBlock for this reviewable.
@@ -88,12 +149,12 @@ RB.AbstractReviewable = Backbone.Model.extend({
      *     attrs (object):
      *         The attributes for the comment block;
      */
-    createCommentBlock(attrs) {
+    createCommentBlock(attrs: unknown) {
         this.commentBlocks.add(_.defaults({
-            reviewRequest: this.get('reviewRequest'),
             review: this.get('review'),
+            reviewRequest: this.get('reviewRequest'),
         }, attrs));
-    },
+    }
 
     /**
      * Load a serialized comment and add comment blocks for it.
@@ -107,8 +168,8 @@ RB.AbstractReviewable = Backbone.Model.extend({
      *     serializedCommentBlock (object):
      *         The serialized data for the new comment block(s).
      */
-    loadSerializedCommentBlock(serializedCommentBlock) {
+    loadSerializedCommentBlock(serializedCommentBlock: SerializedComment) {
         console.assert(false, 'loadSerializedCommentBlock must be ' +
                               'implemented by a subclass');
-    },
-});
+    }
+}

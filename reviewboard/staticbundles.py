@@ -51,7 +51,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/diffviewer/collections/tests/diffReviewableCollectionTests.es6.js',
             'rb/js/diffviewer/models/tests/diffCommitModelTests.es6.js',
             'rb/js/diffviewer/models/tests/diffFileModelTests.es6.js',
-            'rb/js/diffviewer/models/tests/diffReviewableModelTests.es6.js',
             'rb/js/diffviewer/models/tests/diffRevisionModelTests.es6.js',
             'rb/js/diffviewer/models/tests/paginationModelTests.es6.js',
             'rb/js/diffviewer/views/tests/diffCommitListViewTests.es6.js',
@@ -226,13 +225,7 @@ PIPELINE_JAVASCRIPT = {
             # Legacy JavaScript
             #
             # Note: These are roughly in dependency order.
-            'rb/js/models/abstractReviewableModel.es6.js',
             'rb/js/models/commentIssueManagerModel.es6.js',
-            'rb/js/models/fileAttachmentReviewableModel.es6.js',
-            'rb/js/models/imageReviewableModel.es6.js',
-            'rb/js/models/dummyReviewableModel.es6.js',
-            'rb/js/models/screenshotReviewableModel.es6.js',
-            'rb/js/models/textBasedReviewableModel.es6.js',
             'rb/js/models/uploadDiffModel.es6.js',
             'rb/js/utils/textUtils.es6.js',
             'rb/js/views/abstractReviewableView.es6.js',
@@ -258,7 +251,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/diffviewer/models/diffCommitListModel.es6.js',
             'rb/js/diffviewer/models/diffCommitModel.es6.js',
             'rb/js/diffviewer/models/diffFileModel.es6.js',
-            'rb/js/diffviewer/models/diffReviewableModel.es6.js',
             'rb/js/diffviewer/models/diffRevisionModel.es6.js',
             'rb/js/diffviewer/models/paginationModel.es6.js',
             'rb/js/diffviewer/collections/commitHistoryDiffEntryCollection.es6.js',
