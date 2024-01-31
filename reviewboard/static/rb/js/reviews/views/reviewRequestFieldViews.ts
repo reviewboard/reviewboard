@@ -617,11 +617,7 @@ export class TextFieldView extends BaseFieldView {
 /**
  * A field view for multiline text-based fields.
  */
-@spina({
-    prototypeAttrs: [
-        'multiline',
-    ],
-})
+@spina
 export class MultilineTextFieldView extends TextFieldView {
     static multiline = true;
 
@@ -722,9 +718,7 @@ export class MultilineTextFieldView extends TextFieldView {
 /**
  * A field view for fields that include multiple comma-separated values.
  */
-@spina({
-    prototypeAttrs: ['useEditIconOnly'],
-})
+@spina
 export class CommaSeparatedValuesTextFieldView extends TextFieldView {
     static useEditIconOnly = true;
 
@@ -887,9 +881,7 @@ export class DateFieldView extends TextFieldView {
 /**
  * The "Branch" field.
  */
-@spina({
-    prototypeAttrs: ['useExtraData'],
-})
+@spina
 export class BranchFieldView extends TextFieldView {
     static useExtraData = false;
 }
@@ -898,9 +890,7 @@ export class BranchFieldView extends TextFieldView {
 /**
  * The "Bugs" field.
  */
-@spina({
-    prototypeAttrs: ['useExtraData'],
-})
+@spina
 export class BugsFieldView extends CommaSeparatedValuesTextFieldView {
     static useExtraData = false;
 
@@ -936,9 +926,7 @@ export class BugsFieldView extends CommaSeparatedValuesTextFieldView {
 /**
  * The change description field.
  */
-@spina({
-    prototypeAttrs: ['useExtraData'],
-})
+@spina
 export class ChangeDescriptionFieldView extends MultilineTextFieldView {
     static useExtraData = false;
 
@@ -989,12 +977,7 @@ export class CommitListFieldView extends BaseFieldView {
 /**
  * The close description field.
  */
-@spina({
-    prototypeAttrs: [
-        'editableProp',
-        'useExtraData',
-    ],
-})
+@spina
 export class CloseDescriptionFieldView extends MultilineTextFieldView {
     static editableProp = 'statusEditable';
     static useExtraData = false;
@@ -1039,13 +1022,7 @@ export class CloseDescriptionFieldView extends MultilineTextFieldView {
 /**
  * The "Depends On" field.
  */
-@spina({
-    prototypeAttrs: [
-        'autocomplete',
-        'useEditIconOnly',
-        'useExtraData',
-    ],
-})
+@spina
 export class DependsOnFieldView extends CommaSeparatedValuesTextFieldView {
     static autocomplete = {
         cmp: (term, a, b) => b.data.id - a.data.id,
@@ -1093,9 +1070,7 @@ export class DependsOnFieldView extends CommaSeparatedValuesTextFieldView {
 /**
  * The "Description" field.
  */
-@spina({
-    prototypeAttrs: ['useExtraData'],
-})
+@spina
 export class DescriptionFieldView extends MultilineTextFieldView {
     static useExtraData = false;
 
@@ -1106,13 +1081,7 @@ export class DescriptionFieldView extends MultilineTextFieldView {
 /**
  * The "Owner" field.
  */
-@spina({
-    prototypeAttrs: [
-        'autocomplete',
-        'useEditIconOnly',
-        'useExtraData',
-    ],
-})
+@spina
 export class OwnerFieldView extends TextFieldView {
     static autocomplete = {
         cmp: (term, a, b) => {
@@ -1178,9 +1147,7 @@ export class OwnerFieldView extends TextFieldView {
 /**
  * The "Summary" field.
  */
-@spina({
-    prototypeAttrs: ['useExtraData'],
-})
+@spina
 export class SummaryFieldView extends TextFieldView {
     static useExtraData = false;
 }
@@ -1189,13 +1156,7 @@ export class SummaryFieldView extends TextFieldView {
 /**
  * The "Groups" field.
  */
-@spina({
-    prototypeAttrs: [
-        'autocomplete',
-        'useEditIconOnly',
-        'useExtraData',
-    ],
-})
+@spina
 export class TargetGroupsFieldView extends CommaSeparatedValuesTextFieldView {
     static autocomplete = {
         descKey: 'display_name',
@@ -1232,13 +1193,7 @@ export class TargetGroupsFieldView extends CommaSeparatedValuesTextFieldView {
 /**
  * The "People" field.
  */
-@spina({
-    prototypeAttrs: [
-        'autocomplete',
-        'useEditIconOnly',
-        'useExtraData',
-    ],
-})
+@spina
 export class TargetPeopleFieldView extends CommaSeparatedValuesTextFieldView {
     static autocomplete = {
         cmp: (term, a, b) => {
@@ -1298,9 +1253,7 @@ export class TargetPeopleFieldView extends CommaSeparatedValuesTextFieldView {
 /**
  * The "Testing Done" field.
  */
-@spina({
-    prototypeAttrs: ['useExtraData'],
-})
+@spina
 export class TestingDoneFieldView extends MultilineTextFieldView {
     static useExtraData = false;
 

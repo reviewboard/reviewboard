@@ -893,9 +893,7 @@ interface RichTextInlineEditorViewOptions extends InlineEditorViewOptions {
 /**
  * A view for inline editors which use the CodeMirror editor for Markdown.
  */
-@spina({
-    prototypeAttrs: ['defaultOptions'],
-})
+@spina
 export class RichTextInlineEditorView<
     TModel extends Backbone.Model = undefined,
     TElement extends HTMLElement = HTMLDivElement,
@@ -1027,9 +1025,7 @@ interface DateInlineEditorViewOptions extends InlineEditorViewOptions {
  * Version Added:
  *     5.0
  */
-@spina({
-    prototypeAttrs: ['defaultOptions'],
-})
+@spina
 export class DateInlineEditorView<
     TModel extends Backbone.Model = undefined,
     TElement extends HTMLElement = HTMLDivElement,
