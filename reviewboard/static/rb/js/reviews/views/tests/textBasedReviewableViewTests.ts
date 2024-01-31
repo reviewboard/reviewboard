@@ -1,3 +1,19 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    afterEach,
+    beforeEach,
+    expect,
+    it,
+    spyOn,
+} from 'jasmine-core';
+
+import { ReviewRequest } from 'reviewboard/common';
+import {
+    TextBasedReviewable,
+    TextBasedReviewableView,
+} from 'reviewboard/reviews';
+
+
 suite('rb/views/TextBasedReviewableView', function() {
     const template = dedent`
       <div id="container">
@@ -22,20 +38,20 @@ suite('rb/views/TextBasedReviewableView', function() {
     beforeEach(function() {
         $container = $(template).appendTo($testsScratch);
 
-        reviewRequest = new RB.ReviewRequest({
+        reviewRequest = new ReviewRequest({
             reviewURL: '/r/123/',
         });
 
-        model = new RB.TextBasedReviewable({
-            hasRenderedView: true,
-            viewMode: 'rendered',
+        model = new TextBasedReviewable({
             fileAttachmentID: 456,
+            hasRenderedView: true,
             reviewRequest: reviewRequest,
+            viewMode: 'rendered',
         });
 
-        view = new RB.TextBasedReviewableView({
-            model: model,
+        view = new TextBasedReviewableView({
             el: $container,
+            model: model,
         });
 
         /*
@@ -69,18 +85,24 @@ suite('rb/views/TextBasedReviewableView', function() {
 
     it('Router switches view modes', function() {
         view.router.navigate('#rendered');
-        expect(view.router.trigger).toHaveBeenCalledWith('route:viewMode', 'rendered', null, null);
-        expect($container.find('.active').attr('data-view-mode')).toBe('rendered');
+        expect(view.router.trigger).toHaveBeenCalledWith(
+            'route:viewMode', 'rendered', null, null);
+        expect($container.find('.active').attr('data-view-mode'))
+            .toBe('rendered');
         expect(model.get('viewMode')).toBe('rendered');
 
         view.router.navigate('#source');
-        expect(view.router.trigger).toHaveBeenCalledWith('route:viewMode', 'source', null, null);
-        expect($container.find('.active').attr('data-view-mode')).toBe('source');
+        expect(view.router.trigger).toHaveBeenCalledWith(
+            'route:viewMode', 'source', null, null);
+        expect($container.find('.active').attr('data-view-mode'))
+            .toBe('source');
         expect(model.get('viewMode')).toBe('source');
 
         view.router.navigate('#rendered');
-        expect(view.router.trigger).toHaveBeenCalledWith('route:viewMode', 'rendered', null, null);
-        expect($container.find('.active').attr('data-view-mode')).toBe('rendered');
+        expect(view.router.trigger).toHaveBeenCalledWith(
+            'route:viewMode', 'rendered', null, null);
+        expect($container.find('.active').attr('data-view-mode'))
+            .toBe('rendered');
         expect(model.get('viewMode')).toBe('rendered');
     });
 });

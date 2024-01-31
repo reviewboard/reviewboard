@@ -1,4 +1,15 @@
-(function() {
+/**
+ * Displays a review UI for images.
+ */
+
+import { BaseView, EventsHash, spina } from '@beanbag/spina';
+
+import { ImageReviewable } from '../models/imageReviewableModel';
+import { AbstractReviewableViewOptions } from './abstractReviewableView';
+import {
+    FileAttachmentReviewableView,
+} from './fileAttachmentReviewableView';
+import { RegionCommentBlockView } from './regionCommentBlockView';
 
 
 /**
@@ -13,19 +24,54 @@ const scalingFactors = new Map([
 
 
 /**
+ * An object to hold the size of an image.
+ *
+ * Version Added:
+ *     7.0
+ */
+interface ImageSize {
+    height: number;
+    width: number;
+}
+
+
+/**
  * Base class for providing a view onto an image or diff of images.
  *
  * This handles the common functionality, such as loading images, determining
  * the image region, rendering, and so on.
  *
- * Subclasses must, at a minimum, provide a 'mode', 'name', and must set
+ * Subclasses must, at a minimum, provide a 'mode', 'modeName', and must set
  * $commentRegion to an element representing the region where comments are
  * allowed.
  */
-const BaseImageView = Backbone.View.extend({
-    template: null,
-    mode: null,
-    name: null,
+@spina({
+    prototypeAttrs: ['mode', 'modeName'],
+})
+class BaseImageView extends BaseView<ImageReviewable> {
+    /**
+     * The name of the diff mode, used in element IDs.
+     *
+     * This should be overridden by subclasses.
+     */
+    static mode: string = null;
+
+    /**
+     * The user-visible name of the diff mode.
+     *
+     * This should be overridden by subclasses.
+     */
+    static modeName: string = null;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The current comment region. */
+    $commentRegion: JQuery;
+
+    /** The image elements. */
+    protected _$images: JQuery;
 
     /**
      * Initialize the view.
@@ -36,23 +82,23 @@ const BaseImageView = Backbone.View.extend({
         this.listenTo(this.model,
                       'change:scale',
                       (model, scale) => this._onScaleChanged(scale));
-    },
+    }
 
     /**
-     * Compute a CSS class name for this view.
+     * Return the CSS class name for this view.
      *
      * Returns:
      *     string:
      *     A class name based on the current mode.
      */
-    className() {
+    static className() {
         return `image-diff-${this.mode}`;
-    },
+    }
 
     /**
      * Load a list of images.
      *
-     * Once each image is loaded, the view's onImagesLoaded function will
+     * Once each image is loaded, the view's _onImagesLoaded function will
      * be called. Subclasses can override this to provide functionality based
      * on image sizes and content.
      *
@@ -60,14 +106,14 @@ const BaseImageView = Backbone.View.extend({
      *     $images (jQuery):
      *         The image elements to load.
      */
-    loadImages($images) {
+    loadImages($images: JQuery) {
         const scale = this.model.get('scale');
 
         let loadsRemaining = $images.length;
 
         this._$images = $images;
 
-        $images.each((ix, image) => {
+        $images.each((ix: number, image: HTMLImageElement) => {
             const $image = $(image);
 
             if ($image.data('initial-width') === undefined) {
@@ -77,28 +123,29 @@ const BaseImageView = Backbone.View.extend({
 
                     $image
                         .data({
-                            'initial-width': image.width,
                             'initial-height': image.height,
+                            'initial-width': image.width,
                         })
                         .css({
-                            width: image.width * scale,
                             height: image.height * scale,
+                            width: image.width * scale,
                         });
 
                     if (loadsRemaining === 0) {
-                        this.onImagesLoaded();
+                        this._onImagesLoaded();
                         this.trigger('regionChanged');
                     }
                 };
             } else {
                 loadsRemaining--;
+
                 if (loadsRemaining === 0) {
-                    this.onImagesLoaded();
+                    this._onImagesLoaded();
                     this.trigger('regionChanged');
                 }
             }
         });
-    },
+    }
 
     /**
      * Return the region of the view where commenting can take place.
@@ -124,12 +171,12 @@ const BaseImageView = Backbone.View.extend({
         offset.left += $region.getExtents('m', 'l');
 
         return {
+            height: $region.height(),
             left: offset.left,
             top: offset.top,
             width: $region.width(),
-            height: $region.height()
         };
-    },
+    }
 
     /**
      * Callback handler for when the images on the view are loaded.
@@ -137,7 +184,7 @@ const BaseImageView = Backbone.View.extend({
      * Subclasses that override this method must call the base method so that
      * images can be scaled appropriately.
      */
-    onImagesLoaded() {
+    _onImagesLoaded() {
         let scale = null;
 
         /*
@@ -179,7 +226,7 @@ const BaseImageView = Backbone.View.extend({
         }
 
         this.model.set('scale', scale);
-    },
+    }
 
     /**
      * Handle the image scale being changed.
@@ -189,16 +236,16 @@ const BaseImageView = Backbone.View.extend({
      *         The new image scaling factor (where 1.0 is 100%, 0.5 is 50%,
      *         etc).
      */
-    _onScaleChanged(scale) {
+    _onScaleChanged(scale: number) {
         this._$images.each((index, el) => {
             const $image = $(el);
 
             $image.css({
-                width: $image.data('initial-width') * scale,
                 height: $image.data('initial-height') * scale,
+                width: $image.data('initial-width') * scale,
             });
         });
-    },
+    }
 
     /**
      * Return the initial size of the image.
@@ -209,11 +256,13 @@ const BaseImageView = Backbone.View.extend({
      *     object:
      *     An object containing the initial height and width of the image.
      */
-    getInitialSize() {
+    getInitialSize(): ImageSize {
         console.assert(
             false, 'subclass of BaseImageView must implement getInitialSize');
-    },
-});
+
+        return null;
+    }
+}
 
 
 /**
@@ -222,29 +271,24 @@ const BaseImageView = Backbone.View.extend({
  * This view is used for standalone images, without diffs. It displays the
  * image and allows it to be commented on.
  */
-const ImageAttachmentView = BaseImageView.extend({
-    mode: 'attachment',
-    tagName: 'img',
+@spina
+class ImageAttachmentView extends BaseImageView {
+    static mode = 'attachment';
+    static tagName = 'img';
 
     /**
      * Render the view.
-     *
-     * Returns:
-     *     ImageAttachmentView:
-     *     This object, for chaining.
      */
-    render() {
+    onInitialRender() {
         this.$el.attr({
+            src: this.model.get('imageURL'),
             title: this.model.get('caption'),
-            src: this.model.get('imageURL')
         });
 
         this.$commentRegion = this.$el;
 
         this.loadImages(this.$el);
-
-        return this;
-    },
+    }
 
     /**
      * Return the initial size of the image.
@@ -255,15 +299,15 @@ const ImageAttachmentView = BaseImageView.extend({
      *     object:
      *     An object containing the initial height and width of the image.
      */
-    getInitialSize() {
+    getInitialSize(): ImageSize {
         const $img = this._$images.eq(0);
 
         return {
+            height: $img.data('initial-height'),
             width: $img.data('initial-width'),
-            height: $img.height('initial-height'),
         };
-    },
-});
+    }
+}
 
 
 /**
@@ -276,95 +320,100 @@ const ImageAttachmentView = BaseImageView.extend({
  * See:
  * http://jeffkreeftmeijer.com/2011/comparing-images-and-creating-image-diffs/
  */
-const ImageDifferenceDiffView = BaseImageView.extend({
-    mode: 'difference',
-    name: gettext('Difference'),
+@spina
+class ImageDifferenceDiffView extends BaseImageView {
+    static mode = 'difference';
+    static modeName = _`Difference`;
 
-    template: _.template([
-        '<div class="image-container">',
-        ' <canvas></canvas>',
-        '</div>'
-    ].join('')),
+    static template = _.template(dedent`
+        <div class="image-container">
+         <canvas></canvas>
+        </div>
+    `);
 
-    /**
-     * Initialize the view.
-     */
-    initialize() {
-        _super(this).initialize.call(this);
+    /**********************
+     * Instance variables *
+     **********************/
 
-        this._origImage = null;
-        this._modifiedImage = null;
-    },
+    /** The canvas used for drawing the difference. */
+    #$canvas: JQuery<HTMLCanvasElement>;
+
+    /** The (hidden) original image element. */
+    #origImage: HTMLImageElement = null;
+
+    /** The maximum height of the original and modified images. */
+    #maxHeight: number;
+
+    /** The maximum width of the original and modified images. */
+    #maxWidth: number;
+
+    /** The (hidden) modified image element. */
+    #modifiedImage: HTMLImageElement = null;
 
     /**
      * Render the view.
      *
      * Image elements representing the original and modified images will be
-     * created and loaded. After loading, onImagesLoaded will handle populating
-     * the canvas with the difference view.
-     *
-     * Returns:
-     *     ImageDifferenceDiffView:
-     *     This object, for chaining.
+     * created and loaded. After loading, _onImagesLoaded will handle
+     * populating the canvas with the difference view.
      */
-    render() {
-        this.$el.html(this.template(this.model.attributes));
+    onInitialRender() {
+        this.$el.html(ImageDifferenceDiffView.template(this.model.attributes));
 
         this.$commentRegion = this.$('canvas');
-        this._$canvas = this.$commentRegion;
+        this.#$canvas = this.$commentRegion as JQuery<HTMLCanvasElement>;
 
-        this._origImage = new Image();
-        this._origImage.src = this.model.get('diffAgainstImageURL');
+        this.#origImage = new Image();
+        this.#origImage.src = this.model.get('diffAgainstImageURL');
 
-        this._modifiedImage = new Image();
-        this._modifiedImage.src = this.model.get('imageURL');
+        this.#modifiedImage = new Image();
+        this.#modifiedImage.src = this.model.get('imageURL');
 
-        this.loadImages($([this._origImage, this._modifiedImage]));
-
-        return this;
-    },
+        this.loadImages($([this.#origImage, this.#modifiedImage]));
+    }
 
     /**
      * Render the difference between two images onto the canvas.
      */
-    onImagesLoaded() {
-        const origImage = this._origImage;
-        const modifiedImage = this._modifiedImage;
+    _onImagesLoaded() {
+        const origImage = this.#origImage;
+        const modifiedImage = this.#modifiedImage;
         const scale = this.model.get('scale');
 
-        this._maxWidth = Math.max(origImage.width, modifiedImage.width);
-        this._maxHeight = Math.max(origImage.height, modifiedImage.height);
+        this.#maxWidth = Math.max(origImage.width, modifiedImage.width);
+        this.#maxHeight = Math.max(origImage.height, modifiedImage.height);
 
-        _super(this).onImagesLoaded.call(this);
+        super._onImagesLoaded();
 
-        this._$canvas
+        this.#$canvas
             .attr({
-                width: this._maxWidth,
-                height: this._maxHeight
+                height: this.#maxHeight,
+                width: this.#maxWidth,
             })
             .css({
-                width: this._maxWidth * scale + 'px',
-                height: this._maxHeight * scale + 'px'
+                height: this.#maxHeight * scale + 'px',
+                width: this.#maxWidth * scale + 'px',
             });
 
-        const $modifiedCanvas = $('<canvas>')
+        const $modifiedCanvas: JQuery<HTMLCanvasElement> =
+            ($('<canvas>') as JQuery<HTMLCanvasElement>)
             .attr({
-                width: this._maxWidth,
-                height: this._maxHeight
+                height: this.#maxHeight,
+                width: this.#maxWidth,
             });
 
-        const origContext = this._$canvas[0].getContext('2d');
+        const origContext = this.#$canvas[0].getContext('2d');
         origContext.drawImage(origImage, 0, 0);
 
         const modifiedContext = $modifiedCanvas[0].getContext('2d');
         modifiedContext.drawImage(modifiedImage, 0, 0);
 
         const origImageData = origContext.getImageData(
-            0, 0, this._maxWidth, this._maxHeight);
+            0, 0, this.#maxWidth, this.#maxHeight);
         const origPixels = origImageData.data;
 
         const modifiedPixels = modifiedContext.getImageData(
-            0, 0, this._maxWidth, this._maxHeight).data;
+            0, 0, this.#maxWidth, this.#maxHeight).data;
 
         for (let i = 0; i < origPixels.length; i += 4) {
             origPixels[i] += modifiedPixels[i] -
@@ -379,7 +428,7 @@ const ImageDifferenceDiffView = BaseImageView.extend({
         }
 
         origContext.putImageData(origImageData, 0, 0);
-    },
+    }
 
     /**
      * Handle the image scale being changed.
@@ -390,11 +439,11 @@ const ImageDifferenceDiffView = BaseImageView.extend({
      *         etc).
      */
     _onScaleChanged(scale) {
-        this._$canvas.css({
-            width: this._maxWidth * scale + 'px',
-            height: this._maxHeight * scale + 'px',
+        this.#$canvas.css({
+            height: this.#maxHeight * scale + 'px',
+            width: this.#maxWidth * scale + 'px',
         });
-    },
+    }
 
     /**
      * Return the initial size of the image.
@@ -403,13 +452,13 @@ const ImageDifferenceDiffView = BaseImageView.extend({
      *     object:
      *     An object containing the initial height and width of the image.
      */
-    getInitialSize() {
+    getInitialSize(): ImageSize {
         return {
-            width: this._maxWidth,
-            height: this._maxHeight,
+            height: this.#maxHeight,
+            width: this.#maxWidth,
         };
-    },
-});
+    }
+}
 
 
 /**
@@ -420,34 +469,37 @@ const ImageDifferenceDiffView = BaseImageView.extend({
  * be able to play around with the transparency and see if any pixels move,
  * disappear, or otherwise change.
  */
-const ImageOnionDiffView = BaseImageView.extend({
-    mode: 'onion',
-    name: gettext('Onion Skin'),
+@spina
+class ImageOnionDiffView extends BaseImageView {
+    static mode = 'onion';
+    static modeName = _`Onion Skin`;
 
-    template: _.template([
-        '<div class="image-containers">',
-        ' <div class="orig-image">',
-        '  <img title="<%- caption %>" src="<%- diffAgainstImageURL %>">',
-        ' </div>',
-        ' <div class="modified-image">',
-        '  <img title="<%- caption %>" src="<%- imageURL %>">',
-        ' </div>',
-        '</div>',
-        '<div class="image-slider"></div>'
-    ].join('')),
+    static template = _.template(dedent`
+        <div class="image-containers">
+         <div class="orig-image">
+          <img title="<%- caption %>" src="<%- diffAgainstImageURL %>">
+         </div>
+         <div class="modified-image">
+          <img title="<%- caption %>" src="<%- imageURL %>">
+         </div>
+        </div>
+        <div class="image-slider"></div>
+    `);
 
-    DEFAULT_OPACITY: 0.25,
+    static DEFAULT_OPACITY = 0.25;
 
-    /**
-     * Initialize the view.
-     */
-    initialize() {
-        _super(this).initialize.call(this);
+    /**********************
+     * Instance variables *
+     **********************/
 
-        this._$origImage = null;
-        this._$modifiedImage = null;
-        this._$modifiedImageContainer = null;
-    },
+    /** The modified image. */
+    #$modifiedImage: JQuery = null;
+
+    /** The container element for the modified image. */
+    #$modifiedImageContainer: JQuery = null;
+
+    /** The original image. */
+    #$origImage: JQuery = null;
 
     /**
      * Render the view.
@@ -458,26 +510,24 @@ const ImageOnionDiffView = BaseImageView.extend({
      *     ImageOnionDiffView:
      *     This object, for chaining.
      */
-    render() {
-        this.$el.html(this.template(this.model.attributes));
+    onInitialRender() {
+        this.$el.html(ImageOnionDiffView.template(this.model.attributes));
 
         this.$commentRegion = this.$('.image-containers');
-        this._$origImage = this.$('.orig-image img');
-        this._$modifiedImage = this.$('.modified-image img');
-        this._$modifiedImageContainer = this._$modifiedImage.parent();
+        this.#$origImage = this.$('.orig-image img');
+        this.#$modifiedImage = this.$('.modified-image img');
+        this.#$modifiedImageContainer = this.#$modifiedImage.parent();
 
         this.$('.image-slider')
             .slider({
-                value: this.DEFAULT_OPACITY * 100,
-                slide: (e, ui) => this.setOpacity(ui.value / 100.0)
+                slide: (e, ui) => this.setOpacity(ui.value / 100.0),
+                value: ImageOnionDiffView.DEFAULT_OPACITY * 100,
             });
 
-        this.setOpacity(this.DEFAULT_OPACITY);
+        this.setOpacity(ImageOnionDiffView.DEFAULT_OPACITY);
 
         this.loadImages(this.$('img'));
-
-        return this;
-    },
+    }
 
     /**
      * Set the opacity value for the images.
@@ -486,9 +536,9 @@ const ImageOnionDiffView = BaseImageView.extend({
      *     percentage (number):
      *         The opacity percentage, in [0.0, 1.0].
      */
-    setOpacity(percentage) {
-        this._$modifiedImageContainer.css('opacity', percentage);
-    },
+    setOpacity(percentage: number) {
+        this.#$modifiedImageContainer.css('opacity', percentage);
+    }
 
     /**
      * Position the images after they load.
@@ -496,10 +546,10 @@ const ImageOnionDiffView = BaseImageView.extend({
      * The images will be layered on top of each other, consuming the
      * same width and height.
      */
-    onImagesLoaded() {
-        _super(this).onImagesLoaded.call(this);
+    _onImagesLoaded() {
+        super._onImagesLoaded();
         this._resize();
-    },
+    }
 
     /**
      * Handle the image scale being changed.
@@ -509,33 +559,33 @@ const ImageOnionDiffView = BaseImageView.extend({
      *         The new image scaling factor (where 1.0 is 100%, 0.5 is 50%,
      *         etc).
      */
-    _onScaleChanged(scale) {
-        _super(this)._onScaleChanged.call(this, scale);
+    _onScaleChanged(scale: number) {
+        super._onScaleChanged(scale);
         this._resize();
-    },
+    }
 
     /**
      * Resize the image containers.
      */
     _resize() {
         const scale = this.model.get('scale');
-        const origW = this._$origImage.data('initial-width') * scale;
-        const origH = this._$origImage.data('initial-height') * scale;
-        const newW = this._$modifiedImage.data('initial-width') * scale;
-        const newH = this._$modifiedImage.data('initial-height') * scale;
+        const origW = this.#$origImage.data('initial-width') * scale;
+        const origH = this.#$origImage.data('initial-height') * scale;
+        const newW = this.#$modifiedImage.data('initial-width') * scale;
+        const newH = this.#$modifiedImage.data('initial-height') * scale;
 
-        this._$origImage.parent()
+        this.#$origImage.parent()
             .width(origW)
             .height(origH);
 
-        this._$modifiedImage.parent()
+        this.#$modifiedImage.parent()
             .width(newW)
             .height(newH);
 
         this.$('.image-containers')
             .width(Math.max(origW, newW))
             .height(Math.max(origH, newH));
-    },
+    }
 
     /**
      * Return the initial size of the image.
@@ -544,15 +594,15 @@ const ImageOnionDiffView = BaseImageView.extend({
      *     object:
      *     An object containing the initial height and width of the image.
      */
-    getInitialSize() {
+    getInitialSize(): ImageSize {
         return {
-            width: Math.max(this._$origImage.data('initial-width'),
-                            this._$modifiedImage.data('initial-width')),
-            height: Math.max(this._$origImage.data('initial-height'),
-                             this._$modifiedImage.data('initial-height')),
+            height: Math.max(this.#$origImage.data('initial-height'),
+                             this.#$modifiedImage.data('initial-height')),
+            width: Math.max(this.#$origImage.data('initial-width'),
+                            this.#$modifiedImage.data('initial-width')),
         };
-    },
-});
+    }
+}
 
 
 /**
@@ -562,70 +612,78 @@ const ImageOnionDiffView = BaseImageView.extend({
  * much of the modified image is shown. The modified image will overlap the
  * original image. This makes it easy to compare the two images incrementally.
  */
-const ImageSplitDiffView = BaseImageView.extend({
-    mode: 'split',
-    name: gettext('Split'),
+@spina
+class ImageSplitDiffView extends BaseImageView {
+    static mode = 'split';
+    static modeName = _`Split`;
 
-    template: _.template([
-        '<div class="image-containers">',
-        ' <div class="image-diff-split-container-orig">',
-        '  <div class="orig-image">',
-        '   <img title="<%- caption %>" src="<%- diffAgainstImageURL %>">',
-        '  </div>',
-        ' </div>',
-        ' <div class="image-diff-split-container-modified">',
-        '  <div class="modified-image">',
-        '   <img title="<%- caption %>" src="<%- imageURL %>">',
-        '  </div>',
-        ' </div>',
-        '</div>',
-        '<div class="image-slider"></div>'
-    ].join('')),
+    static template = _.template(dedent`
+        <div class="image-containers">
+         <div class="image-diff-split-container-orig">
+          <div class="orig-image">
+           <img title="<%- caption %>" src="<%- diffAgainstImageURL %>">
+          </div>
+         </div>
+         <div class="image-diff-split-container-modified">
+          <div class="modified-image">
+           <img title="<%- caption %>" src="<%- imageURL %>">
+          </div>
+         </div>
+        </div>
+        <div class="image-slider"></div>
+    `);
 
-    // The default slider position of 25%
-    DEFAULT_SPLIT_PCT: 0.25,
+    /** The default slider position of 25%. */
+    static DEFAULT_SPLIT_PCT = 0.25;
 
-    /**
-     * Initialize the view.
-     */
-    initialize() {
-        _super(this).initialize.call(this);
+    /**********************
+     * Instance variables *
+     **********************/
 
-        this._$modifiedImage = null;
-        this._$origImage = null;
-        this._$origSplitContainer = null;
-        this._$modifiedSplitContainer = null;
-        this._$slider = null;
-        this._maxWidth = 0;
-    },
+    /** The modified image. */
+    #$modifiedImage: JQuery = null;
+
+    /** The container for the modified image. */
+    #$modifiedSplitContainer: JQuery = null;
+
+    /** The original image. */
+    #$origImage: JQuery = null;
+
+    /** The container for the original image. */
+    #$origSplitContainer: JQuery = null;
+
+    /** The slider element. */
+    #$slider: JQuery = null;
+
+    /** The maximimum height of the original and modified images. */
+    #maxHeight = 0;
+
+    /** The maximum width of the original and modified images. */
+    #maxWidth = 0;
 
     /**
      * Render the view.
-     *
-     * Returns:
-     *     ImageSplitDiffView:
-     *     This object, for chaining.
      */
-    render() {
-        this.$el.html(this.template(this.model.attributes));
+    onInitialRender() {
+        this.$el.html(ImageSplitDiffView.template(this.model.attributes));
 
         this.$commentRegion = this.$('.image-containers');
-        this._$origImage = this.$('.orig-image img');
-        this._$modifiedImage = this.$('.modified-image img');
-        this._$origSplitContainer = this.$('.image-diff-split-container-orig');
-        this._$modifiedSplitContainer =
+        this.#$origImage = this.$('.orig-image img');
+        this.#$modifiedImage = this.$('.modified-image img');
+        this.#$origSplitContainer = this.$('.image-diff-split-container-orig');
+        this.#$modifiedSplitContainer =
             this.$('.image-diff-split-container-modified');
 
-        this._$slider = this.$('.image-slider')
+        this.#$slider = this.$('.image-slider')
             .slider({
-                value: this.DEFAULT_SPLIT_PCT * 100,
-                slide: (e, ui) => this.setSplitPercentage(ui.value / 100.0)
+                slide: (e, ui) => this.setSplitPercentage(ui.value / 100.0),
+                value: ImageSplitDiffView.DEFAULT_SPLIT_PCT * 100,
             });
 
         this.loadImages(this.$('img'));
 
         return this;
-    },
+    }
 
     /**
      * Set the percentage for the split view.
@@ -634,11 +692,11 @@ const ImageSplitDiffView = BaseImageView.extend({
      *     percentage (number):
      *         The position of the slider, in [0.0, 1.0].
      */
-    setSplitPercentage(percentage) {
-        this._$origSplitContainer.outerWidth(this._maxWidth * percentage);
-        this._$modifiedSplitContainer.outerWidth(
-            this._maxWidth * (1.0 - percentage));
-    },
+    setSplitPercentage(percentage: number) {
+        this.#$origSplitContainer.outerWidth(this.#maxWidth * percentage);
+        this.#$modifiedSplitContainer.outerWidth(
+            this.#maxWidth * (1.0 - percentage));
+    }
 
     /**
      * Position the images after they load.
@@ -649,10 +707,10 @@ const ImageSplitDiffView = BaseImageView.extend({
      * The slider will match the width of the two images, in order to
      * position the slider's handle with the divider between images.
      */
-    onImagesLoaded() {
-        _super(this).onImagesLoaded.call(this);
+    _onImagesLoaded() {
+        super._onImagesLoaded();
         this._resize();
-    },
+    }
 
     /**
      * Handle the image scale being changed.
@@ -662,52 +720,52 @@ const ImageSplitDiffView = BaseImageView.extend({
      *         The new image scaling factor (where 1.0 is 100%, 0.5 is 50%,
      *         etc).
      */
-    _onScaleChanged(scale) {
-        _super(this)._onScaleChanged.call(this, scale);
+    _onScaleChanged(scale: number) {
+        super._onScaleChanged(scale);
         this._resize();
-    },
+    }
 
     /**
      * Resize the image containers.
      */
     _resize() {
-        const $origImageContainer = this._$origImage.parent();
+        const $origImageContainer = this.#$origImage.parent();
         const scale = this.model.get('scale');
-        const origW = this._$origImage.data('initial-width') * scale;
-        const origH = this._$origImage.data('initial-height') * scale;
-        const newW = this._$modifiedImage.data('initial-width') * scale;
-        const newH = this._$modifiedImage.data('initial-height') * scale;
+        const origW = this.#$origImage.data('initial-width') * scale;
+        const origH = this.#$origImage.data('initial-height') * scale;
+        const newW = this.#$modifiedImage.data('initial-width') * scale;
+        const newH = this.#$modifiedImage.data('initial-height') * scale;
         const maxH = Math.max(origH, newH);
         const maxOuterH = maxH + $origImageContainer.getExtents('b', 'tb');
 
-        this._maxWidth = Math.max(origW, newW);
-        this._maxHeight = Math.max(origH, newH);
+        this.#maxWidth = Math.max(origW, newW);
+        this.#maxHeight = Math.max(origH, newH);
 
         $origImageContainer
             .outerWidth(origW)
             .height(origH);
 
-        this._$modifiedImage.parent()
+        this.#$modifiedImage.parent()
             .outerWidth(newW)
             .height(newH);
 
-        this._$origSplitContainer
-            .outerWidth(this._maxWidth)
+        this.#$origSplitContainer
+            .outerWidth(this.#maxWidth)
             .height(maxOuterH);
 
-        this._$modifiedSplitContainer
-            .outerWidth(this._maxWidth)
+        this.#$modifiedSplitContainer
+            .outerWidth(this.#maxWidth)
             .height(maxOuterH);
 
         this.$('.image-containers')
-            .width(this._maxWidth)
+            .width(this.#maxWidth)
             .height(maxH);
 
-        this._$slider.width(this._maxWidth);
+        this.#$slider.width(this.#maxWidth);
 
         /* Now that these are loaded, set the default for the split. */
-        this.setSplitPercentage(this.DEFAULT_SPLIT_PCT);
-    },
+        this.setSplitPercentage(ImageSplitDiffView.DEFAULT_SPLIT_PCT);
+    }
 
     /**
      * Return the initial size of the image.
@@ -716,13 +774,13 @@ const ImageSplitDiffView = BaseImageView.extend({
      *     object:
      *     An object containing the initial height and width of the image.
      */
-    getInitialSize() {
+    getInitialSize(): ImageSize {
         return {
-            width: this._maxWidth,
-            height: this._maxHeight,
+            height: this.#maxHeight,
+            width: this.#maxWidth,
         };
-    },
-});
+    }
+}
 
 
 /**
@@ -731,41 +789,46 @@ const ImageSplitDiffView = BaseImageView.extend({
  * The images will be displayed horizontally, side-by-side. Comments will
  * only be able to be added against the new file.
  */
-const ImageTwoUpDiffView = BaseImageView.extend({
-    mode: 'two-up',
-    name: gettext('Two-Up'),
+@spina
+class ImageTwoUpDiffView extends BaseImageView {
+    static mode = 'two-up';
+    static modeName = _`Two-Up`;
 
-    template: _.template([
-        '<div class="image-container image-container-orig">',
-        ' <div class="orig-image">',
-        '  <img title="<%- caption %>" src="<%- diffAgainstImageURL %>">',
-        ' </div>',
-        '</div>',
-        '<div class="image-container image-container-modified">',
-        ' <div class="modified-image">',
-        '  <img title="<%- caption %>" src="<%- imageURL %>">',
-        ' </div>',
-        '</div>'
-    ].join('')),
+    static template = _.template(dedent`
+        <div class="image-container image-container-orig">
+         <div class="orig-image">
+          <img title="<%- caption %>" src="<%- diffAgainstImageURL %>">
+         </div>
+        </div>
+        <div class="image-container image-container-modified">
+         <div class="modified-image">
+          <img title="<%- caption %>" src="<%- imageURL %>">
+         </div>
+        </div>
+    `);
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The original image. */
+    #$origImage: JQuery = null;
+
+    /** The modified image. */
+    #$modifiedImage: JQuery = null;
 
     /**
      * Render the view.
-     *
-     * Returns:
-     *     ImageTwoUpDiffView:
-     *     This object, for chaining.
      */
-    render() {
-        this.$el.html(this.template(this.model.attributes));
+    onInitialRender() {
+        this.$el.html(ImageTwoUpDiffView.template(this.model.attributes));
         this.$commentRegion = this.$('.modified-image img');
 
-        this._$origImage = this.$('.orig-image img');
-        this._$modifiedImage = this.$('.modified-image img');
+        this.#$origImage = this.$('.orig-image img');
+        this.#$modifiedImage = this.$('.modified-image img');
 
         this.loadImages(this.$('img'));
-
-        return this;
-    },
+    }
 
     /**
      * Return the initial size of the image.
@@ -774,15 +837,22 @@ const ImageTwoUpDiffView = BaseImageView.extend({
      *     object:
      *     An object containing the initial height and width of the image.
      */
-    getInitialSize() {
+    getInitialSize(): ImageSize {
         return {
-            width: Math.max(this._$origImage.data('initial-width'),
-                            this._$modifiedImage.data('initial-width')),
-            height: Math.max(this._$origImage.data('initial-height'),
-                             this._$modifiedImage.data('initial-height')),
+            height: Math.max(this.#$origImage.data('initial-height'),
+                             this.#$modifiedImage.data('initial-height')),
+            width: Math.max(this.#$origImage.data('initial-width'),
+                            this.#$modifiedImage.data('initial-width')),
         };
-    },
-});
+    }
+}
+
+
+/** An object for holding information about the current selection. */
+interface ActiveSelection {
+    beginX?: number;
+    beginY?: number;
+}
 
 
 /**
@@ -799,57 +869,89 @@ const ImageTwoUpDiffView = BaseImageView.extend({
  * side-by-side view, an overlapping split view, Onion Skinning view, and
  * a color difference view.
  */
-RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
-    className: 'image-review-ui',
+@spina
+export class ImageReviewableView<
+    TModel extends ImageReviewable = ImageReviewable
+> extends FileAttachmentReviewableView<TModel> {
+    static className = 'image-review-ui';
 
-    commentBlockView: RB.RegionCommentBlockView,
+    static commentBlockView = RegionCommentBlockView;
 
-    events: {
+    static events: EventsHash = {
         'click .image-diff-mode': '_onImageModeClicked',
         'click .image-resolution-menu .menu-item': '_onImageZoomLevelClicked',
         'mousedown .selection-container': '_onMouseDown',
+        'mousemove .selection-container': '_onMouseMove',
         'mouseup .selection-container': '_onMouseUp',
-        'mousemove .selection-container': '_onMouseMove'
-    },
+    };
 
-    modeItemTemplate: _.template(
-        '<li><a class="image-diff-mode" href="#" data-mode="<%- mode %>"><%- name %></a></li>'
-    ),
+    static modeItemTemplate = _.template(dedent`
+        <li>
+         <a class="image-diff-mode" href="#" data-mode="<%- mode %>">
+          <%- name %>
+         </a>
+        </li>
+    `);
 
-    captionTableTemplate: _.template(
+    static captionTableTemplate = _.template(
         '<table><tr><%= items %></tr></table>'
-    ),
+    );
 
-    captionItemTemplate: _.template([
-        '<td>',
-        ' <h1 class="caption">',
-        '  <%- caption %>',
-        ' </h1>',
-        '</td>'
-    ].join('')),
+    static captionItemTemplate = _.template(dedent`
+        <td>
+         <h1 class="caption">
+          <%- caption %>
+         </h1>
+        </td>
+    `);
 
-    errorTemplate: _.template([
-        '<div class="review-ui-error">',
-        ' <div class="rb-icon rb-icon-warning"></div>',
-        ' <%- errorStr %>',
-        '</div>'
-        ].join('')),
+    static errorTemplate = _.template(dedent`
+        <div class="review-ui-error">
+         <div class="rb-icon rb-icon-warning"></div>
+         <%- errorStr %>
+        </div>
+    `);
 
-    ANIM_SPEED_MS: 200,
+    static ANIM_SPEED_MS = 200;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The container for all of the diff views. */
+    #$imageDiffs: JQuery;
+
+    /** The UI for choosing the diff mode. */
+    #$modeBar: JQuery;
+
+    /** The selection area container. */
+    #$selectionArea: JQuery;
+
+    /** The selection box . */
+    #$selectionRect: JQuery;
+
+    /** The active selection. */
+    #activeSelection: ActiveSelection = {};
+
+    /** The block views for all existing comments. */
+    #commentBlockViews: RegionCommentBlockView[] = [];
+
+    /** The views for the different diff modes. */
+    #diffModeViews: { [key: string]: BaseImageView } = {};
+
+    /** The menu elements for the different diff modes. */
+    #diffModeSelectors: { [key: string]: JQuery } = {};
+
+    /** The basic image view. */
+    #imageView: ImageAttachmentView = null;
 
     /**
      * Initialize the view.
      */
-    initialize() {
-        RB.FileAttachmentReviewableView.prototype.initialize.apply(
-            this, arguments);
+    initialize(options: Partial<AbstractReviewableViewOptions> = {}) {
+        super.initialize(options);
 
         _.bindAll(this, '_adjustPos');
-
-        this._activeSelection = {};
-        this._diffModeSelectors = {};
-        this._diffModeViews = {};
-        this._commentBlockViews = [];
 
         /*
          * Add any CommentBlockViews to the selection area when they're
@@ -857,22 +959,22 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
          */
         this.on('commentBlockViewAdded', commentBlockView => {
             commentBlockView.setSelectionRegionSizeFunc(
-                () => _.pick(this._imageView.getSelectionRegion(),
+                () => _.pick(this.#imageView.getSelectionRegion(),
                              'width', 'height'));
             commentBlockView.setScale(this.model.get('scale'));
 
-            this._$selectionArea.append(commentBlockView.$el);
+            this.#$selectionArea.append(commentBlockView.$el);
 
-            this._commentBlockViews.push(commentBlockView);
+            this.#commentBlockViews.push(commentBlockView);
             this.listenTo(
                 commentBlockView, 'removing', () => {
-                    this._commentBlockViews =
-                        _.without(this._commentBlockViews, commentBlockView);
+                    this.#commentBlockViews =
+                        _.without(this.#commentBlockViews, commentBlockView);
                 });
         });
 
         this.listenTo(this.model, 'change:scale', (model, scale) => {
-            this._commentBlockViews.forEach(view => view.setScale(scale));
+            this.#commentBlockViews.forEach(view => view.setScale(scale));
 
             this.$('.image-resolution-menu-current')
                 .text(scalingFactors.get(scale));
@@ -883,7 +985,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
              */
             _.defer(this._adjustPos);
         });
-    },
+    }
 
     /**
      * Render the view.
@@ -892,54 +994,52 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      * selection rectangle that will be shown when dragging.
      *
      * Any time the window resizes, the comment positions will be adjusted.
-     *
-     * Returns:
-     *     RB.ImageReviewableView:
-     *     This object, for chaining.
      */
     renderContent() {
         const hasDiff = !!this.model.get('diffAgainstFileAttachmentID');
 
-        this._$selectionArea = $('<div>')
+        this.#$selectionArea = $('<div>')
             .addClass('selection-container')
             .hide()
             .proxyTouchEvents();
 
-        this._$selectionRect = $('<div>')
+        this.#$selectionRect = $('<div>')
             .addClass('selection-rect')
-            .prependTo(this._$selectionArea)
+            .prependTo(this.#$selectionArea)
             .proxyTouchEvents()
             .hide();
 
+        /*
+         * Register a hover event to hide the comments when the mouse
+         * is not over the comment area.
+         */
         this.$el
-            /*
-             * Register a hover event to hide the comments when the mouse
-             * is not over the comment area.
-             */
             .hover(
                 () => {
-                    this._$selectionArea.show();
+                    this.#$selectionArea.show();
                     this._adjustPos();
                 },
                 () => {
-                    if (this._$selectionRect.is(':hidden') &&
+                    if (this.#$selectionRect.is(':hidden') &&
                         !this.commentDlg) {
-                        this._$selectionArea.hide();
+                        this.#$selectionArea.hide();
                     }
                 });
 
         const $wrapper = $('<div class="image-content">')
-            .append(this._$selectionArea);
+            .append(this.#$selectionArea);
 
         if (this.model.get('diffTypeMismatch')) {
-            this.$el.append(this.errorTemplate({
-                errorStr: gettext('These revisions cannot be compared because they are different file types.')
+            this.$el.append(ImageReviewableView.errorTemplate({
+                errorStr: _`
+                    These revisions cannot be compared because they
+                    are different file types.`,
             }));
         } else if (hasDiff) {
-            this._$modeBar = $('<ul class="image-diff-modes">')
+            this.#$modeBar = $('<ul class="image-diff-modes">')
                 .appendTo(this.$el);
 
-            this._$imageDiffs = $('<div class="image-diffs">');
+            this.#$imageDiffs = $('<div class="image-diffs">');
 
             this._addDiffMode(ImageTwoUpDiffView);
             this._addDiffMode(ImageDifferenceDiffView);
@@ -947,20 +1047,20 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             this._addDiffMode(ImageOnionDiffView);
 
             $wrapper
-                .append(this._$imageDiffs)
+                .append(this.#$imageDiffs)
                 .appendTo(this.$el);
 
-            this._setDiffMode(ImageTwoUpDiffView.prototype.mode);
+            this._setDiffMode(ImageTwoUpDiffView.mode);
         } else {
-            this._imageView = new ImageAttachmentView({
-                model: this.model
+            this.#imageView = new ImageAttachmentView({
+                model: this.model,
             });
 
             $wrapper
-                .append(this._imageView.$el)
+                .append(this.#imageView.$el)
                 .appendTo(this.$el);
 
-            this._imageView.render();
+            this.#imageView.render();
         }
 
         /*
@@ -979,50 +1079,44 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         if (this.model.get('numRevisions') > 1) {
             const $revisionLabel = $('<div id="revision_label">')
                 .appendTo($header);
-            this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
+            const revisionLabelView = new RB.FileAttachmentRevisionLabelView({
                 el: $revisionLabel,
                 model: this.model,
             });
-            this._revisionLabelView.render();
-            this.listenTo(this._revisionLabelView, 'revisionSelected',
+            revisionLabelView.render();
+            this.listenTo(revisionLabelView, 'revisionSelected',
                           this._onRevisionSelected);
 
             const $revisionSelector =
                 $('<div id="attachment_revision_selector">')
                 .appendTo($header);
-            this._revisionSelectorView =
+            const revisionSelectorView =
                 new RB.FileAttachmentRevisionSelectorView({
                     el: $revisionSelector,
                     model: this.model,
                 });
-            this._revisionSelectorView.render();
-            this.listenTo(this._revisionSelectorView, 'revisionSelected',
+            revisionSelectorView.render();
+            this.listenTo(revisionSelectorView, 'revisionSelected',
                           this._onRevisionSelected);
 
             if (!this.renderedInline) {
                 if (hasDiff) {
+                    const caption = this.model.get('caption');
+                    const revision = this.model.get('fileRevision');
+                    const diffCaption = this.model.get('diffCaption');
+                    const diffRevision = this.model.get('diffRevision');
+
                     const captionItems = [
-                        this.captionItemTemplate({
-                            caption: interpolate(
-                                gettext('%(caption)s (revision %(revision)s)'),
-                                {
-                                    caption: this.model.get('diffCaption'),
-                                    revision: this.model.get('diffRevision'),
-                                },
-                                true),
+                        ImageReviewableView.captionItemTemplate({
+                            caption:
+                                _`${diffCaption} (revision ${diffRevision})`,
                         }),
-                        this.captionItemTemplate({
-                            caption: interpolate(
-                                gettext('%(caption)s (revision %(revision)s)'),
-                                {
-                                    caption: this.model.get('caption'),
-                                    revision: this.model.get('fileRevision'),
-                                },
-                                true),
+                        ImageReviewableView.captionItemTemplate({
+                            caption: _`${caption} (revision ${revision})`,
                         }),
                     ];
 
-                    $header.append(this.captionTableTemplate({
+                    $header.append(ImageReviewableView.captionTableTemplate({
                         items: captionItems.join(''),
                     }));
                 } else {
@@ -1030,14 +1124,10 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                         $('<div class="image-single-revision">')
                         .appendTo($header);
 
+                    const caption = this.model.get('caption');
+                    const revision = this.model.get('fileRevision');
                     $('<h1 class="caption">')
-                        .text(interpolate(
-                            gettext('%(caption)s (revision %(revision)s)'),
-                            {
-                                caption: this.model.get('caption'),
-                                revision: this.model.get('fileRevision'),
-                            },
-                            true))
+                        .text(_`${caption} (revision ${revision})`)
                         .appendTo($captionBar);
                 }
             }
@@ -1051,16 +1141,16 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             }
         }
 
-        const $resolutionMenu = $([
-            '<li class="image-resolution-menu has-menu">',
-            ' <a href="#" class="menu-header">',
-            '  <span class="fa fa-search-plus"></span>',
-            '  <span class="image-resolution-menu-current">100%</span>',
-            '  <span class="rb-icon rb-icon-dropdown-arrow">',
-            ' </a>',
-            ' <ul class="menu"></ul>',
-            '</li>',
-        ].join(''));
+        const $resolutionMenu = $(dedent`
+            <li class="image-resolution-menu has-menu">
+             <a href="#" class="menu-header">
+              <span class="fa fa-search-plus"></span>
+              <span class="image-resolution-menu-current">100%</span>
+              <span class="rb-icon rb-icon-dropdown-arrow">
+             </a>
+             <ul class="menu"></ul>
+            </li>
+        `);
         const $menu = $resolutionMenu.find('.menu');
 
         scalingFactors.forEach((text, scale) => {
@@ -1070,11 +1160,11 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         });
 
         if (hasDiff) {
-            this._$modeBar.append($resolutionMenu);
+            this.#$modeBar.append($resolutionMenu);
         } else {
             this.$('.caption').after($resolutionMenu);
         }
-    },
+    }
 
     /**
      * Callback for when a new file revision is selected.
@@ -1087,7 +1177,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      *     revisions (Array of number):
      *         A two-element array of [base, tip] revisions.
      */
-    _onRevisionSelected(revisions) {
+    _onRevisionSelected(revisions: [number, number]) {
         const revisionIDs = this.model.get('attachmentRevisionIDs');
         const [base, tip] = revisions;
 
@@ -1112,7 +1202,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         }
 
         RB.navigateTo(redirectURL, {replace: true});
-    },
+    }
 
     /**
      * Register a diff mode.
@@ -1124,20 +1214,20 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      *     ViewClass (function):
      *         The constructor for the view class.
      */
-    _addDiffMode(ViewClass) {
+    _addDiffMode(ViewClass: typeof BaseImageView) {
         const mode = ViewClass.prototype.mode;
         const view = new ViewClass({
             model: this.model,
         });
 
-        this._diffModeViews[mode] = view;
+        this.#diffModeViews[mode] = view;
         view.$el.hide();
-        this._$imageDiffs.append(view.$el);
+        this.#$imageDiffs.append(view.$el);
         view.render();
 
-        const $selector = $(this.modeItemTemplate({
+        const $selector = $(ImageReviewableView.modeItemTemplate({
             mode: mode,
-            name: view.name
+            name: view.modeName,
         }));
 
         /*
@@ -1148,15 +1238,16 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
          * This is kind of ugly, but really the only good way.
          */
         $selector
-            .appendTo(this._$modeBar)
+            .appendTo(this.#$modeBar)
             .addClass('selected');
         const selectorWidth = $selector.outerWidth(true);
+
         $selector
             .removeClass('selected')
             .width(selectorWidth);
 
-        this._diffModeSelectors[mode] = $selector;
-    },
+        this.#diffModeSelectors[mode] = $selector;
+    }
 
     /**
      * Set the current diff mode.
@@ -1170,33 +1261,33 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      *     mode (string):
      *         The new diff mode.
      */
-    _setDiffMode(mode) {
-        const newView = this._diffModeViews[mode];
+    _setDiffMode(mode: string) {
+        const newView = this.#diffModeViews[mode];
 
-        if (this._imageView) {
-            this._diffModeSelectors[this._imageView.mode]
+        if (this.#imageView) {
+            this.#diffModeSelectors[this.#imageView.mode]
                 .removeClass('selected');
 
             newView.$el.show();
             const height = newView.$el.height();
             newView.$el.hide();
 
-            this._$imageDiffs.animate({
+            this.#$imageDiffs.animate({
+                duration: ImageReviewableView.ANIM_SPEED_MS,
                 height: height,
-                duration: this.ANIM_SPEED_MS
             });
 
-            this._$selectionArea.fadeOut(this.ANIM_SPEED_MS);
-            this._imageView.$el.fadeOut(
-                this.ANIM_SPEED_MS,
+            this.#$selectionArea.fadeOut(ImageReviewableView.ANIM_SPEED_MS);
+            this.#imageView.$el.fadeOut(
+                ImageReviewableView.ANIM_SPEED_MS,
                 () => this._showDiffMode(newView, true));
         } else {
             this._showDiffMode(newView);
         }
 
-        this._diffModeSelectors[newView.mode]
+        this.#diffModeSelectors[newView.mode]
             .addClass('selected');
-    },
+    }
 
     /**
      * Show the diff mode.
@@ -1214,25 +1305,28 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      *     animate (boolean):
      *         Whether to animate the transition.
      */
-    _showDiffMode(newView, animate) {
-        if (this._imageView) {
-            this.stopListening(this._imageView, 'regionChanged');
+    _showDiffMode(
+        newView: BaseImageView,
+        animate?: boolean,
+    ) {
+        if (this.#imageView) {
+            this.stopListening(this.#imageView, 'regionChanged');
         }
 
-        this._imageView = newView;
+        this.#imageView = newView;
 
         if (animate) {
-            this._imageView.$el.fadeIn(this.ANIM_SPEED_MS);
-            this._$selectionArea.fadeIn(this.ANIM_SPEED_MS);
+            this.#imageView.$el.fadeIn(ImageReviewableView.ANIM_SPEED_MS);
+            this.#$selectionArea.fadeIn(ImageReviewableView.ANIM_SPEED_MS);
         } else {
-            this._imageView.$el.show();
-            this._$selectionArea.show();
+            this.#imageView.$el.show();
+            this.#$selectionArea.show();
         }
 
-        this.listenTo(this._imageView, 'regionChanged', this._adjustPos);
+        this.listenTo(this.#imageView, 'regionChanged', this._adjustPos);
 
         this._adjustPos();
-    },
+    }
 
     /**
      * Handler for when a mode in the diff mode bar is clicked.
@@ -1243,12 +1337,12 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      *     e (Event):
      *         The event which triggered the callback.
      */
-    _onImageModeClicked(e) {
+    _onImageModeClicked(e: Event) {
         e.preventDefault();
         e.stopPropagation();
 
         this._setDiffMode($(e.target).data('mode'));
-    },
+    }
 
     /**
      * Handler for when a zoom level is clicked.
@@ -1257,11 +1351,12 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      *     e (Event):
      *         The event which triggered the callback.
      */
-    _onImageZoomLevelClicked(e) {
+    _onImageZoomLevelClicked(e: Event) {
         e.preventDefault();
         e.stopPropagation();
+
         this.model.set('scale', $(e.target).data('image-scale'));
-    },
+    }
 
     /**
      * Handle a mousedown on the selection area.
@@ -1274,36 +1369,37 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      *     e (Event):
      *         The event which triggered the callback.
      */
-    _onMouseDown(e) {
+    _onMouseDown(e: MouseEvent) {
         if (e.which === 1 &&
             !this.commentDlg &&
             !$(e.target).hasClass('selection-flag')) {
-            const offset = this._$selectionArea.offset();
+            const offset = this.#$selectionArea.offset();
 
-            this._activeSelection.beginX =
+            this.#activeSelection.beginX =
                 e.pageX - Math.floor(offset.left) - 1;
-            this._activeSelection.beginY =
+            this.#activeSelection.beginY =
                 e.pageY - Math.floor(offset.top) - 1;
 
             const updateData = {
-                left: this._activeSelection.beginX,
-                top: this._activeSelection.beginY,
+                height: 1,
+                left: this.#activeSelection.beginX,
+                top: this.#activeSelection.beginY,
                 width: 1,
-                height: 1
             };
 
-            this._$selectionRect
+            this.#$selectionRect
                 .css(updateData)
                 .data(updateData)
                 .show();
 
-            if (this._$selectionRect.is(':hidden')) {
+            if (this.#$selectionRect.is(':hidden')) {
                 this.commentDlg.close();
             }
 
-            return false;
+            e.stopPropagation();
+            e.preventDefault();
         }
-    },
+    }
 
     /**
      * Handle a mouseup on the selection area.
@@ -1315,30 +1411,32 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      *     e (Event):
      *         The event which triggered the callback.
      */
-    _onMouseUp(e) {
+    _onMouseUp(e: MouseEvent) {
         if (!this.commentDlg &&
-            this._$selectionRect.is(':visible')) {
+            this.#$selectionRect.is(':visible')) {
             e.stopPropagation();
-            this._$selectionRect.hide();
+            e.preventDefault();
+
+            this.#$selectionRect.hide();
 
             /*
              * If we don't pass an arbitrary minimum size threshold,
              * don't do anything. This helps avoid making people mad
              * if they accidentally click on the image.
              */
-            const position = this._$selectionRect.data();
+            const position = this.#$selectionRect.data();
             const scale = this.model.get('scale');
 
             if (position.width > 5 && position.height > 5) {
                 this.createAndEditCommentBlock({
+                    height: Math.floor(position.height / scale),
+                    width: Math.floor(position.width / scale),
                     x: Math.floor(position.left / scale),
                     y: Math.floor(position.top / scale),
-                    width: Math.floor(position.width / scale),
-                    height: Math.floor(position.height / scale),
                 });
             }
         }
-    },
+    }
 
     /**
      * Handle a mousemove on the selection area.
@@ -1350,56 +1448,54 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      *     e (Event):
      *         The event which triggered the callback.
      */
-    _onMouseMove(e) {
-        if (!this.commentDlg && this._$selectionRect.is(':visible')) {
-            const offset = this._$selectionArea.offset();
+    _onMouseMove(e: MouseEvent) {
+        if (!this.commentDlg && this.#$selectionRect.is(':visible')) {
+            const offset = this.#$selectionArea.offset();
             const x = e.pageX - Math.floor(offset.left) - 1;
             const y = e.pageY - Math.floor(offset.top) - 1;
-            const updateData = {};
+            const updateData: JQuery.PlainObject<string | number> = {};
 
-            if (this._activeSelection.beginX <= x) {
-                updateData.left = this._activeSelection.beginX;
-                updateData.width = x - this._activeSelection.beginX;
+            if (this.#activeSelection.beginX <= x) {
+                updateData.left = this.#activeSelection.beginX;
+                updateData.width = x - this.#activeSelection.beginX;
             } else {
                 updateData.left = x;
-                updateData.width = this._activeSelection.beginX - x;
+                updateData.width = this.#activeSelection.beginX - x;
             }
 
-            if (this._activeSelection.beginY <= y) {
-                updateData.top = this._activeSelection.beginY;
-                updateData.height = y - this._activeSelection.beginY;
+            if (this.#activeSelection.beginY <= y) {
+                updateData.top = this.#activeSelection.beginY;
+                updateData.height = y - this.#activeSelection.beginY;
             } else {
                 updateData.top = y;
-                updateData.height = this._activeSelection.beginY - y;
+                updateData.height = this.#activeSelection.beginY - y;
             }
 
-            this._$selectionRect
+            this.#$selectionRect
                 .css(updateData)
                 .data(updateData);
 
-            return false;
+            e.stopPropagation();
+            e.preventDefault();
         }
-    },
+    }
 
     /**
      * Reposition the selection area to the right locations.
      */
     _adjustPos() {
-        const region = this._imageView.getSelectionRegion();
+        const region = this.#imageView.getSelectionRegion();
 
-        this._$selectionArea
+        this.#$selectionArea
             .width(region.width)
             .height(region.height)
             .css({
                 left: region.left,
-                top: region.top
+                top: region.top,
             });
 
-        if (this._$imageDiffs) {
-            this._$imageDiffs.height(this._imageView.$el.height());
+        if (this.#$imageDiffs) {
+            this.#$imageDiffs.height(this.#imageView.$el.height());
         }
     }
-});
-
-
-})();
+}

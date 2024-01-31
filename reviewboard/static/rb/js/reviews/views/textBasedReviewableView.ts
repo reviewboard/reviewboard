@@ -1,13 +1,56 @@
 /**
  * Base for text-based review UIs.
- *
- * This will display all existing comments on an element by displaying a comment
- * indicator beside it. Users can place a comment by clicking on a line, which
- * will get a light-grey background color upon mouseover, and placing a comment
- * in the comment dialog that is displayed.
  */
-RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
-    commentBlockView: RB.TextBasedCommentBlockView,
+
+import { spina } from '@beanbag/spina';
+
+import { TextBasedReviewable } from '../models/textBasedReviewableModel';
+import { AbstractReviewableViewOptions } from './abstractReviewableView';
+import {
+    FileAttachmentReviewableView,
+} from './fileAttachmentReviewableView';
+import { TextBasedCommentBlockView } from './textBasedCommentBlockView';
+import { TextCommentRowSelector } from './textCommentRowSelectorView';
+
+
+/**
+ * Base for text-based review UIs.
+ *
+ * This will display all existing comments on an element by displaying a
+ * comment indicator beside it. Users can place a comment by clicking on a
+ * line, which will get a light-grey background color upon mouseover, and
+ * placing a comment in the comment dialog that is displayed.
+ */
+@spina
+export class TextBasedReviewableView<
+    TModel extends TextBasedReviewable = TextBasedReviewable,
+    TElement extends Element = HTMLElement,
+    TExtraViewOptions extends AbstractReviewableViewOptions =
+        AbstractReviewableViewOptions
+> extends FileAttachmentReviewableView<TModel, TElement, TExtraViewOptions> {
+    static commentBlockView = TextBasedCommentBlockView;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The router for loading different revisions. */
+    router: Backbone.Router;
+
+    /** The table for the rendered version of the document. */
+    #$renderedTable: JQuery<HTMLTableElement> = null;
+
+    /** The table for the raw (source) version of the document. */
+    #$textTable: JQuery<HTMLTableElement> = null;
+
+    /** The tabs for selecting which mode to look at. */
+    #$viewTabs: JQuery = null;
+
+    /** The row selector for the rendered version of the document. */
+    #renderedSelector: TextCommentRowSelector = null;
+
+    /** The row selector for the raw (source) version of the document. */
+    #textSelector: TextCommentRowSelector = null;
 
     /**
      * Initialize the view.
@@ -17,14 +60,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
      *         Options for the view.
      */
     initialize(options) {
-        RB.FileAttachmentReviewableView.prototype.initialize.call(
-            this, options);
-
-        this._$viewTabs = null;
-        this._$textTable = null;
-        this._$renderedTable = null;
-        this._textSelector = null;
-        this._renderedSelector = null;
+        super.initialize(options);
 
         this.on('commentBlockViewAdded', this._placeCommentBlockView, this);
 
@@ -54,42 +90,48 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
                 this._scrollToLine(lineNum);
             }
         });
-    },
+    }
 
     /**
      * Remove the reviewable from the DOM.
+     *
+     * Returns:
+     *     TextBasedReviewableView:
+     *     This object, for chaining.
      */
     remove() {
-        _super(this).remove.call(this);
+        this.#textSelector.remove();
+        this.#renderedSelector.remove();
 
-        this._textSelector.remove();
-        this._renderedSelector.remove();
-    },
+        return super.remove();
+    }
 
     /**
      * Render the view.
      */
     renderContent() {
-        this._$viewTabs = this.$('.text-review-ui-views li');
+        this.#$viewTabs = this.$('.text-review-ui-views li');
 
         // Set up the source text table.
-        this._$textTable = this.$('.text-review-ui-text-table');
+        this.#$textTable = this.$('.text-review-ui-text-table') as
+            JQuery<HTMLTableElement>;
 
-        this._textSelector = new RB.TextCommentRowSelector({
-            el: this._$textTable,
-            reviewableView: this
+        this.#textSelector = new TextCommentRowSelector({
+            el: this.#$textTable,
+            reviewableView: this,
         });
-        this._textSelector.render();
+        this.#textSelector.render();
 
         if (this.model.get('hasRenderedView')) {
             // Set up the rendered table.
-            this._$renderedTable = this.$('.text-review-ui-rendered-table');
+            this.#$renderedTable = this.$('.text-review-ui-rendered-table') as
+                JQuery<HTMLTableElement>;
 
-            this._renderedSelector = new RB.TextCommentRowSelector({
-                el: this._$renderedTable,
-                reviewableView: this
+            this.#renderedSelector = new TextCommentRowSelector({
+                el: this.#$renderedTable,
+                reviewableView: this,
             });
-            this._renderedSelector.render();
+            this.#renderedSelector.render();
         }
 
         this.listenTo(this.model, 'change:viewMode', this._onViewChanged);
@@ -97,20 +139,21 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
         const $fileHeader = this.$('.review-ui-header');
 
         if (this.model.get('numRevisions') > 1) {
-            this._revisionSelectorView = new RB.FileAttachmentRevisionSelectorView({
-                el: $fileHeader.find('#attachment_revision_selector'),
-                model: this.model
-            });
-            this._revisionSelectorView.render();
-            this.listenTo(this._revisionSelectorView, 'revisionSelected',
+            const revisionSelectorView =
+                new RB.FileAttachmentRevisionSelectorView({
+                    el: $fileHeader.find('#attachment_revision_selector'),
+                    model: this.model,
+                });
+            revisionSelectorView.render();
+            this.listenTo(revisionSelectorView, 'revisionSelected',
                           this._onRevisionSelected);
 
-            this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
+            const revisionLabelView = new RB.FileAttachmentRevisionLabelView({
                 el: $fileHeader.find('#revision_label'),
-                model: this.model
+                model: this.model,
             });
-            this._revisionLabelView.render();
-            this.listenTo(this._revisionLabelView, 'revisionSelected',
+            revisionLabelView.render();
+            this.listenTo(revisionLabelView, 'revisionSelected',
                           this._onRevisionSelected);
         }
 
@@ -118,11 +161,11 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
         const attachmentID = this.model.get('fileAttachmentID');
         const diffID = this.model.get('diffAgainstFileAttachmentID');
         Backbone.history.start({
-            root: (diffID == null
+            root: (diffID === null
                    ? `${reviewURL}file/${attachmentID}/`
                    : `${reviewURL}file/${diffID}-${attachmentID}/`),
         });
-    },
+    }
 
     /**
      * Callback for when a new file revision is selected.
@@ -135,7 +178,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
      *     revisions (array of number):
      *         A 2-element array containing the new revisions to be viewed.
      */
-    _onRevisionSelected(revisions) {
+    _onRevisionSelected(revisions: [number, number]) {
         const [base, tip] = revisions;
 
         // Ignore clicks on No Diff Label.
@@ -161,7 +204,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
         }
 
         RB.navigateTo(redirectURL, {replace: true});
-    },
+    }
 
     /**
      * Scroll the page to the top of the specified line number.
@@ -170,7 +213,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
      *     lineNum (number):
      *         The line number to scroll to.
      */
-    _scrollToLine(lineNum) {
+    _scrollToLine(lineNum: number) {
         const $table = this._getTableForViewMode(this.model.get('viewMode'));
         const rows = $table[0].tBodies[0].rows;
 
@@ -179,7 +222,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
 
         const $row = $($table[0].tBodies[0].rows[lineNum]);
         $(window).scrollTop($row.offset().top);
-    },
+    }
 
     /**
      * Return the table element for the given view mode.
@@ -192,17 +235,20 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
      *     jQuery:
      *     The table element corresponding to the requested view mode.
      */
-    _getTableForViewMode(viewMode) {
+    _getTableForViewMode(
+        viewMode: string,
+    ): JQuery<HTMLTableElement> {
         if (viewMode === 'source') {
-            return this._$textTable;
+            return this.#$textTable;
         } else if (viewMode === 'rendered' &&
                    this.model.get('hasRenderedView')) {
-            return this._$renderedTable;
+            return this.#$renderedTable;
         } else {
             console.assert(false, 'Unexpected viewMode ' + viewMode);
+
             return null;
         }
-    },
+    }
 
     /**
      * Return the row selector for the given view mode.
@@ -215,17 +261,20 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
      *     RB.TextCommentRowSelector:
      *     The row selector.
      */
-    _getRowSelectorForViewMode(viewMode) {
+    _getRowSelectorForViewMode(
+        viewMode: string,
+    ): TextCommentRowSelector {
         if (viewMode === 'source') {
-            return this._textSelector;
+            return this.#textSelector;
         } else if (viewMode === 'rendered' &&
                    this.model.get('hasRenderedView')) {
-            return this._renderedSelector;
+            return this.#renderedSelector;
         } else {
             console.assert(false, 'Unexpected viewMode ' + viewMode);
+
             return null;
         }
-    },
+    }
 
     /**
      * Add the comment view to the line the comment was created on.
@@ -234,7 +283,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
      *     commentBlockView (RB.AbstractCommentBlockView):
      *         The comment view to add.
      */
-    _placeCommentBlockView(commentBlockView) {
+    _placeCommentBlockView(commentBlockView: TextBasedCommentBlockView) {
         const commentBlock = commentBlockView.model;
         const beginLineNum = commentBlock.get('beginLineNum');
         const endLineNum = commentBlock.get('endLineNum');
@@ -273,7 +322,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
                     commentBlockView.$beginRow[0].cells[0]);
             }
         }
-    },
+    }
 
     /**
      * Handle a change to the view mode.
@@ -284,15 +333,15 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
     _onViewChanged() {
         const viewMode = this.model.get('viewMode');
 
-        this._$viewTabs
+        this.#$viewTabs
             .removeClass('active')
             .filter(`[data-view-mode=${viewMode}]`)
                 .addClass('active');
 
-        this._$textTable.toggle(viewMode === 'source');
-        this._$renderedTable.toggle(viewMode === 'rendered');
+        this.#$textTable.toggle(viewMode === 'source');
+        this.#$renderedTable.toggle(viewMode === 'rendered');
 
         /* Cause all comments to recalculate their sizes. */
         $(window).triggerHandler('resize');
-    },
-});
+    }
+}

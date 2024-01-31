@@ -14,6 +14,7 @@ import {
     UserSession,
 } from 'reviewboard/common';
 import {
+    DiffReviewableView,
     DiffViewerPage,
     DiffViewerPageView,
     UnifiedBannerView,
@@ -388,7 +389,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             it('Show whitespace-only changes', function() {
                 setupPageView();
 
-                const diffReviewableView = new RB.DiffReviewableView();
+                const diffReviewableView = new DiffReviewableView();
                 spyOn(diffReviewableView, 'toggleWhitespaceOnlyChunks');
                 pageView._diffReviewableViews = [diffReviewableView];
 
@@ -421,7 +422,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             it('Hide whitespace-only changes', function() {
                 setupPageView();
 
-                const diffReviewableView = new RB.DiffReviewableView();
+                const diffReviewableView = new DiffReviewableView();
                 spyOn(diffReviewableView, 'toggleWhitespaceOnlyChunks');
                 pageView._diffReviewableViews = [diffReviewableView];
 

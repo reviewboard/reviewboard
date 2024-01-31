@@ -1,7 +1,61 @@
 /**
  * A view which ensures that the specified elements are vertically centered.
  */
-RB.CenteredElementManager = Backbone.View.extend({
+
+import { BaseView, spina } from '@beanbag/spina';
+
+
+/** Stored data about a centered element. */
+type CenteredElementData = {
+    /** The element at the top of the region to center in. */
+    $top: JQuery;
+
+    /** The parent of the element to center. */
+    $parent?: JQuery;
+
+    /** The element at the bottom of the region to center in. */
+    $bottom?: JQuery;
+}
+
+/** Map from a centered element to necessary data. */
+type CenteredElements = Map<HTMLElement, CenteredElementData>;
+
+
+/**
+ * Options for the CenteredElementManager view.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface CenteredElementManagerOptions {
+    /** Information about which elements to center. */
+    elements?: CenteredElements;
+}
+
+
+/**
+ * A view which ensures that the specified elements are vertically centered.
+ */
+@spina
+export class CenteredElementManager extends BaseView<
+    undefined,
+    HTMLElement,
+    CenteredElementManagerOptions
+> {
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /**
+     * The elements being centered.
+     *
+     * This is public for consumption in unit tests.
+     */
+    _elements: CenteredElements;
+
+    /** A function to throttle postion updates. */
+    #updatePositionThrottled: () => void;
+
     /**
      * Initialize the view.
      *
@@ -13,45 +67,51 @@ RB.CenteredElementManager = Backbone.View.extend({
      *     elements (Array, optional):
      *         An initial array of elements to center.
      */
-    initialize(options={}) {
-        this._$window = $(window);
-
-        this._updatePositionThrottled = () => {
+    initialize(
+        options: Backbone.CombinedViewConstructorOptions<
+            CenteredElementManagerOptions, undefined, HTMLElement> = {},
+    ) {
+        this.#updatePositionThrottled = () => {
             requestAnimationFrame(() => this.updatePosition());
         };
 
-        this.setElements(options.elements || new Map());
-    },
+        this.setElements(options.elements ||
+                         new Map<HTMLElement, CenteredElementData>());
+    }
 
     /**
      * Remove the CenteredElementManager.
      *
      * This will result in the event handlers being removed.
+     *
+     * Returns:
+     *     CenteredElementManager:
+     *     This object, for chaining.
      */
-    remove() {
-        Backbone.View.prototype.remove.call(this);
+    remove(): this {
+        super.remove();
 
-        this.setElements(new Map());
-    },
+        this.setElements(new Map<HTMLElement, CenteredElementData>());
+
+        return this;
+    }
 
     /**
      * Set the elements and their containers.
      *
      * Args:
-     *     elements (Map<Element, Element or jQuery>):
+     *     elements (Map<Element, CenteredElementData>):
      *         The elements to center within their respective containers.
      */
-    setElements(elements) {
-        const $window = this._$window;
-
+    setElements(elements: CenteredElements) {
         this._elements = elements;
 
         if (elements.size > 0) {
-            $window.on('resize scroll', this._updatePositionThrottled);
+            $(window).on('resize scroll', this.#updatePositionThrottled);
         } else {
-            $window.off('resize scroll', this._updatePositionThrottled);
+            $(window).off('resize scroll', this.#updatePositionThrottled);
         }
-    },
+    }
 
     /**
      * Update the position of the elements.
@@ -174,5 +234,5 @@ RB.CenteredElementManager = Backbone.View.extend({
                 el.style.top = newTop + 'px';
             }
         });
-    },
-});
+    }
+}

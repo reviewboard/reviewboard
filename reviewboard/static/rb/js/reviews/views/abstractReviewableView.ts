@@ -1,21 +1,66 @@
 /**
  * Abstract base for review UIs.
+ */
+
+import { BaseView, spina } from '@beanbag/spina';
+
+import { AbstractCommentBlock } from '../models/abstractCommentBlockModel';
+import { AbstractReviewable } from '../models/abstractReviewableModel';
+import { AbstractCommentBlockView } from './abstractCommentBlockView';
+import { CommentDialogView } from './commentDialogView';
+
+
+/**
+ * Options for the AbstractReviewableView.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface AbstractReviewableViewOptions {
+    /** Whether the Review UI is rendered inline or as a full page. */
+    renderedInline?: boolean;
+}
+
+
+/**
+ * Abstract base for review UIs.
  *
  * This provides all the basics for creating a review UI. It does the
  * work of loading in comments, creating views, and displaying comment dialogs,
  */
-RB.AbstractReviewableView = Backbone.View.extend({
+@spina({
+    prototypeAttrs: ['commentBlockView', 'commentsListName'],
+})
+export class AbstractReviewableView<
+    TModel extends AbstractReviewable = AbstractReviewable,
+    TElement extends Element = HTMLElement,
+    TExtraViewOptions extends AbstractReviewableViewOptions =
+        AbstractReviewableViewOptions
+> extends BaseView<TModel, TElement, TExtraViewOptions> {
     /**
      * The AbstractCommentBlockView subclass.
      *
      * This is the type that will be instantiated for rendering comment blocks.
      */
-    commentBlockView: null,
+    static commentBlockView = null;
 
     /**
      * The list type (as a string) for passing to CommentDlg.
      */
-    commentsListName: null,
+    static commentsListName: string = null;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The comment dialog. */
+    commentDlg: CommentDialogView = null;
+
+    /** Whether the Review UI is rendered inline or as a full page. */
+    renderedInline: boolean;
+
+    /** The current comment block, if creating or editing a comment. */
+    #activeCommentBlock: AbstractCommentBlock = null;
 
     /**
      * Initialize AbstractReviewableView.
@@ -24,35 +69,27 @@ RB.AbstractReviewableView = Backbone.View.extend({
      *     options (object, optional):
      *         Options for the view.
      */
-    initialize(options={}) {
-        console.assert(this.commentBlockView,
+    initialize(options: Partial<TExtraViewOptions> = {}) {
+        console.assert(!!this.commentBlockView,
                        'commentBlockView must be defined by the subclass');
-        console.assert(this.commentsListName,
+        console.assert(!!this.commentsListName,
                        'commentsListName must be defined by the subclass');
 
-        this.commentDlg = null;
-        this._activeCommentBlock = null;
         this.renderedInline = options.renderedInline || false;
-    },
+    }
 
     /**
      * Render the reviewable to the page.
      *
      * This will call the subclass's renderContent(), and then handle
      * rendering each comment block on the reviewable.
-     *
-     * Returns:
-     *     RB.AbstractReviewableView:
-     *     This object, for chaining.
      */
-    render() {
+    onInitialRender() {
         this.renderContent();
 
         this.model.commentBlocks.each(this._addCommentBlockView, this);
         this.model.commentBlocks.on('add', this._addCommentBlockView, this);
-
-        return this;
-    },
+    }
 
     /**
      * Render the content of the reviewable.
@@ -60,7 +97,8 @@ RB.AbstractReviewableView = Backbone.View.extend({
      * This should be overridden by subclasses.
      */
     renderContent() {
-    },
+        // Intentionally left blank.
+    }
 
     /**
      * Create a new comment in a comment block and opens it for editing.
@@ -72,7 +110,10 @@ RB.AbstractReviewableView = Backbone.View.extend({
     createAndEditCommentBlock(options) {
         if (this.commentDlg !== null &&
             this.commentDlg.model.get('dirty') &&
-            !confirm(gettext('You are currently editing another comment. Would you like to discard it and create a new one?'))) {
+            !confirm(_`
+                You are currently editing another comment. Would you like to
+                discard it and create a new one?
+            `)) {
             return;
         }
 
@@ -81,9 +122,12 @@ RB.AbstractReviewableView = Backbone.View.extend({
 
         if (defaultCommentBlockFields.length === 0 &&
             this.model.reviewableIDField) {
-            console.log('Deprecation notice: Reviewable subclass is missing ' +
-                        'defaultCommentBlockFields. Rename reviewableIDField ' +
-                        'to defaultCommentBlockFields, and make it a list.');
+            console.log(dedent`
+                Deprecation notice: Reviewable subclass is missing
+                defaultCommentBlockFields. Rename reviewableIDField to
+                defaultCommentBlockFields, and make it a list. This will
+                be removed in Review Board 8.0.
+            `);
             defaultCommentBlockFields = [this.model.reviewableIDField];
         }
 
@@ -94,7 +138,7 @@ RB.AbstractReviewableView = Backbone.View.extend({
         _.extend(options,
                  _.pick(this.model.attributes, defaultCommentBlockFields));
         this.model.createCommentBlock(options);
-    },
+    }
 
     /**
      * Show the comment details dialog for a comment block.
@@ -103,31 +147,33 @@ RB.AbstractReviewableView = Backbone.View.extend({
      *     commentBlockView (RB.AbstractCommentBlockView):
      *         The comment block to show the dialog for.
      */
-    showCommentDlg(commentBlockView) {
+    showCommentDlg(
+        commentBlockView: AbstractCommentBlockView<AbstractCommentBlock>,
+    ) {
         const commentBlock = commentBlockView.model;
 
         commentBlock.ensureDraftComment();
 
-        if (this._activeCommentBlock === commentBlock) {
+        if (this.#activeCommentBlock === commentBlock) {
             return;
         }
 
         this.stopListening(this.commentDlg, 'closed');
-        this.commentDlg = RB.CommentDialogView.create({
+        this.commentDlg = CommentDialogView.create({
             comment: commentBlock.get('draftComment'),
             deletedWarning: commentBlock.getDeletedWarning(),
             draftWarning: commentBlock.getDraftWarning(),
+            position: dlg => commentBlockView.positionCommentDlg(dlg),
             publishedComments: commentBlock.get('serializedComments'),
             publishedCommentsType: this.commentsListName,
-            position: dlg => commentBlockView.positionCommentDlg(dlg),
         });
-        this._activeCommentBlock = commentBlock;
+        this.#activeCommentBlock = commentBlock;
 
         this.listenTo(this.commentDlg, 'closed', () => {
             this.commentDlg = null;
-            this._activeCommentBlock = null;
+            this.#activeCommentBlock = null;
         });
-    },
+    }
 
     /**
      * Add a CommentBlockView for the given CommentBlock.
@@ -140,13 +186,14 @@ RB.AbstractReviewableView = Backbone.View.extend({
      *     commentBlock (RB.AbstractCommentBlock):
      *         The comment block to add a view for.
      */
-    _addCommentBlockView(commentBlock) {
+    _addCommentBlockView(commentBlock: AbstractCommentBlock) {
         const commentBlockView = new this.commentBlockView({
-            model: commentBlock
+            model: commentBlock,
         });
 
-        commentBlockView.on('clicked', () => this.showCommentDlg(commentBlockView));
+        commentBlockView.on('clicked',
+                            () => this.showCommentDlg(commentBlockView));
         commentBlockView.render();
         this.trigger('commentBlockViewAdded', commentBlockView);
-    },
-});
+    }
+}

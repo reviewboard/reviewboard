@@ -6,6 +6,7 @@ import { BaseView, spina } from '@beanbag/spina';
 import { EnabledFeatures } from 'reviewboard/common';
 
 import { DiffComplexityIconView } from './diffComplexityIconView';
+import { DiffReviewableView } from './diffReviewableView';
 import { UnifiedBannerView } from './unifiedBannerView';
 
 
@@ -254,7 +255,7 @@ export class DiffFileIndexView extends BaseView<
      */
     addDiff(
         index: number,
-        diffReviewableView: RB.DiffReviewableView,
+        diffReviewableView: DiffReviewableView,
     ) {
         const $item = $(this.#$items[index])
             .removeClass('loading');
@@ -327,7 +328,7 @@ export class DiffFileIndexView extends BaseView<
      */
     #renderDiffEntry(
         $item: JQuery,
-        diffReviewableView: RB.DiffReviewableView,
+        diffReviewableView: DiffReviewableView,
     ) {
         const $table = diffReviewableView.$el;
         const fileDeleted = $item.hasClass('deleted-file');

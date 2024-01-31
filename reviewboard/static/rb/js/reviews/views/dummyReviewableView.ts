@@ -1,5 +1,17 @@
 /**
  * A Review UI for file types which otherwise do not have one.
+ */
+
+import { spina } from '@beanbag/spina';
+
+import { AbstractCommentBlockView } from './abstractCommentBlockView';
+import {
+    FileAttachmentReviewableView,
+} from './fileAttachmentReviewableView';
+
+
+/**
+ * A Review UI for file types which otherwise do not have one.
  *
  * Normally, file types that do not have a Review UI are not linked to one.
  * However, in the case of a file attachment with multiple revisions, if one of
@@ -8,18 +20,23 @@
  * the header (with revision selector) and a message saying that this file type
  * cannot be shown.
  */
-RB.DummyReviewableView = RB.FileAttachmentReviewableView.extend({
-    commentBlockView: RB.AbstractCommentBlockView,
+@spina
+export class DummyReviewableView extends FileAttachmentReviewableView {
+    static commentBlockView = AbstractCommentBlockView;
 
-    captionTableTemplate: _.template(
+    static captionTableTemplate = _.template(
         '<table><tr><%= items %></tr></table>'
-    ),
+    );
 
-    captionItemTemplate: _.template(dedent`
+    static captionItemTemplate = _.template(dedent`
         <td>
          <h1 class="caption"><%- caption %></h1>
         </td>
-    `),
+    `);
+
+    /**********************
+     * Instance variables *
+     **********************/
 
     /**
      * Render the view.
@@ -33,51 +50,45 @@ RB.DummyReviewableView = RB.FileAttachmentReviewableView.extend({
             const $revisionLabel = $('<div id="revision_label">')
                 .appendTo($header);
 
-            this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
+            const revisionLabelView = new RB.FileAttachmentRevisionLabelView({
                 el: $revisionLabel,
                 model: this.model,
             });
-            this._revisionLabelView.render();
-            this.listenTo(this._revisionLabelView, 'revisionSelected',
-                          this._onRevisionSelected);
+            revisionLabelView.render();
+            this.listenTo(revisionLabelView, 'revisionSelected',
+                          this.#onRevisionSelected);
 
             const $revisionSelector =
                 $('<div id="attachment_revision_selector">')
                 .appendTo($header);
-            this._revisionSelectorView =
+            const revisionSelectorView =
                 new RB.FileAttachmentRevisionSelectorView({
                     el: $revisionSelector,
                     model: this.model,
                 });
-            this._revisionSelectorView.render();
-            this.listenTo(this._revisionSelectorView, 'revisionSelected',
-                          this._onRevisionSelected);
+            revisionSelectorView.render();
+            this.listenTo(revisionSelectorView, 'revisionSelected',
+                          this.#onRevisionSelected);
 
             const captionItems = [];
 
-            captionItems.push(this.captionItemTemplate({
-                caption: interpolate(
-                    gettext('%(caption)s (revision %(revision)s)'),
-                    {
-                        caption: this.model.get('caption'),
-                        revision: this.model.get('fileRevision'),
-                    },
-                    true),
+            let caption = this.model.get('caption');
+            let revision = this.model.get('revision');
+
+            captionItems.push(DummyReviewableView.captionItemTemplate({
+                caption: _`${caption} (revision ${revision})`,
             }));
 
             if (this.model.get('diffAgainstFileAttachmentID') !== null) {
-                captionItems.push(this.captionItemTemplate({
-                    caption: interpolate(
-                        gettext('%(caption)s (revision %(revision)s)'),
-                        {
-                            caption: this.model.get('diffCaption'),
-                            revision: this.model.get('diffRevision'),
-                        },
-                        true),
+                caption = this.model.get('diffCaption');
+                revision = this.model.get('diffRevision');
+
+                captionItems.push(DummyReviewableView.captionItemTemplate({
+                    caption: _`${caption} (revision ${revision})`,
                 }));
             }
 
-            $header.append(this.captionTableTemplate({
+            $header.append(DummyReviewableView.captionTableTemplate({
                 items: captionItems.join(''),
             }));
         } else {
@@ -85,7 +96,7 @@ RB.DummyReviewableView = RB.FileAttachmentReviewableView.extend({
                 .text(this.model.get('caption'))
                 .appendTo($header);
         }
-    },
+    }
 
     /**
      * Callback for when a new file revision is selected.
@@ -99,7 +110,7 @@ RB.DummyReviewableView = RB.FileAttachmentReviewableView.extend({
      *         An array with two elements, representing the range of revisions
      *         to display.
      */
-    _onRevisionSelected(revisions) {
+    #onRevisionSelected(revisions: [number, number]) {
         const [base, tip] = revisions;
 
         // Ignore clicks on No Diff Label.
@@ -125,5 +136,5 @@ RB.DummyReviewableView = RB.FileAttachmentReviewableView.extend({
         }
 
         RB.navigateTo(redirectURL, {replace: true});
-    },
-});
+    }
+}
