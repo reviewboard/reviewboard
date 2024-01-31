@@ -54,7 +54,7 @@ class Item extends BaseResource<StoredItemsAttrs> {
      *     object:
      *     Default values for the attributes.
      */
-    defaults(): StoredItemsAttrs {
+    static defaults(): StoredItemsAttrs {
         return _.defaults({
             baseURL: null,
             loaded: true,

@@ -100,7 +100,7 @@ export class BaseComment<
      *     BaseCommentAttrs:
      *     The default values for the model attributes.
      */
-    defaults(): BaseCommentAttrs {
+    static defaults(): BaseCommentAttrs {
         return _.defaults({
             forceTextType: null,
             html: null,

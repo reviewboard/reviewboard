@@ -3,8 +3,19 @@ import {
     BaseView,
     Collection,
     EventsHash,
+    ModelAttributes,
     spina,
 } from '@beanbag/spina';
+
+
+/**
+ * Attributes for the DnDDropTarget model.
+ */
+interface DnDDropTargetAttrs extends ModelAttributes {
+    $target: JQuery<Window> | JQuery;
+    callback: () => void;
+    dropText: string;
+}
 
 
 /**
@@ -26,8 +37,8 @@ import {
  *         The string to show in the overlay.
  */
 @spina
-class DnDDropTarget extends BaseModel {
-    defaults() {
+class DnDDropTarget extends BaseModel<DnDDropTargetAttrs> {
+    static defaults(): DnDDropTargetAttrs {
         return {
             $target: $(window),
             callback: function() {},

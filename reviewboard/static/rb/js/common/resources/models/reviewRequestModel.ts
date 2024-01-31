@@ -150,7 +150,7 @@ export class ReviewRequest extends BaseResource<
      *     ReviewRequestAttrs:
      *     Default values for the model attributes.
      */
-    defaults(): ReviewRequestAttrs {
+    static defaults(): ReviewRequestAttrs {
         return _.defaults({
             approvalFailure: null,
             approved: false,

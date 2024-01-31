@@ -207,7 +207,7 @@ export class BaseResource<
      *     object:
      *     The attribute defaults.
      */
-    defaults(): BaseResourceAttrs {
+    static defaults(): BaseResourceAttrs {
         return {
             extraData: {},
             links: null,

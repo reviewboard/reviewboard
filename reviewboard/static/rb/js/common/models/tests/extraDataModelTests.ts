@@ -75,7 +75,7 @@ suite('rb/models/ExtraData', function() {
         beforeEach(function() {
             @spina({ mixins: [ExtraDataMixin] })
             class Resource extends BaseModel {
-                defaults() {
+                static defaults() {
                     return {
                         extraData: {},
                     };

@@ -42,7 +42,7 @@ interface DraftReviewAttrs extends ReviewAttrs {
     ],
 })
 export class DraftReview extends Review {
-    defaults(): DraftReviewAttrs {
+    static defaults(): DraftReviewAttrs {
         return _.defaults({
             publishAndArchive: false,
             publishToOwnerOnly: false,

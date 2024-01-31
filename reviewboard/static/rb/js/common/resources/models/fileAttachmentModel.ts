@@ -111,7 +111,7 @@ export class FileAttachment extends BaseResource<FileAttachmentAttrs> {
      *     object:
      *     The attribute defaults.
      */
-    defaults(): FileAttachmentAttrs {
+    static defaults(): FileAttachmentAttrs {
         return _.defaults({
             'attachmentHistoryID': null,
             'caption': null,

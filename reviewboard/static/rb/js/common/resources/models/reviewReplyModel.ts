@@ -110,7 +110,7 @@ export class ReviewReply extends BaseResource<ReviewReplyAttrs> {
      *     ReviewReplyAttrs:
      *     The default attributes.
      */
-    defaults(): ReviewReplyAttrs {
+    static defaults(): ReviewReplyAttrs {
         return _.defaults({
             bodyBottom: null,
             bodyBottomRichText: false,

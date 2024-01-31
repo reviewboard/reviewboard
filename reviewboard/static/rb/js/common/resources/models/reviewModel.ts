@@ -166,7 +166,7 @@ export class Review<
      *     ReviewAttrs:
      *     The attribute defaults.
      */
-    defaults(): TAttributes {
+    static defaults(): ReviewAttrs {
         return _.defaults({
             'authorName': null,
             'bodyBottom': null,
