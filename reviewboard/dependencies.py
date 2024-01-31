@@ -118,6 +118,7 @@ runtime_npm_dependencies: Dict[str, str] = {
     '@beanbag/jasmine-suites': '~2.0.0',
     '@prantlf/jsonlint': '^11.7.0',
     '@rollup/plugin-commonjs': '^24.0.1',
+    '@types/jqueryui': '^1.12.21',
     'babel-polyfill': '^6.26.0',
     'codemirror': '^5.65.11',
     'jasmine-core': '~5.1.0',
