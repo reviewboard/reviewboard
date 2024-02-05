@@ -158,7 +158,7 @@ class SummaryColumnTests(BaseColumnTestCase):
 
         self.assertEqual(
             self.column.render_data(self.stateful_column, review_request),
-            '<label class="label-submitted">Submitted</label>'
+            '<label class="label-submitted">Completed</label>'
             '<span>Summary 1</span>')
 
     def test_render_data_with_discarded(self):

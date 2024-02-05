@@ -58,7 +58,7 @@ class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
         if draft:
             label = ('review-request-infobox-label-draft', _('Draft'))
         elif review_request.status == ReviewRequest.SUBMITTED:
-            label = ('review-request-infobox-label-submitted', _('Submitted'))
+            label = ('review-request-infobox-label-submitted', _('Completed'))
         elif review_request.status == ReviewRequest.DISCARDED:
             label = ('review-request-infobox-label-discarded', _('Discarded'))
 

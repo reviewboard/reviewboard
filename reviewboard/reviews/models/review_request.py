@@ -262,7 +262,7 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     STATUSES = (
         (PENDING_REVIEW, _('Pending Review')),
-        (SUBMITTED, _('Submitted')),
+        (SUBMITTED, _('Completed')),
         (DISCARDED, _('Discarded')),
     )
 

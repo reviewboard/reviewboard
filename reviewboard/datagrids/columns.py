@@ -1097,7 +1097,7 @@ class SummaryColumn(Column):
                 labels.append(('label-muted', _('Muted')))
 
         if review_request.status == ReviewRequest.SUBMITTED:
-            labels.append(('label-submitted', _('Submitted')))
+            labels.append(('label-submitted', _('Completed')))
         elif review_request.status == ReviewRequest.DISCARDED:
             labels.append(('label-discarded', _('Discarded')))
 
