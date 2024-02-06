@@ -105,7 +105,10 @@ class ReviewUI:
     supported_mimetypes: List[str] = []
 
     #: Whether this Review UI supports reviewing FileAttachment objects.
-    supports_file_attachments = False
+    supports_file_attachments: bool = False
+
+    #: Whether there's a file type mismatch when showing diffs.
+    diff_type_mismatch: bool = False
 
     @property
     def js_model_class(self) -> str:
@@ -586,9 +589,7 @@ class ReviewUI:
                 data['diffCaption'] = diff_against_obj.display_name
                 data['diffAgainstFileAttachmentID'] = diff_against_obj.pk
                 data['diffRevision'] = diff_against_obj.attachment_revision
-
-                if type(self) != type(diff_against_obj.review_ui):
-                    data['diffTypeMismatch'] = True
+                data['diffTypeMismatch'] = self.diff_type_mismatch
 
         return data
 
@@ -938,6 +939,14 @@ class FileAttachmentReviewUI(ReviewUI):
                                      handler, e)
 
         return None
+
+
+class DiffMismatchReviewUI(ReviewUI):
+    """A special review UI to show when the file types in a diff don't match.
+    """
+
+    diff_type_mismatch = True
+    supports_diffing = True
 
 
 def register_ui(review_ui: type[ReviewUI]) -> None:

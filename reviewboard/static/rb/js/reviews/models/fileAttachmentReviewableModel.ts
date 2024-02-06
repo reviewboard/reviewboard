@@ -41,7 +41,7 @@ export interface FileAttachmentReviewableAttrs
     fileAttachmentID: number;
 
     /** The revision of the file attachment being reviewed. */
-    fileRevision: null;
+    fileRevision: number;
 
     /** The name of the file being reviewed. */
     filename: string;

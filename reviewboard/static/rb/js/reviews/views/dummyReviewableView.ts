@@ -22,6 +22,8 @@ import {
  */
 @spina
 export class DummyReviewableView extends FileAttachmentReviewableView {
+    static className = 'dummy-review-ui';
+
     static commentBlockView = AbstractCommentBlockView;
 
     static captionTableTemplate = _.template(
@@ -32,6 +34,13 @@ export class DummyReviewableView extends FileAttachmentReviewableView {
         <td>
          <h1 class="caption"><%- caption %></h1>
         </td>
+    `);
+
+    static diffTypeMismatchTemplate = _.template(dedent`
+        <div class="dummy-review-ui-error">
+         <span class="rb-icon rb-icon-warning"></span>
+         <%- errorText %>
+        </div>
     `);
 
     /**********************
@@ -46,13 +55,20 @@ export class DummyReviewableView extends FileAttachmentReviewableView {
             .addClass('review-ui-header')
             .prependTo(this.$el);
 
-        if (this.model.get('numRevisions') > 1) {
+        const model = this.model;
+
+        const caption = model.get('caption');
+        const revision = model.get('fileRevision');
+        const diffCaption = model.get('diffCaption');
+        const diffRevision = model.get('diffRevision');
+
+        if (model.get('numRevisions') > 1) {
             const $revisionLabel = $('<div id="revision_label">')
                 .appendTo($header);
 
             const revisionLabelView = new RB.FileAttachmentRevisionLabelView({
                 el: $revisionLabel,
-                model: this.model,
+                model: model,
             });
             revisionLabelView.render();
             this.listenTo(revisionLabelView, 'revisionSelected',
@@ -64,7 +80,7 @@ export class DummyReviewableView extends FileAttachmentReviewableView {
             const revisionSelectorView =
                 new RB.FileAttachmentRevisionSelectorView({
                     el: $revisionSelector,
-                    model: this.model,
+                    model: model,
                 });
             revisionSelectorView.render();
             this.listenTo(revisionSelectorView, 'revisionSelected',
@@ -72,29 +88,33 @@ export class DummyReviewableView extends FileAttachmentReviewableView {
 
             const captionItems = [];
 
-            let caption = this.model.get('caption');
-            let revision = this.model.get('revision');
+            if (model.get('diffAgainstFileAttachmentID') !== null) {
+                captionItems.push(DummyReviewableView.captionItemTemplate({
+                    caption: _`${diffCaption} (revision ${diffRevision})`,
+                }));
+            }
 
             captionItems.push(DummyReviewableView.captionItemTemplate({
                 caption: _`${caption} (revision ${revision})`,
             }));
-
-            if (this.model.get('diffAgainstFileAttachmentID') !== null) {
-                caption = this.model.get('diffCaption');
-                revision = this.model.get('diffRevision');
-
-                captionItems.push(DummyReviewableView.captionItemTemplate({
-                    caption: _`${caption} (revision ${revision})`,
-                }));
-            }
 
             $header.append(DummyReviewableView.captionTableTemplate({
                 items: captionItems.join(''),
             }));
         } else {
             $('<h1 class="caption file-attachment-single-revision">')
-                .text(this.model.get('caption'))
+                .text(model.get('caption'))
                 .appendTo($header);
+        }
+
+        if (model.get('diffTypeMismatch')) {
+            this.$el.append(DummyReviewableView.diffTypeMismatchTemplate({
+                errorText: _`
+                    Unable to show a diff between "${caption}" (revision
+                    ${revision}) and "${diffCaption}" (revision
+                    ${diffRevision}) because the file types do not match.
+                `,
+            }));
         }
     }
 
