@@ -1,5 +1,7 @@
 """Views for rendering diff fragments."""
 
+from __future__ import annotations
+
 import io
 import logging
 import struct
@@ -442,6 +444,8 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
 
     def create_renderer(
         self,
+        context: Dict[str, Any],
+        renderer_settings: Dict[str, Any],
         diff_file: Dict[str, Any],
         *args,
         **kwargs,
@@ -452,6 +456,12 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         file attachments, if review UIs are involved, disabling caching.
 
         Args:
+            context (dict):
+                The current render context.
+
+            renderer_settings (dict):
+                The diff renderer settings.
+
             diff_file (dict):
                 The information on the diff file to render.
 
@@ -466,7 +476,10 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             The resulting diff renderer.
         """
         renderer = super().create_renderer(
-            diff_file=diff_file, *args, **kwargs)
+            context=context,
+            renderer_settings=renderer_settings,
+            diff_file=diff_file,
+            *args, **kwargs)
 
         if diff_file['binary']:
             # Determine the file attachments to display in the diff viewer,
@@ -488,37 +501,41 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
                     orig_attachment = \
                         self._get_diff_file_attachment(filediff, False)
 
-            diff_review_ui = None
-            diff_review_ui_html = None
-            orig_review_ui = None
-            orig_review_ui_html = None
-            modified_review_ui = None
-            modified_review_ui_html = None
+
+            diff_review_ui_html: Optional[str] = None
+            orig_review_ui_class: Optional[type[ReviewUI]] = None
+            orig_review_ui_html: Optional[str] = None
+            modified_review_ui_class: Optional[type[ReviewUI]] = None
+            modified_review_ui_html: Optional[str] = None
+            review_request = context['review_request']
 
             if orig_attachment:
-                orig_review_ui = orig_attachment.review_ui
+                orig_review_ui_class = ReviewUI.for_object(orig_attachment)
 
             if modified_attachment:
-                modified_review_ui = modified_attachment.review_ui
+                modified_review_ui_class = ReviewUI.for_object(
+                    modified_attachment)
 
-            # See if we're able to generate a diff review UI for these files.
-            if (orig_review_ui and modified_review_ui and
-                orig_review_ui.__class__ is modified_review_ui.__class__ and
-                modified_review_ui.supports_diffing):
-                # Both files are able to be diffed by this review UI.
-                # We'll display a special diff review UI instead of two
-                # side-by-side review UIs.
-                diff_review_ui = modified_review_ui
-                diff_review_ui.set_diff_against(orig_attachment)
-                diff_review_ui_html = \
-                    self._render_review_ui(diff_review_ui, False)
+            if (orig_review_ui_class is not None and
+                orig_review_ui_class is modified_review_ui_class and
+                orig_review_ui_class.supports_diffing):
+                review_ui = orig_review_ui_class(
+                    review_request=review_request,
+                    obj=modified_attachment)
+                review_ui.set_diff_against(orig_attachment)
+                diff_review_ui_html = self._render_review_ui(review_ui)
             else:
-                # We won't be showing a diff of these files. Instead, just
-                # grab the review UIs and render them.
-                orig_review_ui_html = \
-                    self._render_review_ui(orig_review_ui)
-                modified_review_ui_html = \
-                    self._render_review_ui(modified_review_ui)
+                if orig_review_ui_class:
+                    review_ui = orig_review_ui_class(
+                        review_request=review_request,
+                        obj=orig_attachment)
+                    orig_review_ui_html = self._render_review_ui(review_ui)
+
+                if modified_review_ui_class:
+                    review_ui = modified_review_ui_class(
+                        review_request=review_request,
+                        obj=modified_attachment)
+                    modified_review_ui_html = self._render_review_ui(review_ui)
 
             if (diff_review_ui_html or orig_review_ui_html or
                 modified_review_ui_html):
