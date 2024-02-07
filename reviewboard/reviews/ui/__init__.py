@@ -1,16 +1,14 @@
-from reviewboard.signals import initializing
+"""Review UI framework.
+
+Review UIs allow specialized review experiences for different file types.
+"""
+
+from djblets.registries.importer import lazy_import_registry
 
 
-def _register_review_uis(**kwargs):
-    """Registers all bundled review UIs."""
-    from reviewboard.reviews.ui.base import register_ui
-    from reviewboard.reviews.ui.image import ImageReviewUI
-    from reviewboard.reviews.ui.markdownui import MarkdownReviewUI
-    from reviewboard.reviews.ui.text import TextBasedReviewUI
-
-    register_ui(ImageReviewUI)
-    register_ui(MarkdownReviewUI)
-    register_ui(TextBasedReviewUI)
-
-
-initializing.connect(_register_review_uis)
+#: The registry for Review UIs.
+#:
+#: Version Added:
+#:     7.0
+review_ui_registry = lazy_import_registry(
+    'reviewboard.reviews.ui.registry', 'ReviewUIRegistry')

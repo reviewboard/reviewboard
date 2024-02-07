@@ -38,10 +38,6 @@ if TYPE_CHECKING:
         BaseReviewRequestDetails
 
 
-# TODO: replace with a registry
-_review_uis = []
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -813,7 +809,9 @@ class ReviewUI:
         best_score = 0
         best_fit: Optional[type[ReviewUI]] = None
 
-        for review_ui in _review_uis:
+        from reviewboard.reviews.ui import review_ui_registry
+
+        for review_ui in review_ui_registry:
             if not (is_file_attachment and
                     review_ui.supports_file_attachments):
                 continue
@@ -873,7 +871,9 @@ class FileAttachmentReviewUI(ReviewUI):
         best_score = 0
         best_fit = None
 
-        for review_ui in _review_uis:
+        from reviewboard.reviews.ui import review_ui_registry
+
+        for review_ui in review_ui_registry:
             for mt in review_ui.supported_mimetypes:
                 try:
                     score = score_match(mimeparse.parse_mime_type(mt),
@@ -958,7 +958,9 @@ def register_ui(review_ui: type[ReviewUI]) -> None:
     if not issubclass(review_ui, ReviewUI):
         raise TypeError('Only ReviewUI subclasses can be registered')
 
-    _review_uis.append(review_ui)
+    from reviewboard.reviews.ui import review_ui_registry
+
+    review_ui_registry.register(review_ui)
 
 
 def unregister_ui(review_ui: type[ReviewUI]) -> None:
@@ -985,9 +987,6 @@ def unregister_ui(review_ui: type[ReviewUI]) -> None:
         raise TypeError('Only ReviewUI subclasses can be '
                         'unregistered')
 
-    try:
-        _review_uis.remove(review_ui)
-    except ValueError:
-        logger.error('Failed to unregister missing review UI %r',
-                     review_ui)
-        raise ValueError('This review UI was not previously registered')
+    from reviewboard.reviews.ui import review_ui_registry
+
+    review_ui_registry.unregister(review_ui)
