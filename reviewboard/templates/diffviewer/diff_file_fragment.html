@@ -117,34 +117,6 @@
 
 {% if file.binary %}
  <tbody class="binary" data-file-id="{{modified_diff_file_attachment.id}}">
-{%  if orig_diff_file_attachment or modified_diff_file_attachment %}
-  <tr class="inline-actions-header">
-{%   if file.moved_or_copied and file.num_changes == 0 or file.newfile and not orig_diff_file_attachment %}
-   <td colspan="4">
-{%   else %}
-   <td colspan="2">
-    <div class="inline-actions-container clearfix">
-     <ul class="actions inline-actions-left">
-     </ul>
-    </div>
-   </td>
-   <td colspan="2">
-{%   endif %}
-    <div class="inline-actions-container clearfix">
-     <ul class="actions inline-actions-right">
-{%   if modified_diff_file_attachment %}
-{%    if not modified_attachment_review_ui_html and not diff_attachment_review_ui_html %}
-{%     if modified_diff_file_attachment.review_ui %}
-      <li class="file-review"><a href="{% url 'file-attachment' modified_diff_file_attachment.get_review_request.display_id modified_diff_file_attachment.pk %}">{% trans "Review" %}</a></li>
-{%     else %}
-      <li class="file-add-comment"><a href="#">{% trans "New Comment" %}</a></li>
-{%     endif %}
-{%    endif %}
-{%   endif %}
-     </ul>
-    </div>
-  </tr>
-{%  endif %}
   <tr class="inline-files-container">
 {%  if diff_attachment_review_ui_html %}
   <td colspan="4" class="diff-review-ui">{{diff_attachment_review_ui_html}}</td>
