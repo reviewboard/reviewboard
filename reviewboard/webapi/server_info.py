@@ -9,6 +9,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.admin.server import get_server_url
 from reviewboard.diffviewer.features import dvcs_feature
+from reviewboard.reviews.ui import review_ui_registry
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,9 @@ _capabilities_defaults = {
     'review_requests': {
         'commit_ids': True,
         'trivial_publish': True,
+    },
+    'review_uis': {
+        'supported_mimetypes': [],
     },
     'scmtools': {
         'git': {
@@ -120,6 +124,27 @@ def get_capabilities(request=None):
     siteconfig = SiteConfiguration.objects.get_current()
     capabilities['authentication']['client_web_login'] = \
         siteconfig.get('client_web_login', False)
+
+    # We always report support for Power Pack-provided types, so that clients
+    # can upload these files, even if Power Pack is not (yet) licensed.
+    mimetypes = {
+        'application/msword',
+        'application/pdf',
+        'application/vnd.ms-excel',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.oasis.opendocument.presentation',
+        'application/vnd.oasis.opendocument.spreadsheet',
+        'application/vnd.oasis.opendocument.text',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/x-pdf',
+    }
+
+    for review_ui_class in review_ui_registry:
+        mimetypes.update(review_ui_class.supported_mimetypes)
+
+    capabilities['review_uis']['supported_mimetypes'] = list(sorted(mimetypes))
 
     return capabilities
 
