@@ -24,6 +24,7 @@ _capabilities_defaults = {
     },
     'diffs': {
         'base_commit_ids': True,
+        'file_attachments': True,
         'moved_files': True,
         'validation': {
             'base_commit_ids': True,
@@ -144,7 +145,7 @@ def get_capabilities(request=None):
     for review_ui_class in review_ui_registry:
         mimetypes.update(review_ui_class.supported_mimetypes)
 
-    capabilities['review_uis']['supported_mimetypes'] = list(sorted(mimetypes))
+    capabilities['review_uis']['supported_mimetypes'] = sorted(mimetypes)
 
     return capabilities
 
