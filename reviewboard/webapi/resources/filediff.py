@@ -123,18 +123,11 @@ class FileDiffResource(WebAPIResource):
     ]
 
     def serialize_source_attachment_field(self, filediff, **kwargs):
-        try:
-            return FileAttachment.objects.get_for_filediff(filediff,
-                                                           modified=False)
-        except FileAttachment.DoesNotExist:
-            return None
+        return FileAttachment.objects.get_for_filediff(filediff,
+                                                       modified=False)
 
     def serialize_dest_attachment_field(self, filediff, **kwargs):
-        try:
-            return FileAttachment.objects.get_for_filediff(filediff,
-                                                           modified=True)
-        except FileAttachment.DoesNotExist:
-            return None
+        return FileAttachment.objects.get_for_filediff(filediff, modified=True)
 
     def serialize_status_field(self, filediff, **kwargs):
         """Serialize the status field.
