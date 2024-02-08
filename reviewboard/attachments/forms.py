@@ -86,40 +86,7 @@ class UploadFileForm(forms.Form):
         mimetype = get_uploaded_file_mimetype(file_obj)
         filename = get_unique_filename(file_obj.name)
 
-        if self.cleaned_data['attachment_history'] is None:
-            # This is a new file: create a new FileAttachmentHistory for it
-            attachment_history = FileAttachmentHistory()
-            attachment_revision = 1
-
-            attachment_history.display_position = \
-                FileAttachmentHistory.compute_next_display_position(
-                    self.review_request)
-            attachment_history.save()
-            self.review_request.file_attachment_histories.add(
-                attachment_history)
-        else:
-            attachment_history = self.cleaned_data['attachment_history']
-
-            try:
-                latest = attachment_history.file_attachments.latest()
-            except FileAttachment.DoesNotExist:
-                latest = None
-
-            if latest is None:
-                # This should theoretically never happen, but who knows.
-                attachment_revision = 1
-            elif latest.review_request.exists():
-                # This is a new update in the draft.
-                attachment_revision = latest.attachment_revision + 1
-            else:
-                # The most recent revision is part of the same draft. Delete it
-                # and replace with the newly uploaded file.
-                attachment_revision = latest.attachment_revision
-                latest.delete()
-
         attachment_kwargs = {
-            'attachment_history': attachment_history,
-            'attachment_revision': attachment_revision,
             'caption': '',
             'draft_caption': caption,
             'extra_data': extra_data,
@@ -133,6 +100,42 @@ class UploadFileForm(forms.Form):
                 save=False,
                 **attachment_kwargs)
         else:
+            attachment_history = self.cleaned_data['attachment_history']
+
+            if attachment_history is None:
+                # This is a new file: create a new FileAttachmentHistory for it
+                attachment_history = FileAttachmentHistory()
+
+                attachment_history.display_position = \
+                    FileAttachmentHistory.compute_next_display_position(
+                        self.review_request)
+                attachment_history.save()
+                self.review_request.file_attachment_histories.add(
+                    attachment_history)
+
+                attachment_kwargs['attachment_history'] = attachment_history
+                attachment_kwargs['attachment_revision'] = 1
+            else:
+                try:
+                    latest = attachment_history.file_attachments.latest()
+                except FileAttachment.DoesNotExist:
+                    latest = None
+
+                if latest is None:
+                    # This should theoretically never happen, but who knows.
+                    attachment_revision = 1
+                elif latest.review_request.exists():
+                    # This is a new update in the draft.
+                    attachment_revision = latest.attachment_revision + 1
+                else:
+                    # The most recent revision is part of the same draft.
+                    # Delete it and replace with the newly uploaded file.
+                    attachment_revision = latest.attachment_revision
+                    latest.delete()
+
+                attachment_kwargs['attachment_history'] = attachment_history
+                attachment_kwargs['attachment_revision'] = attachment_revision
+
             file_attachment = FileAttachment(**attachment_kwargs)
 
         file_attachment.file.save(filename, file_obj, save=True)

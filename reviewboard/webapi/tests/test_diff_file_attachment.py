@@ -1,17 +1,34 @@
-from djblets.webapi.errors import PERMISSION_DENIED
+"""Tests for the DiffFileAttachmentResource."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
+
+from djblets.webapi.errors import PERMISSION_DENIED
+from djblets.webapi.testing.decorators import webapi_test_template
+
+from reviewboard.attachments.models import FileAttachment
+from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
     diff_file_attachment_item_mimetype,
     diff_file_attachment_list_mimetype)
-from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
+from reviewboard.webapi.tests.mixins import (BasicPostTestSetupState,
+                                             BasicTestsMetaclass)
 from reviewboard.webapi.tests.urls import (get_diff_file_attachment_item_url,
                                            get_diff_file_attachment_list_url)
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
+    from djblets.util.typing import JSONDict
+
+    from reviewboard.diffviewer.models import FileDiff
 
 
 class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the DiffFileAttachmentResource list APIs."""
+
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'repositories/<id>/diff-file-attachments/'
     resource = resources.diff_file_attachment
@@ -77,6 +94,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             get_diff_file_attachment_list_url(repository) +
             '?mimetype=image/png',
             expected_mimetype=diff_file_attachment_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn('diff_file_attachments', rsp)
 
@@ -115,6 +133,8 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             get_diff_file_attachment_list_url(repository) +
             '?repository-file-path=/test-file-1.png',
             expected_mimetype=diff_file_attachment_list_mimetype)
+        assert rsp is not None
+
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn('diff_file_attachments', rsp)
 
@@ -157,6 +177,8 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             get_diff_file_attachment_list_url(repository) +
             '?repository-revision=5',
             expected_mimetype=diff_file_attachment_list_mimetype)
+        assert rsp is not None
+
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn('diff_file_attachments', rsp)
 
@@ -167,6 +189,144 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertEqual(attachment_rsp['filename'], '/test-file-1.png')
         self.assertEqual(attachment_rsp['caption'], 'File 1')
         self.assertEqual(attachment_rsp['mimetype'], 'image/png')
+
+    #
+    # HTTP POST tests
+    #
+
+    def check_post_result(
+        self,
+        user: User,
+        rsp: JSONDict,
+        filediff: FileDiff,
+        *args,
+        **kwargs,
+    ) -> None:
+        """Check the results of an HTTP POST.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user performing the request.
+
+            rsp (dict):
+                The POST response payload.
+
+            *args (tuple):
+                Positional arguments provided by
+                :py:meth:`populate_post_test_objects`.
+
+            **kwargs (dict):
+                Keyword arguments provided by
+                :py:meth:`populate_post_test_objects`.
+
+        Raises:
+            AssertionError:
+                One of the checks failed.
+        """
+        self.assertIn('diff_file_attachment', rsp)
+        item_rsp = rsp['diff_file_attachment']
+
+        attachment = FileAttachment.objects.get(pk=item_rsp['id'])
+
+        if filediff.is_new:
+            self.assertEqual(attachment.added_in_filediff, filediff)
+        else:
+            self.assertIsNone(attachment.added_in_filediff)
+            self.assertEqual(attachment.repo_path, filediff.dest_file)
+            self.assertEqual(attachment.repo_revision, filediff.dest_detail)
+
+    def populate_post_test_objects(
+        self,
+        *,
+        setup_state: BasicPostTestSetupState,
+        create_valid_request_data: bool,
+        new_file: bool = False,
+        **kwargs,
+    ) -> None:
+        """Populate objects for a POST test.
+
+        Args:
+            setup_state (reviewboard.webapi.tests.mixins.
+                         BasicPostTestSetupState):
+                The setup state for the test.
+
+            create_valid_request_data (bool):
+                Whether ``request_data`` in ``setup_state`` should provide
+                valid data for a POST test, given the populated objects.
+
+            new_file (bool, optional):
+                Whether to create a newly-added file.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion.
+        """
+        repository = self.create_repository(
+            local_site=setup_state['local_site'])
+        review_request = self.create_review_request(
+            local_site=setup_state['local_site'],
+            submitter=setup_state['owner'],
+            repository=repository,
+            create_with_history=True)
+        diffset = self.create_diffset(review_request)
+        commit = self.create_diffcommit(diffset=diffset)
+
+        if new_file:
+            source_revision = PRE_CREATION
+        else:
+            source_revision = '123'
+
+        filediff = self.create_filediff(
+            diffset=diffset,
+            commit=commit,
+            source_revision=source_revision,
+            diff=b'',
+            binary=True)
+
+        if create_valid_request_data:
+            setup_state['request_data'] = {
+                'path': open(self.get_sample_image_filename(), 'rb'),
+                'filediff': filediff.pk,
+            }
+        else:
+            setup_state['request_data'] = {}
+
+        setup_state['url'] = get_diff_file_attachment_list_url(
+            repository, setup_state['local_site_name'])
+        setup_state['mimetype'] = diff_file_attachment_item_mimetype
+        setup_state['check_result_args'] = (filediff,)
+
+    @webapi_test_template
+    def test_post_with_new_file(self) -> None:
+        """Testing the POST <URL> API with a newly-added binary file"""
+        resource = self.resource
+
+        self.assertTrue(getattr(resource.create, 'login_required', False))
+        self.assertTrue(getattr(resource.create, 'checks_local_site', False))
+
+        self.load_fixtures(self.basic_post_fixtures)
+        self._login_user(admin=self.basic_post_use_admin)
+
+        setup_state = cast(
+            BasicPostTestSetupState,
+            self._build_common_setup_state(fixtures=self.basic_post_fixtures))
+        self.populate_post_test_objects(
+            setup_state=setup_state,
+            create_valid_request_data=True,
+            new_file=True)
+
+        request_data = setup_state.get('request_data')
+
+        rsp = self.api_post(setup_state['url'],
+                            request_data,
+                            expected_mimetype=setup_state['mimetype'],
+                            expected_status=self.basic_post_success_status)
+
+        assert rsp
+        self.assertEqual(rsp['stat'], 'ok')
+        self.check_post_result(setup_state['owner'],
+                               rsp,
+                               *setup_state.get('check_result_args', ()),
+                               **setup_state.get('check_result_kwargs', {}))
 
 
 class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
@@ -238,6 +398,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         rsp = self.api_get(
             get_diff_file_attachment_item_url(attachment, repository),
             expected_mimetype=diff_file_attachment_item_mimetype)
+        assert rsp is not None
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn('diff_file_attachment', rsp)
@@ -262,6 +423,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         rsp = self.api_get(
             get_diff_file_attachment_item_url(attachment, repository),
             expected_status=403)
+        assert rsp is not None
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)

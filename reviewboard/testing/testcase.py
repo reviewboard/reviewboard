@@ -68,6 +68,7 @@ if TYPE_CHECKING:
     from djblets.util.typing import JSONDict
 
     from reviewboard.changedescs.models import ChangeDescription
+    from reviewboard.scmtools.core import RevisionID
 
 
 _static_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
@@ -1342,7 +1343,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         diffset: DiffSet,
         source_file: str = '/test-file',
         dest_file: str = '/test-file',
-        source_revision: str = '123',
+        source_revision: RevisionID = '123',
         dest_detail: str = '124',
         status: str = FileDiff.MODIFIED,
         diff: bytes = DEFAULT_FILEDIFF_DATA_DIFF,
