@@ -132,8 +132,10 @@ class BaseImageView extends BaseView<ImageReviewable> {
                         });
 
                     if (loadsRemaining === 0) {
-                        this._onImagesLoaded();
-                        this.trigger('regionChanged');
+                        _.defer(() => {
+                            this._onImagesLoaded();
+                            this.trigger('regionChanged');
+                        });
                     }
                 };
             } else {
