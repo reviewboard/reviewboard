@@ -88,7 +88,15 @@ class FileAttachmentManager(Manager):
 
         if save:
             attachment.save()
-            attachment.review_request.add(review_request)
+
+            review_request.file_attachments.add(attachment)
+
+            # If there's a draft, we also need to add it there, otherwise it
+            # will disappear as soon as the draft is published.
+            draft = review_request.get_draft()
+
+            if draft:
+                draft.file_attachments.add(attachment)
 
         return attachment
 

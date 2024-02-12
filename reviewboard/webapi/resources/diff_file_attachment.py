@@ -237,4 +237,5 @@ class DiffFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
                 file, request=request, *args, **kwargs),
         }
 
+
 diff_file_attachment_resource = DiffFileAttachmentResource()

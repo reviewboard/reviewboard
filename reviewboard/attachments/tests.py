@@ -877,6 +877,28 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
 
     fixtures = ['test_users', 'test_scmtools', 'test_site']
 
+    def test_create_from_filediff_sets_relation_counter(self):
+        """Testing FileAttachmentManager.create_from_filediff sets
+        ReviewRequest.file_attachment_count counter
+        """
+        user = User.objects.get(username='doc')
+        repository = self.create_repository()
+        review_request = self.create_review_request(repository=repository,
+                                                    submitter=user)
+        diffset_history = review_request.diffset_history
+
+        filediff = self.make_filediff(diffset_history=diffset_history)
+
+        self.assertEqual(review_request.file_attachments_count, 0)
+
+        FileAttachment.objects.create_from_filediff(
+            filediff,
+            file=self.make_uploaded_file(),
+            mimetype='image/png')
+
+        review_request.refresh_from_db()
+        self.assertEqual(review_request.file_attachments_count, 1)
+
     def test_create_from_filediff_with_new_and_modified_true(self):
         """Testing FileAttachmentManager.create_from_filediff
         with new FileDiff and modified=True

@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from djblets.util.typing import JSONDict
 
     from reviewboard.diffviewer.models import FileDiff
+    from reviewboard.reviews.models import ReviewRequest
 
 
 class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
@@ -199,6 +200,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         user: User,
         rsp: JSONDict,
         filediff: FileDiff,
+        review_request: ReviewRequest,
         *args,
         **kwargs,
     ) -> None:
@@ -235,6 +237,9 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             self.assertEqual(attachment.repo_path, filediff.dest_file)
             self.assertEqual(attachment.repo_revision, filediff.dest_detail)
 
+        review_request.refresh_from_db()
+        self.assertEqual(review_request.file_attachments_count, 1)
+
     def populate_post_test_objects(
         self,
         *,
@@ -270,6 +275,8 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         diffset = self.create_diffset(review_request)
         commit = self.create_diffcommit(diffset=diffset)
 
+        self.assertEqual(review_request.file_attachments_count, 0)
+
         if new_file:
             source_revision = PRE_CREATION
         else:
@@ -293,7 +300,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         setup_state['url'] = get_diff_file_attachment_list_url(
             repository, setup_state['local_site_name'])
         setup_state['mimetype'] = diff_file_attachment_item_mimetype
-        setup_state['check_result_args'] = (filediff,)
+        setup_state['check_result_args'] = (filediff, review_request)
 
     @webapi_test_template
     def test_post_with_new_file(self) -> None:

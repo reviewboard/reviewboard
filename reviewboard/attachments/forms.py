@@ -97,7 +97,6 @@ class UploadFileForm(forms.Form):
         if filediff:
             file_attachment = FileAttachment.objects.create_from_filediff(
                 filediff,
-                save=False,
                 **attachment_kwargs)
         else:
             attachment_history = self.cleaned_data['attachment_history']
@@ -140,9 +139,10 @@ class UploadFileForm(forms.Form):
 
         file_attachment.file.save(filename, file_obj, save=True)
 
-        draft = ReviewRequestDraft.create(self.review_request)
-        draft.file_attachments.add(file_attachment)
-        draft.save()
+        if not filediff:
+            draft = ReviewRequestDraft.create(self.review_request)
+            draft.file_attachments.add(file_attachment)
+            draft.save()
 
         return file_attachment
 
