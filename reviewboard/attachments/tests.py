@@ -22,7 +22,7 @@ from reviewboard.attachments.mimetypes import (MimetypeHandler,
                                                unregister_mimetype_handler)
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
-from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
+from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
@@ -941,10 +941,10 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
             filediff,
             file=self.make_uploaded_file(),
             mimetype='image/png')
-        self.assertEqual(file_attachment.repository, filediff.get_repository())
-        self.assertEqual(file_attachment.repo_path, filediff.dest_file)
-        self.assertEqual(file_attachment.repo_revision, filediff.dest_detail)
-        self.assertEqual(file_attachment.added_in_filediff_id, None)
+        self.assertIsNone(file_attachment.repository_id)
+        self.assertIsNone(file_attachment.repo_path)
+        self.assertIsNone(file_attachment.repo_revision)
+        self.assertEqual(file_attachment.added_in_filediff, filediff)
 
     def test_create_from_filediff_with_existing_and_modified_false(self):
         """Testing FileAttachmentManager.create_from_filediff

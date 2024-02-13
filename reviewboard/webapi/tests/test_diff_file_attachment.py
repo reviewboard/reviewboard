@@ -167,16 +167,18 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                                          dest_detail='10')
         attachment = self.create_diff_file_attachment(
             filediff1,
+            from_modified=False,
             caption='File 1',
             orig_filename='/test-file-1.png')
         self.create_diff_file_attachment(
             filediff2,
+            from_modified=False,
             caption='File 2',
             orig_filename='/test-file-2.png')
 
         rsp = self.api_get(
             get_diff_file_attachment_list_url(repository) +
-            '?repository-revision=5',
+            '?repository-revision=4',
             expected_mimetype=diff_file_attachment_list_mimetype)
         assert rsp is not None
 
@@ -230,12 +232,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
 
         attachment = FileAttachment.objects.get(pk=item_rsp['id'])
 
-        if filediff.is_new:
-            self.assertEqual(attachment.added_in_filediff, filediff)
-        else:
-            self.assertIsNone(attachment.added_in_filediff)
-            self.assertEqual(attachment.repo_path, filediff.dest_file)
-            self.assertEqual(attachment.repo_revision, filediff.dest_detail)
+        self.assertEqual(attachment.added_in_filediff, filediff)
 
         review_request.refresh_from_db()
         self.assertEqual(review_request.file_attachments_count, 1)

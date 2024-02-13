@@ -30,7 +30,14 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     def compare_item(self, item_rsp, filediff):
         self.assertEqual(item_rsp['id'], filediff.pk)
         self.assertEqual(item_rsp['source_file'], filediff.source_file)
-        self.assertEqual(item_rsp['extra_data'], filediff.extra_data)
+
+        filtered_extra_data = {
+            key: value
+            for key, value in filediff.extra_data.items()
+            if not key.startswith('_')
+        }
+
+        self.assertEqual(item_rsp['extra_data'], filtered_extra_data)
 
     def setup_http_not_allowed_item_test(self, user):
         review_request = self.create_review_request(
@@ -310,10 +317,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
 
         self.assertTrue(attachment.is_from_diff)
         self.assertEqual(attachment.orig_filename, 'logo.png')
-        self.assertEqual(attachment.added_in_filediff, None)
-        self.assertEqual(attachment.repo_path, 'logo.png')
-        self.assertEqual(attachment.repo_revision, '86b520d')
-        self.assertEqual(attachment.repository, review_request.repository)
+        self.assertEqual(attachment.added_in_filediff, filediff)
 
     def test_put_second_dest_attachment_file_disallowed(self):
         """Testing the PUT review-requests/<id>/diffs/<id>/files/<id>/ API

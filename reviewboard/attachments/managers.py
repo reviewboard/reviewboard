@@ -64,19 +64,12 @@ class FileAttachmentManager(Manager):
 
         local_site = review_request.local_site
 
-        if filediff.is_new:
+        if filediff.is_new or from_modified:
             assert from_modified
 
             attachment = self.model(
                 local_site=local_site,
                 added_in_filediff=filediff,
-                **kwargs)
-        elif from_modified:
-            attachment = self.model(
-                local_site=local_site,
-                repo_path=filediff.dest_file,
-                repo_revision=filediff.dest_detail,
-                repository=filediff.get_repository(),
                 **kwargs)
         else:
             attachment = self.model(
@@ -131,10 +124,10 @@ class FileAttachmentManager(Manager):
             reviewboard.attachments.models.FileAttachment:
             The attachment for the given FileDiff, if one exists.
         """
-        if filediff.is_new:
-            if not modified:
-                return None
-
+        if filediff.is_new and not modified:
+            # We never care about the "original" version of a new file.
+            return None
+        elif filediff.is_new or modified:
             try:
                 return self.get(added_in_filediff=filediff)
             except ObjectDoesNotExist:
@@ -158,22 +151,19 @@ class FileAttachmentManager(Manager):
             commit_filediffs = exclude_ancestor_filediffs(commit_filediffs)
 
             if len(commit_filediffs) == 1:
-                return self.get(added_in_filediff=commit_filediffs[0])
+                try:
+                    return self.get(added_in_filediff=commit_filediffs[0])
+                except ObjectDoesNotExist:
+                    pass
         else:
             review_request = filediff.get_review_request()
             assert review_request is not None
 
             try:
-                if modified:
-                    return self.get(review_request=review_request,
-                                    repo_path=filediff.dest_file,
-                                    repo_revision=filediff.dest_detail,
-                                    repository=filediff.get_repository())
-                else:
-                    return self.get(review_request=review_request,
-                                    repo_path=filediff.source_file,
-                                    repo_revision=filediff.source_revision,
-                                    repository=filediff.get_repository())
+                return self.get(review_request=review_request,
+                                repo_path=filediff.source_file,
+                                repo_revision=filediff.source_revision,
+                                repository=filediff.get_repository())
             except ObjectDoesNotExist:
                 pass
 
