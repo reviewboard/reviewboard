@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import logging
 import struct
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -35,6 +35,9 @@ from reviewboard.reviews.models import Comment
 from reviewboard.reviews.ui.base import ReviewUI
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
+
+if TYPE_CHECKING:
+    from reviewboard.diffviewer.models import DiffCommit
 
 
 logger = logging.getLogger(__name__)
@@ -125,11 +128,25 @@ def build_diff_comment_fragments(
 
     for comment in comments:
         try:
+            base_commit: Optional[DiffCommit] = None
+            tip_commit: Optional[DiffCommit] = None
+
+            base_filediff = comment.base_filediff
+
+            if base_filediff:
+                base_commit = base_filediff.commit
+
+            if comment.filediff.commit_id:
+                tip_commit = comment.filediff.commit
+
             max_line = get_last_line_number_in_diff(
                 context=context,
                 filediff=comment.filediff,
                 interfilediff=comment.interfilediff,
-                diff_settings=diff_settings)
+                diff_settings=diff_settings,
+                base_filediff=base_filediff,
+                base_commit=base_commit,
+                tip_commit=tip_commit)
 
             first_line = max(1, comment.first_line - lines_of_context[0])
             last_line = min(comment.last_line + lines_of_context[1], max_line)
@@ -141,7 +158,11 @@ def build_diff_comment_fragments(
                 interfilediff=comment.interfilediff,
                 first_line=first_line,
                 num_lines=num_lines,
-                diff_settings=diff_settings))
+                diff_settings=diff_settings,
+                base_filediff=base_filediff,
+                base_commit=base_commit,
+                tip_commit=tip_commit
+            ))
 
             comment_context = {
                 'comment': comment,
@@ -150,7 +171,10 @@ def build_diff_comment_fragments(
                     filediff=comment.filediff,
                     interfilediff=comment.interfilediff,
                     target_line=first_line,
-                    diff_settings=diff_settings),
+                    diff_settings=diff_settings,
+                    base_filediff=base_filediff,
+                    base_commit=base_commit,
+                    tip_commit=tip_commit),
                 'chunks': chunks,
                 'domain': Site.objects.get_current().domain,
                 'domain_method': siteconfig.get('site_domain_method'),

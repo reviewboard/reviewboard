@@ -1,5 +1,7 @@
 """Diff viewer view."""
 
+from __future__ import annotations
+
 from typing import Any, Dict, Optional
 
 from django.http import HttpRequest, HttpResponse
@@ -185,7 +187,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         for obj in q:
             comment = obj.comment
             comment.review_obj = obj.review
-            key = (comment.filediff_id, comment.interfilediff_id)
+            key = (comment.filediff_id, comment.interfilediff_id,
+                   comment.base_filediff_id)
             comments.setdefault(key, []).append(comment)
 
         # Build the status information shown below the summary.
@@ -292,8 +295,12 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                 },
                 'base_filediff_id': base_filediff_id,
                 'index': f['index'],
-                'comment_counts': comment_counts(self.request.user, comments,
-                                                 filediff, interfilediff),
+                'comment_counts': comment_counts(
+                    self.request.user,
+                    comments,
+                    filediff,
+                    interfilediff,
+                    base_filediff),
                 'public': f['public'],
             }
 
