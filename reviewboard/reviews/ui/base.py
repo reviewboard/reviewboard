@@ -200,7 +200,7 @@ class ReviewUI:
         self,
         user: Optional[User] = None,
         review_request: Optional[ReviewRequest] = None,
-        obj: object = None,
+        obj: Optional[object] = None,
         **kwargs,
     ) -> bool:
         """Return whether the Review UI is enabled under the given criteria.
@@ -218,10 +218,10 @@ class ReviewUI:
                 The user to check.
 
             review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest):
+                            ReviewRequest, optional):
                 The review request to check.
 
-            obj (object):
+            obj (object, optional):
                 The object being reviewed.
 
             **kwargs (dict):
@@ -966,8 +966,8 @@ def unregister_ui(review_ui: type[ReviewUI]) -> None:
 
     This will unregister a previously registered Review UI.
 
-    Only ReviewUI subclasses are supported. The class must have been registered
-    beforehand or a ValueError will be thrown.
+    Only :py:class:`ReviewUI` subclasses are supported. The class must have
+    been registered beforehand or a ValueError will be thrown.
 
     Args:
         review_ui (type):

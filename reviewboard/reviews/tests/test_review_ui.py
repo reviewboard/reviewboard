@@ -1,4 +1,4 @@
-"""Unit tests for reviewboard.reviews.ui.base.RevieUII."""
+"""Unit tests for reviewboard.reviews.ui.base.ReviewUI."""
 
 from __future__ import annotations
 
