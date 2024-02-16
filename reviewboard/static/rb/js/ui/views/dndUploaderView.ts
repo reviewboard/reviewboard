@@ -10,10 +10,18 @@ import {
 
 /**
  * Attributes for the DnDDropTarget model.
+ *
+ * Version Added:
+ *     7.0
  */
 interface DnDDropTargetAttrs extends ModelAttributes {
+    /** The target element to allow file drops on. */
     $target: JQuery<Window> | JQuery;
+
+    /** The function to call when a file is dropped. */
     callback: () => void;
+
+    /** The string to show in the overlay. */
     dropText: string;
 }
 
@@ -25,23 +33,13 @@ interface DnDDropTargetAttrs extends ModelAttributes {
  * overlay on top of the target when files are dragged over the page. This
  * overlay will accept dropped files and run the dropAction for each file
  * dropped on it.
- *
- * Model Attributes:
- *     $target (jQuery):
- *         The target element to allow file drops on.
- *
- *     callback (function):
- *         The function to call when a file is dropped.
- *
- *     dropText (string):
- *         The string to show in the overlay.
  */
 @spina
 class DnDDropTarget extends BaseModel<DnDDropTargetAttrs> {
     static defaults(): DnDDropTargetAttrs {
         return {
             $target: $(window),
-            callback: function() {},
+            callback: _.noop,
             dropText: _`Drop to upload`,
         };
     }
