@@ -40,7 +40,7 @@ Description{% if changes %}{% if changes.description %} (updated){% endif %}{% e
 {%   if latest_diffset %}
 Diffs{% if changes and changes.diff %} (updated){% endif %}
 -----
-{%    for filediff in latest_diffset.files.all %}
+{%    for filediff in latest_diffset.cumulative_files %}
   {{ filediff.source_file_display }} {{ filediff.source_revision }} {% endfor %}
 
 {%    with latest_diffset.revision as rev %}

@@ -71,7 +71,7 @@
 {%   if latest_diffset %}
 <h1 style="{{csscolor}} {{cssfont}} {{cssmargin}}">Diffs {% if changes and changes.diff %}(updated){% endif %}</h1>
 <ul style="margin-left: 3em; padding-left: 0;">
-{%    for filediff in latest_diffset.files.all %}
+{%    for filediff in latest_diffset.cumulative_files %}
  <li>{{filediff.source_file_display}} <span style="color: grey">({{filediff.source_revision}})</span></li>
 {%    endfor %}
 </ul>
