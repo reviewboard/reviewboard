@@ -14,6 +14,8 @@ here, we will use :file:`/var/www/reviews.example.com`. The directory
 should not exist yet. :command:`rb-site` will create it.
 
 
+.. _creating-sites-db:
+
 1. Create the Database
 ======================
 
@@ -99,6 +101,8 @@ For example:
     postgres=# CREATE DATABASE reviewboard WITH OWNER rbuser;
 
 
+.. _creating-sites-sitedir:
+
 2. Create the Site Directory
 ============================
 
@@ -146,6 +150,9 @@ For example:
    We'll go over those next.
 
 
+.. _creating-sites-after-sitedir:
+.. _creating-sites-permission:
+
 3. Configure Permissions
 ========================
 
@@ -172,6 +179,7 @@ For example:
     $ chown -R www-data htdocs/static/ext
 
 
+.. _creating-sites-selinux:
 .. _configuring-selinux:
 
 4. Configuring SELinux (optional)
@@ -245,6 +253,7 @@ If you need any help with SELinux, `reach out to us for support <support_>`_.
 .. _support: https://www.reviewboard.org/support/
 
 
+.. _creating-sites-webserver:
 .. _configuring-web-server:
 
 5. Configure the Web Server
@@ -756,6 +765,7 @@ Sample Nginx Configuration
    }
 
 
+.. _creating-sites-cron:
 .. _configuring-cron:
 
 6. Configure Task Scheduling

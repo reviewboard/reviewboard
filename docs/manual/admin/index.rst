@@ -15,12 +15,17 @@ on your platform.
 
 Installation will happen in two steps:
 
-* **Step 1: Install the Review Board packages for:**
+* **Step 1: Install Review Board through:**
 
-  * :doc:`Linux <installation/linux>` (recommended)
+  * :doc:`The Review Board Installer <installation/installer>`
+  * :doc:`Official Docker images <installation/docker>`
+
+  If you have special requirements, you can instead follow step-by-step
+  instructions to manually install Review Board for:
+
+  * :doc:`Linux <installation/linux>`
   * :doc:`macOS <installation/osx>`
   * :doc:`Windows <installation/windows>`
-  * Or use our official :doc:`Docker images <installation/docker>`
 
 * :doc:`Step 2: Create your site directory <installation/creating-sites>`
 

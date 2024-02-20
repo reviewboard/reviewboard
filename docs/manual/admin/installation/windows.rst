@@ -9,9 +9,10 @@ To install Review Board:
 1. `Install Linux on Windows with WSL
    <https://learn.microsoft.com/en-us/windows/wsl/install>`_
 
-   We recommend Ubuntu LTS.
+   We recommend the latest Ubuntu LTS.
 
-2. Follow the :ref:`Linux installation guide <installation-linux>`.
+2. Install Review Board using the
+   :ref:`Review Board Installer <installation-installer>`.
 
 If you're looking for a different solution, you may consider:
 
