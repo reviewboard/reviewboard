@@ -1,15 +1,8 @@
-=============================
-Installing on Mac OS X Server
-=============================
+===================
+Installing on macOS
+===================
 
-By and large, the :ref:`Linux installation instructions <installation-linux>`
-also work on Mac OS X Server. This document will serve to illustrate a couple
-small differences.
+Review Board can be installed on macOS. This is a good option if you're
+testing Review Board before deploying in production on a Linux server.
 
-
-Configuring Memcached start-up
-==============================
-
-To set up memcached to start on boot, use the following command::
-
-    $ sudo launchctl load -w /System/Library/LaunchDaemons/com.danga.memcached.plist
+See :ref:`installation-installer` to install on macOS.

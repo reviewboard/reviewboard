@@ -5,9 +5,11 @@ Installation
 .. toctree::
    :maxdepth: 2
 
+   installer
+   linux-compatibility
+   docker
    linux
    osx
    windows
-   docker
    development-releases
    creating-sites

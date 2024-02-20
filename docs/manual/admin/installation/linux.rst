@@ -1,8 +1,20 @@
 .. _installation-linux:
 
-===================
-Installing on Linux
-===================
+============================
+Manually Installing on Linux
+============================
+
+.. tip::
+
+   We recommend installing Review Board using the :ref:`Review Board
+   Installer <installation-installer>`.
+
+   This will handle installation for a wide range of Linux distributions,
+   and is the easiest way to install Review Board.
+
+   The instructions below are for historical purposes, and for administrators
+   and Linux distro packagers looking for more information on the install
+   process.
 
 Review Board is most commonly used on Linux, and supports the latest versions
 of most major Linux distributions.
@@ -50,15 +62,17 @@ Linux Distributions
 Review Board |version| is known to work with the following Linux
 distributions:
 
-* CentOS Stream 9
-* Fedora 36
-* Fedora 37
-* Fedora 38
-* Ubuntu 20.04 LTS
-* Ubuntu 22.10 LTS
+* Amazon Linux
+* Arch Linux
+* CentOS
+* Debian
+* Fedora
+* openSUSE
+* Red Hat Enterprise Linux
+* Rocky Linux
+* Ubuntu
 
-Other distributions may also work, as long as they provide a compatible
-version of Python.
+For a full list of versions, see :ref:`linux-compatibility`.
 
 Review Board works on both X86 and ARM Linux distributions.
 
