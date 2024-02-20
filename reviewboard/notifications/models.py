@@ -7,8 +7,7 @@ from typing import ClassVar
 from django.core.validators import URLValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from djblets.db.fields import JSONField
-from multiselectfield import MultiSelectField
+from djblets.db.fields import CommaSeparatedValuesField, JSONField
 
 from reviewboard.notifications.managers import WebHookTargetManager
 from reviewboard.scmtools.models import Repository
@@ -21,6 +20,7 @@ class WebHookTarget(models.Model):
     A webhook target is a URL which will receive a POST request when the
     corresponding event occurs.
     """
+
     ALL_EVENTS = '*'
 
     EVENT_CHOICES = (
@@ -39,7 +39,7 @@ class WebHookTarget(models.Model):
     ALL_ENCODINGS = (
         ENCODING_JSON,
         ENCODING_XML,
-        ENCODING_FORM_DATA
+        ENCODING_FORM_DATA,
     )
 
     ENCODINGS = (
@@ -63,9 +63,9 @@ class WebHookTarget(models.Model):
 
     # Standard information
     enabled = models.BooleanField(default=True)
-    events = MultiSelectField(
+    events = CommaSeparatedValuesField(
         _('events'),
-        choices=EVENT_CHOICES,
+        max_length=512,
         blank=True,
         help_text=_('Select any or all events that should trigger this '
                     'Webhook.'))
