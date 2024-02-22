@@ -19,10 +19,12 @@ from djblets.webapi.fields import (IntFieldType,
                                    ResourceFieldType,
                                    StringFieldType)
 
+from reviewboard.attachments.errors import FileTooBigError
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.webapi.base import ImportExtraDataError
 from reviewboard.webapi.decorators import webapi_check_local_site
+from reviewboard.webapi.errors import DIFF_TOO_BIG
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_review_request_file_attachment import \
     BaseReviewRequestFileAttachmentResource
@@ -199,7 +201,7 @@ class DiffFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
             return INVALID_FORM_DATA, {
                 'fields': {
                     'filediff': [str(e)],
-                }
+                },
             }
 
         review_request = filediff_obj.get_review_request()
@@ -217,6 +219,11 @@ class DiffFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
 
         try:
             file = form.create(filediff=filediff_obj)
+        except FileTooBigError as e:
+            return DIFF_TOO_BIG, {
+                'max_size': e.max_attachment_size,
+                'reason': str(e),
+            }
         except ValueError as e:
             return INVALID_FORM_DATA, {
                 'fields': {

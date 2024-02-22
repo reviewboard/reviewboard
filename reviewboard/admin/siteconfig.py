@@ -146,6 +146,7 @@ defaults.update({
     'default_use_rich_text': True,
     'diffviewer_context_num_lines': 5,
     'diffviewer_include_space_patterns': [],
+    'diffviewer_max_binary_size': 10_485_760,
     'diffviewer_max_diff_size': 2_097_152,
     'diffviewer_paginate_by': 20,
     'diffviewer_paginate_orphans': 10,

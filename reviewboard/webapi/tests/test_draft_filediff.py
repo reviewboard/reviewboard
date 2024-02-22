@@ -1,3 +1,7 @@
+"""Unit tests for the DraftFileDiffResource."""
+
+from __future__ import annotations
+
 import os
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -9,6 +13,7 @@ from reviewboard import scmtools
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.scmtools.core import PRE_CREATION
+from reviewboard.webapi.errors import DIFF_TOO_BIG
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (diff_item_mimetype,
@@ -318,6 +323,57 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
         self.assertTrue(attachment.is_from_diff)
         self.assertEqual(attachment.orig_filename, 'logo.png')
         self.assertEqual(attachment.added_in_filediff, filediff)
+
+    @webapi_test_template
+    def test_put_attachment_file_too_big(self) -> None:
+        """Testing the PUT <URL> API with a file that exceeds configured size
+        limits
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=self.user)
+
+        diff = SimpleUploadedFile('git_binary_image_modified.diff',
+                                  self.DEFAULT_GIT_BINARY_IMAGE_DIFF,
+                                  content_type='text/x-patch')
+        rsp = self.api_post(
+            get_diff_list_url(review_request),
+            {
+                'path': diff,
+                'base_commit_id': '1234',
+            },
+            expected_mimetype=diff_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        diffset = DiffSet.objects.get(pk=rsp['diff']['id'])
+        filediffs = diffset.files.all()
+
+        self.assertEqual(len(filediffs), 1)
+        filediff = filediffs[0]
+        self.assertEqual(filediff.source_file, 'logo.png')
+
+        with self.siteconfig_settings({'diffviewer_max_binary_size': 2},
+                                      reload_settings=False):
+            with open(self.get_sample_image_filename(), 'rb') as f:
+                rsp = self.api_put(
+                    get_draft_filediff_item_url(filediff, review_request) +
+                    '?expand=dest_attachment',
+                    {
+                        'dest_attachment_file': f,
+                    },
+                    expected_status=400)
+
+        assert rsp is not None
+        self.assertEqual(rsp, {
+            'err': {
+                'code': DIFF_TOO_BIG.code,
+                'msg': 'The specified diff file is too large.',
+                'type': 'diff-too-large',
+            },
+            'max_size': 2,
+            'reason': 'The given file is too large.',
+            'stat': 'fail',
+        })
 
     def test_put_second_dest_attachment_file_disallowed(self):
         """Testing the PUT review-requests/<id>/diffs/<id>/files/<id>/ API

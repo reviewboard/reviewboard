@@ -9,6 +9,7 @@ from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.scmtools.core import PRE_CREATION
+from reviewboard.webapi.errors import DIFF_TOO_BIG
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
@@ -332,9 +333,46 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                                *setup_state.get('check_result_args', ()),
                                **setup_state.get('check_result_kwargs', {}))
 
+    @webapi_test_template
+    def test_post_file_too_big(self) -> None:
+        """Testing the POST <URL> API with a file that exceeds configured size
+        limits
+        """
+        resource = self.resource
+
+        self.assertTrue(getattr(resource.create, 'login_required', False))
+        self.assertTrue(getattr(resource.create, 'checks_local_site', False))
+
+        self.load_fixtures(self.basic_post_fixtures)
+        self._login_user(admin=self.basic_post_use_admin)
+
+        setup_state = cast(
+            BasicPostTestSetupState,
+            self._build_common_setup_state(fixtures=self.basic_post_fixtures))
+        self.populate_post_test_objects(
+            setup_state=setup_state,
+            create_valid_request_data=True,
+            new_file=True)
+
+        request_data = setup_state.get('request_data')
+
+        with self.siteconfig_settings({'diffviewer_max_binary_size': 2},
+                                      reload_settings=False):
+            rsp = self.api_post(setup_state['url'],
+                                request_data,
+                                expected_status=400)
+
+        assert rsp is not None
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DIFF_TOO_BIG.code)
+        self.assertIn('reason', rsp)
+        self.assertIn('max_size', rsp)
+        self.assertEqual(rsp['max_size'], 2)
+
 
 class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the DiffFileAttachmentResource item APIs."""
+
     fixtures = ['test_users', 'test_scmtools']
     sample_api_url = 'repositories/<id>/diff-file-attachments/<id>/'
     resource = resources.diff_file_attachment

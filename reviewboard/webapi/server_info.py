@@ -126,6 +126,11 @@ def get_capabilities(request=None):
     capabilities['authentication']['client_web_login'] = \
         siteconfig.get('client_web_login', False)
 
+    capabilities['diffs'].update({
+        'max_binary_size': siteconfig.get('diffviewer_max_binary_size'),
+        'max_diff_size': siteconfig.get('diffviewer_max_diff_size'),
+    })
+
     # We always report support for Power Pack-provided types, so that clients
     # can upload these files, even if Power Pack is not (yet) licensed.
     mimetypes = {

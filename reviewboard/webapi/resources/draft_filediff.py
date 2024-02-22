@@ -7,10 +7,12 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
 from djblets.webapi.fields import FileFieldType
 
+from reviewboard.attachments.errors import FileTooBigError
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.webapi.base import ImportExtraDataError
 from reviewboard.webapi.decorators import webapi_check_local_site
+from reviewboard.webapi.errors import DIFF_TOO_BIG
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.filediff import FileDiffResource
 
@@ -21,6 +23,7 @@ class DraftFileDiffResource(FileDiffResource):
     Each of these contains a single, self-contained diff file that
     applies to exactly one file on a repository.
     """
+
     added_in = '2.0'
 
     name = 'draft_file'
@@ -86,7 +89,6 @@ class DraftFileDiffResource(FileDiffResource):
         provide the contents of the diff. For that, access the per-file diff's
         resource directly and use the correct mimetype.
         """
-        pass
 
     @webapi_check_local_site
     @webapi_login_required
@@ -102,7 +104,7 @@ class DraftFileDiffResource(FileDiffResource):
                 ),
             },
         },
-        allow_unknown=True
+        allow_unknown=True,
     )
     def update(self, request, extra_fields={}, *args, **kwargs):
         """Updates a per-file diff.
@@ -129,8 +131,8 @@ class DraftFileDiffResource(FileDiffResource):
                         'dest_attachment_file': [
                             'Cannot upload a file attachment to a '
                             'non-binary file in a diff.',
-                        ]
-                    }
+                        ],
+                    },
                 }
 
             # Check if there's already an attachment. If so, bail.
@@ -142,8 +144,8 @@ class DraftFileDiffResource(FileDiffResource):
                         'dest_attachment_file': [
                             'There is already a file attachment associated '
                             'with this binary file.',
-                        ]
-                    }
+                        ],
+                    },
                 }
 
             dest_attachment_file = request.FILES.get('dest_attachment_file')
@@ -157,7 +159,19 @@ class DraftFileDiffResource(FileDiffResource):
                     'fields': self._get_form_errors(form),
                 }
 
-            form.create(filediff)
+            try:
+                form.create(filediff)
+            except FileTooBigError as e:
+                return DIFF_TOO_BIG, {
+                    'max_size': e.max_attachment_size,
+                    'reason': str(e),
+                }
+            except ValueError as e:
+                return INVALID_FORM_DATA, {
+                    'fields': {
+                        'dest_attachment_file': [str(e)],
+                    },
+                }
 
         if extra_fields:
             try:

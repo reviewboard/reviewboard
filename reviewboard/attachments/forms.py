@@ -1,14 +1,25 @@
+"""A form that handles uploading of new files."""
+
+from __future__ import annotations
 
 import os
+from typing import Optional, TYPE_CHECKING, cast
 from uuid import uuid4
 
 from django import forms
+from django.core.files import File
+from django.utils.translation import gettext as _
 from djblets.db.fields.json_field import JSONFormField
+from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.attachments.errors import FileTooBigError
 from reviewboard.attachments.mimetypes import get_uploaded_file_mimetype
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
 from reviewboard.reviews.models import ReviewRequestDraft
+
+if TYPE_CHECKING:
+    from reviewboard.diffviewer.models import FileDiff
 
 
 class UploadFileForm(forms.Form):
@@ -66,7 +77,10 @@ class UploadFileForm(forms.Form):
 
         return history
 
-    def create(self, filediff=None):
+    def create(
+        self,
+        filediff: Optional[FileDiff] = None,
+    ) -> FileAttachment:
         """Create a FileAttachment based on this form.
 
         Args:
@@ -78,8 +92,23 @@ class UploadFileForm(forms.Form):
         Returns:
             reviewboard.attachments.models.FileAttachment:
             The new file attachment model.
+
+        Raises:
+            reviewboard.attachments.errors.FileTooBigError:
+                The file is too big for configured limits.
         """
-        file_obj = self.files['path']
+        file_obj = cast(File, self.files['path'])
+
+        if filediff is not None:
+            siteconfig = SiteConfiguration.objects.get_current()
+            max_attachment_size = siteconfig.get('diffviewer_max_binary_size')
+
+            if file_obj.size > max_attachment_size:
+                raise FileTooBigError(
+                    _('The given file is too large.'),
+                    max_attachment_size=max_attachment_size,
+                )
+
         caption = self.cleaned_data['caption'] or file_obj.name
         extra_data = self.cleaned_data['extra_data']
 
