@@ -13,8 +13,11 @@ from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
 from reviewboard.scmtools.core import (Branch, Commit, Revision, HEAD,
                                        PRE_CREATION)
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
-from reviewboard.scmtools.models import Repository, Tool
-from reviewboard.scmtools.svn import SVNTool, recompute_svn_backend
+from reviewboard.scmtools.svn import (
+    SVNTool,
+    recompute_svn_backend,
+    _IDEA_EMPTY,
+)
 from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
 from reviewboard.scmtools.tests.testcases import SCMTestCase
@@ -265,59 +268,61 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
 
     def test_revision_parsing(self):
         """Testing SVN (<backend>) revision number parsing"""
+        parser = self.tool.get_parser(b'')
+
         self.assertEqual(
-            self.tool.parse_diff_revision(filename=b'',
-                                          revision=b'(working copy)'),
+            parser.parse_diff_revision(filename=b'',
+                                       revision=b'(working copy)'),
             (b'', HEAD))
         self.assertEqual(
-            self.tool.parse_diff_revision(filename=b'',
-                                          revision=b'   (revision 0)'),
+            parser.parse_diff_revision(filename=b'',
+                                       revision=b'   (revision 0)'),
             (b'', PRE_CREATION))
 
         self.assertEqual(
-            self.tool.parse_diff_revision(filename=b'',
-                                          revision=b'(revision 1)'),
+            parser.parse_diff_revision(filename=b'',
+                                       revision=b'(revision 1)'),
             (b'', b'1'))
         self.assertEqual(
-            self.tool.parse_diff_revision(filename=b'',
-                                          revision=b'(revision 23)'),
+            parser.parse_diff_revision(filename=b'',
+                                       revision=b'(revision 23)'),
             (b'', b'23'))
 
         # Fix for bug 2176
         self.assertEqual(
-            self.tool.parse_diff_revision(filename=b'',
-                                          revision=b'\t(revision 4)'),
+            parser.parse_diff_revision(filename=b'',
+                                       revision=b'\t(revision 4)'),
             (b'', b'4'))
 
         self.assertEqual(
-            self.tool.parse_diff_revision(
+            parser.parse_diff_revision(
                 filename=b'',
                 revision=b'2007-06-06 15:32:23 UTC (rev 10958)'),
             (b'', b'10958'))
 
         # Fix for bug 2632
         self.assertEqual(
-            self.tool.parse_diff_revision(filename=b'',
-                                          revision=b'(revision )'),
-            (b'', PRE_CREATION))
+            parser.parse_diff_revision(filename=b'',
+                                       revision=b'(revision )'),
+            (b'', _IDEA_EMPTY))
 
         with self.assertRaises(SCMError):
-            self.tool.parse_diff_revision(filename=b'',
-                                          revision=b'hello')
+            parser.parse_diff_revision(filename=b'',
+                                       revision=b'hello')
 
         # Verify that 'svn diff' localized revision strings parse correctly.
         self.assertEqual(
-            self.tool.parse_diff_revision(
+            parser.parse_diff_revision(
                 filename=b'',
                 revision='(revisión: 5)'.encode('utf-8')),
             (b'', b'5'))
         self.assertEqual(
-            self.tool.parse_diff_revision(
+            parser.parse_diff_revision(
                 filename=b'',
                 revision='(リビジョン 6)'.encode('utf-8')),
             (b'', b'6'))
         self.assertEqual(
-            self.tool.parse_diff_revision(
+            parser.parse_diff_revision(
                 filename=b'',
                 revision='(版本 7)'.encode('utf-8')),
             (b'', b'7'))
@@ -326,21 +331,23 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
         """Testing SVN (<backend>) revision parsing with "(nonexistent)"
         revision indicator
         """
+        parser = self.tool.get_parser(b'')
+
         # English
         self.assertEqual(
-            self.tool.parse_diff_revision(filename=b'',
-                                          revision=b'(nonexistent)'),
+            parser.parse_diff_revision(filename=b'',
+                                       revision=b'(nonexistent)'),
             (b'', PRE_CREATION))
 
         # German
         self.assertEqual(
-            self.tool.parse_diff_revision(filename=b'',
-                                          revision=b'(nicht existent)'),
+            parser.parse_diff_revision(filename=b'',
+                                       revision=b'(nicht existent)'),
             (b'', PRE_CREATION))
 
         # Simplified Chinese
         self.assertEqual(
-            self.tool.parse_diff_revision(
+            parser.parse_diff_revision(
                 filename=b'',
                 revision='(不存在的)'.encode('utf-8')),
             (b'', PRE_CREATION))
@@ -349,20 +356,22 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
         """Testing SVN (<backend>) revision parsing with relocation
         information and nonexistent revision specifier
         """
+        parser = self.tool.get_parser(b'')
+
         self.assertEqual(
-            self.tool.parse_diff_revision(
+            parser.parse_diff_revision(
                 filename=b'',
                 revision=b'(.../trunk) (nonexistent)'),
             (b'trunk/', PRE_CREATION))
 
         self.assertEqual(
-            self.tool.parse_diff_revision(
+            parser.parse_diff_revision(
                 filename=b'',
                 revision=b'(.../branches/branch-1.0)     (nicht existent)'),
             (b'branches/branch-1.0/', PRE_CREATION))
 
         self.assertEqual(
-            self.tool.parse_diff_revision(
+            parser.parse_diff_revision(
                 filename=b'',
                 revision='        (.../trunk)     (不存在的)'.encode('utf-8')),
             (b'trunk/', PRE_CREATION))
@@ -429,6 +438,33 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             index_header_value=b'binfile',
             binary=True,
             insert_count=1,
+            data=diff)
+
+    def test_binary_diff_with_revision(self) -> None:
+        """Testing SVN (<backend>) parsing diff with binary file that has
+        revision information, generated with --force
+        """
+        diff = (
+            b'Index: binfile\n'
+            b'============================================================'
+            b'=======\n'
+            b'Binary files binfile (revision 3) and binfile (working copy) '
+            b'differ\n'
+            b'Cannot display: file marked as a binary type.\n'
+        )
+
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'binfile',
+            orig_file_details=b'3',
+            modified_filename=b'binfile',
+            modified_file_details=HEAD,
+            index_header_value=b'binfile',
+            binary=True,
+            insert_count=0,
             data=diff)
 
     def test_keyword_diff(self):
@@ -572,9 +608,9 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
         self.assert_parsed_diff_file(
             parsed_files[0],
             orig_filename='Filé'.encode('utf-8'),
-            orig_file_details=b'(revision 4)',
+            orig_file_details=b'4',
             modified_filename='Filé'.encode('utf-8'),
-            modified_file_details=b'(working copy)',
+            modified_file_details=HEAD,
             index_header_value='Filé'.encode('utf-8'),
             insert_count=1,
             data=diff)
@@ -600,9 +636,9 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
         self.assert_parsed_diff_file(
             parsed_files[0],
             orig_filename=b'File with spaces',
-            orig_file_details=b'(revision 4)',
+            orig_file_details=b'4',
             modified_filename=b'File with spaces',
-            modified_file_details=b'(working copy)',
+            modified_file_details=HEAD,
             index_header_value=b'File with spaces',
             insert_count=1,
             data=diff)
@@ -623,9 +659,9 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
         self.assert_parsed_diff_file(
             parsed_files[0],
             orig_filename=b'empty-file',
-            orig_file_details=b'(revision 0)',
+            orig_file_details=PRE_CREATION,
             modified_filename=b'empty-file',
-            modified_file_details=b'(revision 0)',
+            modified_file_details=PRE_CREATION,
             index_header_value=b'empty-file\t(added)',
             data=diff)
 
@@ -645,9 +681,9 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
         self.assert_parsed_diff_file(
             parsed_files[0],
             orig_filename=b'empty-file',
-            orig_file_details=b'(revision 4)',
+            orig_file_details=b'4',
             modified_filename=b'empty-file',
-            modified_file_details=b'(working copy)',
+            modified_file_details=HEAD,
             index_header_value=b'empty-file\t(deleted)',
             deleted=True,
             data=diff)
@@ -673,9 +709,9 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
         self.assert_parsed_diff_file(
             parsed_files[0],
             orig_filename=b'deleted-file',
-            orig_file_details=b'(revision 4)',
+            orig_file_details=b'4',
             modified_filename=b'deleted-file',
-            modified_file_details=b'(nonexistent)',
+            modified_file_details=PRE_CREATION,
             index_header_value=b'deleted-file',
             deleted=True,
             delete_count=2,
@@ -729,9 +765,9 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
         self.assert_parsed_diff_file(
             parsed_files[0],
             orig_filename=b'path/to/README',
-            orig_file_details=b'(revision 4)',
+            orig_file_details=b'4',
             modified_filename=b'path/to/README',
-            modified_file_details=b'(revision )',
+            modified_file_details=HEAD,
             index_header_value=b'path/to/README',
             insert_count=1,
             data=diff1)
@@ -739,9 +775,9 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
         self.assert_parsed_diff_file(
             parsed_files[1],
             orig_filename=b'path/to/README2',
-            orig_file_details=b'(revision 4)',
+            orig_file_details=b'4',
             modified_filename=b'path/to/README2',
-            modified_file_details=b'(revision )',
+            modified_file_details=HEAD,
             index_header_value=b'path/to/README2',
             insert_count=1,
             data=diff2)

@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 from difflib import SequenceMatcher
 from functools import cmp_to_key
-from typing import Any, Iterator, Optional, TYPE_CHECKING
+from typing import Any, AnyStr, Iterator, Optional, TYPE_CHECKING
 
 from django.utils.encoding import force_str
 from django.utils.translation import gettext as _
@@ -183,7 +183,9 @@ def convert_line_endings(data):
     return data
 
 
-def split_line_endings(data):
+def split_line_endings(
+    data: AnyStr,
+) -> list[AnyStr]:
     """Split a string into lines while preserving all non-CRLF characters.
 
     Unlike :py:meth:`str.splitlines`, this will only split on the following

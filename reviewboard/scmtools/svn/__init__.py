@@ -8,21 +8,28 @@ import re
 import weakref
 from enum import IntEnum
 from importlib import import_module
-from typing import (Any, Dict, List, Mapping, Optional, Sequence, Tuple,
-                    TYPE_CHECKING, Type, Union, cast)
+from typing import (Any, Dict, Final, Mapping, Optional, Sequence,
+                    TYPE_CHECKING, Union, cast)
 from urllib.parse import urlparse
 
 from django.conf import settings
 from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import gettext as _
-from typing_extensions import Final, TypedDict
+from typing_extensions import TypedDict
 
 from reviewboard import get_manual_url
 from reviewboard.admin.server import get_data_dir
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
-from reviewboard.scmtools.core import (Branch, Commit, SCMTool, HEAD,
-                                       PRE_CREATION, UNKNOWN)
+from reviewboard.scmtools.core import (
+    Branch,
+    Commit,
+    HEAD,
+    PRE_CREATION,
+    Revision,
+    SCMTool,
+    UNKNOWN,
+)
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
                                          SCMError,
@@ -33,25 +40,39 @@ from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
 from reviewboard.ssh import utils as sshutils
 
 if TYPE_CHECKING:
-    from reviewboard.scmtools.core import Revision, RevisionID
+    from reviewboard.diffviewer.parser import ParsedDiffFile
+    from reviewboard.scmtools.core import RevisionID
     from reviewboard.scmtools.models import Repository
-    from reviewboard.scmtools.svn.base import (Client,
-                                               SVNDirEntry,
-                                               SVNLogEntry)
+    from reviewboard.scmtools.svn.base import (
+        Client,
+        SVNDirEntry,
+        SVNLogEntry,
+        SVNRepositoryInfoDict,
+    )
 
 
 logger = logging.getLogger(__name__)
 
 
 # These will be set later in recompute_svn_backend().
-_SVNClientBackend: Optional[Type[Client]] = None
+_SVNClientBackend: Optional[type[Client]] = None
 has_svn_backend: bool = False
+
+
+# Revision atom for use with IntelliJ's empty revision labels.
+_IDEA_EMPTY = Revision('IDEA_EMPTY')
 
 
 # Register these URI schemes so we can handle them properly.
 sshutils.ssh_uri_schemes.append('svn+ssh')
 
 sshutils.register_rbssh('SVN_SSH')
+
+
+# Compiled regexes for parsing diffs.
+_revision_re: Optional[re.Pattern] = None
+_working_copy_re: Optional[re.Pattern] = None
+_binary_revision_re: Optional[re.Pattern] = None
 
 
 class SVNCertificateFailures(IntEnum):
@@ -134,7 +155,7 @@ class SVNRepositoryForm(StandardSCMToolRepositoryForm):
         6.0
     """
 
-    def clean(self) -> Dict[str, Any]:
+    def clean(self) -> dict[str, Any]:
         """Perform validation on the form.
 
         Returns:
@@ -235,74 +256,6 @@ class SVNTool(SCMTool):
             lambda trust_dict:
             SVNTool._ssl_server_trust_prompt(trust_dict, repository_ref()))
 
-        # 'svn diff' produces patches which have the revision string localized
-        # to their system locale. This is a little ridiculous, but we have to
-        # deal with it because not everyone uses RBTools.
-        #
-        # svnlook diff creates lines like
-        # '2016-05-12 12:30:05 UTC (rev 1234)'
-        #
-        # whereas svn diff creates lines like
-        # '(Revision 94754)'
-        # '        (.../branches/product-2.0) (revision 321)'
-        # '        (.../trunk)     (nonexistent)'
-        #
-        # So we need to form a regex to match relocation information and the
-        # revision number. Subversion >=1.9 adds the 'nonexistent' revision
-        # string.
-        self.revision_re = re.compile(r'''
-            ^(\(([^\)]+)\)\s)?      # creating diffs between two branches of a
-                                    # remote repository will insert extra
-                                    # "relocation information" into the diff.
-
-            (?:\d+-\d+-\d+\ +       # svnlook-style diffs contain a timestamp
-               \d+:\d+:\d+\ +       # on each line before the revision number.
-               [A-Z]+\ +)?          # This here is probably a really crappy
-                                    # to express that, but oh well.
-
-            \ *\(
-             (                      # - svn 1.9 nonexistent revision indicator
-              nonexistent|          # English
-              nicht\ existent|      # German
-              不存在的|             # Simplified Chinese
-              (?:
-
-                revisão|            # Brazilian Portuguese
-                [Rr]ev(?:ision)?|   # English, German
-
-                                    # - svnlook uses 'rev 0' while svn diff
-                                    #   uses 'revision 0'
-                révision|           # French
-                revisione|          # Italian
-                リビジョン|         # Japanese
-                리비전|             # Korean
-                revisjon|           # Norwegian
-                wersja|             # Polish
-                版本|               # Simplified Chinese
-                revisión:           # Spanish
-              )\ (\d+)              # - the revision number
-              )
-            \)$
-            '''.encode('utf-8'), re.VERBOSE)
-
-        # 'svn diff' also localises the (working copy) string to the system
-        # locale.
-        self.working_copy_re = re.compile(r'''
-            ^\((?:
-                cópia\ de\ trabalho|   # Brazilian Portuguese
-                working\ copy|         # English
-                copie\ de\ travail|    # French
-                Arbeitskopie|          # German
-                copia\ locale|         # Italian
-                作業コピー|            # Japanese
-                작업\ 사본|            # Korean
-                arbeidskopi|           # Norweigan
-                kopia\ robocza|        # Polish
-                工作副本|              # Simplified Chinese
-                copia\ de\ trabajo     # Spanish
-            )\)$
-        '''.encode('utf-8'), re.VERBOSE)
-
     def get_file(
         self,
         path: str,
@@ -362,7 +315,7 @@ class SVNTool(SCMTool):
             reviewboard.scmtools.errors.SCMError:
                 The repository tool encountered an error.
         """
-        results: List[Branch] = []
+        results: list[Branch] = []
 
         root_dirents = self.client.list_dir('/')
         default = True
@@ -443,7 +396,7 @@ class SVNTool(SCMTool):
                                       limit=self.COMMITS_PAGE_LIMIT,
                                       limit_to_path=False)
 
-        results: List[Commit] = []
+        results: list[Commit] = []
 
         # We fetch one more commit than we care about, because the entries in
         # the svn log doesn't include the parent revision.
@@ -539,7 +492,7 @@ class SVNTool(SCMTool):
         revision: bytes,
         *args,
         **kwargs,
-    ) -> Tuple[bytes, Union[bytes, Revision]]:
+    ) -> tuple[bytes, Union[bytes, Revision]]:
         """Parse and return a filename and revision from a diff.
 
         Args:
@@ -566,56 +519,10 @@ class SVNTool(SCMTool):
                 1 (bytes or reviewboard.scmtools.core.Revision):
                     The normalized revision.
         """
-        assert isinstance(filename, bytes), (
-            'filename must be a byte string, not %s' % type(filename))
-        assert isinstance(filename, bytes), (
-            'revision must be a byte string, not %s' % type(revision))
+        # Revision parsing now happens inside SVNDiffParser.
+        return filename, revision
 
-        # Some diffs have additional tabs between the parts of the file
-        # revisions
-        revision = revision.strip()
-
-        if self.working_copy_re.match(revision):
-            return filename, HEAD
-
-        # "(revision )" is generated by a few weird tools (like IntelliJ). If
-        # in the +++ line of the diff, it means HEAD, and in the --- line, it
-        # means PRE_CREATION. Since the more important use case is parsing the
-        # source revision, we treat it as a new file. See bugs 1937 and 2632.
-        if revision == b'(revision )':
-            return filename, PRE_CREATION
-
-        # Binary diffs don't provide revision information, so we set a fake
-        # "(unknown)" in the SVNDiffParser. This will never actually appear
-        # in SVN diffs.
-        if revision == b'(unknown)':
-            return filename, UNKNOWN
-
-        m = self.revision_re.match(revision)
-
-        if not m:
-            raise SCMError('Unable to parse diff revision header "%s"'
-                           % revision.decode('utf-8'))
-
-        relocated_file = m.group(2)
-        norm_revision: Union[bytes, Revision] = m.group(4)
-
-        # group(3) holds the revision string in braces, like '(revision 4)'
-        # group(4) only matches the revision number, which might by None when
-        # 'nonexistent' is given as the revision string
-        if norm_revision in (None, b'0'):
-            norm_revision = PRE_CREATION
-
-        if relocated_file:
-            if not relocated_file.startswith(b'...'):
-                raise SCMError('Unable to parse SVN relocated path "%s"'
-                               % relocated_file.decode('utf-8'))
-
-            filename = b'%s/%s' % (relocated_file[4:], filename)
-
-        return filename, norm_revision
-
-    def get_repository_info(self) -> Dict[str, Any]:
+    def get_repository_info(self) -> SVNRepositoryInfoDict:
         """Return information on the repository.
 
         Returns:
@@ -660,7 +567,7 @@ class SVNTool(SCMTool):
         *,
         name: str,
         dirent: SVNDirEntry,
-        default=False,
+        default: bool = False,
     ) -> Branch:
         """Return a Branch object from a Subversion directory entry.
 
@@ -721,7 +628,7 @@ class SVNTool(SCMTool):
         cls,
         trust_data: RawSSLTrustDict,
         repository: Optional[Repository],
-    ) -> Tuple[bool, int, bool]:
+    ) -> tuple[bool, int, bool]:
         """Callback for SSL cert verification.
 
         This will be called when accessing a repository with an SSL cert.
@@ -756,7 +663,7 @@ class SVNTool(SCMTool):
             return False, 0, False
 
         saved_cert = repository.extra_data.get('cert', {})
-        cert: Dict[str, Any] = cast(Dict[str, Any], trust_data.copy())
+        cert = cast(Dict[str, Any], trust_data.copy())
         del cert['failures']
 
         return saved_cert == cert, trust_data['failures'], False
@@ -766,7 +673,7 @@ class SVNTool(SCMTool):
         client: Client,
         e: Exception,
         path: str,
-        cert_data: Dict[str, Any],
+        cert_data: dict[str, Any],
     ) -> None:
         """Handle a SSL certificate failure.
 
@@ -812,7 +719,7 @@ class SVNTool(SCMTool):
         if cert_data:
             failures = cert_data['failures']
 
-            reasons: List[str] = []
+            reasons: list[str] = []
 
             if failures & SVNCertificateFailures.NOT_YET_VALID:
                 reasons.append(_('The certificate is not yet valid.'))
@@ -1048,7 +955,7 @@ class SVNTool(SCMTool):
         try:
             os.mkdir(config_dir, 0o700)
         except OSError:
-            raise IOError(
+            raise OSError(
                 _("Unable to create directory %(dirname)s, which is needed "
                   "for the Subversion configuration. Create this directory "
                   "and set the web server's user as the the owner.")
@@ -1099,7 +1006,122 @@ class SVNDiffParser(DiffParser):
 
     BINARY_STRING = b'Cannot display: file marked as a binary type.'
 
-    def parse_diff_header(self, linenum, parsed_file):
+    def __init__(
+        self,
+        data: bytes,
+        **kwargs,
+    ) -> None:
+        """Initialize the parser.
+
+        Version Added:
+            7.0
+
+        Args:
+            data (bytes):
+                The diff content to parse.
+
+            **kwargs (dict):
+                Keyword arguments to pass to the parent class.
+
+        Raises:
+            TypeError:
+                The provided ``data`` argument was not a ``bytes`` type.
+        """
+        super().__init__(data, **kwargs)
+
+        revision_re_part = r'''
+            (                      # - svn 1.9 nonexistent revision indicator
+             nonexistent|          # English
+             nicht\ existent|      # German
+             不存在的|             # Simplified Chinese
+             (?:
+               revisão|            # Brazilian Portuguese
+               [Rr]ev(?:ision)?|   # English, German
+
+                                   # - svnlook uses 'rev 0' while svn diff
+                                   #   uses 'revision 0'
+               révision|           # French
+               revisione|          # Italian
+               リビジョン|         # Japanese
+               리비전|             # Korean
+               revisjon|           # Norwegian
+               wersja|             # Polish
+               版本|               # Simplified Chinese
+               revisión:           # Spanish
+             )\ (\d+)              # - the revision number
+            )
+        '''.strip()
+
+        working_copy_re_part = r'''
+            (
+             cópia\ de\ trabalho|   # Brazilian Portuguese
+             working\ copy|         # English
+             copie\ de\ travail|    # French
+             Arbeitskopie|          # German
+             copia\ locale|         # Italian
+             作業コピー|            # Japanese
+             작업\ 사본|            # Korean
+             arbeidskopi|           # Norweigan
+             kopia\ robocza|        # Polish
+             工作副本|              # Simplified Chinese
+             copia\ de\ trabajo     # Spanish
+            )
+        '''.strip()
+
+        global _revision_re
+        global _working_copy_re
+        global _binary_revision_re
+
+        if _revision_re is None:
+            # 'svn diff' produces patches which have the revision string
+            # localized to their system locale. This is a little ridiculous,
+            # but we have to deal with it because not everyone uses RBTools.
+            #
+            # svnlook diff creates lines like
+            # '2016-05-12 12:30:05 UTC (rev 1234)'
+            #
+            # whereas svn diff creates lines like
+            # '(Revision 94754)'
+            # '        (.../branches/product-2.0) (revision 321)'
+            # '        (.../trunk)     (nonexistent)'
+            #
+            # So we need to form a regex to match relocation information and
+            # the revision number. Subversion >=1.9 adds the 'nonexistent'
+            # revision string.
+            _revision_re = re.compile(
+                fr'''
+                    ^(\(([^\)]+)\)\s)?      # creating diffs between two
+                                            # branches of a remote repository
+                                            # will insert extra "relocation
+                                            # information" into the diff.
+
+                    (?:\d+-\d+-\d+\ +       # svnlook-style diffs contain a
+                       \d+:\d+:\d+\ +       # timestamp on each line before the
+                                            # revision number.
+                       [A-Z]+\ +)?          # This here is probably a really
+                                            # crappy to express that, but oh
+                                            # well.
+
+                    \ *\({revision_re_part}\)$
+                '''.encode('utf-8'),
+                re.VERBOSE)
+
+            # 'svn diff' also localises the (working copy) string to the system
+            # locale.
+            _working_copy_re = re.compile(
+                fr'^\((?:{working_copy_re_part})\)$'.encode('utf-8'),
+                re.VERBOSE)
+
+            _binary_revision_re = re.compile(
+                fr'(\(({revision_re_part}|{working_copy_re_part})\))'
+                .encode('utf-8'),
+                re.VERBOSE)
+
+    def parse_diff_header(
+        self,
+        linenum: int,
+        parsed_file: ParsedDiffFile,
+    ) -> int:
         """Parse a standard header before changes made to a file.
 
         This builds upon the standard behavior to see if the change is to a
@@ -1157,16 +1179,139 @@ class SVNDiffParser(DiffParser):
             parsed_file.index_header_value.endswith(b'\t(deleted)')):
             parsed_file.deleted = True
 
-        linenum = super(SVNDiffParser, self).parse_diff_header(
-            linenum, parsed_file)
+        linenum = super().parse_diff_header(linenum, parsed_file)
 
-        if (parsed_file.modified_file_details and
-            parsed_file.modified_file_details.endswith(b'(nonexistent)')):
+        # Handle IntelliJ/IDEA empty revisions.
+        if parsed_file.orig_file_details is _IDEA_EMPTY:
+            parsed_file.orig_file_details = PRE_CREATION
+
+        if parsed_file.modified_file_details is _IDEA_EMPTY:
+            parsed_file.modified_file_details = HEAD
+
+        # Handle "(nonexistent)" revisions on deleted files. This only applies
+        # if the original revision is not also PRE_CREATION (which indicates an
+        # added empty file).
+        if (parsed_file.modified_file_details is PRE_CREATION and
+            parsed_file.orig_file_details is not PRE_CREATION):
             parsed_file.deleted = True
 
         return linenum
 
-    def parse_special_header(self, linenum, parsed_file):
+    def parse_filename_header(
+        self,
+        s: bytes,
+        linenum: int,
+    ) -> tuple[bytes, Union[bytes, Revision]]:
+        """Parse a filename header in the diff.
+
+        Args:
+            s (bytes):
+                The filename header to parse.
+
+            linenum (int):
+                The current line number.
+
+        Returns:
+            tuple:
+            A tuple containing:
+
+            Tuple:
+                0 (bytes):
+                    The filename.
+
+                1 (bytes or reviewboard.scmtools.core.Revision):
+                    The revision information.
+        """
+        filename, revision = super().parse_filename_header(s, linenum)
+
+        return self.parse_diff_revision(filename, revision)
+
+    def parse_diff_revision(
+        self,
+        filename: Optional[bytes],
+        revision: Optional[bytes],
+    ) -> tuple[bytes, Union[bytes, Revision]]:
+        """Parse and return a filename and revision from the diff.
+
+        Args:
+            filename (bytes):
+                The filename as represented in the diff.
+
+            revision (bytes):
+                The revision as represented in the diff.
+
+        Returns:
+            tuple:
+            A 2-tuple containing:
+
+            Tuple:
+                0 (bytes):
+                    The processed filename.
+
+                1 (bytes or reviewboard.scmtools.core.Revision):
+                    The processed revision.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                The revision could not be parsed.
+        """
+        if revision is None:
+            revision = b''
+
+        assert filename is not None
+        assert revision is not None
+
+        # Some diffs have additional tabs between the parts of the file
+        # revisions
+        revision = revision.strip()
+
+        if _working_copy_re.match(revision):
+            return filename, HEAD
+
+        # "(revision )" is generated by a few weird tools (like IntelliJ). If
+        # in the +++ line of the diff, it means HEAD, and in the --- line, it
+        # means PRE_CREATION. Since the more important use case is parsing the
+        # source revision, we treat it as a new file. See bugs 1937 and 2632.
+        # We'll convert this to the correct meaning later in parse_diff_header.
+        if revision == b'(revision )':
+            return filename, _IDEA_EMPTY
+
+        # Binary diffs don't provide revision information, so we set a fake
+        # "(unknown)" in the SVNDiffParser. This will never actually appear
+        # in SVN diffs.
+        if revision == b'(unknown)':
+            return filename, UNKNOWN
+
+        m = _revision_re.match(revision)
+
+        if not m:
+            raise SCMError('Unable to parse diff revision header "%s"'
+                           % revision.decode('utf-8'))
+
+        # group(3) holds the revision string in braces, like '(revision 4)'
+        # group(4) only matches the revision number, which might by None when
+        # 'nonexistent' is given as the revision string
+        norm_revision: Union[bytes, Revision, None] = m.group(4)
+
+        if norm_revision in (None, b'0'):
+            norm_revision = PRE_CREATION
+
+        relocated_file = m.group(2)
+
+        if relocated_file:
+            if not relocated_file.startswith(b'...'):
+                raise SCMError('Unable to parse SVN relocated path "%s"'
+                               % relocated_file.decode('utf-8'))
+
+            filename = b'%s/%s' % (relocated_file[4:], filename)
+
+        return filename, norm_revision
+
+    def parse_special_header(
+        self,
+        linenum: int,
+        parsed_file: ParsedDiffFile,
+    ) -> int:
         """Parse a special diff header marking the start of a new file's info.
 
         This will look for:
@@ -1203,7 +1348,7 @@ class SVNDiffParser(DiffParser):
             # a property change.
             return linenum + 2
 
-        linenum = super(SVNDiffParser, self).parse_special_header(
+        linenum = super().parse_special_header(
             linenum, parsed_file)
 
         file_index = parsed_file.index_header_value
@@ -1212,23 +1357,51 @@ class SVNDiffParser(DiffParser):
             return linenum
 
         try:
-            if lines[linenum] == self.BINARY_STRING:
-                # Skip this and the svn:mime-type line.
-                linenum += 2
+            line = lines[linenum]
+        except IndexError:
+            return linenum
 
-                parsed_file.binary = True
-                parsed_file.orig_filename = file_index
-                parsed_file.modified_filename = file_index
+        # If the diff has been generated with --diff-cmd=diff --force,
+        # we'll actually get revision information in the file. If not,
+        # we'll match self.BINARY_STRING.
+        if line.startswith(b'Binary files') and line.endswith(b'differ'):
+            linenum += 1
 
-                # We can't get the revision info from this diff header.
+            parsed_file.binary = True
+            parsed_file.orig_filename = file_index
+            parsed_file.modified_filename = file_index
+
+            m = _binary_revision_re.findall(line)
+
+            if len(m) == 2:
+                orig, modified = m
+
+                parsed_file.orig_file_details = \
+                    self.parse_diff_revision(file_index, orig[0])[1]
+                parsed_file.modified_file_details = \
+                    self.parse_diff_revision(file_index, modified[0])[1]
+            else:
                 parsed_file.orig_file_details = b'(unknown)'
                 parsed_file.modified_file_details = b'(working copy)'
-        except IndexError:
-            pass
+        elif lines[linenum] == self.BINARY_STRING:
+            # Skip this and the svn:mime-type line.
+            linenum += 2
+
+            parsed_file.binary = True
+            parsed_file.orig_filename = file_index
+            parsed_file.modified_filename = file_index
+
+            # We can't get the revision info from this diff header.
+            parsed_file.orig_file_details = b'(unknown)'
+            parsed_file.modified_file_details = b'(working copy)'
 
         return linenum
 
-    def parse_after_headers(self, linenum, parsed_file):
+    def parse_after_headers(
+        self,
+        linenum: int,
+        parsed_file: ParsedDiffFile,
+    ) -> int:
         """Parse information after a diff header but before diff data.
 
         This looks for any property changes after the diff header, starting

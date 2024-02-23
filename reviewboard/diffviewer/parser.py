@@ -588,7 +588,30 @@ class DiffParser(BaseDiffParser):
     #: Its presence and location is not guaranteed.
     INDEX_SEP = b'=' * 67
 
-    def __init__(self, data, **kwargs):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The ID of the commit this change is based on.
+    base_commit_id: Optional[str]
+
+    #: The diff content, split into lines.
+    lines: list[bytes]
+
+    #: The new commit ID, if available.
+    new_commit_id: Optional[str]
+
+    #: The parsed diff object.
+    parsed_diff: ParsedDiff
+
+    #: The parsed diff change object.
+    parsed_diff_change: ParsedDiffChange
+
+    def __init__(
+        self,
+        data: bytes,
+        **kwargs,
+    ) -> None:
         """Initialize the parser.
 
         Version Changed:
@@ -611,7 +634,7 @@ class DiffParser(BaseDiffParser):
         """
         from reviewboard.diffviewer.diffutils import split_line_endings
 
-        super(DiffParser, self).__init__(data, **kwargs)
+        super().__init__(data, **kwargs)
 
         self.base_commit_id = None
         self.new_commit_id = None
@@ -907,7 +930,11 @@ class DiffParser(BaseDiffParser):
 
         return linenum
 
-    def parse_diff_header(self, linenum, parsed_file):
+    def parse_diff_header(
+        self,
+        linenum: int,
+        parsed_file: ParsedDiffFile,
+    ) -> int:
         """Parse a standard header before changes made to a file.
 
         This attempts to parse the ``---`` (original) and ``+++`` (modified)

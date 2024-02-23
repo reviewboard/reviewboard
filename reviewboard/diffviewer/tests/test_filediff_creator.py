@@ -1,5 +1,9 @@
 """Tests for reviewboard.diffviewer.filediff_creator."""
 
+from __future__ import annotations
+
+from typing import Union
+
 import kgb
 from django.utils.timezone import now
 
@@ -218,7 +222,7 @@ class FileDiffCreatorTests(kgb.SpyAgency, TestCase):
         self.assertEqual(filediff.old_unix_mode, '0100644')
         self.assertEqual(filediff.new_unix_mode, '0100755')
 
-    def test_create_filediffs_with_parent_and_revision_instance(self):
+    def test_create_filediffs_with_parent_and_revision_instance(self) -> None:
         """Testing create_filediffs() with parent diff and revisions as
         Revision
         """
@@ -227,10 +231,19 @@ class FileDiffCreatorTests(kgb.SpyAgency, TestCase):
 
         self.assertEqual(diffset.files.count(), 0)
 
+        def _parse_diff_revision(
+            self: object,
+            filename: bytes,
+            revision: bytes,
+            *args,
+            **kwargs,
+        ) -> tuple[bytes, Union[Revision, bytes]]:
+            return (filename, Revision(revision.decode('utf-8')))
+
         # Make sure we run this test with a Revision as a result.
         self.spy_on(GitTool.parse_diff_revision,
                     owner=GitTool,
-                    op=kgb.SpyOpReturn((b'readme', Revision('1234567'))))
+                    call_fake=_parse_diff_revision)
 
         # We'll use the same diff for both tests. It doesn't really matter.
         # We're just looking for the end result of the parsed filenames and
