@@ -1,5 +1,7 @@
 """Repository support for Perforce."""
 
+from __future__ import annotations
+
 import logging
 import os
 import random
@@ -12,6 +14,7 @@ import subprocess
 import tempfile
 import time
 from contextlib import contextmanager
+from typing import TYPE_CHECKING, Union
 
 from django.conf import settings
 from django.utils.encoding import force_str
@@ -28,6 +31,9 @@ from reviewboard.scmtools.errors import (SCMError, EmptyChangeSetError,
                                          InvalidRevisionFormatError,
                                          RepositoryNotFoundError,
                                          UnverifiedCertificateError)
+
+if TYPE_CHECKING:
+    from reviewboard.scmtools.core import Revision
 
 
 logger = logging.getLogger(__name__)
@@ -837,7 +843,13 @@ class PerforceTool(SCMTool):
 
         return stat is not None and 'headRev' in stat
 
-    def parse_diff_revision(self, filename, revision, *args, **kwargs):
+    def parse_diff_revision(
+        self,
+        filename: bytes,
+        revision: Union[bytes, Revision],
+        *args,
+        **kwargs,
+    ) -> tuple[bytes, Union[bytes, Revision]]:
         """Parse and return a filename and revision from a diff.
 
         This will separate out the filename from the revision (separated by
@@ -855,7 +867,7 @@ class PerforceTool(SCMTool):
             revision (bytes):
                 The revision as represented in the diff.
 
-            **args (tuple):
+            *args (tuple):
                 Unused positional arguments.
 
             **kwargs (dict):
@@ -865,9 +877,12 @@ class PerforceTool(SCMTool):
             tuple:
             A tuple containing two items:
 
-            1. The normalized filename as a byte string.
-            2. The normalized revision as a byte string or a
-               :py:class:`~reviewboard.scmtools.core.Revision`.
+            Tuple:
+                0 (bytes):
+                    The normalized filename as a byte string.
+
+                1 (bytes or reviewboard.scmtools.core.Revision):
+                    The normalized revision.
 
         Raises:
             reviewboard.scmtools.errors.InvalidRevisionFormatError:
@@ -878,14 +893,12 @@ class PerforceTool(SCMTool):
         assert isinstance(revision, bytes), (
             'revision must be a byte string, not %s' % type(revision))
 
-        filename, revision = revision.rsplit(b'#', 1)
-
         try:
             int(revision)
         except ValueError:
             raise InvalidRevisionFormatError(filename, revision)
 
-        # Older versions of Perforce had this lovely idiosyncracy that diffs
+        # Older versions of Perforce had this lovely idiosyncrasy that diffs
         # show revision #1 both for pre-creation and when there's an actual
         # revision. In this case, we need to check if the file already exists
         # in the repository.
@@ -1109,11 +1122,20 @@ class PerforceDiffParser(DiffParser):
         m = self.SPECIAL_REGEX.match(lines[linenum])
 
         if m:
-            parsed_file.orig_filename = m.group(1)
-            parsed_file.orig_file_details = b'%s#%s' % (m.group(1),
-                                                        m.group(2))
-            parsed_file.modified_filename = m.group(4)
-            parsed_file.modified_file_details = b''
+            orig_filename, orig_revision = self.parse_diff_revision(
+                m.group(1), b'%s#%s' % (m.group(1), m.group(2)))
+
+            modified_filename = m.group(4)
+            modified_revision = b''
+
+            if b'#' in modified_filename:
+                modified_filename, modified_revision = \
+                    self.parse_diff_revision(b'', modified_filename)
+
+            parsed_file.orig_filename = orig_filename
+            parsed_file.orig_file_details = orig_revision
+            parsed_file.modified_filename = modified_filename
+            parsed_file.modified_file_details = modified_revision
             linenum += 1
 
             try:
@@ -1191,3 +1213,62 @@ class PerforceDiffParser(DiffParser):
             The provided filename, unchanged.
         """
         return filename
+
+    def parse_filename_header(
+        self,
+        s: bytes,
+        linenum: int,
+    ) -> tuple[bytes, Union[bytes, Revision]]:
+        """Parse a filename header in the diff.
+
+        Args:
+            s (bytes):
+                The filename header to parse.
+
+            linenum (int):
+                The current line number.
+
+        Returns:
+            tuple:
+            A tuple containing:
+
+            Tuple:
+                0 (bytes):
+                    The filename.
+
+                1 (bytes or reviewboard.scmtools.core.Revision):
+                    The revision information.
+        """
+        filename, revision = super().parse_filename_header(s, linenum)
+        return self.parse_diff_revision(filename, revision)
+
+    def parse_diff_revision(
+        self,
+        filename: bytes,
+        revision: bytes,
+    ) -> tuple[bytes, Union[bytes, Revision]]:
+        """Parse a revision from the diff.
+
+        Args:
+            filename (bytes):
+                The filename.
+
+            revision (bytes):
+                The revision. For existing files in Perforce this will be a
+                depot path containing both the file path and revision.
+
+        Returns:
+            tuple:
+            A tuple containing:
+
+            Tuple:
+                0 (bytes):
+                    The filename.
+
+                1 (bytes or reviewboard.scmtools.core.Revision):
+                    The revision information.
+        """
+        if b'#' in revision:
+            return revision.rsplit(b'#', 1)
+        else:
+            return filename, revision
