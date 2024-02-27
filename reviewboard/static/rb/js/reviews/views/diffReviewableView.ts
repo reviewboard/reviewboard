@@ -1,87 +1,147 @@
-/*
+/**
+ * Handles reviews of the diff for a file.
+ */
+
+import { EventsHash, spina } from '@beanbag/spina';
+
+import { CenteredElementManager } from 'reviewboard/ui';
+
+import { DiffReviewable } from '../models/diffReviewableModel';
+import { AbstractReviewableView } from './abstractReviewableView';
+import { DiffCommentBlockView } from './diffCommentBlockView';
+import { TextCommentRowSelector } from './textCommentRowSelectorView';
+
+
+/**
  * Handles reviews of the diff for a file.
  *
  * This provides commenting abilities for ranges of lines on a diff, as well
  * as showing existing comments, and handling other interaction around
  * per-file diffs.
  */
-RB.DiffReviewableView = RB.AbstractReviewableView.extend({
-    tagName: 'table',
+@spina
+export class DiffReviewableView extends AbstractReviewableView<
+    DiffReviewable, HTMLTableElement> {
+    static tagName = 'table';
 
-    commentBlockView: RB.DiffCommentBlockView,
-    commentsListName: 'diff_comments',
+    static commentBlockView = DiffCommentBlockView;
+    static commentsListName = 'diff_comments';
 
-    events: {
+    static events: EventsHash = {
+        'click .diff-expand-btn': '_onExpandChunkClicked',
         'click .download-link': '_onDownloadLinkClicked',
-        'click thead tr': '_onFileHeaderClicked',
         'click .moved-to, .moved-from': '_onMovedLineClicked',
         'click .rb-c-diff-collapse-button': '_onCollapseChunkClicked',
-        'click .diff-expand-btn': '_onExpandChunkClicked',
-        'click .show-deleted-content-action': '_onShowDeletedClicked',
         'click .rb-o-toggle-ducs': '_onToggleUnicodeCharsClicked',
-        'mouseup': '_onMouseUp'
-    },
+        'click .show-deleted-content-action': '_onShowDeletedClicked',
+        'click thead tr': '_onFileHeaderClicked',
+        'mouseup': '_onMouseUp',
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /**
+     * The manager for centering various controls.
+     *
+     * This is public for consupmtion in unit tests.
+     */
+    _centered: CenteredElementManager;
+
+    /**
+     * The row selector object.
+     *
+     * This is public for consupmtion in unit tests.
+     */
+    _selector: TextCommentRowSelector;
+
+    /** The row containing the filename(s). */
+    #$filenameRow: JQuery<HTMLTableRowElement> = null;
+
+    /** The parent element for the view. */
+    #$parent: JQuery;
+
+    /** The row containing the file revisions. */
+    #$revisionRow: JQuery<HTMLTableRowElement> = null;
+
+    /** The wrapped window object. */
+    #$window: JQuery<Window> = $(window);
+
+    /** The reserved widths for the content columns. */
+    #colReservedWidths = 0;
+
+    /** The reserved widths for the filename columns. */
+    #filenameReservedWidths = 0;
+
+    /** The comment blocks which are currently hidden in collapsed lines. */
+    #hiddenCommentBlockViews: DiffCommentBlockView[] = [];
+
+    /** The number of columns in the table. */
+    #numColumns = 0;
+
+    /** The number of filename columns in the table. */
+    #numFilenameColumns = 0;
+
+    /** The saved content column width of the table. */
+    #prevContentWidth = 0;
+
+    /** The saved filename column width of the table. */
+    #prevFilenameWidth = 0;
+
+    /** The saved full width of the table. */
+    #prevFullWidth = 0;
+
+    /** The comment blocks which are currently visible. */
+    #visibleCommentBlockViews: DiffCommentBlockView[] = [];
 
     /**
      * Initialize the reviewable for a file's diff.
      */
     initialize() {
-        RB.AbstractReviewableView.prototype.initialize.call(this);
+        super.initialize();
 
-        this._selector = new RB.TextCommentRowSelector({
+        this._selector = new TextCommentRowSelector({
             el: this.el,
             reviewableView: this,
         });
-
-        this._hiddenCommentBlockViews = [];
-        this._visibleCommentBlockViews = [];
-
-        /* State for keeping consistent column widths for diff content. */
-        this._$filenameRow = null;
-        this._$revisionRow = null;
-        this._filenameReservedWidths = 0;
-        this._colReservedWidths = 0;
-        this._numColumns = 0;
-        this._numFilenameColumns = 0;
-        this._prevContentWidth = null;
-        this._prevFilenameWidth = null;
-        this._prevFullWidth = null;
 
         /*
          * Wrap this only once so we don't have to re-wrap every time
          * the page scrolls.
          */
-        this._$window = $(window);
-        this._$parent = this.$el.parent();
+        this.#$parent = this.$el.parent();
 
         this.on('commentBlockViewAdded', this._placeCommentBlockView, this);
-    },
+    }
 
     /**
      * Remove the reviewable from the DOM.
+     *
+     * Returns:
+     *     DiffReviewableView:
+     *     This object, for chaining.
      */
-    remove() {
-        RB.AbstractReviewableView.prototype.remove.call(this);
-
+    remove(): this {
         this._selector.remove();
-    },
+
+        return super.remove();
+    }
 
     /**
      * Render the reviewable.
-     *
-     * Returns:
-     *     RB.DiffReviewableView:
-     *     This object, for chaining.
      */
-    render() {
-        RB.AbstractReviewableView.prototype.render.call(this);
+    onInitialRender() {
+        super.onInitialRender();
 
-        this._centered = new RB.CenteredElementManager();
+        this._centered = new CenteredElementManager();
 
         const $thead = $(this.el.tHead);
 
-        this._$revisionRow = $thead.children('.revision-row');
-        this._$filenameRow = $thead.children('.filename-row');
+        this.#$revisionRow = $thead.children('.revision-row') as
+            JQuery<HTMLTableRowElement>;
+        this.#$filenameRow = $thead.children('.filename-row') as
+            JQuery<HTMLTableRowElement>;
 
         this._selector.render();
 
@@ -101,9 +161,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         this._precalculateContentWidths();
         this._updateColumnSizes();
-
-        return this;
-    },
+    }
 
     /*
      * Toggles the display of whitespace-only chunks.
@@ -138,30 +196,35 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             .siblings('tbody')
             .addBack()
                 .toggle();
-    },
+    }
 
-   /**
-    * Create a comment for a chunk of a diff.
-    *
-    * Args:
-    *     beginLineNum (number)
-    *         The first line of the diff to comment on.
-    *
-    *     endLineNum (number):
-    *         The last line of the diff to comment on.
-    *
-    *     beginNode (Element):
-    *         The row corresponding to the first line of the diff being
-    *         commented upon.
-    *
-    *     endNode (Element):
-    *         The row corresponding to the last line of the diff being
-    *         commented upon.
-    */
-    createComment(beginLineNum, endLineNum, beginNode, endNode) {
+    /**
+     * Create a comment for a chunk of a diff.
+     *
+     * Args:
+     *     beginLineNum (number)
+     *         The first line of the diff to comment on.
+     *
+     *     endLineNum (number):
+     *         The last line of the diff to comment on.
+     *
+     *     beginNode (Element):
+     *         The row corresponding to the first line of the diff being
+     *         commented upon.
+     *
+     *     endNode (Element):
+     *         The row corresponding to the last line of the diff being
+     *         commented upon.
+     */
+    createComment(
+        beginLineNum: number,
+        endLineNum: number,
+        beginNode: HTMLElement,
+        endNode: HTMLElement,
+    ) {
         this._selector.createComment(beginLineNum, endLineNum, beginNode,
                                      endNode);
-    },
+    }
 
     /**
      * Place a CommentBlockView on the page.
@@ -179,8 +242,15 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      *     prevBeginRowIndex (number):
      *         The row index to begin at. This places a limit on the rows
      *         searched.
+     *
+     * Returns:
+     *     number:
+     *     The row index where the comment block was placed.
      */
-    _placeCommentBlockView(commentBlockView, prevBeginRowIndex) {
+    _placeCommentBlockView(
+        commentBlockView: DiffCommentBlockView,
+        prevBeginRowIndex: number,
+    ): number {
         const commentBlock = commentBlockView.model;
 
         const rowEls = this._selector.getRowsForRange(
@@ -189,8 +259,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             prevBeginRowIndex);
 
         if (rowEls !== null) {
-            const beginRowEl = rowEls[0];
-            const endRowEl = rowEls[1];
+            const beginRowEl = rowEls[0] as HTMLTableRowElement;
+            const endRowEl = rowEls[1] as HTMLTableRowElement;
 
             /*
              * Note that endRow might be null if it exists in a collapsed
@@ -199,52 +269,54 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
              */
             commentBlockView.setRows($(beginRowEl), $(endRowEl || beginRowEl));
             commentBlockView.$el.appendTo(
-                commentBlockView.$beginRow[0].cells[0]);
-            this._visibleCommentBlockViews.push(commentBlockView);
+                (commentBlockView.$beginRow as JQuery<HTMLTableRowElement>)[0]
+                .cells[0]);
+            this.#visibleCommentBlockViews.push(commentBlockView);
 
             return beginRowEl.rowIndex;
         } else {
-            this._hiddenCommentBlockViews.push(commentBlockView);
+            this.#hiddenCommentBlockViews.push(commentBlockView);
+
             return prevBeginRowIndex;
         }
-    },
+    }
 
     /**
      * Place any hidden comment blocks onto the diff viewer.
      */
     _placeHiddenCommentBlockViews() {
-        const hiddenCommentBlockViews = this._hiddenCommentBlockViews;
-        this._hiddenCommentBlockViews = [];
+        const hiddenCommentBlockViews = this.#hiddenCommentBlockViews;
+        this.#hiddenCommentBlockViews = [];
         let prevBeginRowIndex;
 
         for (let i = 0; i < hiddenCommentBlockViews.length; i++) {
             prevBeginRowIndex = this._placeCommentBlockView(
                 hiddenCommentBlockViews[i], prevBeginRowIndex);
         }
-    },
+    }
 
     /**
      * Mark any comment block views not visible as hidden.
      */
     _hideRemovedCommentBlockViews() {
-        const visibleCommentBlockViews = this._visibleCommentBlockViews;
-        this._visibleCommentBlockViews = [];
+        const visibleCommentBlockViews = this.#visibleCommentBlockViews;
+        this.#visibleCommentBlockViews = [];
 
         for (let i = 0; i < visibleCommentBlockViews.length; i++) {
             const commentBlockView = visibleCommentBlockViews[i];
 
             if (commentBlockView.$el.is(':visible')) {
-                this._visibleCommentBlockViews.push(commentBlockView);
+                this.#visibleCommentBlockViews.push(commentBlockView);
             } else {
-                this._hiddenCommentBlockViews.push(commentBlockView);
+                this.#hiddenCommentBlockViews.push(commentBlockView);
             }
         }
 
         /* Sort these by line number so we can efficiently place them later. */
         _.sortBy(
-            this._hiddenCommentBlockViews,
+            this.#hiddenCommentBlockViews,
             commentBlockView => commentBlockView.model.get('beginLineNum'));
-    },
+    }
 
     /**
      * Update the positions of the collapse buttons.
@@ -259,7 +331,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      */
     _updateCollapseButtonPos() {
         this._centered.updatePosition();
-    },
+    }
 
     /**
      * Expands or collapses a chunk in a diff.
@@ -276,7 +348,10 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      *     expanding (boolean):
      *          Whether or not we are expanding.
      */
-    async _expandOrCollapse($btn, expanding) {
+    async _expandOrCollapse(
+        $btn: JQuery,
+        expanding: boolean,
+    ) {
         const chunkIndex = $btn.data('chunk-index');
         const linesOfContext = $btn.data('lines-of-context');
 
@@ -315,7 +390,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         }
 
         const scrollOffsetTop = ($scrollAnchor.offset().top -
-                                 this._$window.scrollTop());
+                                 this.#$window.scrollTop());
 
         /*
          * If we already expanded, we may have one or two loaded chunks
@@ -346,7 +421,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             if (newEl !== null) {
                 $scrollAnchor = $(newEl);
 
-                this._$window.scrollTop(
+                this.#$window.scrollTop(
                     $scrollAnchor.offset().top - scrollOffsetTop);
             }
         }
@@ -390,7 +465,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         this._updateColumnSizes();
 
         this.trigger('chunkExpansionChanged');
-    },
+    }
 
     /**
      * Pre-calculate the widths and other state needed for column widths.
@@ -402,37 +477,38 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     _precalculateContentWidths() {
         let cellPadding = 0;
 
-        if (!this.$el.hasClass('diff-error') && this._$revisionRow.length > 0) {
+        if (!this.$el.hasClass('diff-error') &&
+            this.#$revisionRow.length > 0) {
             const containerExtents = this.$el.getExtents('p', 'lr');
 
             /* Calculate the widths and state of the diff columns. */
-            let $cells = $(this._$revisionRow[0].cells);
+            let $cells = $(this.#$revisionRow[0].cells);
             cellPadding = $(this.el.querySelector('pre'))
                 .parent().addBack()
                 .getExtents('p', 'lr');
 
-            this._colReservedWidths = $cells.eq(0).outerWidth() + cellPadding +
+            this.#colReservedWidths = $cells.eq(0).outerWidth() + cellPadding +
                                       containerExtents;
-            this._numColumns = $cells.length;
+            this.#numColumns = $cells.length;
 
-            if (this._numColumns === 4) {
+            if (this.#numColumns === 4) {
                 /* There's a left-hand side and a right-hand side. */
-                this._colReservedWidths += $cells.eq(2).outerWidth() +
+                this.#colReservedWidths += $cells.eq(2).outerWidth() +
                                            cellPadding;
             }
 
             /* Calculate the widths and state of the filename columns. */
-            $cells = $(this._$filenameRow[0].cells);
-            this._numFilenameColumns = $cells.length;
-            this._filenameReservedWidths = containerExtents +
-                                           2 * this._numFilenameColumns;
+            $cells = $(this.#$filenameRow[0].cells);
+            this.#numFilenameColumns = $cells.length;
+            this.#filenameReservedWidths = containerExtents +
+                                           2 * this.#numFilenameColumns;
         } else {
-            this._colReservedWidths = 0;
-            this._filenameReservedWidths = 0;
-            this._numColumns = 0;
-            this._numFilenameColumns = 0;
+            this.#colReservedWidths = 0;
+            this.#filenameReservedWidths = 0;
+            this.#numColumns = 0;
+            this.#numFilenameColumns = 0;
         }
-    },
+    }
 
     /*
      * Update the sizes of the diff content columns.
@@ -447,58 +523,59 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             return;
         }
 
-        let $parent = this._$parent;
+        let $parent = this.#$parent;
 
         if (!$parent.is(':visible')) {
             /*
              * We're still in diff loading mode, and the parent is hidden. We
-             * can get the width we need from the parent. It should be the same,
-             * or at least close enough for the first stab at column sizes.
+             * can get the width we need from the parent. It should be the
+             * same, or at least close enough for the first stab at column
+             * sizes.
              */
             $parent = $parent.parent();
         }
 
         const fullWidth = $parent.width();
 
-        if (fullWidth === this._prevFullWidth) {
+        if (fullWidth === this.#prevFullWidth) {
             return;
         }
 
-        this._prevFullWidth = fullWidth;
+        this.#prevFullWidth = fullWidth;
 
         /* Calculate the desired widths of the diff columns. */
-        let contentWidth = fullWidth - this._colReservedWidths;
+        let contentWidth = fullWidth - this.#colReservedWidths;
 
-        if (this._numColumns === 4) {
+        if (this.#numColumns === 4) {
             contentWidth /= 2;
         }
 
         /* Calculate the desired widths of the filename columns. */
-        let filenameWidth = fullWidth - this._filenameReservedWidths;
+        let filenameWidth = fullWidth - this.#filenameReservedWidths;
 
-        if (this._numFilenameColumns === 2) {
+        if (this.#numFilenameColumns === 2) {
             filenameWidth /= 2;
         }
 
         this.$el.width(fullWidth);
 
         /* Update the minimum and maximum widths, if they've changed. */
-        if (filenameWidth !== this._prevFilenameWidth) {
-            this._$filenameRow.children('th').css({
+        if (filenameWidth !== this.#prevFilenameWidth) {
+            this.#$filenameRow.children('th').css({
+                'max-width': Math.ceil(filenameWidth),
                 'min-width': Math.ceil(filenameWidth * 0.66),
-                'max-width': Math.ceil(filenameWidth)
             });
-            this._prevFilenameWidth = filenameWidth;
+            this.#prevFilenameWidth = filenameWidth;
         }
 
-        if (contentWidth !== this._prevContentWidth) {
-            this._$revisionRow.children('.revision-col').css({
+        if (contentWidth !== this.#prevContentWidth) {
+            this.#$revisionRow.children('.revision-col').css({
+                'max-width': Math.ceil(contentWidth),
                 'min-width': Math.ceil(contentWidth * 0.66),
-                'max-width': Math.ceil(contentWidth)
             });
-            this._prevContentWidth = contentWidth;
+            this.#prevContentWidth = contentWidth;
         }
-    },
+    }
 
     /**
      * Handle a window resize.
@@ -509,7 +586,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     updateLayout() {
         this._updateColumnSizes();
         this._updateCollapseButtonPos();
-    },
+    }
 
     /**
      * Handle a file download link being clicked.
@@ -521,9 +598,9 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      *     e (jQuery.Event):
      *         The ``click`` event that triggered this handler.
      */
-    _onDownloadLinkClicked(e) {
+    _onDownloadLinkClicked(e: Event) {
         e.stopPropagation();
-    },
+    }
 
     /**
      * Handle the file header being clicked.
@@ -534,12 +611,12 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      *     e (jQuery.Event):
      *         The ``click`` event that triggered this handler.
      */
-    _onFileHeaderClicked(e) {
+    _onFileHeaderClicked(e: Event) {
         e.preventDefault();
         e.stopPropagation();
 
         this.trigger('fileClicked');
-    },
+    }
 
     /**
      * Handle a "Moved to/from" flag being clicked.
@@ -551,12 +628,12 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      *     e (jQuery.Event):
      *         The ``click`` event that triggered this handler.
      */
-    _onMovedLineClicked(e) {
+    _onMovedLineClicked(e: Event) {
         e.preventDefault();
         e.stopPropagation();
 
         this.trigger('moveFlagClicked', $(e.target).data('line'));
-    },
+    }
 
     /**
      * Handle a mouse up event.
@@ -568,14 +645,14 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      *     e (jQuery.Event):
      *         The ``mouseup`` event that triggered this handler.
      */
-    _onMouseUp(e) {
+    _onMouseUp(e: MouseEvent) {
         const node = e.target;
 
         /*
          * The user clicked somewhere else. Move the anchor point here
          * if it's part of the diff.
          */
-        const $tbody = $(node).closest('tbody');
+        const $tbody = $(node).closest('tbody') as JQuery<HTMLElement>;
 
         if ($tbody.length > 0 &&
             ($tbody.hasClass('delete') ||
@@ -587,7 +664,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
                 this.trigger('chunkClicked', anchor.name);
             }
         }
-    },
+    }
 
     /**
      * Handle an expand chunk button being clicked.
@@ -600,11 +677,11 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      *     e (jQuery.Event):
      *         The ``click`` event that triggered this handler.
      */
-    _onExpandChunkClicked(e) {
+    _onExpandChunkClicked(e: JQuery.TriggeredEvent) {
         e.preventDefault();
 
         this._expandOrCollapse($(e.currentTarget), true);
-    },
+    }
 
     /**
      * Handle a collapse chunk button being clicked.
@@ -616,11 +693,11 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      *     e (jQuery.Event):
      *         The ``click`` event that triggered this handler.
      */
-    _onCollapseChunkClicked(e) {
+    _onCollapseChunkClicked(e: JQuery.TriggeredEvent) {
         e.preventDefault();
 
         this._expandOrCollapse($(e.currentTarget), false);
-    },
+    }
 
     /**
      * Handler for when show content is clicked.
@@ -631,7 +708,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      *     e (jQuery.Event):
      *         The ``click`` event that triggered this handler.
      */
-    _onShowDeletedClicked(e) {
+    _onShowDeletedClicked(e: Event) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -644,7 +721,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             .html('<span class="djblets-o-spinner"></span>');
 
         this.trigger('showDeletedClicked');
-    },
+    }
 
     /**
      * Handler for the suspicious characters toggle button.
@@ -656,7 +733,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      *     e (jQuery.Event):
      *         The ``click`` event that triggered this handler.
      */
-    _onToggleUnicodeCharsClicked(e) {
+    _onToggleUnicodeCharsClicked(e: Event) {
         const $el = this.$el;
         const $button = $(e.target);
         const ducsShown = !$el.hasClass('-hide-ducs');
@@ -668,5 +745,5 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             $el.removeClass('-hide-ducs');
             $button.text($button.data('hide-chars-label'));
         }
-    },
-});
+    }
+}

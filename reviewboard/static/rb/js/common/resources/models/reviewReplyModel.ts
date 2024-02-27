@@ -93,13 +93,8 @@ interface ReviewReplyPublishOptions extends Backbone.PersistenceOptions {
     mixins: [DraftResourceModelMixin],
     prototypeAttrs: [
         'COMMENT_LINK_NAMES',
-        'attrToJsonMap',
-        'deserializedAttrs',
         'extraQueryArgs',
         'listKey',
-        'rspNamespace',
-        'serializedAttrs',
-        'serializers',
     ],
 })
 export class ReviewReply extends BaseResource<ReviewReplyAttrs> {

@@ -1,8 +1,17 @@
+"""A comment made on a diff."""
+
+from __future__ import annotations
+
+from typing import Any, Optional
+from urllib.parse import urlencode
+
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.reviews.models.base_comment import BaseComment
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 class Comment(BaseComment):
@@ -36,27 +45,82 @@ class Comment(BaseComment):
     last_line = property(lambda self: self.first_line + self.num_lines - 1)
 
     @property
-    def base_filediff_id(self):
-        """The base FileDiff ID for the cumulative diff this comment is on."""
-        return (self.extra_data and
-                self.extra_data.get(self._BASE_FILEDIFF_ID_KEY))
+    def base_filediff_id(self) -> Optional[int]:
+        """The base FileDiff ID for the cumulative diff this comment is on.
+
+        Type:
+            int
+        """
+        if self.extra_data:
+            return self.extra_data.get(self._BASE_FILEDIFF_ID_KEY)
+
+        return None
 
     @base_filediff_id.setter
-    def base_filediff_id(self, filediff_id):
+    def base_filediff_id(self, filediff_id: int):
         if self.extra_data is None:
             self.extra_data = {}
 
         self.extra_data[self._BASE_FILEDIFF_ID_KEY] = filediff_id
 
-    def get_absolute_url(self):
-        revision_path = str(self.filediff.diffset.revision)
-        if self.interfilediff:
-            revision_path += "-%s" % self.interfilediff.diffset.revision
+    @property
+    def base_filediff(self) -> Optional[FileDiff]:
+        """The base filediff, if this comment is made on a commit range.
 
-        return "%sdiff/%s/?file=%s#file%sline%s" % (
-            self.get_review_request().get_absolute_url(),
-            revision_path, self.filediff.id, self.filediff.id,
-            self.first_line)
+        Type:
+            reviewboard.diffviewer.models.FileDiff
+        """
+        base_filediff_id = self.base_filediff_id
+
+        if base_filediff_id:
+            try:
+                return FileDiff.objects.get(pk=base_filediff_id)
+            except ObjectDoesNotExist:
+                pass
+
+        return None
+
+    def get_absolute_url(self) -> str:
+        """Return the URL for the given comment.
+
+        Returns:
+            str:
+            The URL to view the part of the file where the comment was added.
+        """
+        review_request = self.get_review_request()
+
+        query: dict[str, Any] = {}
+
+        base_filediff = self.base_filediff
+
+        if base_filediff:
+            query['base-commit-id'] = base_filediff.commit_id
+
+        if self.filediff.commit_id:
+            query['tip-commit-id'] = self.filediff.commit_id
+
+        if self.interfilediff:
+            url = local_site_reverse(
+                'view-interdiff',
+                local_site=review_request.local_site,
+                kwargs={
+                    'review_request_id': review_request.display_id,
+                    'revision': self.filediff.diffset.revision,
+                    'interdiff_revision':
+                        self.interfilediff.diffset.revision,
+                })
+        else:
+            url = local_site_reverse(
+                'view-diff-revision',
+                local_site=review_request.local_site,
+                kwargs={
+                    'review_request_id': review_request.display_id,
+                    'revision': self.filediff.diffset.revision,
+                })
+
+        anchor = '#file%sline%s' % (self.filediff.id, self.first_line)
+
+        return '%s?%s%s' % (url, urlencode(query), anchor)
 
     def diff_is_public(self) -> bool:
         """Return whether the diff(s) being commented on are public.

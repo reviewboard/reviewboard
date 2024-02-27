@@ -35,11 +35,6 @@ interface DraftReviewAttrs extends ReviewAttrs {
  */
 @spina({
     mixins: [DraftResourceModelMixin],
-    prototypeAttrs: [
-        'attrToJsonMap',
-        'serializedAttrs',
-        'serializers',
-    ],
 })
 export class DraftReview extends Review {
     static defaults(): DraftReviewAttrs {

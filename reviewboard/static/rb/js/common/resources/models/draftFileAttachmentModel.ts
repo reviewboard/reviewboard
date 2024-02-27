@@ -3,7 +3,7 @@
 import { spina } from '@beanbag/spina';
 
 import { DraftResourceChildModelMixin } from './draftResourceChildModelMixin';
-import { FileAttachment } from './fileAttachmentModel'
+import { FileAttachment } from './fileAttachmentModel';
 
 
 /**
@@ -11,9 +11,6 @@ import { FileAttachment } from './fileAttachmentModel'
  */
 @spina({
     mixins: [DraftResourceChildModelMixin],
-    prototypeAttrs: [
-        'rspNamespace',
-    ],
 })
 export class DraftFileAttachment extends FileAttachment {
     static rspNamespace = 'draft_file_attachment';

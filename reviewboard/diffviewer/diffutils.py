@@ -1,3 +1,7 @@
+"""Utilities for processing and generating diffs."""
+
+from __future__ import annotations
+
 import fnmatch
 import logging
 import os
@@ -7,8 +11,8 @@ import subprocess
 import tempfile
 from difflib import SequenceMatcher
 from functools import cmp_to_key
+from typing import Any, Iterator, Optional, TYPE_CHECKING
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.utils.encoding import force_str
 from django.utils.translation import gettext as _
 from djblets.log import log_timed
@@ -22,6 +26,14 @@ from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
 from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.scmtools.core import FileLookupContext, PRE_CREATION, HEAD
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+    from reviewboard.diffviewer.models import (
+        DiffCommit,
+        DiffSet,
+        FileDiff,
+    )
 
 
 logger = logging.getLogger(__name__)
@@ -878,9 +890,17 @@ def get_filediffs_match(filediff1, filediff2):
               filediff1.patched_sha1 == filediff2.patched_sha1)))
 
 
-def get_diff_files(diffset, filediff=None, interdiffset=None,
-                   interfilediff=None, base_filediff=None, request=None,
-                   filename_patterns=None, base_commit=None, tip_commit=None):
+def get_diff_files(
+    diffset: DiffSet,
+    filediff: Optional[FileDiff] = None,
+    interdiffset: Optional[DiffSet] = None,
+    interfilediff: Optional[FileDiff] = None,
+    base_filediff: Optional[FileDiff] = None,
+    request: Optional[HttpRequest] = None,
+    filename_patterns: Optional[list[str]] = None,
+    base_commit: Optional[DiffCommit] = None,
+    tip_commit: Optional[DiffCommit] = None,
+) -> list[dict]:
     """Return a list of files that will be displayed in a diff.
 
     This will go through the given diffset/interdiffset, or a given filediff
@@ -918,7 +938,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             This may only be provided if ``filediff`` is provided and
             ``interfilediff`` is not.
 
-        filename_patterns (list of unicode, optional):
+        filename_patterns (list of str, optional):
             A list of filenames or :py:mod:`patterns <fnmatch>` used to
             limit the results. Each of these will be matched against the
             original and modified file of diffs and interdiffs.
@@ -970,15 +990,15 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         filediffs = [filediff]
 
         if interdiffset:
-            log_timer = log_timed("Generating diff file info for "
-                                  "interdiffset ids %s-%s, filediff %s" %
-                                  (diffset.id, interdiffset.id, filediff.id),
-                                  request=request)
+            log_timer = log_timed(
+                f'Generating diff file info for interdiffset ids '
+                f'{diffset.pk}-{interdiffset.pk}, filediff {filediff.pk}',
+                request=request)
         else:
-            log_timer = log_timed("Generating diff file info for "
-                                  "diffset id %s, filediff %s" %
-                                  (diffset.id, filediff.id),
-                                  request=request)
+            log_timer = log_timed(
+                f'Generating diff file info for diffset id {diffset.pk}, '
+                f'filediff {filediff.pk}',
+                request=request)
 
             if (diffset.commit_count > 0 and
                 ((base_commit and filediff.commit_id <= base_commit.pk) or
@@ -1101,7 +1121,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         if interfilediff:
             dest_revision = _('Diff Revision %s') % interdiffset.revision
         else:
-            if force_interdiff:
+            if force_interdiff and interdiffset:
                 dest_revision = (_('Diff Revision %s - File Reverted') %
                                  interdiffset.revision)
             elif newfile:
@@ -1202,7 +1222,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             f['depot_filename'] = tool.normalize_path_for_display(
                 base_filediff.source_file)
 
-        if force_interdiff:
+        if force_interdiff and interdiffset:
             f['force_interdiff_revision'] = interdiffset.revision
 
         files.append(f)
@@ -1286,11 +1306,16 @@ def populate_diff_chunks(
         })
 
 
-def get_file_from_filediff(context,
-                           filediff,
-                           interfilediff,
-                           *,
-                           diff_settings):
+def get_file_from_filediff(
+    context: dict[str, Any],
+    filediff: FileDiff,
+    interfilediff: Optional[FileDiff],
+    *,
+    diff_settings: DiffSettings,
+    base_filediff: Optional[FileDiff] = None,
+    base_commit: Optional[DiffCommit] = None,
+    tip_commit: Optional[DiffCommit] = None,
+) -> Optional[dict[str, Any]]:
     """Return the files that corresponds to the filediff/interfilediff.
 
     This is primarily intended for use with templates. It takes a template
@@ -1299,6 +1324,11 @@ def get_file_from_filediff(context,
     been fetched.
 
     This function returns either exactly one file or ``None``.
+
+    Version Changed:
+        7.0:
+        * Added ``base_filediff`, ``base_commit`` and ``tip_commit``
+          arguments.
 
     Version Changed:
         6.0:
@@ -1325,6 +1355,44 @@ def get_file_from_filediff(context,
             Version Added:
                 5.0.2
 
+        base_filediff (reviewbaord.diffviewer.models.filediff.FileDiff,
+                       optional):
+            The base FileDiff to use.
+
+            This may only be provided if ``filediff`` is provided and
+            ``interfilediff`` is not.
+
+            Version Added:
+                7.0
+
+        base_commit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                     optional):
+            An optional base commit. No :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>` from commits
+            before that commit will be included in the results.
+
+            This argument only applies to :py:class:`DiffSets
+            <reviewboard.diffviewer.models.diffset.DiffSet>` with
+            :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit
+            .DiffCommit>`.
+
+            Version Added:
+                7.0
+
+        tip_commit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                    optional):
+            An optional tip commit. No :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>` from commits
+            after that commit will be included in the results.
+
+            This argument only applies to :py:class:`DiffSets
+            <reviewboard.diffviewer.models.diffset.DiffSet>` with
+            :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit
+            .DiffCommit>`.
+
+            Version Added:
+                7.0
+
     Returns:
         dict:
         The diff file information. If not found, this will return ``None``.
@@ -1333,8 +1401,11 @@ def get_file_from_filediff(context,
 
     key = "_diff_files_%s_%s" % (filediff.diffset.id, filediff.id)
 
+    if base_filediff:
+        key += '_base%s' % base_filediff.id
+
     if interfilediff:
-        key += "_%s" % (interfilediff.id)
+        key += "_%s" % interfilediff.id
         interdiffset = interfilediff.diffset
 
     if key in context:
@@ -1343,9 +1414,15 @@ def get_file_from_filediff(context,
         assert 'user' in context
 
         request = context.get('request', None)
-        files = get_diff_files(filediff.diffset, filediff, interdiffset,
-                               interfilediff=interfilediff,
-                               request=request)
+        files = get_diff_files(
+            filediff.diffset,
+            filediff,
+            interdiffset,
+            interfilediff=interfilediff,
+            base_filediff=base_filediff,
+            request=request,
+            base_commit=base_commit,
+            tip_commit=tip_commit)
 
         populate_diff_chunks(files=files,
                              request=request,
@@ -1359,15 +1436,25 @@ def get_file_from_filediff(context,
     return None
 
 
-def get_last_line_number_in_diff(context,
-                                 filediff,
-                                 interfilediff,
-                                 *,
-                                 diff_settings):
+def get_last_line_number_in_diff(
+    context: dict[str, Any],
+    filediff: FileDiff,
+    interfilediff: Optional[FileDiff],
+    *,
+    diff_settings: DiffSettings,
+    base_filediff: Optional[FileDiff] = None,
+    base_commit: Optional[DiffCommit] = None,
+    tip_commit: Optional[DiffCommit] = None,
+) -> int:
     """Return the last virtual line number in the filediff/interfilediff.
 
     This returns the virtual line number to be used in expandable diff
     fragments.
+
+    Version Changed:
+        7.0:
+        * Added ``base_filediff`, ``base_commit`` and ``tip_commit``
+          arguments.
 
     Version Changed:
         5.0.2:
@@ -1390,6 +1477,44 @@ def get_last_line_number_in_diff(context,
             Version Added:
                 5.0.2
 
+        base_filediff (reviewbaord.diffviewer.models.filediff.FileDiff,
+                       optional):
+            The base FileDiff to use.
+
+            This may only be provided if ``filediff`` is provided and
+            ``interfilediff`` is not.
+
+            Version Added:
+                7.0
+
+        base_commit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                     optional):
+            An optional base commit. No :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>` from commits
+            before that commit will be included in the results.
+
+            This argument only applies to :py:class:`DiffSets
+            <reviewboard.diffviewer.models.diffset.DiffSet>` with
+            :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit
+            .DiffCommit>`.
+
+            Version Added:
+                7.0
+
+        tip_commit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                    optional):
+            An optional tip commit. No :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>` from commits
+            after that commit will be included in the results.
+
+            This argument only applies to :py:class:`DiffSets
+            <reviewboard.diffviewer.models.diffset.DiffSet>` with
+            :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit
+            .DiffCommit>`.
+
+            Version Added:
+                7.0
+
     Returns:
         int:
         The last virtual line number.
@@ -1397,7 +1522,9 @@ def get_last_line_number_in_diff(context,
     diff_file = get_file_from_filediff(context=context,
                                        filediff=filediff,
                                        interfilediff=interfilediff,
-                                       diff_settings=diff_settings)
+                                       diff_settings=diff_settings,
+                                       base_commit=base_commit,
+                                       tip_commit=tip_commit)
     assert diff_file is not None
 
     last_chunk = diff_file['chunks'][-1]
@@ -1496,13 +1623,23 @@ def _get_last_header_in_chunks_before_line(chunks, target_line):
     return header
 
 
-def get_last_header_before_line(context,
-                                filediff,
-                                interfilediff,
-                                target_line,
-                                *,
-                                diff_settings):
+def get_last_header_before_line(
+    context: dict[str, Any],
+    filediff: FileDiff,
+    interfilediff: Optional[FileDiff],
+    target_line: int,
+    *,
+    diff_settings: DiffSettings,
+    base_filediff: Optional[FileDiff] = None,
+    base_commit: Optional[DiffCommit] = None,
+    tip_commit: Optional[DiffCommit] = None,
+) -> dict:
     """Return the last header that occurs before the given line.
+
+    Version Changed:
+        7.0:
+        * Added the ``base_filediff``, ``base_commit``, and ``tip_commit``
+          arguments.
 
     Version Changed:
         5.0.2:
@@ -1527,28 +1664,75 @@ def get_last_header_before_line(context,
             Version Added:
                 5.0.2
 
+        base_filediff (reviewbaord.diffviewer.models.filediff.FileDiff,
+                       optional):
+            The base FileDiff to use.
+
+            This may only be provided if ``filediff`` is provided and
+            ``interfilediff`` is not.
+
+            Version Added:
+                7.0
+
+        base_commit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                     optional):
+            An optional base commit. No :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>` from commits
+            before that commit will be included in the results.
+
+            This argument only applies to :py:class:`DiffSets
+            <reviewboard.diffviewer.models.diffset.DiffSet>` with
+            :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit
+            .DiffCommit>`.
+
+            Version Added:
+                7.0
+
+        tip_commit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                    optional):
+            An optional tip commit. No :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>` from commits
+            after that commit will be included in the results.
+
+            This argument only applies to :py:class:`DiffSets
+            <reviewboard.diffviewer.models.diffset.DiffSet>` with
+            :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit
+            .DiffCommit>`.
+
+            Version Added:
+                7.0
+
     Returns:
         dict:
         Information on any headers found. See
         :py:class:`DiffSideBySideHeadersInfo` for details.
     """
-    diff_file = get_file_from_filediff(context=context,
-                                       filediff=filediff,
-                                       interfilediff=interfilediff,
-                                       diff_settings=diff_settings)
+    diff_file = get_file_from_filediff(
+        context=context,
+        filediff=filediff,
+        interfilediff=interfilediff,
+        diff_settings=diff_settings,
+        base_filediff=base_filediff,
+        base_commit=base_commit,
+        tip_commit=tip_commit)
     assert diff_file is not None
 
     return _get_last_header_in_chunks_before_line(chunks=diff_file['chunks'],
                                                   target_line=target_line)
 
 
-def get_file_chunks_in_range(context,
-                             filediff,
-                             interfilediff,
-                             first_line,
-                             num_lines,
-                             *,
-                             diff_settings):
+def get_file_chunks_in_range(
+    context: dict[str, Any],
+    filediff: FileDiff,
+    interfilediff: Optional[FileDiff],
+    first_line: int,
+    num_lines: int,
+    *,
+    diff_settings: DiffSettings,
+    base_filediff: Optional[FileDiff] = None,
+    base_commit: Optional[DiffCommit] = None,
+    tip_commit: Optional[DiffCommit] = None,
+) -> Iterator[dict[str, Any]]:
     """Generate the chunks within a range of lines in the specified filediff.
 
     This is primarily intended for use with templates. It takes a template
@@ -1558,6 +1742,11 @@ def get_file_chunks_in_range(context,
 
     See :py:func:`get_chunks_in_range` for information on the returned state
     of the chunks.
+
+    Version Changed:
+        7.0:
+        * Added ``base_filediff``, ``base_commit`` and ``tip_commit``
+          arguments.
 
     Version Changed:
         5.0.2:
@@ -1585,6 +1774,44 @@ def get_file_chunks_in_range(context,
             Version Added:
                 5.0.2
 
+        base_filediff (reviewbaord.diffviewer.models.filediff.FileDiff,
+                       optional):
+            The base FileDiff to use.
+
+            This may only be provided if ``filediff`` is provided and
+            ``interfilediff`` is not.
+
+            Version Added:
+                7.0
+
+        base_commit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                     optional):
+            An optional base commit. No :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>` from commits
+            before that commit will be included in the results.
+
+            This argument only applies to :py:class:`DiffSets
+            <reviewboard.diffviewer.models.diffset.DiffSet>` with
+            :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit
+            .DiffCommit>`.
+
+            Version Added:
+                7.0
+
+        tip_commit (reviewboard.diffviewer.models.diffcommit.DiffCommit,
+                    optional):
+            An optional tip commit. No :py:class:`FileDiffs
+            <reviewboard.diffviewer.models.filediff.FileDiff>` from commits
+            after that commit will be included in the results.
+
+            This argument only applies to :py:class:`DiffSets
+            <reviewboard.diffviewer.models.diffset.DiffSet>` with
+            :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit
+            .DiffCommit>`.
+
+            Version Added:
+                7.0
+
     Yields:
         DiffChunk:
         Each chunk in the range.
@@ -1592,7 +1819,10 @@ def get_file_chunks_in_range(context,
     diff_file = get_file_from_filediff(context=context,
                                        filediff=filediff,
                                        interfilediff=interfilediff,
-                                       diff_settings=diff_settings)
+                                       diff_settings=diff_settings,
+                                       base_filediff=base_filediff,
+                                       base_commit=base_commit,
+                                       tip_commit=tip_commit)
 
     if diff_file:
         yield from get_chunks_in_range(chunks=diff_file['chunks'],

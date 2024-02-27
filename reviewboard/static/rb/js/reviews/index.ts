@@ -24,18 +24,28 @@ export { UnifiedBanner } from './models/unifiedBannerModel';
 export * as ReviewRequestFields from './views/reviewRequestFieldViews';
 export * from './views/reviewRequestActions';
 export { AbstractCommentBlockView } from './views/abstractCommentBlockView';
+export { AbstractReviewableView } from './views/abstractReviewableView';
 export { CommentDialogView } from './views/commentDialogView';
 export { DiffCommentBlockView } from './views/diffCommentBlockView';
 export { DiffComplexityIconView } from './views/diffComplexityIconView';
 export { DiffFileIndexView } from './views/diffFileIndexView';
+export { DiffReviewableView } from './views/diffReviewableView';
 export { DiffViewerPageView } from './views/diffViewerPageView';
+export { DummyReviewableView } from './views/dummyReviewableView';
+export {
+    FileAttachmentReviewableView,
+} from './views/fileAttachmentReviewableView';
 export {
     FileAttachmentThumbnail,
     FileAttachmentThumbnailView,
 } from './views/fileAttachmentThumbnailView';
+export { ImageReviewableView } from './views/imageReviewableView';
+export { MarkdownReviewableView } from './views/markdownReviewableView';
 export { RegionCommentBlockView } from './views/regionCommentBlockView';
 export { ReviewDialogView } from './views/reviewDialogView';
 export { ReviewRequestEditorView } from './views/reviewRequestEditorView';
 export { ReviewablePageView } from './views/reviewablePageView';
 export { TextBasedCommentBlockView } from './views/textBasedCommentBlockView';
+export { TextBasedReviewableView } from './views/textBasedReviewableView';
+export { TextCommentRowSelector } from './views/textCommentRowSelectorView';
 export { UnifiedBannerView } from './views/unifiedBannerView';

@@ -6,7 +6,8 @@ from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard.reviews.models.review_request import FileAttachmentState
-from reviewboard.reviews.ui.base import (ReviewUI,
+from reviewboard.reviews.ui.base import (DiffMismatchReviewUI,
+                                         ReviewUI,
                                          register_ui,
                                          unregister_ui)
 from reviewboard.testing import TestCase
@@ -448,6 +449,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'diffAgainstFileAttachmentID': attachment1.pk,
                 'diffCaption': 'My attachment 1',
                 'diffRevision': 1,
+                'diffTypeMismatch': False,
                 'fileAttachmentID': attachment2.pk,
                 'fileRevision': 2,
                 'filename': 'filename.txt',
@@ -472,12 +474,11 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             orig_filename='filename.txt',
             caption='My attachment 2')
 
-        review_ui = attachment2.review_ui
-        assert review_ui is not None
-
+        review_ui = DiffMismatchReviewUI(
+            self.review_request,
+            attachment2)
         review_ui.set_diff_against(attachment1)
 
-        self.assertIsInstance(review_ui, MyReviewUI)
         self.assertEqual(
             review_ui.get_js_model_data(),
             {

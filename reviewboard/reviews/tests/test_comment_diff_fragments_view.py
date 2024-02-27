@@ -7,10 +7,10 @@ from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.testing import TestCase
+from reviewboard.testing.testcase import BaseFileDiffAncestorTests
 
 
-class CommentDiffFragmentsViewTests(TestCase):
+class CommentDiffFragmentsViewTests(BaseFileDiffAncestorTests):
     """Unit tests for reviewboard.reviews.views.CommentDiffFragmentsView."""
 
     fixtures = ['test_users', 'test_scmtools']
@@ -433,3 +433,83 @@ class CommentDiffFragmentsViewTests(TestCase):
             results.append((comment_id, html))
 
         return results
+
+    def test_comment_fragment_on_commit_range1(self) -> None:
+        """Testing CommentDiffFragmentsView with a comment made on a commit
+        range starting from the base commit
+        """
+        self._create_commit_comment_data()
+
+        comment_id, html = self._get_fragments(
+            self.review_request,
+            [self.commit_comment1.pk])[0]
+
+        # We don't have a great way of actually looking at diff content,
+        # especially because these diffs are totally fake, but this is a good
+        # proxy to ensure that we're rendering with the correct commit
+        # information.
+        self.assertIn(
+            '<a href="/r/1/diff/1/?tip-commit-id=3#file6line1">bar</a>',
+            html)
+
+    def test_comment_fragment_on_commit_range2(self) -> None:
+        """Testing CommentDiffFragmentsView with a comment made on a commit
+        range starting from the base commit
+        """
+        self._create_commit_comment_data()
+
+        comment_id, html = self._get_fragments(
+            self.review_request,
+            [self.commit_comment2.pk],
+            expect_cacheable=False)[0]
+
+        # We don't have a great way of actually looking at diff content,
+        # especially because these diffs are totally fake, but this is a good
+        # proxy to ensure that we're rendering with the correct commit
+        # information.
+        self.assertIn(
+            '<a href="/r/1/diff/1/?base-commit-id=2&amp;'
+            'tip-commit-id=3#file6line1">bar</a>',
+            html)
+
+    def test_diff_comment_links_with_commits(self) -> None:
+        """Testing Comment.get_absolute_url with commit ranges"""
+        self._create_commit_comment_data()
+
+        self.assertEqual(
+            self.cumulative_comment.get_absolute_url(),
+            '/r/1/diff/1/?#file10line1')
+
+        self.assertEqual(
+            self.commit_comment1.get_absolute_url(),
+            '/r/1/diff/1/?tip-commit-id=3#file6line1')
+
+        self.assertEqual(
+            self.commit_comment2.get_absolute_url(),
+            '/r/1/diff/1/?base-commit-id=2&tip-commit-id=3#file6line1')
+
+    def _create_commit_comment_data(self) -> None:
+        """Create the test data for commit comments."""
+        self.set_up_filediffs()
+
+        review = self.create_review(review_request=self.review_request,
+                                    publish=True)
+        self.cumulative_comment = self.create_diff_comment(
+            review=review,
+            filediff=self.diffset.cumulative_files[0])
+
+        commit1 = self.diff_commits[1]
+        commit2 = self.diff_commits[2]
+
+        # Comment from the base commit to a tip
+        self.commit_comment1 = self.create_diff_comment(
+            review=review,
+            filediff=commit2.files.get(dest_file='bar'))
+
+        # Comment from one commit to another
+        self.commit_comment2 = self.create_diff_comment(
+            review=review,
+            filediff=commit2.files.get(dest_file='bar'))
+        self.commit_comment2.base_filediff_id = \
+            commit1.files.get(dest_file='bar').pk
+        self.commit_comment2.save(update_fields=['extra_data'])

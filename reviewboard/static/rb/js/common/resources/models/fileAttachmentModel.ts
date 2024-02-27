@@ -93,15 +93,7 @@ export interface FileAttachmentAttrs extends BaseResourceAttrs {
  * Represents a new or existing file attachment.
  */
 @spina({
-    prototypeAttrs: [
-        'attrToJsonMap',
-        'deserializedAttrs',
-        'payloadFileKeys',
-        'rspNamespace',
-        'serializedAttrs',
-        'serializers',
-        'supportsExtraData',
-    ],
+    prototypeAttrs: ['payloadFileKeys'],
 })
 export class FileAttachment extends BaseResource<FileAttachmentAttrs> {
     /**

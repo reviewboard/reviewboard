@@ -22,7 +22,7 @@ from reviewboard.attachments.mimetypes import (MimetypeHandler,
                                                unregister_mimetype_handler)
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
-from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
+from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
@@ -877,6 +877,28 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
 
     fixtures = ['test_users', 'test_scmtools', 'test_site']
 
+    def test_create_from_filediff_sets_relation_counter(self):
+        """Testing FileAttachmentManager.create_from_filediff sets
+        ReviewRequest.file_attachment_count counter
+        """
+        user = User.objects.get(username='doc')
+        repository = self.create_repository()
+        review_request = self.create_review_request(repository=repository,
+                                                    submitter=user)
+        diffset_history = review_request.diffset_history
+
+        filediff = self.make_filediff(diffset_history=diffset_history)
+
+        self.assertEqual(review_request.file_attachments_count, 0)
+
+        FileAttachment.objects.create_from_filediff(
+            filediff,
+            file=self.make_uploaded_file(),
+            mimetype='image/png')
+
+        review_request.refresh_from_db()
+        self.assertEqual(review_request.file_attachments_count, 1)
+
     def test_create_from_filediff_with_new_and_modified_true(self):
         """Testing FileAttachmentManager.create_from_filediff
         with new FileDiff and modified=True
@@ -919,10 +941,10 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
             filediff,
             file=self.make_uploaded_file(),
             mimetype='image/png')
-        self.assertEqual(file_attachment.repository, filediff.get_repository())
-        self.assertEqual(file_attachment.repo_path, filediff.dest_file)
-        self.assertEqual(file_attachment.repo_revision, filediff.dest_detail)
-        self.assertEqual(file_attachment.added_in_filediff_id, None)
+        self.assertIsNone(file_attachment.repository_id)
+        self.assertIsNone(file_attachment.repo_path)
+        self.assertIsNone(file_attachment.repo_revision)
+        self.assertEqual(file_attachment.added_in_filediff, filediff)
 
     def test_create_from_filediff_with_existing_and_modified_false(self):
         """Testing FileAttachmentManager.create_from_filediff

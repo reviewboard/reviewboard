@@ -146,16 +146,7 @@ interface CreateDiffCommentOptions {
  * This corresponds to a top-level review. Replies are encapsulated in
  * ReviewReply.
  */
-@spina({
-    prototypeAttrs: [
-        'attrToJsonMap',
-        'deserializedAttrs',
-        'rspNamespace',
-        'serializedAttrs',
-        'serializers',
-        'supportsExtraData',
-    ],
-})
+@spina
 export class Review<
     TAttributes extends ReviewAttrs = ReviewAttrs
 > extends BaseResource<TAttributes> {

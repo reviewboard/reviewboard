@@ -1,9 +1,11 @@
 """Views for rendering diff fragments."""
 
+from __future__ import annotations
+
 import io
 import logging
 import struct
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -33,6 +35,9 @@ from reviewboard.reviews.models import Comment
 from reviewboard.reviews.ui.base import ReviewUI
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
+
+if TYPE_CHECKING:
+    from reviewboard.diffviewer.models import DiffCommit
 
 
 logger = logging.getLogger(__name__)
@@ -123,11 +128,25 @@ def build_diff_comment_fragments(
 
     for comment in comments:
         try:
+            base_commit: Optional[DiffCommit] = None
+            tip_commit: Optional[DiffCommit] = None
+
+            base_filediff = comment.base_filediff
+
+            if base_filediff:
+                base_commit = base_filediff.commit
+
+            if comment.filediff.commit_id:
+                tip_commit = comment.filediff.commit
+
             max_line = get_last_line_number_in_diff(
                 context=context,
                 filediff=comment.filediff,
                 interfilediff=comment.interfilediff,
-                diff_settings=diff_settings)
+                diff_settings=diff_settings,
+                base_filediff=base_filediff,
+                base_commit=base_commit,
+                tip_commit=tip_commit)
 
             first_line = max(1, comment.first_line - lines_of_context[0])
             last_line = min(comment.last_line + lines_of_context[1], max_line)
@@ -139,7 +158,11 @@ def build_diff_comment_fragments(
                 interfilediff=comment.interfilediff,
                 first_line=first_line,
                 num_lines=num_lines,
-                diff_settings=diff_settings))
+                diff_settings=diff_settings,
+                base_filediff=base_filediff,
+                base_commit=base_commit,
+                tip_commit=tip_commit
+            ))
 
             comment_context = {
                 'comment': comment,
@@ -148,7 +171,10 @@ def build_diff_comment_fragments(
                     filediff=comment.filediff,
                     interfilediff=comment.interfilediff,
                     target_line=first_line,
-                    diff_settings=diff_settings),
+                    diff_settings=diff_settings,
+                    base_filediff=base_filediff,
+                    base_commit=base_commit,
+                    tip_commit=tip_commit),
                 'chunks': chunks,
                 'domain': Site.objects.get_current().domain,
                 'domain_method': siteconfig.get('site_domain_method'),
@@ -442,6 +468,8 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
 
     def create_renderer(
         self,
+        context: Dict[str, Any],
+        renderer_settings: Dict[str, Any],
         diff_file: Dict[str, Any],
         *args,
         **kwargs,
@@ -452,6 +480,12 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         file attachments, if review UIs are involved, disabling caching.
 
         Args:
+            context (dict):
+                The current render context.
+
+            renderer_settings (dict):
+                The diff renderer settings.
+
             diff_file (dict):
                 The information on the diff file to render.
 
@@ -466,7 +500,10 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             The resulting diff renderer.
         """
         renderer = super().create_renderer(
-            diff_file=diff_file, *args, **kwargs)
+            context=context,
+            renderer_settings=renderer_settings,
+            diff_file=diff_file,
+            *args, **kwargs)
 
         if diff_file['binary']:
             # Determine the file attachments to display in the diff viewer,
@@ -488,37 +525,41 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
                     orig_attachment = \
                         self._get_diff_file_attachment(filediff, False)
 
-            diff_review_ui = None
-            diff_review_ui_html = None
-            orig_review_ui = None
-            orig_review_ui_html = None
-            modified_review_ui = None
-            modified_review_ui_html = None
+
+            diff_review_ui_html: Optional[str] = None
+            orig_review_ui_class: Optional[type[ReviewUI]] = None
+            orig_review_ui_html: Optional[str] = None
+            modified_review_ui_class: Optional[type[ReviewUI]] = None
+            modified_review_ui_html: Optional[str] = None
+            review_request = context['review_request']
 
             if orig_attachment:
-                orig_review_ui = orig_attachment.review_ui
+                orig_review_ui_class = ReviewUI.for_object(orig_attachment)
 
             if modified_attachment:
-                modified_review_ui = modified_attachment.review_ui
+                modified_review_ui_class = ReviewUI.for_object(
+                    modified_attachment)
 
-            # See if we're able to generate a diff review UI for these files.
-            if (orig_review_ui and modified_review_ui and
-                orig_review_ui.__class__ is modified_review_ui.__class__ and
-                modified_review_ui.supports_diffing):
-                # Both files are able to be diffed by this review UI.
-                # We'll display a special diff review UI instead of two
-                # side-by-side review UIs.
-                diff_review_ui = modified_review_ui
-                diff_review_ui.set_diff_against(orig_attachment)
-                diff_review_ui_html = \
-                    self._render_review_ui(diff_review_ui, False)
+            if (orig_review_ui_class is not None and
+                orig_review_ui_class is modified_review_ui_class and
+                orig_review_ui_class.supports_diffing):
+                review_ui = orig_review_ui_class(
+                    review_request=review_request,
+                    obj=modified_attachment)
+                review_ui.set_diff_against(orig_attachment)
+                diff_review_ui_html = self._render_review_ui(review_ui)
             else:
-                # We won't be showing a diff of these files. Instead, just
-                # grab the review UIs and render them.
-                orig_review_ui_html = \
-                    self._render_review_ui(orig_review_ui)
-                modified_review_ui_html = \
-                    self._render_review_ui(modified_review_ui)
+                if orig_review_ui_class:
+                    review_ui = orig_review_ui_class(
+                        review_request=review_request,
+                        obj=orig_attachment)
+                    orig_review_ui_html = self._render_review_ui(review_ui)
+
+                if modified_review_ui_class:
+                    review_ui = modified_review_ui_class(
+                        review_request=review_request,
+                        obj=modified_attachment)
+                    modified_review_ui_html = self._render_review_ui(review_ui)
 
             if (diff_review_ui_html or orig_review_ui_html or
                 modified_review_ui_html):

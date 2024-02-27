@@ -133,10 +133,10 @@ class DraftFileDiffResource(FileDiffResource):
                     }
                 }
 
-            try:
-                # Check if there's already an attachment. If so, bail.
-                FileAttachment.objects.get_for_filediff(filediff)
+            # Check if there's already an attachment. If so, bail.
+            attachment = FileAttachment.objects.get_for_filediff(filediff)
 
+            if attachment is not None:
                 return INVALID_FORM_DATA, {
                     'fields': {
                         'dest_attachment_file': [
@@ -145,8 +145,6 @@ class DraftFileDiffResource(FileDiffResource):
                         ]
                     }
                 }
-            except ObjectDoesNotExist:
-                pass
 
             dest_attachment_file = request.FILES.get('dest_attachment_file')
 

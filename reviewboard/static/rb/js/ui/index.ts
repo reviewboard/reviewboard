@@ -1,4 +1,5 @@
 export * from './views/inlineEditorView';
+export { CenteredElementManager } from './views/centeredElementManager';
 export { DnDUploader } from './views/dndUploaderView';
 export {
     FieldStateLabelThemes,

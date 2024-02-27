@@ -24,7 +24,14 @@ from reviewboard.webapi.tests.urls import (get_filediff_item_url,
 def _compare_item(self, item_rsp, filediff):
     self.assertEqual(item_rsp['id'], filediff.pk)
     self.assertEqual(item_rsp['binary'], filediff.binary)
-    self.assertEqual(item_rsp['extra_data'], filediff.extra_data)
+
+    filtered_extra_data = {
+        key: value
+        for key, value in filediff.extra_data.items()
+        if not key.startswith('_')
+    }
+
+    self.assertEqual(item_rsp['extra_data'], filtered_extra_data)
     self.assertEqual(item_rsp['source_file'], filediff.source_file)
     self.assertEqual(item_rsp['dest_file'], filediff.dest_file)
     self.assertEqual(item_rsp['source_revision'], filediff.source_revision)
@@ -190,6 +197,103 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
 
             self.assertNotEqual(commit.files.get().pk,
                                 cumulative_filediff.pk)
+
+    @webapi_test_template
+    def test_binary_true(self) -> None:
+        """Testing the GET <URL> API with ?binary=1"""
+        repository = self.create_repository()
+        review_request = self.create_review_request(
+            repository=repository,
+            submitter=self.user,
+            public=True)
+
+        diffset = self.create_diffset(review_request)
+
+        self.create_filediff(diffset, source_file='/test1', dest_file='/test1')
+        self.create_filediff(diffset, source_file='/test2', dest_file='/test2')
+        self.create_filediff(diffset, source_file='/test3', dest_file='/test3')
+        binary1 = self.create_filediff(diffset, source_file='/binary1',
+                                       dest_file='/binary1', binary=True)
+        binary2 = self.create_filediff(diffset, source_file='/binary2',
+                                       dest_file='/binary2', binary=True)
+
+        rsp = self.api_get(
+            '%s?binary=1' % get_filediff_list_url(diffset, review_request),
+            expected_mimetype=filediff_list_mimetype)
+        assert rsp is not None
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('files', rsp)
+        self.assertEqual(rsp['total_results'], 2)
+
+        self.assertEqual(rsp['files'][0]['id'], binary1.pk)
+        self.assertEqual(rsp['files'][1]['id'], binary2.pk)
+
+    @webapi_test_template
+    def test_binary_false(self) -> None:
+        """Testing the GET <URL> API with ?binary=0"""
+        repository = self.create_repository()
+        review_request = self.create_review_request(
+            repository=repository,
+            submitter=self.user,
+            public=True)
+
+        diffset = self.create_diffset(review_request)
+
+        fd1 = self.create_filediff(diffset, source_file='/test1',
+                                   dest_file='/test1')
+        fd2 = self.create_filediff(diffset, source_file='/test2',
+                                   dest_file='/test2')
+        fd3 = self.create_filediff(diffset, source_file='/test3',
+                                   dest_file='/test3')
+        self.create_filediff(diffset, source_file='/binary1',
+                             dest_file='/binary1', binary=True)
+        self.create_filediff(diffset, source_file='/binary2',
+                             dest_file='/binary2', binary=True)
+
+        rsp = self.api_get(
+            '%s?binary=0' % get_filediff_list_url(diffset, review_request),
+            expected_mimetype=filediff_list_mimetype)
+        assert rsp is not None
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('files', rsp)
+        self.assertEqual(rsp['total_results'], 3)
+
+        self.assertEqual(rsp['files'][0]['id'], fd1.pk)
+        self.assertEqual(rsp['files'][1]['id'], fd2.pk)
+        self.assertEqual(rsp['files'][2]['id'], fd3.pk)
+
+    @webapi_test_template
+    def test_binary_None(self) -> None:
+        """Testing the GET <URL> API with ?binary unspecified"""
+        repository = self.create_repository()
+        review_request = self.create_review_request(
+            repository=repository,
+            submitter=self.user,
+            public=True)
+
+        diffset = self.create_diffset(review_request)
+
+        self.create_filediff(diffset, source_file='/test1', dest_file='/test1')
+        self.create_filediff(diffset, source_file='/test2', dest_file='/test2')
+        self.create_filediff(diffset, source_file='/test3', dest_file='/test3')
+        self.create_filediff(diffset, source_file='/binary1',
+                             dest_file='/binary1', binary=True)
+        self.create_filediff(diffset, source_file='/binary2',
+                             dest_file='/binary2', binary=True)
+
+        rsp = self.api_get(
+            get_filediff_list_url(diffset, review_request),
+            expected_mimetype=filediff_list_mimetype)
+        assert rsp is not None
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('files', rsp)
+        self.assertEqual(rsp['total_results'], 5)
 
 
 class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,

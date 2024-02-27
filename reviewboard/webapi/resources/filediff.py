@@ -1,3 +1,8 @@
+"""API resource for per-file diffs."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 from urllib.parse import quote as urllib_quote
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -29,6 +34,11 @@ from reviewboard.webapi.decorators import (webapi_check_login_required,
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.diff_file_attachment import \
     DiffFileAttachmentResource
+
+
+if TYPE_CHECKING:
+    from django.db import QuerySet
+    from django.http import HttpRequest
 
 
 class FileDiffResource(WebAPIResource):
@@ -123,18 +133,11 @@ class FileDiffResource(WebAPIResource):
     ]
 
     def serialize_source_attachment_field(self, filediff, **kwargs):
-        try:
-            return FileAttachment.objects.get_for_filediff(filediff,
-                                                           modified=False)
-        except FileAttachment.DoesNotExist:
-            return None
+        return FileAttachment.objects.get_for_filediff(filediff,
+                                                       modified=False)
 
     def serialize_dest_attachment_field(self, filediff, **kwargs):
-        try:
-            return FileAttachment.objects.get_for_filediff(filediff,
-                                                           modified=True)
-        except FileAttachment.DoesNotExist:
-            return None
+        return FileAttachment.objects.get_for_filediff(filediff, modified=True)
 
     def serialize_status_field(self, filediff, **kwargs):
         """Serialize the status field.
@@ -156,18 +159,28 @@ class FileDiffResource(WebAPIResource):
     def get_last_modified(self, request, obj, *args, **kwargs):
         return obj.diffset.timestamp
 
-    def get_queryset(self, request, diff_revision, is_list=False, *args,
-                     **kwargs):
+    def get_queryset(
+        self,
+        request: HttpRequest,
+        diff_revision: str,
+        is_list: bool = False,
+        *args,
+        **kwargs,
+    ) -> QuerySet:
         """Return a queryset for FileDiff models.
 
         If the ``commit-id`` query parameter is given, results will be limited
         to FileDiffs belonging to that commit.
 
+        If the ``binary`` query parameter is given, results will be limited to
+        FileDiffs that are either marked as binary or non-binary depending on
+        the value of the parameter.
+
         Args:
             request (django.http.HttpRequest):
                 The HTTP request from the client.
 
-            diff_revision (unicode):
+            diff_revision (str):
                 Limit results to the DiffSet with the given revision.
 
             is_list (bool, optional):
@@ -200,6 +213,11 @@ class FileDiffResource(WebAPIResource):
                 qs = qs.filter(commit__commit_id=commit_id)
             else:
                 qs = qs.filter(commit_id__isnull=True)
+
+            binary = request.GET.get('binary', None)
+
+            if binary is not None:
+                qs = qs.filter(binary=binary)
 
         return qs
 

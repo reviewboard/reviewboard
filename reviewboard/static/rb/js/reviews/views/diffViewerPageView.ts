@@ -5,8 +5,10 @@ import { Router, spina } from '@beanbag/spina';
 
 import { UserSession } from 'reviewboard/common';
 
+import { DiffReviewable } from '../models/diffReviewableModel';
 import { DiffViewerPage } from '../models/diffViewerPageModel';
 import { DiffFileIndexView } from './diffFileIndexView';
+import { DiffReviewableView } from './diffReviewableView';
 import {
     ReviewablePageView,
     ReviewablePageViewOptions,
@@ -115,7 +117,7 @@ export class DiffViewerPageView extends ReviewablePageView<
     #startAtAnchorName: string = null;
     _$anchors: JQuery;
     _commitListView: RB.DiffCommitListView = null;
-    _diffReviewableViews: RB.DiffReviewableView[] = [];
+    _diffReviewableViews: DiffReviewableView[] = [];
     _selectedAnchorIndex = -1;
     router: Router;
 
@@ -140,7 +142,7 @@ export class DiffViewerPageView extends ReviewablePageView<
          * Listen for the construction of added DiffReviewables.
          *
          * We'll queue up the loading and construction of a view when added.
-         * This will ultimately result in a RB.DiffReviewableView being
+         * This will ultimately result in a DiffReviewableView being
          * constructed, once the data from the server is loaded.
          */
         this.listenTo(this.model.diffReviewables, 'add',
@@ -515,7 +517,7 @@ export class DiffViewerPageView extends ReviewablePageView<
      *         diff in order to show its deleted content.
      */
     queueLoadDiff(
-        diffReviewable: RB.DiffReviewable,
+        diffReviewable: DiffReviewable,
         options: {
             showDeleted?: boolean,
         } = {},
@@ -584,7 +586,7 @@ export class DiffViewerPageView extends ReviewablePageView<
      *     diffReviewable (RB.DiffReviewable):
      *         The reviewable diff to render.
      */
-    #renderFileDiff(diffReviewable: RB.DiffReviewable) {
+    #renderFileDiff(diffReviewable: DiffReviewable) {
         const elementName = 'file' + diffReviewable.get('fileDiffID');
         const $el = $(`#${elementName}`);
 
@@ -608,7 +610,7 @@ export class DiffViewerPageView extends ReviewablePageView<
             isReplacing = false;
         }
 
-        const diffReviewableView = new RB.DiffReviewableView({
+        const diffReviewableView = new DiffReviewableView({
             el: $el,
             model: diffReviewable,
         });
@@ -1195,7 +1197,7 @@ export class DiffViewerPageView extends ReviewablePageView<
     }
 
     /**
-     * Handler for when a RB.DiffReviewable is added.
+     * Handler for when a DiffReviewable is added.
      *
      * This will add a placeholder entry for the file and queue the diff
      * for loading/rendering.
@@ -1204,7 +1206,7 @@ export class DiffViewerPageView extends ReviewablePageView<
      *     diffReviewable (RB.DiffReviewable):
      *         The DiffReviewable that was added.
      */
-    #onDiffReviewableAdded(diffReviewable: RB.DiffReviewable) {
+    #onDiffReviewableAdded(diffReviewable: DiffReviewable) {
         const file = diffReviewable.get('file');
 
         this.#$diffs.append(DiffViewerPageView.fileEntryTemplate({

@@ -40,7 +40,6 @@ interface BannerViewOptions {
     prototypeAttrs: [
         'DescriptionFieldViewType',
         'actions',
-        'className',
         'describeText',
         'descriptionFieldClasses',
         'descriptionFieldHTML',
@@ -184,15 +183,7 @@ class BannerView extends BaseView<
  * to subclasses to provide the other details.
  */
 @spina({
-    prototypeAttrs: [
-        'DescriptionFieldViewType',
-        'actions',
-        'closeType',
-        'descriptionFieldClasses',
-        'descriptionFieldID',
-        'descriptionFieldName',
-        'events',
-    ],
+    prototypeAttrs: ['closeType'],
 })
 class ClosedBannerView extends BannerView {
     static DescriptionFieldViewType = CloseDescriptionFieldView;
@@ -252,12 +243,7 @@ class ClosedBannerView extends BannerView {
  * A banner representing a discarded review request.
  */
 @spina({
-    prototypeAttrs: [
-        'closeType',
-        'describeText',
-        'id',
-        'title',
-    ],
+    prototypeAttrs: ['id'],
 })
 class DiscardedBannerView extends ClosedBannerView {
     static closeType = ReviewRequest.CLOSE_DISCARDED;
@@ -271,12 +257,7 @@ class DiscardedBannerView extends ClosedBannerView {
  * A banner representing a submitted review request.
  */
 @spina({
-    prototypeAttrs: [
-        'closeType',
-        'describeText',
-        'id',
-        'title',
-    ],
+    prototypeAttrs: ['id'],
 })
 class CompletedBannerView extends ClosedBannerView {
     static closeType = ReviewRequest.CLOSE_SUBMITTED;
@@ -294,13 +275,7 @@ class CompletedBannerView extends ClosedBannerView {
  */
 @spina({
     prototypeAttrs: [
-        'describeText',
-        'descriptionFieldID',
-        'descriptionFieldName',
-        'events',
         'id',
-        'subtitle',
-        'title',
         '_newDraftTemplate',
     ],
 })
