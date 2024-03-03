@@ -603,7 +603,20 @@ class HgGitDiffParser(GitDiffParser):
                 self.base_commit_id = split_line[2]
                 self.parsed_diff_change.parent_commit_id = split_line[2]
 
-        return super().parse()
+        diff_files = super().parse()
+
+        # hg diff --git generally doesn't include index lines for files, and so
+        # by default GitDiffParser will use ``self.base_commit_id`` and
+        # ``self.new_commit_id`` for individual file revisions. The exception
+        # is for binary files, which get an index line containing the binary
+        # file's SHA. This is meaningless for Mercurial. Go back through and
+        # overwrite those with the revision IDs.
+        for f in diff_files:
+            if f.binary:
+                f.orig_file_details = self.base_commit_id
+                f.modified_file_details = self.new_commit_id
+
+        return diff_files
 
 
 class HgWebClient(SCMClient):
@@ -941,11 +954,10 @@ class HgClient(SCMClient):
             rev = ""
 
         if path:
-            p = self._run_hg(['cat', '--rev', str(rev), path])
-
-            assert p.stdout is not None
-            contents = p.stdout.read()
-            failure = p.wait()
+            with self._run_hg(['cat', '--rev', str(rev), path]) as p:
+                assert p.stdout is not None
+                contents = p.stdout.read()
+                failure = p.wait()
 
             if not failure:
                 return contents
@@ -959,22 +971,21 @@ class HgClient(SCMClient):
             list of reviewboard.scmtools.core.Branch:
             The list of the branches.
         """
-        p = self._run_hg(['branches', '--template', 'json'])
+        with self._run_hg(['branches', '--template', 'json']) as p:
+            if p.wait() != 0:
+                assert p.stderr is not None
+                raise SCMError('Cannot load branches: %s' % p.stderr.read())
 
-        if p.wait() != 0:
-            assert p.stderr is not None
-            raise SCMError('Cannot load branches: %s' % p.stderr.read())
+            assert p.stdout is not None
 
-        assert p.stdout is not None
-
-        return [
-            Branch(
-                id=data['branch'],
-                commit=data['node'],
-                default=(data['branch'] == 'default'))
-            for data in json.loads(force_str(p.stdout.read()))
-            if not data['closed']
-        ]
+            return [
+                Branch(
+                    id=data['branch'],
+                    commit=data['node'],
+                    default=(data['branch'] == 'default'))
+                for data in json.loads(force_str(p.stdout.read()))
+                if not data['closed']
+            ]
 
     def _get_commits(
         self,
@@ -995,31 +1006,31 @@ class HgClient(SCMClient):
             The list of commit objects.
         """
         cmd = ['log'] + revset + ['--template', 'json']
-        p = self._run_hg(cmd)
 
-        if p.wait() != 0:
-            assert p.stderr is not None
-            raise SCMError('Cannot load commits: %s' % p.stderr.read())
+        with self._run_hg(cmd) as p:
+            if p.wait() != 0:
+                assert p.stderr is not None
+                raise SCMError('Cannot load commits: %s' % p.stderr.read())
 
-        results = []
+            results = []
 
-        assert p.stdout is not None
+            assert p.stdout is not None
 
-        for data in json.loads(force_str(p.stdout.read())):
-            try:
-                parent: Optional[str] = force_str(data['parents'][0])
+            for data in json.loads(force_str(p.stdout.read())):
+                try:
+                    parent: Optional[str] = force_str(data['parents'][0])
 
-                if parent == INITIAL_COMMIT_ID:
-                    parent = ''
-            except IndexError:
-                parent = None
+                    if parent == INITIAL_COMMIT_ID:
+                        parent = ''
+                except IndexError:
+                    parent = None
 
-            results.append(Commit(
-                id=data['node'],
-                message=data['desc'],
-                author_name=data['user'],
-                date=HgTool.date_tuple_to_iso8601(data['date']),
-                parent=parent))
+                results.append(Commit(
+                    id=data['node'],
+                    message=data['desc'],
+                    author_name=data['user'],
+                    date=HgTool.date_tuple_to_iso8601(data['date']),
+                    parent=parent))
 
         return results
 
@@ -1075,17 +1086,19 @@ class HgClient(SCMClient):
         if changesets:
             commit = changesets[0]
             cmd = ['diff', '-c', revision]
-            p = self._run_hg(cmd)
 
-            if p.wait() != 0:
-                assert p.stderr is not None
+            with self._run_hg(cmd) as p:
 
-                e = p.stderr.read()
-                raise SCMError(f'Cannot load patch {revision}: {e}')
+                if p.wait() != 0:
+                    assert p.stderr is not None
 
-            assert p.stdout is not None
+                    e = p.stderr.read()
+                    raise SCMError(f'Cannot load patch {revision}: {e}')
 
-            commit.diff = p.stdout.read()
+                assert p.stdout is not None
+
+                commit.diff = p.stdout.read()
+
             return commit
 
         raise SCMError('Cannot load changeset %s' % revision)
@@ -1105,7 +1118,7 @@ class HgClient(SCMClient):
         hg_ssh = self._get_hg_config('ui.ssh')
 
         if not hg_ssh:
-            logger.debug('Using rbssh for mercurial')
+            logger.debug('Using rbssh for Mercurial')
 
             if self.local_site_name:
                 hg_ssh = 'rbssh --rb-local-site=%s' % self.local_site_name
@@ -1116,17 +1129,17 @@ class HgClient(SCMClient):
                 '--config', 'ui.ssh=%s' % hg_ssh,
             ])
         else:
-            logger.debug('Found configured ssh for mercurial: %s', hg_ssh)
+            logger.debug('Found configured ssh for Mercurial: %s', hg_ssh)
 
     def _get_hg_config(
         self,
         config_name: str,
     ) -> Optional[str]:
-        p = self._run_hg(['showconfig', config_name])
-        assert p.stdout is not None
+        with self._run_hg(['showconfig', config_name]) as p:
+            assert p.stdout is not None
 
-        contents = p.stdout.read()
-        failure = p.wait()
+            contents = p.stdout.read()
+            failure = p.wait()
 
         if failure:
             # Just assume it's empty.
