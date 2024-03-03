@@ -160,7 +160,7 @@ class DraftFileDiffResource(FileDiffResource):
                 }
 
             try:
-                form.create(filediff)
+                form.create(filediff=filediff)
             except FileTooBigError as e:
                 return DIFF_TOO_BIG, {
                     'max_size': e.max_attachment_size,

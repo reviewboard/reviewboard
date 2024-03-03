@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, cast
 
-from djblets.webapi.errors import PERMISSION_DENIED
+from djblets.webapi.errors import DUPLICATE_ITEM, PERMISSION_DENIED
 from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.attachments.models import FileAttachment
@@ -204,6 +204,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         rsp: JSONDict,
         filediff: FileDiff,
         review_request: ReviewRequest,
+        source_file: bool = None,
         *args,
         **kwargs,
     ) -> None:
@@ -233,7 +234,12 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
 
         attachment = FileAttachment.objects.get(pk=item_rsp['id'])
 
-        self.assertEqual(attachment.added_in_filediff, filediff)
+        if source_file:
+            self.assertEqual(attachment.repo_path, filediff.source_file)
+            self.assertEqual(attachment.repo_revision,
+                             filediff.source_revision)
+        else:
+            self.assertEqual(attachment.added_in_filediff, filediff)
 
         review_request.refresh_from_db()
         self.assertEqual(review_request.file_attachments_count, 1)
@@ -332,6 +338,71 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                                rsp,
                                *setup_state.get('check_result_args', ()),
                                **setup_state.get('check_result_kwargs', {}))
+
+    @webapi_test_template
+    def test_post_source_file(self) -> None:
+        """Testing the POST <URL> API with source_file=1"""
+        resource = self.resource
+
+        self.assertTrue(getattr(resource.create, 'login_required', False))
+        self.assertTrue(getattr(resource.create, 'checks_local_site', False))
+
+        self.load_fixtures(self.basic_post_fixtures)
+        self._login_user(admin=self.basic_post_use_admin)
+
+        setup_state = cast(
+            BasicPostTestSetupState,
+            self._build_common_setup_state(fixtures=self.basic_post_fixtures))
+        self.populate_post_test_objects(
+            setup_state=setup_state,
+            create_valid_request_data=True)
+
+        request_data = setup_state.get('request_data')
+        request_data['source_file'] = '1'
+
+        rsp = self.api_post(setup_state['url'],
+                            request_data,
+                            expected_mimetype=setup_state['mimetype'],
+                            expected_status=self.basic_post_success_status)
+
+        assert rsp
+        self.assertEqual(rsp['stat'], 'ok')
+        self.check_post_result(setup_state['owner'],
+                               rsp,
+                               source_file=True,
+                               *setup_state.get('check_result_args', ()),
+                               **setup_state.get('check_result_kwargs', {}))
+
+    @webapi_test_template
+    def test_post_duplicate_file(self) -> None:
+        """Testing the POST <URL> API with a duplicate file"""
+        resource = self.resource
+
+        self.assertTrue(getattr(resource.create, 'login_required', False))
+        self.assertTrue(getattr(resource.create, 'checks_local_site', False))
+
+        self.load_fixtures(self.basic_post_fixtures)
+        self._login_user(admin=self.basic_post_use_admin)
+
+        setup_state = cast(
+            BasicPostTestSetupState,
+            self._build_common_setup_state(fixtures=self.basic_post_fixtures))
+        self.populate_post_test_objects(
+            setup_state=setup_state,
+            create_valid_request_data=True)
+
+        filediff = setup_state['check_result_args'][0]
+        self.create_diff_file_attachment(filediff)
+
+        request_data = setup_state.get('request_data')
+
+        rsp = self.api_post(setup_state['url'],
+                            request_data,
+                            expected_status=409)
+
+        assert rsp
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DUPLICATE_ITEM.code)
 
     @webapi_test_template
     def test_post_file_too_big(self) -> None:

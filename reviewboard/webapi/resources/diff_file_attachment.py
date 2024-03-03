@@ -11,16 +11,19 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
                                        webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST,
+                                   DUPLICATE_ITEM,
                                    INVALID_FORM_DATA,
                                    NOT_LOGGED_IN,
                                    PERMISSION_DENIED,
                                    WebAPIError)
-from djblets.webapi.fields import (IntFieldType,
+from djblets.webapi.fields import (BooleanFieldType,
+                                   IntFieldType,
                                    ResourceFieldType,
                                    StringFieldType)
 
 from reviewboard.attachments.errors import FileTooBigError
 from reviewboard.attachments.forms import UploadFileForm
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.webapi.base import ImportExtraDataError
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -171,12 +174,23 @@ class DiffFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
                                'attachment for.',
             },
         },
+        optional={
+            'source_file': {
+                'type': BooleanFieldType,
+                'description': 'Whether to create the attachment for the '
+                               'source version of the file. If false or not '
+                               'specified, the attachment will be created '
+                               'for the modified version.',
+                'added_in': '7.0',
+            },
+        },
         allow_unknown=True,
     )
     def create(
         self,
         request: HttpRequest,
         filediff: Optional[int] = None,
+        source_file: Optional[bool] = None,
         extra_fields: Dict[str, Any] = {},
         *args,
         **kwargs,
@@ -209,6 +223,14 @@ class DiffFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
         if not review_request.is_mutable_by(request.user):
             return self.get_no_access_error(request)
 
+        modified = source_file is not True
+
+        existing_attachment = FileAttachment.objects.get_for_filediff(
+            filediff_obj, modified)
+
+        if existing_attachment is not None:
+            return DUPLICATE_ITEM
+
         form_data = request.POST.copy()
         form = UploadFileForm(review_request, form_data, request.FILES)
 
@@ -218,7 +240,8 @@ class DiffFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
             }
 
         try:
-            file = form.create(filediff=filediff_obj)
+            file = form.create(filediff=filediff_obj,
+                               from_modified=modified)
         except FileTooBigError as e:
             return DIFF_TOO_BIG, {
                 'max_size': e.max_attachment_size,
