@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import datetime
 import logging
 from typing import Optional
 from urllib.parse import quote, urlparse
@@ -21,7 +20,6 @@ from django.http import (Http404,
                          HttpResponseRedirect)
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.html import escape
@@ -876,20 +874,9 @@ class ClientLoginView(BaseClientLoginView):
         error = ''
 
         if client_allowed:
-            expire_amount = \
-                self.siteconfig.get('client_token_expiration')
-
-            if expire_amount:
-                assert isinstance(expire_amount, int)
-                expires = (timezone.now() +
-                           datetime.timedelta(days=expire_amount))
-            else:
-                expires = None
-
             try:
                 api_token = WebAPIToken.objects.get_or_create_client_token(
                     client_name=client_name,
-                    expires=expires,
                     user=self.request.user)[0]
 
                 payload = {
