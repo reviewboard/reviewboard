@@ -494,6 +494,8 @@ export class BaseResource<
         options: SaveOptions = {},
         context: object = undefined,
     ): Promise<JQuery.jqXHR> {
+        options ??= {};
+
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
