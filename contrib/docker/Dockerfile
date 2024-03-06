@@ -80,6 +80,7 @@ RUN    set -ex \
     && apt-get install -y --no-install-recommends \
            build-essential \
            ca-certificates \
+           libldap-common \
            curl \
            gnupg \
            libapr1-dev \
