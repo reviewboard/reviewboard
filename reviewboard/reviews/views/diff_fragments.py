@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import io
 import logging
+import os
 import struct
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple, cast
 
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
+from django.core.files.base import ContentFile
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_list_or_404
@@ -22,6 +24,7 @@ from djblets.util.dates import get_latest_timestamp
 from djblets.views.generic.etag import ETagViewMixin
 from typing_extensions import TypedDict
 
+from reviewboard.attachments.mimetypes import guess_mimetype
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import (get_file_chunks_in_range,
                                               get_last_header_before_line,
@@ -34,6 +37,7 @@ from reviewboard.diffviewer.views import (DiffFragmentView,
 from reviewboard.reviews.models import Comment
 from reviewboard.reviews.ui.base import ReviewUI
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
+from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
@@ -525,6 +529,17 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
                     orig_attachment = \
                         self._get_diff_file_attachment(filediff, False)
 
+                    if (orig_attachment is None and
+                        modified_attachment is not None):
+                        # We only fetch the original version of the file if we
+                        # already have an attachment for the modified version.
+                        # This way we're not cluttering up the DB and
+                        # filesystem with attachments that aren't helpful for
+                        # the review process.
+                        orig_attachment = self._create_attachment_for_orig(
+                            request=cast(HttpRequest, context.get('request')),
+                            filediff=filediff)
+
 
             diff_review_ui_html: Optional[str] = None
             orig_review_ui_class: Optional[type[ReviewUI]] = None
@@ -734,3 +749,75 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
                          filediff.pk,
                          exc_info=True)
             return None
+
+    def _create_attachment_for_orig(
+        self,
+        *,
+        request: HttpRequest,
+        filediff: FileDiff,
+    ) -> Optional[FileAttachment]:
+        """Create an attachment for the original version of a binary file.
+
+        New versions of binary files in diffs are expected to be uploaded by
+        RBTools, but the original version may need to be fetched from the
+        repository.
+
+        Version Added:
+            7.0
+
+        Args:
+            request (django.http.HttpRequest):
+                The request from the server.
+
+            filediff (reviewboard.diffviewer.models.filediff.Filediff):
+                The FileDiff for the attachment.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The newly-created file attachment.
+        """
+        extra_data = filediff.extra_data or {}
+
+        if filediff.commit is not None:
+            commit_extra_data = filediff.commit.extra_data
+        else:
+            commit_extra_data = {}
+
+        diffset = filediff.diffset
+
+        context = FileLookupContext(
+            request=request,
+            base_commit_id=diffset.base_commit_id,
+            diff_extra_data=diffset.extra_data,
+            commit_extra_data=commit_extra_data,
+            file_extra_data=extra_data)
+
+        try:
+            repository = filediff.get_repository()
+            file_contents = repository.get_file(filediff.source_file,
+                                                filediff.source_revision,
+                                                context=context)
+
+            with ContentFile(file_contents) as file_obj:
+                attachment = FileAttachment.objects.create_from_filediff(
+                    filediff=filediff,
+                    from_modified=False,
+                    mimetype=guess_mimetype(file_obj))
+
+                attachment.file.save(
+                    os.path.basename(filediff.source_file),
+                    file_obj)
+
+            logger.debug('Creating new file attachment for binary file %s '
+                         '(%s) in repository %s',
+                         filediff.source_file,
+                         filediff.source_revision,
+                         repository)
+
+            return attachment
+        except Exception as e:
+            logger.exception(
+                'Unable to fetch original version of binary file %s (%s): %s',
+                filediff.source_file,
+                filediff.source_revision,
+                e)

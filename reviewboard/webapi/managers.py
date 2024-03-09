@@ -10,7 +10,10 @@ import datetime
 from typing import Optional, TYPE_CHECKING, Tuple, Union
 
 from django.db.models import F
+from django.utils import timezone
 from djblets.secrets.token_generators import token_generator_registry
+from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.symbols import UNSET, Unsettable
 from djblets.webapi.managers import (
     WebAPITokenManager as DjbletsWebAPITokenManager)
 
@@ -31,7 +34,7 @@ class WebAPITokenManager(DjbletsWebAPITokenManager):
         self,
         user: Union[AbstractBaseUser, AnonymousUser],
         client_name: str,
-        expires: Optional[datetime.datetime] = None,
+        expires: Unsettable[Optional[datetime.datetime]] = UNSET,
     ) -> Tuple[WebAPIToken, bool]:
         """Get a user's API token for authenticating a client to Review Board.
 
@@ -49,8 +52,11 @@ class WebAPITokenManager(DjbletsWebAPITokenManager):
                 The name of the client that the token is for.
 
             expires (datetime.datetime, optional):
-                The expiration date of the token. This defaults to no
-                expiration.
+                The expiration datetime of the token. This defaults to the
+                ``client_token_expiration`` value in the site configuration
+                added to the creation datetime of the token. For example, if
+                the ``client_token_expiration`` is set to 5, the token will
+                expire in 5 days from when it is created.
 
         Returns:
             tuple:
@@ -78,6 +84,16 @@ class WebAPITokenManager(DjbletsWebAPITokenManager):
             elif token.is_expired():
                 # The rest of the tokens are also expired.
                 break
+
+        if expires == UNSET:
+            siteconfig = SiteConfiguration.objects.get_current()
+            expire_amount = siteconfig.get('client_token_expiration')
+
+            if expire_amount:
+                expires = (timezone.now() +
+                           datetime.timedelta(days=expire_amount))
+            else:
+                expires = None
 
         generator = token_generator_registry.get_default().token_generator_id
         token = self.generate_token(

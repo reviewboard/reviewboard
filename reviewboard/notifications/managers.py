@@ -1,4 +1,17 @@
+"""Manager for WebHookTarget models."""
+
+from __future__ import annotations
+
+from typing import Optional, TYPE_CHECKING
+
 from django.db.models import Manager, Q
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
+    from django.db.models.query import QuerySet
+
+    from reviewboard.notifications.models import WebHookTarget
+    from reviewboard.site.models import LocalSite
 
 
 class WebHookTargetManager(Manager):
@@ -8,8 +21,31 @@ class WebHookTargetManager(Manager):
     given event.
     """
 
-    def for_event(self, event, local_site_id=None, repository_id=None):
-        """Returns a list of matching webhook targets for the given event."""
+    def for_event(
+        self,
+        event: str,
+        local_site_id: Optional[int] = None,
+        repository_id: Optional[int] = None,
+    ) -> list[WebHookTarget]:
+        """Return a list of matching webhook targets for the given event.
+
+        Args:
+            event (str):
+                The event name to match.
+
+            local_site_id (int, optional):
+                The ID of the :py:class:`~reviewboard.site.models.LocalSite` to
+                restrict results to.
+
+            repository_id (int, optional):
+                The ID of the
+                :py:class:`~reviewboard.scmtools.models.Repository` to restrict
+                results to.
+
+        Returns:
+            list of reviewboard.notifications.models.WebHookTarget:
+            The webhook targets which match the event.
+        """
         if event == self.model.ALL_EVENTS:
             raise ValueError('"%s" is not a valid event choice' % event)
 
@@ -29,11 +65,14 @@ class WebHookTargetManager(Manager):
             if event in target.events or self.model.ALL_EVENTS in target.events
         ]
 
-    def for_local_site(self, local_site=None):
+    def for_local_site(
+        self,
+        local_site: Optional[LocalSite] = None,
+    ) -> QuerySet:
         """Return a list of webhooks on the local site.
 
         Args:
-            local_site (reviewboard.site.models.LocalSite):
+            local_site (reviewboard.site.models.LocalSite, optional):
                 An optional local site.
 
         Returns:
@@ -42,14 +81,18 @@ class WebHookTargetManager(Manager):
         """
         return self.filter(local_site=local_site)
 
-    def can_create(self, user, local_site=None):
+    def can_create(
+        self,
+        user: User,
+        local_site: Optional[LocalSite] = None,
+    ) -> bool:
         """Return whether the user can create webhooks on the local site.
 
         Args:
             user (django.contrib.auth.models.User):
                 The user to check for permissions.
 
-            local_site (reviewboard.site.models.LocalSite):
+            local_site (reviewboard.site.models.LocalSite, optional):
                 The current local site, if it exists.
 
         Returns:
@@ -58,5 +101,5 @@ class WebHookTargetManager(Manager):
         """
         return (user.is_superuser or
                 (user.is_authenticated and
-                 local_site and
+                 local_site is not None and
                  local_site.is_mutable_by(user)))

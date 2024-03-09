@@ -42,17 +42,23 @@ class WebAPITokenManagerTests(kgb.SpyAgency, TestCase):
         """Testing WebAPITokenManager.get_or_create_client_token creates
         a token with default arguments
         """
-        client_token, created = WebAPIToken.objects.get_or_create_client_token(
-            client_name='Test',
-            user=self.user)
+        settings = {
+            'client_token_expiration': 2,
+        }
 
-        self.assertTrue(created)
-        self._assert_client_token_equals(
-            token=client_token,
-            client_name='Test',
-            expires=None,
-            note='API token automatically created for Test.',
-            user=self.user)
+        with self.siteconfig_settings(settings):
+            client_token, created = \
+                WebAPIToken.objects.get_or_create_client_token(
+                    client_name='Test',
+                    user=self.user)
+
+            self.assertTrue(created)
+            self._assert_client_token_equals(
+                token=client_token,
+                client_name='Test',
+                expires=(timezone.now() + datetime.timedelta(days=2)),
+                note='API token automatically created for Test.',
+                user=self.user)
 
     def test_get_or_create_client_token_custom_expires(self) -> None:
         """Testing WebAPITokenManager.get_or_create_client_token creates
@@ -68,6 +74,23 @@ class WebAPITokenManagerTests(kgb.SpyAgency, TestCase):
             token=client_token,
             client_name='Test',
             expires=timezone.now() + datetime.timedelta(days=10),
+            note='API token automatically created for Test.',
+            user=self.user)
+
+    def test_get_or_create_client_token_custom_expires_none(self) -> None:
+        """Testing WebAPITokenManager.get_or_create_client_token creates
+        a token with no expiration date when expires=None
+        """
+        client_token, created = WebAPIToken.objects.get_or_create_client_token(
+            client_name='Test',
+            expires=None,
+            user=self.user)
+
+        self.assertTrue(created)
+        self._assert_client_token_equals(
+            token=client_token,
+            client_name='Test',
+            expires=None,
             note='API token automatically created for Test.',
             user=self.user)
 

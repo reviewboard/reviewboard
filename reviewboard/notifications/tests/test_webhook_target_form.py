@@ -11,8 +11,9 @@ class WebHookTargetFormTests(TestCase):
 
     fixtures = ['test_scmtools']
 
-    def setUp(self):
-        super(WebHookTargetFormTests, self).setUp()
+    def setUp(self) -> None:
+        """Set up the test."""
+        super().setUp()
 
         self.local_site = LocalSite.objects.create(name='test')
 
@@ -24,7 +25,7 @@ class WebHookTargetFormTests(TestCase):
         self.global_site_repo = self.create_repository(
             name='global-site-repo')
 
-    def test_without_localsite(self):
+    def test_without_localsite(self) -> None:
         """Testing WebHookTargetForm without a LocalSite"""
         # Make sure the initial state and querysets are what we expect on init.
         form = WebHookTargetForm()
@@ -60,7 +61,7 @@ class WebHookTargetFormTests(TestCase):
         self.assertEqual(list(webhook.repositories.all()),
                          [self.global_site_repo])
 
-    def test_without_localsite_and_instance(self):
+    def test_without_localsite_and_instance(self) -> None:
         """Testing WebHookTargetForm without a LocalSite and editing instance
         """
         webhook = WebHookTarget.objects.create()
@@ -80,7 +81,7 @@ class WebHookTargetFormTests(TestCase):
         self.assertEqual(webhook.pk, new_webhook.pk)
         self.assertIsNone(new_webhook.local_site)
 
-    def test_without_localsite_and_with_local_site_repo(self):
+    def test_without_localsite_and_with_local_site_repo(self) -> None:
         """Testing WebHookTargetForm without a LocalSite and Repository on a
         LocalSite
         """
@@ -99,7 +100,7 @@ class WebHookTargetFormTests(TestCase):
                                  'available choices.'],
             })
 
-    def test_with_limited_localsite(self):
+    def test_with_limited_localsite(self) -> None:
         """Testing WebHookTargetForm limited to a LocalSite"""
         form = WebHookTargetForm(limit_to_local_site=self.local_site)
 
@@ -108,7 +109,7 @@ class WebHookTargetFormTests(TestCase):
         self.assertEqual(list(form.fields['repositories'].queryset),
                          [self.local_site_repo])
 
-    def test_with_limited_localsite_and_changing_site(self):
+    def test_with_limited_localsite_and_changing_site(self) -> None:
         """Testing WebHookTargetForm limited to a LocalSite and changing
         LocalSite
         """
@@ -132,7 +133,7 @@ class WebHookTargetFormTests(TestCase):
         webhook = form.save()
         self.assertEqual(webhook.local_site, self.local_site)
 
-    def test_with_limited_localsite_and_compatible_instance(self):
+    def test_with_limited_localsite_and_compatible_instance(self) -> None:
         """Testing WebHookTargetForm limited to a LocalSite and editing
         compatible instance
         """
@@ -142,7 +143,7 @@ class WebHookTargetFormTests(TestCase):
         WebHookTargetForm(instance=webhook,
                           limit_to_local_site=self.local_site)
 
-    def test_with_limited_localsite_and_incompatible_instance(self):
+    def test_with_limited_localsite_and_incompatible_instance(self) -> None:
         """Testing WebHookTargetForm limited to a LocalSite and editing
         incompatible instance
         """
@@ -157,7 +158,7 @@ class WebHookTargetFormTests(TestCase):
             WebHookTargetForm(instance=webhook,
                               limit_to_local_site=self.local_site)
 
-    def test_with_limited_localsite_and_invalid_repository(self):
+    def test_with_limited_localsite_and_invalid_repository(self) -> None:
         """Testing WebHookTargetForm limited to a LocalSite with a Repository
         not on the LocalSite
         """
@@ -179,7 +180,7 @@ class WebHookTargetFormTests(TestCase):
                                  'available choices.'],
             })
 
-    def test_with_localsite_in_data(self):
+    def test_with_localsite_in_data(self) -> None:
         """Testing WebHookTargetForm with a LocalSite in form data"""
         # Make sure the initial state and querysets are what we expect on init.
         form = WebHookTargetForm()
@@ -216,7 +217,7 @@ class WebHookTargetFormTests(TestCase):
         self.assertEqual(list(webhook.repositories.all()),
                          [self.local_site_repo])
 
-    def test_with_localsite_in_data_and_instance(self):
+    def test_with_localsite_in_data_and_instance(self) -> None:
         """Testing WebHookTargetForm with a LocalSite in form data and editing
         instance
         """
@@ -237,7 +238,7 @@ class WebHookTargetFormTests(TestCase):
         self.assertEqual(webhook.pk, new_webhook.pk)
         self.assertEqual(new_webhook.local_site, self.local_site)
 
-    def test_with_localsite_in_data_and_invalid_repository(self):
+    def test_with_localsite_in_data_and_invalid_repository(self) -> None:
         """Testing WebHookTargetForm with a LocalSite in form data and
         Repository not on the LocalSite
         """
@@ -255,4 +256,21 @@ class WebHookTargetFormTests(TestCase):
             {
                 'repositories': ['Select a valid choice. 2 is not one of the '
                                  'available choices.'],
+            })
+
+    def test_with_invalid_events(self) -> None:
+        """Testing WebHookTargetForm with invalid events"""
+        form = WebHookTargetForm(data={
+            'apply_to': WebHookTarget.APPLY_TO_SELECTED_REPOS,
+            'encoding': WebHookTarget.ENCODING_JSON,
+            'events': ['review_request_closed', 'a', 'b'],
+            'url': 'https://example.com/',
+            'repositories': [self.global_site_repo.pk],
+        })
+        self.assertFalse(form.is_valid())
+        self.assertEqual(
+            form.errors,
+            {
+                'events': ['Select a valid choice. a is not one of the '
+                           'available choices.'],
             })

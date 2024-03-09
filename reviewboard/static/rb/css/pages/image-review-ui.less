@@ -75,7 +75,7 @@
     .image-container {
       display: inline-block;
       float: none;
-      margin: 0 2em;
+      margin: 2em;
     }
 
     .image-diff-difference {
@@ -85,17 +85,9 @@
     }
 
     .image-diff-two-up {
-      img {
-        display: inline-block;
-      }
-
-      .image-container-orig {
-        right: 50%;
-      }
-
-      .image-container-modified {
-        left: 50%;
-      }
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     .image-diff-onion,

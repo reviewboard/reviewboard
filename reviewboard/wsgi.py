@@ -76,8 +76,9 @@ if not os.environ.get('VIRTUAL_ENV'):
 # and to store home directory data.
 sys.path.insert(0, os.path.join(sitedir, 'conf'))
 
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
+
 os.environ.update({
-    'DJANGO_SETTINGS_MODULE': 'reviewboard.settings',
     'HOME': os.path.join(sitedir, 'data'),
     'PATH': os.pathsep.join([
         os.path.join(sitedir, 'bin'),

@@ -508,11 +508,6 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                           Q(pk=str(review_request.pk)))
             },
             {
-                'model': FileAttachment,
-                'type': 'UPDATE',
-                'where': Q(pk=file_attachment.pk),
-            },
-            {
                 'model': ReviewRequestDraft,
                 'where': Q(review_request=review_request),
             },
@@ -649,11 +644,6 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                            Q(drafts=review_request_draft) |
                            Q(inactive_drafts=review_request_draft)) &
                           Q(pk=str(review_request.pk)))
-            },
-            {
-                'model': FileAttachment,
-                'type': 'UPDATE',
-                'where': Q(pk=file_attachment.pk),
             },
             {
                 'model': ReviewRequestDraft,
@@ -879,11 +869,6 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                           Q(pk=str(review_request.pk)))
             },
             {
-                'model': FileAttachment,
-                'type': 'UPDATE',
-                'where': Q(pk=file_attachment.pk),
-            },
-            {
                 'model': ReviewRequestDraft,
                 'where': Q(review_request=review_request),
             },
@@ -1092,11 +1077,6 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                            Q(drafts=review_request_draft) |
                            Q(inactive_drafts=review_request_draft)) &
                           Q(pk=str(review_request.pk)))
-            },
-            {
-                'model': FileAttachment,
-                'type': 'UPDATE',
-                'where': Q(pk=file_attachment.pk),
             },
             {
                 'model': ReviewRequestDraft,

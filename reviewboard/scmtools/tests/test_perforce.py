@@ -1,4 +1,6 @@
-# coding=utf-8
+"""Unit tests for the Perforce tool."""
+
+from __future__ import annotations
 
 import os
 import shutil
@@ -24,7 +26,6 @@ from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError,
                                          SCMError,
                                          UnverifiedCertificateError)
-from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.perforce import PerforceTool, STunnelProxy
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.site.models import LocalSite
@@ -615,7 +616,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         self.assert_parsed_diff_file(
             parsed_files[0],
             orig_filename=b'//depot/foo/proj/README',
-            orig_file_details=b'//depot/foo/proj/README#2',
+            orig_file_details=b'2',
             modified_filename=b'/src/proj/README',
             modified_file_details=b'',
             data=diff)
@@ -633,7 +634,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         self.assert_parsed_diff_file(
             parsed_files[0],
             orig_filename=b'//depot/foo/proj/test.png',
-            orig_file_details=b'//depot/foo/proj/test.png#1',
+            orig_file_details=b'1',
             modified_filename=b'/src/proj/test.png',
             modified_file_details=b'',
             binary=True,
@@ -652,7 +653,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         self.assert_parsed_diff_file(
             parsed_files[0],
             orig_filename=b'//depot/foo/proj/test.png',
-            orig_file_details=b'//depot/foo/proj/test.png#1',
+            orig_file_details=b'1',
             modified_filename=b'/src/proj/test.png',
             modified_file_details=b'',
             deleted=True,
@@ -677,7 +678,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         self.assert_parsed_diff_file(
             parsed_files[0],
             orig_filename=b'//depot/foo/proj/test.txt',
-            orig_file_details=b'//depot/foo/proj/test.txt#2',
+            orig_file_details=b'2',
             modified_filename=b'//depot/foo/proj/test2.txt',
             modified_file_details=b'01-02-03 04:05:06',
             moved=True,
@@ -698,7 +699,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         self.assert_parsed_diff_file(
             parsed_files[0],
             orig_filename=b'//depot/foo/proj/test.png',
-            orig_file_details=b'//depot/foo/proj/test.png#5',
+            orig_file_details=b'5',
             modified_filename=b'//depot/foo/proj/test2.png',
             modified_file_details=b'',
             moved=True,
@@ -726,15 +727,15 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         self.assert_parsed_diff_file(
             parsed_files[0],
             orig_filename=b'//depot/foo/proj/test.png',
-            orig_file_details=b'//depot/foo/proj/test.png#1',
+            orig_file_details=b'1',
             modified_filename=b'/src/proj/test.png',
             modified_file_details=b'',
             data=diff1_text)
 
         self.assert_parsed_diff_file(
             parsed_files[1],
-            orig_filename=b'test.c',
-            orig_file_details=b'//depot/foo/proj/test.c#2',
+            orig_filename=b'//depot/foo/proj/test.c',
+            orig_file_details=b'2',
             modified_filename=b'test.c',
             modified_file_details=b'01-02-03 04:05:06',
             insert_count=2,
@@ -763,8 +764,8 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
 
         self.assert_parsed_diff_file(
             parsed_files[0],
-            orig_filename='tést.c'.encode('utf-8'),
-            orig_file_details='//depot/foo/proj/tést.c#2'.encode('utf-8'),
+            orig_filename='//depot/foo/proj/tést.c'.encode('utf-8'),
+            orig_file_details=b'2',
             modified_filename='tést.c'.encode('utf-8'),
             modified_file_details=b'01-02-03 04:05:06',
             insert_count=2,
