@@ -14,13 +14,18 @@ const ActionsDrawerView = RB.DrawerView.extend({
         <div class="rb-c-drawer__actions">
          <ul class="rb-c-drawer__action-group">
           <% _.each(actions, function(actionInfo) { %>
-           <li class="rb-c-drawer__action js-action-<%- actionInfo.id %>">
+           <li class="rb-c-drawer__action"
+               data-action-id="<%- actionInfo.id %>">
             <strong><%- actionInfo.label %></strong>
            </li>
           <% }) %>
          </ul>
         </div>
     `),
+
+    events: {
+        'click .rb-c-drawer__action': '_onActionClicked',
+    },
 
     /**
      * Initialize the drawer.
@@ -61,6 +66,20 @@ const ActionsDrawerView = RB.DrawerView.extend({
         this.$summary = this.$('.rb-c-drawer__summary');
 
         return this;
+    },
+
+    /**
+     * Handle a click on one of the action items.
+     *
+     * Args:
+     *     e (Event):
+     *         The click event.
+     */
+    _onActionClicked(e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        this.trigger('actionClicked', $(e.currentTarget).data('action-id'));
     },
 });
 
@@ -108,10 +127,18 @@ RB.Admin.ChangeListPageView = RB.Admin.PageView.extend({
         this._$datagrid = this._$form.children(
             '.rb-c-admin-change-list__results');
         this._datagrid = this._$datagrid.data('datagrid');
+        this._$actions = this._$form.find(
+            'select[name="action"]');
 
-        this.setDrawer(new ActionsDrawerView({
+        const drawer = new ActionsDrawerView({
             actions: model.get('actions'),
-        }));
+        });
+        this.setDrawer(drawer);
+        this.listenTo(drawer, 'actionClicked', action => {
+            this._$actions.children(`option[value="${action}"]`)
+                .prop('selected', true);
+            this._$form.submit();
+        });
 
         const modelNameLower = model.get('modelName').toLowerCase();
         const modelNameLowerPlural =

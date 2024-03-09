@@ -77,6 +77,14 @@
   <div>{{cl.formset.management_form}}</div>
 {%  endif %}
 
+{%  if action_form %}
+  <select hidden name="action" required="">
+{%   for choice in action_form.fields.action.choices %}
+   <option value="{{choice.0}}"></option>
+{%   endfor %}
+  </select>
+{%  endif %}
+
 {%  block result_list %}
 {%   result_list cl %}
 {%  endblock %}
