@@ -924,7 +924,7 @@ export class ImageReviewableView<
     #$imageDiffs: JQuery;
 
     /** The UI for choosing the diff mode. */
-    #$modeBar: JQuery;
+    #$modeBar: JQuery = null;
 
     /** The selection area container. */
     #$selectionArea: JQuery;
@@ -1054,6 +1054,22 @@ export class ImageReviewableView<
 
             this._setDiffMode(ImageTwoUpDiffView.mode);
         } else {
+            if (this.renderedInline) {
+                /*
+                 * When we're rendered inline, even if we don't have a diff, we
+                 * add the mode bar so that we have somewhere to stick the
+                 * resolution drop-down. This needs to have an empty anchor in
+                 * it for layout to succeed.
+                 *
+                 * This will be reworked later once we spend some time giving
+                 * review UIs some love, possibly with something like a
+                 * floating toolbar.
+                 */
+                this.#$modeBar = $('<ul class="image-diff-modes">')
+                    .append('<li><a>&nbsp;</a></li>')
+                    .appendTo(this.$el);
+            }
+
             this.#imageView = new ImageAttachmentView({
                 model: this.model,
             });
@@ -1161,7 +1177,7 @@ export class ImageReviewableView<
                 .appendTo($menu);
         });
 
-        if (hasDiff) {
+        if (this.#$modeBar !== null) {
             this.#$modeBar.append($resolutionMenu);
         } else {
             this.$('.caption').after($resolutionMenu);
