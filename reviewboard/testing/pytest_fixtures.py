@@ -42,8 +42,15 @@ def setup_siteconfig():
     # Make sure we're using standard static files storage, and not
     # something like Pipeline or S3 (since we don't want to trigger any
     # special behavior). Subclasses are free to override this setting.
-    settings.STATICFILES_STORAGE = \
-        'django.contrib.staticfiles.storage.StaticFilesStorage'
+    settings.STORAGES = {
+        'default': {
+            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        },
+        'staticfiles': {
+            'BACKEND':
+                'django.contrib.staticfiles.storage.StaticFilesStorage',
+        },
+    }
 
     # By default, don't look up DMARC records when generating From
     # addresses for e-mails. Just assume we can, since we're not
