@@ -3,15 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import (
-    Any,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    TYPE_CHECKING,
-    Union,
-    cast)
+from collections.abc import Iterator, Sequence
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union, cast
 
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
@@ -27,8 +20,9 @@ from reviewboard.diffviewer.chunk_generator import (NoWrapperHtmlFormatter,
                                                     RawDiffChunkGenerator)
 from reviewboard.diffviewer.diffutils import get_chunks_in_range
 from reviewboard.diffviewer.settings import DiffSettings
-from reviewboard.reviews.ui.base import ReviewUI
-
+from reviewboard.reviews.ui.base import (ReviewUI,
+                                         SerializedComment,
+                                         SerializedCommentBlocks)
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
@@ -39,6 +33,28 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+class SerializedTextComment(SerializedComment):
+    """Serialized comment data for text review UIs.
+
+    This must be kept in sync with the definitions in
+    :file:`reviewboard/static/rb/js/reviews/models/commentData.ts`.
+
+    Version Added:
+        7.0
+    """
+
+    #: The starting line number of the comment.
+    beginLineNum: int
+
+    #: The ending line number of the comment.
+    endLineNum: int
+
+    #: The view mode of the document when the comment was made.
+    #:
+    #: This will be either "source" or "rendered".
+    viewMode: str
 
 
 class TextBasedReviewUI(ReviewUI):
@@ -287,15 +303,27 @@ class TextBasedReviewUI(ReviewUI):
 
     def serialize_comments(
         self,
-        comments: List[FileAttachmentComment],
-    ) -> Dict[str, Any]:
-        """Return a dictionary of the comments for this file attachment."""
-        result = {}
+        comments: Sequence[FileAttachmentComment],
+    ) -> SerializedCommentBlocks:
+        """Serialize the comments for the file attachment.
 
-        for comment in comments:
+        Args:
+            comments (list of
+                      reviewboard.reviews.models.FileAttachmentComment):
+                The list of objects to serialize. This will be the result of
+                :py:meth:`get_comments`.
+
+        Returns:
+            SerializedCommentBlocks:
+            The serialized comments.
+        """
+        result: SerializedCommentBlocks = {}
+
+        for comment in self.flat_serialized_comments(comments):
+            comment = cast(SerializedTextComment, comment)
+
             try:
-                key = '%s-%s' % (comment.extra_data['beginLineNum'],
-                                 comment.extra_data['endLineNum'])
+                key = f'{comment["beginLineNum"]}-{comment["endLineNum"]}'
             except KeyError:
                 # It's possible this comment was made before the review UI
                 # was provided, meaning it has no data. If this is the case,
@@ -303,7 +331,7 @@ class TextBasedReviewUI(ReviewUI):
                 # line region.
                 continue
 
-            result.setdefault(key, []).append(self.serialize_comment(comment))
+            result.setdefault(key, []).append(comment)
 
         return result
 

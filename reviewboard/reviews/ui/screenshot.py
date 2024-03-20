@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, TYPE_CHECKING, cast
+from collections.abc import Sequence
+from typing import Optional, TYPE_CHECKING
 
-from reviewboard.reviews.ui.base import ReviewUI
 from reviewboard.reviews.models import (
-    BaseComment,
     Screenshot,
     ScreenshotComment,
 )
+from reviewboard.reviews.ui.base import ReviewUI, SerializedCommentBlocks
+from reviewboard.reviews.ui.image import SerializedRegionComment
 
 if TYPE_CHECKING:
     from djblets.util.typing import JSONDict
@@ -27,7 +28,7 @@ class LegacyScreenshotReviewUI(ReviewUI):
     js_model_class: str = 'RB.ScreenshotReviewable'
     js_view_class: str = 'RB.ImageReviewableView'
 
-    def get_comments(self) -> List[ScreenshotComment]:
+    def get_comments(self) -> list[ScreenshotComment]:
         """Return all existing comments on the screenshot.
 
         Returns:
@@ -91,52 +92,45 @@ class LegacyScreenshotReviewUI(ReviewUI):
 
     def serialize_comments(
         self,
-        comments: List[ScreenshotComment],
-    ) -> JSONDict:
+        comments: Sequence[ScreenshotComment],
+    ) -> SerializedCommentBlocks:
         """Serialize the comments for the screenshot.
 
         Args:
-            comments (list of reviewboard.reviews.models.
-                      screenshot_comment.ScreenshotComment):
+            comments (list of
+                      reviewboard.reviews.models.ScreenshotComment):
                 The comments to serialize.
 
         Returns:
-            dict:
+            SerializedCommentBlocks:
             The serialized comments.
         """
-        result: JSONDict = {}
-        serialized_comments = super().serialize_comments(
-            cast(List[BaseComment], comments))
+        result: SerializedCommentBlocks = {}
 
-        for serialized_comment in serialized_comments:
-            position = '%(x)sx%(y)s+%(w)s+%(h)s' % serialized_comment
-            result.setdefault(position, []).append(serialized_comment)
+        for comment in self.flat_serialized_comments(comments):
+            position = '%(x)sx%(y)s+%(w)s+%(h)s' % comment
+            result.setdefault(position, []).append(comment)
 
         return result
 
     def serialize_comment(
         self,
         comment: ScreenshotComment,
-    ) -> JSONDict:
+    ) -> SerializedRegionComment:
         """Serialize a comment.
 
         Args:
-            comment (reviewboard.reviews.models.screenshot_comment.
-                     ScreenshotComment):
+            comment (reviewboard.reviews.models.ScreenshotComment):
                 The comment to serialize.
 
         Returns:
-            dict:
+            SerializedRegionComment:
             The serialized comment.
         """
-        data = super(LegacyScreenshotReviewUI, self).serialize_comment(
-            comment)
-
-        data.update({
+        return {
+            **super().serialize_comment(comment),
             'x': comment.x,
             'y': comment.y,
-            'w': comment.w,
-            'h': comment.h,
-        })
-
-        return data
+            'width': comment.w,
+            'height': comment.h,
+        }

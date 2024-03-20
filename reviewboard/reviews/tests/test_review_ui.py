@@ -144,34 +144,46 @@ class ReviewUITests(SpyAgency, TestCase):
 
         comments_json = review_ui.get_comments_json()
 
-        self.assertEqual(
+        self.assertJSONEqual(
             comments_json,
-            '['
-            '{"comment_id": 1,'
-            ' "html": "Comment 1",'
-            ' "issue_opened": false,'
-            ' "issue_status": "",'
-            ' "localdraft": true,'
-            ' "review_id": 1,'
-            ' "review_request_id": 1,'
-            ' "rich_text": false,'
-            ' "text": "Comment 1",'
-            ' "url": "/r/1/#fcomment1",'
-            ' "user": {"name": "Dopey Dwarf", "username": "dopey"}'
-            '}, '
-            '{"comment_id": 2,'
-            ' "html": "Comment 2",'
-            ' "issue_opened": true,'
-            ' "issue_status": "open",'
-            ' "localdraft": true,'
-            ' "review_id": 1,'
-            ' "review_request_id": 1,'
-            ' "rich_text": false,'
-            ' "text": "Comment 2",'
-            ' "url": "/r/1/#fcomment2",'
-            ' "user": {"name": "Dopey Dwarf", "username": "dopey"}'
-            '}]'
-        )
+            {
+                '0': [
+                    {
+                        'comment_id': 1,
+                        'html': 'Comment 1',
+                        'issue_opened': False,
+                        'issue_status': '',
+                        'localdraft': True,
+                        'review_id': 1,
+                        'review_request_id': 1,
+                        'rich_text': False,
+                        'text': 'Comment 1',
+                        'url': '/r/1/#fcomment1',
+                        'user': {
+                            'name': 'Dopey Dwarf',
+                            'username': 'dopey',
+                        },
+                    },
+                ],
+                '1': [
+                    {
+                        'comment_id': 2,
+                        'html': 'Comment 2',
+                        'issue_opened': True,
+                        'issue_status': 'open',
+                        'localdraft': True,
+                        'review_id': 1,
+                        'review_request_id': 1,
+                        'rich_text': False,
+                        'text': 'Comment 2',
+                        'url': '/r/1/#fcomment2',
+                        'user': {
+                            'name': 'Dopey Dwarf',
+                            'username': 'dopey',
+                        },
+                    },
+                ],
+            })
 
     def test_render_to_response_with_inline_false(self) -> None:
         """Testing ReviewUI.render_to_response with inline=0"""
@@ -255,9 +267,9 @@ class ReviewUITests(SpyAgency, TestCase):
         comments = review_ui.serialize_comments(list(review_ui.get_comments()))
 
         self.assertEqual(len(comments), 3)
-        self.assertEqual(comments[0]['text'], 'Comment 1')
-        self.assertEqual(comments[1]['text'], 'Comment 2')
-        self.assertEqual(comments[2]['text'], 'Comment 3')
+        self.assertEqual(comments['0'][0]['text'], 'Comment 1')
+        self.assertEqual(comments['1'][0]['text'], 'Comment 2')
+        self.assertEqual(comments['2'][0]['text'], 'Comment 3')
 
     def test_serialize_comment(self) -> None:
         """Testing ReviewUI.serialize_comment"""

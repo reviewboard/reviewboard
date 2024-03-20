@@ -18,6 +18,15 @@ import { SerializedComment } from './commentData';
 
 
 /**
+ * The serialized comment block type.
+ *
+ * Version Added:
+ *     7.0
+ */
+export type SerializedCommentBlocks = { [key: string]: SerializedComment[] };
+
+
+/**
  * Attributes for the AbstractReviewable model.
  *
  * Version Added:
@@ -37,7 +46,7 @@ export interface AbstractReviewableAttrs extends ModelAttributes {
     review: Review;
 
     /** The set of serialized comment threads. */
-    serializedCommentBlocks: SerializedComment[];
+    serializedCommentBlocks: SerializedCommentBlocks;
 }
 
 
@@ -62,7 +71,7 @@ export class AbstractReviewable<
         renderedInline: false,
         review: null,
         reviewRequest: null,
-        serializedCommentBlocks: [],
+        serializedCommentBlocks: {},
     };
 
     /**
@@ -116,9 +125,24 @@ export class AbstractReviewable<
          * as the image review UI) return their serialized comments as an
          * object instead of an array.
          */
-        _.each(this.get('serializedCommentBlocks'),
-               this.loadSerializedCommentBlock,
-               this);
+        const commentBlocks = this.get('serializedCommentBlocks');
+
+        if (commentBlocks !== null) {
+            if (Array.isArray(commentBlocks)) {
+                // Temporary implementation for DiffReviewable comments. This will
+                // go away once we fix the format of the serialized comments for
+                // diffs.
+                for (const comments of commentBlocks) {
+                    this.loadSerializedCommentBlock(comments);
+                }
+            } else {
+                for (const comments of Object.values(commentBlocks)) {
+                    if (comments.length) {
+                        this.loadSerializedCommentBlock(comments);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -146,10 +170,10 @@ export class AbstractReviewable<
      * This must be implemented by subclasses.
      *
      * Args:
-     *     serializedCommentBlock (object):
+     *     serializedComments (Array of SerializedComment):
      *         The serialized data for the new comment block(s).
      */
-    loadSerializedCommentBlock(serializedCommentBlock: SerializedComment) {
+    loadSerializedCommentBlock(serializedComments: SerializedComment[]) {
         console.assert(false, 'loadSerializedCommentBlock must be ' +
                               'implemented by a subclass');
     }

@@ -88,14 +88,14 @@ export class FileAttachmentReviewable<
      * Load a serialized comment and add comment blocks for it.
      *
      * Args:
-     *     serializedCommentBlock (object):
+     *     serializedComments (Array of SerializedComment):
      *         The serialized data for the new comment block(s).
      */
     loadSerializedCommentBlock(
-        serializedCommentBlock: SerializedComment[],
+        serializedComments: SerializedComment[],
     ) {
         const parsedData = this.commentBlockModel.prototype.parse(
-            _.pick(serializedCommentBlock[0],
+            _.pick(serializedComments[0],
                    this.commentBlockModel.prototype.serializedFields));
 
         this.createCommentBlock(_.extend(
@@ -103,7 +103,7 @@ export class FileAttachmentReviewable<
                 diffAgainstFileAttachmentID:
                     this.get('diffAgainstFileAttachmentID'),
                 fileAttachmentID: this.get('fileAttachmentID'),
-                serializedComments: serializedCommentBlock,
+                serializedComments: serializedComments,
                 state: this.get('state'),
             }, parsedData));
     }

@@ -1,8 +1,11 @@
+"""Base class for a Review UI."""
+
 from __future__ import annotations
 
 import json
 import logging
 import os
+from collections.abc import Iterator, Sequence
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 from uuid import uuid4
 
@@ -12,6 +15,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
+from typing_extensions import TypeAlias, TypedDict
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.attachments.models import (FileAttachment,
@@ -39,6 +43,74 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+class SerializedCommentUser(TypedDict):
+    """Serialized user for comment data.
+
+    This must be kept in sync with the definitions in
+    :file:`reviewboard/static/rb/js/reviews/models/commentData.ts`.
+
+    Version Added:
+        7.0
+    """
+
+    #: The user's full name, if available.
+    name: str
+
+    #: The user's username.
+    username: str
+
+
+class SerializedComment(TypedDict):
+    """Serialized comment data to pass through to JavaScript.
+
+    This must be kept in sync with the definitions in
+    :file:`reviewboard/static/rb/js/reviews/models/commentData.ts`.
+
+    Version Added:
+        7.0
+    """
+
+    #: The ID of the comment.
+    comment_id: int
+
+    #: The rendered HTML version of the comment text.
+    html: str
+
+    #: Whether the comment opens an issue.
+    issue_opened: bool
+
+    #: The status of the issue, if one was opened.
+    issue_status: str
+
+    #: Whether the comment is part of the user's current draft review.
+    localdraft: bool
+
+    #: The ID of the review that this comment is a part of.
+    review_id: int
+
+    #: The ID of the review request that this comment is on.
+    review_request_id: int
+
+    #: Whether the comment text should be rendered in Markdown.
+    rich_text: bool
+
+    #: The raw text of the comment.
+    text: str
+
+    #: The URL to link to for the comment.
+    url: str
+
+    #: Information about the author of the comment.
+    user: SerializedCommentUser
+
+
+#: A type for the serialized comments for a review UI.
+#:
+#: Version Added:
+#:     7.0
+SerializedCommentBlocks: TypeAlias = Dict[str, List[SerializedComment]]
 
 
 class ReviewUI:
@@ -629,14 +701,12 @@ class ReviewUI:
 
     def serialize_comments(
         self,
-        comments: List[BaseComment],
-    ) -> List[JSONDict]:
+        comments: Sequence[BaseComment],
+    ) -> SerializedCommentBlocks:
         """Serialize the comments for the Review UI target.
 
-        By default, this will return a list of serialized comments,
-        but it can be overridden to return other list or dictionary-based
-        representations, such as comments grouped by an identifier or region.
-        These representations must be serializable into JSON.
+        By default, this will return a "flat" array of comments, but it can be
+        overridden in order to group comments by identifier or region.
 
         Args:
             comments (list of reviewboard.reviews.models.base_comment.
@@ -645,38 +715,56 @@ class ReviewUI:
                 :py:meth:`get_comments`.
 
         Returns:
-            list of dict:
-            The list of serialized comment data.
+            SerializedCommentBlocks:
+            The set of serialized comment data.
+        """
+        result: SerializedCommentBlocks = {}
+
+        for i, comment in enumerate(self.flat_serialized_comments(comments)):
+            result[str(i)] = [comment]
+
+        return result
+
+    def flat_serialized_comments(
+        self,
+        comments: Sequence[BaseComment],
+    ) -> Iterator[SerializedComment]:
+        """Yield the serialized comments.
+
+        This will go through the list of comments and filter out any which
+        should not be shown (ones which are in other users' drafts), then yield
+        the serialized form for each.
+
+        Yields:
+            SerializedComment:
+            The serialized comment.
         """
         assert self.request is not None
         user = self.request.user
-
-        result = []
 
         for comment in comments:
             try:
                 review = comment.get_review()
             except Review.DoesNotExist:
-                logger.error('Missing Review for comment %r' % comment,
-                             extra={'request': self.request},)
+                logger.error('Missing Review for comment %r',
+                             comment,
+                             extra={'request': self.request})
                 continue
 
             try:
                 if review and (review.public or review.user_id == user.pk):
-                    result.append(self.serialize_comment(comment))
+                    yield self.serialize_comment(comment)
             except Exception as e:
-                logger.exception('Error when calling serialize_comment for '
-                                 '%r: %s',
-                                 self, e,
-                                 extra={'request': self.request})
+                logger.exception(
+                    'Error when calling serialize_comment for %r: %s',
+                    comment, e,
+                    extra={'request': self.request})
                 raise
-
-        return result
 
     def serialize_comment(
         self,
         comment: BaseComment,
-    ) -> JSONDict:
+    ) -> SerializedComment:
         """Serialize a comment.
 
         This will provide information on the comment that may be useful
@@ -690,7 +778,7 @@ class ReviewUI:
                 The comment to serialize.
 
         Returns:
-            dict:
+            SerializedComment:
             The serialized comment data.
         """
         review = comment.get_review()
@@ -698,24 +786,24 @@ class ReviewUI:
         assert self.request is not None
         user = self.request.user
 
-        data = {
+        data: SerializedComment = {
             'comment_id': comment.pk,
-            'text': normalize_text_for_edit(user, comment.text,
-                                            comment.rich_text),
-            'rich_text': comment.rich_text,
+            'issue_opened': comment.issue_opened,
+            'issue_status': comment.issue_status_to_string(
+                comment.issue_status),
             'html': markdown_render_conditional(comment.text,
                                                 comment.rich_text),
+            'localdraft': review.user_id == user.pk and not review.public,
+            'review_id': review.pk,
+            'review_request_id': review.review_request_id,
+            'rich_text': comment.rich_text,
+            'text': normalize_text_for_edit(user, comment.text,
+                                            comment.rich_text),
+            'url': comment.get_review_url(),
             'user': {
                 'username': review.user.username,
                 'name': review.user.get_profile().get_display_name(user),
             },
-            'url': comment.get_review_url(),
-            'localdraft': review.user_id == user.pk and not review.public,
-            'review_id': review.pk,
-            'review_request_id': review.review_request_id,
-            'issue_opened': comment.issue_opened,
-            'issue_status': comment.issue_status_to_string(
-                comment.issue_status),
         }
 
         if isinstance(comment, FileAttachmentComment):
