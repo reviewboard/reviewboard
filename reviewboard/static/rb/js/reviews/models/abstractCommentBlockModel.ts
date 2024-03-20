@@ -61,7 +61,9 @@ export interface AbstractCommentBlockAttrs extends ModelAttributes {
  * The total number of comments in the block (including any draft comment)
  * will be stored, which may be useful for display.
  */
-@spina
+@spina({
+    prototypeAttrs: ['serializedFields'],
+})
 export class AbstractCommentBlock<
     TAttributes extends AbstractCommentBlockAttrs
         = AbstractCommentBlockAttrs
@@ -76,6 +78,13 @@ export class AbstractCommentBlock<
         reviewRequest: null,
         serializedComments: [],
     };
+
+    /**
+     * The list of extra fields on this model.
+     *
+     * These will be stored on the server in the comment's extra_data field.
+     */
+    static serializedFields: string[] = [];
 
     /**
      * Initialize the AbstractCommentBlock.
