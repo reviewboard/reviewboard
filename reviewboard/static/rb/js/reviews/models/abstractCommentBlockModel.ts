@@ -2,36 +2,21 @@
  * Represents a region of reviewable content that contains comments.
  */
 
-import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
+import {
+    BaseModel,
+    type ModelAttributes,
+    spina,
+} from '@beanbag/spina';
 
 import {
-    BaseComment,
-    Review,
-    ReviewRequest,
+    type BaseComment,
+    type Review,
+    type ReviewRequest,
 } from 'reviewboard/common';
-import {
+import type {
     BaseCommentAttrs,
 } from 'reviewboard/common/resources/models/baseCommentModel';
-
-
-/**
- * Serialized data for a comment block.
- *
- * Version Added:
- *     7.0
- */
-export interface SerializedComment {
-    comment_id: number;
-    html: string;
-    issue_opened: boolean;
-    issue_status: string;
-    localdraft: boolean;
-    rich_text: boolean;
-    text: string;
-    user: {
-        name: string;
-    };
-}
+import type { SerializedComment } from './commentData';
 
 
 /**

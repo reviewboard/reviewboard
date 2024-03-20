@@ -6,9 +6,9 @@ import { spina } from '@beanbag/spina';
 
 import {
     AbstractCommentBlock,
-    AbstractCommentBlockAttrs,
-    SerializedComment,
+    type AbstractCommentBlockAttrs,
 } from './abstractCommentBlockModel';
+import type { SerializedComment } from './commentData';
 
 
 /**

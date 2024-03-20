@@ -4,14 +4,12 @@
 
 import { spina } from '@beanbag/spina';
 
-import {
-    AbstractCommentBlock,
-    SerializedComment,
-} from './abstractCommentBlockModel';
+import type { AbstractCommentBlock } from './abstractCommentBlockModel';
 import {
     AbstractReviewable,
-    AbstractReviewableAttrs,
+    type AbstractReviewableAttrs,
 } from './abstractReviewableModel';
+import type { SerializedComment } from './commentData';
 
 
 /**

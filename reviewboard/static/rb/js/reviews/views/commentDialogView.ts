@@ -1,17 +1,22 @@
 /**
  * The comment dialog.
  */
-import { BaseView, EventsHash, spina } from '@beanbag/spina';
+import {
+    BaseView,
+    type EventsHash,
+    spina,
+} from '@beanbag/spina';
 
 import {
-    BaseComment,
+    type BaseComment,
     EnabledFeatures,
     UserSession,
 } from 'reviewboard/common';
 import { TextEditorView } from 'reviewboard/ui';
 
+import type { SerializedComment } from '../models/commentData';
 import { CommentEditor } from '../models/commentEditorModel';
-import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import type { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 
 
 /**
@@ -94,7 +99,10 @@ class CommentsListView extends BaseView<
      *     replyType (string):
      *         The type of comment, for use in creating replies.
      */
-    setComments(comments, replyType) {
+    setComments(
+        comments: SerializedComment[],
+        replyType: string,
+    ) {
         if (comments.length === 0) {
             return;
         }
@@ -105,7 +113,7 @@ class CommentsListView extends BaseView<
         let odd = true;
         let $items = $();
 
-        _.each(comments, serializedComment => {
+        comments.forEach(serializedComment => {
             const commentID = serializedComment.comment_id;
             const $item = $(CommentsListView.itemTemplate({
                 comment: serializedComment,
@@ -228,7 +236,7 @@ interface CommentDialogViewCreationOptions {
      *
      * This only applies if the comment is a reply.
      */
-    publishedComments?: BaseComment[];
+    publishedComments?: SerializedComment[];
 
     /**
      * The type of comment that this draft is a reply to.
