@@ -8,12 +8,14 @@ import {
 } from 'jasmine-core';
 
 import { ReviewRequest } from 'reviewboard/common';
-
-import { DiffReviewable } from '../diffReviewableModel';
+import {
+    DiffFile,
+    DiffReviewable,
+} from 'reviewboard/reviews';
 
 
 suite('rb/diffviewer/models/DiffReviewable', function() {
-    let reviewRequest;
+    let reviewRequest: ReviewRequest;
 
     beforeEach(function() {
         reviewRequest = new ReviewRequest({
@@ -24,7 +26,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
     describe('getRenderedDiff', function() {
         it('Without interdiffs', async function() {
             const diffReviewable = new DiffReviewable({
-                file: new RB.DiffFile({
+                file: new DiffFile({
                     index: 4,
                 }),
                 fileDiffID: 3,
@@ -47,7 +49,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
 
         it('With interdiffs', async function() {
             const diffReviewable = new DiffReviewable({
-                file: new RB.DiffFile({
+                file: new DiffFile({
                     index: 4,
                 }),
                 fileDiffID: 3,
@@ -72,7 +74,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
         it('With base FileDiff', async function() {
             const diffReviewable = new DiffReviewable({
                 baseFileDiffID: 1,
-                file: new RB.DiffFile({
+                file: new DiffFile({
                     index: 4,
                 }),
                 fileDiffID: 3,
@@ -97,7 +99,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
     describe('getRenderedDiffFragment', function() {
         it('Without interdiffs', async function() {
             const diffReviewable = new DiffReviewable({
-                file: new RB.DiffFile({
+                file: new DiffFile({
                     index: 5,
                 }),
                 fileDiffID: 3,
@@ -125,7 +127,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
 
         it('With interdiffs', async function() {
             const diffReviewable = new DiffReviewable({
-                file: new RB.DiffFile({
+                file: new DiffFile({
                     index: 5,
                 }),
                 fileDiffID: 3,
@@ -156,7 +158,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
         it('With base filediff ID', async function() {
             const diffReviewable = new DiffReviewable({
                 baseFileDiffID: 123,
-                file: new RB.DiffFile({
+                file: new DiffFile({
                     index: 5,
                 }),
                 fileDiffID: 3,

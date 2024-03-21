@@ -12,6 +12,7 @@ import {
 
 import { ReviewRequest } from 'reviewboard/common';
 import {
+    DiffFile,
     DiffReviewable,
     DiffReviewableView,
 } from 'reviewboard/reviews';
@@ -604,7 +605,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
         beforeEach(function() {
             model = new DiffReviewable({
-                file: new RB.DiffFile({
+                file: new DiffFile({
                     index: 1
                 }),
                 fileDiffID: 10,

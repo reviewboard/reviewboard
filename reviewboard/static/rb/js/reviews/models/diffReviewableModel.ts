@@ -6,12 +6,13 @@ import { spina } from '@beanbag/spina';
 
 import {
     AbstractReviewable,
-    AbstractReviewableAttrs,
+    type AbstractReviewableAttrs,
 } from './abstractReviewableModel';
 import {
     DiffCommentBlock,
-    SerializedDiffComment,
+    type SerializedDiffComment,
 } from './diffCommentBlockModel';
+import type { DiffFile } from './diffFileModel';
 
 
 /**
@@ -25,7 +26,7 @@ export interface DiffReviewableAttrs extends AbstractReviewableAttrs {
     baseFileDiffID: number;
 
     /** Information on the file associated with this diff. */
-    file: RB.DiffFile;
+    file: DiffFile;
 
     /** The ID of the FileDiff. */
     fileDiffID: number;

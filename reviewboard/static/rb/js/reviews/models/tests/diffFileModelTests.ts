@@ -1,26 +1,41 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { DiffFile } from 'reviewboard/reviews';
+
+
 suite('rb/diffviewer/models/DiffFile', function() {
     describe('parse', function() {
         it('API payloads', function() {
-            const data = RB.DiffFile.prototype.parse.call(undefined, {
+            const diffFile = new DiffFile({
                 base_filediff_id: 12,
                 binary: false,
+                // XXX: this is all wrong, but going away later.
                 comment_counts: [1],
                 deleted: true,
                 depot_filename: 'foo',
                 dest_filename: 'bar',
                 filediff: {
                     id: 38,
-                    revision: 2
+                    revision: 2,
                 },
                 id: 28,
                 index: 3,
                 interfilediff: {
                     id: 23,
-                    revision: 4
+                    revision: 4,
                 },
                 newfile: true,
-                revision: 3
+                revision: '3',
+            }, {
+                parse: true,
             });
+
+            const data = diffFile.attributes;
 
             expect(data).not.toBe(undefined);
             expect(data.baseFileDiffID).toBe(12);
@@ -38,7 +53,7 @@ suite('rb/diffviewer/models/DiffFile', function() {
             expect(data.interfilediff.id).toBe(23);
             expect(data.interfilediff.revision).toBe(4);
             expect(data.newfile).toBe(true);
-            expect(data.revision).toBe(3);
+            expect(data.revision).toBe('3');
         });
     });
 });

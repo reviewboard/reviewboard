@@ -14,6 +14,7 @@ import {
     UserSession,
 } from 'reviewboard/common';
 import {
+    DiffFile,
     DiffReviewableView,
     DiffViewerPage,
     DiffViewerPageView,
@@ -792,7 +793,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 expect(pageView.queueLoadDiff.calls.count()).toBe(0);
 
                 page.files.reset([
-                    new RB.DiffFile({
+                    new DiffFile({
                         filediff: {
                             id: 200,
                             revision: 1,
@@ -811,7 +812,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
                 /* Add an initial batch of files. */
                 page.files.reset([
-                    new RB.DiffFile({
+                    new DiffFile({
                         filediff: {
                             id: 200,
                             revision: 1,
@@ -825,7 +826,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
                 /* Now do another. */
                 page.files.reset([
-                    new RB.DiffFile({
+                    new DiffFile({
                         filediff: {
                             id: 201,
                             revision: 2,

@@ -3,10 +3,12 @@
  */
 import { spina } from '@beanbag/spina';
 
+import { DiffFileCollection } from '../collections/diffFileCollection';
+import type { DiffFileResourceData } from './diffFileModel';
 import {
     ReviewablePage,
-    ReviewablePageAttrs,
-    ReviewablePageParseData,
+    type ReviewablePageAttrs,
+    type ReviewablePageParseData,
 } from './reviewablePageModel';
 
 
@@ -47,7 +49,7 @@ interface DiffViewerPageParseData extends ReviewablePageParseData {
     commit_history_diff: object[];
     commits: object[];
     filename_patterns: string[];
-    files: object[];
+    files: DiffFileResourceData[];
     num_diffs: number;
     pagination: object;
     revision: {
@@ -127,7 +129,7 @@ export class DiffViewerPage extends ReviewablePage<DiffViewerPageAttrs> {
     diffReviewables: RB.DiffReviewableCollection;
 
     /** The set of currently-shown files. */
-    files: RB.DiffFileCollection;
+    files: DiffFileCollection;
 
     /** Paginator for all of the diff files. */
     pagination: RB.Pagination;
@@ -146,7 +148,7 @@ export class DiffViewerPage extends ReviewablePage<DiffViewerPageAttrs> {
         this.commentsHint = new RB.DiffCommentsHint();
         this.commits = new RB.DiffCommitCollection();
         this.commitHistoryDiff = new RB.CommitHistoryDiffEntryCollection();
-        this.files = new RB.DiffFileCollection();
+        this.files = new DiffFileCollection();
         this.pagination = new RB.Pagination();
         this.revision = new RB.DiffRevision();
     }

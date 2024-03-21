@@ -1,7 +1,10 @@
+export { DiffFileCollection } from './collections/diffFileCollection';
+
 export { AbstractCommentBlock } from './models/abstractCommentBlockModel';
 export { AbstractReviewable } from './models/abstractReviewableModel';
 export { CommentEditor } from './models/commentEditorModel';
 export { DiffCommentBlock } from './models/diffCommentBlockModel';
+export { DiffFile } from './models/diffFileModel';
 export { DiffReviewable } from './models/diffReviewableModel';
 export { DiffViewerPage } from './models/diffViewerPageModel';
 export { DummyReviewable } from './models/dummyReviewableModel';
