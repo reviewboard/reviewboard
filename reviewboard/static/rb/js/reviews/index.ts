@@ -1,4 +1,7 @@
 export { DiffFileCollection } from './collections/diffFileCollection';
+export {
+    DiffReviewableCollection,
+} from './collections/diffReviewableCollection';
 
 export { AbstractCommentBlock } from './models/abstractCommentBlockModel';
 export { AbstractReviewable } from './models/abstractReviewableModel';

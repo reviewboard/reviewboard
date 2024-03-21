@@ -1,8 +1,25 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+} from 'jasmine-core';
+
+import { ReviewRequest } from 'reviewboard/common';
+import {
+    DiffFile,
+    DiffFileCollection,
+    DiffReviewableCollection,
+} from 'reviewboard/reviews';
+
+
 suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
     describe('Construction', function() {
         it('Sets reviewRequest', function() {
-            const reviewRequest = new RB.ReviewRequest();
-            const collection = new RB.DiffReviewableCollection([], {
+            const reviewRequest = new ReviewRequest();
+            const collection = new DiffReviewableCollection([], {
                 reviewRequest: reviewRequest,
             });
 
@@ -11,14 +28,14 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
     });
 
     describe('watchFiles', function() {
-        let collection;
-        let files;
+        let collection: DiffReviewableCollection;
+        let files: DiffFileCollection;
 
         beforeEach(function() {
-            collection = new RB.DiffReviewableCollection([], {
-                reviewRequest: new RB.ReviewRequest(),
+            collection = new DiffReviewableCollection([], {
+                reviewRequest: new ReviewRequest(),
             });
-            files = new RB.DiffFileCollection();
+            files = new DiffFileCollection();
         });
 
         it('Initially populates', function() {
@@ -36,15 +53,16 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
             collection.watchFiles(files);
 
             files.reset([
-                new RB.DiffFile({
+                new DiffFile({
                     filediff: {
                         id: 300,
                         revision: 1,
                     },
-                    index: 1,
                     id: 100,
+                    index: 1,
                 }),
-                new RB.DiffFile({
+                new DiffFile({
+                    commentCounts: [1],
                     filediff: {
                         id: 301,
                         revision: 1,
@@ -53,11 +71,10 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
                         id: 400,
                         revision: 2,
                     },
-                    index: 2,
                     id: 101,
-                    commentCounts: [1],
+                    index: 2,
                 }),
-                new RB.DiffFile({
+                new DiffFile({
                     baseFileDiffID: 123,
                     filediff: {
                         id: 302,
@@ -65,8 +82,8 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
                     },
                     forceInterdiff: true,
                     forceInterdiffRevision: 1,
-                    index: 3,
                     id: 102,
+                    index: 3,
                 }),
             ]);
 
