@@ -62,17 +62,30 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
                     index: 1,
                 }),
                 new DiffFile({
-                    commentCounts: [1],
                     filediff: {
                         id: 301,
                         revision: 1,
                     },
+                    id: 101,
+                    index: 2,
                     interfilediff: {
                         id: 400,
                         revision: 2,
                     },
-                    id: 101,
-                    index: 2,
+                    serializedCommentBlocks: {
+                        '2-2': [
+                            {
+                                comment_id: 1,
+                                issue_opened: false,
+                                line: 2,
+                                localdraft: false,
+                                num_lines: 2,
+                                review_id: 1,
+                                text: 'Comment',
+                                user: { name: 'testuser' },
+                            },
+                        ],
+                    },
                 }),
                 new DiffFile({
                     baseFileDiffID: 123,
@@ -111,7 +124,21 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
             expect(diffReviewable.get('interFileDiffID')).toBe(400);
             expect(diffReviewable.get('revision')).toBe(1);
             expect(diffReviewable.get('interdiffRevision')).toBe(2);
-            expect(diffReviewable.get('serializedCommentBlocks')).toEqual([1]);
+            expect(diffReviewable.get('serializedCommentBlocks')).toEqual(
+                {
+                    '2-2': [
+                        {
+                            comment_id: 1,
+                            issue_opened: false,
+                            line: 2,
+                            localdraft: false,
+                            num_lines: 2,
+                            review_id: 1,
+                            text: 'Comment',
+                            user: { name: 'testuser' },
+                        },
+                    ],
+                });
 
             diffReviewable = collection.at(2);
             expect(diffReviewable.get('baseFileDiffID')).toBe(123);

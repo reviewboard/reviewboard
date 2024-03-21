@@ -126,7 +126,7 @@ export class DiffReviewableCollection extends BaseCollection<
                 public: file.get('public'),
                 reviewRequest: reviewRequest,
                 revision: filediff.revision,
-                serializedCommentBlocks: file.get('commentCounts'),
+                serializedCommentBlocks: file.get('serializedCommentBlocks'),
             });
         });
 

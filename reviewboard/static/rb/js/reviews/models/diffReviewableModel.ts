@@ -8,10 +8,8 @@ import {
     AbstractReviewable,
     type AbstractReviewableAttrs,
 } from './abstractReviewableModel';
-import {
-    DiffCommentBlock,
-    type SerializedDiffComment,
-} from './diffCommentBlockModel';
+import type { SerializedComment } from './commentData';
+import { DiffCommentBlock } from './diffCommentBlockModel';
 import type { DiffFile } from './diffFileModel';
 
 
@@ -82,18 +80,24 @@ export class DiffReviewable
      *         The serialized data for the new comment block(s).
      */
     loadSerializedCommentBlock(
-        serializedCommentBlock: SerializedDiffComment,
+        serializedComments: SerializedComment[],
     ) {
+        const parsedData = this.commentBlockModel.prototype.parse(
+            _.pick(serializedComments[0],
+                   this.commentBlockModel.prototype.serializedFields));
+
+        const line = parsedData['line'] as number;
+        const numLines = parsedData['num_lines'] as number;
+
         this.createCommentBlock({
-            beginLineNum: serializedCommentBlock.linenum,
-            endLineNum: (serializedCommentBlock.linenum as number) +
-                        (serializedCommentBlock.num_lines as number) - 1,
+            beginLineNum: line,
+            endLineNum: line + numLines - 1,
             fileDiffID: this.get('fileDiffID'),
             interFileDiffID: this.get('interFileDiffID'),
             public: this.get('public'),
             review: this.get('review'),
             reviewRequest: this.get('reviewRequest'),
-            serializedComments: serializedCommentBlock.comments || [],
+            serializedComments: serializedComments,
         });
     }
 

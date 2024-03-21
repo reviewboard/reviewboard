@@ -4,6 +4,8 @@
 
 import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
 
+import type { SerializedDiffComment } from './commentData';
+
 
 /**
  * Serialized information about a FileDiff.
@@ -24,6 +26,10 @@ interface SerializedFileDiff {
 }
 
 
+/** The set of serialized comment blocks in the diff. */
+type SerializedDiffCommentBlocks = { [key: string]: SerializedDiffComment };
+
+
 /**
  * Attributes for the DiffFile model.
  *
@@ -42,13 +48,6 @@ export interface DiffFileAttrs extends ModelAttributes {
 
     /** Whether or not this is a binary file. */
     binary: boolean;
-
-    /**
-     * The serialized comments.
-     *
-     * This will be changing in a future commit.
-     */
-    commentCounts: object[] | null;
 
     /** Whether or not the file was deleted. */
     deleted: boolean;
@@ -114,6 +113,9 @@ export interface DiffFileAttrs extends ModelAttributes {
 
     /** Whether the diff has been published or not. */
     public: boolean;
+
+    /** The set of serialized comment blocks in the diff. */
+    serializedCommentBlocks: SerializedDiffCommentBlocks | null;
 }
 
 
@@ -126,7 +128,6 @@ export interface DiffFileAttrs extends ModelAttributes {
 export interface DiffFileResourceData {
     base_filediff_id: number;
     binary: boolean;
-    comment_counts: object[];
     deleted: boolean;
     filediff: SerializedFileDiff;
     force_interdiff: boolean;
@@ -140,6 +141,7 @@ export interface DiffFileResourceData {
     orig_filename: string;
     orig_revision: string;
     public: boolean;
+    serialized_comment_blocks: SerializedDiffCommentBlocks | null;
 }
 
 
@@ -151,7 +153,6 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
     static defaults: DiffFileAttrs = {
         baseFileDiffID: null,
         binary: false,
-        commentCounts: null,
         deleted: false,
         filediff: null,
         forceInterdiff: null,
@@ -164,6 +165,7 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
         origFilename: null,
         origRevision: null,
         public: false,
+        serializedCommentBlocks: null,
     };
 
     /**
@@ -183,7 +185,6 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
         return {
             baseFileDiffID: rsp.base_filediff_id,
             binary: rsp.binary,
-            commentCounts: rsp.comment_counts,
             deleted: rsp.deleted,
             filediff: rsp.filediff,
             forceInterdiff: rsp.force_interdiff,
@@ -197,6 +198,7 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
             origFilename: rsp.orig_filename,
             origRevision: rsp.orig_revision,
             public: rsp.public,
+            serializedCommentBlocks: rsp.serialized_comment_blocks,
         };
     }
 }

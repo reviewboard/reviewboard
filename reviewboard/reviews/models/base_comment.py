@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import ClassVar, TYPE_CHECKING
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -13,6 +13,9 @@ from djblets.db.fields import CounterField, JSONField
 
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.reviews.managers import CommentManager
+
+if TYPE_CHECKING:
+    from reviewboard.reviews.models import Review
 
 
 class BaseComment(models.Model):
@@ -145,7 +148,7 @@ class BaseComment(models.Model):
         else:
             return self.get_review().review_request
 
-    def get_review(self):
+    def get_review(self) -> Review:
         """Return this comment's review.
 
         Returns:

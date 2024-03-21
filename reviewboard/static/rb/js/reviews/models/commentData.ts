@@ -58,6 +58,24 @@ export interface SerializedComment {
 
 
 /**
+ * Serialized data for a diff comment.
+ *
+ * This must be kept in sync with the definitions in
+ * :file:`reviewboard/reviews/ui/diff.py`.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface SerializedDiffComment extends SerializedComment {
+    /** The line that the comment starts on. */
+    line: number;
+
+    /** The number of lines that the comment spans. */
+    num_lines: number;
+}
+
+
+/**
  * Serialized data for a region comment.
  *
  * This must be kept in sync with the definitions in

@@ -8,20 +8,6 @@ import {
     AbstractCommentBlock,
     type AbstractCommentBlockAttrs,
 } from './abstractCommentBlockModel';
-import type { SerializedComment } from './commentData';
-
-
-/**
- * Serialized data for a diff comment block.
- *
- * Version Added:
- *     7.0
- */
-export interface SerializedDiffComment {
-    linenum: number;
-    num_lines: number;
-    comments: SerializedComment[];
-}
 
 
 /**
@@ -89,6 +75,8 @@ export class DiffCommentBlock
         interFileDiffID: null,
         public: false,
     }, super.defaults);
+
+    static serializedFields = ['line', 'num_lines'];
 
     /**
      * Return the number of lines this comment block spans.

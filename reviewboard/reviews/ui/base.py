@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 import logging
 import os
-from collections.abc import Iterator, Sequence
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import (Any, Dict, Iterator, List, Optional, Sequence, Tuple,
+                    TYPE_CHECKING)
 from uuid import uuid4
 
 import mimeparse
@@ -181,6 +181,16 @@ class ReviewUI:
 
     #: Whether there's a file type mismatch when showing diffs.
     diff_type_mismatch: bool = False
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The object being reviewed.
+    obj: object
+
+    #: The current HTTP request.
+    request: HttpRequest
 
     @property
     def js_model_class(self) -> str:
@@ -794,6 +804,7 @@ class ReviewUI:
             'html': markdown_render_conditional(comment.text,
                                                 comment.rich_text),
             'localdraft': review.user_id == user.pk and not review.public,
+            'reply_to_id': comment.reply_to_id,
             'review_id': review.pk,
             'review_request_id': review.review_request_id,
             'rich_text': comment.rich_text,

@@ -128,18 +128,9 @@ export class AbstractReviewable<
         const commentBlocks = this.get('serializedCommentBlocks');
 
         if (commentBlocks !== null) {
-            if (Array.isArray(commentBlocks)) {
-                // Temporary implementation for DiffReviewable comments. This will
-                // go away once we fix the format of the serialized comments for
-                // diffs.
-                for (const comments of commentBlocks) {
+            for (const comments of Object.values(commentBlocks)) {
+                if (comments.length) {
                     this.loadSerializedCommentBlock(comments);
-                }
-            } else {
-                for (const comments of Object.values(commentBlocks)) {
-                    if (comments.length) {
-                        this.loadSerializedCommentBlock(comments);
-                    }
                 }
             }
         }

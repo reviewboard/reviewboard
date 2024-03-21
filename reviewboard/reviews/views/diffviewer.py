@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 from django.http import HttpRequest, HttpResponse
 from django.utils.translation import gettext
 
 from reviewboard.accounts.mixins import UserProfileRequiredViewMixin
 from reviewboard.attachments.models import get_latest_file_attachments
+from reviewboard.diffviewer.models import FileDiff
 from reviewboard.diffviewer.views import DiffViewerView
-from reviewboard.reviews.context import (comment_counts,
-                                         diffsets_with_comments,
+from reviewboard.reviews.context import (diffsets_with_comments,
                                          has_comments_in_diffsets_excluding,
                                          interdiffs_with_comments,
                                          make_review_request_context)
+from reviewboard.reviews.ui.diff import DiffReviewUI
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.reviews.models import Review
 
@@ -271,23 +272,32 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         files = []
 
         for f in context['files']:
-            filediff = f['filediff']
-            interfilediff = f['interfilediff']
-            base_filediff = f['base_filediff']
+            filediff = cast(FileDiff, f['filediff'])
+            interfilediff = cast(Optional[FileDiff], f['interfilediff'])
+            base_filediff = cast(Optional[FileDiff], f['base_filediff'])
+
+            interfilediff_id: Optional[int] = None
+            base_filediff_id: Optional[int] = None
 
             if base_filediff:
                 base_filediff_id = base_filediff.pk
-            else:
-                base_filediff_id = None
+
+            if interfilediff:
+                interfilediff_id = interfilediff.pk
+
+            key = (filediff.pk, interfilediff_id, base_filediff_id)
+
+            file_comments = comments.get(key, [])
+
+            review_ui = DiffReviewUI(
+                review_request=self.review_request,
+                obj=filediff,
+                base_filediff=base_filediff,
+                interfilediff=interfilediff,
+                request=self.request)
 
             data = {
                 'base_filediff_id': base_filediff_id,
-                'comment_counts': comment_counts(
-                    self.request.user,
-                    comments,
-                    filediff,
-                    interfilediff,
-                    base_filediff),
                 'binary': f['binary'],
                 'deleted': f['deleted'],
                 'id': filediff.pk,
@@ -302,6 +312,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                 'orig_filename': f['orig_filename'],
                 'orig_revision': f['orig_revision'],
                 'public': f['public'],
+                'serialized_comment_blocks':
+                    review_ui.serialize_comments(file_comments),
             }
 
             if interfilediff:

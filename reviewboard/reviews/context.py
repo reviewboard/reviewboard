@@ -2,138 +2,15 @@
 
 from __future__ import annotations
 
-from functools import cmp_to_key
-from typing import Any, Optional, Sequence, TYPE_CHECKING
-
 from django.utils.translation import gettext as _
 from django.template.defaultfilters import truncatechars
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat.python.past import cmp
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import build_server_url
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm
-from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
-                                                normalize_text_for_edit)
-from reviewboard.reviews.models import BaseComment
 from reviewboard.site.urlresolvers import local_site_reverse
-
-if TYPE_CHECKING:
-    from django.contrib.auth.models import User
-
-    from reviewboard.diffviewer.models import FileDiff
-    from reviewboard.reviews.models import Comment
-
-
-def comment_counts(
-    user: User,
-    all_comments: dict[tuple, Sequence[Comment]],
-    filediff: FileDiff,
-    interfilediff: Optional[FileDiff] = None,
-    base_filediff: Optional[FileDiff] = None,
-) -> list[dict[str, Any]]:
-    """Return an array of comments for a filediff, sorted by line number.
-
-    Args:
-        user (django.contrib.auth.models.User):
-            The user making the request.
-
-        all_comments (dict):
-            All of the diff comments, sorted by filediff, interfilediff, and
-            base filediff IDs.
-
-        filediff (reviewboard.diffviewer.models.FileDiff):
-            The filediff currently being viewed.
-
-        interfilediff (reviewboard.diffviewer.models.FileDiff, optional):
-            The interdiff currently being viewed.
-
-        base_filediff (reviewboard.diffviewer.models.FileDiff, optional):
-            The base filediff currently being viewed (used when looking at
-            commit ranges).
-
-    Returns:
-        list:
-        A list of dictionaries containing information about the comment.
-
-        Each entry in the array has a dictionary containing the following keys:
-
-        =========== ==================================================
-        Key                Description
-        =========== ==================================================
-        comment_id         The ID of the comment
-        text               The plain or rich text of the comment
-        rich_text          The rich text flag for the comment
-        line               The first line number
-        num_lines          The number of lines this comment spans
-        user               A dictionary containing "username" and "name" keys
-                           for the user
-        url                The URL to the comment
-        localdraft         True if this is the current user's draft comment
-        review_id          The ID of the review this comment is associated with
-        ==============================================================
-    """
-    comment_dict = {}
-
-    interfilediff_id: Optional[int] = None
-    base_filediff_id: Optional[int] = None
-
-    if interfilediff:
-        interfilediff_id = interfilediff.pk
-
-    if base_filediff:
-        base_filediff_id = base_filediff.pk
-
-    key = (filediff.pk, interfilediff_id, base_filediff_id)
-
-    comments = all_comments.get(key, [])
-
-    for comment in comments:
-        review = comment.get_review()
-
-        if review and (review.public or review.user_id == user.pk):
-            key = (comment.first_line, comment.num_lines)
-
-            comment_dict.setdefault(key, []).append({
-                'comment_id': comment.pk,
-                'text': normalize_text_for_edit(user, comment.text,
-                                                comment.rich_text),
-                'html': markdown_render_conditional(comment.text,
-                                                    comment.rich_text),
-                'rich_text': comment.rich_text,
-                'line': comment.first_line,
-                'num_lines': comment.num_lines,
-                'user': {
-                    'username': review.user.username,
-                    'name': (review.user.get_full_name() or
-                             review.user.username),
-                },
-                'url': comment.get_review_url(),
-                'localdraft': (review.user == user and
-                               not review.public),
-                'review_id': review.id,
-                'issue_opened': comment.issue_opened,
-                'issue_status': BaseComment.issue_status_to_string(
-                    comment.issue_status),
-                'reply_to_id': comment.reply_to_id,
-            })
-
-    comments_array = []
-
-    for key, value in comment_dict.items():
-        comments_array.append({
-            'linenum': key[0],
-            'num_lines': key[1],
-            'comments': value,
-        })
-
-    comments_array.sort(key=cmp_to_key(
-        lambda x, y: cmp(x['linenum'],
-                         y['linenum'] or cmp(x['num_lines'],
-                                             y['num_lines']))))
-
-    return comments_array
 
 
 def make_review_request_context(request, review_request, extra_context={},

@@ -14,15 +14,6 @@ suite('rb/diffviewer/models/DiffFile', function() {
             const diffFile = new DiffFile({
                 base_filediff_id: 12,
                 binary: false,
-
-                // XXX: this will be updated in a future change.
-                comment_counts: [
-                    {
-                        comments: [],
-                        linenum: 4,
-                        num_lines: 2,
-                    },
-                ],
                 deleted: true,
                 filediff: {
                     id: 38,
@@ -39,6 +30,20 @@ suite('rb/diffviewer/models/DiffFile', function() {
                 newfile: true,
                 orig_filename: 'foo',
                 orig_revision: '3',
+                serialized_comment_blocks: {
+                    '4-2': [
+                        {
+                            comment_id: 1,
+                            issue_opened: false,
+                            line: 4,
+                            localdraft: false,
+                            num_lines: 2,
+                            review_id: 1,
+                            text: 'Comment',
+                            user: { name: 'testuser' },
+                        },
+                    ],
+                },
             }, {
                 parse: true,
             });
@@ -48,13 +53,20 @@ suite('rb/diffviewer/models/DiffFile', function() {
             expect(data).not.toBe(undefined);
             expect(data.baseFileDiffID).toBe(12);
             expect(data.binary).toBe(false);
-            expect(data.commentCounts).toEqual([
-                {
-                    comments: [],
-                    linenum: 4,
-                    num_lines: 2,
-                },
-            ]);
+            expect(data.serializedCommentBlocks).toEqual({
+                '4-2': [
+                    {
+                        comment_id: 1,
+                        issue_opened: false,
+                        line: 4,
+                        localdraft: false,
+                        num_lines: 2,
+                        review_id: 1,
+                        text: 'Comment',
+                        user: { name: 'testuser' },
+                    },
+                ],
+            });
             expect(data.deleted).toBe(true);
             expect(data.filediff).not.toBe(undefined);
             expect(data.filediff.id).toBe(38);

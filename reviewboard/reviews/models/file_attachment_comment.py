@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 class FileAttachmentComment(BaseComment):
     """A comment on a file attachment."""
+
     anchor_prefix = "fcomment"
     comment_type = "file"
 
