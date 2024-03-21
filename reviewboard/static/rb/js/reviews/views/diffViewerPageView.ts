@@ -1210,7 +1210,7 @@ export class DiffViewerPageView extends ReviewablePageView<
         const file = diffReviewable.get('file');
 
         this.#$diffs.append(DiffViewerPageView.fileEntryTemplate({
-            filename: file.get('depotFilename'),
+            filename: file.get('origFilename'),
             id: file.id,
             newFile: file.get('isnew'),
         }));

@@ -199,7 +199,7 @@ def build_diff_comment_fragments(
                 None, e, error_template_name, {
                     'comment': comment,
                     'file': {
-                        'depot_filename': comment.filediff.source_file,
+                        'orig_filename': comment.filediff.source_file,
                         'index': None,
                         'filediff': comment.filediff,
                     },

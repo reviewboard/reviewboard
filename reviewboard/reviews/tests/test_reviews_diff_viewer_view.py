@@ -131,10 +131,10 @@ class ReviewsDiffViewerViewTests(TestCase):
         self.assertTrue(files)
         self.assertEqual(len(files), 2)
 
-        self.assertEqual(files[0]['depot_filename'], '/newfile')
+        self.assertEqual(files[0]['orig_filename'], '/newfile')
         self.assertIn('interfilediff', files[0])
 
-        self.assertEqual(files[1]['depot_filename'], '/readme')
+        self.assertEqual(files[1]['orig_filename'], '/readme')
         self.assertIn('interfilediff', files[1])
 
     # Bug 847
@@ -210,7 +210,7 @@ class ReviewsDiffViewerViewTests(TestCase):
         self.assertTrue(files)
         self.assertEqual(len(files), 1)
 
-        self.assertEqual(files[0]['depot_filename'], '/newfile')
+        self.assertEqual(files[0]['orig_filename'], '/newfile')
         self.assertIn('interfilediff', files[0])
 
     def test_with_filenames_option(self) -> None:

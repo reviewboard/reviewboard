@@ -281,26 +281,26 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                 base_filediff_id = None
 
             data = {
-                'newfile': f['newfile'],
-                'binary': f['binary'],
-                'deleted': f['deleted'],
-                'id': filediff.pk,
-                'depot_filename': f['depot_filename'],
-                'dest_filename': f['dest_filename'],
-                'dest_revision': f['dest_revision'],
-                'revision': f['revision'],
-                'filediff': {
-                    'id': filediff.pk,
-                    'revision': filediff.diffset.revision,
-                },
                 'base_filediff_id': base_filediff_id,
-                'index': f['index'],
                 'comment_counts': comment_counts(
                     self.request.user,
                     comments,
                     filediff,
                     interfilediff,
                     base_filediff),
+                'binary': f['binary'],
+                'deleted': f['deleted'],
+                'id': filediff.pk,
+                'index': f['index'],
+                'filediff': {
+                    'id': filediff.pk,
+                    'revision': filediff.diffset.revision,
+                },
+                'modified_filename': f['modified_filename'],
+                'modified_revision': f['modified_revision'],
+                'newfile': f['newfile'],
+                'orig_filename': f['orig_filename'],
+                'orig_revision': f['orig_revision'],
                 'public': f['public'],
             }
 

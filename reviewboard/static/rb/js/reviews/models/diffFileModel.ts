@@ -53,15 +53,6 @@ export interface DiffFileAttrs extends ModelAttributes {
     /** Whether or not the file was deleted. */
     deleted: boolean;
 
-    /** The filename for the original version of the file. */
-    depotFilename: string | null;
-
-    /** The filename for the modified version of the file. */
-    destFilename: string | null;
-
-    /** The revision for the modified version of the file. */
-    destRevision: string | null;
-
     /** Information about the filediff. */
     filediff: SerializedFileDiff | null;
 
@@ -82,14 +73,47 @@ export interface DiffFileAttrs extends ModelAttributes {
     /** Information about the interdiff, if present. */
     interfilediff: SerializedFileDiff | null;
 
+    /**
+     * The filename for the modified version of the file.
+     *
+     * Version Changed:
+     *     7.0:
+     *     This attribute was renamed (was ``destFilename``).
+     */
+    modifiedFilename: string | null;
+
+    /**
+     * The revision for the modified version of the file.
+     *
+     * Version Changed:
+     *     7.0:
+     *     This attribute was renamed (was ``destRevision``).
+     */
+    modifiedRevision: string | null;
+
     /** Whether this file is newly added. */
     newfile: boolean;
 
+    /**
+     * The filename for the original version of the file.
+     *
+     * Version Changed:
+     *     7.0:
+     *     This attribute was renamed (was ``depotFilename``).
+     */
+    origFilename: string | null;
+
+    /**
+     * The revision for the original version of the file.
+     *
+     * Version Changed:
+     *     7.0:
+     *     This attribute was renamed (was ``revision``).
+     */
+    origRevision: string | null;
+
     /** Whether the diff has been published or not. */
     public: boolean;
-
-    /** The revision for the original version of the file. */
-    revision: string | null;
 }
 
 
@@ -104,18 +128,18 @@ export interface DiffFileResourceData {
     binary: boolean;
     comment_counts: object[];
     deleted: boolean;
-    depot_filename: string;
-    dest_filename: string;
-    dest_revision: string;
     filediff: SerializedFileDiff;
     force_interdiff: boolean;
     id: number;
     index: number;
     interdiff_revision: number;
     interfilediff: SerializedFileDiff;
+    modified_filename: string;
+    modified_revision: string;
     newfile: boolean;
+    orig_filename: string;
+    orig_revision: string;
     public: boolean;
-    revision: string;
 }
 
 
@@ -129,17 +153,17 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
         binary: false,
         commentCounts: null,
         deleted: false,
-        depotFilename: null,
-        destFilename: null,
-        destRevision: null,
         filediff: null,
         forceInterdiff: null,
         forceInterdiffRevision: null,
         index: null,
         interfilediff: null,
+        modifiedFilename: null,
+        modifiedRevision: null,
         newfile: false,
+        origFilename: null,
+        origRevision: null,
         public: false,
-        revision: null,
     };
 
     /**
@@ -161,18 +185,18 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
             binary: rsp.binary,
             commentCounts: rsp.comment_counts,
             deleted: rsp.deleted,
-            depotFilename: rsp.depot_filename,
-            destFilename: rsp.dest_filename,
-            destRevision: rsp.dest_revision,
             filediff: rsp.filediff,
             forceInterdiff: rsp.force_interdiff,
             forceInterdiffRevision: rsp.interdiff_revision,
             id: rsp.id,
             index: rsp.index,
             interfilediff: rsp.interfilediff,
+            modifiedFilename: rsp.modified_filename,
+            modifiedRevision: rsp.modified_revision,
             newfile: rsp.newfile,
+            origFilename: rsp.orig_filename,
+            origRevision: rsp.orig_revision,
             public: rsp.public,
-            revision: rsp.revision,
         };
     }
 }

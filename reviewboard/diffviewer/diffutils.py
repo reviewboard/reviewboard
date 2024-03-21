@@ -1116,44 +1116,44 @@ def get_diff_files(
             if get_filediffs_match(filediff, interfilediff):
                 continue
 
-            source_revision = _('Diff Revision %s') % diffset.revision
+            orig_revision = _('Diff Revision %s') % diffset.revision
         else:
-            source_revision = get_revision_str(filediff.source_revision)
+            orig_revision = get_revision_str(filediff.source_revision)
 
         if interfilediff:
-            dest_revision = _('Diff Revision %s') % interdiffset.revision
+            modified_revision = _('Diff Revision %s') % interdiffset.revision
         else:
             if force_interdiff and interdiffset:
-                dest_revision = (_('Diff Revision %s - File Reverted') %
-                                 interdiffset.revision)
+                modified_revision = (_('Diff Revision %s - File Reverted') %
+                                     interdiffset.revision)
             elif newfile:
-                dest_revision = _('New File')
+                modified_revision = _('New File')
             else:
-                dest_revision = _('New Change')
+                modified_revision = _('New Change')
 
-        source_extra_data = filediff.extra_data
+        orig_extra_data = filediff.extra_data
 
         if interfilediff:
-            raw_depot_filename = filediff.dest_file
-            raw_dest_filename = interfilediff.dest_file
-            dest_extra_data = interfilediff.extra_data
+            raw_orig_filename = filediff.dest_file
+            raw_modified_filename = interfilediff.dest_file
+            modified_extra_data = interfilediff.extra_data
         else:
-            raw_depot_filename = filediff.source_file
-            raw_dest_filename = filediff.dest_file
-            dest_extra_data = filediff.extra_data
+            raw_orig_filename = filediff.source_file
+            raw_modified_filename = filediff.dest_file
+            modified_extra_data = filediff.extra_data
 
-        depot_filename = tool.normalize_path_for_display(
-            raw_depot_filename,
-            extra_data=source_extra_data)
-        dest_filename = tool.normalize_path_for_display(
-            raw_dest_filename,
-            extra_data=dest_extra_data)
+        orig_filename = tool.normalize_path_for_display(
+            raw_orig_filename,
+            extra_data=orig_extra_data)
+        modified_filename = tool.normalize_path_for_display(
+            raw_modified_filename,
+            extra_data=modified_extra_data)
 
         if filename_patterns:
-            if dest_filename == depot_filename:
-                filenames = [dest_filename]
+            if modified_filename == orig_filename:
+                filenames = [modified_filename]
             else:
-                filenames = [dest_filename, depot_filename]
+                filenames = [modified_filename, orig_filename]
 
             if not get_filenames_match_patterns(patterns=filename_patterns,
                                                 filenames=filenames):
@@ -1187,22 +1187,15 @@ def get_diff_files(
                         ancestors=ancestors)
 
         f = {
-            'depot_filename': depot_filename,
-            'dest_filename': dest_filename or depot_filename,
-            'revision': source_revision,
-            'dest_revision': dest_revision,
-            'filediff': filediff,
-            'interfilediff': interfilediff,
-            'force_interdiff': force_interdiff,
+            'base_filediff': base_filediff,
             'binary': filediff.binary,
-            'deleted': filediff.deleted,
-            'moved': filediff.moved,
-            'copied': filediff.copied,
-            'moved_or_copied': filediff.moved or filediff.copied,
-            'newfile': newfile,
-            'is_symlink': filediff.extra_data.get('is_symlink', False),
-            'index': len(files),
             'chunks_loaded': False,
+            'copied': filediff.copied,
+            'deleted': filediff.deleted,
+            'filediff': filediff,
+            'force_interdiff': force_interdiff,
+            'index': len(files),
+            'interfilediff': interfilediff,
             'is_new_file': (
                 (newfile or
                  (base_filediff is not None and
@@ -1210,7 +1203,14 @@ def get_diff_files(
                 not interfilediff and
                 not filediff.parent_diff
             ),
-            'base_filediff': base_filediff,
+            'is_symlink': filediff.extra_data.get('is_symlink', False),
+            'modified_filename': modified_filename or orig_filename,
+            'modified_revision': modified_revision,
+            'moved': filediff.moved,
+            'moved_or_copied': filediff.moved or filediff.copied,
+            'newfile': newfile,
+            'orig_filename': orig_filename,
+            'orig_revision': orig_revision,
             'public': (diffset.history is not None and
                        (interdiffset is None or
                         interdiffset.history is not None)),
@@ -1220,8 +1220,9 @@ def get_diff_files(
         # revision of the base filediff. Instead, we will display the diff
         # revision as computed above.
         if base_filediff and not interdiffset:
-            f['revision'] = get_revision_str(base_filediff.source_revision)
-            f['depot_filename'] = tool.normalize_path_for_display(
+            f['orig_revision'] = \
+                get_revision_str(base_filediff.source_revision)
+            f['orig_filename'] = tool.normalize_path_for_display(
                 base_filediff.source_file)
 
         if force_interdiff and interdiffset:
