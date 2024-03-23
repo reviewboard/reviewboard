@@ -1,8 +1,13 @@
+"""Views for the diff viewer."""
+
+from __future__ import annotations
+
 import logging
 import os
 import re
 import traceback
 from io import BytesIO
+from typing import Any, Optional, TYPE_CHECKING
 from zipfile import ZipFile
 
 from django.conf import settings
@@ -23,20 +28,141 @@ from djblets.util.http import encode_etag, etag_if_none_match, set_etag
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
+from typing_extensions import NotRequired, TypedDict
 
-from reviewboard.diffviewer.commit_utils import (diff_histories,
-                                                 get_base_and_tip_commits)
+from reviewboard.diffviewer.commit_utils import (
+    SerializedCommitHistoryDiffEntry,
+    diff_histories,
+    get_base_and_tip_commits)
 from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.errors import PatchError, UserVisibleError
 from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
+from reviewboard.diffviewer.models.diffcommit import SerializedDiffCommit
 from reviewboard.diffviewer.renderers import (get_diff_renderer,
                                               get_diff_renderer_class)
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.site.urlresolvers import local_site_reverse
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+
+    from reviewboard.diffviewer.diffutils import SerializedDiffFile
+
 
 logger = logging.getLogger(__name__)
+
+
+class SerializedPaginationInfo(TypedDict):
+    """Serialized information about pagination.
+
+    Version Added:
+        7.0
+    """
+
+    #: Whether the diff has been paginated.
+    is_paginated: bool
+
+    #: The current page number.
+    current_page: int
+
+    #: The total number of pages.
+    pages: int
+
+    #: The set of all page numbers.
+    page_numbers: list[int]
+
+    #: Whether there's another page after the current one.
+    has_next: bool
+
+    #: Whether there's another page before the current one.
+    has_previous: bool
+
+    #: The number of the next page, if available.
+    next_page: NotRequired[int]
+
+    #: The number of the previous page, if available.
+    previous_page: NotRequired[int]
+
+
+class SerializedRevisionInfo(TypedDict):
+    """Serialized information about diff revisions.
+
+    Version Added:
+        7.0
+    """
+
+    #: The current diff revision.
+    revision: int
+
+    #: Whether the current page is an interdiff.
+    is_interdiff: bool
+
+    #: The current interdiff revision, if available.
+    interdiff_revision: Optional[int]
+
+    #: The current base commit ID, when viewing a commit range.
+    base_commit_id: Optional[int]
+
+    #: The current tip commit ID, when viewing a commit range.
+    tip_commit_id: Optional[int]
+
+    #: The most recent diff revision, if available.
+    latest_revision: NotRequired[Optional[int]]
+
+    #: Whether the current page is showing a draft diff.
+    is_draft_diff: NotRequired[bool]
+
+    #: Whether the current page is showing a draft interdiff.
+    is_draft_interdiff: NotRequired[bool]
+
+
+class SerializedDiffContext(TypedDict):
+    """Serialized diff information.
+
+    Version Added:
+        7.0
+    """
+
+    #: The set of commits for the current diff revision.
+    commits: Optional[list[SerializedDiffCommit]]
+
+    #: The diff of commits between two diff revisions.
+    #:
+    #: This will only be populated when viewing an interdiff.
+    commit_history_diff: Optional[list[SerializedCommitHistoryDiffEntry]]
+
+    #: A list of filename patterns to limit the view to.
+    filename_patterns: list[str]
+
+    #: Pagination information for the current diff.
+    pagination: SerializedPaginationInfo
+
+    #: Revision information for the current diff.
+    revision: SerializedRevisionInfo
+
+
+class DiffViewerContext(TypedDict):
+    """Render context for the diff viewer views.
+
+    Version Added:
+        7.0
+    """
+
+    #: Whether to collapse all expandable diff context.
+    collapseall: bool
+
+    #: The template context information for the diff.
+    diff_context: SerializedDiffContext
+
+    #: The current diff.
+    diffset: DiffSet
+
+    #: The current interdiff, if available.
+    interdiffset: Optional[DiffSet]
+
+    #: The list of all files in the current diff/interdiff.
+    files: list[SerializedDiffFile]
 
 
 def get_collapse_diff(request):
@@ -104,8 +230,15 @@ class DiffViewerView(TemplateView):
     template_name = 'diffviewer/view_diff.html'
     fragment_error_template_name = 'diffviewer/diff_fragment_error.html'
 
-    def get(self, request, diffset, interdiffset=None, *args, **kwargs):
-        """Handles GET requests for this view.
+    def get(
+        self,
+        request: HttpRequest,
+        diffset: DiffSet,
+        interdiffset: Optional[DiffSet] = None,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle GET requests for this view.
 
         This will render the full diff viewer based on the provided
         parameters.
@@ -120,27 +253,27 @@ class DiffViewerView(TemplateView):
         if interdiffset:
             logger.debug('Generating diff viewer page for interdiffset '
                          'ids %s-%s',
-                         diffset.id, interdiffset.id,
+                         diffset.pk, interdiffset.pk,
                          extra={'request': request})
         else:
             logger.debug('Generating diff viewer page for filediff id %s',
-                         diffset.id,
+                         diffset.pk,
                          extra={'request': request})
 
         try:
-            response = super(DiffViewerView, self).get(
+            response = super().get(
                 request, diffset=diffset, interdiffset=interdiffset,
                 *args, **kwargs)
 
             if interdiffset:
                 logger.debug('Done generating diff viewer page for '
                              'interdiffset ids %s-%s',
-                             diffset.id, interdiffset.id,
+                             diffset.pk, interdiffset.pk,
                              extra={'request': request})
             else:
                 logger.debug('Done generating diff viewer page for filediff '
                              'id %s',
-                             diffset.id,
+                             diffset.pk,
                              extra={'request': request})
 
             return response
@@ -160,26 +293,59 @@ class DiffViewerView(TemplateView):
 
             return exception_traceback(request, e, self.template_name)
 
-    def render_to_response(self, *args, **kwargs):
-        """Renders the page to an HttpResponse.
+    def render_to_response(self, *args, **kwargs) -> HttpResponse:
+        """Render the page to an HttpResponse.
 
         This renders the diff viewer page, based on the context data
         generated, and sets cookies before returning an HttpResponse to
         the client.
+
+        Args:
+            *args (tuple):
+                Positional arguments to pass through to the parent class.
+
+            **kwargs (tuple):
+                Keyword arguments to pass through to the parent class.
+
+        Returns:
+            django.http.HttpResponse:
+            The response to send back to the client.
         """
-        response = super(DiffViewerView, self).render_to_response(*args,
-                                                                  **kwargs)
+        response = super().render_to_response(*args, **kwargs)
         response.set_cookie('collapsediffs', self.collapse_diffs)
 
         return response
 
-    def get_context_data(self, diffset, interdiffset, extra_context={},
-                         **kwargs):
-        """Calculates and returns data used for rendering the diff viewer.
+    def get_context_data(
+        self,
+        *,
+        diffset: DiffSet,
+        interdiffset: Optional[DiffSet],
+        extra_context: Optional[dict[str, Any]] = None,
+        **kwargs,
+    ) -> DiffViewerContext:
+        """Calculate and return data used for rendering the diff viewer.
 
         This handles all the hard work of generating the data backing the
         side-by-side diff, handling pagination, and more. The data is
         collected into a context dictionary and returned for rendering.
+
+        Args:
+            diffset (reviewboard.diffviewer.models.DiffSet):
+                The diffset being viewed.
+
+            interdiffset (reviewboard.diffviewer.models.DiffSet):
+                The interdiff diffset, if present.
+
+            extra_context (dict, optional):
+                Extra information to add to the context.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments, for future expansion.
+
+        Returns:
+            dict:
+            Context to use when rendering the template.
         """
         try:
             filename_patterns = \
@@ -193,7 +359,7 @@ class DiffViewerView(TemplateView):
         tip_commit_id = None
         tip_commit = None
 
-        commits_by_diffset_id = {}
+        commits_by_diffset_id: dict[int, list[DiffCommit]] = {}
 
         if diffset.commit_count > 0:
             diffset_pks = [diffset.pk]
@@ -262,15 +428,17 @@ class DiffViewerView(TemplateView):
         except InvalidPage:
             page = paginator.page(paginator.num_pages)
 
-        diff_context = {
+        diff_context: SerializedDiffContext = {
             'commits': None,
             'commit_history_diff': None,
-            'filename_patterns': list(filename_patterns),
+            'filename_patterns': filename_patterns,
             'revision': {
                 'revision': diffset.revision,
                 'is_interdiff': interdiffset is not None,
                 'interdiff_revision': (interdiffset.revision
                                        if interdiffset else None),
+                'base_commit_id': base_commit_id,
+                'tip_commit_id': tip_commit_id,
             },
             'pagination': {
                 'is_paginated': page.has_other_pages(),
@@ -310,21 +478,16 @@ class DiffViewerView(TemplateView):
                                      key=lambda commit: commit.pk)
             ]
 
-            revision_context = diff_context['revision']
-
-            revision_context.update({
-                'base_commit_id': base_commit_id,
-                'tip_commit_id': tip_commit_id,
-            })
-
-        context = dict({
+        context: DiffViewerContext = {
             'diff_context': diff_context,
             'diffset': diffset,
             'interdiffset': interdiffset,
-            'diffset_pair': (diffset, interdiffset),
-            'files': page.object_list,
+            'files': list(page.object_list),
             'collapseall': self.collapse_diffs,
-        }, **extra_context)
+        }
+
+        if extra_context is not None:
+            context.update(extra_context)
 
         return context
 

@@ -34,8 +34,8 @@ class ResourceTests(BaseWebAPITestCase, BaseReviewRequestChildMixin,
         self.assertIn('latest_revision', revision_info)
         self.assertIn('revision', revision_info)
 
-        self.assertEqual(revision_info['is_draft_diff'], None)
-        self.assertEqual(revision_info['is_draft_interdiff'], None)
+        self.assertFalse(revision_info['is_draft_diff'])
+        self.assertFalse(revision_info['is_draft_interdiff'])
         self.assertEqual(revision_info['is_interdiff'],
                          interdiffset is not None)
         self.assertEqual(revision_info['latest_revision'],

@@ -412,10 +412,10 @@ class ReviewUI:
         close_info = self.review_request.get_close_info()
         caption = self.get_caption(draft)
 
-        context: Dict[str, Any] = make_review_request_context(
-            request,
-            self.review_request,
-            {
+        context = make_review_request_context(
+            request=request,
+            review_request=self.review_request,
+            extra_context={
                 'caption': caption,
                 'close_description': close_info['close_description'],
                 'close_description_rich_text': close_info['is_rich_text'],
@@ -434,8 +434,7 @@ class ReviewUI:
                 'review_ui_uuid': str(uuid4()),
                 self.object_key: self.obj,
                 self.diff_object_key: self.diff_against_obj,
-            }
-        )
+            })
 
         if inline:
             context.update({

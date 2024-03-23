@@ -271,7 +271,9 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
             file_attachments)
 
         context = super().get_context_data(**kwargs)
-        context.update(make_review_request_context(request, review_request))
+        context.update(make_review_request_context(
+            request=request,
+            review_request=review_request))
         context.update({
             'all_file_attachments': all_file_attachments,
             'blocks': self.blocks,

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from enum import Enum
-from typing import Any, ClassVar, Optional, Set, TYPE_CHECKING
+from typing import Any, ClassVar, Optional, Set, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -47,10 +47,30 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
     from reviewboard.attachments.models import FileAttachmentSequence
-    from reviewboard.reviews.models import ReviewRequestDraft
+    from reviewboard.reviews.models import (Review,
+                                            ReviewRequestDraft)
 
 
 logger = logging.getLogger(__name__)
+
+
+class LastActivityInfo(TypedDict):
+    """Information about the last activity on a review request.
+
+    Version Added:
+        7.0
+    """
+
+    #: The change description corresponding to the last activity.
+    #:
+    #: This may or may not be present depending on the type of activity.
+    changedesc: Optional[ChangeDescription]
+
+    #: The timestamp of the last activity.
+    timestamp: datetime
+
+    #: The most recently updated thing that caused the activity update.
+    updated_object: Union[DiffSet, Review, ReviewRequest]
 
 
 class ReviewRequestCloseInfo(TypedDict):
@@ -799,7 +819,11 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return Review.objects.get_pending_review(self, user)
 
-    def get_last_activity_info(self, diffsets=None, reviews=None):
+    def get_last_activity_info(
+        self,
+        diffsets: Optional[list[DiffSet]] = None,
+        reviews: Optional[list[Review]] = None,
+    ) -> LastActivityInfo:
         """Return the last public activity information on the review request.
 
         Args:
@@ -934,11 +958,15 @@ class ReviewRequest(BaseReviewRequestDetails):
             local_site_name=local_site_name,
             kwargs={'review_request_id': self.display_id})
 
-    def get_diffsets(self):
-        """Returns a list of all diffsets on this review request.
+    def get_diffsets(self) -> list[DiffSet]:
+        """Return a list of all diffsets on this review request.
 
         This will also fetch all associated FileDiffs, as well as a count
         of the number of files (stored in DiffSet.file_count).
+
+        Returns:
+            list of reviewboard.diffviewer.models.DiffSet:
+            The list of all diffsets on the review request.
         """
         if not self.repository_id:
             return []

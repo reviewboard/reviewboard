@@ -10,12 +10,36 @@ from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
+from typing_extensions import TypedDict
 
 from reviewboard.diffviewer.diffutils import get_total_line_counts
 from reviewboard.diffviewer.managers import DiffCommitManager
 from reviewboard.diffviewer.models.diffset import DiffSet
 from reviewboard.diffviewer.validators import (COMMIT_ID_LENGTH,
                                                validate_commit_id)
+
+
+class SerializedDiffCommit(TypedDict):
+    """Serialized version of a DiffCommit.
+
+    Version Added:
+        7.0
+    """
+
+    #: The name of the author of the commit.
+    author_name: str
+
+    #: The SCM-specific commit ID of the commit.
+    commit_id: str
+
+    #: The commit message.
+    commit_message: str
+
+    #: The PK of the :py:class:`DiffCommit` object.
+    id: int
+
+    #: The SCM-specific ID of the parent of the commit.
+    parent_id: str
 
 
 class DiffCommit(models.Model):
@@ -222,7 +246,7 @@ class DiffCommit(models.Model):
 
         return summary
 
-    def serialize(self):
+    def serialize(self) -> SerializedDiffCommit:
         """Serialize to a dictionary.
 
         Returns:

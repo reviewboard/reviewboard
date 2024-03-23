@@ -2,27 +2,120 @@
 
 from __future__ import annotations
 
+from typing import Any, Optional, TYPE_CHECKING
+
 from django.utils.translation import gettext as _
 from django.template.defaultfilters import truncatechars
 from djblets.siteconfig.models import SiteConfiguration
+from housekeeping import deprecate_non_keyword_only_args
+from typing_extensions import NotRequired, TypedDict
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import build_server_url
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm
 from reviewboard.site.urlresolvers import local_site_reverse
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest
 
-def make_review_request_context(request, review_request, extra_context={},
-                                is_diff_view=False):
-    """Returns a dictionary for template contexts used for review requests.
+    from reviewboard.reviews.models import ReviewRequest
+    from reviewboard.scmtools.models import Tool
+
+
+class SerializedReviewRequestTab(TypedDict):
+    """Serialized information about a tab on the review request page.
+
+    Version Added:
+        7.0
+    """
+
+    #: Whether this tab is the active tab.
+    active: NotRequired[bool]
+
+    #: The text to show on the tab label.
+    text: str
+
+    #: The URL to link to for the tab.
+    url: str
+
+
+class ReviewRequestContext(TypedDict):
+    """Template context for rendering the review request.
+
+    Version Added:
+        7.0
+    """
+
+    #: Whether the review request is mutable by the current user.
+    mutable_by_user: bool
+
+    #: The review request object.
+    review_request: ReviewRequest
+
+    #: The most recent review request visit info, if available.
+    review_request_visit: NotRequired[ReviewRequestVisit]
+
+    #: Whether the user can change the review request status.
+    status_mutable_by_user: bool
+
+    #: The SCMTool for the current review request, if it has a diff.
+    scmtool: Optional[Tool]
+
+    #: Global setting for whether to send e-mails for publish actions.
+    send_email: bool
+
+    #: The description to use for social media links to the review request.
+    social_page_description: str
+
+    #: The URL to use for social media links to the review request.
+    social_page_url: str
+
+    #: The tabs to show for the review request.
+    tabs: list[SerializedReviewRequestTab]
+
+    # TODO: this is unused. Remove in a later change.
+    #: The form for uploading diffs.
+    upload_diff_form: Optional[UploadDiffForm]
+
+
+@deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
+def make_review_request_context(
+    *,
+    request: HttpRequest,
+    review_request: ReviewRequest,
+    extra_context: Optional[dict[str, Any]] = None,
+    is_diff_view: bool = False,
+) -> ReviewRequestContext:
+    """Return a dictionary for template contexts used for review requests.
 
     The dictionary will contain the common data that is used for all
     review request-related pages (the review request detail page, the diff
     viewer, and the screenshot pages).
 
     For convenience, extra data can be passed to this dictionary.
+
+    Args:
+        request (django.http.HttpRequest):
+            The current HTTP request.
+
+        review_request (reviewboard.reviews.models.ReviewRequest):
+            The review request to get the context data for.
+
+        extra_context (dict, optional):
+            Extra information to add to the context.
+
+        is_diff_view (bool, optional):
+            Whether to add information specific to the diff viewer.
+
+    Returns:
+        ReviewRequestContext:
+        The context for rendering review request templates.
     """
+    if extra_context is None:
+        extra_context = {}
+
     if review_request.repository:
         upload_diff_form = UploadDiffForm(review_request, request=request)
         scmtool = review_request.repository.get_scmtool()
@@ -33,7 +126,7 @@ def make_review_request_context(request, review_request, extra_context={},
     if 'blocks' not in extra_context:
         extra_context['blocks'] = list(review_request.blocks.all())
 
-    tabs = [
+    tabs: list[SerializedReviewRequestTab] = [
         {
             'text': _('Reviews'),
             'url': review_request.get_absolute_url(),
@@ -71,7 +164,7 @@ def make_review_request_context(request, review_request, extra_context={},
         review_request_details.description.replace('\n', ' '),
         300)
 
-    context = dict({
+    context: ReviewRequestContext = {
         'mutable_by_user': review_request.is_mutable_by(request.user),
         'status_mutable_by_user':
             review_request.is_status_mutable_by(request.user),
@@ -82,7 +175,9 @@ def make_review_request_context(request, review_request, extra_context={},
         'tabs': tabs,
         'social_page_description': social_page_description,
         'social_page_url': build_server_url(request.path, request=request),
-    }, **extra_context)
+    }
+
+    context.update(extra_context)
 
     if ('review_request_visit' not in context and
         request.user.is_authenticated):

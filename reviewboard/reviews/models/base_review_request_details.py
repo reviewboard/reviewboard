@@ -1,7 +1,9 @@
+"""Base information for a review request and draft."""
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from collections.abc import Iterator
+from typing import TYPE_CHECKING, cast
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -12,6 +14,7 @@ from reviewboard.reviews.models.default_reviewer import DefaultReviewer
 
 if TYPE_CHECKING:
     from reviewboard.attachments.models import FileAttachmentSequence
+    from reviewboard.reviews.models.screenshot import Screenshot
 
 
 class BaseReviewRequestDetails(models.Model):
@@ -21,6 +24,7 @@ class BaseReviewRequestDetails(models.Model):
     methods. This class provides those fields and methods for those
     classes.
     """
+
     MAX_SUMMARY_LENGTH = 300
 
     description = models.TextField(_("description"), blank=True)
@@ -63,7 +67,7 @@ class BaseReviewRequestDetails(models.Model):
 
         return bugs
 
-    def get_screenshots(self):
+    def get_screenshots(self) -> Iterator[Screenshot]:
         """Return a generator for all active screenshots.
 
         This includes all current screenshots, but not previous inactive ones.
@@ -78,11 +82,13 @@ class BaseReviewRequestDetails(models.Model):
         if self.screenshots_count > 0:
             review_request = self.get_review_request()
 
+            from reviewboard.reviews.models.screenshot import Screenshot
+
             for screenshot in self.screenshots.all():
                 screenshot._review_request = review_request
-                yield screenshot
+                yield cast(Screenshot, screenshot)
 
-    def get_inactive_screenshots(self):
+    def get_inactive_screenshots(self) -> Iterator[Screenshot]:
         """Return a generator for all inactive screenshots.
 
         This only includes screenshots that were previously visible but
