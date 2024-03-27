@@ -7,6 +7,7 @@ import { UserSession } from 'reviewboard/common';
 
 import { DiffReviewable } from '../models/diffReviewableModel';
 import { DiffViewerPage } from '../models/diffViewerPageModel';
+import { DiffCommentsHintView } from './diffCommentsHintView';
 import { DiffFileIndexView } from './diffFileIndexView';
 import { DiffReviewableView } from './diffReviewableView';
 import {
@@ -108,7 +109,7 @@ export class DiffViewerPageView extends ReviewablePageView<
     #$highlightedChunk: JQuery = null;
     #$window: JQuery<Window>;
     #chunkHighlighter: RB.ChunkHighlighterView = null;
-    #commentsHintView: RB.DiffCommentsHintView = null;
+    #commentsHintView: DiffCommentsHintView = null;
     #diffFileIndexView: DiffFileIndexView = null;
     #diffRevisionLabelView: RB.DiffRevisionLabelView = null;
     #diffRevisionSelectorView: RB.DiffRevisionSelectorView = null;
@@ -393,13 +394,15 @@ export class DiffViewerPageView extends ReviewablePageView<
                           this._onRevisionSelected);
         }
 
-        this.#commentsHintView = new RB.DiffCommentsHintView({
+        this.#commentsHintView = new DiffCommentsHintView({
             el: $('#diff_comments_hint'),
             model: model.commentsHint,
         });
         this.#commentsHintView.render();
         this.listenTo(this.#commentsHintView, 'revisionSelected',
                       this._onRevisionSelected);
+        this.listenTo(this.#commentsHintView, 'commitRangeSelected',
+                      this._onCommitRangeSelected);
 
         this.#paginationView1 = new RB.PaginationView({
             el: $('#pagination1'),
@@ -1262,6 +1265,38 @@ export class DiffViewerPageView extends ReviewablePageView<
             interdiffRevision: tip,
             revision: base,
         });
+    }
+
+    /**
+     * Callback for when a commit range is selected.
+     *
+     * Args:
+     *     revision (number):
+     *         The diff revision to load.
+     *
+     *     baseCommit (number):
+     *         The base commit to select.
+     *
+     *     tipCommit (number):
+     *         The tip commit to select.
+     */
+    _onCommitRangeSelected(
+        revision: number,
+        baseCommit: number | null,
+        tipCommit: number,
+    ) {
+        if (baseCommit === null || baseCommit === tipCommit) {
+            this._navigate({
+                revision: revision,
+                tipCommitID: tipCommit.toString(),
+            });
+        } else {
+            this._navigate({
+                baseCommitID: baseCommit.toString(),
+                revision: revision,
+                tipCommitID: tipCommit.toString(),
+            });
+        }
     }
 
     /**

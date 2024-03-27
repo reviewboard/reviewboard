@@ -226,6 +226,16 @@ suite('rb/pages/models/DiffViewerPage', function() {
         it('comments_hint', function() {
             const page = new DiffViewerPage({
                 comments_hint: {
+                    commits_with_comments: [
+                        {
+                            base_commit_id: '18375be',
+                            base_commit_pk: 34,
+                            is_current: false,
+                            revision: 1,
+                            tip_commit_id: 'efd582c',
+                            tip_commit_pk: 39,
+                        },
+                    ],
                     diffsets_with_comments: [
                         {
                             is_current: false,
@@ -247,6 +257,16 @@ suite('rb/pages/models/DiffViewerPage', function() {
 
             const commentsHint = page.commentsHint;
             expect(commentsHint.get('hasOtherComments')).toBe(true);
+            expect(commentsHint.get('commitsWithComments')).toEqual([
+                {
+                    baseCommitID: '18375be',
+                    baseCommitPK: 34,
+                    isCurrent: false,
+                    revision: 1,
+                    tipCommitID: 'efd582c',
+                    tipCommitPK: 39,
+                },
+            ]),
             expect(commentsHint.get('diffsetsWithComments')).toEqual([
                 {
                     isCurrent: false,

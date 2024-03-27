@@ -6,6 +6,10 @@ import { spina } from '@beanbag/spina';
 import { DiffFileCollection } from '../collections/diffFileCollection';
 import type { DiffFileResourceData } from './diffFileModel';
 import {
+    DiffCommentsHint,
+    type DiffCommentsHintParseData,
+} from './diffCommentsHintModel';
+import {
     ReviewablePage,
     type ReviewablePageAttrs,
     type ReviewablePageParseData,
@@ -45,7 +49,7 @@ interface DiffViewerPageParseData extends ReviewablePageParseData {
     // TODO: update these as sub-objects are converted to TS.
     allChunksCollapsed: boolean;
     canToggleExtraWhitespace: boolean;
-    comments_hint: object;
+    comments_hint: DiffCommentsHintParseData;
     commit_history_diff: object[];
     commits: object[];
     filename_patterns: string[];
@@ -117,7 +121,7 @@ export class DiffViewerPage extends ReviewablePage<DiffViewerPageAttrs> {
      **********************/
 
     /** The hint for comments in other revisions. */
-    commentsHint: RB.DiffCommentsHint;
+    commentsHint: DiffCommentsHint;
 
     /** The diff of all the files between currently-shown commits. */
     commitHistoryDiff: RB.CommitHistoryDiffEntryCollection;
@@ -145,7 +149,7 @@ export class DiffViewerPage extends ReviewablePage<DiffViewerPageAttrs> {
      * the instance.
      */
     preinitialize() {
-        this.commentsHint = new RB.DiffCommentsHint();
+        this.commentsHint = new DiffCommentsHint();
         this.commits = new RB.DiffCommitCollection();
         this.commitHistoryDiff = new RB.CommitHistoryDiffEntryCollection();
         this.files = new DiffFileCollection();
