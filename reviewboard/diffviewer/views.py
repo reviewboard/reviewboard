@@ -25,15 +25,16 @@ from django.utils.translation import gettext as _
 from django.views.generic.base import TemplateView, View
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.http import encode_etag, etag_if_none_match, set_etag
+from housekeeping import deprecate_non_keyword_only_args
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 from typing_extensions import NotRequired, TypedDict
 
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.commit_utils import (
     SerializedCommitHistoryDiffEntry,
-    diff_histories,
-    get_base_and_tip_commits)
+    diff_histories)
 from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.errors import PatchError, UserVisibleError
 from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
@@ -316,11 +317,15 @@ class DiffViewerView(TemplateView):
 
         return response
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
     def get_context_data(
         self,
         *,
         diffset: DiffSet,
         interdiffset: Optional[DiffSet],
+        all_commits: list[DiffCommit],
+        base_commit: Optional[DiffCommit],
+        tip_commit: Optional[DiffCommit],
         extra_context: Optional[dict[str, Any]] = None,
         **kwargs,
     ) -> DiffViewerContext:
@@ -330,12 +335,28 @@ class DiffViewerView(TemplateView):
         side-by-side diff, handling pagination, and more. The data is
         collected into a context dictionary and returned for rendering.
 
+        Version Changed:
+            7.0:
+            * Added typed dicts for return data.
+            * Made arguments keyword-only.
+            * Added ``all_commits``, ``base_commit``, and ``tip_commit``
+              arguments.
+
         Args:
             diffset (reviewboard.diffviewer.models.DiffSet):
                 The diffset being viewed.
 
             interdiffset (reviewboard.diffviewer.models.DiffSet):
                 The interdiff diffset, if present.
+
+            all_commits (list of reviewboard.diffviewer.models.DiffCommit):
+                The list of all commits in all diffs on the review request.
+
+            base_commit (reviewboard.diffviewer.models.DiffCommit):
+                The base commit, when viewing a commit range.
+
+            tip_commit (reviewboard.diffviewer.models.DiffCommit):
+                The tip commit, when viewing a commit range.
 
             extra_context (dict, optional):
                 Extra information to add to the context.
@@ -352,48 +373,6 @@ class DiffViewerView(TemplateView):
                 re.split(r',+\s*', self.request.GET['filenames'].strip())
         except KeyError:
             filename_patterns = []
-
-        base_commit_id = None
-        base_commit = None
-
-        tip_commit_id = None
-        tip_commit = None
-
-        commits_by_diffset_id: dict[int, list[DiffCommit]] = {}
-
-        if diffset.commit_count > 0:
-            diffset_pks = [diffset.pk]
-
-            if interdiffset:
-                diffset_pks.append(interdiffset.pk)
-
-            commits = DiffCommit.objects.filter(diffset_id__in=diffset_pks)
-
-            for commit in commits:
-                commits_by_diffset_id.setdefault(commit.diffset_id, []).append(
-                    commit)
-
-            # Base and tip commit selection is not supported in interdiffs.
-            if not interdiffset:
-                raw_base_commit_id = self.request.GET.get('base-commit-id')
-                raw_tip_commit_id = self.request.GET.get('tip-commit-id')
-
-                if raw_base_commit_id is not None:
-                    try:
-                        base_commit_id = int(raw_base_commit_id)
-                    except ValueError:
-                        pass
-
-                if raw_tip_commit_id is not None:
-                    try:
-                        tip_commit_id = int(raw_tip_commit_id)
-                    except ValueError:
-                        pass
-
-                base_commit, tip_commit = get_base_and_tip_commits(
-                    base_commit_id,
-                    tip_commit_id,
-                    commits=commits_by_diffset_id[diffset.pk])
 
         files = get_diff_files(diffset=diffset,
                                interdiffset=interdiffset,
@@ -437,8 +416,8 @@ class DiffViewerView(TemplateView):
                 'is_interdiff': interdiffset is not None,
                 'interdiff_revision': (interdiffset.revision
                                        if interdiffset else None),
-                'base_commit_id': base_commit_id,
-                'tip_commit_id': tip_commit_id,
+                'base_commit_id': base_commit and base_commit.pk,
+                'tip_commit_id': tip_commit and tip_commit.pk,
             },
             'pagination': {
                 'is_paginated': page.has_other_pages(),
@@ -458,25 +437,34 @@ class DiffViewerView(TemplateView):
                 page.previous_page_number()
 
         if diffset.commit_count > 0:
-            if interdiffset:
-                diff_context['commit_history_diff'] = [
-                    entry.serialize()
-                    for entry in diff_histories(
-                        commits_by_diffset_id[diffset.pk],
-                        commits_by_diffset_id[interdiffset.pk])
-                ]
-
-            all_commits = [
+            diff_commits = [
                 commit
-                for pk in commits_by_diffset_id
-                for commit in commits_by_diffset_id[pk]
+                for commit in all_commits
+                if commit.diffset_id == diffset.pk
             ]
 
             diff_context['commits'] = [
                 commit.serialize()
-                for commit in sorted(all_commits,
-                                     key=lambda commit: commit.pk)
+                for commit in diff_commits
             ]
+
+            if interdiffset:
+                interdiff_commits = [
+                    commit
+                    for commit in all_commits
+                    if commit.diffset_id == interdiffset.pk
+                ]
+
+                diff_context['commit_history_diff'] = [
+                    entry.serialize()
+                    for entry in diff_histories(diff_commits,
+                                                interdiff_commits)
+                ]
+
+                diff_context['commits'].extend(
+                    commit.serialize()
+                    for commit in interdiff_commits
+                )
 
         context: DiffViewerContext = {
             'diff_context': diff_context,

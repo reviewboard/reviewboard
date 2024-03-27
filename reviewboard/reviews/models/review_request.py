@@ -964,6 +964,10 @@ class ReviewRequest(BaseReviewRequestDetails):
         This will also fetch all associated FileDiffs, as well as a count
         of the number of files (stored in DiffSet.file_count).
 
+        Version Changed:
+            7.0:
+            Made this pre-fetch the related DiffCommit objects.
+
         Returns:
             list of reviewboard.diffviewer.models.DiffSet:
             The list of all diffsets on the review request.

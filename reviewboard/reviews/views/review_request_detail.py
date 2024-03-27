@@ -273,7 +273,11 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
         context = super().get_context_data(**kwargs)
         context.update(make_review_request_context(
             request=request,
-            review_request=review_request))
+            review_request=review_request,
+            social_page_title=(
+               f'Review Request #{review_request.display_id}: '
+               f'{review_request.summary}'),
+            social_page_image_url=social_page_image_url))
         context.update({
             'all_file_attachments': all_file_attachments,
             'blocks': self.blocks,
@@ -293,11 +297,6 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
             'issues': data.issues,
             'file_attachments': file_attachments,
             'screenshots': data.active_screenshots,
-            'social_page_image_url': social_page_image_url,
-            'social_page_title': (
-                'Review Request #%s: %s'
-                % (review_request.display_id, review_request.summary)
-            ),
         })
 
         return context

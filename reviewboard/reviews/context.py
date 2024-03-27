@@ -69,6 +69,12 @@ class ReviewRequestContext(TypedDict):
     #: The description to use for social media links to the review request.
     social_page_description: str
 
+    #: The image URL to use for social media links.
+    social_page_image_url: Optional[str]
+
+    #: The title text to use for social media links.
+    social_page_title: str
+
     #: The URL to use for social media links to the review request.
     social_page_url: str
 
@@ -87,6 +93,8 @@ def make_review_request_context(
     review_request: ReviewRequest,
     extra_context: Optional[dict[str, Any]] = None,
     is_diff_view: bool = False,
+    social_page_image_url: Optional[str] = None,
+    social_page_title: str = '',
 ) -> ReviewRequestContext:
     """Return a dictionary for template contexts used for review requests.
 
@@ -96,18 +104,34 @@ def make_review_request_context(
 
     For convenience, extra data can be passed to this dictionary.
 
+    Version Changed:
+        7.0:
+        Added ``social_page_image_url`` and ``social_page_title`` arguments.
+
     Args:
         request (django.http.HttpRequest):
-            The current HTTP request.
+            The HTTP request.
 
         review_request (reviewboard.reviews.models.ReviewRequest):
-            The review request to get the context data for.
+            The review request.
 
         extra_context (dict, optional):
-            Extra information to add to the context.
+            Extra information to include in the context.
 
         is_diff_view (bool, optional):
-            Whether to add information specific to the diff viewer.
+            Whether the user is viewing a diff.
+
+        social_page_image_url (str, optional):
+            The image URL to include for social media thumbnails.
+
+            Version Added:
+                7.0
+
+        social_page_title (str, optional):
+            The page title to include for social media thumbnails.
+
+            Version Added:
+                7.0
 
     Returns:
         ReviewRequestContext:
@@ -174,6 +198,8 @@ def make_review_request_context(
         'send_email': siteconfig.get('mail_send_review_mail'),
         'tabs': tabs,
         'social_page_description': social_page_description,
+        'social_page_image_url': social_page_image_url,
+        'social_page_title': social_page_title,
         'social_page_url': build_server_url(request.path, request=request),
     }
 
@@ -189,77 +215,3 @@ def make_review_request_context(
                 review_request=review_request)[0]
 
     return context
-
-
-def has_comments_in_diffsets_excluding(review, diffset_pair):
-    """Returns whether the specified review has "other comments".
-
-    This is used to notify users that their review has comments on diff
-    revisions other than the one that they happen to be looking at at any given
-    moment.
-    """
-    if not review:
-        return False
-
-    current_diffset, interdiff = diffset_pair
-
-    # See if there are any diffsets with comments on them in this review.
-    q = DiffSet.objects.filter(files__comments__review=review)
-    q = q.filter(files__comments__interfilediff__isnull=True).distinct()
-
-    if not interdiff:
-        # The user is browsing a standard diffset, so filter it out.
-        q = q.exclude(pk=current_diffset.id)
-
-    if q.exists():
-        return True
-
-    # See if there are any interdiffs with comments on them in this review.
-    q = DiffSet.objects.filter(files__comments__review=review)
-    q = q.filter(files__comments__interfilediff__isnull=False)
-
-    if interdiff:
-        # The user is browsing an interdiff, so filter it out.
-        q = q.exclude(pk=current_diffset.id,
-                      files__comments__interfilediff__diffset=interdiff)
-
-    return q.exists()
-
-
-def diffsets_with_comments(review, current_pair):
-    """Returns a list of diffsets in the review that contain draft comments."""
-    if not review:
-        return
-
-    diffsets = DiffSet.objects.filter(files__comments__review=review)
-    diffsets = diffsets.filter(files__comments__interfilediff__isnull=True)
-    diffsets = diffsets.distinct()
-
-    for diffset in diffsets:
-        yield {
-            'diffset': diffset,
-            'is_current': (current_pair[0] == diffset and
-                           current_pair[1] is None),
-        }
-
-
-def interdiffs_with_comments(review, current_pair):
-    """Get a list of interdiffs in the review that contain draft comments."""
-    if not review:
-        return
-
-    diffsets = DiffSet.objects.filter(files__comments__review=review)
-    diffsets = diffsets.filter(files__comments__interfilediff__isnull=False)
-    diffsets = diffsets.distinct()
-
-    for diffset in diffsets:
-        interdiffs = DiffSet.objects.filter(
-            files__interdiff_comments__filediff__diffset=diffset).distinct()
-
-        for interdiff in interdiffs:
-            yield {
-                'diffset': diffset,
-                'interdiff': interdiff,
-                'is_current': (current_pair[0] == diffset and
-                               current_pair[1] == interdiff),
-            }

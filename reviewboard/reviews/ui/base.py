@@ -423,18 +423,17 @@ class ReviewUI:
                 'comments': self.get_comments(),
                 'draft': draft,
                 'last_activity_time': last_activity_time,
-                'social_page_image_url': self.get_page_cover_image_url(),
-                'social_page_title': (
-                    'Reviewable for Review Request #%s: %s'
-                    % (self.review_request.display_id, caption)
-                ),
                 'review_request_details': review_request_details,
                 'review_request': self.review_request,
                 'review_ui': self,
                 'review_ui_uuid': str(uuid4()),
                 self.object_key: self.obj,
                 self.diff_object_key: self.diff_against_obj,
-            })
+            },
+            social_page_image_url=self.get_page_cover_image_url(),
+            social_page_title=(
+                f'Reviewable for Review Request '
+                f'#{self.review_request.display_id}: {caption}'))
 
         if inline:
             context.update({
