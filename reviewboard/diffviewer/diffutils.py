@@ -1197,10 +1197,9 @@ def get_diff_files(
             'index': len(files),
             'interfilediff': interfilediff,
             'is_new_file': (
-                (newfile or
-                 (base_filediff is not None and
-                  base_filediff.is_new)) and
-                not interfilediff and
+                newfile and
+                base_filediff is None and
+                interfilediff is None and
                 not filediff.parent_diff
             ),
             'is_symlink': filediff.extra_data.get('is_symlink', False),

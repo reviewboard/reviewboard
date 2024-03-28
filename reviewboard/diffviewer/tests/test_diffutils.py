@@ -1,3 +1,7 @@
+"""Unit tests for the diffutils module."""
+
+from __future__ import annotations
+
 import kgb
 from itertools import zip_longest
 
@@ -1263,6 +1267,35 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         }
 
         self.assertEqual(results, expected_results)
+
+    def test_get_diff_files_history_with_new_file(self) -> None:
+        """Testing get_diff_files with a diffset that has commit history with a
+        new file introduced in one commit and changed in another
+        """
+        self.set_up_filediffs()
+
+        commits = list(DiffCommit.objects.all())
+
+        files = get_diff_files(diffset=self.diffset,
+                               base_commit=None,
+                               tip_commit=commits[0])
+
+        # File "foo" was added in the first commit in the series.
+
+        self.assertEqual(files[1]['modified_filename'], 'foo')
+        self.assertTrue(files[1]['filediff'].is_new)
+        self.assertTrue(files[1]['is_new_file'])
+
+        # File "foo" should not be considered a new file when viewing a diff
+        # between commits.
+
+        files = get_diff_files(diffset=self.diffset,
+                               base_commit=commits[0],
+                               tip_commit=commits[1])
+
+        self.assertEqual(files[2]['modified_filename'], 'foo')
+        self.assertFalse(files[1]['filediff'].is_new)
+        self.assertFalse(files[1]['is_new_file'])
 
     def _get_filediff_base_mapping_from_details(self, by_details, details):
         """Return a mapping from FileDiffs to base FileDiffs from the details.
