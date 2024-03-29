@@ -7,6 +7,7 @@ import logging
 import os
 from typing import (Any, Dict, Iterator, List, Optional, Sequence, Tuple,
                     TYPE_CHECKING)
+from urllib.parse import urlencode
 from uuid import uuid4
 
 import mimeparse
@@ -21,6 +22,7 @@ from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.diffviewer.models import FileDiff
 from reviewboard.reviews.context import make_review_request_context
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
@@ -585,13 +587,16 @@ class ReviewUI:
         if isinstance(comment, FileAttachmentComment):
             assert isinstance(self.obj, FileAttachment)
 
-            return local_site_reverse(
-                'file-attachment',
-                local_site=self.review_request.local_site,
-                kwargs={
-                    'review_request_id': self.review_request.display_id,
-                    'file_attachment_id': self.obj.pk,
-                })
+            if self.obj.is_from_diff:
+                return self._get_diff_attachment_comment_link_url(comment)
+            else:
+                return local_site_reverse(
+                    'file-attachment',
+                    local_site=self.review_request.local_site,
+                    kwargs={
+                        'review_request_id': self.review_request.display_id,
+                        'file_attachment_id': self.obj.pk,
+                    })
 
         raise NotImplementedError
 
@@ -863,6 +868,99 @@ class ReviewUI:
             pass
 
         return prev_obj, next_obj
+
+    def _get_diff_attachment_comment_link_url(
+        self,
+        comment: FileAttachmentComment,
+    ) -> str:
+        """Return the URL for linking to a comment on a diff file attachment.
+
+        This will inspect a file attachment comment which was made on an
+        attachment that's part of a diff, and return the URL to the diff viewer
+        with the correct revisions.
+
+        Args:
+            comment (reviewboard.reviews.models.FileAttachmentComment):
+                The file attachment comment.
+
+        Returns:
+            str:
+            The link to the relevant diffviewer revision that the comment was
+            made on.
+        """
+        revision_info = comment.get_comment_diff_revision_info()
+        assert revision_info is not None
+
+        diff_revision = revision_info['diff_revision']
+        interdiff_revision = revision_info['interdiff_revision']
+        base_commit_id = revision_info['base_commit_id']
+        tip_commit_id = revision_info['tip_commit_id']
+        modified_filediff = revision_info['modified_filediff']
+        modified_diffset = revision_info['modified_diffset']
+
+        filediff_id: int = modified_filediff.pk
+        query: dict[str, Any] = {}
+
+        if base_commit_id:
+            query['base-commit-id'] = base_commit_id
+
+        if tip_commit_id:
+            query['tip-commit-id'] = tip_commit_id
+
+        if (modified_diffset.commit_count and
+            not base_commit_id and
+            not tip_commit_id):
+            # For review requests created with commit history, we can have
+            # multiple FileDiffs for the same file--one as part of the commit,
+            # and one as part of the cumulative diff. The file attachment for a
+            # binary file gets uploaded to the FileDiff corresponding to the
+            # commit.
+            #
+            # When the user loads the cumulative diff, we'll find the file
+            # attachments that correspond to those files. See
+            # :py:meth:`reviewboard.attachments.managers.
+            # FileAttachmentManager.get_for_filediff`.
+            #
+            # When we've reached this point in the code, we know that the user
+            # made their comment on the cumulative diff (we don't have any
+            # base-commit-id or tip-commit-id parameters to stick in the URL,
+            # yet the diffset has commits). We therefore need to do the reverse
+            # of what ``get_for_filediff` does, and find the FileDiff in the
+            # cumulative diff that corresponds to the commit-specific one we
+            # have.
+            filediff_id = (
+                FileDiff.objects
+                .filter(
+                    diffset_id=modified_diffset.pk,
+                    commit__isnull=True,
+                    dest_file=modified_filediff.dest_file)
+                .values_list('pk', flat=True)
+            )[0]
+
+        review_request = self.review_request
+
+        if interdiff_revision:
+            url = local_site_reverse(
+                'view-interdiff',
+                local_site=review_request.local_site,
+                kwargs={
+                    'interdiff_revision': interdiff_revision,
+                    'review_request_id': review_request.display_id,
+                    'revision': diff_revision,
+                })
+        else:
+            url = local_site_reverse(
+                'view-diff-revision',
+                local_site=review_request.local_site,
+                kwargs={
+                    'review_request_id': review_request.display_id,
+                    'revision': diff_revision,
+                })
+
+        if query:
+            url += f'?{urlencode(query)}'
+
+        return f'{url}#file{filediff_id}'
 
     @classmethod
     def for_object(
