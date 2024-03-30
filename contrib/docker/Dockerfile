@@ -243,6 +243,8 @@ RUN    set -ex \
            git \
            gosu \
            helix-cli \
+           libldap-2.4 \
+           libldap-common \
            libmysqlclient21 \
            libxmlsec1-openssl \
            patch \
