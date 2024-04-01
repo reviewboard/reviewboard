@@ -141,10 +141,10 @@ class SerializedCommitWithComments(TypedDict):
     revision: int
 
     #: The commit ID of the tip commit in the commit range.
-    tip_commit_id: str
+    tip_commit_id: Optional[str]
 
     #: The PK of the tip DiffCommit in the commit range.
-    tip_commit_pk: int
+    tip_commit_pk: Optional[int]
 
 
 class SerializedCommentsHint(TypedDict):
@@ -541,8 +541,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                 filediffs_by_id=filediffs_by_id,
                 current_diffset=diffset,
                 current_interdiffset=interdiffset,
-                current_base_commit=base_commit,
-                current_tip_commit=tip_commit,
+                current_base_commit_id=base_commit_id,
+                current_tip_commit_id=tip_commit_id,
             ),
         })
         diff_context['revision'].update({
@@ -625,8 +625,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         filediffs_by_id: dict[int, FileDiff],
         current_diffset: DiffSet,
         current_interdiffset: Optional[DiffSet],
-        current_base_commit: Optional[DiffCommit],
-        current_tip_commit: Optional[DiffCommit],
+        current_base_commit_id: Optional[int],
+        current_tip_commit_id: Optional[int],
     ) -> SerializedCommentsHint:
         """Return the comments hint for the diff viewer.
 
@@ -672,9 +672,6 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
 
         pending_comments: list[Comment] = []
 
-        # TODO: we need to also include file attachment comments that are part
-        # of the diff.
-
         for comment in itertools.chain(*all_comments.values()):
             review = comment.get_review()
 
@@ -708,6 +705,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         # commit_ranges_with_comments is sortable.
         NO_BASE_COMMIT = -1
 
+        # Go through all diff comments and sort them into our *_with_comments
+        # sets.
         for comment in pending_comments:
             filediff = filediffs_by_id[comment.filediff_id]
             diffset_id = filediff.diffset_id
@@ -731,6 +730,37 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                 commit_ranges_with_comments.add(
                     (diffset_id, base_commit_id, tip_commit_id))
 
+        # Now go through file attachment comments and add any that correspond
+        # to diffs.
+        for comment in pending_review.file_attachment_comments.all():
+            revision_info = comment.get_comment_diff_revision_info()
+
+            if not revision_info:
+                continue
+
+            diffset_id = revision_info['diffset_id']
+            interdiffset_id = revision_info['interdiffset_id']
+            base_commit_id = revision_info['base_commit_id']
+            tip_commit_id = revision_info['tip_commit_id']
+
+            if interdiffset_id is not None:
+                interdiffset_ids_with_comments.add(
+                    (diffset_id, interdiffset_id)
+                )
+            elif base_commit_id is not None or tip_commit_id is not None:
+                if base_commit_id is None:
+                    base_commit_id = NO_BASE_COMMIT
+
+                if tip_commit_id is None:
+                    tip_commit_id = revision_info.get('last_commit_id')
+                    assert tip_commit_id is not None
+
+                commit_ranges_with_comments.add(
+                    (diffset_id, base_commit_id, tip_commit_id)
+                )
+            else:
+                diffset_ids_with_comments.add(revision_info['diffset_id'])
+
         commits_by_id: dict[int, DiffCommit] = {
             commit.pk: commit
             for commit in all_commits
@@ -741,8 +771,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         # Find all diffsets that have comments.
         current_is_diffset = (
             current_interdiffset is None and
-            current_tip_commit is None and
-            current_base_commit is None)
+            current_base_commit_id is None and
+            current_tip_commit_id is None)
         diffsets_with_comments: list[SerializedDiffsetWithComments] = []
 
         for diffset_id in sorted(diffset_ids_with_comments):
@@ -780,7 +810,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
             })
 
         # Now find all commit ranges that have comments.
-        current_is_commit_range = current_tip_commit is not None
+        current_is_commit_range = (current_base_commit_id is not None or
+                                   current_tip_commit_id is not None)
         commits_with_comments: list[SerializedCommitWithComments] = []
 
         for diffset_id, base_commit_id, tip_commit_id in \
@@ -812,11 +843,11 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
             is_current = (
                 current_is_commit_range and
                 current_diffset.pk == diffset_id and
-                current_tip_commit.pk == tip_commit_id and
-                ((current_base_commit is None and
+                ((current_base_commit_id is None and
                   base_commit_id == NO_BASE_COMMIT) or
-                 (current_base_commit is not None and
-                  current_base_commit.pk == base_commit_id)))
+                 (current_base_commit_id is not None and
+                  current_base_commit_id == base_commit_id)) and
+                current_tip_commit_id == tip_commit_id)
 
             if not is_current:
                 has_other_comments = True
@@ -836,7 +867,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                         base_commit_commit_id = commit.commit_id
                         break
                 else:
-                    logger.error('Unable to find parent commit for comment '
+                    logger.error('Unable to find child commit for comment '
                                  'base commit pk=%s',
                                  base_commit_id)
 
@@ -849,8 +880,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                 'tip_commit_pk': tip_commit.pk,
             })
 
-        hint['commits_with_comments'] = commits_with_comments
         hint['diffsets_with_comments'] = diffsets_with_comments
+        hint['commits_with_comments'] = commits_with_comments
         hint['has_other_comments'] = has_other_comments
         hint['interdiffs_with_comments'] = interdiffsets_with_comments
 

@@ -267,7 +267,6 @@ export class DiffViewerPageView extends ReviewablePageView<
         const session = UserSession.instance;
 
         this.#$controls = $('#view_controls');
-        console.assert(this.#$controls.length === 1);
 
         /* Set up the view buttons. */
         this.addViewToggleButton({
@@ -1283,16 +1282,24 @@ export class DiffViewerPageView extends ReviewablePageView<
     _onCommitRangeSelected(
         revision: number,
         baseCommit: number | null,
-        tipCommit: number,
+        tipCommit: number | null,
     ) {
-        if (baseCommit === null || baseCommit === tipCommit) {
+        if (baseCommit === null) {
             this._navigate({
                 revision: revision,
+                interdiffRevision: null,
                 tipCommitID: tipCommit.toString(),
+            });
+        } else if (tipCommit === null) {
+            this._navigate({
+                baseCommitID: baseCommit.toString(),
+                interdiffRevision: null,
+                revision: revision,
             });
         } else {
             this._navigate({
                 baseCommitID: baseCommit.toString(),
+                interdiffRevision: null,
                 revision: revision,
                 tipCommitID: tipCommit.toString(),
             });

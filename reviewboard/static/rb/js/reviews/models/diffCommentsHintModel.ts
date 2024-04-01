@@ -34,8 +34,8 @@ export interface DiffCommentsHintAttrs extends ModelAttributes {
         revision: number;
         baseCommitID: string | null;
         baseCommitPK: number | null;
-        tipCommitID: string;
-        tipCommitPK: number;
+        tipCommitID: string | null;
+        tipCommitPK: number | null;
     }[];
 }
 
@@ -65,7 +65,7 @@ export interface DiffCommentsHintParseData {
         base_commit_pk: number | null;
         is_current: boolean;
         revision: number;
-        tip_commit_id: string;
+        tip_commit_id: string | null;
         tip_commit_pk: number | null;
     }[];
 }

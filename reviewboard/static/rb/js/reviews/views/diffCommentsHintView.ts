@@ -79,6 +79,11 @@ export class DiffCommentsHintView extends BaseView<DiffCommentsHint> {
                         Revision ${commit.revision},
                         commit ${commit.tipCommitID.substring(0, 8)}
                     `);
+                } else if (commit.tipCommitID === null) {
+                    $li.text(_`
+                        Revision ${commit.revision},
+                        commit ${commit.baseCommitID.substring(0, 8)}
+                    `);
                 } else {
                     $li.text(_`
                         Revision ${commit.revision},

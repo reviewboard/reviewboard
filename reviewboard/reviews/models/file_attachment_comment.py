@@ -8,7 +8,7 @@ from typing import Optional, TYPE_CHECKING, cast
 from django.db import models
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from typing_extensions import TypedDict
+from typing_extensions import NotRequired, TypedDict
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.models.base_comment import BaseComment
@@ -36,14 +36,26 @@ class FileAttachmentCommentRevisionInfo(TypedDict):
     #: The revision of the diff that the comment is on.
     diff_revision: int
 
+    #: The PK of the DiffSet that the comment is on.
+    diffset_id: int
+
     #: The interdiff revision, if present.
     interdiff_revision: Optional[int]
+
+    #: The PK of the interdiff DiffSet, when present.
+    interdiffset_id: Optional[int]
 
     #: The base commit ID, if present.
     base_commit_id: Optional[int]
 
     #: The tip commit ID, if present.
     tip_commit_id: Optional[int]
+
+    #: The last commit ID in the commit series.
+    #:
+    #: This is used for some other computation when ``tip_commit_id`` is
+    #: None.
+    last_commit_id: NotRequired[int]
 
     #: The filediff for the modified version of the file.
     modified_filediff: FileDiff
@@ -181,7 +193,9 @@ class FileAttachmentComment(BaseComment):
             return None
 
         diff_revision: int
+        diffset_id: int
         interdiff_revision: Optional[int] = None
+        interdiffset_id: Optional[int] = None
 
         modified_filediff = self.file_attachment.added_in_filediff
         modified_diffset = modified_filediff.diffset
@@ -194,6 +208,7 @@ class FileAttachmentComment(BaseComment):
         if diff_attachment is None:
             # This was a newly-added file.
             diff_revision = modified_diffset.revision
+            diffset_id = modified_diffset.pk
             tip_commit_id = modified_filediff.commit_id
         else:
             orig_filediff = diff_attachment.added_in_filediff
@@ -201,6 +216,7 @@ class FileAttachmentComment(BaseComment):
             if orig_filediff is None:
                 # The comment was made against a single diff revision.
                 diff_revision = modified_diffset.revision
+                diffset_id = modified_diffset.pk
                 tip_commit_id = modified_filediff.commit_id
             else:
                 orig_diffset = orig_filediff.diffset
@@ -209,12 +225,26 @@ class FileAttachmentComment(BaseComment):
                     # The comment was made against a commit range on a single
                     # revision.
                     diff_revision = modified_diffset.revision
+                    diffset_id = modified_diffset.pk
                     base_commit_id = orig_filediff.commit_id
                     tip_commit_id = modified_filediff.commit_id
                 else:
                     # The comment was made on an interdiff.
                     diff_revision = orig_diffset.revision
+                    diffset_id = orig_diffset.pk
                     interdiff_revision = modified_diffset.revision
+                    interdiffset_id = modified_diffset.pk
+
+        result: FileAttachmentCommentRevisionInfo = {
+            'diff_revision': diff_revision,
+            'diffset_id': diffset_id,
+            'interdiff_revision': interdiff_revision,
+            'interdiffset_id': interdiffset_id,
+            'base_commit_id': base_commit_id,
+            'tip_commit_id': tip_commit_id,
+            'modified_filediff': modified_filediff,
+            'modified_diffset': modified_diffset,
+        }
 
         if tip_commit_id:
             last_commit_id = cast(int, (
@@ -226,16 +256,10 @@ class FileAttachmentComment(BaseComment):
             # We don't specify the tip commit ID in the URL if it's the last
             # commit in the series.
             if tip_commit_id == last_commit_id:
-                tip_commit_id = None
+                result['last_commit_id'] = last_commit_id
+                result['tip_commit_id'] = None
 
-        return {
-            'diff_revision': diff_revision,
-            'interdiff_revision': interdiff_revision,
-            'base_commit_id': base_commit_id,
-            'tip_commit_id': tip_commit_id,
-            'modified_filediff': modified_filediff,
-            'modified_diffset': modified_diffset,
-        }
+        return result
 
     class Meta(BaseComment.Meta):
         """Metadata for the FileAttachmentComment model."""
