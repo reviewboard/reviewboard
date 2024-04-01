@@ -506,6 +506,38 @@ class FileDiff(models.Model):
             then ``insert_count`` and ``delete_count`` will be equal to the raw
             versions.
         """
+        if self.binary:
+            if self.is_new:
+                return {
+                    'delete_count': 0,
+                    'equal_count': 0,
+                    'insert_count': 1,
+                    'raw_delete_count': 0,
+                    'raw_insert_count': 0,
+                    'replace_count': 0,
+                    'total_line_count': 1,
+                }
+            elif self.deleted:
+                return {
+                    'delete_count': 1,
+                    'equal_count': 0,
+                    'insert_count': 0,
+                    'raw_delete_count': 0,
+                    'raw_insert_count': 0,
+                    'replace_count': 0,
+                    'total_line_count': 1,
+                }
+            else:
+                return {
+                    'delete_count': 0,
+                    'equal_count': 0,
+                    'insert_count': 0,
+                    'raw_delete_count': 0,
+                    'raw_insert_count': 0,
+                    'replace_count': 1,
+                    'total_line_count': 1,
+                }
+
         if ('raw_insert_count' not in self.extra_data or
             'raw_delete_count' not in self.extra_data):
             if not self.diff_hash:
