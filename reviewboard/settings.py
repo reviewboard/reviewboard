@@ -136,7 +136,14 @@ STATICFILES_FINDERS = (
     'pipeline.finders.PipelineFinder',
 )
 
-STATICFILES_STORAGE = 'djblets.pipeline.storage.PipelineStorage'
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'djblets.pipeline.storage.PipelineStorage',
+    },
+}
 
 RB_BUILTIN_APPS = [
     'corsheaders',

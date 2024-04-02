@@ -1,27 +1,15 @@
 {
+    "extends": "./reviewboard/packaging/js/tsconfig.base"
     "compilerOptions": {
-        "allowJs": true,
-        "baseUrl": "./",
-        "declaration": false,
-        "esModuleInterop": true,
-        "experimentalDecorators": true,
-        "isolatedModules": true,
-        "moduleResolution": "node",
-        "moduleSuffixes": [
-            ".es6",
-            ""
-        ],
-        "noEmit": true,
         "paths": {
             "backbone": ["node_modules/@beanbag/spina/lib/@types/backbone"],
-            "djblets/*": [".djblets/static/djblets/js/*"],
+            "djblets/*": ["node_modules/@beanbag/djblets/static/djblets/js/*"],
             "reviewboard/*": ["reviewboard/static/rb/js/*"]
         },
-        "target": "ESNext"
-    },
+    }
     "include": [
-        "reviewboard/static/lib/js/**/*",
-        "reviewboard/static/rb/js/**/*",
-        ".djblets/static/djblets/js/**/*"
+       "reviewboard/static/lib/js/**/*",
+       "reviewboard/static/rb/js/**/*",
+       "node_modules/@beanbag/djblets/static/djblets/js/**/*"
     ]
 }

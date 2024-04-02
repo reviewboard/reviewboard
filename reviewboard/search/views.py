@@ -1,6 +1,9 @@
 """Views for searching."""
 
+from __future__ import annotations
+
 from collections import OrderedDict
+from typing import Any, Optional
 
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
@@ -107,7 +110,11 @@ class RBSearchView(CheckLoginRequiredViewMixin,
 
         return self.form_valid(form)
 
-    def get_context_data(self, form=None, **kwargs):
+    def get_context_data(
+        self,
+        form: Optional[RBSearchForm] = None,
+        **kwargs,
+    ) -> dict[str, Any]:
         """Return context data for rendering the view.
 
         Args:
@@ -123,8 +130,7 @@ class RBSearchView(CheckLoginRequiredViewMixin,
             dict:
             The context dictionary.
         """
-        context = super(RBSearchView, self).get_context_data(form=form,
-                                                             **kwargs)
+        context = super().get_context_data(form=form, **kwargs)
 
         paginator = context['paginator']
         page_obj = context['page_obj']
@@ -135,8 +141,13 @@ class RBSearchView(CheckLoginRequiredViewMixin,
             min(paginator.num_pages,
                 page_obj.number + self.ADJACENT_PAGES) + 1))
 
-        active_filters = form.cleaned_data.get('model_filter',
-                                               [form.FILTER_ALL])
+        assert form is not None
+
+        if form.is_valid():
+            active_filters = form.cleaned_data.get('model_filter',
+                                                   [form.FILTER_ALL])
+        else:
+            active_filters = []
 
         context.update({
             'filter_types': OrderedDict(

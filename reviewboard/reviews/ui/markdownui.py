@@ -25,7 +25,7 @@ class MarkdownReviewUI(TextBasedReviewUI):
     top-level block (header, paragraph, list, code block, etc).
     """
 
-    supported_mimetypes = ['text/x-markdown']
+    supported_mimetypes = ['text/markdown', 'text/x-markdown']
     object_key = 'markdown'
     can_render_text = True
     rendered_chunk_generator_cls = MarkdownDiffChunkGenerator

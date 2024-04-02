@@ -16,6 +16,7 @@ from setuptools import setup, find_packages
 from setuptools.command.develop import develop
 from setuptools.command.egg_info import egg_info
 
+import reviewboard
 from reviewboard import get_package_version, VERSION
 from reviewboard.dependencies import (PYTHON_MIN_VERSION,
                                       PYTHON_MIN_VERSION_STR,
@@ -330,11 +331,26 @@ class InstallNodeDependenciesCommand(Command):
         #
         # This will be used for path resolution in JavaScript tools used for
         # static media building.
+        npm_workspaces_dir = os.path.join(os.path.dirname(__file__),
+                                          '.npm-workspaces')
+
+        if not os.path.exists(npm_workspaces_dir):
+            os.mkdir(npm_workspaces_dir, 0o755)
+
+        # Clean up legacy symlinks.
         if os.path.exists('.djblets'):
             os.unlink('.djblets')
 
+        # Populate the workspaces.
         import djblets
-        os.symlink(os.path.dirname(djblets.__file__), '.djblets')
+
+        for mod in (djblets, reviewboard):
+            symlink_path = os.path.join(npm_workspaces_dir, mod.__name__)
+
+            if os.path.exists(symlink_path):
+                os.unlink(symlink_path)
+
+            os.symlink(os.path.dirname(mod.__file__), symlink_path)
 
         print('Installing node.js modules...')
         result = os.system('%s install' % npm_command)

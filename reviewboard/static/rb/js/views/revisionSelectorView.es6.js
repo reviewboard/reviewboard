@@ -14,9 +14,10 @@ RB.RevisionSelectorView = Backbone.View.extend({
     `),
 
     events: {
+        'click .revision-selector-label': '_onLabelClick',
         'mousedown .revision-selector-handle': '_onHandleMouseDown',
         'mousedown .revision-selector-label': '_onLabelMouseDown',
-        'click .revision-selector-label': '_onLabelClick',
+        'touchstart .revision-selector-handle': '_onHandleTouchStart',
     },
 
     /**
@@ -48,7 +49,11 @@ RB.RevisionSelectorView = Backbone.View.extend({
 
         this.listenTo(this.model, 'change', this._update);
 
-        _.bindAll(this, '_onHandleMouseUp', '_onHandleMouseMove');
+        _.bindAll(this,
+                  '_onHandleMouseUp',
+                  '_onHandleMouseMove',
+                  '_onHandleTouchEnd',
+                  '_onHandleTouchMove');
     },
 
     /**
@@ -149,55 +154,40 @@ RB.RevisionSelectorView = Backbone.View.extend({
     },
 
     /**
-     * Callback for when a handle is clicked. Starts a drag.
+     * Begin dragging a handle.
      *
-     * This will register for the various events used to handle the drag
-     * operation.
+     * This will prepare state for dragging the provided handle.
      *
      * Args:
-     *     ev (Event):
-     *         The mousedown event.
+     *     $handle (jQuery):
+     *         The handle being dragged.
      */
-    _onHandleMouseDown(ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-
-        this._activeValues = [];
+    _beginDragHandle($handle) {
+        const activeValues = [];
 
         for (let i = 0; i < this._values.length; i++) {
-            this._activeValues.push(i);
+            activeValues.push(i);
         }
 
-        this._mouseActive = true;
-        this._activeHandle = $(ev.currentTarget).data('handle-id');
+        this._activeValues = activeValues;
 
-        document.addEventListener('mouseup', this._onHandleMouseUp, true);
-        document.addEventListener('mousemove', this._onHandleMouseMove, true);
+        this._mouseActive = true;
+        this._activeHandle = $handle.data('handle-id');
 
         $('body').addClass('revision-selector-grabbed');
     },
 
     /**
-     * Callback for when a mouseup event occurs anywhere.
+     * Finish dragging a handle.
      *
-     * Triggers the 'revisionSelected' event with the new revisions.
-     * Removes event handlers used during the drag operation.
-     *
-     * Args:
-     *     ev (Event):
-     *         The mouseup event.
+     * This will reset the drag state and emit the ``revisionSelected``
+     * event if the handle is in a new location.
      */
-    _onHandleMouseUp(ev) {
+    _endDragHandle() {
         console.assert(this._mouseActive);
-
-        ev.stopPropagation();
-        ev.preventDefault();
 
         this._mouseActive = false;
         this._activeHandle = null;
-
-        document.removeEventListener('mouseup', this._onHandleMouseUp, true);
-        document.removeEventListener('mousemove', this._onHandleMouseMove, true);
 
         $('body').removeClass('revision-selector-grabbed');
 
@@ -207,19 +197,19 @@ RB.RevisionSelectorView = Backbone.View.extend({
     },
 
     /**
-     * Callback for a mousemove event anywhere.
+     * Move a handle based on a drag operation.
      *
-     * Updates the "active" values to select the revisions closest to the
-     * current location of the mouse.
+     * This will update the displayed handles if needed in order to represent
+     * any new drag locations.
      *
      * Args:
-     *     ev (Event):
-     *         The mousemove event.
+     *     clientX (number):
+     *         The current dragged location for the handle.
      */
-    _onHandleMouseMove(ev) {
+    _moveDragHandle(clientX) {
         console.assert(this._mouseActive);
 
-        const mouseX = (window.pageXOffset + ev.clientX -
+        const mouseX = (window.pageXOffset + clientX -
                         this._$trough.offset().left);
         let closestPos;
         let closestDist;
@@ -266,5 +256,119 @@ RB.RevisionSelectorView = Backbone.View.extend({
         }
 
         this._updateHandles();
+    },
+
+    /**
+     * Callback for when a mousedown event occurs on a handle.
+     *
+     * This will register for the various events used to handle the drag
+     * operation via the mouse for the revision handle.
+     *
+     * Args:
+     *     ev (Event):
+     *         The mousedown event.
+     */
+    _onHandleMouseDown(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        this._beginDragHandle($(ev.currentTarget));
+
+        document.addEventListener('mouseup', this._onHandleMouseUp, true);
+        document.addEventListener('mousemove', this._onHandleMouseMove, true);
+    },
+
+    /**
+     * Callback for when a touchstart event occurs on a handle.
+     *
+     * This will register for the various events used to handle the drag
+     * operation via touchscreens for the revision handle.
+     *
+     * Args:
+     *     ev (Event):
+     *         The touchstart event.
+     */
+    _onHandleTouchStart(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+
+        this._beginDragHandle($(ev.targetTouches[0].target));
+
+        document.addEventListener('touchend', this._onHandleTouchEnd, true);
+        document.addEventListener('touchmove', this._onHandleTouchMove, true);
+    },
+
+    /**
+     * Callback for when a mouseup event occurs anywhere.
+     *
+     * This completes the handle drag operation and then triggers the
+     * ``revisionSelected`` event with the new revisions.
+     *
+     * All current mouse events will be cleaned up.
+     *
+     * Args:
+     *     ev (Event):
+     *         The mouseup event.
+     */
+    _onHandleMouseUp(ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+
+        document.removeEventListener('mouseup', this._onHandleMouseUp, true);
+        document.removeEventListener('mousemove', this._onHandleMouseMove,
+                                     true);
+
+        this._endDragHandle();
+    },
+
+    /**
+     * Callback for when a touchend event occurs anywhere.
+     *
+     * This completes the handle drag operation and then triggers the
+     * ``revisionSelected`` event with the new revisions.
+     *
+     * All current mouse events will be cleaned up.
+     *
+     * Args:
+     *     ev (Event):
+     *         The touchend event.
+     */
+    _onHandleTouchEnd(ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+
+        document.removeEventListener('touchend', this._onHandleTouchEnd, true);
+        document.removeEventListener('touchmove', this._onHandleTouchMove,
+                                     true);
+
+        this._endDragHandle();
+    },
+
+    /**
+     * Callback for a mousemove event anywhere.
+     *
+     * Updates the "active" values to select the revisions closest to the
+     * current location of the mouse.
+     *
+     * Args:
+     *     ev (Event):
+     *         The mousemove event.
+     */
+    _onHandleMouseMove(ev) {
+        this._moveDragHandle(ev.clientX);
+    },
+
+    /**
+     * Callback for a touchmove event anywhere.
+     *
+     * Updates the "active" values to select the revisions closest to the
+     * current location of the mouse.
+     *
+     * Args:
+     *     ev (Event):
+     *         The touchmove event.
+     */
+    _onHandleTouchMove(ev) {
+        this._moveDragHandle(ev.targetTouches[0].clientX);
     },
 });

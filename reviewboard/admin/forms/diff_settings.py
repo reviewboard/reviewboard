@@ -99,6 +99,14 @@ class DiffSettingsForm(SiteSettingsForm):
         ),
         widget=forms.TextInput(attrs={'size': '15'}))
 
+    diffviewer_max_binary_size = forms.IntegerField(
+        label=_('Max size for binary files in diffs'),
+        help_text=_(
+            'The maximum size (in bytes) for any binary files which will be '
+            'uploaded to show as part of diffs. <strong>10485760 (10MB) '
+            'is recommended</strong>.'),
+        widget=forms.TextInput(attrs={'size': '15'}))
+
     trojan_source_check_confusables = forms.BooleanField(
         label=_(
             'Check for potentially misleading Unicode characters '
@@ -219,6 +227,7 @@ class DiffSettingsForm(SiteSettingsForm):
                 ),
                 'fields': (
                     'diffviewer_max_diff_size',
+                    'diffviewer_max_binary_size',
                     'diffviewer_syntax_highlighting_threshold',
                 ),
             },
@@ -251,6 +260,6 @@ class DiffSettingsForm(SiteSettingsForm):
                     'diffviewer_context_num_lines',
                     'diffviewer_paginate_by',
                     'diffviewer_paginate_orphans',
-                )
-            }
+                ),
+            },
         )

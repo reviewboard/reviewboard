@@ -94,6 +94,7 @@ File Attachments
 .. autosummary::
    :toctree: python
 
+   reviewboard.attachments.errors
    reviewboard.attachments.forms
    reviewboard.attachments.managers
    reviewboard.attachments.mimetypes

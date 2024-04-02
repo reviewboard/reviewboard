@@ -1,17 +1,39 @@
+"""SCMTool for Mercurial."""
+
+from __future__ import annotations
+
 import json
 import logging
 from datetime import datetime
+from typing import Any, Optional, TYPE_CHECKING, Union
 from urllib.parse import quote as urllib_quote, urlparse
 
 from django.utils.encoding import force_str
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
-from reviewboard.scmtools.core import (Branch, Commit, FileNotFoundError, HEAD,
-                                       PRE_CREATION, SCMClient, SCMTool,
-                                       UNKNOWN)
-from reviewboard.scmtools.errors import SCMError
+from reviewboard.scmtools.core import (
+    Branch,
+    Commit,
+    HEAD,
+    PRE_CREATION,
+    SCMClient,
+    SCMTool,
+    UNKNOWN,
+)
+from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.scmtools.git import GitDiffParser, strip_git_symlink_mode
+
+if TYPE_CHECKING:
+    import subprocess
+
+    from reviewboard.diffviewer.parser import ParsedDiffFile
+    from reviewboard.scmtools.core import (
+        FileLookupContext,
+        Revision,
+        RevisionID,
+    )
+    from reviewboard.scmtools.models import Repository
 
 
 logger = logging.getLogger(__name__)
@@ -21,6 +43,8 @@ INITIAL_COMMIT_ID = '0' * 40
 
 
 class HgTool(SCMTool):
+    """SCMTool for Mercurial."""
+
     scmtool_id = 'mercurial'
     name = "Mercurial"
     diffs_use_absolute_paths = True
@@ -30,8 +54,12 @@ class HgTool(SCMTool):
         'executables': ['hg'],
     }
 
-    def __init__(self, repository):
-        super(HgTool, self).__init__(repository)
+    def __init__(
+        self,
+        repository: Repository,
+    ) -> None:
+        """Initialize the SCMTool."""
+        super().__init__(repository)
 
         if repository.path.startswith('http'):
             credentials = repository.get_credentials()
@@ -45,18 +73,67 @@ class HgTool(SCMTool):
                 # pattern we use with all the other tools.
                 raise ImportError
 
-            self.client = HgClient(repository.path, repository.local_site)
+            if repository.local_site:
+                local_site_name = repository.local_site.name
+            else:
+                local_site_name = None
 
-    def get_file(self, path, revision=HEAD, base_commit_id=None, **kwargs):
-        if base_commit_id is not None:
-            base_commit_id = str(base_commit_id)
+            self.client = HgClient(repository.path, local_site_name)
+
+    def get_file(
+        self,
+        path: str,
+        revision: RevisionID = HEAD,
+        context: Optional[FileLookupContext] = None,
+        **kwargs,
+    ) -> bytes:
+        """Return the contents of a file from a repository.
+
+        Args:
+            path (str):
+                The path to the file in the repository.
+
+            revision (reviewboard.scmtools.core.Revision, optional):
+                The revision to fetch. Subclasses should default this to
+                :py:data:`HEAD`.
+
+            context (reviewboard.scmtools.core.FileLookupContext, optional):
+                Extra context used to help look up this file.
+
+                This contains information about the HTTP request, requesting
+                user, and parsed diff information, which may be useful as
+                part of the repository lookup process.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments. This is not currently used, but
+                is available for future expansion.
+
+        Returns:
+            bytes:
+            The returned file contents.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file could not be found in the repository.
+
+            reviewboard.scmtools.errors.InvalidRevisionFormatError:
+                The ``revision`` or ``base_commit_id`` arguments were in an
+                invalid format.
+        """
+        base_commit_id = context and context.base_commit_id
 
         return self.client.cat_file(
             path,
             str(revision),
             base_commit_id=base_commit_id)
 
-    def parse_diff_revision(self, filename, revision, *args, **kwargs):
+    def parse_diff_revision(
+        self,
+        filename: bytes,
+        revision: Union[Revision, bytes],
+        *args,
+        **kwargs,
+    ) -> tuple[bytes, Union[Revision, bytes]]:
         """Parse and return a filename and revision from a diff.
 
         Args:
@@ -90,7 +167,7 @@ class HgTool(SCMTool):
 
         return filename, revision or UNKNOWN
 
-    def get_branches(self):
+    def get_branches(self) -> list[Branch]:
         """Return open/inactive branches from repository.
 
         Returns:
@@ -99,29 +176,36 @@ class HgTool(SCMTool):
         """
         return self.client.get_branches()
 
-    def get_commits(self, branch=None, start=None):
+    def get_commits(
+        self,
+        branch: Optional[str] = None,
+        start: Optional[str] = None,
+    ) -> list[Commit]:
         """Return changesets from repository.
 
         Args:
-            branch (unicode, optional):
+            branch (str, optional):
                 An identifier name of branch.
 
-            start (unicode, optional):
+            start (str, optional):
                 An optional changeset revision to start with.
 
         Returns:
-            reviewboard.scmtools.core.Commit:
-            The commit object.
+            list of reviewboard.scmtools.core.Commit:
+            The list of commits.
         """
         return self.client.get_commits(branch, start)
 
-    def get_change(self, revision):
+    def get_change(
+        self,
+        revision: str,
+    ) -> Commit:
         """Return detailed information about a changeset.
 
         Receive changeset data and patch from repository.
 
         Args:
-            revision (unicode):
+            revision (str):
                 An identifier of changeset.
 
         Returns:
@@ -130,13 +214,32 @@ class HgTool(SCMTool):
         """
         return self.client.get_change(revision)
 
-    def get_parser(self, data):
+    def get_parser(
+        self,
+        data: bytes,
+    ) -> DiffParser:
+        """Return a diff parser used to parse diff data.
+
+        This will return either a :py:class:`HgDiffParser` or
+        :py:class:`HgGitDiffParser` depending on the format of the diff data.
+
+        Args:
+            data (bytes):
+                The diff data to parse.
+
+        Returns:
+            reviewboard.diffviewer.diffparser.BaseDiffParser:
+            The diff parser used to parse this data.
+        """
         diff_parser_cls = self._get_diff_parser_cls(data)
 
         return diff_parser_cls(data)
 
     @classmethod
-    def date_tuple_to_iso8601(cls, data):
+    def date_tuple_to_iso8601(
+        cls,
+        data: tuple[int, int],
+    ) -> str:
         """Return isoformat date from JSON tuple date.
 
         Args:
@@ -145,15 +248,21 @@ class HgTool(SCMTool):
                  and the second is the timezone offset.
 
         Returns:
-            unicode:
+            str:
             Date of given data in ISO 8601 format.
         """
         return force_str(datetime.utcfromtimestamp(
             data[0] + (data[1] * -1)).isoformat())
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None,
-                         local_site_name=None, **kwargs):
+    def check_repository(
+        cls,
+        path: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        local_site_name: Optional[str] = None,
+        **kwargs,
+    ) -> None:
         """Check a repository configuration for validity.
 
         This should check if a repository exists and can be connected to.
@@ -165,16 +274,16 @@ class HgTool(SCMTool):
         be thrown.
 
         Args:
-            path (unicode):
+            path (str):
                 The repository path.
 
-            username (unicode, optional):
+            username (str, optional):
                 The optional username for the repository.
 
-            password (unicode, optional):
+            password (str, optional):
                 The optional password for the repository.
 
-            local_site_name (unicode, optional):
+            local_site_name (str, optional):
                 The name of the :term:`Local Site` that owns this repository.
                 This is optional.
 
@@ -206,7 +315,7 @@ class HgTool(SCMTool):
                 valid number.
 
             Exception:
-                An unexpected exception has ocurred. Callers should check
+                An unexpected exception has occurred. Callers should check
                 for this and handle it.
         """
         result = urlparse(path)
@@ -214,7 +323,7 @@ class HgTool(SCMTool):
         if result.scheme == 'ssh':
             raise SCMError('Mercurial over SSH is not supported.')
 
-        super(HgTool, cls).check_repository(
+        super().check_repository(
             path=path,
             username=username,
             password=password,
@@ -227,7 +336,12 @@ class HgTool(SCMTool):
         else:
             HgClient(path, local_site_name)
 
-    def normalize_patch(self, patch, filename, revision):
+    def normalize_patch(
+        self,
+        patch: bytes,
+        filename: str,
+        revision: str,
+    ) -> bytes:
         """Normalize the provided patch file.
 
         For Git-style diffs, this will update modes on new, changed, and
@@ -242,10 +356,10 @@ class HgTool(SCMTool):
             patch (bytes):
                 The diff/patch file to normalize.
 
-            filename (unicode):
+            filename (str):
                 The name of the file being changed in the diff.
 
-            revision (unicode):
+            revision (str):
                 The revision of the file being changed in the diff.
 
         Returns:
@@ -259,7 +373,10 @@ class HgTool(SCMTool):
 
         return patch
 
-    def _get_diff_parser_cls(self, data):
+    def _get_diff_parser_cls(
+        self,
+        data: bytes,
+    ) -> type[DiffParser]:
         """Return the diff parser class used for this file.
 
         Version Added:
@@ -286,7 +403,11 @@ class HgTool(SCMTool):
 class HgDiffParser(DiffParser):
     """Diff parser for native Mercurial diffs."""
 
-    def __init__(self, data, **kwargs):
+    def __init__(
+        self,
+        data: bytes,
+        **kwargs,
+    ) -> None:
         """Initialize the parser.
 
         Args:
@@ -302,7 +423,11 @@ class HgDiffParser(DiffParser):
         """
         super().__init__(data, uses_commit_ids_as_revisions=True)
 
-    def parse_special_header(self, linenum, parsed_file):
+    def parse_special_header(
+        self,
+        linenum: int,
+        parsed_file: ParsedDiffFile,
+    ) -> int:
         """Parse a special diff header marking the start of a new file's info.
 
         This looks for some special markers found in Mercurial diffs, trying
@@ -372,7 +497,11 @@ class HgDiffParser(DiffParser):
 
         return linenum
 
-    def parse_diff_header(self, linenum, parsed_file):
+    def parse_diff_header(
+        self,
+        linenum: int,
+        parsed_file: ParsedDiffFile,
+    ) -> int:
         """Parse a standard header before changes made to a file.
 
         This will look for information indicating if the file is a binary file,
@@ -420,7 +549,11 @@ class HgGitDiffParser(GitDiffParser):
     be parsed in order to properly locate changes to files in a repository.
     """
 
-    def __init__(self, data, **kwargs):
+    def __init__(
+        self,
+        data: bytes,
+        **kwargs,
+    ) -> None:
         """Initialize the parser.
 
         Args:
@@ -436,7 +569,7 @@ class HgGitDiffParser(GitDiffParser):
         """
         super().__init__(data, uses_commit_ids_as_revisions=True)
 
-    def parse(self):
+    def parse(self) -> list[ParsedDiffFile]:
         """Parse the diff.
 
         This will parse the diff, looking for changes to the file.
@@ -470,21 +603,77 @@ class HgGitDiffParser(GitDiffParser):
                 self.base_commit_id = split_line[2]
                 self.parsed_diff_change.parent_commit_id = split_line[2]
 
-        return super(HgGitDiffParser, self).parse()
+        diff_files = super().parse()
+
+        # hg diff --git generally doesn't include index lines for files, and so
+        # by default GitDiffParser will use ``self.base_commit_id`` and
+        # ``self.new_commit_id`` for individual file revisions. The exception
+        # is for binary files, which get an index line containing the binary
+        # file's SHA. This is meaningless for Mercurial. Go back through and
+        # overwrite those with the revision IDs.
+        for f in diff_files:
+            if f.binary:
+                f.orig_file_details = self.base_commit_id
+                f.modified_file_details = self.new_commit_id
+
+        return diff_files
 
 
 class HgWebClient(SCMClient):
+    """Client for communicating with HgWeb."""
+
     FULL_FILE_URL = '%(url)s/%(rawpath)s/%(revision)s/%(quoted_path)s'
 
-    def __init__(self, path, username, password):
-        super(HgWebClient, self).__init__(path, username=username,
-                                          password=password)
+    def __init__(
+        self,
+        path: str,
+        username: Optional[str],
+        password: Optional[str],
+    ) -> None:
+        """Initialize the client.
+
+        Args:
+            path (str):
+                The repository path.
+
+            username (str, optional):
+                The username used for the repository.
+
+            password (str, optional):
+                The password used for the repository.
+        """
+        super().__init__(path, username=username, password=password)
 
         self.path_stripped = self.path.rstrip('/')
         logger.debug('Initialized HgWebClient with url=%r, username=%r',
                      self.path, self.username)
 
-    def cat_file(self, path, rev='tip', base_commit_id=None):
+    def cat_file(
+        self,
+        path: str,
+        rev: RevisionID = 'tip',
+        base_commit_id: Optional[str] = None,
+    ) -> bytes:
+        """Return the content of a file.
+
+        Args:
+            path (str):
+                The path of the file to return.
+
+            rev (reviewboard.scmtools.core.RevisionID, optional):
+                The revision of the file to return.
+
+            base_commit_id (str, optional):
+                The base commit, if using.
+
+        Returns:
+            bytes:
+            The content of the file at the given revision.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file was not found at the given name and revision.
+        """
         # If the base commit id is provided it should override anything
         # that was parsed from the diffs.
         if rev != PRE_CREATION and base_commit_id is not None:
@@ -504,14 +693,17 @@ class HgWebClient(SCMClient):
                     'quoted_path': urllib_quote(path.lstrip('/')),
                 }
 
-                return self.get_file_http(url, path, rev)
+                data = self.get_file_http(url, path, rev)
+
+                if data is not None:
+                    return data
             except Exception:
                 # It failed. Error was logged and we may try again.
                 pass
 
         raise FileNotFoundError(path, rev)
 
-    def get_branches(self):
+    def get_branches(self) -> list[Branch]:
         """Return open/inactive branches from hgweb in JSON.
 
         Returns:
@@ -538,13 +730,16 @@ class HgWebClient(SCMClient):
 
         return results
 
-    def _get_commit(self, revision):
+    def _get_commit(
+        self,
+        revision: str,
+    ) -> Optional[Commit]:
         """Return detailed information about a single changeset.
 
         Receive changeset from hgweb in JSON format.
 
         Args:
-            revision (unicode):
+            revision (str):
                 An identifier of changeset.
 
         Returns:
@@ -552,8 +747,8 @@ class HgWebClient(SCMClient):
             The commit object.
         """
         try:
-            rsp = self._get_http_json('%s/json-rev/%s'
-                                      % (self.path_stripped, revision))
+            rsp = self._get_http_json(
+                f'{self.path_stripped}/json-rev/{revision}')
         except Exception as e:
             logger.exception('Cannot load detail of changeset from hgweb: %s',
                              e)
@@ -576,16 +771,20 @@ class HgWebClient(SCMClient):
                       date=HgTool.date_tuple_to_iso8601(rsp['date']),
                       parent=parent)
 
-    def get_commits(self, branch=None, start=None):
+    def get_commits(
+        self,
+        branch: Optional[str] = None,
+        start: Optional[str] = None,
+    ) -> list[Commit]:
         """Return detailed information about a changeset.
 
         Receive changeset from hgweb in JSON format.
 
         Args:
-            branch (unicode, optional):
+            branch (str, optional):
                 An optional branch name to filter by.
 
-            start (unicode, optional):
+            start (str, optional):
                 An optional changeset revision to start with.
 
         Returns:
@@ -602,8 +801,8 @@ class HgWebClient(SCMClient):
         query = '+and+'.join(query_parts)
 
         try:
-            rsp = self._get_http_json('%s/json-log/?rev=%s'
-                                      % (self.path_stripped, query))
+            rsp = self._get_http_json(
+                f'{self.path_stripped}/json-log/?rev={query}')
         except Exception as e:
             logger.exception('Cannot load commits from hgweb: %s', e)
             return []
@@ -630,13 +829,16 @@ class HgWebClient(SCMClient):
 
         return results
 
-    def get_change(self, revision):
+    def get_change(
+        self,
+        revision: str,
+    ) -> Commit:
         """Return detailed information about a changeset.
 
         This method retrieves the patch in JSON format from hgweb.
 
         Args:
-            revision (unicode):
+            revision (str):
                 An identifier of changeset
 
         Returns:
@@ -645,7 +847,7 @@ class HgWebClient(SCMClient):
         """
         try:
             contents = self.get_file_http(
-                url='%s/raw-rev/%s' % (self.path_stripped, revision),
+                url=f'{self.path_stripped}/raw-rev/{revision}',
                 path='',
                 revision='')
         except Exception as e:
@@ -662,11 +864,14 @@ class HgWebClient(SCMClient):
         logger.error('Cannot load changeset %s from hgweb', revision)
         raise SCMError('Cannot load changeset %s from hgweb' % revision)
 
-    def _get_http_json(self, url):
+    def _get_http_json(
+        self,
+        url: str,
+    ) -> Optional[dict[str, Any]]:
         """Return a JSON response from an HgWeb API endpoint.
 
         Args:
-            url (unicode):
+            url (str):
                 The URL of the JSON payload to fetch.
 
         Returns:
@@ -690,18 +895,54 @@ class HgWebClient(SCMClient):
 
 
 class HgClient(SCMClient):
+    """Client implementation for using the hg tool."""
+
     COMMITS_PAGE_LIMIT = '31'
 
-    def __init__(self, path, local_site):
-        super(HgClient, self).__init__(path)
+    def __init__(
+        self,
+        path: str,
+        local_site_name: Optional[str],
+    ) -> None:
+        """Initialize the client.
+
+        Args:
+            path (str):
+                The path to the repository.
+
+            local_site_name (str, optional):
+                The name of the Local Site that the repository is part of.
+        """
+        super().__init__(path)
         self.default_args = None
+        self.local_site_name = local_site_name
 
-        if local_site:
-            self.local_site_name = local_site.name
-        else:
-            self.local_site_name = None
+    def cat_file(
+        self,
+        path: str,
+        rev: RevisionID = 'tip',
+        base_commit_id: Optional[str] = None,
+    ) -> bytes:
+        """Return the content of a file.
 
-    def cat_file(self, path, rev='tip', base_commit_id=None):
+        Args:
+            path (str):
+                The path of the file to return.
+
+            rev (reviewboard.scmtools.core.RevisionID, optional):
+                The revision of the file to return.
+
+            base_commit_id (str, optional):
+                The base commit, if using.
+
+        Returns:
+            bytes:
+            The content of the file at the given revision.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file was not found at the given name and revision.
+        """
         # If the base commit id is provided it should override anything
         # that was parsed from the diffs.
         if rev != PRE_CREATION and base_commit_id is not None:
@@ -713,46 +954,50 @@ class HgClient(SCMClient):
             rev = ""
 
         if path:
-            p = self._run_hg(['cat', '--rev', rev, path])
-            contents = p.stdout.read()
-            failure = p.wait()
+            with self._run_hg(['cat', '--rev', str(rev), path]) as p:
+                assert p.stdout is not None
+                contents = p.stdout.read()
+                failure = p.wait()
 
             if not failure:
                 return contents
 
         raise FileNotFoundError(path, rev)
 
-    def get_branches(self):
+    def get_branches(self) -> list[Branch]:
         """Return open/inactive branches from repository in JSON.
 
         Returns:
             list of reviewboard.scmtools.core.Branch:
             The list of the branches.
         """
-        p = self._run_hg(['branches', '--template', 'json'])
+        with self._run_hg(['branches', '--template', 'json']) as p:
+            if p.wait() != 0:
+                assert p.stderr is not None
+                raise SCMError('Cannot load branches: %s' % p.stderr.read())
 
-        if p.wait() != 0:
-            raise SCMError('Cannot load branches: %s' % p.stderr.read())
+            assert p.stdout is not None
 
-        results = [
-            Branch(
-                id=data['branch'],
-                commit=data['node'],
-                default=(data['branch'] == 'default'))
-            for data in json.loads(force_str(p.stdout.read()))
-            if not data['closed']
-        ]
+            return [
+                Branch(
+                    id=data['branch'],
+                    commit=data['node'],
+                    default=(data['branch'] == 'default'))
+                for data in json.loads(force_str(p.stdout.read()))
+                if not data['closed']
+            ]
 
-        return results
-
-    def _get_commits(self, revset):
+    def _get_commits(
+        self,
+        revset: list[str],
+    ) -> list[Commit]:
         """Return a list of commit objects.
 
         This method calls the given revset and parses the returned
         JSON data to retrieve detailed information about changesets.
 
         Args:
-            revset (list of unicode):
+            revset (list of str):
                 Hg command line that will be executed with JSON
                 template as log command.
 
@@ -761,39 +1006,46 @@ class HgClient(SCMClient):
             The list of commit objects.
         """
         cmd = ['log'] + revset + ['--template', 'json']
-        p = self._run_hg(cmd)
 
-        if p.wait() != 0:
-            raise SCMError('Cannot load commits: %s' % p.stderr.read())
+        with self._run_hg(cmd) as p:
+            if p.wait() != 0:
+                assert p.stderr is not None
+                raise SCMError('Cannot load commits: %s' % p.stderr.read())
 
-        results = []
+            results = []
 
-        for data in json.loads(force_str(p.stdout.read())):
-            try:
-                parent = force_str(data['parents'][0])
+            assert p.stdout is not None
 
-                if parent == INITIAL_COMMIT_ID:
-                    parent = ''
-            except IndexError:
-                parent = None
+            for data in json.loads(force_str(p.stdout.read())):
+                try:
+                    parent: Optional[str] = force_str(data['parents'][0])
 
-            results.append(Commit(
-                id=data['node'],
-                message=data['desc'],
-                author_name=data['user'],
-                date=HgTool.date_tuple_to_iso8601(data['date']),
-                parent=parent))
+                    if parent == INITIAL_COMMIT_ID:
+                        parent = ''
+                except IndexError:
+                    parent = None
+
+                results.append(Commit(
+                    id=data['node'],
+                    message=data['desc'],
+                    author_name=data['user'],
+                    date=HgTool.date_tuple_to_iso8601(data['date']),
+                    parent=parent))
 
         return results
 
-    def get_commits(self, branch=None, start=None):
+    def get_commits(
+        self,
+        branch: Optional[str] = None,
+        start: Optional[str] = None,
+    ) -> list[Commit]:
         """Return changesets from repository in JSON.
 
         Args:
-            branch (unicode, optional):
+            branch (str, optional):
                 An identifier name of branch.
 
-            start (unicode, optional):
+            start (str, optional):
                 An optional changeset revision to start with.
 
         Returns:
@@ -812,13 +1064,16 @@ class HgClient(SCMClient):
 
         return self._get_commits(revset)
 
-    def get_change(self, revision):
+    def get_change(
+        self,
+        revision: str,
+    ) -> Commit:
         """Return detailed information about a changeset.
 
         Receive changeset data and patch from repository in JSON.
 
         Args:
-            revision (unicode):
+            revision (str):
                 An identifier of changeset.
 
         Returns:
@@ -831,18 +1086,24 @@ class HgClient(SCMClient):
         if changesets:
             commit = changesets[0]
             cmd = ['diff', '-c', revision]
-            p = self._run_hg(cmd)
 
-            if p.wait() != 0:
-                e = p.stderr.read()
-                raise SCMError('Cannot load patch %s: %s' % (revision, e))
+            with self._run_hg(cmd) as p:
 
-            commit.diff = p.stdout.read()
+                if p.wait() != 0:
+                    assert p.stderr is not None
+
+                    e = p.stderr.read()
+                    raise SCMError(f'Cannot load patch {revision}: {e}')
+
+                assert p.stdout is not None
+
+                commit.diff = p.stdout.read()
+
             return commit
 
         raise SCMError('Cannot load changeset %s' % revision)
 
-    def _calculate_default_args(self):
+    def _calculate_default_args(self) -> None:
         self.default_args = [
             '--noninteractive',
             '--repository', self.path,
@@ -857,7 +1118,7 @@ class HgClient(SCMClient):
         hg_ssh = self._get_hg_config('ui.ssh')
 
         if not hg_ssh:
-            logger.debug('Using rbssh for mercurial')
+            logger.debug('Using rbssh for Mercurial')
 
             if self.local_site_name:
                 hg_ssh = 'rbssh --rb-local-site=%s' % self.local_site_name
@@ -868,12 +1129,17 @@ class HgClient(SCMClient):
                 '--config', 'ui.ssh=%s' % hg_ssh,
             ])
         else:
-            logger.debug('Found configured ssh for mercurial: %s' % hg_ssh)
+            logger.debug('Found configured ssh for Mercurial: %s', hg_ssh)
 
-    def _get_hg_config(self, config_name):
-        p = self._run_hg(['showconfig', config_name])
-        contents = p.stdout.read()
-        failure = p.wait()
+    def _get_hg_config(
+        self,
+        config_name: str,
+    ) -> Optional[str]:
+        with self._run_hg(['showconfig', config_name]) as p:
+            assert p.stdout is not None
+
+            contents = p.stdout.read()
+            failure = p.wait()
 
         if failure:
             # Just assume it's empty.
@@ -881,10 +1147,24 @@ class HgClient(SCMClient):
 
         return contents.strip()
 
-    def _run_hg(self, args):
-        """Runs the Mercurial command, returning a subprocess.Popen."""
+    def _run_hg(
+        self,
+        args: list[str],
+    ) -> subprocess.Popen:
+        """Run the Mercurial command, returning a subprocess.Popen.
+
+        Args:
+            args (list of str):
+                The arguments to add to the :command:`hg` command.
+
+        Returns:
+            subprocess.Popen:
+            The Popen object.
+        """
         if not self.default_args:
             self._calculate_default_args()
+
+        assert self.default_args is not None
 
         return SCMTool.popen(
             ['hg'] + self.default_args + args,

@@ -1,23 +1,35 @@
-# coding=utf-8
+"""Unit tests for mercurial."""
+
+from __future__ import annotations
 
 import json
 import os
 import unittest
+from typing import Optional, TYPE_CHECKING
 
+import kgb
 from djblets.testing.decorators import add_fixtures
-from kgb import SpyAgency
 
 from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
-from reviewboard.scmtools.core import HEAD, PRE_CREATION, Revision
+from reviewboard.scmtools.core import (
+    FileLookupContext,
+    HEAD,
+    PRE_CREATION,
+    Revision,
+)
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.hg import (HgDiffParser,
                                      HgGitDiffParser,
                                      HgTool,
                                      HgWebClient)
-from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing import online_only
 from reviewboard.testing.testcase import TestCase
+
+if TYPE_CHECKING:
+    from djblets.util.typing import SerializableJSONDict
+
+    from reviewboard.scmtools.core import RevisionID, SCMClient
 
 
 class MercurialTests(DiffParserTestingMixin, SCMTestCase):
@@ -25,8 +37,9 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
 
     fixtures = ['test_scmtools']
 
-    def setUp(self):
-        super(MercurialTests, self).setUp()
+    def setUp(self) -> None:
+        """Set up the test."""
+        super().setUp()
 
         hg_repo_path = os.path.join(os.path.dirname(__file__),
                                     '..', 'testdata', 'hg_repo')
@@ -40,12 +53,12 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         except ImportError:
             raise unittest.SkipTest('Hg is not installed')
 
-    def test_ssh_disallowed(self):
+    def test_ssh_disallowed(self) -> None:
         """Testing HgTool does not allow SSH URLs"""
         with self.assertRaises(SCMError):
             self.tool.check_repository('ssh://foo')
 
-    def test_git_parser_selection_with_header(self):
+    def test_git_parser_selection_with_header(self) -> None:
         """Testing HgTool returns the git parser when a header is present"""
         diffContents = (b'# HG changeset patch\n'
                         b'# Node ID 6187592a72d7\n'
@@ -56,7 +69,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         parser = self.tool.get_parser(diffContents)
         self.assertEqual(type(parser), HgGitDiffParser)
 
-    def test_hg_parser_selection_with_header(self):
+    def test_hg_parser_selection_with_header(self) -> None:
         """Testing HgTool returns the hg parser when a header is present"""
         diffContents = (b'# HG changeset patch'
                         b'# Node ID 6187592a72d7\n'
@@ -68,7 +81,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         parser = self.tool.get_parser(diffContents)
         self.assertEqual(type(parser), HgDiffParser)
 
-    def test_git_parser_sets_commit_ids(self):
+    def test_git_parser_sets_commit_ids(self) -> None:
         """Testing HgGitDiffParser sets the parser commit ids"""
         diffContents = (b'# HG changeset patch\n'
                         b'# Node ID 6187592a72d7\n'
@@ -81,14 +94,14 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         self.assertEqual(parser.new_commit_id, b'6187592a72d7')
         self.assertEqual(parser.base_commit_id, b'9d3f4147f294')
 
-    def test_patch_creates_new_file(self):
+    def test_patch_creates_new_file(self) -> None:
         """Testing HgTool with a patch that creates a new file"""
         self.assertEqual(
             self.tool.parse_diff_revision(filename=b'/dev/null',
                                           revision=b'bf544ea505f8')[1],
             PRE_CREATION)
 
-    def test_diff_parser_new_file(self):
+    def test_diff_parser_new_file(self) -> None:
         """Testing HgDiffParser with a diff that creates a new file"""
         diff = (
             b'diff -r bf544ea505f8 readme\n'
@@ -107,7 +120,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
             modified_file_details=b'Uncommitted',
             data=diff)
 
-    def test_diff_parser_with_added_empty_file(self):
+    def test_diff_parser_with_added_empty_file(self) -> None:
         """Testing HgDiffParser with a diff with an added empty file"""
         diff = (
             b'diff -r 356a6127ef19 -r 4960455a8e88 empty\n'
@@ -126,7 +139,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
             modified_file_details=b'4960455a8e88',
             data=diff)
 
-    def test_diff_parser_with_deleted_empty_file(self):
+    def test_diff_parser_with_deleted_empty_file(self) -> None:
         """Testing HgDiffParser with a diff with a deleted empty file"""
         diff = (
             b'diff -r 356a6127ef19 -r 4960455a8e88 empty\n'
@@ -146,7 +159,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
             deleted=True,
             data=diff)
 
-    def test_diff_parser_uncommitted(self):
+    def test_diff_parser_uncommitted(self) -> None:
         """Testing HgDiffParser with a diff with an uncommitted change"""
         diff = (
             b'diff -r bf544ea505f8 readme\n'
@@ -165,7 +178,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
             modified_file_details=b'Uncommitted',
             data=diff)
 
-    def test_diff_parser_committed(self):
+    def test_diff_parser_committed(self) -> None:
         """Testing HgDiffParser with a diff between committed revisions"""
         diff = (
             b'diff -r 356a6127ef19 -r 4960455a8e88 readme\n'
@@ -184,7 +197,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
             modified_file_details=b'4960455a8e88',
             data=diff)
 
-    def test_diff_parser_with_preamble_junk(self):
+    def test_diff_parser_with_preamble_junk(self) -> None:
         """Testing HgDiffParser with a diff that contains non-diff junk text
         as a preamble
         """
@@ -213,7 +226,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
             modified_file_details=b'4960455a8e88',
             data=diff)
 
-    def test_git_diff_parsing(self):
+    def test_git_diff_parsing(self) -> None:
         """Testing HgDiffParser git diff support"""
         diff = (
             b'# Node ID 4960455a8e88\n'
@@ -238,7 +251,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
             moved=True,
             data=diff)
 
-    def test_diff_parser_unicode(self):
+    def test_diff_parser_unicode(self) -> None:
         """Testing HgDiffParser with unicode characters"""
         diff = (
             'diff -r bf544ea505f8 réadme\n'
@@ -257,7 +270,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
             modified_file_details=b'Uncommitted',
             data=diff)
 
-    def test_git_diff_parsing_unicode(self):
+    def test_git_diff_parsing_unicode(self) -> None:
         """Testing HgDiffParser git diff with unicode characters"""
         diff = (
             '# Node ID 4960455a8e88\n'
@@ -282,7 +295,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
             moved=True,
             data=diff)
 
-    def test_revision_parsing(self):
+    def test_revision_parsing(self) -> None:
         """Testing HgDiffParser revision number parsing"""
         self.assertEqual(
             self.tool.parse_diff_revision(filename=b'doc/readme',
@@ -294,7 +307,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
                                           revision=b'bf544ea505f8'),
             (b'/dev/null', PRE_CREATION))
 
-    def test_get_branches(self):
+    def test_get_branches(self) -> None:
         """Testing list of branches in HgClient.get_change"""
         value = self.tool.get_branches()
         self.assertTrue(isinstance(value, list))
@@ -305,7 +318,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
                          '661e5dd3c4938ecbe8f77e2fdfa905d70485f94c')
         self.assertEqual(value[0].default, True)
 
-    def test_get_change(self):
+    def test_get_change(self) -> None:
         """Testing raw diff of HgClient.get_change"""
         self.assertRaises(SCMError, lambda: self.tool.get_change('dummy'))
 
@@ -316,7 +329,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         self.assertIn(b'goodbye', value.diff)
         self.assertEqual(value.id, '661e5dd3c4938ecbe8f77e2fdfa905d70485f94c')
 
-    def test_get_commits(self):
+    def test_get_commits(self) -> None:
         """Testing commit objects in HgClient.get_commits"""
         value = self.tool.get_commits()
         self.assertTrue(isinstance(value, list))
@@ -347,17 +360,17 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         self.assertTrue(isinstance(value, list))
         self.assertEqual(len(value), 1)
 
-    def test_get_commits_with_non_utc_server_timezone(self):
+    def test_get_commits_with_non_utc_server_timezone(self) -> None:
         """Testing commit objects in HgClient.get_commits with
         settings.TIME_ZONE != UTC
         """
-        old_tz = os.environ[str('TZ')]
-        os.environ[str('TZ')] = str('US/Pacific')
+        old_tz = os.environ['TZ']
+        os.environ['TZ'] = 'US/Pacific'
 
         try:
             value = self.tool.get_commits()
         finally:
-            os.environ[str('TZ')] = old_tz
+            os.environ['TZ'] = old_tz
 
         self.assertTrue(isinstance(value, list))
         self.assertEqual(len(value), 2)
@@ -387,7 +400,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         self.assertTrue(isinstance(value, list))
         self.assertEqual(len(value), 1)
 
-    def test_get_file(self):
+    def test_get_file(self) -> None:
         """Testing HgTool.get_file"""
         tool = self.tool
 
@@ -401,34 +414,36 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         with self.assertRaises(FileNotFoundError):
             tool.get_file('hello', PRE_CREATION)
 
-    def test_file_exists(self):
+    def test_file_exists(self) -> None:
         """Testing HgTool.file_exists"""
         rev = Revision('661e5dd3c493')
 
         self.assertTrue(self.tool.file_exists('doc/readme', rev))
         self.assertFalse(self.tool.file_exists('doc/readme2', rev))
 
-    def test_get_file_base_commit_id_override(self):
+    def test_get_file_base_commit_id_override(self) -> None:
         """Testing base_commit_id overrides revision in HgTool.get_file"""
-        base_commit_id = Revision('661e5dd3c493')
+        base_commit_id = '661e5dd3c493'
         bogus_rev = Revision('bogusrevision')
         file = 'doc/readme'
 
-        value = self.tool.get_file(file, bogus_rev,
-                                   base_commit_id=base_commit_id)
+        context = FileLookupContext()
+        context.base_commit_id = base_commit_id
+
+        value = self.tool.get_file(file, bogus_rev, context=context)
         self.assertTrue(isinstance(value, bytes))
         self.assertEqual(value, b'Hello\n\ngoodbye\n')
 
         self.assertTrue(self.tool.file_exists(
             'doc/readme',
             bogus_rev,
-            base_commit_id=base_commit_id))
+            context=context))
         self.assertTrue(not self.tool.file_exists(
             'doc/readme2',
             bogus_rev,
-            base_commit_id=base_commit_id))
+            context=context))
 
-    def test_interface(self):
+    def test_interface(self) -> None:
         """Testing basic HgTool API"""
         self.assertTrue(self.tool.diffs_use_absolute_paths)
 
@@ -436,7 +451,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
                           lambda: self.tool.get_changeset(1))
 
     @online_only
-    def test_https_repo(self):
+    def test_https_repo(self) -> None:
         """Testing HgTool.file_exists with an HTTPS-based repository"""
         repo = self.create_repository(
             name='Test HG2',
@@ -449,7 +464,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         self.assertFalse(tool.file_exists('mercurial/hgweb/common.py',
                                           Revision('abcdef123456')))
 
-    def test_normalize_patch_with_git_diff_new_symlink(self):
+    def test_normalize_patch_with_git_diff_new_symlink(self) -> None:
         """Testing HgTool.normalize_patch with Git-style diff and new symlink
         """
         self.assertEqual(
@@ -475,7 +490,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
                 b'\\ No newline at end of file'
             ))
 
-    def test_normalize_patch_with_git_diff_modified_symlink(self):
+    def test_normalize_patch_with_git_diff_modified_symlink(self) -> None:
         """Testing HgTool.normalize_patch with Git-style diff and modified
         symlink
         """
@@ -506,7 +521,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
                 b'\\ No newline at end of file'
             ))
 
-    def test_normalize_patch_with_git_diff_deleted_symlink(self):
+    def test_normalize_patch_with_git_diff_deleted_symlink(self) -> None:
         """Testing HgTool.normalize_patch with Git-style diff and deleted
         symlink
         """
@@ -535,7 +550,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
                 b'\\ No newline at end of file'
             ))
 
-    def test_normalize_patch_with_hg_diff(self):
+    def test_normalize_patch_with_hg_diff(self) -> None:
         """Testing HgTool.normalize_patch with Git-style diff and deleted
         symlink
         """
@@ -560,7 +575,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
                 b'-b\n'
             ))
 
-    def test_get_diff_parser_cls_with_git_diff(self):
+    def test_get_diff_parser_cls_with_git_diff(self) -> None:
         """Testing HgTool._get_diff_parser_cls with Git diff"""
         self.assertIs(
             self.tool._get_diff_parser_cls(
@@ -572,7 +587,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
                 b'-b\n'),
             HgGitDiffParser)
 
-    def test_get_diff_parser_cls_with_git_diff_and_header(self):
+    def test_get_diff_parser_cls_with_git_diff_and_header(self) -> None:
         """Testing HgTool._get_diff_parser_cls with Git diff and header"""
         self.assertIs(
             self.tool._get_diff_parser_cls(
@@ -587,7 +602,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
                 b'-b\n'),
             HgGitDiffParser)
 
-    def test_get_diff_parser_cls_with_hg_diff(self):
+    def test_get_diff_parser_cls_with_hg_diff(self) -> None:
         """Testing HgTool._get_diff_parser_cls with Mercurial diff"""
         self.assertIs(
             self.tool._get_diff_parser_cls(
@@ -599,7 +614,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
                 b'-b\n'),
             HgDiffParser)
 
-    def test_get_diff_parser_cls_with_hg_diff_and_header(self):
+    def test_get_diff_parser_cls_with_hg_diff_and_header(self) -> None:
         """Testing HgTool._get_diff_parser_cls with Mercurial diff and header
         """
         self.assertIs(
@@ -615,7 +630,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
                 b'-b\n'),
             HgDiffParser)
 
-    def test_get_diff_parser_cls_with_git_before_hg(self):
+    def test_get_diff_parser_cls_with_git_before_hg(self) -> None:
         """Testing HgTool._get_diff_parser_cls with diff --git before diff -r
         """
         self.assertIs(
@@ -624,7 +639,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
                 b'diff -r 123456789abc -r 123456789def test\n'),
             HgGitDiffParser)
 
-    def test_get_diff_parser_cls_with_hg_before_git(self):
+    def test_get_diff_parser_cls_with_hg_before_git(self) -> None:
         """Testing HgTool._get_diff_parser_cls with diff -r before diff --git
         """
         self.assertIs(
@@ -634,19 +649,28 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
             HgDiffParser)
 
 
-class HgWebClientTests(SpyAgency, TestCase):
+class HgWebClientTests(kgb.SpyAgency, TestCase):
     """Unit tests for reviewboard.scmtools.hg.HgWebClient."""
 
-    def setUp(self):
-        super(HgWebClientTests, self).setUp()
+    def setUp(self) -> None:
+        """Set up the test."""
+        super().setUp()
 
         self.hgweb_client = HgWebClient(path='http://hg.example.com/',
                                         username='test-user',
                                         password='test-password')
 
-    def test_cat_file_with_raw_file(self):
+    def test_cat_file_with_raw_file(self) -> None:
         """Testing HgWebClient.cat_file with URL using raw-file"""
-        def _get_file_http(client, url, path, revision, *args, **kwargs):
+        def _get_file_http(
+            client: SCMClient,
+            url: str,
+            path: str,
+            revision: RevisionID,
+            mime_type: Optional[str],
+            *args,
+            **kwargs,
+        ) -> Optional[bytes]:
             if url.startswith('http://hg.example.com/raw-file/'):
                 return b'result payload'
 
@@ -668,9 +692,17 @@ class HgWebClientTests(SpyAgency, TestCase):
             path='foo/bar.txt',
             revision='tip'))
 
-    def test_cat_file_with_raw(self):
+    def test_cat_file_with_raw(self) -> None:
         """Testing HgWebClient.cat_file with URL using raw"""
-        def _get_file_http(client, url, path, revision, *args, **kwargs):
+        def _get_file_http(
+            client: SCMClient,
+            url: str,
+            path: str,
+            revision: RevisionID,
+            mime_type: Optional[str],
+            *args,
+            **kwargs,
+        ) -> Optional[bytes]:
             if url.startswith('http://hg.example.com/raw/'):
                 return b'result payload'
 
@@ -692,9 +724,17 @@ class HgWebClientTests(SpyAgency, TestCase):
             path='foo/bar.txt',
             revision='tip'))
 
-    def test_cat_file_with_hg_history(self):
+    def test_cat_file_with_hg_history(self) -> None:
         """Testing HgWebClient.cat_file with URL using hg-history"""
-        def _get_file_http(client, url, path, revision, *args, **kwargs):
+        def _get_file_http(
+            client: SCMClient,
+            url: str,
+            path: str,
+            revision: RevisionID,
+            mime_type: Optional[str],
+            *args,
+            **kwargs,
+        ) -> Optional[bytes]:
             if url.startswith('http://hg.example.com/hg-history/'):
                 return b'result payload'
 
@@ -716,13 +756,10 @@ class HgWebClientTests(SpyAgency, TestCase):
             path='foo/bar.txt',
             revision='tip'))
 
-    def test_cat_file_with_base_commit_id(self):
+    def test_cat_file_with_base_commit_id(self) -> None:
         """Testing HgWebClient.cat_file with base_commit_id"""
-        def _get_file_http(client, url, path, revision, *args, **kwargs):
-            return b'result payload'
-
         spy = self.spy_on(self.hgweb_client.get_file_http,
-                          call_fake=_get_file_http)
+                          op=kgb.SpyOpReturn(b'result payload'))
 
         rsp = self.hgweb_client.cat_file(
             path='foo/bar.txt',
@@ -737,24 +774,28 @@ class HgWebClientTests(SpyAgency, TestCase):
             path='foo/bar.txt',
             revision='1ca5879492b8fd606df1964ea3c1e2f4520f076f'))
 
-    def test_cat_file_with_not_found(self):
+    def test_cat_file_with_not_found(self) -> None:
         """Testing HgWebClient.cat_file with file not found"""
-        def _get_file_http(client, url, path, revision, *args, **kwargs):
-            raise FileNotFoundError(path=path,
-                                    revision=revision)
-
-        spy = self.spy_on(self.hgweb_client.get_file_http,
-                          call_fake=_get_file_http)
+        spy = self.spy_on(
+            self.hgweb_client.get_file_http,
+            op=kgb.SpyOpRaise(FileNotFoundError('foo/bar.txt')))
 
         with self.assertRaises(FileNotFoundError):
             self.hgweb_client.cat_file(path='foo/bar.txt')
 
         self.assertEqual(len(spy.calls), 3)
 
-    def test_get_branches(self):
+    def test_get_branches(self) -> None:
         """Testing HgWebClient.get_branches"""
-        def _get_file_http(client, url, path, revision, mime_type, *args,
-                           **kwargs):
+        def _get_file_http(
+            client: SCMClient,
+            url: str,
+            path: str,
+            revision: RevisionID,
+            mime_type: Optional[str],
+            *args,
+            **kwargs,
+        ) -> Optional[bytes]:
             self.assertEqual(url, 'http://hg.example.com/json-branches')
             self.assertEqual(mime_type, 'application/json')
             self.assertEqual(path, '')
@@ -799,9 +840,17 @@ class HgWebClientTests(SpyAgency, TestCase):
                          '8210c0d945ef893d40a903c9dc14cd072eee5bb7')
         self.assertFalse(branch.default)
 
-    def test_get_branches_with_error(self):
+    def test_get_branches_with_error(self) -> None:
         """Testing HgWebClient.get_branches with error fetching result"""
-        def _get_file_http(client, url, path, revision, *args, **kwargs):
+        def _get_file_http(
+            client: SCMClient,
+            url: str,
+            path: str,
+            revision: RevisionID,
+            mime_type: Optional[str],
+            *args,
+            **kwargs,
+        ) -> Optional[bytes]:
             raise FileNotFoundError(path, revision)
 
         self.spy_on(self.hgweb_client.get_file_http,
@@ -810,10 +859,17 @@ class HgWebClientTests(SpyAgency, TestCase):
         branches = self.hgweb_client.get_branches()
         self.assertEqual(branches, [])
 
-    def test_get_change(self):
+    def test_get_change(self) -> None:
         """Testing HgWebClient.get_change"""
-        def _get_file_http(client, url, path, revision, mime_type, *args,
-                           **kwargs):
+        def _get_file_http(
+            client: SCMClient,
+            url: str,
+            path: str,
+            revision: RevisionID,
+            mime_type: Optional[str],
+            *args,
+            **kwargs,
+        ) -> Optional[bytes]:
             if url.startswith('http://hg.example.com/raw-rev/'):
                 self.assertEqual(
                     url,
@@ -839,7 +895,7 @@ class HgWebClientTests(SpyAgency, TestCase):
                     'user': 'Test User',
                     'date': [1583149219, 28800],
                     'parents': [
-                        'b9af6489f6f2004ad11b82c6057f7007e3c35372'
+                        'b9af6489f6f2004ad11b82c6057f7007e3c35372',
                     ],
                 })
             else:
@@ -858,10 +914,17 @@ class HgWebClientTests(SpyAgency, TestCase):
         self.assertEqual(commit.parent,
                          'b9af6489f6f2004ad11b82c6057f7007e3c35372')
 
-    def test_get_commits(self):
+    def test_get_commits(self) -> None:
         """Testing HgWebClient.get_commits"""
-        def _get_file_http(client, url, path, revision, mime_type, *args,
-                           **kwargs):
+        def _get_file_http(
+            client: SCMClient,
+            url: str,
+            path: str,
+            revision: RevisionID,
+            mime_type: Optional[str],
+            *args,
+            **kwargs,
+        ) -> Optional[bytes]:
             self.assertEqual(
                 url,
                 'http://hg.example.com/json-log/?rev=branch(.)')
@@ -877,7 +940,7 @@ class HgWebClientTests(SpyAgency, TestCase):
                         'user': 'Test User',
                         'date': [1583149219, 28800],
                         'parents': [
-                            'b9af6489f6f2004ad11b82c6057f7007e3c35372'
+                            'b9af6489f6f2004ad11b82c6057f7007e3c35372',
                         ],
                     },
                     {
@@ -914,10 +977,17 @@ class HgWebClientTests(SpyAgency, TestCase):
         self.assertEqual(commit.parent,
                          '8210c0d945ef893d40a903c9dc14cd072eee5bb7')
 
-    def test_get_commits_with_branch(self):
+    def test_get_commits_with_branch(self) -> None:
         """Testing HgWebClient.get_commits with branch"""
-        def _get_file_http(client, url, path, revision, mime_type, *args,
-                           **kwargs):
+        def _get_file_http(
+            client: SCMClient,
+            url: str,
+            path: str,
+            revision: RevisionID,
+            mime_type: Optional[str],
+            *args,
+            **kwargs,
+        ) -> Optional[bytes]:
             self.assertEqual(
                 url,
                 'http://hg.example.com/json-log/?rev=branch(my-branch)')
@@ -933,7 +1003,7 @@ class HgWebClientTests(SpyAgency, TestCase):
                         'user': 'Test User',
                         'date': [1583149219, 28800],
                         'parents': [
-                            'b9af6489f6f2004ad11b82c6057f7007e3c35372'
+                            'b9af6489f6f2004ad11b82c6057f7007e3c35372',
                         ],
                     },
                     {
@@ -970,10 +1040,17 @@ class HgWebClientTests(SpyAgency, TestCase):
         self.assertEqual(commit.parent,
                          '8210c0d945ef893d40a903c9dc14cd072eee5bb7')
 
-    def test_get_commits_with_start(self):
+    def test_get_commits_with_start(self) -> None:
         """Testing HgWebClient.get_commits with start"""
-        def _get_file_http(client, url, path, revision, mime_type, *args,
-                           **kwargs):
+        def _get_file_http(
+            client: SCMClient,
+            url: str,
+            path: str,
+            revision: RevisionID,
+            mime_type: Optional[str],
+            *args,
+            **kwargs,
+        ) -> Optional[bytes]:
             self.assertEqual(
                 url,
                 'http://hg.example.com/json-log/'
@@ -991,7 +1068,7 @@ class HgWebClientTests(SpyAgency, TestCase):
                         'user': 'Test User',
                         'date': [1583149219, 28800],
                         'parents': [
-                            'b9af6489f6f2004ad11b82c6057f7007e3c35372'
+                            'b9af6489f6f2004ad11b82c6057f7007e3c35372',
                         ],
                     },
                     {
@@ -1029,12 +1106,19 @@ class HgWebClientTests(SpyAgency, TestCase):
         self.assertEqual(commit.parent,
                          '8210c0d945ef893d40a903c9dc14cd072eee5bb7')
 
-    def test_get_commits_with_not_implemented(self):
+    def test_get_commits_with_not_implemented(self) -> None:
         """Testing HgWebClient.get_commits with server response of "not yet
         implemented"
         """
-        def _get_file_http(client, url, path, revision, mime_type, *args,
-                           **kwargs):
+        def _get_file_http(
+            client: SCMClient,
+            url: str,
+            path: str,
+            revision: RevisionID,
+            mime_type: Optional[str],
+            *args,
+            **kwargs,
+        ) -> Optional[bytes]:
             self.assertEqual(url,
                              'http://hg.example.com/json-log/?rev=branch(.)')
             self.assertEqual(mime_type, 'application/json')
@@ -1049,7 +1133,10 @@ class HgWebClientTests(SpyAgency, TestCase):
         commits = self.hgweb_client.get_commits()
         self.assertEqual(commits, [])
 
-    def _dump_json(self, obj):
+    def _dump_json(
+        self,
+        obj: SerializableJSONDict,
+    ) -> bytes:
         """Dump an object to a JSON byte string.
 
         Args:
@@ -1066,7 +1153,7 @@ class HgWebClientTests(SpyAgency, TestCase):
 class HgAuthFormTests(TestCase):
     """Unit tests for HgTool's authentication form."""
 
-    def test_fields(self):
+    def test_fields(self) -> None:
         """Testing HgTool authentication form fields"""
         form = HgTool.create_auth_form()
 
@@ -1077,7 +1164,7 @@ class HgAuthFormTests(TestCase):
         self.assertEqual(form['password'].label, 'Password')
 
     @add_fixtures(['test_scmtools'])
-    def test_load(self):
+    def test_load(self) -> None:
         """Tetting HgTool authentication form load"""
         repository = self.create_repository(
             tool_name='Mercurial',
@@ -1091,7 +1178,7 @@ class HgAuthFormTests(TestCase):
         self.assertEqual(form['password'].value(), 'test-pass')
 
     @add_fixtures(['test_scmtools'])
-    def test_save(self):
+    def test_save(self) -> None:
         """Tetting HgTool authentication form save"""
         repository = self.create_repository(tool_name='Mercurial')
 
@@ -1111,7 +1198,7 @@ class HgAuthFormTests(TestCase):
 class HgRepositoryFormTests(TestCase):
     """Unit tests for HgTool's repository form."""
 
-    def test_fields(self):
+    def test_fields(self) -> None:
         """Testing HgTool repository form fields"""
         form = HgTool.create_repository_form()
 
@@ -1124,7 +1211,7 @@ class HgRepositoryFormTests(TestCase):
         self.assertEqual(form['mirror_path'].label, 'Mirror Path')
 
     @add_fixtures(['test_scmtools'])
-    def test_load(self):
+    def test_load(self) -> None:
         """Tetting HgTool repository form load"""
         repository = self.create_repository(
             tool_name='Mercurial',
@@ -1139,7 +1226,7 @@ class HgRepositoryFormTests(TestCase):
                          'https://hg.mirror.example.com/repo')
 
     @add_fixtures(['test_scmtools'])
-    def test_save(self):
+    def test_save(self) -> None:
         """Tetting HgTool repository form save"""
         repository = self.create_repository(tool_name='Mercurial')
 

@@ -1,14 +1,27 @@
+"""A form that handles uploading of new files."""
+
+from __future__ import annotations
 
 import os
+from typing import Optional, TYPE_CHECKING, cast
 from uuid import uuid4
 
 from django import forms
+from django.core.files import File
+from django.utils.translation import gettext as _
 from djblets.db.fields.json_field import JSONFormField
+from djblets.siteconfig.models import SiteConfiguration
+from housekeeping import deprecate_non_keyword_only_args
 
+from reviewboard.attachments.errors import FileTooBigError
 from reviewboard.attachments.mimetypes import get_uploaded_file_mimetype
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
+from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.reviews.models import ReviewRequestDraft
+
+if TYPE_CHECKING:
+    from reviewboard.diffviewer.models import FileDiff
 
 
 class UploadFileForm(forms.Form):
@@ -66,8 +79,19 @@ class UploadFileForm(forms.Form):
 
         return history
 
-    def create(self, filediff=None):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard70Warning)
+    def create(
+        self,
+        *,
+        filediff: Optional[FileDiff] = None,
+        from_modified: bool = True,
+    ) -> FileAttachment:
         """Create a FileAttachment based on this form.
+
+        Version Changed:
+            7.0:
+            * Added the ``from_modified`` argument.
+            * Made arguments keyword-only.
 
         Args:
             filediff (reviewboard.diffviewer.models.filediff.FileDiff,
@@ -75,11 +99,34 @@ class UploadFileForm(forms.Form):
                 The optional diff to attach this file to (for use when this
                 file represents a binary file within the diff).
 
+            from_modified (bool, optional):
+                If creating an attachment for a FileDiff and this is ``True``,
+                create the attachment for the modified version of the file.
+                Otherwise, create it for the source version of the file.
+
+                Version Added:
+                    7.0
+
         Returns:
             reviewboard.attachments.models.FileAttachment:
             The new file attachment model.
+
+        Raises:
+            reviewboard.attachments.errors.FileTooBigError:
+                The file is too big for configured limits.
         """
-        file_obj = self.files['path']
+        file_obj = cast(File, self.files['path'])
+
+        if filediff is not None:
+            siteconfig = SiteConfiguration.objects.get_current()
+            max_attachment_size = siteconfig.get('diffviewer_max_binary_size')
+
+            if file_obj.size > max_attachment_size:
+                raise FileTooBigError(
+                    _('The given file is too large.'),
+                    max_attachment_size=max_attachment_size,
+                )
+
         caption = self.cleaned_data['caption'] or file_obj.name
         extra_data = self.cleaned_data['extra_data']
 
@@ -97,6 +144,7 @@ class UploadFileForm(forms.Form):
         if filediff:
             file_attachment = FileAttachment.objects.create_from_filediff(
                 filediff,
+                from_modified=from_modified,
                 **attachment_kwargs)
         else:
             attachment_history = self.cleaned_data['attachment_history']

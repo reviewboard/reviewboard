@@ -42,9 +42,10 @@ import 'codemirror/mode/swift/swift';
 import 'codemirror/mode/xml/xml';
 import 'codemirror/mode/yaml/yaml';
 
-/* Load our Spina/Backbone/etc. infrastructure */
+/* Load our Spina/Backbone/Ink/etc. infrastructure. */
 import _ from 'underscore';
 import Backbone from 'backbone';
+import Ink from '@beanbag/ink';
 import Spina from '@beanbag/spina';
 
 
@@ -53,6 +54,7 @@ const _global = typeof globalThis !== 'undefined' ? globalThis : self;
 
 _global.Backbone = Backbone;
 _global.CodeMirror = CodeMirror;
+_global.Ink = Ink;
 _global.Spina = Spina;
 _global._ = _;
 _global.moment = moment;
