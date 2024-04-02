@@ -29,7 +29,6 @@ djangojs.mo
 
 # Directories/symlinks
 .DS_Store
-.djblets
 docs/manual/extending/coderef/python
 reviewboard/htdocs/media/djblets
 reviewboard/htdocs/media/uploaded
@@ -44,6 +43,7 @@ pickle
 search-index/
 temp
 .idea
+.npm-workspaces
 bak
 reviewboard/scmtools/testdata/hg_repo/.hg/cache/branch2-served
 reviewboard/scmtools/testdata/hg_repo/.hg/cache/tags2-visible
