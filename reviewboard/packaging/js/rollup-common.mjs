@@ -96,6 +96,7 @@ export function makeReviewBoardRollupConfig(options) {
         external: [
             ...commonRollupConfig.external,
 
+            '@beanbag/ink',
             '@beanbag/jasmine-suites',
             '@beanbag/spina',
             'backbone',
@@ -123,6 +124,7 @@ export function makeReviewBoardRollupConfig(options) {
             globals: {
                 ...commonRollupConfig.globals,
 
+                '@beanbag/ink': 'Ink',
                 '@beanbag/jasmine-suites': 'window',
                 '@beanbag/spina': 'Spina',
                 RB: 'RB',
@@ -166,11 +168,6 @@ export function makeReviewBoardRollupConfig(options) {
                 modulePaths: [
                     ...modulePathsConfig,
 
-                    /*
-                    'reviewboard/static/lib/js',
-                    'reviewboard/static/rb/js',
-                    '.djblets/static/djblets/js',
-                    */
                     'node_modules',
                 ],
             }),
