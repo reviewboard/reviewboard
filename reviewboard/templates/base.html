@@ -147,16 +147,17 @@
         {% endspaceless %},
         modelOptions: {% spaceless %}{% block js-page-model-options %}{}{% endblock %}{% endspaceless %}
     });
-
-    RB.PageManager.beforeRender(function(page) {
-{%  actions_js %}
-    });
   </script>
 {% endblock setup-page %}
 {% block js_extensions %}
 {%  load_extensions_js "reviewboard.extensions" %}
 {%  init_js_extensions "reviewboard.extensions" %}
 {% endblock %}
+<script>
+    RB.PageManager.beforeRender(function(page) {
+{%  actions_js %}
+    });
+</script>
 {% template_hook_point "base-scripts-post" %}
  </body>
 </html>
