@@ -81,10 +81,6 @@ class ReviewRequestContext(TypedDict):
     #: The tabs to show for the review request.
     tabs: list[SerializedReviewRequestTab]
 
-    # TODO: this is unused. Remove in a later change.
-    #: The form for uploading diffs.
-    upload_diff_form: Optional[UploadDiffForm]
-
 
 @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
 def make_review_request_context(
@@ -141,10 +137,8 @@ def make_review_request_context(
         extra_context = {}
 
     if review_request.repository:
-        upload_diff_form = UploadDiffForm(review_request, request=request)
         scmtool = review_request.repository.get_scmtool()
     else:
-        upload_diff_form = None
         scmtool = None
 
     if 'blocks' not in extra_context:
@@ -193,7 +187,6 @@ def make_review_request_context(
         'status_mutable_by_user':
             review_request.is_status_mutable_by(request.user),
         'review_request': review_request,
-        'upload_diff_form': upload_diff_form,
         'scmtool': scmtool,
         'send_email': siteconfig.get('mail_send_review_mail'),
         'tabs': tabs,
