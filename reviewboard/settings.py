@@ -405,6 +405,10 @@ EXTENSIONS_ENABLED_BY_DEFAULT = [
 DJBLETS_EXTENSIONS_BROWSE_URL = 'https://www.reviewboard.org/store/'
 
 
+# Ink configuration.
+INK_DEFAULT_THEME = 'light'
+
+
 #: A list of external IP addresses that are allowed to access /health/.
 #:
 #: Version Added:

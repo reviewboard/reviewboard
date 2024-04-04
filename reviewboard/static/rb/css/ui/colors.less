@@ -2,6 +2,9 @@
  * Standard color definitions and reusable color schemes.
  */
 
+@import (reference) "@beanbag/ink/lib/ink.less";
+
+
 #rb-ns-ui() {
   .colors() {
     @black: #000000;
@@ -113,5 +116,26 @@
       @hover-bg: darken(@bg, 5%);
       @hover-border: lighten(@border, 5%);
     }
+  }
+
+  /**
+   * Standard color palette design tokens.
+   *
+   * Version Added:
+   *     7.0
+   */
+  .design-tokens() {
+    #ink-ns-theme.add-css-vars(
+      @prefix: rb-p;
+      @vars: {
+        /** Background for draft elements. */
+        draft-bg: var(--ink-p-green-200);
+
+        /** Border color for draft elements. */
+        draft-border-color:
+          var(--if-light, var(--ink-p-green-500))
+          var(--if-dark, var(--ink-p-green-100));
+      };
+    );
   }
 }

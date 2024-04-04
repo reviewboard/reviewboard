@@ -1,6 +1,7 @@
 @import (reference) "rb/css/defs.less";
 @import (reference) "rb/css/mixins/theme.less";
 @import (reference) "rb/css/ui/colors.less";
+@import (reference) "rb/css/ui/ink-overrides.less";
 @import (reference) "rb/css/ui/responsive.less";
 
 
@@ -189,6 +190,12 @@ body {
       display: none;
     }
   });
+}
+
+:root,
+[data-theme] {
+  #rb-ns-ui.design-tokens();
+  #rb-ns-ui.ink-overrides();
 }
 
 html {

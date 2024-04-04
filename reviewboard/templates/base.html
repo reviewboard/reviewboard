@@ -2,7 +2,8 @@
 {% load accounts actions djblets_extensions djblets_js djblets_utils %}
 {% load features i18n pipeline rbproduct static %}
 
-<html>
+{% definevar "page_class" %}{% block page_class %}default-page{% endblock %}{% enddefinevar %}
+<html class="{{page_class}}" data-theme="{{settings.INK_DEFAULT_THEME}}">
  <head>
 {% block global-vars %}{% endblock %}
   <meta http-equiv="X-UA-Compatible" content="IE=10; IE=9; IE=8; IE=7; IE=EDGE" />
@@ -34,7 +35,7 @@
 {% template_hook_point "base-scripts" %}
  </head>
 {% block bodytag %}
- <body class="{% block page_class %}default-page{% endblock %} {% if is_read_only %}read-only{% endif %}">
+ <body class="{{page_class}} {% if is_read_only %}read-only{% endif %}">
 {% endblock %}
 
 {%  definevar "sidebar_content" strip %}
