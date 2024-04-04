@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import (Any, Dict, Iterator, List, Optional, Sequence, Tuple,
-                    TYPE_CHECKING)
+from typing import (Any, ClassVar, Dict, Generic, Iterator, List, Optional,
+                    Sequence, TYPE_CHECKING, TypeVar)
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -26,7 +26,9 @@ from reviewboard.diffviewer.models import FileDiff
 from reviewboard.reviews.context import make_review_request_context
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
-from reviewboard.reviews.models import FileAttachmentComment, Review
+from reviewboard.reviews.models import (BaseComment,
+                                        FileAttachmentComment,
+                                        Review)
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -36,7 +38,6 @@ if TYPE_CHECKING:
     from djblets.util.typing import JSONDict
 
     from reviewboard.reviews.models import (
-        BaseComment,
         ReviewRequest,
         ReviewRequestDraft,
     )
@@ -89,6 +90,9 @@ class SerializedComment(TypedDict):
     #: Whether the comment is part of the user's current draft review.
     localdraft: bool
 
+    #: The ID of the comment that this comment is a reply to.
+    reply_to_id: int
+
     #: The ID of the review that this comment is a part of.
     review_id: int
 
@@ -108,14 +112,40 @@ class SerializedComment(TypedDict):
     user: SerializedCommentUser
 
 
+#: A generic type for the reviewable object for a Review UI.
+#:
+#: Version Added:
+#:     7.0
+ReviewableType = TypeVar('ReviewableType')
+
+
+#: A generic type for the type of comment used by a Review UI.
+#:
+#: Version Added:
+#:     7.0
+CommentType = TypeVar('CommentType', bound=BaseComment)
+
+
+#: A generic type for the serialized comment data for a ReviewUI.
+#:
+#: Version Added:
+#:     7.0
+SerializedCommentType = TypeVar('SerializedCommentType',
+                                bound=SerializedComment)
+
+
 #: A type for the serialized comments for a review UI.
 #:
 #: Version Added:
 #:     7.0
-SerializedCommentBlocks: TypeAlias = Dict[str, List[SerializedComment]]
+SerializedCommentBlocks: TypeAlias = Dict[str, List[SerializedCommentType]]
 
 
-class ReviewUI:
+class ReviewUI(Generic[
+    ReviewableType,
+    CommentType,
+    SerializedCommentType,
+]):
     """Base class for a Review UI.
 
     Review UIs are interfaces for reviewing content of some type. They take a
@@ -146,53 +176,56 @@ class ReviewUI:
     """
 
     #: The display name for the Review UI.
-    name = 'Unknown file type'
+    name: ClassVar[str] = 'Unknown file type'
 
     #: The template that renders the Review UI.
     #:
     #: Generally, subclasses should use the default template and render the
     #: UI using JavaScript.
-    template_name = 'reviews/ui/default.html'
+    template_name: ClassVar[str] = 'reviews/ui/default.html'
 
     #: Whether the Review UI can be rendered inline in diffs and other places.
     #:
     #: If set, the Review UI will be able to be displayed within the diff
     #: viewer (and potentially other locations).
-    allow_inline = False
+    allow_inline: ClassVar[bool] = False
 
     #: Whether this Review UI supports diffing two objects.
-    supports_diffing = False
+    supports_diffing: ClassVar[bool] = False
 
     #: A list of CSS bundle names to include on the Review UI's page.
-    css_bundle_names: List[str] = []
+    css_bundle_names: ClassVar[list[str]] = []
 
     #: A list of JavaScript bundle names to include on the Review UI's page.
-    js_bundle_names: List[str] = []
+    js_bundle_names: ClassVar[list[str]] = []
 
     #: A list of specific JavaScript URLs to include on the page.
     #:
     #: It is recommended that :py:attr:`js_bundle_names` be used instead
     #: where possible.
-    js_files: List[str] = []
+    js_files: ClassVar[list[str]] = []
 
     #: The list of MIME types that this Review UI supports.
-    supported_mimetypes: List[str] = []
+    supported_mimetypes: ClassVar[list[str]] = []
 
     #: Whether this Review UI supports reviewing FileAttachment objects.
-    supports_file_attachments: bool = False
+    supports_file_attachments: ClassVar[bool] = False
 
     #: Whether there's a file type mismatch when showing diffs.
-    diff_type_mismatch: bool = False
+    diff_type_mismatch: ClassVar[bool] = False
 
     ######################
     # Instance variables #
     ######################
 
     #: The object being reviewed.
-    obj: object
+    obj: ReviewableType
+
+    #: The object being compared against, if present.
+    diff_against_obj: Optional[ReviewableType]
 
     #: The current HTTP request.
-    request: HttpRequest
+    request: Optional[HttpRequest]
 
     @property
     def js_model_class(self) -> str:
@@ -245,7 +278,7 @@ class ReviewUI:
     def __init__(
         self,
         review_request: ReviewRequest,
-        obj: object,
+        obj: ReviewableType,
     ) -> None:
         """Initialize the Review UI.
 
@@ -264,7 +297,7 @@ class ReviewUI:
 
     def set_diff_against(
         self,
-        obj: object,
+        obj: ReviewableType,
     ) -> None:
         """Set the object to generate a diff against.
 
@@ -386,7 +419,7 @@ class ReviewUI:
         request: HttpRequest,
         inline: bool = False,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build context for rendering the page.
 
         This computes the standard template context to use when rendering the
@@ -495,7 +528,7 @@ class ReviewUI:
         """
         return None
 
-    def get_comments(self) -> List[BaseComment]:
+    def get_comments(self) -> Sequence[CommentType]:
         """Return all existing comments on the reviewable object.
 
         Subclasses must override this.
@@ -549,7 +582,7 @@ class ReviewUI:
 
     def get_comment_thumbnail(
         self,
-        comment: BaseComment,
+        comment: CommentType,
     ) -> Optional[SafeText]:
         """Return an HTML thumbnail for a comment.
 
@@ -570,7 +603,7 @@ class ReviewUI:
 
     def get_comment_link_url(
         self,
-        comment: BaseComment,
+        comment: CommentType,
     ) -> str:
         """Return a URL for linking to a comment.
 
@@ -602,7 +635,7 @@ class ReviewUI:
 
     def get_comment_link_text(
         self,
-        comment: BaseComment,
+        comment: CommentType,
     ) -> Optional[str]:
         """Return the text to link to a comment.
 
@@ -624,7 +657,7 @@ class ReviewUI:
     def get_extra_context(
         self,
         request: HttpRequest,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Return extra context to use when rendering the Review UI.
 
         Args:
@@ -647,7 +680,7 @@ class ReviewUI:
             dict:
             The attributes to pass to the model.
         """
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         obj = self.obj
 
         if isinstance(obj, FileAttachment):
@@ -714,8 +747,8 @@ class ReviewUI:
 
     def serialize_comments(
         self,
-        comments: Sequence[BaseComment],
-    ) -> SerializedCommentBlocks:
+        comments: Sequence[CommentType],
+    ) -> SerializedCommentBlocks[SerializedCommentType]:
         """Serialize the comments for the Review UI target.
 
         By default, this will return a "flat" array of comments, but it can be
@@ -731,7 +764,7 @@ class ReviewUI:
             SerializedCommentBlocks:
             The set of serialized comment data.
         """
-        result: SerializedCommentBlocks = {}
+        result: SerializedCommentBlocks[SerializedCommentType] = {}
 
         for i, comment in enumerate(self.flat_serialized_comments(comments)):
             result[str(i)] = [comment]
@@ -740,8 +773,8 @@ class ReviewUI:
 
     def flat_serialized_comments(
         self,
-        comments: Sequence[BaseComment],
-    ) -> Iterator[SerializedComment]:
+        comments: Sequence[CommentType],
+    ) -> Iterator[SerializedCommentType]:
         """Yield the serialized comments.
 
         This will go through the list of comments and filter out any which
@@ -776,7 +809,7 @@ class ReviewUI:
 
     def serialize_comment(
         self,
-        comment: BaseComment,
+        comment: CommentType,
     ) -> SerializedComment:
         """Serialize a comment.
 
@@ -828,7 +861,7 @@ class ReviewUI:
     def _get_adjacent_file_attachments(
         self,
         review_request_details: BaseReviewRequestDetails,
-    ) -> Tuple[Optional[FileAttachment], Optional[FileAttachment]]:
+    ) -> tuple[Optional[FileAttachment], Optional[FileAttachment]]:
         """Return the next and previous file attachments.
 
         The next and previous file attachments are the file attachments that
@@ -1045,8 +1078,8 @@ class FileAttachmentReviewUI(ReviewUI):
     @classmethod
     def get_best_handler(
         cls,
-        mimetype: Tuple[str, str, str],
-    ) -> Tuple[float, Optional[type[ReviewUI]]]:
+        mimetype: tuple[str, str, str],
+    ) -> tuple[float, Optional[type[ReviewUI]]]:
         """Return the Review UI and score that that best fit the mimetype.
 
         Args:

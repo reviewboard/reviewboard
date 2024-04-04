@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Optional, TYPE_CHECKING, cast
+from typing import Optional, Sequence, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.utils.html import escape
@@ -11,6 +10,7 @@ from djblets.util.templatetags.djblets_images import crop_image
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.reviews.models import FileAttachmentComment
 from reviewboard.reviews.ui.base import (ReviewUI,
                                          SerializedComment,
                                          SerializedCommentBlocks)
@@ -18,8 +18,6 @@ from reviewboard.reviews.ui.base import (ReviewUI,
 
 if TYPE_CHECKING:
     from djblets.util.typing import JSONDict
-
-    from reviewboard.reviews.models import FileAttachmentComment
 
 
 class SerializedRegionComment(SerializedComment):
@@ -45,7 +43,11 @@ class SerializedRegionComment(SerializedComment):
     height: int
 
 
-class ImageReviewUI(ReviewUI):
+class ImageReviewUI(ReviewUI[
+    FileAttachment,
+    FileAttachmentComment,
+    SerializedRegionComment
+]):
     """A Review UI for image files."""
 
     name = 'Image'
@@ -68,8 +70,6 @@ class ImageReviewUI(ReviewUI):
             str:
             The absolute URL to an image used to depict this file attachment.
         """
-        assert isinstance(self.obj, FileAttachment)
-
         return self.obj.get_absolute_url()
 
     def get_js_model_data(self) -> JSONDict:
@@ -82,8 +82,6 @@ class ImageReviewUI(ReviewUI):
             dict:
             The attributes to pass to the model.
         """
-        assert isinstance(self.obj, FileAttachment)
-
         data = super(ImageReviewUI, self).get_js_model_data()
         data['imageURL'] = self.obj.file.url
 
@@ -96,7 +94,7 @@ class ImageReviewUI(ReviewUI):
     def serialize_comments(
         self,
         comments: Sequence[FileAttachmentComment],
-    ) -> SerializedCommentBlocks:
+    ) -> SerializedCommentBlocks[SerializedRegionComment]:
         """Serialize the comments for the file attachment.
 
         Args:
@@ -109,11 +107,9 @@ class ImageReviewUI(ReviewUI):
             SerializedCommentBlocks:
             The serialized comment data.
         """
-        result: SerializedCommentBlocks = {}
+        result: SerializedCommentBlocks[SerializedRegionComment] = {}
 
         for comment in self.flat_serialized_comments(comments):
-            comment = cast(SerializedRegionComment, comment)
-
             try:
                 position = (
                     f'{comment["x"]}x{comment["y"]}+'

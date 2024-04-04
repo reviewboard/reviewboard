@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Sequence, TYPE_CHECKING
 
 from reviewboard.reviews.models import (
     Screenshot,
@@ -18,7 +17,11 @@ if TYPE_CHECKING:
     from reviewboard.reviews.models import ReviewRequestDraft
 
 
-class LegacyScreenshotReviewUI(ReviewUI):
+class LegacyScreenshotReviewUI(ReviewUI[
+    Screenshot,
+    ScreenshotComment,
+    SerializedRegionComment
+]):
     """Review UI for the legacy Screenshot object."""
 
     name = 'Screenshot'
@@ -28,14 +31,13 @@ class LegacyScreenshotReviewUI(ReviewUI):
     js_model_class: str = 'RB.ScreenshotReviewable'
     js_view_class: str = 'RB.ImageReviewableView'
 
-    def get_comments(self) -> list[ScreenshotComment]:
+    def get_comments(self) -> Sequence[ScreenshotComment]:
         """Return all existing comments on the screenshot.
 
         Returns:
             list of reviewboard.reviews.screenshot_comment.ScreenshotComment:
             The list of comments for the page.
         """
-        assert isinstance(self.obj, Screenshot)
         return self.obj.get_comments()
 
     def get_caption(
@@ -93,7 +95,7 @@ class LegacyScreenshotReviewUI(ReviewUI):
     def serialize_comments(
         self,
         comments: Sequence[ScreenshotComment],
-    ) -> SerializedCommentBlocks:
+    ) -> SerializedCommentBlocks[SerializedRegionComment]:
         """Serialize the comments for the screenshot.
 
         Args:
@@ -105,7 +107,7 @@ class LegacyScreenshotReviewUI(ReviewUI):
             SerializedCommentBlocks:
             The serialized comments.
         """
-        result: SerializedCommentBlocks = {}
+        result: SerializedCommentBlocks[SerializedRegionComment] = {}
 
         for comment in self.flat_serialized_comments(comments):
             position = '%(x)sx%(y)s+%(w)s+%(h)s' % comment

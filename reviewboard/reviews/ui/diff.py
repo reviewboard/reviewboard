@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, cast
+from typing import Optional, Sequence, TYPE_CHECKING
 
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.reviews.models import Comment
@@ -15,8 +15,6 @@ from reviewboard.reviews.ui.base import (ReviewUI,
                                          SerializedCommentBlocks)
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from django.http import HttpRequest
 
     from reviewboard.reviews.models import ReviewRequest
@@ -39,7 +37,7 @@ class SerializedDiffComment(SerializedComment):
     num_lines: int
 
 
-class DiffReviewUI(ReviewUI):
+class DiffReviewUI(ReviewUI[FileDiff, Comment, SerializedDiffComment]):
     """A Review UI for diffs.
 
     Version Added:
@@ -102,7 +100,7 @@ class DiffReviewUI(ReviewUI):
     def serialize_comments(
         self,
         comments: Sequence[Comment],
-    ) -> SerializedCommentBlocks:
+    ) -> SerializedCommentBlocks[SerializedDiffComment]:
         """Serialize the comments for the diff.
 
         Args:
@@ -113,11 +111,9 @@ class DiffReviewUI(ReviewUI):
             SerializedCommentBlocks:
             The serialized comments.
         """
-        result: SerializedCommentBlocks = {}
+        result: SerializedCommentBlocks[SerializedDiffComment] = {}
 
         for comment in self.flat_serialized_comments(comments):
-            comment = cast(SerializedDiffComment, comment)
-
             key = f'{comment["line"]}-{comment["num_lines"]}'
 
             result.setdefault(key, []).append(comment)
@@ -138,11 +134,8 @@ class DiffReviewUI(ReviewUI):
             SerializedDiffComment:
             The serialized comment.
         """
-        serialized_comment = cast(
-            SerializedDiffComment,
-            super().serialize_comment(comment))
-
-        serialized_comment['line'] = comment.first_line
-        serialized_comment['num_lines'] = comment.num_lines
-
-        return serialized_comment
+        return {
+            **super().serialize_comment(comment),
+            'line': comment.first_line,
+            'num_lines': comment.num_lines,
+        }
