@@ -1038,15 +1038,9 @@ table.rb-c-diff-file-index {
 /****************************************************************************
  * Comments hint
  ****************************************************************************/
-.comments-hint li {
-  &.current {
+#diff_comments_hint {
+  .-is-current {
     font-weight: bold;
-  }
-
-  &:not(.current) {
-    color: var(--ink-p-link-color);
-    text-decoration: underline;
-    cursor: pointer;
   }
 }
 
