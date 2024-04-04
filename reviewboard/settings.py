@@ -531,7 +531,11 @@ DJANGO_EVOLUTION = {
     'CUSTOM_EVOLUTIONS': {
         'oauth2_provider': ('reviewboard.admin.custom_evolutions.'
                             'oauth2_provider'),
-    }
+    },
+    'RENAMED_FIELD_TYPES': {
+        'multiselectfield.db.fields.MultiSelectField':
+            'djblets.db.fields.CommaSeparatedValuesField',
+    },
 }
 
 # Make sure that we have a staticfiles cache set up for media generation.
