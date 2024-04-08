@@ -55,7 +55,7 @@ class FileDiffResource(WebAPIResource):
             'type': StringFieldType,
             'description': 'The encoding of the original and patched file, '
                            'if available.',
-            'added_in': '5.0.7',
+            'added_in': '5.0.8',
         },
         'extra_data': {
             'type': DictFieldType,
