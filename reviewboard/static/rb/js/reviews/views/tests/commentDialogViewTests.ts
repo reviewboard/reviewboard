@@ -20,9 +20,6 @@ import {
 import { DnDUploader } from 'reviewboard/ui';
 
 
-declare const $testsScratch: JQuery;
-
-
 suite('rb/views/CommentDialogView', function() {
     let reviewRequest;
     let reviewRequestEditor;

@@ -12,9 +12,6 @@ import {
 import { PageView } from 'reviewboard/common';
 
 
-declare const $testsScratch: JQuery;
-
-
 suite('rb/pages/views/PageView', function() {
     const pageSidebarTemplate = dedent`
         <div class="rb-c-page-sidebar test-page-sidebar">

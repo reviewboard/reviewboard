@@ -15,9 +15,6 @@ import {
 import { FileAttachmentThumbnailView } from 'reviewboard/reviews';
 
 
-declare const $testsScratch: JQuery;
-
-
 suite('rb/views/FileAttachmentThumbnailView', function() {
     let reviewRequest: ReviewRequest;
     let model: FileAttachment;

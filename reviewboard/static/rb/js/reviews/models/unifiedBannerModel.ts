@@ -12,9 +12,6 @@ import {
 import { type ReviewRequestEditor } from './reviewRequestEditorModel';
 
 
-declare function ngettext(singular: string, plural: string, n: number): string;
-
-
 /**
  * Information about a selectable draft mode.
  *

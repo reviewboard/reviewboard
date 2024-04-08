@@ -14,9 +14,6 @@ import {
 } from '../views/reviewRequestEditorView';
 
 
-declare const SITE_ROOT: string;
-
-
 /** Options for field views. */
 interface BaseFieldViewOptions {
     /** The ID of the field. */

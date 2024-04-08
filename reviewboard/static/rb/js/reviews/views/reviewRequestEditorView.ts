@@ -21,9 +21,12 @@ import {
 } from './reviewRequestFieldViews';
 
 
-declare const dedent: (string) => string;
-
-
+/**
+ * Options for the BannerView.
+ *
+ * Version Added:
+ *     6.0
+ */
 interface BannerViewOptions {
     reviewRequestEditorView: ReviewRequestEditorView;
 }

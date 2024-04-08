@@ -15,9 +15,6 @@ import {
 } from 'reviewboard/common';
 
 
-declare const $testsScratch: JQuery;
-
-
 suite('rb/models/CommChannel', () => {
     let commChannel;
 

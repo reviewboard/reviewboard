@@ -16,9 +16,6 @@ import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 import { ReviewDialogView } from './reviewDialogView';
 
 
-declare const SITE_ROOT: string;
-
-
 /**
  * The view to manage the archive menu.
  *

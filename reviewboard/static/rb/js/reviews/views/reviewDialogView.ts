@@ -21,7 +21,6 @@ import {
 import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 
 
-declare const MANUAL_URL: string;
 const REVIEW_DOCS_URL = `${MANUAL_URL}users/#reviewing-code-and-documents`;
 
 

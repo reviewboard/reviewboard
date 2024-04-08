@@ -28,11 +28,6 @@ import { type ReviewRequestEditorView } from './reviewRequestEditorView';
 import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
 
 
-declare const SITE_ROOT: string;
-declare const dedent: (string, ...args) => string;
-declare const gettext: (string) => string;
-
-
 /**
  * A view for a dropdown menu within the unified banner.
  *

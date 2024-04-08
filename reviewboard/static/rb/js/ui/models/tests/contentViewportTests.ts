@@ -11,9 +11,6 @@ import {
 import { ContentViewport } from 'reviewboard/ui';
 
 
-declare const $testsScratch: JQuery;
-
-
 suite('rb/ui/models/ContentViewport', () => {
     let contentViewport: ContentViewport;
     let el1: HTMLElement;

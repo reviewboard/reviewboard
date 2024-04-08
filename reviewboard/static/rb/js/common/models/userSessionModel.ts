@@ -13,9 +13,6 @@ import {
 } from '../resources/models/baseResourceModel';
 
 
-declare const SITE_ROOT: string;
-
-
 /** Attributes for the StoredItems model. */
 interface StoredItemsAttrs extends BaseResourceAttrs {
     /** The root of the URL for the resource list. */
