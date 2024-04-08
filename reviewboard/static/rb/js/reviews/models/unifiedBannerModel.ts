@@ -4,12 +4,12 @@
 import { BaseModel, spina } from '@beanbag/spina';
 
 import {
-    Review,
-    ReviewReply,
-    ReviewRequest,
+    type Review,
+    type ReviewReply,
+    type ReviewRequest,
 } from 'reviewboard/common';
 
-import { ReviewRequestEditor } from './reviewRequestEditorModel';
+import { type ReviewRequestEditor } from './reviewRequestEditorModel';
 
 
 declare function ngettext(singular: string, plural: string, n: number): string;

@@ -3,13 +3,13 @@ import { BaseModel, spina } from '@beanbag/spina';
 
 import {
     type BaseComment,
-    ExtraDataMixin,
     type ReviewRequest,
+    ExtraDataMixin,
     UserSession,
 } from 'reviewboard/common';
 
-import type { SerializedComment } from './commentData';
-import type { ReviewRequestEditor } from './reviewRequestEditorModel';
+import { type SerializedComment } from './commentData';
+import { type ReviewRequestEditor } from './reviewRequestEditorModel';
 
 
 /**

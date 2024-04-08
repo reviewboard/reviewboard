@@ -4,10 +4,10 @@
 
 import { spina } from '@beanbag/spina';
 
-import { DiffCommentBlock } from '../models/diffCommentBlockModel';
-import { TextCommentBlock } from '../models/textCommentBlockModel';
+import { type DiffCommentBlock } from '../models/diffCommentBlockModel';
+import { type TextCommentBlock } from '../models/textCommentBlockModel';
 import { AbstractCommentBlockView } from './abstractCommentBlockView';
-import { CommentDialogView } from './commentDialogView';
+import { type CommentDialogView } from './commentDialogView';
 
 
 /**

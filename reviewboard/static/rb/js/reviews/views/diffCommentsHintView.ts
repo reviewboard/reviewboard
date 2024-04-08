@@ -4,12 +4,12 @@
 
 import { paint, renderInto } from '@beanbag/ink';
 import {
-    BaseView,
     type EventsHash,
+    BaseView,
     spina,
 } from '@beanbag/spina';
 
-import type { DiffCommentsHint } from '../models/diffCommentsHintModel';
+import { type DiffCommentsHint } from '../models/diffCommentsHintModel';
 
 
 /**

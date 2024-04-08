@@ -6,7 +6,10 @@ import { spina } from '@beanbag/spina';
 
 import { UserSession } from '../../models/userSessionModel';
 import * as JSONSerializers from '../utils/serializers';
-import { BaseResource, BaseResourceAttrs } from './baseResourceModel';
+import {
+    type BaseResourceAttrs,
+    BaseResource,
+} from './baseResourceModel';
 
 
 /**

@@ -5,14 +5,14 @@ import { Router, spina } from '@beanbag/spina';
 
 import { UserSession } from 'reviewboard/common';
 
-import { DiffReviewable } from '../models/diffReviewableModel';
-import { DiffViewerPage } from '../models/diffViewerPageModel';
+import { type DiffReviewable } from '../models/diffReviewableModel';
+import { type DiffViewerPage } from '../models/diffViewerPageModel';
 import { DiffCommentsHintView } from './diffCommentsHintView';
 import { DiffFileIndexView } from './diffFileIndexView';
 import { DiffReviewableView } from './diffReviewableView';
 import {
+    type ReviewablePageViewOptions,
     ReviewablePageView,
-    ReviewablePageViewOptions,
 } from './reviewablePageView';
 
 

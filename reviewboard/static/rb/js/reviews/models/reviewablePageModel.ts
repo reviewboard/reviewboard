@@ -1,19 +1,22 @@
 /**
  * A page used for editing, viewing, or reviewing review requests.
  */
-import { ModelAttributes, spina } from '@beanbag/spina';
+import {
+    type ModelAttributes,
+    spina,
+} from '@beanbag/spina';
 
 import {
+    type Review,
     FileAttachment,
     Page,
     ResourceCollection,
-    Review,
     ReviewRequest,
 } from 'reviewboard/common';
 
 import {
+    type ReviewRequestEditorAttrs,
     ReviewRequestEditor,
-    ReviewRequestEditorAttrs,
 } from './reviewRequestEditorModel';
 
 

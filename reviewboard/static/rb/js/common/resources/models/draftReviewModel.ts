@@ -5,9 +5,12 @@
 import { spina } from '@beanbag/spina';
 
 import * as JSONSerializers from '../utils/serializers';
-import { SaveOptions } from './baseResourceModel';
+import { type SaveOptions } from './baseResourceModel';
 import { DraftResourceModelMixin } from './draftResourceModelMixin';
-import { Review, ReviewAttrs } from './reviewModel';
+import {
+    type ReviewAttrs,
+    Review,
+} from './reviewModel';
 
 
 /**

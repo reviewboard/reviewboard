@@ -5,9 +5,9 @@
 import { BaseView, spina } from '@beanbag/spina';
 
 import {
-    FileAttachment,
+    type FileAttachment,
+    type ReviewRequest,
     FileAttachmentStates,
-    ReviewRequest,
 } from 'reviewboard/common';
 import {
     FieldStateLabelThemes,
@@ -15,7 +15,7 @@ import {
     InlineEditorView,
 } from 'reviewboard/ui';
 
-import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 import { CommentDialogView } from './commentDialogView';
 
 

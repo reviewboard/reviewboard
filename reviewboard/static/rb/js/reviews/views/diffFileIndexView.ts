@@ -5,9 +5,9 @@ import { BaseView, spina } from '@beanbag/spina';
 
 import { EnabledFeatures } from 'reviewboard/common';
 
-import type { DiffFileCollection } from '../collections/diffFileCollection';
+import { type DiffFileCollection } from '../collections/diffFileCollection';
 import { DiffComplexityIconView } from './diffComplexityIconView';
-import type { DiffReviewableView } from './diffReviewableView';
+import { type DiffReviewableView } from './diffReviewableView';
 import { UnifiedBannerView } from './unifiedBannerView';
 
 

@@ -2,11 +2,14 @@
  * Handles reviews of the diff for a file.
  */
 
-import { EventsHash, spina } from '@beanbag/spina';
+import {
+    type EventsHash,
+    spina,
+} from '@beanbag/spina';
 
 import { CenteredElementManager } from 'reviewboard/ui';
 
-import { DiffReviewable } from '../models/diffReviewableModel';
+import { type DiffReviewable } from '../models/diffReviewableModel';
 import { AbstractReviewableView } from './abstractReviewableView';
 import { DiffCommentBlockView } from './diffCommentBlockView';
 import { TextCommentRowSelector } from './textCommentRowSelectorView';

@@ -2,7 +2,11 @@
  * Model that handles all operations and state for editing review requests.
  */
 
-import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
+import {
+    type ModelAttributes,
+    BaseModel,
+    spina,
+} from '@beanbag/spina';
 
 import {
     ResourceCollection,
@@ -11,7 +15,7 @@ import {
     ReviewRequest,
 } from 'reviewboard/common';
 import {
-    FileAttachmentAttrs,
+    type FileAttachmentAttrs,
 } from 'reviewboard/common/resources/models/fileAttachmentModel';
 
 

@@ -6,8 +6,8 @@ import { spina } from '@beanbag/spina';
 
 import { FileAttachmentStates } from 'reviewboard/common';
 import {
+    type AbstractCommentBlockAttrs,
     AbstractCommentBlock,
-    AbstractCommentBlockAttrs,
 } from './abstractCommentBlockModel';
 
 

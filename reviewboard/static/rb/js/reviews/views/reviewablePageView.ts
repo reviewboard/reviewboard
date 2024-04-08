@@ -1,21 +1,25 @@
 /**
  * A page managing reviewable content for a review request.
  */
-import { BaseView, EventsHash, spina } from '@beanbag/spina';
+import {
+    type EventsHash,
+    BaseView,
+    spina,
+} from '@beanbag/spina';
 
 import {
     EnabledFeatures,
     PageView,
     UserSession,
 } from 'reviewboard/common';
-import { PageViewOptions } from 'reviewboard/common/views/pageView';
+import { type PageViewOptions } from 'reviewboard/common/views/pageView';
 import {
-    ReviewRequestAttrs,
+    type ReviewRequestAttrs,
 } from 'reviewboard/common/resources/models/reviewRequestModel';
 import { DnDUploader } from 'reviewboard/ui';
 
-import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
-import { ReviewablePage } from '../models/reviewablePageModel';
+import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { type ReviewablePage } from '../models/reviewablePageModel';
 import { UnifiedBanner } from '../models/unifiedBannerModel';
 import { ReviewDialogView } from './reviewDialogView';
 import { ReviewRequestEditorView } from './reviewRequestEditorView';

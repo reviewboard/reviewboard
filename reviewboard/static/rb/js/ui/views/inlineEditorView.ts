@@ -3,7 +3,10 @@
 import { paint } from '@beanbag/ink';
 import { BaseView, spina } from '@beanbag/spina';
 
-import { TextEditorView, TextEditorViewOptions } from './textEditorView';
+import {
+    type TextEditorViewOptions,
+    TextEditorView,
+} from './textEditorView';
 
 
 interface InlineEditorViewOptions {

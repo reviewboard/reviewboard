@@ -4,9 +4,11 @@
 
 import { BaseView, spina } from '@beanbag/spina';
 
-import { AbstractCommentBlock } from '../models/abstractCommentBlockModel';
-import { AbstractReviewable } from '../models/abstractReviewableModel';
-import { AbstractCommentBlockView } from './abstractCommentBlockView';
+import {
+    type AbstractCommentBlock,
+} from '../models/abstractCommentBlockModel';
+import { type AbstractReviewable } from '../models/abstractReviewableModel';
+import { type AbstractCommentBlockView } from './abstractCommentBlockView';
 import { CommentDialogView } from './commentDialogView';
 
 

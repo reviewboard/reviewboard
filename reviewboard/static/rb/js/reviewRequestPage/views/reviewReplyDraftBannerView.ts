@@ -1,10 +1,14 @@
-import { BaseView, EventsHash, spina } from '@beanbag/spina';
+import {
+    type EventsHash,
+    BaseView,
+    spina,
+} from '@beanbag/spina';
 
-import { ReviewReply } from 'reviewboard/common';
-import { ReviewRequestEditor } from 'reviewboard/reviews';
+import { type ReviewReply } from 'reviewboard/common';
+import { type ReviewRequestEditor } from 'reviewboard/reviews';
 import { FloatingBannerView } from 'reviewboard/ui';
 import {
-    FloatingBannerViewOptions,
+    type FloatingBannerViewOptions,
 } from 'reviewboard/ui/views/floatingBannerView';
 
 

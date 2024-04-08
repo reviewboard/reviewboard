@@ -2,8 +2,8 @@ import {
     BaseModel,
     BaseView,
     Collection,
-    EventsHash,
-    ModelAttributes,
+    type EventsHash,
+    type ModelAttributes,
     spina,
 } from '@beanbag/spina';
 

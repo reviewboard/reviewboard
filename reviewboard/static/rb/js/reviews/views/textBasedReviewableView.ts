@@ -4,8 +4,8 @@
 
 import { spina } from '@beanbag/spina';
 
-import { TextBasedReviewable } from '../models/textBasedReviewableModel';
-import { AbstractReviewableViewOptions } from './abstractReviewableView';
+import { type TextBasedReviewable } from '../models/textBasedReviewableModel';
+import { type AbstractReviewableViewOptions } from './abstractReviewableView';
 import {
     FileAttachmentReviewableView,
 } from './fileAttachmentReviewableView';

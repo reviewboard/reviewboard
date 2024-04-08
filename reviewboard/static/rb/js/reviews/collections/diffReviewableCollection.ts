@@ -3,10 +3,10 @@
  */
 
 import { BaseCollection, spina } from '@beanbag/spina';
-import type { ReviewRequest } from 'reviewboard/common';
+import { type ReviewRequest } from 'reviewboard/common';
 
 import { DiffReviewable } from '../models/diffReviewableModel';
-import type { DiffFileCollection } from './diffFileCollection';
+import { type DiffFileCollection } from './diffFileCollection';
 
 
 /**

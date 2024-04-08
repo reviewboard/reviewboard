@@ -1,5 +1,9 @@
 import { paint } from '@beanbag/ink';
-import { BaseView, EventsHash, spina } from '@beanbag/spina';
+import {
+    type EventsHash,
+    BaseView,
+    spina,
+} from '@beanbag/spina';
 import CodeMirror from 'codemirror';
 
 import { UserSession } from 'reviewboard/common';

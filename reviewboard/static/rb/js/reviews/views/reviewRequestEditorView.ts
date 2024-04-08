@@ -4,21 +4,20 @@
 import { BaseView, spina } from '@beanbag/spina';
 
 import {
+    type FileAttachment,
+    type ResourceCollection,
     EnabledFeatures,
-    FileAttachment,
-    ResourceCollection,
     ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
 import { DnDUploader } from 'reviewboard/ui';
 
-import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 import { FileAttachmentThumbnailView } from './fileAttachmentThumbnailView';
 import {
-    BaseFieldView,
+    type BaseFieldView,
     ChangeDescriptionFieldView,
     CloseDescriptionFieldView,
-    TextFieldView,
 } from './reviewRequestFieldViews';
 
 

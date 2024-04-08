@@ -2,9 +2,13 @@
  * A model for a single file in a diff.
  */
 
-import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
+import {
+    type ModelAttributes,
+    BaseModel,
+    spina,
+} from '@beanbag/spina';
 
-import type { SerializedDiffComment } from './commentData';
+import { type SerializedDiffComment } from './commentData';
 
 
 /**

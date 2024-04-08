@@ -1,7 +1,11 @@
 /**
  * Base class for page models.
  */
-import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
+import {
+    type ModelAttributes,
+    BaseModel,
+    spina,
+} from '@beanbag/spina';
 
 /**
  * Base class for page models.

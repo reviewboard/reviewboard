@@ -2,8 +2,8 @@
  * The comment dialog.
  */
 import {
-    BaseView,
     type EventsHash,
+    BaseView,
     spina,
 } from '@beanbag/spina';
 
@@ -14,9 +14,9 @@ import {
 } from 'reviewboard/common';
 import { TextEditorView } from 'reviewboard/ui';
 
-import type { SerializedComment } from '../models/commentData';
+import { type SerializedComment } from '../models/commentData';
 import { CommentEditor } from '../models/commentEditorModel';
-import type { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 
 
 /**

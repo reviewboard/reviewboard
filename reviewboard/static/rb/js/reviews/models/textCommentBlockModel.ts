@@ -5,8 +5,8 @@
 import { spina } from '@beanbag/spina';
 
 import {
+    type FileAttachmentCommentBlockAttrs,
     FileAttachmentCommentBlock,
-    FileAttachmentCommentBlockAttrs,
 } from './fileAttachmentCommentBlockModel';
 
 

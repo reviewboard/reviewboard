@@ -5,8 +5,8 @@
 import { spina } from '@beanbag/spina';
 
 import {
-    AbstractCommentBlock,
     type AbstractCommentBlockAttrs,
+    AbstractCommentBlock,
 } from './abstractCommentBlockModel';
 
 

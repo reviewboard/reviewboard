@@ -2,7 +2,11 @@
  * A model for giving the user hints about comments in other revisions.
  */
 
-import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
+import {
+    type ModelAttributes,
+    BaseModel,
+    spina,
+} from '@beanbag/spina';
 
 
 /**

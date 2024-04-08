@@ -3,9 +3,9 @@
  */
 
 import {
+    type ModelAttributes,
     BaseModel,
     Collection,
-    type ModelAttributes,
     spina,
 } from '@beanbag/spina';
 
@@ -13,8 +13,8 @@ import {
     type Review,
     type ReviewRequest,
 } from 'reviewboard/common';
-import { AbstractCommentBlock } from './abstractCommentBlockModel';
-import { SerializedComment } from './commentData';
+import { type AbstractCommentBlock } from './abstractCommentBlockModel';
+import { type SerializedComment } from './commentData';
 
 
 /**

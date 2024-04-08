@@ -5,12 +5,12 @@
 import { spina } from '@beanbag/spina';
 
 import {
-    AbstractReviewable,
     type AbstractReviewableAttrs,
+    AbstractReviewable,
 } from './abstractReviewableModel';
-import type { SerializedComment } from './commentData';
+import { type SerializedComment } from './commentData';
 import { DiffCommentBlock } from './diffCommentBlockModel';
-import type { DiffFile } from './diffFileModel';
+import { type DiffFile } from './diffFileModel';
 
 
 /**

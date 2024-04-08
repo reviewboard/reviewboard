@@ -1,8 +1,12 @@
-import { BaseView, EventsHash, spina } from '@beanbag/spina';
+import {
+    BaseView,
+    type EventsHash,
+    spina,
+} from '@beanbag/spina';
 
 import {
-    MenuItemOptions,
-    MenuTransitionOptions,
+    type MenuItemOptions,
+    type MenuTransitionOptions,
     MenuType,
     MenuView,
 } from './menuView';

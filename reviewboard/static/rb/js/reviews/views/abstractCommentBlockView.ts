@@ -2,14 +2,20 @@
  * Abstract view for comment blocks.
  */
 
-import { BaseView, EventsHash, spina } from '@beanbag/spina';
+import {
+    type EventsHash,
+    BaseView,
+    spina,
+} from '@beanbag/spina';
 
 import {
     EnabledFeatures,
     UserSession,
 } from 'reviewboard/common';
-import { AbstractCommentBlock } from '../models/abstractCommentBlockModel';
-import { CommentDialogView } from './commentDialogView';
+import {
+    type AbstractCommentBlock,
+} from '../models/abstractCommentBlockModel';
+import { type CommentDialogView } from './commentDialogView';
 
 
 /**

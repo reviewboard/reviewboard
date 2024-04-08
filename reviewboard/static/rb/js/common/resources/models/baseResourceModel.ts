@@ -1,10 +1,14 @@
 /**
  * The base model for all API-based resource models.
  */
-import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
+import {
+    type ModelAttributes,
+    BaseModel,
+    spina,
+} from '@beanbag/spina';
 
 import { ExtraDataMixin } from '../../models/extraDataMixin';
-import { SerializerState } from '../utils/serializers';
+import { type SerializerState } from '../utils/serializers';
 
 
 /** A link within the resource tree. */

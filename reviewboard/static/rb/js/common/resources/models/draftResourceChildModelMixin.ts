@@ -1,6 +1,6 @@
 /** Mixin for resources that are children of a draft resource. */
 
-import { ReadyOptions } from './baseResourceModel';
+import { type ReadyOptions } from './baseResourceModel';
 
 
 /**

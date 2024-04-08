@@ -5,20 +5,20 @@
 import { BaseView, spina } from '@beanbag/spina';
 
 import {
+    type Review,
     ClientCommChannel,
     EnabledFeatures,
     ResourceCollection,
-    Review,
     UserSession,
 } from 'reviewboard/common';
 import {
+    type TextEditorView,
     MenuButtonView,
     RichTextInlineEditorView,
     SlideshowView,
-    TextEditorView,
 } from 'reviewboard/ui';
 
-import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 
 
 declare const MANUAL_URL: string;
@@ -1025,7 +1025,7 @@ interface ReviewDialogViewOptions {
  */
 interface ReviewDialogViewCreationOptions extends ReviewDialogViewOptions {
     /** The review instance. */
-    review: RB.Review;
+    review: Review;
 }
 
 

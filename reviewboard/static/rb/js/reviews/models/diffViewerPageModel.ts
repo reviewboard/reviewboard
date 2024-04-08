@@ -4,15 +4,15 @@
 import { spina } from '@beanbag/spina';
 
 import { DiffFileCollection } from '../collections/diffFileCollection';
-import type { DiffFileResourceData } from './diffFileModel';
+import { type DiffFileResourceData } from './diffFileModel';
 import {
-    DiffCommentsHint,
     type DiffCommentsHintParseData,
+    DiffCommentsHint,
 } from './diffCommentsHintModel';
 import {
-    ReviewablePage,
     type ReviewablePageAttrs,
     type ReviewablePageParseData,
+    ReviewablePage,
 } from './reviewablePageModel';
 
 

@@ -5,7 +5,10 @@
 import { spina } from '@beanbag/spina';
 
 import { BaseCollection } from '../../collections/baseCollection';
-import { BaseResource, ResourceLink } from '../models/baseResourceModel';
+import {
+    type ResourceLink,
+    BaseResource,
+} from '../models/baseResourceModel';
 
 
 /** Options for the ResourceCollection object. */
