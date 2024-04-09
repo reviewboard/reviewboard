@@ -132,7 +132,7 @@ suite('rb/views/CommentDialogView', function() {
                 let $button;
 
                 beforeEach(function() {
-                    $button = dlg.$el.find('.buttons .cancel');
+                    $button = dlg.$el.find('.btn-cancel');
                 });
 
                 it('Enabled', function() {
@@ -187,7 +187,7 @@ suite('rb/views/CommentDialogView', function() {
                 let $button;
 
                 beforeEach(function() {
-                    $button = dlg.$el.find('.buttons .close');
+                    $button = dlg.$el.find('.btn-close');
                 });
 
                 it('Cancels editor when clicked', function() {
@@ -220,7 +220,7 @@ suite('rb/views/CommentDialogView', function() {
                 let $button;
 
                 beforeEach(function() {
-                    $button = dlg.$el.find('.buttons .delete');
+                    $button = dlg.$el.find('.btn-delete');
                 });
 
                 it('Cancels editor when clicked', function() {
@@ -267,7 +267,7 @@ suite('rb/views/CommentDialogView', function() {
                 let $button;
 
                 beforeEach(function() {
-                    $button = dlg.$el.find('.buttons .save');
+                    $button = dlg.$el.find('.btn-save');
                 });
 
                 it('Cancels editor when clicked', function() {

@@ -21,14 +21,14 @@
 .rb-c-formatting-toolbar {
   @_formatting-toolbar-vars: #rb-ns-ui.formatting-toolbar();
 
-  background: @_formatting-toolbar-vars[@bg];
+  background: var(--ink-c-button-bg);
   bottom: 0px;
   display: flex;
   margin: 0;
   padding: 0;
 
   a, label {
-    color: #rb-ns-ui.colors[@black];
+    color: var(--ink-c-button-text-color);
   }
 
   &__btn-group {
@@ -45,7 +45,8 @@
     margin: 0 0.1em;
     width: 14px;
     height: 14px;
-    padding: 0.5em;
+    padding: var(--ink-c-button-padding-vert)
+             var(--ink-c-button-padding-horiz);
     text-align: center;
 
     &::before {
@@ -53,8 +54,7 @@
     }
 
     &:hover, &:focus {
-      background-color: @_formatting-toolbar-vars[@button-hover-bg];
-      color: @_formatting-toolbar-vars[@button-color];
+      background: var(--ink-c-button-hover-bg);
     }
 
     &-bold:before {

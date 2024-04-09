@@ -1,3 +1,4 @@
+import { paint } from '@beanbag/ink';
 import { BaseView, EventsHash, spina } from '@beanbag/spina';
 import CodeMirror from 'codemirror';
 
@@ -767,7 +768,7 @@ class FormattingToolbarView extends BaseView<
                 {
                     $el: $(dedent`
                         <label class="rb-c-formatting-toolbar__btn"
-                               aria-role="button" tabindex="0">
+                               role="button" tabindex="0">
                         `)
                         .append(
                             $('<input type="file" style="display: none;">')
@@ -866,13 +867,11 @@ class FormattingToolbarView extends BaseView<
         let $el = options.$el;
 
         if ($el === undefined) {
-            $el = $('<button>')
-                .attr({
-                    'aria-pressed': 'false',
-                    'class': 'rb-c-formatting-toolbar__btn',
-                    'tabindex': '0',
-                    'type': 'button',
-                });
+            $el = $(paint`
+                <Ink.Button class="rb-c-formatting-toolbar__btn"
+                            aria-pressed="false"
+                            tabindex=0/>
+            `);
         }
 
         if (options.ariaLabel) {

@@ -259,10 +259,10 @@ export class CommentDialogView extends BaseView<
     static className = 'comment-dlg';
 
     static events: EventsHash = {
-        'click .buttons .cancel': '_onCancelClicked',
-        'click .buttons .close': '_onCancelClicked',
-        'click .buttons .delete': '_onDeleteClicked',
-        'click .buttons .save': 'save',
+        'click .btn-cancel': '_onCancelClicked',
+        'click .btn-close': '_onCancelClicked',
+        'click .btn-delete': '_onDeleteClicked',
+        'click .btn-save': 'save',
         'keydown .comment-text-field': '_onTextKeyDown',
     };
 
@@ -317,7 +317,8 @@ export class CommentDialogView extends BaseView<
           <ul class="comment-dlg-options">
            <li class="comment-issue-options">
             <input type="checkbox" id="comment_issue">
-            <label for="comment_issue" accesskey="i"><%= openAnIssueText %></label>
+            <label for="comment_issue"
+                   accesskey="i"><%= openAnIssueText %></label>
             <% if (showVerify) { %>
              <input type="checkbox" id="comment_issue_verify">
              <label for="comment_issue_verify"><%= verifyIssueText %></label>
@@ -325,18 +326,25 @@ export class CommentDialogView extends BaseView<
            </li>
            <li class="comment-markdown-options">
             <input type="checkbox" id="enable_markdown">
-            <label for="enable_markdown" accesskey="m"><%= enableMarkdownText %></label>
+            <label for="enable_markdown"
+                   accesskey="m"><%= enableMarkdownText %></label>
            </li>
           </ul>
          </div>
          <div class="comment-dlg-footer">
           <div class="buttons">
-           <input type="button" class="save" value="<%- saveButton %>"
-                  disabled="true">
-           <input type="button" class="cancel" value="<%- cancelButton %>">
-           <input type="button" class="delete" value="<%- deleteButton %>"
-                  disabled="true">
-           <input type="button" class="close" value="<%- closeButton %>">
+           <button class="ink-c-button btn-save" type="button" disabled>
+            <%- saveButton %>
+           </button>
+           <button class="ink-c-button btn-cancel" type="button">
+            <%- cancelButton %>
+           </button>
+           <button class="ink-c-button btn-delete" type="button" disabled>
+            <%- deleteButton %>
+           </button>
+           <button class="ink-c-button btn-close" type="button">
+            <%- closeButton %>
+           </button>
           </div>
          </div>
         </form>
@@ -570,26 +578,27 @@ export class CommentDialogView extends BaseView<
 
         this.#$draftWarning = this.$('.draft-warning');
 
-        this.$buttons = this._$footer.find('.buttons');
+        const $buttons = this._$footer.find('.buttons');
+        this.$buttons = $buttons;
 
-        this.$saveButton = this.$buttons.find('input.save')
+        this.$saveButton = $buttons.children('.btn-save')
             .bindVisibility(model, 'canEdit')
             .bindProperty('disabled', model, 'canSave', {
                 elementToModel: false,
                 inverse: true,
             });
 
-        this.$cancelButton = this.$buttons.find('input.cancel')
+        this.$cancelButton = $buttons.children('.btn-cancel')
             .bindVisibility(model, 'canEdit');
 
-        this.$deleteButton = this.$buttons.find('input.delete')
+        this.$deleteButton = $buttons.children('.btn-delete')
             .bindVisibility(model, 'canDelete')
             .bindProperty('disabled', model, 'canDelete', {
                 elementToModel: false,
                 inverse: true,
             });
 
-        this.$closeButton = this.$buttons.find('input.close')
+        this.$closeButton = $buttons.children('.btn-close')
             .bindVisibility(model, 'canEdit', {
                 inverse: true,
             });

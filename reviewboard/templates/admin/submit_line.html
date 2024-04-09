@@ -2,30 +2,38 @@
 
 <div class="rb-c-form__actions-primary">
 {% if show_save %}
- <input class="rb-c-form__action -is-primary" type="submit"
-        value="{% trans "Save" %}" name="_save">
+ <button class="rb-c-form__action ink-c-button -is-primary" type="submit"
+         name="_save">
+  {% trans "Save" %}
+ </button>
 {% endif %}
 
 {% if show_save_as_new %}
- <input class="rb-c-form__action" type="submit"
-        value="{% trans "Save as new" %}" name="_saveasnew">
+ <button class="rb-c-form__action ink-c-button" type="button"
+         name="_saveasnew">
+  {% trans "Save as new" %}
+ </button>
 {% endif %}
 
 {% if show_save_and_add_another %}
- <input class="rb-c-form__action" type="submit"
-        value="{% trans "Save and add another" %}" name="_addanother">
+ <button class="rb-c-form__action ink-c-button" type="button"
+         name="_addanother">
+  {% trans "Save and add another" %}
+ </button>
 {% endif %}
 
 {% if show_save_and_continue %}
- <input class="rb-c-form__action" type="submit"
-        value="{% trans "Save and continue editing" %}" name="_continue">
+ <button class="rb-c-form__action ink-c-button"
+         name="_continue">
+  {% trans "Save and continue editing" %}
+ </button>
 {% endif %}
 </div>
 
 {% if show_delete_link %}
 <div class="rb-c-form__actions-secondary">
- <a class="rb-c-form__action rb-c-button -is-danger" role="button"
-    href="{{delete_url}}">{% trans "Delete" %}</a>
+ <a class="rb-c-form__action ink-c-button -is-danger" role="button"
+    draggable="false" href="{{delete_url}}">{% trans "Delete" %}</a>
  </div>
 {% endif %}
 </div>

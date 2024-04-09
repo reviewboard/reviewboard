@@ -73,8 +73,9 @@ class BannerView extends BaseView<
         <% } %>
         <span class="banner-actions">
         <% _.each(actions, function(action) { %>
-         <input type="button" id="<%= action.id %>"
-                value="<%- action.label %>">
+         <button class="ink-c-button" type="button" id="<%= action.id %>">
+          <%- action.label %>
+         </button>
         <% }); %>
         <% if (showSendEmail) { %>
          <label>
@@ -163,7 +164,7 @@ class BannerView extends BaseView<
             this.reviewRequestEditorView.addFieldView(this.field);
         }
 
-        this.$buttons = this.$('input');
+        this.$buttons = this.$('.ink-c-button');
 
         this.reviewRequestEditor.on(
             'saving destroying',

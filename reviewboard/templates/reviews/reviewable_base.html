@@ -57,8 +57,6 @@
   <div class="rb-c-unified-banner__controls">
    <div class="rb-c-unified-banner__mode-selector"></div>
    <div class="rb-c-unified-banner__draft-actions">
-    <input type="button" id="btn-review-request-discard"
-           value="{% trans "Discard" %}">
    </div>
    <menu class="rb-c-unified-banner__review-actions rb-c-actions" role="menu">
 {%    actions_html "unified-banner" %}
@@ -97,11 +95,11 @@
 {% endcomment %}
   <div id="review-banner-publish-container" class="rb-c-menu-button">
    <div class="rb-c-button-group" role="group">
-    <button class="rb-c-menu-button__primary rb-c-button" type="button">
-     {% trans "Publish Review" %}
+    <button class="rb-c-menu-button__primary ink-c-button" type="button">
+     {% trans "Publish" %}
     </button>
-    <button class="rb-c-menu-button__toggle rb-c-button" type="button">
-     <span class="rb-icon rb-icon-dropdown-arrow"></span>
+    <button class="rb-c-menu-button__toggle ink-c-button" type="button">
+     <span class="ink-c-button__icon fa fa-gear"></span>
     </button>
    </div>
   </div>
