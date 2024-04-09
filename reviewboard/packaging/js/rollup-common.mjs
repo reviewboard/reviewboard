@@ -61,6 +61,7 @@ export const commonRollupConfig = {
         resolve: {
             browser: true,
             extensions: supportedJSExtensions,
+            moduleDirectories: [],
             modulePaths: [
                 'node_modules',
             ],
