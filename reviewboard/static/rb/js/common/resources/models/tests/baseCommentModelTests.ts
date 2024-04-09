@@ -10,6 +10,7 @@ import {
 import {
     BaseComment,
     BaseResource,
+    CommentIssueStatusType,
 } from 'reviewboard/common';
 
 
@@ -33,14 +34,33 @@ suite('rb/resources/models/BaseComment', function() {
     describe('State values', function() {
         it('STATE_DROPPED', function() {
             expect(BaseComment.STATE_DROPPED).toBe('dropped');
+            expect(BaseComment.STATE_DROPPED)
+                .toBe(CommentIssueStatusType.DROPPED);
         });
 
         it('STATE_OPEN', function() {
             expect(BaseComment.STATE_OPEN).toBe('open');
+            expect(BaseComment.STATE_OPEN).toBe(CommentIssueStatusType.OPEN);
         });
 
         it('STATE_RESOLVED', function() {
             expect(BaseComment.STATE_RESOLVED).toBe('resolved');
+            expect(BaseComment.STATE_RESOLVED)
+                .toBe(CommentIssueStatusType.RESOLVED);
+        });
+
+        it('STATE_VERIFYING_DROPPED', function() {
+            expect(BaseComment.STATE_VERIFYING_DROPPED)
+                .toBe('verifying-dropped');
+            expect(BaseComment.STATE_VERIFYING_DROPPED)
+                .toBe(CommentIssueStatusType.VERIFYING_DROPPED);
+        });
+
+        it('STATE_VERIFYING_RESOLVED', function() {
+            expect(BaseComment.STATE_VERIFYING_RESOLVED)
+                .toBe('verifying-resolved');
+            expect(BaseComment.STATE_VERIFYING_RESOLVED)
+                .toBe(CommentIssueStatusType.VERIFYING_RESOLVED);
         });
     });
 
@@ -81,7 +101,7 @@ suite('rb/resources/models/BaseComment', function() {
             expect(data).not.toBe(undefined);
             expect(data.id).toBe(42);
             expect(data.issueOpened).toBe(true);
-            expect(data.issueStatus).toBe(BaseComment.STATE_RESOLVED);
+            expect(data.issueStatus).toBe(CommentIssueStatusType.RESOLVED);
             expect(data.text).toBe('foo');
         });
     });
@@ -133,7 +153,7 @@ suite('rb/resources/models/BaseComment', function() {
 
         describe('issue_status field', function() {
             it('When not loaded', function() {
-                model.set('issueStatus', BaseComment.STATE_DROPPED);
+                model.set('issueStatus', CommentIssueStatusType.DROPPED);
                 const data = model.toJSON();
                 expect(data.issue_status).toBe(undefined);
             });
@@ -142,7 +162,7 @@ suite('rb/resources/models/BaseComment', function() {
                 parentObject.set('public', false);
 
                 model.set({
-                    issueStatus: BaseComment.STATE_DROPPED,
+                    issueStatus: CommentIssueStatusType.DROPPED,
                     loaded: true,
                     parentObject: parentObject,
                 });
@@ -155,13 +175,13 @@ suite('rb/resources/models/BaseComment', function() {
                 parentObject.set('public', true);
 
                 model.set({
-                    issueStatus: BaseComment.STATE_DROPPED,
+                    issueStatus: CommentIssueStatusType.DROPPED,
                     loaded: true,
                     parentObject: parentObject,
                 });
 
                 const data = model.toJSON();
-                expect(data.issue_status).toBe(BaseComment.STATE_DROPPED);
+                expect(data.issue_status).toBe(CommentIssueStatusType.DROPPED);
             });
         });
 
@@ -190,21 +210,33 @@ suite('rb/resources/models/BaseComment', function() {
 
     describe('validate', function() {
         describe('issueState', function() {
-            it('STATE_DROPPED', function() {
+            it('DROPPED', function() {
                 expect(model.validate({
-                    issueStatus: BaseComment.STATE_DROPPED,
+                    issueStatus: CommentIssueStatusType.DROPPED,
                 })).toBe(undefined);
             });
 
-            it('STATE_OPEN', function() {
+            it('OPEN', function() {
                 expect(model.validate({
-                    issueStatus: BaseComment.STATE_OPEN,
+                    issueStatus: CommentIssueStatusType.OPEN,
                 })).toBe(undefined);
             });
 
-            it('STATE_RESOLVED', function() {
+            it('RESOLVED', function() {
                 expect(model.validate({
-                    issueStatus: BaseComment.STATE_RESOLVED,
+                    issueStatus: CommentIssueStatusType.RESOLVED,
+                })).toBe(undefined);
+            });
+
+            it('VERIFYING_DROPPED', function() {
+                expect(model.validate({
+                    issueStatus: CommentIssueStatusType.VERIFYING_DROPPED,
+                })).toBe(undefined);
+            });
+
+            it('VERIFYING_RESOLVED', function() {
+                expect(model.validate({
+                    issueStatus: CommentIssueStatusType.VERIFYING_RESOLVED,
                 })).toBe(undefined);
             });
 

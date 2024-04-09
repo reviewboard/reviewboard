@@ -1,5 +1,8 @@
 export { ResourceCollection } from './collections/resourceCollection';
-export { BaseComment } from './models/baseCommentModel';
+export {
+    BaseComment,
+    CommentIssueStatusType,
+} from './models/baseCommentModel';
 export { BaseResource } from './models/baseResourceModel';
 export { DraftFileAttachment } from './models/draftFileAttachmentModel';
 export {
