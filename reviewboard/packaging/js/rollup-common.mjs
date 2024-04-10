@@ -102,6 +102,7 @@ export function makeReviewBoardRollupConfig(options) {
             '@beanbag/spina',
             'backbone',
             'codemirror',
+            'moment',
             'django',
             'djblets',
             'jasmine-core',
