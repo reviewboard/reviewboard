@@ -195,7 +195,7 @@ interface SaveOptions {
 })
 export class InlineEditorView<
     TModel extends Backbone.Model = undefined,
-    TElement extends HTMLElement = HTMLDivElement,
+    TElement extends HTMLElement = HTMLElement,
     TExtraViewOptions extends InlineEditorViewOptions = InlineEditorViewOptions
 > extends BaseView<TModel, TElement, TExtraViewOptions> {
     /**
@@ -896,7 +896,7 @@ interface RichTextInlineEditorViewOptions extends InlineEditorViewOptions {
 @spina
 export class RichTextInlineEditorView<
     TModel extends Backbone.Model = undefined,
-    TElement extends HTMLElement = HTMLDivElement,
+    TElement extends HTMLElement = HTMLElement,
     TExtraViewOptions extends RichTextInlineEditorViewOptions =
         RichTextInlineEditorViewOptions
 > extends InlineEditorView<TModel, TElement, TExtraViewOptions> {
@@ -1028,7 +1028,7 @@ interface DateInlineEditorViewOptions extends InlineEditorViewOptions {
 @spina
 export class DateInlineEditorView<
     TModel extends Backbone.Model = undefined,
-    TElement extends HTMLElement = HTMLDivElement,
+    TElement extends HTMLElement = HTMLElement,
     TExtraViewOptions extends DateInlineEditorViewOptions =
         DateInlineEditorViewOptions
 > extends InlineEditorView<TModel, TElement, TExtraViewOptions> {
