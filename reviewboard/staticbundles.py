@@ -130,9 +130,6 @@ PIPELINE_JAVASCRIPT = {
     'account-page': {
         'source_filenames': (
             'rb/js/accountPrefsPage/index.ts',
-
-            # Legacy JavaScript
-            'rb/js/accountPrefsPage/views/oauthTokensView.es6.js',
         ),
         'output_filename': 'rb/js/account-page.min.js',
     },
