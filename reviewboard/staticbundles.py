@@ -232,13 +232,6 @@ PIPELINE_JAVASCRIPT = {
         ),
         'output_filename': 'rb/js/newReviewRequest.min.js',
     },
-    'oauth-edit': {
-        'source_filenames': (
-            # Legacy JavaScript
-            'rb/js/accountPrefsPage/views/oauthClientSecretView.es6.js',
-        ),
-        'output_filename': 'rb/js/oauth.min.js',
-    },
     'admin': {
         'source_filenames': (
             'rb/js/admin/index.ts',
@@ -281,6 +274,8 @@ PIPELINE_JAVASCRIPT = {
     },
     'widgets': {
         'source_filenames': (
+            'rb/js/widgets/index.ts',
+
             # Legacy JavaScript
             'rb/js/admin/views/relatedUserSelectorView.es6.js',
             'rb/js/admin/views/relatedRepoSelectorView.es6.js',
