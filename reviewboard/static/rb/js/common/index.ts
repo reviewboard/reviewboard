@@ -102,5 +102,6 @@ export { ExtraData } from './models/extraDataModel';
 export { ExtraDataMixin } from './models/extraDataMixin';
 export { Page } from './models/pageModel';
 export { FormView } from './views/formView';
+export { PageManager } from './models/pageManagerModel';
 export { PageView } from './views/pageView';
 export { UserSession } from './models/userSessionModel';

@@ -45,7 +45,7 @@ export interface PageViewOptions {
 })
 export class PageView<
     TModel extends Page = Page,
-    TElement extends HTMLDivElement = HTMLDivElement,
+    TElement extends HTMLBodyElement = HTMLBodyElement,
     TExtraViewOptions extends PageViewOptions = PageViewOptions
 > extends BaseView<TModel, TElement, TExtraViewOptions> {
     /**

@@ -1,23 +1,40 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+} from 'jasmine-core';
+
+import {
+    PageManager,
+    PageView,
+} from 'reviewboard/common';
+
+
 suite('rb/pages/models/PageManager', function() {
-    let pageManager;
-    let page;
+    let pageManager: PageManager;
+    let page: PageView;
 
     beforeEach(function() {
-        pageManager = new RB.PageManager();
-        page = new Backbone.View();
+        pageManager = new PageManager();
+        page = new PageView();
 
         spyOn(page, 'render');
     });
 
     describe('Instance', function() {
-        let callbacks;
-        let expectedRender;
+        let callbacks: {
+            cb: (page: PageView) => void;
+        };
+        let expectedRender: boolean;
 
         beforeEach(function() {
             expectedRender = false;
 
             callbacks = {
-                cb: _page => {
+                cb: (_page: PageView) => {
                     expect(_page).toBe(page);
                     expect(pageManager.get('rendered')).toBe(expectedRender);
                 },
@@ -94,41 +111,44 @@ suite('rb/pages/models/PageManager', function() {
     });
 
     describe('Class methods', function() {
-        let oldInstance;
+        let oldInstance: PageManager;
+
+        function cb(page: PageView) { /* Intentionally left blank. */}
+        const context = {};
 
         beforeEach(function() {
-            oldInstance = RB.PageManager.instance;
-            RB.PageManager.instance = pageManager;
+            oldInstance = PageManager.instance;
+            PageManager.instance = pageManager;
         });
 
         afterEach(function() {
-            RB.PageManager.instance = oldInstance;
+            PageManager.instance = oldInstance;
         });
 
         it('beforeRender', function() {
-            spyOn(RB.PageManager.instance, 'beforeRender');
-            RB.PageManager.beforeRender(1, 2);
-            expect(RB.PageManager.instance.beforeRender)
-                .toHaveBeenCalledWith(1, 2);
+            spyOn(PageManager.instance, 'beforeRender');
+            PageManager.beforeRender(cb, context);
+            expect(PageManager.instance.beforeRender)
+                .toHaveBeenCalledWith(cb, context);
         });
 
         it('ready', function() {
-            spyOn(RB.PageManager.instance, 'ready');
-            RB.PageManager.ready(1, 2);
-            expect(RB.PageManager.instance.ready)
-                .toHaveBeenCalledWith(1, 2);
+            spyOn(PageManager.instance, 'ready');
+            PageManager.ready(cb, context);
+            expect(PageManager.instance.ready)
+                .toHaveBeenCalledWith(cb, context);
         });
 
         it('setPage', function() {
-            const page = new Backbone.View();
-            RB.PageManager.setPage(page);
+            const page = new PageView();
+            PageManager.setPage(page);
             expect(pageManager.get('page')).toBe(page);
         });
 
         it('getPage', function() {
-            const page = new Backbone.View();
+            const page = new PageView();
             pageManager.set('page', page);
-            expect(RB.PageManager.getPage()).toBe(page);
+            expect(PageManager.getPage()).toBe(page);
         });
     });
 });

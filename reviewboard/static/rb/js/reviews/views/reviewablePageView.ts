@@ -22,7 +22,10 @@ import {
 } from 'reviewboard/common/resources/models/reviewRequestModel';
 import { DnDUploader } from 'reviewboard/ui';
 
-import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import {
+    type ReviewRequestEditor,
+    type ReviewRequestEditorAttrs,
+} from '../models/reviewRequestEditorModel';
 import { type ReviewablePage } from '../models/reviewablePageModel';
 import { UnifiedBanner } from '../models/unifiedBannerModel';
 import { ReviewDialogView } from './reviewDialogView';
@@ -222,7 +225,7 @@ export interface ReviewablePageViewOptions extends PageViewOptions {
 @spina
 export class ReviewablePageView<
     TModel extends ReviewablePage = ReviewablePage,
-    TElement extends HTMLDivElement = HTMLDivElement,
+    TElement extends HTMLBodyElement = HTMLBodyElement,
     TExtraViewOptions extends ReviewablePageViewOptions =
         ReviewablePageViewOptions
 > extends PageView<TModel, TElement, TExtraViewOptions> {
