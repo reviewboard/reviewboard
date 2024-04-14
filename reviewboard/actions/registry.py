@@ -52,6 +52,9 @@ class ActionsRegistry(OrderedRegistry):
                                                   AdminAction,
                                                   DocumentationAction,
                                                   FollowFacebookAction,
+                                                  FollowBlueSkyAction,
+                                                  FollowLinkedInAction,
+                                                  FollowMastodonAction,
                                                   FollowMenuAction,
                                                   FollowRedditAction,
                                                   FollowNewsAction,
@@ -97,9 +100,12 @@ class ActionsRegistry(OrderedRegistry):
             SupportAction(),
             FollowMenuAction(),
             FollowNewsAction(),
-            FollowTwitterAction(),
+            FollowBlueSkyAction(),
             FollowFacebookAction(),
+            FollowLinkedInAction(),
+            FollowMastodonAction(),
             FollowRedditAction(),
+            FollowTwitterAction(),
             FollowYouTubeAction(),
 
             # Review request actions (left side)

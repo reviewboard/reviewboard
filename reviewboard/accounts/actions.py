@@ -263,8 +263,53 @@ class FollowNewsAction(BaseAction):
     action_id = 'follow-rss'
     parent_id = 'follow-menu'
     label = _('Review Board News')
-    icon_class = 'fa fa-rss'
+    icon_class = 'rb-icon-rss'
     url = 'https://www.reviewboard.org/news/'
+    attachment = AttachmentPoint.HEADER
+
+
+class FollowBlueSkyAction(BaseAction):
+    """Action for following via BlueSky.
+
+    Version Added:
+        7.0
+    """
+
+    action_id = 'follow-bluesky'
+    parent_id = 'follow-menu'
+    label = _('BlueSky')
+    icon_class = 'rb-icon-brand-bluesky'
+    url = 'https://bsky.app/profile/reviewboard.bsky.social'
+    attachment = AttachmentPoint.HEADER
+
+
+class FollowLinkedInAction(BaseAction):
+    """Action for following via LinkedIn.
+
+    Version Added:
+        7.0
+    """
+
+    action_id = 'follow-linkedin'
+    parent_id = 'follow-menu'
+    label = _('LinkedIn')
+    icon_class = 'rb-icon-brand-linkedin'
+    url = 'https://www.linkedin.com/company/reviewboard/'
+    attachment = AttachmentPoint.HEADER
+
+
+class FollowMastodonAction(BaseAction):
+    """Action for following via Mastodon.
+
+    Version Added:
+        7.0
+    """
+
+    action_id = 'follow-mastodon'
+    parent_id = 'follow-menu'
+    label = _('Mastodon')
+    icon_class = 'rb-icon-brand-mastodon'
+    url = 'https://mastodon.online/@reviewboard'
     attachment = AttachmentPoint.HEADER
 
 
@@ -278,7 +323,7 @@ class FollowTwitterAction(BaseAction):
     action_id = 'follow-twitter'
     parent_id = 'follow-menu'
     label = _('Twitter')
-    icon_class = 'fa fa-twitter'
+    icon_class = 'rb-icon-brand-twitter'
     url = 'https://twitter.com/reviewboard/'
     attachment = AttachmentPoint.HEADER
 
@@ -293,7 +338,7 @@ class FollowFacebookAction(BaseAction):
     action_id = 'follow-facebook'
     parent_id = 'follow-menu'
     label = _('Facebook')
-    icon_class = 'fa fa-facebook'
+    icon_class = 'rb-icon-brand-facebook'
     url = 'https://facebook.com/reviewboard.org'
     attachment = AttachmentPoint.HEADER
 
@@ -308,7 +353,7 @@ class FollowRedditAction(BaseAction):
     action_id = 'follow-reddit'
     parent_id = 'follow-menu'
     label = _('Reddit')
-    icon_class = 'fa fa-reddit'
+    icon_class = 'rb-icon-brand-reddit'
     url = 'https://reddit.com/r/reviewboard'
     attachment = AttachmentPoint.HEADER
 
@@ -323,6 +368,6 @@ class FollowYouTubeAction(BaseAction):
     action_id = 'follow-youtube'
     parent_id = 'follow-menu'
     label = _('YouTube')
-    icon_class = 'fa fa-youtube'
+    icon_class = 'rb-icon-brand-youtube'
     url = 'https://www.youtube.com/channel/UCTnwzlRTtx8wQOmyXiA_iCg'
     attachment = AttachmentPoint.HEADER
