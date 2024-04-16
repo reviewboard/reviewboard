@@ -119,7 +119,7 @@ def get_capabilities(request=None):
 
     siteconfig = SiteConfiguration.objects.get_current()
     capabilities['authentication']['client_web_login'] = \
-        siteconfig.get('client_web_login', False)
+        siteconfig.get('client_web_login')
 
     return capabilities
 

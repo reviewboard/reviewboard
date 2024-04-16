@@ -58,6 +58,23 @@ The following settings can be configured:
     * Legacy Authentication Module
 
 
+.. _api-authentication-settings:
+
+API Authentication Settings
+===========================
+
+This section manages how applications and services (e.g. RBTools) authenticate
+to the Review Board API.
+
+* **Automatic token expiration:**
+    Certain services will authenticate to Review Board by directing the user
+    to log in via the web site. Upon successful authentication, an API token
+    is automatically created for that service.
+
+    This setting allows you to control the expiration for those types of
+    API tokens.
+
+
 .. _basic-authentication-settings:
 
 Basic Authentication Settings
