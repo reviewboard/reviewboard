@@ -321,9 +321,10 @@ class ReviewRequest(BaseReviewRequestDetails):
                                         default=None, blank=True)
 
     diffset_history = models.ForeignKey(DiffSetHistory,
-                                        on_delete=models.CASCADE,
+                                        on_delete=models.SET_NULL,
                                         related_name='review_request',
                                         verbose_name=_('diff set history'),
+                                        null=True,
                                         blank=True)
     target_groups = models.ManyToManyField(
         Group,
