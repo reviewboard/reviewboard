@@ -6,16 +6,15 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Type
-
 from django.db.models.signals import pre_delete
 
-from reviewboard.reviews.models import ReviewRequestDraft
+from reviewboard.reviews.models import (ReviewRequest,
+                                        ReviewRequestDraft)
 from reviewboard.reviews.models.review_request import FileAttachmentState
 
 
 def _on_review_request_draft_deleted(
-    sender: Type[ReviewRequestDraft],
+    sender: type[ReviewRequestDraft],
     instance: ReviewRequestDraft,
     using: str,
     **kwargs,
@@ -60,6 +59,55 @@ def _on_review_request_draft_deleted(
         del review_request._file_attachments_data
 
 
+def _on_review_request_deleted(
+    sender: type[ReviewRequest],
+    instance: ReviewRequest,
+    using: str,
+    **kwargs,
+) -> None:
+    """Handle extra cleanup when a review request is deleted.
+
+    Version Added:
+        7.0
+
+    Args:
+        sender (type, unused):
+            The sender of the signal.
+
+        instance (reviewboard.reviews.models.ReviewRequest):
+            The review request being deleted.
+
+        using (str, unused):
+            The database alias being used.
+
+        **kwargs (dict, unused):
+            Unused additional keyword arguments.
+    """
+    # We defined a bunch of these things using ManyToMany fields, when they
+    # really ought to have been foreign keys. We therefore can't rely on
+    # cascade, and need to clean them all up manually when the review request
+    # is deleted.
+    instance.changedescs.all().delete()
+
+    if (instance.file_attachments_count or
+        instance.inactive_file_attachments_count):
+        instance.file_attachment_histories.all().delete()
+
+        if instance.file_attachments_count:
+            instance.file_attachments.all().delete()
+
+        if instance.inactive_file_attachments_count:
+            instance.inactive_file_attachments.all().delete()
+
+    if instance.screenshots_count:
+        instance.screenshots.all().delete()
+
+    if instance.inactive_screenshots_count:
+        instance.inactive_screenshots.all().delete()
+
+    instance.diffset_history.delete()
+
+
 def connect_signal_handlers() -> None:
     """Connect review and review request related signal handlers.
 
@@ -68,3 +116,5 @@ def connect_signal_handlers() -> None:
     """
     pre_delete.connect(_on_review_request_draft_deleted,
                        sender=ReviewRequestDraft)
+    pre_delete.connect(_on_review_request_deleted,
+                       sender=ReviewRequest)
