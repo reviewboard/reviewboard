@@ -23,6 +23,7 @@ from reviewboard.oauth.models import Application
 from reviewboard.reviews.models import Group
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
+from reviewboard.themes.ui.registry import ui_theme_registry
 
 
 logger = logging.getLogger(__name__)
@@ -160,6 +161,76 @@ class AccountSettingsForm(AccountPageForm):
                            'enable_desktop_notifications'),
             })
         )
+
+
+class ThemeForm(AccountPageForm):
+    """Form for controlling the themes of Review Board.
+
+    Version Added:
+        7.0
+    """
+
+    form_id = 'theme'
+    form_title = _('Theme')
+
+    ui_theme = forms.ChoiceField(
+        label=_('Default appearance'),
+        choices=[],
+        widget=forms.widgets.RadioSelect())
+
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the form.
+
+        This will populate the theme choices with the available settings for
+        the install.
+
+        Args:
+            *args (tuple):
+                Positional arguments for the parent form.
+
+            **kwargs (dict):
+                Keyword arguments for the parent form.
+        """
+        super().__init__(*args, **kwargs)
+
+        default_theme = ui_theme_registry.get_theme('default')
+
+        self.fields['ui_theme'].choices = [
+            ('default', _('Default appearance (%(theme_name)s)') % {
+                'theme_name': default_theme.name,
+            }),
+            *[
+                (theme.theme_id, theme.name)
+                for theme in ui_theme_registry
+                if theme is not default_theme
+            ],
+        ]
+
+    def load(self):
+        """Load settings for the form.
+
+        This will convert stored profile settings into initial form data.
+        """
+        profile = self.user.get_profile()
+
+        self.set_initial({
+            'ui_theme': profile.ui_theme_id,
+        })
+
+    def save(self) -> None:
+        """Save the form values to the profile.
+
+        This will convert the user-provided form data to stored profile
+        settings, and then notify the user the settings have been saved.
+        """
+        profile = self.user.get_profile()
+
+        profile.ui_theme_id = self.cleaned_data['ui_theme'] or 'default'
+
+        profile.save(update_fields=('settings',))
+
+        messages.add_message(self.request, messages.INFO,
+                             _('Your appearance settings have been saved.'))
 
 
 class AvatarSettingsForm(DjbletsAvatarSettingsForm):

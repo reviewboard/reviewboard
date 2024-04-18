@@ -229,14 +229,47 @@ class Profile(models.Model):
         explicitly, then that choice will be respected. Otherwise, we
         enable desktop notifications by default.
 
-        Returns:
+        Type:
             bool:
-                If the user has set whether they wish to receive desktop
-                notifications, then use their preference. Otherwise, we return
-                ``True``.
+            If the user has set whether they wish to receive desktop
+            notifications, then use their preference. Otherwise, we return
+            ``True``.
         """
         return (not self.settings or
                 self.settings.get('enable_desktop_notifications', True))
+
+    @property
+    def ui_theme_id(self) -> str:
+        """Return the user's preferred UI theme.
+
+        Version Added:
+            7.0
+
+        Type:
+            str
+        """
+        settings = self.settings or {}
+
+        return settings.get('ui_theme', 'default')
+
+    @ui_theme_id.setter
+    def ui_theme_id(
+        self,
+        theme: str,
+    ) -> None:
+        """Set the user's preferred UI theme.
+
+        The ``settings`` field will need to be saved after this is
+        modified.
+
+        Version Added:
+            7.0
+
+        Args:
+            theme (str):
+                The ID of the configured UI theme to set.
+        """
+        self.settings['ui_theme'] = theme
 
     def get_starred_review_groups_count(self, *, local_site=None):
         """The number of starred review groups.

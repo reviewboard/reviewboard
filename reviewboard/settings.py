@@ -465,6 +465,7 @@ TEMPLATES = [
                 'reviewboard.admin.context_processors.read_only',
                 'reviewboard.admin.context_processors.version',
                 'reviewboard.site.context_processors.localsite',
+                'reviewboard.themes.context_processors.theme',
             ],
             'debug': DEBUG,
             'loaders': [

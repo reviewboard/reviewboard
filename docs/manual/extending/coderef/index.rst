@@ -393,6 +393,20 @@ Unit Test Helpers
    reviewboard.testing.testcase
 
 
+Themes
+======
+
+.. autosummary::
+   :toctree: python
+
+   reviewboard.themes
+   reviewboard.themes.context_processors
+   reviewboard.themes.ui
+   reviewboard.themes.ui.base
+   reviewboard.themes.ui.default
+   reviewboard.themes.ui.registry
+
+
 Web API
 =======
 
