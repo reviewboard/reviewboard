@@ -49,12 +49,12 @@
 {%  enddefinevar %}
 
   <div id="container">
-   <header id="topbar" role="banner">
+   <header class="rb-c-topbar" id="topbar" role="banner">
 {% block headerbar %}
 {%  include "base/headerbar.html" %}
 {%  template_hook_point "base-before-navbar" %}
-    <div id="navbar-container">
-     <nav aria-label="{% trans 'Main pages' %}">
+    <div class="rb-c-topbar__nav-container" id="navbar-container">
+     <nav class="rb-c-topbar__main-nav" aria-label="{% trans 'Main pages' %}">
 {%  block navbar %}
 {%   include "base/navbar.html" %}
 {%  endblock %}

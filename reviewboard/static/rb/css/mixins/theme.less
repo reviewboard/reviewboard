@@ -21,27 +21,8 @@
              @topbar-menu-bg: @topbar-bg,
              @topbar-menu-selected-bg: lighten(@topbar-bg, 10%)) {
   #accountnav {
-    .rb-c-actions__action:hover {
-      border-color: @topbar-border-color;
-    }
-
-    .rb-c-menu {
-      border-color: @topbar-border-color;
-    }
-
-    .rb-c-menu__item {
-      background: @topbar-menu-bg;
-
-      &:hover, &:focus {
-        background: @topbar-menu-selected-bg;
-      }
-    }
-
     li {
       &:hover {
-        background: @topbar-menu-selected-bg;
-        border-color: lighten(@topbar-border-color, 5%);
-
         ul {
           border-color: @topbar-border-color;
 
@@ -72,47 +53,11 @@
     }
   }
 
-  #headerbar {
-    border-bottom-color: @topbar-border-color;
-
-    #nav_toggle {
-      color: fadeout(@topbar-text-color, 20%);
-    }
-
-    #search {
-      input {
-        border-color: @topbar-border-color;
-      }
-    }
-  }
-
-  #navbar-container {
-    background: @topbar-bg;
-    border-color: @topbar-border-color;
-  }
-
-  #navbar {
-    border-bottom-color: @topbar-border-color;
-
-    a {
-      color: @topbar-link-color;
-    }
-  }
-
   #page-sidebar {
     #rb-ns-pages.base.on-shell-mobile-mode({
-      background-color: @topbar-bg;
-      border-right-color: @topbar-border-color;
+      background: var(--ink-p-header-bg);
+      border-right-color: var(--ink-p-header-border-color);
     });
-  }
-
-  #topbar {
-    background: @topbar-bg;
-    color: @topbar-text-color;
-
-    .version {
-      color: @topbar-faded-text-color;
-    }
   }
 
   #rb-ns-ui.drawer.set-colors(@bg: @topbar-bg,

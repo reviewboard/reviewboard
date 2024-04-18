@@ -1,16 +1,16 @@
 {% load i18n rb_extensions %}
 
-<ul id="navbar">
+<ul class="rb-c-topbar__nav-items" id="navbar">
 {% if request.user.is_authenticated or not siteconfig_settings.auth_require_sitewide_login %}
 {%  if request.user.is_authenticated %}
- <li><a href="{% url 'dashboard' %}">{% trans "My Dashboard" %}</a></li>
+ <li class="rb-c-topbar__nav-item"><a href="{% url 'dashboard' %}">{% trans "My Dashboard" %}</a></li>
 {%   if not is_read_only %}
- <li><a href="{% url 'new-review-request' %}">{% trans "New Review Request" %}</a></li>
+ <li class="rb-c-topbar__nav-item"><a href="{% url 'new-review-request' %}">{% trans "New Review Request" %}</a></li>
 {%   endif %}
 {%  endif %}
- <li><a href="{% url 'all-review-requests' %}">{% trans "All Review Requests" %}</a></li>
- <li><a href="{% url 'all-users' %}">{% trans "Users" %}</a></li>
- <li><a href="{% url 'all-groups' %}">{% trans "Groups" %}</a></li>
+ <li class="rb-c-topbar__nav-item"><a href="{% url 'all-review-requests' %}">{% trans "All Review Requests" %}</a></li>
+ <li class="rb-c-topbar__nav-item"><a href="{% url 'all-users' %}">{% trans "Users" %}</a></li>
+ <li class="rb-c-topbar__nav-item"><a href="{% url 'all-groups' %}">{% trans "Groups" %}</a></li>
 {%  navigation_bar_hooks %}
 {% endif %}
 </ul>
