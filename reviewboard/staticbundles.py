@@ -219,7 +219,6 @@ PIPELINE_JAVASCRIPT = {
             # Legacy JavaScript
             #
             # Note: These are roughly in dependency order.
-            'rb/js/models/commentIssueManagerModel.es6.js',
             'rb/js/models/uploadDiffModel.es6.js',
             'rb/js/utils/textUtils.es6.js',
             'rb/js/views/commentIssueBarView.es6.js',

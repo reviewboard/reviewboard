@@ -6,6 +6,10 @@ export {
 export { AbstractCommentBlock } from './models/abstractCommentBlockModel';
 export { AbstractReviewable } from './models/abstractReviewableModel';
 export { CommentEditor } from './models/commentEditorModel';
+export {
+    CommentIssueManager,
+    CommentIssueManagerCommentType,
+} from './models/commentIssueManagerModel';
 export { DiffCommentBlock } from './models/diffCommentBlockModel';
 export { DiffCommentsHint } from './models/diffCommentsHintModel';
 export { DiffFile } from './models/diffFileModel';

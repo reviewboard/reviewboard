@@ -101,6 +101,7 @@ export interface BaseCommentResourceData {
     raw_text_fields: { [key: string]: string };
     rich_text: boolean;
     text: string;
+    timestamp: string;
 }
 
 
