@@ -171,7 +171,6 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
  * Version Added:
  *     6.0
  */
-@spina
 abstract class BaseVisibilityActionView extends Actions.ActionView {
     static events: EventsHash = {
         'click': '_toggle',
