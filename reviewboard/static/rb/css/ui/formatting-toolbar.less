@@ -21,7 +21,9 @@
 .rb-c-formatting-toolbar {
   @_formatting-toolbar-vars: #rb-ns-ui.formatting-toolbar();
 
-  background: var(--ink-c-button-bg);
+  background:
+    var(--if-light, rgba(0, 0, 0, 0.04))
+    var(--if-dark, rgba(0, 0, 0, 0.1));
   bottom: 0px;
   display: flex;
   margin: 0;

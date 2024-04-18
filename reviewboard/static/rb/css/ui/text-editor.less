@@ -5,6 +5,12 @@
   .text-editor() {
     @_form-field-vars: #rb-ns-ui.form-field();
 
+    /**
+     * Text editor definitions.
+     *
+     * Deprecated:
+     *     7.0
+     */
     @bg: @_form-field-vars[@textarea-editor-background];
     @border: @_form-field-vars[@textarea-border];
     @margin: @_form-field-vars[@textarea-editor-margin];
@@ -37,8 +43,9 @@
 .rb-c-text-editor {
   @_text-editor-vars: #rb-ns-ui.text-editor();
 
-  background: @_text-editor-vars[@bg];
-  border: @_text-editor-vars[@border];
+  background: var(--ink-p-input-bg-color);
+  border: var(--ink-g-border-input);
+  color: var(--ink-p-input-text-color);
   display: flex;
   flex-direction: column;
   margin: @_text-editor-vars[@margin];;
@@ -72,6 +79,7 @@
     textarea&,
     &.CodeMirror {
       background: transparent;
+      color: inherit;
       border: 0;
       border-radius: 0;
       margin: 0;
@@ -88,9 +96,21 @@
        * See http://stackoverflow.com/questions/7144843/extra-space-under-textarea-differs-along-browsers
        */
       vertical-align: top;
+
+      &::selection {
+        background: var(--ink-p-input-selection-bg);
+      }
     }
 
     &.-is-rich {
+      .CodeMirror-cursor {
+        border-left-color: var(--ink-p-input-text-color);
+      }
+
+      .CodeMirror-selected {
+        background: var(--ink-p-input-selection-bg);
+      }
+
       .CodeMirror-scroll {
         margin-bottom: -@_text-editor-vars[@toolbar-spacing] !important;
       }
