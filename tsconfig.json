@@ -1,6 +1,7 @@
 {
     "extends": "./reviewboard/packaging/js/tsconfig.base",
     "compilerOptions": {
+        "baseUrl": "./",
         "paths": {
             "backbone": ["node_modules/@beanbag/spina/lib/@types/backbone"],
             "djblets/*": ["node_modules/@beanbag/djblets/static/djblets/js/*"],

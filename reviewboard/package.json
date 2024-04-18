@@ -3,7 +3,9 @@
   "private": "true",
   "files": [],
   "scripts": {
-    "dependencies": "./contrib/internal/build-npm-deps.py"
+    "build-storybook": "storybook build",
+    "dependencies": "./contrib/internal/build-npm-deps.py",
+    "storybook": "storybook dev -p 6007 --no-open"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -28,5 +30,16 @@
   },
   "workspaces": [
     ".npm-workspaces/*"
-  ]
+  ],
+  "devDependencies": {
+    "@chromatic-com/storybook": "^1.3.3",
+    "@storybook/addon-essentials": "^8.0.8",
+    "@storybook/addon-interactions": "^8.0.8",
+    "@storybook/addon-links": "^8.0.8",
+    "@storybook/blocks": "^8.0.8",
+    "@storybook/html": "^8.0.8",
+    "@storybook/html-vite": "^8.0.8",
+    "@storybook/test": "^8.0.8",
+    "storybook": "^8.0.8"
+  }
 }
