@@ -79,6 +79,7 @@ package_dependencies = {
     'pymdown-extensions': '~=6.3.0',
     'pymemcache': '',
     'pytz': '>=2015.2',
+    'tqdm': '~=4.66.2',
     'Whoosh': '>=2.6',
 
     # The following are pinned versions/ranges needed to satisfy dependency
