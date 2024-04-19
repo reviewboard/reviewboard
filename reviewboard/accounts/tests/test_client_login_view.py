@@ -4,6 +4,8 @@ Version Added:
     5.0.5
 """
 
+from __future__ import annotations
+
 import datetime
 from typing import Optional
 from urllib.parse import quote
@@ -13,6 +15,7 @@ from django.contrib.auth.models import User
 from django.template import Context
 from django.utils import timezone
 from django.utils.html import escape
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.errors import WebAPITokenGenerationError
 
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -59,6 +62,39 @@ class ClientLoginViewTests(kgb.SpyAgency, TestCase):
             username='doc',
             check_payload_token=True,
             token_expires=timezone.make_aware(datetime.datetime(2023, 5, 25)))
+
+    def test_get_siteconfig_not_set(self) -> None:
+        """Testing ClientLoginView GET still builds a payload containing
+        authentication data when the client web login and the client
+        token expiration settings are missing from the site configuration
+        """
+        self.spy_on(timezone.now, op=kgb.SpyOpReturn(
+            timezone.make_aware(datetime.datetime(2023, 5, 20))))
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        del siteconfig.settings['client_web_login']
+        del siteconfig.settings['client_token_expiration']
+
+        self.assertNotIn('client_web_login', siteconfig.settings)
+        self.assertNotIn('client_token_expiration', siteconfig.settings)
+
+        self.client.login(username='doc', password='doc')
+
+        rsp = self.client.get(
+            local_site_reverse('client-login'),
+            {
+                'client-name': 'TestClient',
+                'client-url': 'http://localhost:1234/test/',
+            })
+
+        self._assert_context_equals(
+            rsp.context,
+            client_allowed=True,
+            client_name='TestClient',
+            client_url='http://localhost:1234/test/',
+            username='doc',
+            check_payload_token=True,
+            token_expires=timezone.make_aware(datetime.datetime(2024, 5, 19)))
 
     def test_get_with_redirect(self) -> None:
         """Testing ClientLoginView GET with a redirect URL"""

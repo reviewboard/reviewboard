@@ -61,6 +61,12 @@ class FileDiffResource(WebAPIResource):
             'description': 'Whether this represents a binary file.',
             'added_in': '4.0.6',
         },
+        'encoding': {
+            'type': StringFieldType,
+            'description': 'The encoding of the original and patched file, '
+                           'if available.',
+            'added_in': '5.0.8',
+        },
         'extra_data': {
             'type': DictFieldType,
             'description': 'Extra data as part of the diff. '
