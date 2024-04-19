@@ -503,10 +503,10 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
 
         this.listenTo(view, 'fieldError', err => {
             this.#$warning
+                .text(err)
+                .show()
                 .delay(6000)
-                .fadeOut(400, () => this.#$warning.hide())
-                .html(err.errorText)
-                .show();
+                .fadeOut(400, () => this.#$warning.hide());
         });
 
         this.listenTo(view, 'fieldSaved', this.showBanner);
