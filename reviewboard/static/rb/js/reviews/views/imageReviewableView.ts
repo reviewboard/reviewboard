@@ -2,10 +2,14 @@
  * Displays a review UI for images.
  */
 
-import { BaseView, EventsHash, spina } from '@beanbag/spina';
+import {
+    type EventsHash,
+    BaseView,
+    spina,
+} from '@beanbag/spina';
 
-import { ImageReviewable } from '../models/imageReviewableModel';
-import { AbstractReviewableViewOptions } from './abstractReviewableView';
+import { type ImageReviewable } from '../models/imageReviewableModel';
+import { type AbstractReviewableViewOptions } from './abstractReviewableView';
 import {
     FileAttachmentReviewableView,
 } from './fileAttachmentReviewableView';

@@ -48,9 +48,7 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/admin/views/tests/inlineFormViewTests.es6.js',
             'rb/js/collections/tests/filteredCollectionTests.es6.js',
             'rb/js/configForms/models/tests/resourceListItemModelTests.es6.js',
-            'rb/js/diffviewer/collections/tests/diffReviewableCollectionTests.es6.js',
             'rb/js/diffviewer/models/tests/diffCommitModelTests.es6.js',
-            'rb/js/diffviewer/models/tests/diffFileModelTests.es6.js',
             'rb/js/diffviewer/models/tests/diffRevisionModelTests.es6.js',
             'rb/js/diffviewer/models/tests/paginationModelTests.es6.js',
             'rb/js/diffviewer/views/tests/diffCommitListViewTests.es6.js',
@@ -117,7 +115,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/common/index.ts',
 
             # Legacy JavaScript
-            'rb/js/utils/consoleUtils.es6.js',
             'rb/js/utils/underscoreUtils.es6.js',
             'rb/js/init.es6.js',
             'rb/js/utils/apiErrors.es6.js',
@@ -222,7 +219,6 @@ PIPELINE_JAVASCRIPT = {
             # Legacy JavaScript
             #
             # Note: These are roughly in dependency order.
-            'rb/js/models/commentIssueManagerModel.es6.js',
             'rb/js/models/uploadDiffModel.es6.js',
             'rb/js/utils/textUtils.es6.js',
             'rb/js/views/commentIssueBarView.es6.js',
@@ -237,18 +233,13 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/views/uploadDiffView.es6.js',
             'rb/js/views/updateDiffView.es6.js',
             'rb/js/diffviewer/models/commitHistoryDiffEntry.es6.js',
-            'rb/js/diffviewer/models/diffCommentsHintModel.es6.js',
             'rb/js/diffviewer/models/diffCommitListModel.es6.js',
             'rb/js/diffviewer/models/diffCommitModel.es6.js',
-            'rb/js/diffviewer/models/diffFileModel.es6.js',
             'rb/js/diffviewer/models/diffRevisionModel.es6.js',
             'rb/js/diffviewer/models/paginationModel.es6.js',
             'rb/js/diffviewer/collections/commitHistoryDiffEntryCollection.es6.js',
             'rb/js/diffviewer/collections/diffCommitCollection.es6.js',
-            'rb/js/diffviewer/collections/diffFileCollection.es6.js',
-            'rb/js/diffviewer/collections/diffReviewableCollection.es6.js',
             'rb/js/diffviewer/views/chunkHighlighterView.es6.js',
-            'rb/js/diffviewer/views/diffCommentsHintView.es6.js',
             'rb/js/diffviewer/views/diffCommitListView.es6.js',
             'rb/js/diffviewer/views/diffRevisionLabelView.es6.js',
             'rb/js/diffviewer/views/diffRevisionSelectorView.es6.js',

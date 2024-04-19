@@ -1,8 +1,11 @@
-import { EventsHash, spina } from '@beanbag/spina';
+import {
+    type EventsHash,
+    spina,
+} from '@beanbag/spina';
 
 import { MenuView } from 'reviewboard/ui';
 
-import { MenuAction } from '../models/menuActionModel';
+import { type MenuAction } from '../models/menuActionModel';
 import { ActionView } from './actionView';
 
 

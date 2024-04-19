@@ -1,0 +1,42 @@
+/**
+ * Overrides for Ink styling.
+ *
+ * Version Added:
+ *     7.0
+ */
+
+@import (reference) "@beanbag/ink/lib/ink.less";
+
+
+#rb-ns-ui() {
+  /**
+   * Overrides for Ink styling.
+   *
+   * Version Added:
+   *     7.0
+   */
+  .ink-overrides() {
+    #ink-ns-theme.add-css-vars(
+      @prefix: ink;
+      @vars: {
+        /**
+         * The default Sans Serif font for Review Board.
+         *
+         * This is the standard used historically for Review Board. We'll
+         * continue to use it until we find a more appropriate default font
+         * with a similar aesthetic.
+         */
+        ff-sans-serif: Verdana, Arial, Helvetica, Sans-Serif;
+
+        /*
+         * Standard font size.
+         *
+         * This is a bit smaller than Ink's default, providing more
+         * information on the page at once. It's consistent with the size
+         * used in Review Board versions prior to 7.0.
+         */
+        u-font-std: var(--ink-u-font-s);
+      };
+    );
+  }
+}

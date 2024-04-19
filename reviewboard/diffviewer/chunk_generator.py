@@ -24,6 +24,7 @@ from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
 from reviewboard.diffviewer.diffutils import (get_filediff_encodings,
                                               get_line_changed_regions,
                                               get_original_file,
+                                              get_original_and_patched_files,
                                               get_patched_file,
                                               convert_to_unicode,
                                               split_line_endings)
@@ -1259,11 +1260,9 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         interfilediff = self.interfilediff
         request = self.request
 
-        old = get_original_file(filediff=filediff,
-                                request=request)
-        new = get_patched_file(source_data=old,
-                               filediff=filediff,
-                               request=request)
+        old, new = get_original_and_patched_files(
+            filediff=filediff,
+            request=request)
 
         old_encoding_list = get_filediff_encodings(filediff)
         new_encoding_list = old_encoding_list

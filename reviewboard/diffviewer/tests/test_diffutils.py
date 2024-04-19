@@ -1,3 +1,7 @@
+"""Unit tests for the diffutils module."""
+
+from __future__ import annotations
+
 import kgb
 from itertools import zip_longest
 
@@ -588,8 +592,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         diff_files = get_diff_files(diffset=diffset, interdiffset=interdiffset)
         two_to_three = diff_files[0]
 
-        self.assertEqual(two_to_three['depot_filename'], 'foo2.txt')
-        self.assertEqual(two_to_three['dest_filename'], 'foo3.txt')
+        self.assertEqual(two_to_three['orig_filename'], 'foo2.txt')
+        self.assertEqual(two_to_three['modified_filename'], 'foo3.txt')
 
     def test_get_diff_files_with_interdiff_and_files_same_source(self):
         """Testing get_diff_files with interdiff and multiple files using the
@@ -686,64 +690,64 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.assertEqual(len(diff_files), 6)
 
         diff_file = diff_files[0]
-        self.assertEqual(diff_file['depot_filename'], 'foo.txt')
-        self.assertEqual(diff_file['dest_filename'], 'foo.txt')
         self.assertEqual(diff_file['filediff'], filediff1)
         self.assertEqual(diff_file['interfilediff'], None)
-        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
-        self.assertEqual(diff_file['dest_revision'],
+        self.assertEqual(diff_file['modified_filename'], 'foo.txt')
+        self.assertEqual(diff_file['modified_revision'],
                          'Diff Revision 2 - File Reverted')
+        self.assertEqual(diff_file['orig_filename'], 'foo.txt')
+        self.assertEqual(diff_file['orig_revision'], 'Diff Revision 1')
         self.assertFalse(diff_file['is_new_file'])
         self.assertTrue(diff_file['force_interdiff'])
 
         diff_file = diff_files[1]
-        self.assertEqual(diff_file['depot_filename'], 'foo.txt')
-        self.assertEqual(diff_file['dest_filename'], 'foo.txt')
         self.assertEqual(diff_file['filediff'], interfilediff2)
         self.assertEqual(diff_file['interfilediff'], None)
-        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
-        self.assertEqual(diff_file['dest_revision'], 'New File')
+        self.assertEqual(diff_file['modified_filename'], 'foo.txt')
+        self.assertEqual(diff_file['modified_revision'], 'New File')
+        self.assertEqual(diff_file['orig_filename'], 'foo.txt')
+        self.assertEqual(diff_file['orig_revision'], 'Diff Revision 1')
         self.assertTrue(diff_file['is_new_file'])
         self.assertFalse(diff_file['force_interdiff'])
 
         diff_file = diff_files[2]
-        self.assertEqual(diff_file['depot_filename'], 'foo2.txt')
-        self.assertEqual(diff_file['dest_filename'], 'foo2.txt')
         self.assertEqual(diff_file['filediff'], filediff2)
         self.assertEqual(diff_file['interfilediff'], interfilediff1)
-        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
-        self.assertEqual(diff_file['dest_revision'], 'Diff Revision 2')
+        self.assertEqual(diff_file['modified_filename'], 'foo2.txt')
+        self.assertEqual(diff_file['modified_revision'], 'Diff Revision 2')
+        self.assertEqual(diff_file['orig_filename'], 'foo2.txt')
+        self.assertEqual(diff_file['orig_revision'], 'Diff Revision 1')
         self.assertFalse(diff_file['is_new_file'])
         self.assertTrue(diff_file['force_interdiff'])
 
         diff_file = diff_files[3]
-        self.assertEqual(diff_file['depot_filename'], 'foo.txt')
-        self.assertEqual(diff_file['dest_filename'], 'foo3.txt')
         self.assertEqual(diff_file['filediff'], filediff3)
         self.assertEqual(diff_file['interfilediff'], None)
-        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
-        self.assertEqual(diff_file['dest_revision'],
+        self.assertEqual(diff_file['modified_filename'], 'foo3.txt')
+        self.assertEqual(diff_file['modified_revision'],
                          'Diff Revision 2 - File Reverted')
+        self.assertEqual(diff_file['orig_filename'], 'foo.txt')
+        self.assertEqual(diff_file['orig_revision'], 'Diff Revision 1')
         self.assertFalse(diff_file['is_new_file'])
         self.assertTrue(diff_file['force_interdiff'])
 
         diff_file = diff_files[4]
-        self.assertEqual(diff_file['depot_filename'], 'foo4.txt')
-        self.assertEqual(diff_file['dest_filename'], 'foo5.txt')
         self.assertEqual(diff_file['filediff'], filediff4)
         self.assertEqual(diff_file['interfilediff'], interfilediff3)
-        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
-        self.assertEqual(diff_file['dest_revision'], 'Diff Revision 2')
+        self.assertEqual(diff_file['modified_filename'], 'foo5.txt')
+        self.assertEqual(diff_file['modified_revision'], 'Diff Revision 2')
+        self.assertEqual(diff_file['orig_filename'], 'foo4.txt')
+        self.assertEqual(diff_file['orig_revision'], 'Diff Revision 1')
         self.assertFalse(diff_file['is_new_file'])
         self.assertTrue(diff_file['force_interdiff'])
 
         diff_file = diff_files[5]
-        self.assertEqual(diff_file['depot_filename'], 'foo4.txt')
-        self.assertEqual(diff_file['dest_filename'], 'foo6.txt')
         self.assertEqual(diff_file['filediff'], filediff4)
         self.assertEqual(diff_file['interfilediff'], interfilediff4)
-        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
-        self.assertEqual(diff_file['dest_revision'], 'Diff Revision 2')
+        self.assertEqual(diff_file['modified_filename'], 'foo6.txt')
+        self.assertEqual(diff_file['modified_revision'], 'Diff Revision 2')
+        self.assertEqual(diff_file['orig_filename'], 'foo4.txt')
+        self.assertEqual(diff_file['orig_revision'], 'Diff Revision 1')
         self.assertFalse(diff_file['is_new_file'])
         self.assertTrue(diff_file['force_interdiff'])
 
@@ -797,13 +801,13 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.assertEqual(len(diff_files), 1)
 
         diff_file = diff_files[0]
-        self.assertEqual(diff_file['depot_filename'], 'foo.txt')
-        self.assertEqual(diff_file['dest_filename'], 'foo.txt')
         self.assertEqual(diff_file['filediff'], filediff)
         self.assertEqual(diff_file['interfilediff'], None)
-        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
-        self.assertEqual(diff_file['dest_revision'],
+        self.assertEqual(diff_file['modified_filename'], 'foo.txt')
+        self.assertEqual(diff_file['modified_revision'],
                          'Diff Revision 2 - File Reverted')
+        self.assertEqual(diff_file['orig_filename'], 'foo.txt')
+        self.assertEqual(diff_file['orig_revision'], 'Diff Revision 1')
         self.assertFalse(diff_file['is_new_file'])
         self.assertTrue(diff_file['force_interdiff'])
 
@@ -858,12 +862,12 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.assertEqual(len(diff_files), 1)
 
         diff_file = diff_files[0]
-        self.assertEqual(diff_file['depot_filename'], 'foo.txt')
-        self.assertEqual(diff_file['dest_filename'], 'foo.txt')
         self.assertEqual(diff_file['filediff'], filediff)
         self.assertEqual(diff_file['interfilediff'], interfilediff)
-        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
-        self.assertEqual(diff_file['dest_revision'], 'Diff Revision 2')
+        self.assertEqual(diff_file['modified_filename'], 'foo.txt')
+        self.assertEqual(diff_file['modified_revision'], 'Diff Revision 2')
+        self.assertEqual(diff_file['orig_filename'], 'foo.txt')
+        self.assertEqual(diff_file['orig_revision'], 'Diff Revision 1')
         self.assertFalse(diff_file['is_new_file'])
         self.assertTrue(diff_file['force_interdiff'])
 
@@ -1263,6 +1267,35 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         }
 
         self.assertEqual(results, expected_results)
+
+    def test_get_diff_files_history_with_new_file(self) -> None:
+        """Testing get_diff_files with a diffset that has commit history with a
+        new file introduced in one commit and changed in another
+        """
+        self.set_up_filediffs()
+
+        commits = list(DiffCommit.objects.all())
+
+        files = get_diff_files(diffset=self.diffset,
+                               base_commit=None,
+                               tip_commit=commits[0])
+
+        # File "foo" was added in the first commit in the series.
+
+        self.assertEqual(files[1]['modified_filename'], 'foo')
+        self.assertTrue(files[1]['filediff'].is_new)
+        self.assertTrue(files[1]['is_new_file'])
+
+        # File "foo" should not be considered a new file when viewing a diff
+        # between commits.
+
+        files = get_diff_files(diffset=self.diffset,
+                               base_commit=commits[0],
+                               tip_commit=commits[1])
+
+        self.assertEqual(files[2]['modified_filename'], 'foo')
+        self.assertFalse(files[1]['filediff'].is_new)
+        self.assertFalse(files[1]['is_new_file'])
 
     def _get_filediff_base_mapping_from_details(self, by_details, details):
         """Return a mapping from FileDiffs to base FileDiffs from the details.

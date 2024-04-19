@@ -131,10 +131,10 @@ class ReviewsDiffViewerViewTests(TestCase):
         self.assertTrue(files)
         self.assertEqual(len(files), 2)
 
-        self.assertEqual(files[0]['depot_filename'], '/newfile')
+        self.assertEqual(files[0]['orig_filename'], '/newfile')
         self.assertIn('interfilediff', files[0])
 
-        self.assertEqual(files[1]['depot_filename'], '/readme')
+        self.assertEqual(files[1]['orig_filename'], '/readme')
         self.assertIn('interfilediff', files[1])
 
     # Bug 847
@@ -210,7 +210,7 @@ class ReviewsDiffViewerViewTests(TestCase):
         self.assertTrue(files)
         self.assertEqual(len(files), 1)
 
-        self.assertEqual(files[0]['depot_filename'], '/newfile')
+        self.assertEqual(files[0]['orig_filename'], '/newfile')
         self.assertIn('interfilediff', files[0])
 
     def test_with_filenames_option(self) -> None:
@@ -332,15 +332,17 @@ class CommitsTests(BaseFileDiffAncestorTests):
         files = response.context['diff_context']['files']
 
         for f in files:
-            counts = f['comment_counts']
+            comment_blocks = f['serialized_comment_blocks']
 
             if f['id'] == self.cumulative_comment.filediff_id:
-                self.assertEqual(len(counts), 1)
-                self.assertEqual(counts[0]['comments'][0]['comment_id'],
+                self.assertEqual(len(comment_blocks), 1)
+
+                comments = list(comment_blocks.values())[0]
+                self.assertEqual(comments[0]['comment_id'],
                                  self.cumulative_comment.pk)
             else:
                 # All other files in the diff should show no comments on them.
-                self.assertEqual(counts, [])
+                self.assertEqual(comment_blocks, {})
 
     def test_comment_data_with_commit_range1(self) -> None:
         """Testing ReviewsDiffViewerView comment data with a commit range from
@@ -361,15 +363,17 @@ class CommitsTests(BaseFileDiffAncestorTests):
         files = response.context['diff_context']['files']
 
         for f in files:
-            counts = f['comment_counts']
+            comment_blocks = f['serialized_comment_blocks']
 
             if f['id'] == self.commit_comment1.filediff_id:
-                self.assertEqual(len(counts), 1)
-                self.assertEqual(counts[0]['comments'][0]['comment_id'],
+                self.assertEqual(len(comment_blocks), 1)
+
+                comments = list(comment_blocks.values())[0]
+                self.assertEqual(comments[0]['comment_id'],
                                  self.commit_comment1.pk)
             else:
                 # All other files in the diff should show no comments on them.
-                self.assertEqual(counts, [])
+                self.assertEqual(comment_blocks, {})
 
     def test_comment_data_with_commit_range2(self) -> None:
         """Testing ReviewsDiffViewerView comment data with a commit range in
@@ -391,12 +395,14 @@ class CommitsTests(BaseFileDiffAncestorTests):
         files = response.context['diff_context']['files']
 
         for f in files:
-            counts = f['comment_counts']
+            comment_blocks = f['serialized_comment_blocks']
 
             if f['id'] == self.commit_comment2.filediff_id:
-                self.assertEqual(len(counts), 1)
-                self.assertEqual(counts[0]['comments'][0]['comment_id'],
+                self.assertEqual(len(comment_blocks), 1)
+
+                comments = list(comment_blocks.values())[0]
+                self.assertEqual(comments[0]['comment_id'],
                                  self.commit_comment2.pk)
             else:
                 # All other files in the diff should show no comments on them.
-                self.assertEqual(counts, [])
+                self.assertEqual(comment_blocks, {})

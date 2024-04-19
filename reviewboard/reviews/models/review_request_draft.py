@@ -825,7 +825,9 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             # that were removed from the review request.
             for item in new_items:
                 if item.caption != item.draft_caption:
-                    if item.pk in old_ids:
+                    if (item.pk in old_ids and
+                        not (isinstance(item, FileAttachment) and
+                             item.is_from_diff)):
                         caption_changes[item.pk] = {
                             'old': (item.caption,),
                             'new': (item.draft_caption,),

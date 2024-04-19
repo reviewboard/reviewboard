@@ -5,7 +5,10 @@
 import { spina } from '@beanbag/spina';
 
 import * as JSONSerializers from '../utils/serializers';
-import { BaseResource, BaseResourceAttrs } from './baseResourceModel';
+import {
+    type BaseResourceAttrs,
+    BaseResource,
+} from './baseResourceModel';
 import { ReviewReply } from './reviewReplyModel';
 
 
@@ -110,14 +113,6 @@ interface ReviewResourceData {
  *     6.0
  */
 interface CreateDiffCommentOptions {
-    /**
-     * The ID of the base filediff.
-     *
-     * This is the base diff when commenting on a cumulative diff. This is
-     * mutually exclusive with ``interFileDiffID``.
-     */
-    baseFileDiffID: number;
-
     /** The line number of the start of the comment. */
     beginLineNum: number;
 
@@ -127,8 +122,16 @@ interface CreateDiffCommentOptions {
     /** The ID of the FileDiff that this comment is for. */
     fileDiffID: number;
 
+    /**
+     * The ID of the base filediff.
+     *
+     * This is the base diff when commenting on a cumulative diff. This is
+     * mutually exclusive with ``interFileDiffID``.
+     */
+    baseFileDiffID?: number;
+
     /** The ID for the new model (in the case of existing comments. */
-    id: number;
+    id?: number;
 
     /**
      * The ID of the FileDiff that represents the "new" side of an interdiff.
@@ -136,7 +139,7 @@ interface CreateDiffCommentOptions {
      * If specified, the ``fileDiffID`` represents the "old" side. This option
      * is mutually exclusive with ``baseFileDiffID``.
      */
-    interFileDiffID: number;
+    interFileDiffID?: number;
 }
 
 
@@ -371,7 +374,7 @@ export class Review<
      *     fileAttachmentID (number):
      *         The ID of the FileAttachment that this comment is for.
      *
-     *     diffAgainstFileAttachmentID (number):
+     *     diffAgainstFileAttachmentID (number, optional):
      *         The ID of the FileAttachment that the ``fileAttachmentID`` is
      *         diffed against, if the comment is for a file diff.
      *
@@ -382,7 +385,7 @@ export class Review<
     createFileAttachmentComment(
         id: number,
         fileAttachmentID: number,
-        diffAgainstFileAttachmentID: number,
+        diffAgainstFileAttachmentID?: number,
     ): RB.FileAttachmentComment {
         return new RB.FileAttachmentComment({
             diffAgainstFileAttachmentID: diffAgainstFileAttachmentID,
@@ -399,7 +402,7 @@ export class Review<
      *     id (number):
      *         The ID for the new model (in the case of existing comments).
      *
-     *     issueOpened (boolean):
+     *     issueOpened (boolean, optional):
      *         Whether this comment should have an open issue.
      *
      * Returns:
@@ -408,7 +411,7 @@ export class Review<
      */
     createGeneralComment(
         id: number,
-        issueOpened: boolean,
+        issueOpened?: boolean,
     ): RB.GeneralComment {
         return new RB.GeneralComment({
             id: id,

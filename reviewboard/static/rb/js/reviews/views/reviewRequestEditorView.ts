@@ -4,27 +4,29 @@
 import { BaseView, spina } from '@beanbag/spina';
 
 import {
+    type FileAttachment,
+    type ResourceCollection,
     EnabledFeatures,
-    FileAttachment,
-    ResourceCollection,
     ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
 import { DnDUploader } from 'reviewboard/ui';
 
-import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 import { FileAttachmentThumbnailView } from './fileAttachmentThumbnailView';
 import {
-    BaseFieldView,
+    type BaseFieldView,
     ChangeDescriptionFieldView,
     CloseDescriptionFieldView,
-    TextFieldView,
 } from './reviewRequestFieldViews';
 
 
-declare const dedent: (string) => string;
-
-
+/**
+ * Options for the BannerView.
+ *
+ * Version Added:
+ *     6.0
+ */
 interface BannerViewOptions {
     reviewRequestEditorView: ReviewRequestEditorView;
 }
@@ -73,8 +75,9 @@ class BannerView extends BaseView<
         <% } %>
         <span class="banner-actions">
         <% _.each(actions, function(action) { %>
-         <input type="button" id="<%= action.id %>"
-                value="<%- action.label %>">
+         <button class="ink-c-button" type="button" id="<%= action.id %>">
+          <%- action.label %>
+         </button>
         <% }); %>
         <% if (showSendEmail) { %>
          <label>
@@ -163,7 +166,7 @@ class BannerView extends BaseView<
             this.reviewRequestEditorView.addFieldView(this.field);
         }
 
-        this.$buttons = this.$('input');
+        this.$buttons = this.$('.ink-c-button');
 
         this.reviewRequestEditor.on(
             'saving destroying',

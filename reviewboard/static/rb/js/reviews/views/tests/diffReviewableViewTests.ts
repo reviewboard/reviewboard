@@ -12,6 +12,7 @@ import {
 
 import { ReviewRequest } from 'reviewboard/common';
 import {
+    DiffFile,
     DiffReviewable,
     DiffReviewableView,
 } from 'reviewboard/reviews';
@@ -604,7 +605,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
         beforeEach(function() {
             model = new DiffReviewable({
-                file: new RB.DiffFile({
+                file: new DiffFile({
                     index: 1
                 }),
                 fileDiffID: 10,
@@ -957,59 +958,63 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     })),
                     model: new DiffReviewable({
                         reviewRequest: reviewRequest,
-                        serializedCommentBlocks: [
-                            {
-                                comments: [{
+                        serializedCommentBlocks: {
+                            '11-1': [
+                                {
+                                    comment_id: 1,
+                                    issue_opened: false,
+                                    line: 11,
+                                    localdraft: false,
+                                    num_lines: 1,
+                                    review_id: 1,
+                                    text: 'Comment 4',
+                                    user: {
+                                        name: 'testuser',
+                                        username: 'testuser',
+                                    },
+                                },
+                            ],
+                            '2-2': [
+                                {
                                     comment_id: 1,
                                     issue_opened: false,
                                     line: 2,
                                     localdraft: false,
+                                    num_lines: 2,
                                     review_id: 1,
                                     text: 'Comment 1',
-                                    user: { name: 'testuser' },
-                                }],
-                                linenum: 2,
-                                num_lines: 2,
-                            },
-                            {
-                                comments: [
-                                    {
-                                        comment_id: 1,
-                                        issue_opened: false,
-                                        line: 4,
-                                        localdraft: false,
-                                        review_id: 1,
-                                        text: 'Comment 2',
-                                        user: { name: 'testuser' },
+                                    user: {
+                                        name: 'testuser',
+                                        username: 'testuser',
                                     },
-                                    {
-                                        comment_id: 1,
-                                        issue_opened: false,
-                                        line: 4,
-                                        localdraft: false,
-                                        review_id: 1,
-                                        text: 'Comment 3',
-                                        user: { name: 'testuser' },
-                                    },
-                                ],
-                                linenum: 4,
-                                num_lines: 1,
-                            },
-                            {
-                                /* This is in the collapsed area. */
-                                comments: [{
+                                },
+                            ],
+                            '4-1': [
+                                {
                                     comment_id: 1,
                                     issue_opened: false,
-                                    line: 12,
+                                    line: 4,
                                     localdraft: false,
+                                    num_lines: 1,
                                     review_id: 1,
-                                    text: 'Comment 4',
+                                    text: 'Comment 2',
                                     user: { name: 'testuser' },
-                                }],
-                                linenum: 11,
-                                num_lines: 1,
-                            },
-                        ],
+                                },
+                                {
+                                    comment_id: 1,
+                                    issue_opened: false,
+                                    line: 4,
+                                    localdraft: false,
+                                    num_lines: 1,
+                                    review_id: 1,
+                                    text: 'Comment 3',
+                                    user: {
+                                        name: 'testuser',
+                                        username: 'testuser',
+                                    },
+                                },
+                            ],
+                        },
                     }),
                 });
                 view.render().$el.appendTo($container);

@@ -2,9 +2,13 @@
  * Provides multi-line commenting capabilities for a diff.
  */
 
-import { BaseView, EventsHash, spina } from '@beanbag/spina';
+import {
+    type EventsHash,
+    BaseView,
+    spina,
+} from '@beanbag/spina';
 
-import { AbstractReviewableView } from './abstractReviewableView';
+import { type AbstractReviewableView } from './abstractReviewableView';
 
 
 /**

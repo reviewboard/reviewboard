@@ -1,6 +1,6 @@
 import { BaseView, spina } from '@beanbag/spina';
 
-import { Action } from '../models/actionModel';
+import { type Action } from '../models/actionModel';
 
 
 /**

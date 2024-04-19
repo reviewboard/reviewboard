@@ -1,19 +1,19 @@
-import { EventsHash, spina } from '@beanbag/spina';
+import {
+    type EventsHash,
+    spina,
+} from '@beanbag/spina';
 
 import {
+    type BaseResource,
+    type Review,
     Actions,
-    BaseResource,
-    Review,
     ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
 import { OverlayView } from 'reviewboard/ui';
 
-import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 import { ReviewDialogView } from './reviewDialogView';
-
-
-declare const SITE_ROOT: string;
 
 
 /**
@@ -171,7 +171,6 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
  * Version Added:
  *     6.0
  */
-@spina
 abstract class BaseVisibilityActionView extends Actions.ActionView {
     static events: EventsHash = {
         'click': '_toggle',

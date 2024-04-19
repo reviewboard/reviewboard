@@ -7,7 +7,15 @@
 @import (reference) "rb/css/ui/sidebars.less";
 
 
-@font-family: Verdana, Arial, Helvetica, Sans-Serif;
+/**
+ * The default font family.
+ *
+ * Deprecated:
+ *     7.0:
+ *     Use ``var(--ink-ff-default)`` from Ink instead.
+ */
+@font-family: var(--ink-ff-default);
+
 
 /* RB Colors */
 
@@ -15,6 +23,7 @@
 @draft-color: #rb-ns-ui.colors[@green-80];
 @draft-hover-color: darken(@draft-color, 15%);
 @draft-border-color: #rb-ns-ui.colors[@green-50];
+
 
 /**
  * The color used for links.

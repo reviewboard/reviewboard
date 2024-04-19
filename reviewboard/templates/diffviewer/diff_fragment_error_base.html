@@ -25,15 +25,15 @@
 {% else %}
    <th colspan="2">
     {% if file.index != None %}<a name="{{file.index}}">{% endif %}
-    {{file.depot_filename}}
+    {{file.orig_filename}}
     {% if file.index != None %}</a>{% endif %}
     </th>
 {% endif %}
   </tr>
-{% if file.revision %}
+{% if file.orig_revision %}
   <tr class="revision-row">
-   <th>{{file.revision}}</th>
-   <th>{{file.dest_revision}}</th>
+   <th>{{file.orig_revision}}</th>
+   <th>{{file.modified_revision}}</th>
   </tr>
 {% endif %}
  </thead>

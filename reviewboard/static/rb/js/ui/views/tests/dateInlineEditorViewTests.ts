@@ -11,9 +11,6 @@ import {
 import { DateInlineEditorView } from 'reviewboard/ui';
 
 
-declare const $testsScratch: JQuery;
-
-
 suite('rb/ui/views/DateInlineEditorView', function() {
     const initialDate = '2022-09-16';
     let view;

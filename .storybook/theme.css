@@ -1,0 +1,7 @@
+body,
+.docs-story {
+    background: var(--ink-p-page-bg);
+    color: var(--ink-p-text-color);
+    font-family: var(--ink-ff-sans-serif);
+    font-size: var(--ink-u-font-std);
+}

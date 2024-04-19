@@ -5,13 +5,14 @@ import { Router, spina } from '@beanbag/spina';
 
 import { UserSession } from 'reviewboard/common';
 
-import { DiffReviewable } from '../models/diffReviewableModel';
-import { DiffViewerPage } from '../models/diffViewerPageModel';
+import { type DiffReviewable } from '../models/diffReviewableModel';
+import { type DiffViewerPage } from '../models/diffViewerPageModel';
+import { DiffCommentsHintView } from './diffCommentsHintView';
 import { DiffFileIndexView } from './diffFileIndexView';
 import { DiffReviewableView } from './diffReviewableView';
 import {
+    type ReviewablePageViewOptions,
     ReviewablePageView,
-    ReviewablePageViewOptions,
 } from './reviewablePageView';
 
 
@@ -108,7 +109,7 @@ export class DiffViewerPageView extends ReviewablePageView<
     #$highlightedChunk: JQuery = null;
     #$window: JQuery<Window>;
     #chunkHighlighter: RB.ChunkHighlighterView = null;
-    #commentsHintView: RB.DiffCommentsHintView = null;
+    #commentsHintView: DiffCommentsHintView = null;
     #diffFileIndexView: DiffFileIndexView = null;
     #diffRevisionLabelView: RB.DiffRevisionLabelView = null;
     #diffRevisionSelectorView: RB.DiffRevisionSelectorView = null;
@@ -266,7 +267,6 @@ export class DiffViewerPageView extends ReviewablePageView<
         const session = UserSession.instance;
 
         this.#$controls = $('#view_controls');
-        console.assert(this.#$controls.length === 1);
 
         /* Set up the view buttons. */
         this.addViewToggleButton({
@@ -393,13 +393,15 @@ export class DiffViewerPageView extends ReviewablePageView<
                           this._onRevisionSelected);
         }
 
-        this.#commentsHintView = new RB.DiffCommentsHintView({
+        this.#commentsHintView = new DiffCommentsHintView({
             el: $('#diff_comments_hint'),
             model: model.commentsHint,
         });
         this.#commentsHintView.render();
         this.listenTo(this.#commentsHintView, 'revisionSelected',
                       this._onRevisionSelected);
+        this.listenTo(this.#commentsHintView, 'commitRangeSelected',
+                      this._onCommitRangeSelected);
 
         this.#paginationView1 = new RB.PaginationView({
             el: $('#pagination1'),
@@ -1210,7 +1212,7 @@ export class DiffViewerPageView extends ReviewablePageView<
         const file = diffReviewable.get('file');
 
         this.#$diffs.append(DiffViewerPageView.fileEntryTemplate({
-            filename: file.get('depotFilename'),
+            filename: file.get('origFilename'),
             id: file.id,
             newFile: file.get('isnew'),
         }));
@@ -1262,6 +1264,46 @@ export class DiffViewerPageView extends ReviewablePageView<
             interdiffRevision: tip,
             revision: base,
         });
+    }
+
+    /**
+     * Callback for when a commit range is selected.
+     *
+     * Args:
+     *     revision (number):
+     *         The diff revision to load.
+     *
+     *     baseCommit (number):
+     *         The base commit to select.
+     *
+     *     tipCommit (number):
+     *         The tip commit to select.
+     */
+    _onCommitRangeSelected(
+        revision: number,
+        baseCommit: number | null,
+        tipCommit: number | null,
+    ) {
+        if (baseCommit === null) {
+            this._navigate({
+                revision: revision,
+                interdiffRevision: null,
+                tipCommitID: tipCommit.toString(),
+            });
+        } else if (tipCommit === null) {
+            this._navigate({
+                baseCommitID: baseCommit.toString(),
+                interdiffRevision: null,
+                revision: revision,
+            });
+        } else {
+            this._navigate({
+                baseCommitID: baseCommit.toString(),
+                interdiffRevision: null,
+                revision: revision,
+                tipCommitID: tipCommit.toString(),
+            });
+        }
     }
 
     /**

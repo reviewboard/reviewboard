@@ -1,3 +1,4 @@
+@import (reference) "@beanbag/ink/lib/ink.less";
 @import (reference) "djblets/css/ui/spinner.less";
 
 @import (reference) "rb/css/ui/colors.less";
@@ -223,6 +224,10 @@
  * They may also contain ``.rb-c-button__icon`` and ``.rb-c-button__label``
  * children to style an icon and label. These will be spaced appropriately.
  *
+ * Deprecated:
+ *     7.0:
+ *     Use ``.ink-c-button`` instead.
+ *
  * Modifiers:
  *     -is-danger:
  *         Indicates that the button performs an operation that might result
@@ -290,8 +295,11 @@
  *      <label class="rb-c-button__label">...</label>
  *     </a>
  */
+
 .rb-c-button {
   @_button-vars: #rb-ns-ui.buttons();
+
+  #ink-ns-ui.deprecated();
 
   border: @_button-vars[@border];
   border-radius: @_button-vars[@border-radius];
@@ -301,7 +309,7 @@
   gap: 0.5em;
   align-items: center;
   justify-content: center;
-  font-family: @font-family;
+  font-family: var(--ink-ff-default);
   font-weight: normal;
   font-size: @_button-vars[@font-size];
   line-height: normal;
@@ -418,7 +426,9 @@
 button,
 input[type="button"],
 input[type="submit"] {
-  &:extend(.rb-c-button all);
+  &:not(.ink-c-button) {
+    &:extend(.rb-c-button all);
+  }
 }
 
 
@@ -430,6 +440,10 @@ input[type="submit"] {
  * dropdowns and toolbars.
  *
  * Children must be ``.rb-c-button`` components or ``<button>`` elements.
+ *
+ * Deprecated:
+ *     7.0:
+ *     Use ``.ink-c-button-group`` instead.
  *
  * Modifiers:
  *     -is-vertical:
@@ -452,6 +466,8 @@ input[type="submit"] {
  */
 .rb-c-button-group {
   @_button-vars: #rb-ns-ui.buttons();
+
+  #ink-ns-ui.deprecated();
 
   border: @_button-vars[@border];
   border-radius: @_button-vars[@border-radius];
@@ -524,6 +540,10 @@ input[type="submit"] {
  * ``.rb-c-button-group`` into the ``.rb-c-menu`` element and ``.rb-c-button``
  * into the ``.rb-c-menu__item`` elements.
  *
+ * Deprecated:
+ *     7.0:
+ *     Use ``.ink-c-menu-button`` instead.
+ *
  * DOM Attributes:
  *     role (required):
  *         This should be set to "group".
@@ -564,6 +584,8 @@ input[type="submit"] {
   @_button-vars: #rb-ns-ui.buttons();
   @_menu-button-vars: #rb-ns-ui.menu-buttons();
   @_border-radius: @_button-vars[@border-radius];
+
+  #ink-ns-ui.deprecated();
 
   border-radius: @_border-radius @_border-radius 0 0;
   display: inline-block;
@@ -781,8 +803,8 @@ input[type="submit"] {
 }
 
 
-button,
-input[type="submit"],
+button:not(.ink-c-button),
+input[type="submit"]:not(.ink-c-button),
 .btn,
 .btn-segment {
   &:hover,

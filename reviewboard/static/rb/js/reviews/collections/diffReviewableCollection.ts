@@ -1,5 +1,28 @@
 /**
  * A collection of RB.DiffReviewable instances.
+ */
+
+import { BaseCollection, spina } from '@beanbag/spina';
+import { type ReviewRequest } from 'reviewboard/common';
+
+import { DiffReviewable } from '../models/diffReviewableModel';
+import { type DiffFileCollection } from './diffFileCollection';
+
+
+/**
+ * Options for the DiffReviewableCollection.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface DiffReviewableCollectionOptions {
+    /** The review request. */
+    reviewRequest: ReviewRequest;
+}
+
+
+/**
+ * A collection of RB.DiffReviewable instances.
  *
  * This manages a collection of :js:class:`RB.DiffReviewable`s and can
  * populate itself based on changes to a collection of files.
@@ -7,8 +30,19 @@
  * When repopulating, this will emit a ``populating`` event. After populating,
  * it will emit a ``populated`` event.
  */
-RB.DiffReviewableCollection = Backbone.Collection.extend({
-    model: RB.DiffReviewable,
+@spina
+export class DiffReviewableCollection extends BaseCollection<
+    DiffReviewable,
+    DiffReviewableCollectionOptions
+> {
+    static model = DiffReviewable;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The review request. */
+    reviewRequest: ReviewRequest;
 
     /**
      * Initialize the collection.
@@ -24,9 +58,14 @@ RB.DiffReviewableCollection = Backbone.Collection.extend({
      *     reviewRequest (RB.ReviewRequest):
      *         The review request for the collection. This must be provided.
      */
-    initialize(models, options) {
+    initialize(
+        models: DiffReviewable[],
+        options: DiffReviewableCollectionOptions,
+    ) {
+        super.initialize(models, options);
+
         this.reviewRequest = options.reviewRequest;
-    },
+    }
 
     /**
      * Watch for changes to a collection of files.
@@ -38,10 +77,10 @@ RB.DiffReviewableCollection = Backbone.Collection.extend({
      *     files (RB.DiffFileCollection):
      *         The collection of files to watch.
      */
-    watchFiles(files) {
+    watchFiles(files: DiffFileCollection) {
         this.listenTo(files, 'reset', () => this._populateFromFiles(files));
         this._populateFromFiles(files);
-    },
+    }
 
     /**
      * Populate this collection from a collection of files.
@@ -57,11 +96,12 @@ RB.DiffReviewableCollection = Backbone.Collection.extend({
      *     files (RB.DiffFileCollection):
      *         The collection of files to populate from.
      */
-    _populateFromFiles(files) {
+    _populateFromFiles(files: DiffFileCollection) {
         const reviewRequest = this.reviewRequest;
 
-        console.assert(reviewRequest,
-                       'RB.DiffReviewableCollection.reviewRequest must be set');
+        console.assert(
+            !!reviewRequest,
+            'RB.DiffReviewableCollection.reviewRequest must be set');
 
         this.reset();
         this.trigger('populating');
@@ -79,17 +119,17 @@ RB.DiffReviewableCollection = Backbone.Collection.extend({
 
             this.add({
                 baseFileDiffID: file.get('baseFileDiffID'),
-                reviewRequest: reviewRequest,
                 file: file,
                 fileDiffID: filediff.id,
                 interFileDiffID: interfilediff ? interfilediff.id : null,
-                revision: filediff.revision,
                 interdiffRevision: interdiffRevision,
                 public: file.get('public'),
-                serializedCommentBlocks: file.get('commentCounts'),
+                reviewRequest: reviewRequest,
+                revision: filediff.revision,
+                serializedCommentBlocks: file.get('serializedCommentBlocks'),
             });
         });
 
         this.trigger('populated');
-    },
-});
+    }
+}

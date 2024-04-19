@@ -48,6 +48,12 @@ done through the My Account -> API Tokens page. Simply click
 date, and a description, and you're done. Tokens may also be created
 using the API.
 
+Certain services and applications will authenticate to Review Board by first
+directing you to log in via the web site. When this happens, an API token is
+automatically created for that service and will be used to authenticate it
+from now on. These types of tokens will appear in your API Tokens page marked
+with a description of: "API token automatically created for [service name]."
+
 The policy, description, and expiration date and time can be changed at any
 time through the API Tokens page or the API.
 

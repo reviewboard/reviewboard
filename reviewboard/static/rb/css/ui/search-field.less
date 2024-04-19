@@ -7,14 +7,18 @@
   .search-field() {
     @_color-vars: #rb-ns-ui.colors();
 
+    @icon-color: @_color-vars[@grey-50];
+    @icon-size: 14px;
+
+    /*
+     * Deprecated:
+     *     7.0
+     */
     @border-color: @_color-vars[@grey-50];
     @border-radius: 6px;
     @border-size: 1px;
     @padding-horiz: 4px;
     @padding-vert: 2px;
-
-    @icon-color: @_color-vars[@grey-50];
-    @icon-size: 14px;
   }
 }
 
@@ -31,18 +35,18 @@
 .rb-c-search-field {
   @_search-field-vars: #rb-ns-ui.search-field();
   @_border-size: @_search-field-vars[@border-size];
-  @_padding-vert: @_search-field-vars[@padding-vert];
-  @_padding-horiz: @_search-field-vars[@padding-horiz];
+  @_padding-vert: var(--ink-u-spacing-s);
+  @_padding-horiz: var(--ink-u-spacing-s);
   @_icon-size: @_search-field-vars[@icon-size];
 
+  display: flex;
   position: relative;
 
   .fa {
-    color: @_search-field-vars[@icon-color];
-    font-size: @_icon-size;
+    color: inherit;
+    font-size: var(--ink-u-font-m);
     position: absolute;
-    left: @_border-size + @_padding-horiz;
-    top: @_border-size + @_padding-vert;
+    margin: var(--ink-u-spacing-s);
   }
 
   /**
@@ -58,11 +62,10 @@
     &[type=text],
     .djblets-c-config-forms-page__content &[type=search],
     .djblets-c-config-forms-page__content &[type=text] {
-      border: @_border-size solid @_search-field-vars[@border-color];
-      border-radius: @_search-field-vars[@border-radius];
+      border: var(--ink-g-border-input);
+      border-radius: var(--ink-u-border-radius-input);
       box-sizing: border-box;
-      padding: @_padding-vert @_padding-horiz @_padding-horiz
-               (@_icon-size + 2 * @_padding-horiz);
+      padding-left: calc(var(--ink-u-font-m) + 2 * var(--ink-u-spacing-s));
       width: 100%;
     }
   }

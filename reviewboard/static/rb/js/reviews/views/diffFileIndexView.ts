@@ -5,8 +5,9 @@ import { BaseView, spina } from '@beanbag/spina';
 
 import { EnabledFeatures } from 'reviewboard/common';
 
+import { type DiffFileCollection } from '../collections/diffFileCollection';
 import { DiffComplexityIconView } from './diffComplexityIconView';
-import { DiffReviewableView } from './diffReviewableView';
+import { type DiffReviewableView } from './diffReviewableView';
 import { UnifiedBannerView } from './unifiedBannerView';
 
 
@@ -18,7 +19,7 @@ import { UnifiedBannerView } from './unifiedBannerView';
  */
 interface DiffFileIndexViewOptions {
     /** The collection of DiffFile models. */
-    collection: Backbone.Collection;
+    collection: DiffFileCollection;
 }
 
 
@@ -59,14 +60,14 @@ export class DiffFileIndexView extends BaseView<
          <% if (newfile) { %>new-file<% } %>
          <% if (binary) { %>binary-file<% } %>
          <% if (deleted) { %>deleted-file<% } %>
-         <% if (destFilename !== depotFilename) { %>renamed-file<% } %>
+         <% if (modifiedFilename !== origFilename) { %>renamed-file<% } %>
          ">
          <td class="diff-file-icon">
           <span class="djblets-o-spinner"></span>
          </td>
          <td class="diff-file-info">
-          <a href="#<%- index %>"><%- destFilename %></a>
-          <% if (destFilename !== depotFilename) { %>
+          <a href="#<%- index %>"><%- modifiedFilename %></a>
+          <% if (modifiedFilename !== origFilename) { %>
           <span class="diff-file-rename"><%- wasText %></span>
           <% } %>
          </td>
@@ -95,20 +96,53 @@ export class DiffFileIndexView extends BaseView<
      * Instance variables *
      **********************/
 
+    /** The collection of diff files. */
+    collection: DiffFileCollection = null;
+
+    /** Whether the index view is docked into the unified banner. */
     #isDocked = false;
+
+    /** Whether the docked view is expanded. */
     #isDockExpanded = false;
+
+    /** The remembered height of the view before it was docked. */
     #lastDockHeight: number;
 
+    /** A mapping from the file index to the row in the table. */
     #diffFiles = new Map<number, JQuery>();
+
+    /** The unified review banner. */
     #unifiedBannerView: UnifiedBannerView;
+
+    /** The banner's dock element. */
     #$bannerDock: JQuery = null;
+
+    /** The banner's dock container. */
     #$dockContainer: JQuery = null;
+
+    /** The table used when docked. */
     #$dockTable: JQuery = null;
+
+    /**
+     * The spacer element for floating mode.
+     *
+     * This is an element added to the page when we move the index from inline
+     * mode into docked mode. This prevents a visual jump by mantaining space
+     * for the file index in the main layout even though we've moved the
+     * content into the banner.
+     */
     #$floatSpacer: JQuery = null;
+
+    /** The individual index rows. */
     #$items: JQuery = null;
+
+    /** The index table. */
     #$itemsTable: JQuery = null;
 
+    /** The visual extents of the items in the index table. */
     #indexExtents = new Map<number, ScrollExtents>();
+
+    /** The visual extents of the files in the diff. */
     #diffExtents = new Map<number, ScrollExtents>();
 
     /**
@@ -288,7 +322,7 @@ export class DiffFileIndexView extends BaseView<
                 _.defaults({
                     binaryFileText: _`Binary file`,
                     deletedFileText: _`Deleted`,
-                    wasText: _`Was ${file.get('depotFilename')}`,
+                    wasText: _`Was ${file.get('origFilename')}`,
                 }, file.attributes)
             )));
 

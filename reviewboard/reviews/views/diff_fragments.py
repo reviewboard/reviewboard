@@ -199,7 +199,7 @@ def build_diff_comment_fragments(
                 None, e, error_template_name, {
                     'comment': comment,
                     'file': {
-                        'depot_filename': comment.filediff.source_file,
+                        'orig_filename': comment.filediff.source_file,
                         'index': None,
                         'filediff': comment.filediff,
                     },
@@ -431,7 +431,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         revision: int,
         interdiff_revision: Optional[int] = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Process and return information on the desired diff.
 
         The diff IDs and other data passed to the view can be processed and
@@ -472,9 +472,9 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
 
     def create_renderer(
         self,
-        context: Dict[str, Any],
-        renderer_settings: Dict[str, Any],
-        diff_file: Dict[str, Any],
+        context: dict[str, Any],
+        renderer_settings: dict[str, Any],
+        diff_file: dict[str, Any],
         *args,
         **kwargs,
     ) -> DiffRenderer:
@@ -519,15 +519,22 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             modified_attachment = None
 
             if diff_file['force_interdiff']:
-                orig_attachment = self._get_diff_file_attachment(filediff)
-                modified_attachment = \
-                    self._get_diff_file_attachment(interfilediff)
+                orig_attachment = self._get_diff_file_attachment(
+                    filediff=filediff)
+                modified_attachment = self._get_diff_file_attachment(
+                    filediff=interfilediff)
             else:
-                modified_attachment = self._get_diff_file_attachment(filediff)
+                modified_attachment = self._get_diff_file_attachment(
+                    filediff=filediff)
 
-                if not diff_file['is_new_file']:
-                    orig_attachment = \
-                        self._get_diff_file_attachment(filediff, False)
+                base_filediff = diff_file['base_filediff']
+
+                if base_filediff is not None:
+                    orig_attachment = self._get_diff_file_attachment(
+                        filediff=base_filediff)
+                elif not diff_file['is_new_file']:
+                    orig_attachment = self._get_diff_file_attachment(
+                        filediff=filediff, use_modified=False)
 
                     if (orig_attachment is None and
                         modified_attachment is not None):
@@ -536,10 +543,9 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
                         # This way we're not cluttering up the DB and
                         # filesystem with attachments that aren't helpful for
                         # the review process.
+                        request = cast(HttpRequest, context.get('request'))
                         orig_attachment = self._create_attachment_for_orig(
-                            request=cast(HttpRequest, context.get('request')),
-                            filediff=filediff)
-
+                            request=request, filediff=filediff)
 
             diff_review_ui_html: Optional[str] = None
             orig_review_ui_class: Optional[type[ReviewUI]] = None
@@ -714,6 +720,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
 
     def _get_diff_file_attachment(
         self,
+        *,
         filediff: FileDiff,
         use_modified: bool = True,
     ) -> Optional[FileAttachment]:
@@ -744,10 +751,11 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             return None
         except MultipleObjectsReturned:
             # Only one FileAttachment should be associated with a FileDiff
-            logger.error('More than one FileAttachments associated with '
-                         'FileDiff %s',
-                         filediff.pk,
-                         exc_info=True)
+            logger.exception('More than one FileAttachments associated with '
+                             'FileDiff %s',
+                             filediff.pk,
+                             extra={'request': self.request})
+
             return None
 
     def _create_attachment_for_orig(

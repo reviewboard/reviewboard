@@ -6,8 +6,8 @@ import { spina } from '@beanbag/spina';
 
 import { FileAttachmentStates } from 'reviewboard/common';
 import {
+    type AbstractCommentBlockAttrs,
     AbstractCommentBlock,
-    AbstractCommentBlockAttrs,
 } from './abstractCommentBlockModel';
 
 
@@ -41,9 +41,7 @@ extends AbstractCommentBlockAttrs {
  *     :js:class:`RB.AbstractCommentBlock`:
  *         For attributes defined on the base model.
  */
-@spina({
-    prototypeAttrs: ['serializedFields'],
-})
+@spina
 export class FileAttachmentCommentBlock<
     TAttributes extends FileAttachmentCommentBlockAttrs
 > extends AbstractCommentBlock<TAttributes> {
@@ -53,14 +51,6 @@ export class FileAttachmentCommentBlock<
         fileAttachmentID: null,
         state: null,
     }, super.defaults);
-
-    /**
-     * The list of extra fields on this model.
-     *
-     * These will be stored on the server in the FileAttachmentComment's
-     * extra_data field.
-     */
-    static serializedFields = [];
 
     /**
      * Create a FileAttachmentComment for the given comment ID.

@@ -2,13 +2,14 @@
 import { BaseModel, spina } from '@beanbag/spina';
 
 import {
-    BaseComment,
+    type BaseComment,
+    type ReviewRequest,
     ExtraDataMixin,
-    ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
 
-import { ReviewRequestEditor } from './reviewRequestEditorModel';
+import { type SerializedComment } from './commentData';
+import { type ReviewRequestEditor } from './reviewRequestEditorModel';
 
 
 /**
@@ -40,7 +41,7 @@ interface CommentEditorAttrs {
     openIssue: boolean;
 
     /** The thread of previous comments that this draft is a reply to. */
-    publishedComments: BaseComment[];
+    publishedComments: SerializedComment[];
 
     /** The type of comment that this draft is a reply to, if applicable. */
     publishedCommentsType: string;

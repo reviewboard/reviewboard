@@ -3,9 +3,9 @@
  */
 import { BaseView, spina } from '@beanbag/spina';
 
-import { ActionView } from '../actions/views/actionView';
+import { type ActionView } from '../actions/views/actionView';
 import { ClientCommChannel } from '../models/commChannelModel';
-import { Page } from '../models/pageModel';
+import { type Page } from '../models/pageModel';
 
 
 export interface PageViewOptions {

@@ -12,9 +12,6 @@ import {
 import { InlineEditorView } from 'reviewboard/ui';
 
 
-declare const $testsScratch: JQuery;
-
-
 suite('rb/ui/views/InlineEditorView', () => {
     let view;
     let $container;

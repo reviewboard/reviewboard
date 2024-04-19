@@ -6,7 +6,25 @@ import { spina } from '@beanbag/spina';
 
 import { UserSession } from '../../models/userSessionModel';
 import * as JSONSerializers from '../utils/serializers';
-import { BaseResource, BaseResourceAttrs } from './baseResourceModel';
+import {
+    type BaseResourceAttrs,
+    BaseResource,
+} from './baseResourceModel';
+
+
+/**
+ * A valid issue status type.
+ *
+ * Version Added:
+ *     7.0
+ */
+export enum CommentIssueStatusType {
+    DROPPED = 'dropped',
+    OPEN = 'open',
+    RESOLVED = 'resolved',
+    VERIFYING_DROPPED = 'verifying-dropped',
+    VERIFYING_RESOLVED = 'verifying-resolved',
+}
 
 
 /**
@@ -32,11 +50,15 @@ export interface BaseCommentAttrs extends BaseResourceAttrs {
     issueOpened: boolean;
 
     /**
-     * The current state of the issue. This must be one of ``STATE_DROPPED``,
-     * ``STATE_OPEN``, ``STATE_RESOLVED``, ``STATE_VERIFYING_DROPPED`` or
-     * ``STATE_VERIFYING_RESOLVED``.
+     * The current state of the issue. This must be one of:
+     *
+     * * ``dropped``
+     * * ``open``
+     * * ``resolved``
+     * * ``verifying-dropped``
+     * * ``verifying-resolved``
      */
-    issueStatus: string;
+    issueStatus: CommentIssueStatusType;
 
     /**
      * The source contents of any Markdown text fields, if forceTextType is
@@ -79,6 +101,7 @@ export interface BaseCommentResourceData {
     raw_text_fields: { [key: string]: string };
     rich_text: boolean;
     text: string;
+    timestamp: string;
 }
 
 
@@ -177,11 +200,18 @@ export class BaseComment<
         richText: JSONSerializers.textType,
     };
 
-    static STATE_DROPPED = 'dropped';
-    static STATE_OPEN = 'open';
-    static STATE_RESOLVED = 'resolved';
-    static STATE_VERIFYING_DROPPED = 'verifying-dropped';
-    static STATE_VERIFYING_RESOLVED = 'verifying-resolved';
+    /*
+     * Legacy definitions for an issue status type.
+     *
+     * These remain around for compatibility reasons, but are pending
+     * deprecation.
+     */
+    static STATE_DROPPED = CommentIssueStatusType.DROPPED;
+    static STATE_OPEN = CommentIssueStatusType.OPEN;
+    static STATE_RESOLVED = CommentIssueStatusType.RESOLVED;
+    static STATE_VERIFYING_DROPPED = CommentIssueStatusType.VERIFYING_DROPPED;
+    static STATE_VERIFYING_RESOLVED =
+        CommentIssueStatusType.VERIFYING_RESOLVED;
 
     static strings: { [key: string]: string } = {
         INVALID_ISSUE_STATUS: dedent`
@@ -202,10 +232,12 @@ export class BaseComment<
      *     boolean:
      *     ``true`` if the given state is open.
      */
-    static isStateOpen(state): boolean {
-        return (state === BaseComment.STATE_OPEN ||
-                state === BaseComment.STATE_VERIFYING_DROPPED ||
-                state === BaseComment.STATE_VERIFYING_RESOLVED);
+    static isStateOpen(
+        state: CommentIssueStatusType,
+    ): boolean {
+        return (state === CommentIssueStatusType.OPEN ||
+                state === CommentIssueStatusType.VERIFYING_DROPPED ||
+                state === CommentIssueStatusType.VERIFYING_RESOLVED);
     }
 
     /**
@@ -283,12 +315,14 @@ export class BaseComment<
             return BaseResource.strings.UNSET_PARENT_OBJECT;
         }
 
-        if (attrs.issueStatus &&
-            attrs.issueStatus !== BaseComment.STATE_DROPPED &&
-            attrs.issueStatus !== BaseComment.STATE_OPEN &&
-            attrs.issueStatus !== BaseComment.STATE_RESOLVED &&
-            attrs.issueStatus !== BaseComment.STATE_VERIFYING_DROPPED &&
-            attrs.issueStatus !== BaseComment.STATE_VERIFYING_RESOLVED) {
+        const issueStatus = attrs.issueStatus;
+
+        if (issueStatus &&
+            issueStatus !== CommentIssueStatusType.DROPPED &&
+            issueStatus !== CommentIssueStatusType.OPEN &&
+            issueStatus !== CommentIssueStatusType.RESOLVED &&
+            issueStatus !== CommentIssueStatusType.VERIFYING_DROPPED &&
+            issueStatus !== CommentIssueStatusType.VERIFYING_RESOLVED) {
             return BaseComment.strings.INVALID_ISSUE_STATUS;
         }
 

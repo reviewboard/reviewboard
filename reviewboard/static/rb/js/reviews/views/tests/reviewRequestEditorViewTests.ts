@@ -24,10 +24,6 @@ import {
 import { DnDUploader } from 'reviewboard/ui';
 
 
-declare const $testsScratch: JQuery;
-declare const dedent: (string) => string;
-
-
 suite('rb/views/ReviewRequestEditorView', function() {
     const template = dedent`
         <div>

@@ -6,7 +6,7 @@ import { spina } from '@beanbag/spina';
 
 import {
     FileAttachmentReviewable,
-    FileAttachmentReviewableAttrs,
+    type FileAttachmentReviewableAttrs,
 } from './fileAttachmentReviewableModel';
 import { RegionCommentBlock } from './regionCommentBlockModel';
 

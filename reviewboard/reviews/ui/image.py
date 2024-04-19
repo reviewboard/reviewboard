@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, TYPE_CHECKING
+from typing import Optional, Sequence, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.utils.html import escape
@@ -10,18 +10,44 @@ from djblets.util.templatetags.djblets_images import crop_image
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.reviews.ui.base import ReviewUI
+from reviewboard.reviews.models import FileAttachmentComment
+from reviewboard.reviews.ui.base import (ReviewUI,
+                                         SerializedComment,
+                                         SerializedCommentBlocks)
 
 
 if TYPE_CHECKING:
     from djblets.util.typing import JSONDict
 
-    from reviewboard.reviews.models import (
-        BaseComment,
-        FileAttachmentComment)
+
+class SerializedRegionComment(SerializedComment):
+    """Serialized data for an image comment.
+
+    This must be kept in sync with the definitions in
+    :file:`reviewboard/static/rb/js/reviews/models/commentData.ts`.
+
+    Version Added:
+        7.0
+    """
+
+    #: The X position of the comment block, in pixels.
+    x: int
+
+    #: The Y position of the comment block, in pixels.
+    y: int
+
+    #: The width of the comment block, in pixels.
+    width: int
+
+    #: The height of the comment block, in pixels.
+    height: int
 
 
-class ImageReviewUI(ReviewUI):
+class ImageReviewUI(ReviewUI[
+    FileAttachment,
+    FileAttachmentComment,
+    SerializedRegionComment
+]):
     """A Review UI for image files."""
 
     name = 'Image'
@@ -44,8 +70,6 @@ class ImageReviewUI(ReviewUI):
             str:
             The absolute URL to an image used to depict this file attachment.
         """
-        assert isinstance(self.obj, FileAttachment)
-
         return self.obj.get_absolute_url()
 
     def get_js_model_data(self) -> JSONDict:
@@ -58,8 +82,6 @@ class ImageReviewUI(ReviewUI):
             dict:
             The attributes to pass to the model.
         """
-        assert isinstance(self.obj, FileAttachment)
-
         data = super(ImageReviewUI, self).get_js_model_data()
         data['imageURL'] = self.obj.file.url
 
@@ -71,33 +93,27 @@ class ImageReviewUI(ReviewUI):
 
     def serialize_comments(
         self,
-        comments: List[BaseComment],
-    ) -> JSONDict:
-        """Serialize the comments for the Review UI target.
-
-        By default, this will return a list of serialized comments,
-        but it can be overridden to return other list or dictionary-based
-        representations, such as comments grouped by an identifier or region.
-        These representations must be serializable into JSON.
+        comments: Sequence[FileAttachmentComment],
+    ) -> SerializedCommentBlocks[SerializedRegionComment]:
+        """Serialize the comments for the file attachment.
 
         Args:
-            comments (list of reviewboard.reviews.models.base_comment.
-                      BaseComment):
+            comments (list of
+                      reviewboard.reviews.models.FileAttachmentComment):
                 The list of objects to serialize. This will be the result of
                 :py:meth:`get_comments`.
 
         Returns:
-            dict:
+            SerializedCommentBlocks:
             The serialized comment data.
         """
-        result = {}
-        serialized_comments = \
-            super(ImageReviewUI, self).serialize_comments(comments)
+        result: SerializedCommentBlocks[SerializedRegionComment] = {}
 
-        for serialized_comment in serialized_comments:
+        for comment in self.flat_serialized_comments(comments):
             try:
-                position = '%(x)sx%(y)s+%(width)s+%(height)s' \
-                           % serialized_comment
+                position = (
+                    f'{comment["x"]}x{comment["y"]}+'
+                    f'{comment["width"]}+{comment["height"]}')
             except KeyError:
                 # It's possible this comment was made before the review UI
                 # was provided, meaning it has no data. If this is the case,
@@ -105,7 +121,7 @@ class ImageReviewUI(ReviewUI):
                 # region.
                 continue
 
-            result.setdefault(position, []).append(serialized_comment)
+            result.setdefault(position, []).append(comment)
 
         return result
 

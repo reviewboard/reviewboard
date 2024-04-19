@@ -1,0 +1,440 @@
+/**
+ * The top product, search, and navigation bar for Review Board.
+ *
+ * This is the header bar shown at the top of the page, providing information
+ * on the version of Review Board, general site-wide navigation, and menus
+ * for accounts and help.
+ *
+ * Version Added:
+ *     7.0
+ *
+ * DOM Attributes:
+ *     role (string):
+ *         ``banner``, always.
+ *
+ * Structure:
+ *     <div class="rb-c-topbar" role="banner">
+ *      <div class="rb-c-topbar__header">...</div>
+ *      <div class="rb-c-topbar__nav-container">...</div>
+ *     </div>
+ */
+.rb-c-topbar {
+  background: var(--ink-p-header-bg);
+  border-bottom: var(--ink-g-border-header);
+  color: var(--ink-p-header-text-color);
+  margin: 0 0 @page-container-padding 0;
+
+  &__actions {
+    grid-area: actions;
+  }
+
+  /**
+   * The top header portion of the bar.
+   *
+   * This contains the logo, product information, search bar, and main
+   * menus.
+   *
+   * Structure:
+   *     <div class="rb-c-topbar__header">
+   *      <div class="rb-c-topbar__product-info">...</div>
+   *      <div class="rb-c-topbar__nav-toggle" ...></div>
+   *      <div class="rb-c-topbar__search">
+   *       ...
+   *      </div>
+   *      <nav class="rb-c-topbar__actions rb-c-actions" ...>...</nav>
+   *     </div>
+   */
+  &__header {
+    display: grid;
+    grid-template-areas: "product search actions";
+    grid-template-columns: minmax(28em, 1fr) minmax(auto, 30em) min-content;
+    align-items: center;
+    margin: 0;
+    padding: @headerbar-padding;
+    vertical-align: middle;
+    z-index: @z-index-mobile-headerbar;
+
+    .rb-c-search-field {
+      margin: 0 1em;
+    }
+  }
+
+  /**
+   * The container for the navigation bar shown on desktop.
+   *
+   * This is not shown on mobile.
+   *
+   * DOM Attributes:
+   *     aria-label (string):
+   *         A label describing the navigation bar area.
+   *
+   * Structure:
+   *     <nav class="rb-c-topbar__main-nav"
+   *          aria-label="...">
+   *      <ul class="rb-c-topbar__nav-items">...</ul>
+   *     </nav>
+   */
+  &__nav-container {
+    border-color: var(--ink-p-header-border-color);
+
+    /*
+     * Alerts embedded in the navbar area should appear flush with the
+     * navigation container.
+     */
+    .ink-c-alert,
+    .rb-c-alert {
+      border-left: 0;
+      border-right: 0;
+      border-top: 0;
+      border-radius: 0;
+    }
+  }
+
+  /**
+   * A navigation item in the main navigation bar.
+   *
+   * Structure:
+   *     <li class="rb-c-topbar__nav-item">
+   *      <a href="...">...</a>
+   *     </li>
+   */
+  &__nav-item {
+    display: inline;
+    margin: 0 1em 0 0;
+  }
+
+  /*
+   * The list of main navigation items.
+   *
+   * This is the bar showing such items as "My Dashboard" and
+   * "New Review Request".
+   *
+   * Structure:
+   *     <ul class="rb-c-topbar__nav-items">
+   *      <li class="rb-c-topbar__nav-item">...</li>  [1+]
+   *     </ul>
+   */
+  &__nav-items {
+    list-style: none;
+    margin: 0;
+    padding: var(--ink-u-spacing-sm);
+    padding-left: @headerbar-padding-left;
+  }
+
+  /**
+   * The toggle control for the navigation sidebar on mobile.
+   *
+   * This is not shown on desktop views.
+   *
+   * DOM Attributes:
+   *     aria-label (string):
+   *         A label describing the navigation toggle.
+   *
+   *     role (string):
+   *         ``button``, always.
+   *
+   * Structure:
+   *     <div class="rb-c-topbar__nav-toggle"
+   *          aria-label="..."
+   *          role="button">
+   *      <span class="fa fa-navicon"></span>
+   *     </div>
+   */
+  &__nav-toggle {
+    @icon-size: 32px;
+    @font-size: (@icon-size / 2);
+
+    grid-area: mobile-nav;
+
+    color: var(--ink-p-header-text-color-weak);
+    cursor: pointer;
+    display: none;
+    font-size: @font-size;
+    padding: ((@icon-size - @font-size) / 2);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: @icon-size;
+    height: @icon-size;
+
+    .fa {
+      vertical-align: middle;
+    }
+  }
+
+  /**
+   * Information on the Review Board product.
+   *
+   * Structure:
+   *     <div class="rb-c-topbar__product-info">
+   *      <a href="..." aria-label="...">
+   *       <img class="rb-c-topbar__product-logo" ...>
+   *      </a>
+   *      <h1 class="rb-c-topbar__product-name">...</h1>
+   *     </div>
+   */
+  &__product-info {
+    grid-area: product;
+    position: absolute;
+    left: 0;
+    padding-top: 0.2em;
+    padding-left: @headerbar-padding-left;
+  }
+
+  /**
+   * The product's logo.
+   *
+   * DOM Attributes:
+   *     alt (string):
+   *         Alternative text describing the logo.
+   *
+   *     aria-hidden (boolean):
+   *         ``true``, always.
+   *
+   *     height (number):
+   *         The height of the image.
+   *
+   *     src (string):
+   *         The URL to the main image.
+   *
+   *     srcset (string):
+   *         The set of images for all supported DPIs.
+   *
+   *     width (number):
+   *         The width of the image.
+   *
+   * Structure:
+   *     <img class="rb-c-topbar__product-logo"
+   *          alt=""
+   *          aria-hidden="true"
+   *          height="..."
+   *          src="..."
+   *          srcset="..."
+   *          width="...">
+   */
+  &__product-logo {
+    display: inline;
+    position: absolute;
+    top: 3px;
+    left: @headerbar-logo-padding-horiz;
+    vertical-align: middle;
+    z-index: @z-index-logo;
+  }
+
+  /**
+   * The name of the product.
+   *
+   * Structure:
+   *     <h1 class="rb-c-topbar__product-name">
+   *      <a href="..."
+   *         aria-label="...">
+   *       ...
+   *      </a>
+   *      <span class="rb-c-topbar__product-version">
+   *       ...
+   *      </span>
+   *     </h1>
+   */
+  &__product-name {
+    color: inherit;
+    display: inline;
+    font-weight: normal;
+    font-size: 125%;
+    margin: 0;
+    padding: 0;
+    vertical-align: middle;
+
+    a {
+      color: inherit;
+      font-size: 120%;
+      text-decoration: none;
+    }
+  }
+
+  /**
+   * The version of the product.
+   *
+   * Structure:
+   *     <span class="rb-c-topbar__product-version">
+   *      ...
+   *     </span>
+   */
+  &__product-version {
+    color: var(--ink-p-header-text-color-weak);
+    font-weight: normal;
+    font-size: 90%;
+  }
+
+  /**
+   * The search area.
+   *
+   * The inner search form is optional, depending on whether full-text
+   * searching is enabled. If enabled, the form will be present.
+   *
+   * DOM Attributes:
+   *     role (string):
+   *         "search", always.
+   *
+   * Structure:
+   *     <div class="rb-c-topbar__search"
+   *          role="search">
+   *      <form method="get" action="...">
+   *       <div class="rb-c-search-field ..." ...>...</div>
+   *      </form>
+   *      |
+   *      <div class="rb-c-search-field ..." ...>...</div>
+   *     </div>
+   */
+  &__search {
+    grid-area: search;
+  }
+
+  #rb-ns-pages.base.on-shell-mobile-mode({
+    height: auto;
+    position: relative;
+    text-align: center;
+    transition: #rb-ns-ui.sidebars.mobile[@animation];
+
+    &__header {
+      grid-template-areas:
+        "mobile-nav product"
+        "search     search";
+      grid-template-columns: min-content auto;
+      gap: var(--ink-u-spacing-std) 0;
+    }
+
+    &__nav-item {
+      display: block;
+    }
+
+    &__nav-items {
+      display: none;
+      padding-left: 10px;
+      margin-top: 10px;
+    }
+
+    &__nav-toggle {
+      display: block;
+    }
+
+    &__product-info {
+      /*
+       * Reset positioning and floating so that on mobile, this will take the
+       * full width of the page.
+       */
+      position: relative;
+      padding: 0;
+    }
+
+    &__product-logo {
+      position: relative;
+      top: 0;
+      height: 32px;
+      width: 32px;
+      z-index: @z-index-mobile-headerbar;
+    }
+
+    &__product-name {
+      margin-left: 0.5em;
+    }
+
+    &__product-version {
+      display: none;
+    }
+  });
+}
+
+
+/**
+ * Header actions.
+ *
+ * Structure:
+ *     <div class="rb-c-actions" role="presentation">
+ *      <menu class="rb-c-actions__content" role="menu">
+ *       ...
+ *      </menu>
+ *     </div>
+ */
+.rb-c-topbar .rb-c-actions {
+  /**
+   * A header action.
+   *
+   * Structure:
+   *     <li class="rb-c-actions__action" role="presentation">
+   *      <a href="#" role="menuitem">...</a>
+   *     </li>
+   */
+  &__action {
+    border: var(--ink-g-header-border);
+    border-top: 0;
+    box-sizing: border-box;
+    display: inline-block;
+    position: relative;
+
+    a {
+      color: inherit;
+      display: flex;
+      align-items: center;
+      font-size: 110%;
+      margin: 0;
+      padding: 0 1em;
+      text-decoration: none;
+      height: 32px;
+      line-height: 32px;
+
+      &:hover {
+        background: var(--ink-c-menu-item-selected-bg);
+        color: var(--ink-c-menu-item-selected-fg);
+      }
+    }
+
+		img {
+      vertical-align: middle;
+		}
+  }
+
+  &__content {
+    display: flex;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    box-sizing: border-box;
+    list-style: none;
+    margin: -@headerbar-padding 0;
+    padding: 0;
+    z-index: @z-index-base;
+  }
+
+  .rb-c-menu {
+    background: var(--ink-p-header-bg);
+    border: var(--ink-g-border-header);
+    border-radius: 0 0 @box-border-radius @box-border-radius;
+    margin: 0;
+    margin-right: -1px;
+    right: 0;
+    overflow: hidden;
+  }
+
+  .rb-c-menu__item {
+    background: transparent;
+    margin: 0;
+    padding: 0;
+
+    > a {
+      gap: var(--ink-u-spacing-m);
+    }
+
+    &:focus,
+    &:hover {
+      background: var(--ink-c-menu-item-selected-bg);
+      color: var(--ink-c-menu-item-selected-fg);
+    }
+
+    &:last-child {
+      border-radius: 0 0 @box-border-radius @box-border-radius;
+    }
+  }
+
+  #rb-ns-pages.base.on-shell-mobile-mode({
+    display: none;
+  });
+}

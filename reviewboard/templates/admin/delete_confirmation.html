@@ -34,7 +34,8 @@ Delete {{object_name}}
    <li>{{related_obj}}</li>
 {%   endfor %}
   </ul>
-  <a class="rb-c-button" href="{{back_url}}">{% trans "Go back" %}</a>
+  <a class="ink-c-button" role="button" draggable="false"
+     href="{{back_url}}">{% trans "Go back" %}</a>
  </div>
 </div>
 {%  elif protected %}
@@ -56,7 +57,8 @@ Delete {{object_name}}
    <li>{{related_obj}}</li>
 {%   endfor %}
   </ul>
-  <a class="rb-c-button" href="{{back_url}}">{% trans "Go back" %}</a>
+  <a class="ink-c-button" role="button" draggable="false"
+     href="{{back_url}}">{% trans "Go back" %}</a>
  </div>
 </div>
 {%  else %}
@@ -87,10 +89,15 @@ Delete {{object_name}}
    </p>
    <ul>{{deleted_objects|unordered_list}}</ul>
    <div>
-    <input class="rb-c-form__action -is-danger" type="submit"
-           value="{% trans "Yes, I'm sure" %}">
-    <a class="rb-c-form__action rb-c-button"
-       href="{{back_url}}">{% trans "No, don't delete" %}</a>
+    <span class="rb-c-form__action">
+     <button class="ink-c-button -is-danger" type="button">
+      {% trans "Yes, I'm sure" %}
+     </button>
+    </span>
+    <span class="rb-c-form__action">
+     <a class="ink-c-button" role="button" draggable="false"
+        href="{{back_url}}">{% trans "No, don't delete" %}</a>
+    </span>
    </div>
   </div>
  </div>

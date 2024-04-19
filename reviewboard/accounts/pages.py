@@ -9,15 +9,16 @@ from djblets.registries.errors import ItemLookupError
 from djblets.registries.mixins import ExceptionFreeGetterMixin
 
 from reviewboard.admin.server import build_server_url
-from reviewboard.accounts.forms.pages import (AccountSettingsForm,
-                                              APITokensForm,
+from reviewboard.accounts.forms.pages import (APITokensForm,
+                                              AccountSettingsForm,
                                               AvatarSettingsForm,
                                               ChangePasswordForm,
                                               PrivacyForm,
                                               GroupsForm,
                                               OAuthApplicationsForm,
                                               OAuthTokensForm,
-                                              ProfileForm)
+                                              ProfileForm,
+                                              ThemeForm)
 
 
 logger = logging.getLogger(__name__)
@@ -34,8 +35,15 @@ class AccountPageRegistry(ExceptionFreeGetterMixin, ConfigPageRegistry):
         Returns:
             type: The page classes, as subclasses of :py:class:`AccountPage`.
         """
-        return (PrivacyPage, ProfilePage, AccountSettingsPage, GroupsPage,
-                AuthenticationPage, OAuth2Page)
+        return (
+            PrivacyPage,
+            ProfilePage,
+            AccountSettingsPage,
+            AppearancePage,
+            GroupsPage,
+            AuthenticationPage,
+            OAuth2Page,
+        )
 
     def unregister(self, page_class):
         """Unregister the page class.
@@ -91,6 +99,18 @@ class AccountSettingsPage(AccountPage):
     page_id = 'settings'
     page_title = _('Settings')
     form_classes = [AccountSettingsForm]
+
+
+class AppearancePage(AccountPage):
+    """A page giving users control over the appearance of Review Board.
+
+    Version Added:
+        7.0
+    """
+
+    page_id = 'appearance'
+    page_title = _('Appearance')
+    form_classes = [ThemeForm]
 
 
 class AuthenticationPage(AccountPage):

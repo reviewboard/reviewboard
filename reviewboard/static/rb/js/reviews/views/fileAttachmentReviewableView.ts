@@ -5,11 +5,11 @@
 import { spina } from '@beanbag/spina';
 
 import {
-    FileAttachmentReviewable,
+    type FileAttachmentReviewable,
 } from '../models/fileAttachmentReviewableModel';
 import {
+    type AbstractReviewableViewOptions,
     AbstractReviewableView,
-    AbstractReviewableViewOptions,
 } from './abstractReviewableView';
 
 

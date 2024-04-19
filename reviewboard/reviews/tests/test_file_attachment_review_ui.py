@@ -520,6 +520,7 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'issue_opened': False,
                 'issue_status': '',
                 'localdraft': False,
+                'reply_to_id': None,
                 'review_id': 1,
                 'review_request_id': 1,
                 'rich_text': True,

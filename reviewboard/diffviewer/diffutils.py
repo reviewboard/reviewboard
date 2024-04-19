@@ -13,6 +13,7 @@ from difflib import SequenceMatcher
 from functools import cmp_to_key
 from typing import Any, AnyStr, Iterator, Optional, TYPE_CHECKING
 
+from django.core.files.base import ContentFile
 from django.utils.encoding import force_str
 from django.utils.translation import gettext as _
 from djblets.log import log_timed
@@ -20,7 +21,9 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.compat.python.past import cmp
 from djblets.util.contextmanagers import controlled_subprocess
 from housekeeping.functions import deprecate_non_keyword_only_args
+from typing_extensions import NotRequired, TypedDict
 
+from reviewboard.attachments.mimetypes import guess_mimetype
 from reviewboard.deprecation import RemovedInReviewBoard70Warning
 from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
 from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
@@ -54,6 +57,80 @@ NEWLINE_BYTES_RE = re.compile(br'(?:\n|\r(?:\r?\n)?)')
 NEWLINE_UNICODE_RE = re.compile(r'(?:\n|\r(?:\r?\n)?)')
 
 _PATCH_GARBAGE_INPUT = 'patch: **** Only garbage was found in the patch input.'
+
+
+class SerializedDiffFile(TypedDict):
+    """Serialized information on a diff file.
+
+    Version Added:
+        7.0
+    """
+
+    #: The FileDiff for the base of a commit range diff.
+    base_filediff: Optional[FileDiff]
+
+    #: Whether the file is binary.
+    binary: bool
+
+    #: Whether the diff chunks have been loaded.
+    chunks_loaded: bool
+
+    #: Whether the file was copied from another location.
+    copied: bool
+
+    #: Whether the file was deleted.
+    deleted: bool
+
+    #: The FileDiff for the file.
+    filediff: FileDiff
+
+    #: Whether to force rendering an interdiff.
+    #:
+    #: This is used to show correct interdiffs for files that were reverted
+    #: in later versions.
+    force_interdiff: bool
+
+    #: The revision to use when forcing an interdiff.
+    force_interdiff_revision: NotRequired[int]
+
+    #: The index of the file within the change.
+    index: int
+
+    #: The interdiff FileDiff to use.
+    interfilediff: Optional[FileDiff]
+
+    #: Whether the file should be rendered as a new file.
+    is_new_file: bool
+
+    #: Whether the file is a symbolic link.
+    is_symlink: bool
+
+    #: The filename for the modified version of the file.
+    modified_filename: str
+
+    #: The revision for the modified version of the file.
+    #:
+    #: This may not always be a real revision, depending on the type of
+    #: SCM in use.
+    modified_revision: str
+
+    #: Whether the file was moved from another location.
+    moved: bool
+
+    #: Whether the file was either moved or copied.
+    moved_or_copied: bool
+
+    #: Whether the file was a new file in the original diff.
+    newfile: bool
+
+    #: The filename for the original version of the file.
+    orig_filename: str
+
+    #: The revision for the original version of the file.
+    orig_revision: str
+
+    #: Whether this file is part of a published diff.
+    public: bool
 
 
 def convert_to_unicode(s, encoding_list):
@@ -482,39 +559,39 @@ def get_original_file(filediff, request=None):
     # If the FileDiff has a parent diff, it must be the case that it has no
     # ancestor FileDiffs. We can fall back to the no history case here.
     if filediff.parent_diff:
-        return get_original_file_from_repo(filediff=filediff,
-                                           request=request)
-
-    # Otherwise, there may be one or more ancestors that we have to apply.
-    ancestors = filediff.get_ancestors(minimal=True)
-
-    if ancestors:
-        oldest_ancestor = ancestors[0]
-
-        # If the file was created outside this history, fetch it from the
-        # repository and apply the parent diff if it exists.
-        if not oldest_ancestor.is_new:
-            data = get_original_file_from_repo(filediff=oldest_ancestor,
-                                               request=request)
-
-        if not oldest_ancestor.is_diff_empty:
-            data = patch(diff=oldest_ancestor.diff,
-                         orig_file=data,
-                         filename=oldest_ancestor.source_file,
-                         request=request)
-
-        for ancestor in ancestors[1:]:
-            # TODO: Cache these results so that if this ``filediff`` is an
-            # ancestor of another FileDiff, computing that FileDiff's original
-            # file will be cheaper. This will also allow an ancestor filediff's
-            # original file to be computed cheaper.
-            data = patch(diff=ancestor.diff,
-                         orig_file=data,
-                         filename=ancestor.source_file,
-                         request=request)
-    elif not filediff.is_new:
         data = get_original_file_from_repo(filediff=filediff,
                                            request=request)
+    else:
+        # Otherwise, there may be one or more ancestors that we have to apply.
+        ancestors = filediff.get_ancestors(minimal=True)
+
+        if ancestors:
+            oldest_ancestor = ancestors[0]
+
+            # If the file was created outside this history, fetch it from the
+            # repository and apply the parent diff if it exists.
+            if not oldest_ancestor.is_new:
+                data = get_original_file_from_repo(filediff=oldest_ancestor,
+                                                   request=request)
+
+            if not oldest_ancestor.is_diff_empty:
+                data = patch(diff=oldest_ancestor.diff,
+                             orig_file=data,
+                             filename=oldest_ancestor.source_file,
+                             request=request)
+
+            for ancestor in ancestors[1:]:
+                # TODO: Cache these results so that if this ``filediff`` is an
+                # ancestor of another FileDiff, computing that FileDiff's
+                # original file will be cheaper. This will also allow an
+                # ancestor filediff's original file to be computed cheaper.
+                data = patch(diff=ancestor.diff,
+                             orig_file=data,
+                             filename=ancestor.source_file,
+                             request=request)
+        elif not filediff.is_new:
+            data = get_original_file_from_repo(filediff=filediff,
+                                               request=request)
 
     return data
 
@@ -548,6 +625,72 @@ def get_patched_file(source_data, filediff, request=None):
                  orig_file=source_data,
                  filename=filediff.dest_file,
                  request=request)
+
+
+def get_original_and_patched_files(
+    filediff: FileDiff,
+    request: Optional[HttpRequest] = None,
+    update_mimetypes: bool = True,
+) -> Tuple[Optional[bytes], Optional[bytes]]:
+    """Return the original and patched version of a file.
+
+    Args:
+        filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+            The filediff to fetch versions for.
+
+        request (django.http.HttpRequest, optional):
+            The request object.
+
+        update_mimetypes (bool, optional):
+            Whether to store the detected mimetypes of the old and new
+            versions in the filediff extra_data.
+
+    Returns:
+        tuple:
+        A 2-tuple with the following items:
+
+        Tuple:
+            0 (bytes):
+                The original version of the file.
+
+            1 (bytes):
+                The patched version of the file.
+    """
+    old = get_original_file(filediff=filediff,
+                            request=request)
+    new = get_patched_file(source_data=old,
+                           filediff=filediff,
+                           request=request)
+
+    if update_mimetypes:
+        needs_update = False
+
+        if old and 'source_mimetype' not in filediff.extra_data:
+            logger.debug('Detecting MIME type for old version of FileDiff %d',
+                         filediff.pk,
+                         extra={'request': request})
+
+            with ContentFile(old) as f:
+                mimetype = guess_mimetype(f)
+
+            filediff.extra_data['source_mimetype'] = mimetype
+            needs_update = True
+
+        if new and 'dest_mimetype' not in filediff.extra_data:
+            logger.debug('Detecting MIME type for new version of FileDiff %d',
+                         filediff.pk,
+                         extra={'request': request})
+
+            with ContentFile(new) as f:
+                mimetype = guess_mimetype(f)
+
+            filediff.extra_data['dest_mimetype'] = mimetype
+            needs_update = True
+
+        if needs_update:
+            filediff.save(update_fields=['extra_data'])
+
+    return (old, new)
 
 
 def get_revision_str(revision):
@@ -902,7 +1045,7 @@ def get_diff_files(
     filename_patterns: Optional[list[str]] = None,
     base_commit: Optional[DiffCommit] = None,
     tip_commit: Optional[DiffCommit] = None,
-) -> list[dict]:
+) -> list[SerializedDiffFile]:
     """Return a list of files that will be displayed in a diff.
 
     This will go through the given diffset/interdiffset, or a given filediff
@@ -1100,7 +1243,7 @@ def get_diff_files(
 
     # Now that we have all the bits and pieces we care about for the filediffs,
     # we can start building information about each entry on the diff viewer.
-    files = []
+    files: list[SerializedDiffFile] = []
 
     for parts in filediff_parts:
         filediff, interfilediff, force_interdiff = parts
@@ -1116,44 +1259,44 @@ def get_diff_files(
             if get_filediffs_match(filediff, interfilediff):
                 continue
 
-            source_revision = _('Diff Revision %s') % diffset.revision
+            orig_revision = _('Diff Revision %s') % diffset.revision
         else:
-            source_revision = get_revision_str(filediff.source_revision)
+            orig_revision = get_revision_str(filediff.source_revision)
 
         if interfilediff:
-            dest_revision = _('Diff Revision %s') % interdiffset.revision
-        else:
-            if force_interdiff and interdiffset:
-                dest_revision = (_('Diff Revision %s - File Reverted') %
+            assert interdiffset is not None
+            modified_revision = _('Diff Revision %s') % interdiffset.revision
+        elif force_interdiff and interdiffset:
+            modified_revision = (_('Diff Revision %s - File Reverted') %
                                  interdiffset.revision)
-            elif newfile:
-                dest_revision = _('New File')
-            else:
-                dest_revision = _('New Change')
+        elif newfile:
+            modified_revision = _('New File')
+        else:
+            modified_revision = _('New Change')
 
-        source_extra_data = filediff.extra_data
+        orig_extra_data = filediff.extra_data
 
         if interfilediff:
-            raw_depot_filename = filediff.dest_file
-            raw_dest_filename = interfilediff.dest_file
-            dest_extra_data = interfilediff.extra_data
+            raw_orig_filename = filediff.dest_file
+            raw_modified_filename = interfilediff.dest_file
+            modified_extra_data = interfilediff.extra_data
         else:
-            raw_depot_filename = filediff.source_file
-            raw_dest_filename = filediff.dest_file
-            dest_extra_data = filediff.extra_data
+            raw_orig_filename = filediff.source_file
+            raw_modified_filename = filediff.dest_file
+            modified_extra_data = filediff.extra_data
 
-        depot_filename = tool.normalize_path_for_display(
-            raw_depot_filename,
-            extra_data=source_extra_data)
-        dest_filename = tool.normalize_path_for_display(
-            raw_dest_filename,
-            extra_data=dest_extra_data)
+        orig_filename = tool.normalize_path_for_display(
+            raw_orig_filename,
+            extra_data=orig_extra_data)
+        modified_filename = tool.normalize_path_for_display(
+            raw_modified_filename,
+            extra_data=modified_extra_data)
 
         if filename_patterns:
-            if dest_filename == depot_filename:
-                filenames = [dest_filename]
+            if modified_filename == orig_filename:
+                filenames = [modified_filename]
             else:
-                filenames = [dest_filename, depot_filename]
+                filenames = [modified_filename, orig_filename]
 
             if not get_filenames_match_patterns(patterns=filename_patterns,
                                                 filenames=filenames):
@@ -1186,31 +1329,30 @@ def get_diff_files(
                         base_commit=base_commit,
                         ancestors=ancestors)
 
-        f = {
-            'depot_filename': depot_filename,
-            'dest_filename': dest_filename or depot_filename,
-            'revision': source_revision,
-            'dest_revision': dest_revision,
-            'filediff': filediff,
-            'interfilediff': interfilediff,
-            'force_interdiff': force_interdiff,
+        f: SerializedDiffFile = {
+            'base_filediff': base_filediff,
             'binary': filediff.binary,
-            'deleted': filediff.deleted,
-            'moved': filediff.moved,
-            'copied': filediff.copied,
-            'moved_or_copied': filediff.moved or filediff.copied,
-            'newfile': newfile,
-            'is_symlink': filediff.extra_data.get('is_symlink', False),
-            'index': len(files),
             'chunks_loaded': False,
+            'copied': filediff.copied,
+            'deleted': filediff.deleted,
+            'filediff': filediff,
+            'force_interdiff': force_interdiff,
+            'index': len(files),
+            'interfilediff': interfilediff,
             'is_new_file': (
-                (newfile or
-                 (base_filediff is not None and
-                  base_filediff.is_new)) and
-                not interfilediff and
+                newfile and
+                base_filediff is None and
+                interfilediff is None and
                 not filediff.parent_diff
             ),
-            'base_filediff': base_filediff,
+            'is_symlink': filediff.extra_data.get('is_symlink', False),
+            'modified_filename': modified_filename or orig_filename,
+            'modified_revision': modified_revision,
+            'moved': filediff.moved,
+            'moved_or_copied': filediff.moved or filediff.copied,
+            'newfile': newfile,
+            'orig_filename': orig_filename,
+            'orig_revision': orig_revision,
             'public': (diffset.history is not None and
                        (interdiffset is None or
                         interdiffset.history is not None)),
@@ -1220,8 +1362,9 @@ def get_diff_files(
         # revision of the base filediff. Instead, we will display the diff
         # revision as computed above.
         if base_filediff and not interdiffset:
-            f['revision'] = get_revision_str(base_filediff.source_revision)
-            f['depot_filename'] = tool.normalize_path_for_display(
+            f['orig_revision'] = \
+                get_revision_str(base_filediff.source_revision)
+            f['orig_filename'] = tool.normalize_path_for_display(
                 base_filediff.source_file)
 
         if force_interdiff and interdiffset:

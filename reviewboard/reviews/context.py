@@ -2,161 +2,149 @@
 
 from __future__ import annotations
 
-from functools import cmp_to_key
-from typing import Any, Optional, Sequence, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 from django.utils.translation import gettext as _
 from django.template.defaultfilters import truncatechars
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat.python.past import cmp
+from housekeeping import deprecate_non_keyword_only_args
+from typing_extensions import NotRequired, TypedDict
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import build_server_url
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm
-from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
-                                                normalize_text_for_edit)
-from reviewboard.reviews.models import BaseComment
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
-    from django.contrib.auth.models import User
+    from django.http import HttpRequest
 
-    from reviewboard.diffviewer.models import FileDiff
-    from reviewboard.reviews.models import Comment
+    from reviewboard.reviews.models import ReviewRequest
+    from reviewboard.scmtools.models import Tool
 
 
-def comment_counts(
-    user: User,
-    all_comments: dict[tuple, Sequence[Comment]],
-    filediff: FileDiff,
-    interfilediff: Optional[FileDiff] = None,
-    base_filediff: Optional[FileDiff] = None,
-) -> list[dict[str, Any]]:
-    """Return an array of comments for a filediff, sorted by line number.
+class SerializedReviewRequestTab(TypedDict):
+    """Serialized information about a tab on the review request page.
 
-    Args:
-        user (django.contrib.auth.models.User):
-            The user making the request.
-
-        all_comments (dict):
-            All of the diff comments, sorted by filediff, interfilediff, and
-            base filediff IDs.
-
-        filediff (reviewboard.diffviewer.models.FileDiff):
-            The filediff currently being viewed.
-
-        interfilediff (reviewboard.diffviewer.models.FileDiff, optional):
-            The interdiff currently being viewed.
-
-        base_filediff (reviewboard.diffviewer.models.FileDiff, optional):
-            The base filediff currently being viewed (used when looking at
-            commit ranges).
-
-    Returns:
-        list:
-        A list of dictionaries containing information about the comment.
-
-        Each entry in the array has a dictionary containing the following keys:
-
-        =========== ==================================================
-        Key                Description
-        =========== ==================================================
-        comment_id         The ID of the comment
-        text               The plain or rich text of the comment
-        rich_text          The rich text flag for the comment
-        line               The first line number
-        num_lines          The number of lines this comment spans
-        user               A dictionary containing "username" and "name" keys
-                           for the user
-        url                The URL to the comment
-        localdraft         True if this is the current user's draft comment
-        review_id          The ID of the review this comment is associated with
-        ==============================================================
+    Version Added:
+        7.0
     """
-    comment_dict = {}
 
-    interfilediff_id: Optional[int] = None
-    base_filediff_id: Optional[int] = None
+    #: Whether this tab is the active tab.
+    active: NotRequired[bool]
 
-    if interfilediff:
-        interfilediff_id = interfilediff.pk
+    #: The text to show on the tab label.
+    text: str
 
-    if base_filediff:
-        base_filediff_id = base_filediff.pk
-
-    key = (filediff.pk, interfilediff_id, base_filediff_id)
-
-    comments = all_comments.get(key, [])
-
-    for comment in comments:
-        review = comment.get_review()
-
-        if review and (review.public or review.user_id == user.pk):
-            key = (comment.first_line, comment.num_lines)
-
-            comment_dict.setdefault(key, []).append({
-                'comment_id': comment.pk,
-                'text': normalize_text_for_edit(user, comment.text,
-                                                comment.rich_text),
-                'html': markdown_render_conditional(comment.text,
-                                                    comment.rich_text),
-                'rich_text': comment.rich_text,
-                'line': comment.first_line,
-                'num_lines': comment.num_lines,
-                'user': {
-                    'username': review.user.username,
-                    'name': (review.user.get_full_name() or
-                             review.user.username),
-                },
-                'url': comment.get_review_url(),
-                'localdraft': (review.user == user and
-                               not review.public),
-                'review_id': review.id,
-                'issue_opened': comment.issue_opened,
-                'issue_status': BaseComment.issue_status_to_string(
-                    comment.issue_status),
-                'reply_to_id': comment.reply_to_id,
-            })
-
-    comments_array = []
-
-    for key, value in comment_dict.items():
-        comments_array.append({
-            'linenum': key[0],
-            'num_lines': key[1],
-            'comments': value,
-        })
-
-    comments_array.sort(key=cmp_to_key(
-        lambda x, y: cmp(x['linenum'],
-                         y['linenum'] or cmp(x['num_lines'],
-                                             y['num_lines']))))
-
-    return comments_array
+    #: The URL to link to for the tab.
+    url: str
 
 
-def make_review_request_context(request, review_request, extra_context={},
-                                is_diff_view=False):
-    """Returns a dictionary for template contexts used for review requests.
+class ReviewRequestContext(TypedDict):
+    """Template context for rendering the review request.
+
+    Version Added:
+        7.0
+    """
+
+    #: Whether the review request is mutable by the current user.
+    mutable_by_user: bool
+
+    #: The review request object.
+    review_request: ReviewRequest
+
+    #: The most recent review request visit info, if available.
+    review_request_visit: NotRequired[ReviewRequestVisit]
+
+    #: Whether the user can change the review request status.
+    status_mutable_by_user: bool
+
+    #: The SCMTool for the current review request, if it has a diff.
+    scmtool: Optional[Tool]
+
+    #: Global setting for whether to send e-mails for publish actions.
+    send_email: bool
+
+    #: The description to use for social media links to the review request.
+    social_page_description: str
+
+    #: The image URL to use for social media links.
+    social_page_image_url: Optional[str]
+
+    #: The title text to use for social media links.
+    social_page_title: str
+
+    #: The URL to use for social media links to the review request.
+    social_page_url: str
+
+    #: The tabs to show for the review request.
+    tabs: list[SerializedReviewRequestTab]
+
+
+@deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
+def make_review_request_context(
+    *,
+    request: HttpRequest,
+    review_request: ReviewRequest,
+    extra_context: Optional[dict[str, Any]] = None,
+    is_diff_view: bool = False,
+    social_page_image_url: Optional[str] = None,
+    social_page_title: str = '',
+) -> ReviewRequestContext:
+    """Return a dictionary for template contexts used for review requests.
 
     The dictionary will contain the common data that is used for all
     review request-related pages (the review request detail page, the diff
     viewer, and the screenshot pages).
 
     For convenience, extra data can be passed to this dictionary.
+
+    Version Changed:
+        7.0:
+        Added ``social_page_image_url`` and ``social_page_title`` arguments.
+
+    Args:
+        request (django.http.HttpRequest):
+            The HTTP request.
+
+        review_request (reviewboard.reviews.models.ReviewRequest):
+            The review request.
+
+        extra_context (dict, optional):
+            Extra information to include in the context.
+
+        is_diff_view (bool, optional):
+            Whether the user is viewing a diff.
+
+        social_page_image_url (str, optional):
+            The image URL to include for social media thumbnails.
+
+            Version Added:
+                7.0
+
+        social_page_title (str, optional):
+            The page title to include for social media thumbnails.
+
+            Version Added:
+                7.0
+
+    Returns:
+        ReviewRequestContext:
+        The context for rendering review request templates.
     """
+    if extra_context is None:
+        extra_context = {}
+
     if review_request.repository:
-        upload_diff_form = UploadDiffForm(review_request, request=request)
         scmtool = review_request.repository.get_scmtool()
     else:
-        upload_diff_form = None
         scmtool = None
 
     if 'blocks' not in extra_context:
         extra_context['blocks'] = list(review_request.blocks.all())
 
-    tabs = [
+    tabs: list[SerializedReviewRequestTab] = [
         {
             'text': _('Reviews'),
             'url': review_request.get_absolute_url(),
@@ -194,18 +182,21 @@ def make_review_request_context(request, review_request, extra_context={},
         review_request_details.description.replace('\n', ' '),
         300)
 
-    context = dict({
+    context: ReviewRequestContext = {
         'mutable_by_user': review_request.is_mutable_by(request.user),
         'status_mutable_by_user':
             review_request.is_status_mutable_by(request.user),
         'review_request': review_request,
-        'upload_diff_form': upload_diff_form,
         'scmtool': scmtool,
         'send_email': siteconfig.get('mail_send_review_mail'),
         'tabs': tabs,
         'social_page_description': social_page_description,
+        'social_page_image_url': social_page_image_url,
+        'social_page_title': social_page_title,
         'social_page_url': build_server_url(request.path, request=request),
-    }, **extra_context)
+    }
+
+    context.update(extra_context)
 
     if ('review_request_visit' not in context and
         request.user.is_authenticated):
@@ -217,77 +208,3 @@ def make_review_request_context(request, review_request, extra_context={},
                 review_request=review_request)[0]
 
     return context
-
-
-def has_comments_in_diffsets_excluding(review, diffset_pair):
-    """Returns whether the specified review has "other comments".
-
-    This is used to notify users that their review has comments on diff
-    revisions other than the one that they happen to be looking at at any given
-    moment.
-    """
-    if not review:
-        return False
-
-    current_diffset, interdiff = diffset_pair
-
-    # See if there are any diffsets with comments on them in this review.
-    q = DiffSet.objects.filter(files__comments__review=review)
-    q = q.filter(files__comments__interfilediff__isnull=True).distinct()
-
-    if not interdiff:
-        # The user is browsing a standard diffset, so filter it out.
-        q = q.exclude(pk=current_diffset.id)
-
-    if q.exists():
-        return True
-
-    # See if there are any interdiffs with comments on them in this review.
-    q = DiffSet.objects.filter(files__comments__review=review)
-    q = q.filter(files__comments__interfilediff__isnull=False)
-
-    if interdiff:
-        # The user is browsing an interdiff, so filter it out.
-        q = q.exclude(pk=current_diffset.id,
-                      files__comments__interfilediff__diffset=interdiff)
-
-    return q.exists()
-
-
-def diffsets_with_comments(review, current_pair):
-    """Returns a list of diffsets in the review that contain draft comments."""
-    if not review:
-        return
-
-    diffsets = DiffSet.objects.filter(files__comments__review=review)
-    diffsets = diffsets.filter(files__comments__interfilediff__isnull=True)
-    diffsets = diffsets.distinct()
-
-    for diffset in diffsets:
-        yield {
-            'diffset': diffset,
-            'is_current': (current_pair[0] == diffset and
-                           current_pair[1] is None),
-        }
-
-
-def interdiffs_with_comments(review, current_pair):
-    """Get a list of interdiffs in the review that contain draft comments."""
-    if not review:
-        return
-
-    diffsets = DiffSet.objects.filter(files__comments__review=review)
-    diffsets = diffsets.filter(files__comments__interfilediff__isnull=False)
-    diffsets = diffsets.distinct()
-
-    for diffset in diffsets:
-        interdiffs = DiffSet.objects.filter(
-            files__interdiff_comments__filediff__diffset=diffset).distinct()
-
-        for interdiff in interdiffs:
-            yield {
-                'diffset': diffset,
-                'interdiff': interdiff,
-                'is_current': (current_pair[0] == diffset and
-                               current_pair[1] == interdiff),
-            }

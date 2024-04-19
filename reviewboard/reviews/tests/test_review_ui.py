@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Any, TYPE_CHECKING
+
 from django.utils.safestring import SafeText
+from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
-from typing import Any, Dict, List, TYPE_CHECKING
 
 from reviewboard.reviews.models import FileAttachmentComment
 from reviewboard.reviews.ui.base import ReviewUI
@@ -30,13 +32,13 @@ class MyReviewUI(ReviewUI):
     def get_caption(self, draft=None) -> str:
         return 'Test Caption'
 
-    def get_comments(self) -> List[BaseComment]:
+    def get_comments(self) -> list[BaseComment]:
         return list(FileAttachmentComment.objects.order_by('pk'))
 
     def get_page_cover_image_url(self) -> str:
         return '/cover-image.png'
 
-    def get_extra_context(self, request) -> Dict[str, Any]:
+    def get_extra_context(self, request) -> dict[str, Any]:
         return {
             'custom_key': '123',
         }
@@ -144,34 +146,48 @@ class ReviewUITests(SpyAgency, TestCase):
 
         comments_json = review_ui.get_comments_json()
 
-        self.assertEqual(
+        self.assertJSONEqual(
             comments_json,
-            '['
-            '{"comment_id": 1,'
-            ' "html": "Comment 1",'
-            ' "issue_opened": false,'
-            ' "issue_status": "",'
-            ' "localdraft": true,'
-            ' "review_id": 1,'
-            ' "review_request_id": 1,'
-            ' "rich_text": false,'
-            ' "text": "Comment 1",'
-            ' "url": "/r/1/#fcomment1",'
-            ' "user": {"name": "Dopey Dwarf", "username": "dopey"}'
-            '}, '
-            '{"comment_id": 2,'
-            ' "html": "Comment 2",'
-            ' "issue_opened": true,'
-            ' "issue_status": "open",'
-            ' "localdraft": true,'
-            ' "review_id": 1,'
-            ' "review_request_id": 1,'
-            ' "rich_text": false,'
-            ' "text": "Comment 2",'
-            ' "url": "/r/1/#fcomment2",'
-            ' "user": {"name": "Dopey Dwarf", "username": "dopey"}'
-            '}]'
-        )
+            {
+                '0': [
+                    {
+                        'comment_id': 1,
+                        'html': 'Comment 1',
+                        'issue_opened': False,
+                        'issue_status': '',
+                        'localdraft': True,
+                        'reply_to_id': None,
+                        'review_id': 1,
+                        'review_request_id': 1,
+                        'rich_text': False,
+                        'text': 'Comment 1',
+                        'url': '/r/1/#fcomment1',
+                        'user': {
+                            'name': 'Dopey Dwarf',
+                            'username': 'dopey',
+                        },
+                    },
+                ],
+                '1': [
+                    {
+                        'comment_id': 2,
+                        'html': 'Comment 2',
+                        'issue_opened': True,
+                        'issue_status': 'open',
+                        'localdraft': True,
+                        'reply_to_id': None,
+                        'review_id': 1,
+                        'review_request_id': 1,
+                        'rich_text': False,
+                        'text': 'Comment 2',
+                        'url': '/r/1/#fcomment2',
+                        'user': {
+                            'name': 'Dopey Dwarf',
+                            'username': 'dopey',
+                        },
+                    },
+                ],
+            })
 
     def test_render_to_response_with_inline_false(self) -> None:
         """Testing ReviewUI.render_to_response with inline=0"""
@@ -255,9 +271,9 @@ class ReviewUITests(SpyAgency, TestCase):
         comments = review_ui.serialize_comments(list(review_ui.get_comments()))
 
         self.assertEqual(len(comments), 3)
-        self.assertEqual(comments[0]['text'], 'Comment 1')
-        self.assertEqual(comments[1]['text'], 'Comment 2')
-        self.assertEqual(comments[2]['text'], 'Comment 3')
+        self.assertEqual(comments['0'][0]['text'], 'Comment 1')
+        self.assertEqual(comments['1'][0]['text'], 'Comment 2')
+        self.assertEqual(comments['2'][0]['text'], 'Comment 3')
 
     def test_serialize_comment(self) -> None:
         """Testing ReviewUI.serialize_comment"""
@@ -273,6 +289,7 @@ class ReviewUITests(SpyAgency, TestCase):
                 'issue_opened': False,
                 'issue_status': '',
                 'localdraft': True,
+                'reply_to_id': None,
                 'review_id': 1,
                 'review_request_id': 1,
                 'rich_text': False,
@@ -280,3 +297,350 @@ class ReviewUITests(SpyAgency, TestCase):
                 'url': '/r/1/#fcomment1',
                 'user': {'name': 'Dopey Dwarf', 'username': 'dopey'}
             })
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_comment_link_url_diff(self) -> None:
+        """Testing ReviewUI.get_comment_link_url with a file attachment
+        attached to a diff
+        """
+        review_request = self.create_review_request(
+            publish=True,
+            create_repository=True)
+        diffset = self.create_diffset(review_request=review_request)
+        filediff = self.create_filediff(diffset=diffset, binary=True)
+
+        attachment = self.create_file_attachment(
+            review_request=review_request,
+            with_history=False,
+            added_in_filediff=filediff)
+
+        review = self.create_review(review_request=review_request)
+        comment = self.create_file_attachment_comment(
+            review=review,
+            file_attachment=attachment)
+
+        review_ui = MyReviewUI(
+            review_request=review_request,
+            obj=attachment)
+
+        self.assertEqual(review_ui.get_comment_link_url(comment),
+                         f'/r/2/diff/1/#file{filediff.pk}')
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_comment_link_url_interdiff(self) -> None:
+        """Testing ReviewUI.get_comment_link_url with a file attachment
+        attached to an interdiff
+        """
+        review_request = self.create_review_request(
+            publish=True,
+            create_repository=True)
+
+        diffset1 = self.create_diffset(review_request=review_request)
+        filediff1 = self.create_filediff(diffset=diffset1, binary=True)
+        attachment1 = self.create_file_attachment(
+            review_request=review_request,
+            with_history=False,
+            added_in_filediff=filediff1)
+
+        diffset2 = self.create_diffset(
+            review_request=review_request,
+            revision=2)
+        filediff2 = self.create_filediff(diffset=diffset2, binary=True)
+        attachment2 = self.create_file_attachment(
+            review_request=review_request,
+            with_history=False,
+            added_in_filediff=filediff2)
+
+        review = self.create_review(review_request=review_request)
+        comment = self.create_file_attachment_comment(
+            review=review,
+            file_attachment=attachment2,
+            diff_against_file_attachment=attachment1)
+
+        review_ui = MyReviewUI(
+            review_request=review_request,
+            obj=attachment2)
+
+        self.assertEqual(review_ui.get_comment_link_url(comment),
+                         f'/r/2/diff/1-2/#file{filediff2.pk}')
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_comment_link_diff_with_commits(self) -> None:
+        """Testing ReviewUI.get_comment_link_url with a file attachment
+        attached to a diff that has commit history
+        """
+        review_request = self.create_review_request(
+            publish=True, create_repository=True)
+
+        diffset = self.create_diffset(review_request=review_request)
+
+        cumulative_filediff = self.create_filediff(
+            diffset=diffset,
+            binary=True)
+
+        commit = self.create_diffcommit(
+            repository=review_request.repository,
+            diffset=diffset,
+            with_diff=False)
+        commit_filediff = self.create_filediff(
+            diffset=diffset,
+            binary=True,
+            commit=commit)
+
+        attachment = self.create_file_attachment(
+            review_request=review_request,
+            with_history=False,
+            added_in_filediff=commit_filediff)
+
+        review = self.create_review(review_request=review_request)
+        comment = self.create_file_attachment_comment(
+            review=review,
+            file_attachment=attachment)
+
+        review_ui = MyReviewUI(
+            review_request=review_request,
+            obj=attachment)
+
+        self.assertEqual(review_ui.get_comment_link_url(comment),
+                         f'/r/2/diff/1/#file{cumulative_filediff.pk}')
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_comment_link_diff_with_commits_base_commit_id(self) -> None:
+        """Testing ReviewUI.get_comment_link_url with a file attachment
+        attached to a diff that has commit history with a specified base commit
+        """
+        review_request = self.create_review_request(
+            publish=True, create_repository=True)
+
+        diffset = self.create_diffset(review_request=review_request)
+
+        # Cumulative filediff
+        self.create_filediff(
+            diffset=diffset,
+            binary=True)
+
+        commit1 = self.create_diffcommit(
+            repository=review_request.repository,
+            diffset=diffset,
+            with_diff=False,
+            commit_id='r1',
+            parent_id='r0')
+        commit1_filediff = self.create_filediff(
+            diffset=diffset,
+            binary=True,
+            commit=commit1)
+        self.create_file_attachment(
+            review_request=review_request,
+            with_history=False,
+            added_in_filediff=commit1_filediff)
+
+        commit2 = self.create_diffcommit(
+            repository=review_request.repository,
+            diffset=diffset,
+            with_diff=False,
+            commit_id='r2',
+            parent_id='r1')
+        commit2_filediff = self.create_filediff(
+            diffset=diffset,
+            binary=True,
+            commit=commit2)
+        attachment2 = self.create_file_attachment(
+            review_request=review_request,
+            with_history=False,
+            added_in_filediff=commit2_filediff)
+
+        commit3 = self.create_diffcommit(
+            repository=review_request.repository,
+            diffset=diffset,
+            with_diff=False,
+            commit_id='r3',
+            parent_id='r2')
+        commit3_filediff = self.create_filediff(
+            diffset=diffset,
+            binary=True,
+            commit=commit3)
+        attachment3 = self.create_file_attachment(
+            review_request=review_request,
+            with_history=False,
+            added_in_filediff=commit3_filediff)
+
+        review = self.create_review(review_request=review_request)
+        comment = self.create_file_attachment_comment(
+            review=review,
+            file_attachment=attachment3,
+            diff_against_file_attachment=attachment2)
+
+        review_ui = MyReviewUI(
+            review_request=review_request,
+            obj=attachment3)
+
+        self.assertEqual(review_ui.get_comment_link_url(comment),
+                         f'/r/2/diff/1/?base-commit-id={commit2.pk}'
+                         f'#file{commit3_filediff.pk}')
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_comment_link_diff_with_commits_tip_commit_id(self) -> None:
+        """Testing ReviewUI.get_comment_link_url with a file attachment
+        attached to a diff that has commit history with a specified tip commit
+        """
+        review_request = self.create_review_request(
+            publish=True, create_repository=True)
+
+        diffset = self.create_diffset(review_request=review_request)
+
+        # Cumulative filediff
+        self.create_filediff(
+            diffset=diffset,
+            binary=True)
+
+        upstream_attachment = self.create_file_attachment(
+            review_request=review_request,
+            repository=review_request.repository,
+            with_history=False,
+            repo_path='/test-file',
+            repo_revision='r0')
+
+        commit1 = self.create_diffcommit(
+            repository=review_request.repository,
+            diffset=diffset,
+            with_diff=False,
+            commit_id='r1',
+            parent_id='r0')
+        commit1_filediff = self.create_filediff(
+            diffset=diffset,
+            binary=True,
+            commit=commit1)
+        self.create_file_attachment(
+            review_request=review_request,
+            with_history=False,
+            added_in_filediff=commit1_filediff)
+
+        commit2 = self.create_diffcommit(
+            repository=review_request.repository,
+            diffset=diffset,
+            with_diff=False,
+            commit_id='r2',
+            parent_id='r1')
+        commit2_filediff = self.create_filediff(
+            diffset=diffset,
+            binary=True,
+            commit=commit2)
+        attachment2 = self.create_file_attachment(
+            review_request=review_request,
+            with_history=False,
+            added_in_filediff=commit2_filediff)
+
+        commit3 = self.create_diffcommit(
+            repository=review_request.repository,
+            diffset=diffset,
+            with_diff=False,
+            commit_id='r3',
+            parent_id='r2')
+        commit3_filediff = self.create_filediff(
+            diffset=diffset,
+            binary=True,
+            commit=commit3)
+        self.create_file_attachment(
+            review_request=review_request,
+            with_history=False,
+            added_in_filediff=commit3_filediff)
+
+        review = self.create_review(review_request=review_request)
+        comment = self.create_file_attachment_comment(
+            review=review,
+            file_attachment=attachment2,
+            diff_against_file_attachment=upstream_attachment)
+
+        review_ui = MyReviewUI(
+            review_request=review_request,
+            obj=attachment2)
+
+        self.assertEqual(review_ui.get_comment_link_url(comment),
+                         f'/r/2/diff/1/?tip-commit-id={commit2.pk}'
+                         f'#file{commit2_filediff.pk}')
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_comment_link_diff_with_commits_base_and_tip_commit_id(
+        self,
+    ) -> None:
+        """Testing ReviewUI.get_comment_link_url with a file attachment
+        attached to a diff that has commit history with a specified base and
+        tip commit
+        """
+        review_request = self.create_review_request(
+            publish=True, create_repository=True)
+
+        diffset = self.create_diffset(review_request=review_request)
+
+        # Cumulative filediff
+        self.create_filediff(
+            diffset=diffset,
+            binary=True)
+
+        # Upstream attachment
+        self.create_file_attachment(
+            review_request=review_request,
+            repository=review_request.repository,
+            with_history=False,
+            repo_path='/test-file',
+            repo_revision='r0')
+
+        commit1 = self.create_diffcommit(
+            repository=review_request.repository,
+            diffset=diffset,
+            with_diff=False,
+            commit_id='r1',
+            parent_id='r0')
+        commit1_filediff = self.create_filediff(
+            diffset=diffset,
+            binary=True,
+            commit=commit1)
+        attachment1 = self.create_file_attachment(
+            review_request=review_request,
+            with_history=False,
+            added_in_filediff=commit1_filediff)
+
+        commit2 = self.create_diffcommit(
+            repository=review_request.repository,
+            diffset=diffset,
+            with_diff=False,
+            commit_id='r2',
+            parent_id='r1')
+        commit2_filediff = self.create_filediff(
+            diffset=diffset,
+            binary=True,
+            commit=commit2)
+        attachment2 = self.create_file_attachment(
+            review_request=review_request,
+            with_history=False,
+            added_in_filediff=commit2_filediff)
+
+        commit3 = self.create_diffcommit(
+            repository=review_request.repository,
+            diffset=diffset,
+            with_diff=False,
+            commit_id='r3',
+            parent_id='r2')
+        commit3_filediff = self.create_filediff(
+            diffset=diffset,
+            binary=True,
+            commit=commit3)
+        self.create_file_attachment(
+            review_request=review_request,
+            with_history=False,
+            added_in_filediff=commit3_filediff)
+
+        review = self.create_review(review_request=review_request)
+        comment = self.create_file_attachment_comment(
+            review=review,
+            file_attachment=attachment2,
+            diff_against_file_attachment=attachment1)
+
+        review_ui = MyReviewUI(
+            review_request=review_request,
+            obj=attachment2)
+
+        self.assertEqual(review_ui.get_comment_link_url(comment),
+                         f'/r/2/diff/1/?base-commit-id={commit1.pk}'
+                         f'&tip-commit-id={commit2.pk}'
+                         f'#file{commit2_filediff.pk}')

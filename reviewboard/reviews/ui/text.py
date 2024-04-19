@@ -3,15 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import (
-    Any,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    TYPE_CHECKING,
-    Union,
-    cast)
+from typing import (Any, Iterator, List, Optional, Sequence, TYPE_CHECKING,
+                    Union, cast)
 
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
@@ -27,21 +20,47 @@ from reviewboard.diffviewer.chunk_generator import (NoWrapperHtmlFormatter,
                                                     RawDiffChunkGenerator)
 from reviewboard.diffviewer.diffutils import get_chunks_in_range
 from reviewboard.diffviewer.settings import DiffSettings
-from reviewboard.reviews.ui.base import ReviewUI
-
+from reviewboard.reviews.models import FileAttachmentComment
+from reviewboard.reviews.ui.base import (ReviewUI,
+                                         SerializedComment,
+                                         SerializedCommentBlocks)
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from djblets.util.typing import JSONDict
     from pygments.lexers import Lexer
 
-    from reviewboard.reviews.models import FileAttachmentComment
-
 
 logger = logging.getLogger(__name__)
 
 
-class TextBasedReviewUI(ReviewUI):
+class SerializedTextComment(SerializedComment):
+    """Serialized comment data for text review UIs.
+
+    This must be kept in sync with the definitions in
+    :file:`reviewboard/static/rb/js/reviews/models/commentData.ts`.
+
+    Version Added:
+        7.0
+    """
+
+    #: The starting line number of the comment.
+    beginLineNum: int
+
+    #: The ending line number of the comment.
+    endLineNum: int
+
+    #: The view mode of the document when the comment was made.
+    #:
+    #: This will be either "source" or "rendered".
+    viewMode: str
+
+
+class TextBasedReviewUI(ReviewUI[
+    FileAttachment,
+    FileAttachmentComment,
+    SerializedTextComment
+]):
     """A Review UI for text-based files.
 
     This renders the text file, applying syntax highlighting, and allows users
@@ -61,7 +80,7 @@ class TextBasedReviewUI(ReviewUI):
     rendered_chunk_generator_cls = RawDiffChunkGenerator
 
     #: Extra classes to apply to the Review UI element.
-    extra_css_classes: List[str] = []
+    extra_css_classes: list[str] = []
 
     js_model_class: str = 'RB.TextBasedReviewable'
     js_view_class: str = 'RB.TextBasedReviewableView'
@@ -76,7 +95,7 @@ class TextBasedReviewUI(ReviewUI):
             dict:
             The attributes to pass to the model.
         """
-        data = super(TextBasedReviewUI, self).get_js_model_data()
+        data = super().get_js_model_data()
         data['hasRenderedView'] = self.can_render_text
 
         if self.can_render_text:
@@ -89,7 +108,7 @@ class TextBasedReviewUI(ReviewUI):
     def get_extra_context(
         self,
         request: HttpRequest,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Return extra context to use when rendering the Review UI.
 
         Args:
@@ -100,12 +119,10 @@ class TextBasedReviewUI(ReviewUI):
             dict:
             The context to provide to the template.
         """
-        assert isinstance(self.obj, FileAttachment)
         context = {}
         diff_type_mismatch = False
 
         if self.diff_against_obj:
-            assert isinstance(self.diff_against_obj, FileAttachment)
             diff_against_review_ui = self.diff_against_obj.review_ui
 
             context.update({
@@ -163,28 +180,24 @@ class TextBasedReviewUI(ReviewUI):
             str:
             The file contents as a text string.
         """
-        assert isinstance(self.obj, FileAttachment)
-
         return cast(
             str,
             cache_memoize('text-attachment-%d-string' % self.obj.pk,
                           self._get_text_uncached))
 
-    def get_text_lines(self) -> List[str]:
+    def get_text_lines(self) -> Sequence[str]:
         """Return the file contents as syntax-highlighted lines.
 
         This will fetch the file, render it however appropriate for the review
         UI, and split it into reviewable lines. It will then cache it for
         future renders.
         """
-        assert isinstance(self.obj, FileAttachment)
-
         return cast(
             List[str],
             cache_memoize('text-attachment-%d-lines' % self.obj.pk,
                           lambda: list(self.generate_highlighted_text())))
 
-    def get_rendered_lines(self) -> List[str]:
+    def get_rendered_lines(self) -> list[str]:
         """Return the file contents as a render, based on the raw text.
 
         If a subclass sets ``can_render_text = True`` and implements
@@ -195,8 +208,6 @@ class TextBasedReviewUI(ReviewUI):
             list of str:
             The rendered lines.
         """
-        assert isinstance(self.obj, FileAttachment)
-
         if self.can_render_text:
             return cast(
                 List[str],
@@ -212,7 +223,6 @@ class TextBasedReviewUI(ReviewUI):
             str:
             The text of the file.
         """
-        assert isinstance(self.obj, FileAttachment)
         self.obj.file.open()
 
         with self.obj.file as f:
@@ -220,7 +230,7 @@ class TextBasedReviewUI(ReviewUI):
 
         return data
 
-    def generate_highlighted_text(self) -> List[str]:
+    def generate_highlighted_text(self) -> list[str]:
         """Generate syntax-highlighted text for the file.
 
         This will render the text file to HTML, applying any syntax
@@ -231,7 +241,6 @@ class TextBasedReviewUI(ReviewUI):
             list of str:
             The syntax-highlighted text, split into lines.
         """
-        assert isinstance(self.obj, FileAttachment)
         assert self.obj.filename is not None
 
         data = self.get_text()
@@ -287,15 +296,25 @@ class TextBasedReviewUI(ReviewUI):
 
     def serialize_comments(
         self,
-        comments: List[FileAttachmentComment],
-    ) -> Dict[str, Any]:
-        """Return a dictionary of the comments for this file attachment."""
-        result = {}
+        comments: Sequence[FileAttachmentComment],
+    ) -> SerializedCommentBlocks[SerializedTextComment]:
+        """Serialize the comments for the file attachment.
 
-        for comment in comments:
+        Args:
+            comments (list of
+                      reviewboard.reviews.models.FileAttachmentComment):
+                The list of objects to serialize. This will be the result of
+                :py:meth:`get_comments`.
+
+        Returns:
+            SerializedCommentBlocks:
+            The serialized comments.
+        """
+        result: SerializedCommentBlocks[SerializedTextComment] = {}
+
+        for comment in self.flat_serialized_comments(comments):
             try:
-                key = '%s-%s' % (comment.extra_data['beginLineNum'],
-                                 comment.extra_data['endLineNum'])
+                key = f'{comment["beginLineNum"]}-{comment["endLineNum"]}'
             except KeyError:
                 # It's possible this comment was made before the review UI
                 # was provided, meaning it has no data. If this is the case,
@@ -303,7 +322,7 @@ class TextBasedReviewUI(ReviewUI):
                 # line region.
                 continue
 
-            result.setdefault(key, []).append(self.serialize_comment(comment))
+            result.setdefault(key, []).append(comment)
 
         return result
 
@@ -324,8 +343,6 @@ class TextBasedReviewUI(ReviewUI):
             str:
             The rendered comment thumbnail.
         """
-        assert isinstance(self.obj, FileAttachment)
-
         try:
             begin_line_num = int(comment.extra_data['beginLineNum'])
             end_line_num = int(comment.extra_data['endLineNum'])
@@ -381,8 +398,6 @@ class TextBasedReviewUI(ReviewUI):
                            'comment thumbnail.',
                            view_mode)
             return ''
-
-        assert isinstance(self.obj, FileAttachment)
 
         context = {
             'is_diff': self.diff_against_obj is not None,
@@ -452,7 +467,7 @@ class TextBasedReviewUI(ReviewUI):
             str:
             The URL to link the comment to.
         """
-        base_url = super(TextBasedReviewUI, self).get_comment_link_url(comment)
+        base_url = super().get_comment_link_url(comment)
 
         try:
             begin_line_num = int(comment.extra_data['beginLineNum'])
@@ -467,8 +482,8 @@ class TextBasedReviewUI(ReviewUI):
     def _get_diff_chunk_generator(
         self,
         chunk_generator_cls: type[RawDiffChunkGenerator],
-        orig: Union[bytes, List[bytes]],
-        modified: Union[bytes, List[bytes]],
+        orig: Union[bytes, list[bytes]],
+        modified: Union[bytes, list[bytes]],
     ) -> RawDiffChunkGenerator:
         """Return a chunk generator showing a diff for the text.
 
@@ -494,8 +509,7 @@ class TextBasedReviewUI(ReviewUI):
             reviewboard.diffviewer.chunk_generator.RawDiffChunkGenerator:
             The chunk generator used to diff source or rendered text.
         """
-        assert isinstance(self.obj, FileAttachment)
-        assert isinstance(self.diff_against_obj, FileAttachment)
+        assert self.diff_against_obj is not None
 
         return chunk_generator_cls(
             old=orig,
@@ -511,8 +525,7 @@ class TextBasedReviewUI(ReviewUI):
             reviewboard.diffviewer.chunk_generator.RawDiffChunkGenerator:
             The chunk generator used to diff source text.
         """
-        assert isinstance(self.obj, FileAttachment)
-        assert isinstance(self.diff_against_obj, FileAttachment)
+        assert self.diff_against_obj is not None
         assert isinstance(self.diff_against_obj.review_ui, TextBasedReviewUI)
 
         return self._get_diff_chunk_generator(
@@ -527,7 +540,7 @@ class TextBasedReviewUI(ReviewUI):
             reviewboard.diffviewer.chunk_generator.RawDiffChunkGenerator:
             The chunk generator used to diff rendered text.
         """
-        assert isinstance(self.diff_against_obj, FileAttachment)
+        assert self.diff_against_obj is not None
 
         diff_against_review_ui = self.diff_against_obj.review_ui
         assert isinstance(diff_against_review_ui, TextBasedReviewUI)

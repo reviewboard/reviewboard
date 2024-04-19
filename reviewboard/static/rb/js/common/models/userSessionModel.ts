@@ -1,15 +1,16 @@
 /**
  * Object to manage the user's session.
  */
-import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
+import {
+    type ModelAttributes,
+    BaseModel,
+    spina,
+} from '@beanbag/spina';
 
 import {
+    type BaseResourceAttrs,
     BaseResource,
-    BaseResourceAttrs,
 } from '../resources/models/baseResourceModel';
-
-
-declare const SITE_ROOT: string;
 
 
 /** Attributes for the StoredItems model. */

@@ -5,14 +5,13 @@
 import { BaseView, spina } from '@beanbag/spina';
 
 import {
-    GetDraftFieldOptions,
-    ReviewRequestEditor,
-    SetDraftFieldOptions,
+    type GetDraftFieldOptions,
+    type ReviewRequestEditor,
+    type SetDraftFieldOptions,
 } from '../models/reviewRequestEditorModel';
-import { ReviewRequestEditorView } from '../views/reviewRequestEditorView';
-
-
-declare const SITE_ROOT: string;
+import {
+    type ReviewRequestEditorView,
+} from '../views/reviewRequestEditorView';
 
 
 /** Options for field views. */

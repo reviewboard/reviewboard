@@ -3,20 +3,27 @@
  */
 
 import {
+    type ModelAttributes,
     BaseModel,
     Collection,
-    ModelAttributes,
     spina,
 } from '@beanbag/spina';
 
 import {
-    Review,
-    ReviewRequest,
+    type Review,
+    type ReviewRequest,
 } from 'reviewboard/common';
-import {
-    AbstractCommentBlock,
-    SerializedComment,
-} from './abstractCommentBlockModel';
+import { type AbstractCommentBlock } from './abstractCommentBlockModel';
+import { type SerializedComment } from './commentData';
+
+
+/**
+ * The serialized comment block type.
+ *
+ * Version Added:
+ *     7.0
+ */
+export type SerializedCommentBlocks = { [key: string]: SerializedComment[] };
 
 
 /**
@@ -39,7 +46,7 @@ export interface AbstractReviewableAttrs extends ModelAttributes {
     review: Review;
 
     /** The set of serialized comment threads. */
-    serializedCommentBlocks: SerializedComment[];
+    serializedCommentBlocks: SerializedCommentBlocks;
 }
 
 
@@ -51,23 +58,6 @@ export interface AbstractReviewableAttrs extends ModelAttributes {
  *
  * All subclasses must provide a 'commentBlockModel' object type and an
  * loadSerializedCommentBlock() function.
- *
- * Model Attributes:
- *     caption (string):
- *         The caption of the reviewed object, if any.
- *
- *     renderedInline (boolean):
- *         Whether or not the comment is rendered inline.
- *
- *     reviewRequest (RB.ReviewRequest):
- *         The review request that the object being reviewed is associated
- *         with.
- *
- *     review (RB.Review):
- *         The current review that new comments will be added to.
- *
- *     serializedCommentBlocks (Array of object):
- *         Serialized comment blocks.
  */
 @spina({
     prototypeAttrs: ['commentBlockModel', 'defaultCommentBlockFields'],
@@ -81,7 +71,7 @@ export class AbstractReviewable<
         renderedInline: false,
         review: null,
         reviewRequest: null,
-        serializedCommentBlocks: [],
+        serializedCommentBlocks: {},
     };
 
     /**
@@ -135,9 +125,15 @@ export class AbstractReviewable<
          * as the image review UI) return their serialized comments as an
          * object instead of an array.
          */
-        _.each(this.get('serializedCommentBlocks'),
-               this.loadSerializedCommentBlock,
-               this);
+        const commentBlocks = this.get('serializedCommentBlocks');
+
+        if (commentBlocks !== null) {
+            for (const comments of Object.values(commentBlocks)) {
+                if (comments.length) {
+                    this.loadSerializedCommentBlock(comments);
+                }
+            }
+        }
     }
 
     /**
@@ -165,10 +161,10 @@ export class AbstractReviewable<
      * This must be implemented by subclasses.
      *
      * Args:
-     *     serializedCommentBlock (object):
+     *     serializedComments (Array of SerializedComment):
      *         The serialized data for the new comment block(s).
      */
-    loadSerializedCommentBlock(serializedCommentBlock: SerializedComment) {
+    loadSerializedCommentBlock(serializedComments: SerializedComment[]) {
         console.assert(false, 'loadSerializedCommentBlock must be ' +
                               'implemented by a subclass');
     }

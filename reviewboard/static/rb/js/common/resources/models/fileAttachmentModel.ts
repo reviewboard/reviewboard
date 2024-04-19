@@ -3,7 +3,10 @@
 import { spina } from '@beanbag/spina';
 
 import { onlyIfNew } from '../utils/serializers';
-import { BaseResource, BaseResourceAttrs } from './baseResourceModel';
+import {
+    type BaseResourceAttrs,
+    BaseResource,
+} from './baseResourceModel';
 
 
 /**

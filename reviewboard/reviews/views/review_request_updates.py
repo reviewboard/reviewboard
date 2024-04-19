@@ -270,7 +270,9 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
                 # we can construct and populate it.
                 base_entry_context = super().get_context_data(**kwargs)
                 base_entry_context.update(
-                    make_review_request_context(request, review_request))
+                    make_review_request_context(
+                        request=request,
+                        review_request=review_request))
 
             try:
                 html = render_to_string(

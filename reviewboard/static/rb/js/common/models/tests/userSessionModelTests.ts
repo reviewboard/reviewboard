@@ -10,9 +10,6 @@ import {
 import { UserSession } from 'reviewboard/common';
 
 
-declare const SITE_ROOT: string;
-
-
 suite('rb/models/UserSession', function() {
     describe('create', function() {
         it('Instance is set', function() {

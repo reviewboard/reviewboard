@@ -11,10 +11,6 @@ import {
 import { DateTimeInlineEditorView } from 'reviewboard/ui';
 
 
-declare const $testsScratch: JQuery;
-declare const dedent: (string) => string;
-
-
 suite('rb/ui/views/DateTimeInlineEditorView', function() {
     const initialDateTime = '2022-09-16T03:45';
     let view;

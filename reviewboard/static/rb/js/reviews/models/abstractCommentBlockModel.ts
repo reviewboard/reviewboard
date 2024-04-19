@@ -2,36 +2,21 @@
  * Represents a region of reviewable content that contains comments.
  */
 
-import { BaseModel, ModelAttributes, spina } from '@beanbag/spina';
+import {
+    type ModelAttributes,
+    BaseModel,
+    spina,
+} from '@beanbag/spina';
 
 import {
-    BaseComment,
-    Review,
-    ReviewRequest,
+    type BaseComment,
+    type Review,
+    type ReviewRequest,
 } from 'reviewboard/common';
 import {
-    BaseCommentAttrs,
+    type BaseCommentAttrs,
 } from 'reviewboard/common/resources/models/baseCommentModel';
-
-
-/**
- * Serialized data for a comment block.
- *
- * Version Added:
- *     7.0
- */
-export interface SerializedComment {
-    comment_id: number;
-    html: string;
-    issue_opened: boolean;
-    issue_status: string;
-    localdraft: boolean;
-    rich_text: boolean;
-    text: string;
-    user: {
-        name: string;
-    };
-}
+import { type SerializedComment } from './commentData';
 
 
 /**
@@ -76,7 +61,9 @@ export interface AbstractCommentBlockAttrs extends ModelAttributes {
  * The total number of comments in the block (including any draft comment)
  * will be stored, which may be useful for display.
  */
-@spina
+@spina({
+    prototypeAttrs: ['serializedFields'],
+})
 export class AbstractCommentBlock<
     TAttributes extends AbstractCommentBlockAttrs
         = AbstractCommentBlockAttrs
@@ -91,6 +78,13 @@ export class AbstractCommentBlock<
         reviewRequest: null,
         serializedComments: [],
     };
+
+    /**
+     * The list of extra fields on this model.
+     *
+     * These will be stored on the server in the comment's extra_data field.
+     */
+    static serializedFields: string[] = [];
 
     /**
      * Initialize the AbstractCommentBlock.

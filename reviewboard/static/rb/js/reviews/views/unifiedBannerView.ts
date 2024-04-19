@@ -1,7 +1,11 @@
 /**
  * The unified banner view.
  */
-import { BaseView, EventsHash, spina } from '@beanbag/spina';
+import {
+    type EventsHash,
+    BaseView,
+    spina,
+} from '@beanbag/spina';
 
 import {
     ClientCommChannel,
@@ -16,14 +20,12 @@ import {
 } from 'reviewboard/ui';
 import { MenuType } from 'reviewboard/ui/views/menuView';
 
-import { DraftMode, UnifiedBanner } from '../models/unifiedBannerModel';
-import { ReviewRequestEditorView } from './reviewRequestEditorView';
+import {
+    type DraftMode,
+    UnifiedBanner,
+} from '../models/unifiedBannerModel';
+import { type ReviewRequestEditorView } from './reviewRequestEditorView';
 import { ChangeDescriptionFieldView } from './reviewRequestFieldViews';
-
-
-declare const SITE_ROOT: string;
-declare const dedent: (string, ...args) => string;
-declare const gettext: (string) => string;
 
 
 /**

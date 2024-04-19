@@ -40,10 +40,10 @@
 
  <div class="auth-form-row">
   <div class="auth-button-container">
-   <input type="submit" class="primary" value="{% trans "Log in" %}" />
+   <button class="ink-c-button -is-primary" type="submit">{% trans "Log in" %}</button>
 {%  for sso_backend in enabled_sso_backends %}
    <a href="{{sso_backend.login_url}}{% if next %}?next={{next|urlencode}}{% endif %}">
-    <button type="button" class="rb-c-button">{{sso_backend.login_label}}</button>
+    <button class="ink-c-button" type="button">{{sso_backend.login_label}}</button>
    </a>
 {%  endfor %}
   </div>

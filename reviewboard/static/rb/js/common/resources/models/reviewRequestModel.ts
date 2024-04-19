@@ -5,9 +5,18 @@
 import { Collection, spina } from '@beanbag/spina';
 
 import { UserSession } from '../../models/userSessionModel';
-import { BaseResource, BaseResourceAttrs } from './baseResourceModel';
-import { FileAttachment, FileAttachmentAttrs } from './fileAttachmentModel';
-import { Review, ReviewAttrs } from './reviewModel';
+import {
+    type BaseResourceAttrs,
+    BaseResource,
+} from './baseResourceModel';
+import {
+    type FileAttachmentAttrs,
+    FileAttachment,
+} from './fileAttachmentModel';
+import {
+    type ReviewAttrs,
+    Review,
+} from './reviewModel';
 
 
 /**

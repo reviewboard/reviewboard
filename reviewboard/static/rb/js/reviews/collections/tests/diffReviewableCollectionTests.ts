@@ -1,8 +1,25 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+} from 'jasmine-core';
+
+import { ReviewRequest } from 'reviewboard/common';
+import {
+    DiffFile,
+    DiffFileCollection,
+    DiffReviewableCollection,
+} from 'reviewboard/reviews';
+
+
 suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
     describe('Construction', function() {
         it('Sets reviewRequest', function() {
-            const reviewRequest = new RB.ReviewRequest();
-            const collection = new RB.DiffReviewableCollection([], {
+            const reviewRequest = new ReviewRequest();
+            const collection = new DiffReviewableCollection([], {
                 reviewRequest: reviewRequest,
             });
 
@@ -11,14 +28,14 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
     });
 
     describe('watchFiles', function() {
-        let collection;
-        let files;
+        let collection: DiffReviewableCollection;
+        let files: DiffFileCollection;
 
         beforeEach(function() {
-            collection = new RB.DiffReviewableCollection([], {
-                reviewRequest: new RB.ReviewRequest(),
+            collection = new DiffReviewableCollection([], {
+                reviewRequest: new ReviewRequest(),
             });
-            files = new RB.DiffFileCollection();
+            files = new DiffFileCollection();
         });
 
         it('Initially populates', function() {
@@ -36,28 +53,41 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
             collection.watchFiles(files);
 
             files.reset([
-                new RB.DiffFile({
+                new DiffFile({
                     filediff: {
                         id: 300,
                         revision: 1,
                     },
-                    index: 1,
                     id: 100,
+                    index: 1,
                 }),
-                new RB.DiffFile({
+                new DiffFile({
                     filediff: {
                         id: 301,
                         revision: 1,
                     },
+                    id: 101,
+                    index: 2,
                     interfilediff: {
                         id: 400,
                         revision: 2,
                     },
-                    index: 2,
-                    id: 101,
-                    commentCounts: [1],
+                    serializedCommentBlocks: {
+                        '2-2': [
+                            {
+                                comment_id: 1,
+                                issue_opened: false,
+                                line: 2,
+                                localdraft: false,
+                                num_lines: 2,
+                                review_id: 1,
+                                text: 'Comment',
+                                user: { name: 'testuser' },
+                            },
+                        ],
+                    },
                 }),
-                new RB.DiffFile({
+                new DiffFile({
                     baseFileDiffID: 123,
                     filediff: {
                         id: 302,
@@ -65,8 +95,8 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
                     },
                     forceInterdiff: true,
                     forceInterdiffRevision: 1,
-                    index: 3,
                     id: 102,
+                    index: 3,
                 }),
             ]);
 
@@ -94,7 +124,21 @@ suite('rb/diffviewer/collections/DiffReviewableCollection', function() {
             expect(diffReviewable.get('interFileDiffID')).toBe(400);
             expect(diffReviewable.get('revision')).toBe(1);
             expect(diffReviewable.get('interdiffRevision')).toBe(2);
-            expect(diffReviewable.get('serializedCommentBlocks')).toEqual([1]);
+            expect(diffReviewable.get('serializedCommentBlocks')).toEqual(
+                {
+                    '2-2': [
+                        {
+                            comment_id: 1,
+                            issue_opened: false,
+                            line: 2,
+                            localdraft: false,
+                            num_lines: 2,
+                            review_id: 1,
+                            text: 'Comment',
+                            user: { name: 'testuser' },
+                        },
+                    ],
+                });
 
             diffReviewable = collection.at(2);
             expect(diffReviewable.get('baseFileDiffID')).toBe(123);

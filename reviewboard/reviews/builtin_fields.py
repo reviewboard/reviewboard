@@ -917,15 +917,22 @@ class DiffField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
                                % raw_delete_count)
 
         # Display the label, URL, and line counts for the diff.
-        s.append(format_html(
-            '<p class="diff-changes">'
-            ' <a href="{url}">{label}</a>'
-            ' <span class="line-counts">({line_counts})</span>'
-            '</p>',
-            url=diff_url,
-            label=_('Revision %s') % diff_revision,
-            count=_('%d files') % len(diffset.cumulative_files),
-            line_counts=mark_safe(' '.join(line_counts))))
+        if line_counts:
+            s.append(format_html(
+                '<p class="diff-changes">'
+                ' <a href="{url}">{label}</a>'
+                ' <span class="line-counts">({line_counts})</span>'
+                '</p>',
+                url=diff_url,
+                label=_('Revision %s') % diff_revision,
+                line_counts=mark_safe(' '.join(line_counts))))
+        else:
+            s.append(format_html(
+                '<p class="diff-changes">'
+                ' <a href="{url}">{label}</a>'
+                '</p>',
+                url=diff_url,
+                label=_('Revision %s') % diff_revision))
 
         if past_revision > 0:
             # This is not the first diff revision. Include an interdiff link.

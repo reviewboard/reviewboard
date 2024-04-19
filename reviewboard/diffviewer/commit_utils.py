@@ -1,10 +1,13 @@
 """Utilities for dealing with DiffCommits."""
 
+from __future__ import annotations
+
 import base64
 import json
 from itertools import chain
 
 from django.utils.encoding import force_bytes
+from typing_extensions import NotRequired, TypedDict
 
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN
 
@@ -237,6 +240,25 @@ def update_validation_info(validation_info, commit_id, parent_id, filediffs):
     return validation_info
 
 
+class SerializedCommitHistoryDiffEntry(TypedDict):
+    """Serialized version of a CommitHistoryDiffEntry.
+
+    Version Added:
+        7.0
+    """
+
+    #: The type of change in the commit history diff.
+    #:
+    #: This will be one of "added", "removed", "modified", or "unmodified".
+    entry_type: str
+
+    #: The new ID of the commit in the diff line.
+    new_commit_id: NotRequired[int]
+
+    #: The old ID of the commit in the diff line.
+    old_commit_id: NotRequired[int]
+
+
 class CommitHistoryDiffEntry(object):
     """An entry in a commit history diff."""
 
@@ -294,14 +316,14 @@ class CommitHistoryDiffEntry(object):
         self.old_commit = old_commit
         self.new_commit = new_commit
 
-    def serialize(self):
+    def serialize(self) -> SerializedCommitHistoryDiffEntry:
         """Serialize the entry to a dictionary.
 
         Returns:
             dict:
             A dictionary of the serialized information.
         """
-        result = {
+        result: SerializedCommitHistoryDiffEntry = {
             'entry_type': self.entry_type,
         }
 

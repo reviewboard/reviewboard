@@ -2,11 +2,14 @@
  * Provides a visual region over an image or other document showing comments.
  */
 
-import { EventsHash, spina } from '@beanbag/spina';
+import {
+    type EventsHash,
+    spina,
+} from '@beanbag/spina';
 
-import { RegionCommentBlock } from '../models/regionCommentBlockModel';
+import { type RegionCommentBlock } from '../models/regionCommentBlockModel';
 import { AbstractCommentBlockView } from './abstractCommentBlockView';
-import { CommentDialogView } from './commentDialogView';
+import { type CommentDialogView } from './commentDialogView';
 
 
 /** A structure to hold the region size for a selection. */

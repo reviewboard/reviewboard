@@ -405,6 +405,10 @@ EXTENSIONS_ENABLED_BY_DEFAULT = [
 DJBLETS_EXTENSIONS_BROWSE_URL = 'https://www.reviewboard.org/store/'
 
 
+# Ink configuration.
+INK_DEFAULT_THEME = 'light'
+
+
 #: A list of external IP addresses that are allowed to access /health/.
 #:
 #: Version Added:
@@ -461,6 +465,7 @@ TEMPLATES = [
                 'reviewboard.admin.context_processors.read_only',
                 'reviewboard.admin.context_processors.version',
                 'reviewboard.site.context_processors.localsite',
+                'reviewboard.themes.context_processors.theme',
             ],
             'debug': DEBUG,
             'loaders': [
@@ -527,7 +532,11 @@ DJANGO_EVOLUTION = {
     'CUSTOM_EVOLUTIONS': {
         'oauth2_provider': ('reviewboard.admin.custom_evolutions.'
                             'oauth2_provider'),
-    }
+    },
+    'RENAMED_FIELD_TYPES': {
+        'multiselectfield.db.fields.MultiSelectField':
+            'djblets.db.fields.CommaSeparatedValuesField',
+    },
 }
 
 # Make sure that we have a staticfiles cache set up for media generation.

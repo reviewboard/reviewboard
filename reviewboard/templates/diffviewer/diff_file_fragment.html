@@ -62,7 +62,7 @@
  </colgroup>
  <thead>
   <tr class="filename-row">
-{%  if file.dest_filename == file.depot_filename %}
+{%  if file.modified_filename == file.orig_filename %}
    <th colspan="4">
     <a name="{{file.index}}" class="file-anchor"></a>
 {%   if file.binary %}
@@ -72,19 +72,19 @@
     <img class="header-file-icon" src="{{orig_diff_file_attachment.icon_url}}" />
 {%    endif %}
 {%   endif %}
-    {{file.depot_filename}}
+    {{file.orig_filename}}
     {% if file.is_symlink %}{% trans " (symlink)" %}{% endif %}
   </th>
 {%  else %}
 {%   if not file.is_new_file %}
-   <th colspan="2"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
+   <th colspan="2"><a name="{{file.index}}" class="file-anchor"></a>{{ file.orig_filename }}</th>
 {%   endif %}
    <th colspan="2">
 {%   if file.is_new_file %}
     <a name="{{file.index}}" class="file-anchor"></a>
 {%   endif %}
-    {{file.dest_filename}}{% if file.moved %}{% trans " (moved)" %}{% elif file.copied %}{% trans " (copied)" %}{% endif %}{% if file.is_symlink %}{% trans " (symlink)" %}{% endif %}</th>
-{%  endif %}{# file.dest_filename == file.depot_filename #}
+    {{file.modified_filename}}{% if file.moved %}{% trans " (moved)" %}{% elif file.copied %}{% trans " (copied)" %}{% endif %}{% if file.is_symlink %}{% trans " (symlink)" %}{% endif %}</th>
+{%  endif %}{# file.modified_filename == file.orig_filename #}
   </tr>
   <tr class="revision-row">
 {%  if file.moved_or_copied and file.num_changes == 0 %}
@@ -96,7 +96,7 @@
 {%    if download_orig_url %}
     <a class="rb-icon rb-icon-download download-link" href="{{download_orig_url}}" rel="nofollow" alt="{% trans 'Download' %}" title="{% trans 'Download' %}"></a>
 {%    endif %}
-    {{file.revision}}
+    {{file.orig_revision}}
     </th>
 {%   endif %}
    <th></th>
@@ -105,7 +105,7 @@
 {%    if download_modified_url %}
     <a class="rb-icon rb-icon-download download-link" href="{{download_modified_url}}" rel="nofollow" alt="{% trans 'Download' %}" title="{% trans 'Download' %}"></a>
 {%    endif %}
-    {{file.dest_revision}}
+    {{file.modified_revision}}
    </th>
 {%   else %}
    <th></th>

@@ -1,6 +1,7 @@
 @import (reference) "rb/css/defs.less";
 @import (reference) "rb/css/mixins/theme.less";
 @import (reference) "rb/css/ui/colors.less";
+@import (reference) "rb/css/ui/ink-overrides.less";
 @import (reference) "rb/css/ui/responsive.less";
 
 
@@ -121,10 +122,6 @@
 body {
   @_page-sidebar-mobile-menu-vars: #rb-ns-ui.page-sidebar.mobile-menu();
 
-  background-color: #rb-ns-ui.colors[@grey-90];
-  color: @default-text-color;
-  font-family: @font-family;
-  font-size: 11px;
   margin: 0;
   padding: 0;
 
@@ -191,6 +188,12 @@ body {
   });
 }
 
+:root,
+[data-ink-color-scheme] {
+  #rb-ns-ui.design-tokens();
+  #rb-ns-ui.ink-overrides();
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -198,6 +201,7 @@ html {
 html, body {
   min-height: 100vh;
 }
+
 
 #rb-ns-pages.base.on-full-page-content-mode({
   /*
@@ -307,87 +311,6 @@ textarea {
 }
 
 
-/**
- * Header actions.
- *
- * Structure:
- *     <div class="rb-c-actions" role="presentation">
- *      <menu class="rb-c-actions__content" role="menu">
- *       ...
- *      </menu>
- *     </div>
- */
-#headerbar .rb-c-actions {
-  float: right;
-
-  /**
-   * A header action.
-   *
-   * Structure:
-   *     <li class="rb-c-actions__action" role="presentation">
-   *      <a href="#" role="menuitem">...</a>
-   *     </li>
-   */
-  &__action {
-    border: 1px transparent solid;
-    border-top: 0;
-    box-sizing: border-box;
-    display: inline-block;
-    position: relative;
-
-    a {
-      color: inherit;
-      display: block;
-      font-size: 110%;
-      margin: 0;
-      padding: 0 1em;
-      text-decoration: none;
-      height: 32px;
-      vertical-align: middle;
-      line-height: 32px;
-    }
-
-		img {
-      vertical-align: middle;
-		}
-  }
-
-  &__content {
-    box-sizing: border-box;
-    list-style: none;
-    margin: -@headerbar-padding 0;
-    padding: 0;
-    white-space: nowrap;
-    z-index: @z-index-base;
-
-    img {
-      vertical-align: middle;
-    }
-  }
-
-  .rb-c-menu {
-    border: 1px #888 solid;
-    border-radius: 0 0 @box-border-radius @box-border-radius;
-    margin: 0;
-    margin-right: -1px;
-    right: 0;
-  }
-
-  .rb-c-menu__item {
-    margin: 0;
-    padding: 0;
-
-    &:last-child {
-      border-radius: 0 0 @box-border-radius @box-border-radius;
-    }
-  }
-
-  #rb-ns-pages.base.on-shell-mobile-mode({
-    display: none;
-  });
-}
-
-
 /*
  * The "Loading..." indicator shown during AJAX operations.
  */
@@ -461,168 +384,6 @@ textarea {
 
 
 /*
- * The header bar at the top of the page. This contains the branding,
- * search field, and the accountnav element.
- *
- * This has the following children:
- *
- *    * #rbinfo
- *    * #accountnav
- *    * #search
- */
-#headerbar {
-  margin: 0;
-  padding: @headerbar-padding;
-  height: 22px;
-  vertical-align: middle;
-  z-index: @z-index-mobile-headerbar;
-
-  br {
-    clear: both;
-    height: 0;
-  }
-
-  #logo {
-    position: absolute;
-    top: 3px;
-    left: @headerbar-logo-padding-horiz;
-    z-index: @z-index-logo;
-  }
-
-  #nav_toggle {
-    @icon-size: 32px;
-    @font-size: (@icon-size / 2);
-
-    color: rgba(0, 0, 0, 0.8);
-    cursor: pointer;
-    display: none;
-    font-size: @font-size;
-    padding: ((@icon-size - @font-size) / 2);
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: @icon-size;
-    height: @icon-size;
-
-    .fa {
-      vertical-align: middle;
-    }
-  }
-
-  #title {
-    color: inherit;
-    display: inline;
-    font-weight: normal;
-    font-size: 125%;
-    margin: 0;
-    padding: 0;
-    vertical-align: middle;
-
-    a {
-      color: inherit;
-      font-size: 120%;
-      text-decoration: none;
-    }
-
-    .version {
-      font-weight: normal;
-      font-size: 90%;
-    }
-  }
-
-  #search {
-    float: right;
-    margin: 0 1em;
-
-    input {
-      border: 1px #CCC solid;
-      margin: 0;
-      padding: 2px;
-      border-radius: 6px;
-      background-color: #EEEEEE;
-      font-size: 1.2em;
-
-      // Safari does super dumb things with input[type="search"]. Fix that.
-      -webkit-appearance: textfield;
-    }
-  }
-
-  #rb-ns-pages.base.on-shell-mobile-mode({
-    border-bottom: 1px solid;
-    height: auto;
-    position: relative;
-    text-align: center;
-    transition: #rb-ns-ui.sidebars.mobile[@animation];
-
-    #logo {
-      position: relative;
-      top: 0;
-      height: 32px;
-      width: 32px;
-      z-index: @z-index-mobile-headerbar;
-    }
-
-    #nav_toggle {
-      display: block;
-    }
-
-    #search {
-      box-sizing: border-box;
-      float: none;
-      margin: 0.5em 0.5em 0 0.5em;
-
-      input {
-        /*
-         * Style the search input to appear more like the saerch bars on
-         * most mobile apps and sites, giving more breathing room.
-         */
-        background-color: white;
-        box-sizing: border-box;
-        padding: 4px 8px;
-        margin: 0;
-        width: 100%;
-      }
-    }
-
-    #title {
-      margin-left: 0.5em;
-
-      .version {
-        display: none;
-      }
-    }
-  });
-}
-
-
-/*
- * The branding section of the headerbar, containing the logo and versioning
- * information.
- */
-#rbinfo {
-  float: left;
-  position: absolute;
-  left: 0;
-  padding-top: 0.2em;
-  padding-left: @headerbar-padding-left;
-
-  #rb-ns-pages.base.on-shell-mobile-mode({
-    /*
-     * Reset positioning and floating so that on mobile, this will take the
-     * full width of the page.
-     */
-    float: none;
-    position: relative;
-    padding: 0;
-  });
-
-  img {
-    display: inline;
-    vertical-align: middle;
-  }
-}
-
-/*
  * An event mask overlaying the content of the page. It's shown only when
  * the mobile menu is shown. There is nothing visible, allowing the page
  * content to fully show through.
@@ -636,63 +397,6 @@ textarea {
   right: 0;
   bottom: 0;
   z-index: @z-index-nav-menu-mask;
-}
-
-/*
- * The container for the desktop navigation bar. This is not shown when in
- * mobile mode.
- */
-#navbar-container {
-  a {
-    font-size: 110%;
-    text-decoration: none;
-  }
-
-  /*
-   * Alerts embedded in the navbar area should appear flush with the
-   * navigation container.
-   */
-  .rb-c-alert {
-    border-left: 0;
-    border-right: 0;
-    border-top: 0;
-    border-radius: 0;
-  }
-}
-
-/*
- * The navigation bar.
- *
- * This is the bar showing such items as "My Dashboard"< "New Review Request",
- * etc.
- */
-#navbar {
-  border-bottom: 1px solid;
-  list-style: none;
-  margin: 0;
-  min-height: 1.5em;
-  padding: @headerbar-padding;
-  padding-left: @headerbar-padding-left;
-
-  li {
-    display: inline;
-    height: 30px;
-    margin: 0 1em 0 0;
-  }
-
-  .newreviewrequest {
-    text-align: right;
-  }
-
-  #rb-ns-pages.base.on-shell-mobile-mode({
-    display: none;
-    padding-left: 10px;
-    margin-top: 10px;
-
-    li {
-      display: block;
-    }
-  });
 }
 
 /*
@@ -732,11 +436,6 @@ textarea {
   vertical-align: middle;
 }
 
-#topbar {
-  margin: 0 0 @page-container-padding 0;
-}
-
-
 /*
  * The box containing information on an AJAX error.
  */
@@ -758,6 +457,10 @@ textarea {
 
 /* Reviewable pages (review request, diff, file attachment, etc.) are brown. */
 .reviewable-page {
+  --ink-p-header-bg:
+    var(--if-light, @review-request-action-bg)
+    var(--if-dark, var(--ink-p-cool-grey-100));
+
   .page-colors(@topbar-bg: @review-request-action-bg;
                @topbar-border-color: @review-request-action-border-color);
 }

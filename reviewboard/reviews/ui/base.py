@@ -1,9 +1,13 @@
+"""Base class for a Review UI."""
+
 from __future__ import annotations
 
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import (Any, ClassVar, Dict, Generic, Iterator, List, Optional,
+                    Sequence, TYPE_CHECKING, TypeVar)
+from urllib.parse import urlencode
 from uuid import uuid4
 
 import mimeparse
@@ -12,15 +16,19 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
+from typing_extensions import TypeAlias, TypedDict
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.diffviewer.models import FileDiff
 from reviewboard.reviews.context import make_review_request_context
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
-from reviewboard.reviews.models import FileAttachmentComment, Review
+from reviewboard.reviews.models import (BaseComment,
+                                        FileAttachmentComment,
+                                        Review)
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -30,7 +38,6 @@ if TYPE_CHECKING:
     from djblets.util.typing import JSONDict
 
     from reviewboard.reviews.models import (
-        BaseComment,
         ReviewRequest,
         ReviewRequestDraft,
     )
@@ -41,7 +48,104 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ReviewUI:
+class SerializedCommentUser(TypedDict):
+    """Serialized user for comment data.
+
+    This must be kept in sync with the definitions in
+    :file:`reviewboard/static/rb/js/reviews/models/commentData.ts`.
+
+    Version Added:
+        7.0
+    """
+
+    #: The user's full name, if available.
+    name: str
+
+    #: The user's username.
+    username: str
+
+
+class SerializedComment(TypedDict):
+    """Serialized comment data to pass through to JavaScript.
+
+    This must be kept in sync with the definitions in
+    :file:`reviewboard/static/rb/js/reviews/models/commentData.ts`.
+
+    Version Added:
+        7.0
+    """
+
+    #: The ID of the comment.
+    comment_id: int
+
+    #: The rendered HTML version of the comment text.
+    html: str
+
+    #: Whether the comment opens an issue.
+    issue_opened: bool
+
+    #: The status of the issue, if one was opened.
+    issue_status: str
+
+    #: Whether the comment is part of the user's current draft review.
+    localdraft: bool
+
+    #: The ID of the comment that this comment is a reply to.
+    reply_to_id: int
+
+    #: The ID of the review that this comment is a part of.
+    review_id: int
+
+    #: The ID of the review request that this comment is on.
+    review_request_id: int
+
+    #: Whether the comment text should be rendered in Markdown.
+    rich_text: bool
+
+    #: The raw text of the comment.
+    text: str
+
+    #: The URL to link to for the comment.
+    url: str
+
+    #: Information about the author of the comment.
+    user: SerializedCommentUser
+
+
+#: A generic type for the reviewable object for a Review UI.
+#:
+#: Version Added:
+#:     7.0
+ReviewableType = TypeVar('ReviewableType')
+
+
+#: A generic type for the type of comment used by a Review UI.
+#:
+#: Version Added:
+#:     7.0
+CommentType = TypeVar('CommentType', bound=BaseComment)
+
+
+#: A generic type for the serialized comment data for a ReviewUI.
+#:
+#: Version Added:
+#:     7.0
+SerializedCommentType = TypeVar('SerializedCommentType',
+                                bound=SerializedComment)
+
+
+#: A type for the serialized comments for a review UI.
+#:
+#: Version Added:
+#:     7.0
+SerializedCommentBlocks: TypeAlias = Dict[str, List[SerializedCommentType]]
+
+
+class ReviewUI(Generic[
+    ReviewableType,
+    CommentType,
+    SerializedCommentType,
+]):
     """Base class for a Review UI.
 
     Review UIs are interfaces for reviewing content of some type. They take a
@@ -72,43 +176,56 @@ class ReviewUI:
     """
 
     #: The display name for the Review UI.
-    name = 'Unknown file type'
+    name: ClassVar[str] = 'Unknown file type'
 
     #: The template that renders the Review UI.
     #:
     #: Generally, subclasses should use the default template and render the
     #: UI using JavaScript.
-    template_name = 'reviews/ui/default.html'
+    template_name: ClassVar[str] = 'reviews/ui/default.html'
 
     #: Whether the Review UI can be rendered inline in diffs and other places.
     #:
     #: If set, the Review UI will be able to be displayed within the diff
     #: viewer (and potentially other locations).
-    allow_inline = False
+    allow_inline: ClassVar[bool] = False
 
     #: Whether this Review UI supports diffing two objects.
-    supports_diffing = False
+    supports_diffing: ClassVar[bool] = False
 
     #: A list of CSS bundle names to include on the Review UI's page.
-    css_bundle_names: List[str] = []
+    css_bundle_names: ClassVar[list[str]] = []
 
     #: A list of JavaScript bundle names to include on the Review UI's page.
-    js_bundle_names: List[str] = []
+    js_bundle_names: ClassVar[list[str]] = []
 
     #: A list of specific JavaScript URLs to include on the page.
     #:
     #: It is recommended that :py:attr:`js_bundle_names` be used instead
     #: where possible.
-    js_files: List[str] = []
+    js_files: ClassVar[list[str]] = []
 
     #: The list of MIME types that this Review UI supports.
-    supported_mimetypes: List[str] = []
+    supported_mimetypes: ClassVar[list[str]] = []
 
     #: Whether this Review UI supports reviewing FileAttachment objects.
-    supports_file_attachments: bool = False
+    supports_file_attachments: ClassVar[bool] = False
 
     #: Whether there's a file type mismatch when showing diffs.
-    diff_type_mismatch: bool = False
+    diff_type_mismatch: ClassVar[bool] = False
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The object being reviewed.
+    obj: ReviewableType
+
+    #: The object being compared against, if present.
+    diff_against_obj: Optional[ReviewableType]
+
+    #: The current HTTP request.
+    request: Optional[HttpRequest]
 
     @property
     def js_model_class(self) -> str:
@@ -161,7 +278,7 @@ class ReviewUI:
     def __init__(
         self,
         review_request: ReviewRequest,
-        obj: object,
+        obj: ReviewableType,
     ) -> None:
         """Initialize the Review UI.
 
@@ -180,7 +297,7 @@ class ReviewUI:
 
     def set_diff_against(
         self,
-        obj: object,
+        obj: ReviewableType,
     ) -> None:
         """Set the object to generate a diff against.
 
@@ -302,7 +419,7 @@ class ReviewUI:
         request: HttpRequest,
         inline: bool = False,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build context for rendering the page.
 
         This computes the standard template context to use when rendering the
@@ -330,10 +447,10 @@ class ReviewUI:
         close_info = self.review_request.get_close_info()
         caption = self.get_caption(draft)
 
-        context: Dict[str, Any] = make_review_request_context(
-            request,
-            self.review_request,
-            {
+        context = make_review_request_context(
+            request=request,
+            review_request=self.review_request,
+            extra_context={
                 'caption': caption,
                 'close_description': close_info['close_description'],
                 'close_description_rich_text': close_info['is_rich_text'],
@@ -341,19 +458,17 @@ class ReviewUI:
                 'comments': self.get_comments(),
                 'draft': draft,
                 'last_activity_time': last_activity_time,
-                'social_page_image_url': self.get_page_cover_image_url(),
-                'social_page_title': (
-                    'Reviewable for Review Request #%s: %s'
-                    % (self.review_request.display_id, caption)
-                ),
                 'review_request_details': review_request_details,
                 'review_request': self.review_request,
                 'review_ui': self,
                 'review_ui_uuid': str(uuid4()),
                 self.object_key: self.obj,
                 self.diff_object_key: self.diff_against_obj,
-            }
-        )
+            },
+            social_page_image_url=self.get_page_cover_image_url(),
+            social_page_title=(
+                f'Reviewable for Review Request '
+                f'#{self.review_request.display_id}: {caption}'))
 
         if inline:
             context.update({
@@ -413,7 +528,7 @@ class ReviewUI:
         """
         return None
 
-    def get_comments(self) -> List[BaseComment]:
+    def get_comments(self) -> Sequence[CommentType]:
         """Return all existing comments on the reviewable object.
 
         Subclasses must override this.
@@ -467,7 +582,7 @@ class ReviewUI:
 
     def get_comment_thumbnail(
         self,
-        comment: BaseComment,
+        comment: CommentType,
     ) -> Optional[SafeText]:
         """Return an HTML thumbnail for a comment.
 
@@ -488,7 +603,7 @@ class ReviewUI:
 
     def get_comment_link_url(
         self,
-        comment: BaseComment,
+        comment: CommentType,
     ) -> str:
         """Return a URL for linking to a comment.
 
@@ -505,19 +620,22 @@ class ReviewUI:
         if isinstance(comment, FileAttachmentComment):
             assert isinstance(self.obj, FileAttachment)
 
-            return local_site_reverse(
-                'file-attachment',
-                local_site=self.review_request.local_site,
-                kwargs={
-                    'review_request_id': self.review_request.display_id,
-                    'file_attachment_id': self.obj.pk,
-                })
+            if self.obj.is_from_diff:
+                return self._get_diff_attachment_comment_link_url(comment)
+            else:
+                return local_site_reverse(
+                    'file-attachment',
+                    local_site=self.review_request.local_site,
+                    kwargs={
+                        'review_request_id': self.review_request.display_id,
+                        'file_attachment_id': self.obj.pk,
+                    })
 
         raise NotImplementedError
 
     def get_comment_link_text(
         self,
-        comment: BaseComment,
+        comment: CommentType,
     ) -> Optional[str]:
         """Return the text to link to a comment.
 
@@ -539,7 +657,7 @@ class ReviewUI:
     def get_extra_context(
         self,
         request: HttpRequest,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Return extra context to use when rendering the Review UI.
 
         Args:
@@ -562,7 +680,7 @@ class ReviewUI:
             dict:
             The attributes to pass to the model.
         """
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         obj = self.obj
 
         if isinstance(obj, FileAttachment):
@@ -629,14 +747,12 @@ class ReviewUI:
 
     def serialize_comments(
         self,
-        comments: List[BaseComment],
-    ) -> List[JSONDict]:
+        comments: Sequence[CommentType],
+    ) -> SerializedCommentBlocks[SerializedCommentType]:
         """Serialize the comments for the Review UI target.
 
-        By default, this will return a list of serialized comments,
-        but it can be overridden to return other list or dictionary-based
-        representations, such as comments grouped by an identifier or region.
-        These representations must be serializable into JSON.
+        By default, this will return a "flat" array of comments, but it can be
+        overridden in order to group comments by identifier or region.
 
         Args:
             comments (list of reviewboard.reviews.models.base_comment.
@@ -645,38 +761,56 @@ class ReviewUI:
                 :py:meth:`get_comments`.
 
         Returns:
-            list of dict:
-            The list of serialized comment data.
+            SerializedCommentBlocks:
+            The set of serialized comment data.
+        """
+        result: SerializedCommentBlocks[SerializedCommentType] = {}
+
+        for i, comment in enumerate(self.flat_serialized_comments(comments)):
+            result[str(i)] = [comment]
+
+        return result
+
+    def flat_serialized_comments(
+        self,
+        comments: Sequence[CommentType],
+    ) -> Iterator[SerializedCommentType]:
+        """Yield the serialized comments.
+
+        This will go through the list of comments and filter out any which
+        should not be shown (ones which are in other users' drafts), then yield
+        the serialized form for each.
+
+        Yields:
+            SerializedComment:
+            The serialized comment.
         """
         assert self.request is not None
         user = self.request.user
-
-        result = []
 
         for comment in comments:
             try:
                 review = comment.get_review()
             except Review.DoesNotExist:
-                logger.error('Missing Review for comment %r' % comment,
-                             extra={'request': self.request},)
+                logger.error('Missing Review for comment %r',
+                             comment,
+                             extra={'request': self.request})
                 continue
 
             try:
                 if review and (review.public or review.user_id == user.pk):
-                    result.append(self.serialize_comment(comment))
+                    yield self.serialize_comment(comment)
             except Exception as e:
-                logger.exception('Error when calling serialize_comment for '
-                                 '%r: %s',
-                                 self, e,
-                                 extra={'request': self.request})
+                logger.exception(
+                    'Error when calling serialize_comment for %r: %s',
+                    comment, e,
+                    extra={'request': self.request})
                 raise
-
-        return result
 
     def serialize_comment(
         self,
-        comment: BaseComment,
-    ) -> JSONDict:
+        comment: CommentType,
+    ) -> SerializedComment:
         """Serialize a comment.
 
         This will provide information on the comment that may be useful
@@ -690,7 +824,7 @@ class ReviewUI:
                 The comment to serialize.
 
         Returns:
-            dict:
+            SerializedComment:
             The serialized comment data.
         """
         review = comment.get_review()
@@ -698,24 +832,25 @@ class ReviewUI:
         assert self.request is not None
         user = self.request.user
 
-        data = {
+        data: SerializedComment = {
             'comment_id': comment.pk,
-            'text': normalize_text_for_edit(user, comment.text,
-                                            comment.rich_text),
-            'rich_text': comment.rich_text,
+            'issue_opened': comment.issue_opened,
+            'issue_status': comment.issue_status_to_string(
+                comment.issue_status),
             'html': markdown_render_conditional(comment.text,
                                                 comment.rich_text),
+            'localdraft': review.user_id == user.pk and not review.public,
+            'reply_to_id': comment.reply_to_id,
+            'review_id': review.pk,
+            'review_request_id': review.review_request_id,
+            'rich_text': comment.rich_text,
+            'text': normalize_text_for_edit(user, comment.text,
+                                            comment.rich_text),
+            'url': comment.get_review_url(),
             'user': {
                 'username': review.user.username,
                 'name': review.user.get_profile().get_display_name(user),
             },
-            'url': comment.get_review_url(),
-            'localdraft': review.user_id == user.pk and not review.public,
-            'review_id': review.pk,
-            'review_request_id': review.review_request_id,
-            'issue_opened': comment.issue_opened,
-            'issue_status': comment.issue_status_to_string(
-                comment.issue_status),
         }
 
         if isinstance(comment, FileAttachmentComment):
@@ -726,7 +861,7 @@ class ReviewUI:
     def _get_adjacent_file_attachments(
         self,
         review_request_details: BaseReviewRequestDetails,
-    ) -> Tuple[Optional[FileAttachment], Optional[FileAttachment]]:
+    ) -> tuple[Optional[FileAttachment], Optional[FileAttachment]]:
         """Return the next and previous file attachments.
 
         The next and previous file attachments are the file attachments that
@@ -766,6 +901,99 @@ class ReviewUI:
             pass
 
         return prev_obj, next_obj
+
+    def _get_diff_attachment_comment_link_url(
+        self,
+        comment: FileAttachmentComment,
+    ) -> str:
+        """Return the URL for linking to a comment on a diff file attachment.
+
+        This will inspect a file attachment comment which was made on an
+        attachment that's part of a diff, and return the URL to the diff viewer
+        with the correct revisions.
+
+        Args:
+            comment (reviewboard.reviews.models.FileAttachmentComment):
+                The file attachment comment.
+
+        Returns:
+            str:
+            The link to the relevant diffviewer revision that the comment was
+            made on.
+        """
+        revision_info = comment.get_comment_diff_revision_info()
+        assert revision_info is not None
+
+        diff_revision = revision_info['diff_revision']
+        interdiff_revision = revision_info['interdiff_revision']
+        base_commit_id = revision_info['base_commit_id']
+        tip_commit_id = revision_info['tip_commit_id']
+        modified_filediff = revision_info['modified_filediff']
+        modified_diffset = revision_info['modified_diffset']
+
+        filediff_id: int = modified_filediff.pk
+        query: dict[str, Any] = {}
+
+        if base_commit_id:
+            query['base-commit-id'] = base_commit_id
+
+        if tip_commit_id:
+            query['tip-commit-id'] = tip_commit_id
+
+        if (modified_diffset.commit_count and
+            not base_commit_id and
+            not tip_commit_id):
+            # For review requests created with commit history, we can have
+            # multiple FileDiffs for the same file--one as part of the commit,
+            # and one as part of the cumulative diff. The file attachment for a
+            # binary file gets uploaded to the FileDiff corresponding to the
+            # commit.
+            #
+            # When the user loads the cumulative diff, we'll find the file
+            # attachments that correspond to those files. See
+            # :py:meth:`reviewboard.attachments.managers.
+            # FileAttachmentManager.get_for_filediff`.
+            #
+            # When we've reached this point in the code, we know that the user
+            # made their comment on the cumulative diff (we don't have any
+            # base-commit-id or tip-commit-id parameters to stick in the URL,
+            # yet the diffset has commits). We therefore need to do the reverse
+            # of what ``get_for_filediff` does, and find the FileDiff in the
+            # cumulative diff that corresponds to the commit-specific one we
+            # have.
+            filediff_id = (
+                FileDiff.objects
+                .filter(
+                    diffset_id=modified_diffset.pk,
+                    commit__isnull=True,
+                    dest_file=modified_filediff.dest_file)
+                .values_list('pk', flat=True)
+            )[0]
+
+        review_request = self.review_request
+
+        if interdiff_revision:
+            url = local_site_reverse(
+                'view-interdiff',
+                local_site=review_request.local_site,
+                kwargs={
+                    'interdiff_revision': interdiff_revision,
+                    'review_request_id': review_request.display_id,
+                    'revision': diff_revision,
+                })
+        else:
+            url = local_site_reverse(
+                'view-diff-revision',
+                local_site=review_request.local_site,
+                kwargs={
+                    'review_request_id': review_request.display_id,
+                    'revision': diff_revision,
+                })
+
+        if query:
+            url += f'?{urlencode(query)}'
+
+        return f'{url}#file{filediff_id}'
 
     @classmethod
     def for_object(
@@ -850,8 +1078,8 @@ class FileAttachmentReviewUI(ReviewUI):
     @classmethod
     def get_best_handler(
         cls,
-        mimetype: Tuple[str, str, str],
-    ) -> Tuple[float, Optional[type[ReviewUI]]]:
+        mimetype: tuple[str, str, str],
+    ) -> tuple[float, Optional[type[ReviewUI]]]:
         """Return the Review UI and score that that best fit the mimetype.
 
         Args:

@@ -2,6 +2,10 @@
 @import (reference) "rb/css/ui/colors.less";
 
 
+@linenum-padding-right: 4px;
+@linenum-padding-left: 2px;
+
+
 /*
  * The .diff-changes-* rules are used only within JavaScript code to
  * figure out the colors used to display the file complexity icons.
@@ -21,8 +25,6 @@
 
 .sidebyside {
   @diff-cell-padding: 1px;
-  @linenum-padding-right: 4px;
-  @linenum-padding-left: 2px;
 
   /*
    * Most of the moved range border sits on the line number cell as a
@@ -208,38 +210,37 @@
     }
   }
 
-  .moved-row td {
-    &.moved-from, &.moved-to {
-      border-left-width: @moved-border-left-width;
-      border-left-style: solid;
+  .moved-row {
+    td {
+      &.moved-from,
+      &.moved-to {
+        pre {
+          padding-right: @linenum-padding-right - @moved-border-left-width;
+        }
+      }
 
-      pre {
-        padding-left: @linenum-padding-left - @moved-border-left-width;
+      &.moved-from {
+        border-left: @moved-border-left-width @diff-moved-from-bg-color solid;
+      }
+
+      &.moved-to {
+        border-left: @moved-border-left-width @diff-moved-to-bg-color solid;
       }
     }
 
-    &.moved-from {
-      border-left-color: @diff-moved-from-bg-color;
-    }
+    th {
+      &.moved-from,
+      &.moved-to {
+        padding-right: @linenum-padding-right - @moved-border-right-width;
+      }
 
-    &.moved-to {
-      border-left-color: @diff-moved-to-bg-color;
-    }
-  }
+      &.moved-from {
+        border-right: @moved-border-right-width @diff-moved-from-bg-color solid;
+      }
 
-  .moved-row th {
-    &.moved-from, &.moved-to {
-      border-right-width: @moved-border-right-width;
-      border-right-style: solid;
-      padding-right: @linenum-padding-right - @moved-border-right-width;
-    }
-
-    &.moved-from {
-      border-right-color: @diff-moved-from-bg-color;
-    }
-
-    &.moved-to {
-      border-right-color: @diff-moved-to-bg-color;
+      &.moved-to {
+        border-right: @moved-border-right-width @diff-moved-to-bg-color solid;
+      }
     }
   }
 
@@ -586,6 +587,8 @@
       code {
         margin: 0 2px;
         font-size: 12px;
+        word-break: break-all;
+        word-wrap: break-word;
         vertical-align: middle;
       }
 
@@ -673,6 +676,490 @@
     padding: 2px 0 2px 2px;
     vertical-align: top;
   }
+
+  /*
+   * On mobile, we'll be making a few major changes to layout:
+   *
+   * 1. Rather than table layout, this will use grid layout, allowing us to
+   *    have control over where lines begin.
+   *
+   *    We use subgrid if available to make column sizes consistent across the
+   *    diff, but fall back to reasonably-minimum-enforced sizes on browers
+   *    lacking subgrid support.
+   *
+   * 2. There are three columns: The original file line number, the modified
+   *    file line number, and the content. Only one side is represented per
+   *    row.
+   *
+   * 3. The <tbody> and <thead> tags will be styled with borders, rather than
+   *    the <td> and <th> tags. When using table layout, styling must go on
+   *    the cells, rather than the tbody/thead, but this is not the case with
+   *    grid.
+   *
+   * 4. The "replace" chunks now display as pairs of deletes and inserts,
+   *    helping users see what changes are made.
+   */
+  .on-mobile-medium-screen-720({
+    display: grid;
+    grid-template-columns: 5em 5em 1fr;
+
+    /* With table layout removed, this becomes a standard element. Hide it. */
+    colgroup {
+      display: none;
+    }
+
+    /*
+     * The diff file header will continue to show two columns, one for the
+     * original file and one for the modified file.
+     *
+     * If we only show one filename, the original filename will take the full
+     * width. Its revision will also take as much of the column space as
+     * possible, leaving "New Change" to take a minimum amount.
+     *
+     * If we show both, they'll each get as much of the column space as is
+     * necessary (likely 50%).
+     */
+    thead {
+      display: grid;
+      grid-column: 1 / 4;
+      grid-template-columns: auto auto;
+
+      /* Override any JavaScript-set widths. */
+      th {
+        min-width: revert !important;
+        max-width: revert !important;
+      }
+
+      .filename-row {
+        display: grid;
+        grid-column: 1 / 3;
+        grid-template-columns: inherit;
+
+        /*
+         * Style the original filename column to take the full width by
+         * default.
+         */
+        > :nth-child(1) {
+          grid-column: 1 / 3;
+
+          &:has(+ th) {
+            /* If we have a modified filename, make it only take half. */
+            grid-column: 1 / 2;
+          }
+        }
+
+        /* Style the modified filename to take half, if present. */
+        > :nth-child(2) {
+          grid-column: 2 / 3;
+        }
+      }
+
+      .revision-row {
+        display: grid;
+        grid-column: 1 / 3;
+        grid-template-columns: inherit;
+
+        /* Hide the empty spacing cells before each revision. */
+        > :nth-child(1),
+        > :nth-child(3) {
+          display: none;
+        }
+
+        /* Style the original and modified revisions to take half the space. */
+        > :nth-child(2) {
+          grid-column: 1 / 2;
+        }
+
+        > :nth-child(4) {
+          grid-column: 2 / 3;
+        }
+
+        th {
+          padding: 8px;
+        }
+      }
+    }
+
+    tbody {
+      display: grid;
+      grid-column: 1 / 4;
+      grid-template-columns: inherit;
+
+      /* Hide the very first and last <tbody> borders in the diff. */
+      &:first-of-type {
+        border-top: 0 !important;
+      }
+
+      &:last-child {
+        border-bottom: 0 !important;
+      }
+
+      /*
+       * The following changes are made to the diff collapse header:
+       *
+       * 1. The button for expanding the original side will be placed in the
+       *    first column of the first row.
+       *
+       * 2. The button for expanding the modified side will be placed in the
+       *    second column of the first row.
+       *
+       * 3. Only one side's function/class header is shown. If the modified
+       *    file's header is present, then that is shown. Otherwise, the
+       *    original file's header is shown. This keeps it clean and
+       *    prioritizes looking at the modified file. We don't allow expanding
+       *    to the original file header if both are present anyway.
+       *
+       *    This takes all remaining columns.
+       */
+      &.diff-header {
+        background: @diff-header-color;
+        border-top: 1px darken(@diff-header-color, 10%) solid;
+        border-bottom: 1px darken(@diff-header-color, 10%) solid;
+
+        > tr {
+          &:first-child,
+          &:last-child {
+            td, th {
+              border: 0;
+            }
+          }
+
+          /*
+           * The row containing the "Expand above" and "Expand all lines"
+           * buttons.
+           */
+          &:nth-child(1) {
+            /* The "Expand above" button. */
+            > :nth-child(1) {
+              grid-column: 1 / 2;
+            }
+
+            /* The "Expand all lines" button. */
+            > :nth-child(2) {
+              grid-column: 2 / 4;
+            }
+          }
+
+          /* The row containing the "Expand below" and header buttons. */
+          &:nth-child(2) {
+            /* The "Expand below" button. */
+            > :nth-child(1) {
+              align-self: end;
+              grid-column: 1 / 2;
+            }
+
+            /*
+             * The original header.
+             *
+             * This will be the header for the original file if it differs
+             * from the modified file, in which case it's hidden.
+             */
+            > :nth-child(2) {
+              grid-column: 2 / 4;
+
+              &:has(+ td) {
+                display: none;
+              }
+            }
+
+            /* The modified header will take the remaining space. */
+            > :nth-child(3) {
+              grid-column: 2 / 4;
+            }
+          }
+        }
+      }
+
+      /*
+       * The following changes are made to the deleted chunks <tbody>:
+       *
+       * 1. The empty modified content area is hidden.
+       *
+       * 2. The original file line number is shown in the first line number
+       *    column. The empty modified line number is shown in the second
+       *    line number column.
+       *
+       * 3. Border management logic is applied to the <tbody>, mirroring the
+       *    logic normally applied for the desktop version of the diff viewer
+       *    to <td> and <tr>.
+       */
+      &.delete {
+        background: @diff-delete-linenum-color;
+        border-top: 1px @diff-delete-border-color solid;
+        border-bottom: 1px @diff-delete-border-color solid;
+
+        /*
+         * If there's a replace chunk right below, hide the border to make it
+         * appear as one set of deletes.
+         */
+        &:has(+ tbody.replace) {
+          border-bottom: 0;
+        }
+
+        /*
+         * Prioritize the delete chunk's border over any other, as it provides
+         * a stronger contrast.
+         */
+        + tbody.equal,
+        + tbody.delete,
+        + tbody.insert,
+        + tbody.replace {
+          border-top: 0;
+        }
+
+        > tr {
+          &.moved-row {
+            > :nth-child(1) {
+              padding-right: calc(50% + @linenum-padding-right -
+                                  @moved-border-right-width);
+            }
+          }
+
+          /* Place the original line number in the first column. */
+          > :nth-child(1) {
+            grid-column: 1 / 3;
+            padding-right: calc(50% + @linenum-padding-right);
+          }
+
+          /* Place the deleted line content in the third column. */
+          > :nth-child(2) {
+            grid-column: 3 / 4;
+          }
+
+          /* Place the empty modified line number in the second column. */
+          > :nth-child(3) {
+            display: none;
+          }
+
+          /* Hide the modified line content. */
+          > :nth-child(4) {
+            display: none;
+          }
+        }
+      }
+
+      /*
+       * The following changes are made to the equal chunks <tbody>:
+       *
+       * 1. The empty original content area is hidden.
+       *
+       * 2. The empty original file line number is shown in the first line
+       *    number column. The modified line number is shown in the second
+       *    line number column.
+       *
+       * 3. Border management logic is applied to the <tbody>, mirroring the
+       *    logic normally applied for the desktop version of the diff viewer
+       *    to <td> and <tr>.
+       */
+      &.equal {
+        /* Don't show any borders between equals chunks. */
+        + tbody.equal {
+          border-top: 0;
+        }
+
+        > tr {
+          /* Place the empty original line number in the first column. */
+          > :nth-child(1) {
+            grid-column: 1 / 2;
+          }
+
+          /* Hide the original line content. */
+          > :nth-child(4) {
+            display: none;
+          }
+
+          /* Place the modified line number in the second column. */
+          > :nth-child(3) {
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+          }
+
+          /* Place the modified line content in the third column. */
+          > :nth-child(2) {
+            grid-column: 3 / 4;
+            grid-row: 1 / 2;
+          }
+        }
+      }
+
+      /*
+       * The following changes are made to the inserted chunks <tbody>:
+       *
+       * 1. The empty original content area is hidden.
+       *
+       * 2. The empty original file line number is shown in the first line
+       *    number column. The modified line number is shown in the second
+       *    line number column.
+       *
+       * 3. Border management logic is applied to the <tbody>, mirroring the
+       *    logic normally applied for the desktop version of the diff viewer
+       *    to <td> and <tr>.
+       */
+      &.insert {
+        border-top: 1px @diff-insert-border-color solid;
+        border-bottom: 1px @diff-insert-border-color solid;
+
+        /*
+         * Prioritize the insert chunk's border over an equal, and hide it
+         * outright if there's a replace below (which will show as an insert).
+         */
+        + tbody.equal tr.first,
+        + tbody.replace tr.first {
+          border-top: 0;
+        }
+
+        > tr {
+          /* Place the empty original line number in the first column. */
+          > :nth-child(1) {
+            grid-column: 1 / 2;
+          }
+
+          /* Hide the inserted line content. */
+          > :nth-child(2) {
+            display: none;
+          }
+
+          /* Place the modified line number in the second column. */
+          > :nth-child(3) {
+            grid-column: 2 / 3;
+          }
+
+          /* Place the modified line content in the third column. */
+          > :nth-child(4) {
+            grid-column: 3 / 4;
+          }
+        }
+      }
+
+      /*
+       * The following changes are made to the replaced chunks <tbody>:
+       *
+       * 1. Replaced lines are shown as pairs of deletes and inserts. Their
+       *    styles merge with any adjacent deletes or inserts, respectively.
+       *
+       * 2. The original file line number is shown in the first line number
+       *    column. The modified line number is shown in the second line
+       *    number column.
+       *
+       * 3. Border management logic is applied to the <tbody>, mirroring the
+       *    logic normally applied for the desktop version of the diff viewer
+       *    to <td> and <tr>.
+       */
+      &.replace {
+        border-top: 1px @diff-delete-border-color solid;
+        border-bottom: 1px @diff-insert-border-color solid;
+
+        /*
+         * If there's an insert chunk right below, hide the border to make it
+         * appear as one set of deletes.
+         */
+        &:has(+ tbody.insert) {
+          border-bottom: 0;
+        }
+
+        /*
+         * Prioritize the delete chunk's border over any other, as it provides
+         * a stronger contrast. This is the same as with ``.delete``.
+         */
+        + tbody.equal,
+        + tbody.delete,
+        + tbody.insert,
+        + tbody.replace {
+          border-top: 0;
+        }
+
+        > tr {
+          /*
+           * The original file line number spans the first two columns on the
+           * first row, offset as best as possible by half the column area,
+           * and styled as a delete.
+           */
+          > :nth-child(1) {
+            background: @diff-delete-linenum-color;
+            grid-column: 1 / 3;
+            padding-right: calc(50% + @linenum-padding-right);
+          }
+
+          /*
+           * The original file content is placed in the third column on the
+           * first row and is styled as a delete.
+           */
+          > :nth-child(2) {
+            background: @diff-delete-color;
+            grid-column: 3 / 4;
+          }
+
+          /*
+           * The modified file line number spans the first two columns on the
+           * second row, aligned with the other inserted line numbers, and is
+           * styled as an insert.
+           */
+          > :nth-child(3) {
+            background: @diff-insert-linenum-color;
+            grid-column: 1 / 3;
+          }
+
+          /*
+           * The modified file content is placed in the third column on the
+           * second row and is styled as a delete.
+           */
+          > :nth-child(4) {
+            background: @diff-insert-color;
+            grid-column: 3 / 4;
+          }
+        }
+      }
+
+      /*
+       * Ensure each row inherits layout from its parent, and takes up the
+       * full available width.
+       *
+       * We also need to clear borders on cells so we can manage them on
+       * <tbody>.
+       */
+      > tr {
+        display: grid;
+        grid-column: 1 / 4;
+        grid-template-columns: inherit;
+
+        &.first {
+          td, th {
+            border-top: 0;
+          }
+        }
+
+        td .rb-c-diff-collapse-button {
+          right: 50%;
+          transform: none;
+        }
+
+        th {
+          /* Clip the left side of the text if it goes out of bounds. */
+          direction: rtl;
+          overflow: hidden;
+          text-overflow: clip;
+        }
+      }
+    }
+
+    /*
+     * If CSS subgrid is supported by the browser, apply this to select parts
+     * of the diff. This will help ensure columns line up correctly. Note that
+     * children may inherit this via `grid-template-columns: inherit` above.
+     *
+     * If not available, then default minimum widths will be used to try to
+     * keep columns aligned.
+     */
+    @supports (grid-template-columns: subgrid) {
+      grid-template-columns: max-content max-content 1fr;
+
+      tbody,
+      thead .filename-row,
+      thead .revision-row {
+        grid-template-columns: subgrid;
+      }
+    }
+  });
 }
 
 .commentflag {
@@ -1038,15 +1525,9 @@ table.rb-c-diff-file-index {
 /****************************************************************************
  * Comments hint
  ****************************************************************************/
-.comments-hint li {
-  &.current {
+#diff_comments_hint {
+  .-is-current {
     font-weight: bold;
-  }
-
-  &:not(.current) {
-    color: var(--ink-p-link-color);
-    text-decoration: underline;
-    cursor: pointer;
   }
 }
 

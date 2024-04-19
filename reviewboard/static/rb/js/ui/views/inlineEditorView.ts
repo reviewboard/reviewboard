@@ -1,8 +1,12 @@
 /** View classes for various types of inline editors. */
 
+import { paint } from '@beanbag/ink';
 import { BaseView, spina } from '@beanbag/spina';
 
-import { TextEditorView, TextEditorViewOptions } from './textEditorView';
+import {
+    type TextEditorViewOptions,
+    TextEditorView,
+} from './textEditorView';
 
 
 interface InlineEditorViewOptions {
@@ -280,6 +284,7 @@ export class InlineEditorView<
         const options = this.options;
         const multiline = options.multiline;
         const fieldLabel = options.fieldLabel;
+        const hasShortButtons = options.hasShortButtons;
         const editorID = _.uniqueId('rb-c-inline-editor');
 
         this.$el.data('inline-editor', this);
@@ -299,7 +304,7 @@ export class InlineEditorView<
             $form.addClass(options.formClass);
         }
 
-        if (options.hasShortButtons) {
+        if (hasShortButtons) {
             $form.addClass('-has-short-buttons');
         }
 
@@ -316,44 +321,39 @@ export class InlineEditorView<
         this.$buttons = $();
 
         if (options.showButtons) {
-            this.$buttons = $('<div>')
+            this.$buttons =
+                $(paint`
+                    <div class="rb-c-inline-editor__actions">
+                     <Ink.Button
+                       aria-label="${
+                           fieldLabel
+                           ? _`Save ${fieldLabel}`
+                           : _`Save the field`
+                       }"
+                       data-action="save"
+                       iconName="ink-i-check"
+                       onClick=${() => this.submit()}>
+                      ${!hasShortButtons && _`Save`}
+                     </Ink.Button>
+
+                     <Ink.Button
+                       aria-label="${
+                           fieldLabel
+                           ? _`
+                               Cancel editing ${fieldLabel} and
+                               discard changes
+                             `
+                           : _`Cancel editing and discard changes`
+                       }"
+                       data-action="cancel"
+                       iconName="ink-i-close"
+                       onClick=${() => this.cancel()}>
+                      ${!hasShortButtons && _`Cancel`}
+                     </Ink.Button>
+                    </div>
+                `)
                 .hide()
-                .addClass('rb-c-inline-editor__actions')
                 .appendTo($form);
-
-            $('<button class="rb-c-button" data-action="save">')
-                .append($('<span class="rb-c-button__icon">')
-                    .attr('aria-hidden', 'true'))
-                .append($('<label class="rb-c-button__label">')
-                    .text(_`Save`))
-                .attr('aria-label',
-                      fieldLabel
-                      ? _`Save ${fieldLabel}`
-                      : _`Save the field`)
-                .appendTo(this.$buttons)
-                .click(e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    this.submit();
-                });
-
-            $('<button class="rb-c-button" data-action="cancel">')
-                .append($('<span class="rb-c-button__icon">')
-                    .attr('aria-hidden', 'true'))
-                .append($('<label class="rb-c-button__label">')
-                    .text(_`Cancel`))
-                .attr('aria-label',
-                      fieldLabel
-                      ? _`Cancel editing ${fieldLabel} and discard changes`
-                      : _`Cancel editing and discard changes`)
-                .appendTo(this.$buttons)
-                .click(e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    this.cancel();
-                });
         }
 
         this._$editIcon = $();

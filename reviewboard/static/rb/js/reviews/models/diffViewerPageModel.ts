@@ -3,10 +3,16 @@
  */
 import { spina } from '@beanbag/spina';
 
+import { DiffFileCollection } from '../collections/diffFileCollection';
+import { type DiffFileResourceData } from './diffFileModel';
 import {
+    type DiffCommentsHintParseData,
+    DiffCommentsHint,
+} from './diffCommentsHintModel';
+import {
+    type ReviewablePageAttrs,
+    type ReviewablePageParseData,
     ReviewablePage,
-    ReviewablePageAttrs,
-    ReviewablePageParseData,
 } from './reviewablePageModel';
 
 
@@ -43,11 +49,11 @@ interface DiffViewerPageParseData extends ReviewablePageParseData {
     // TODO: update these as sub-objects are converted to TS.
     allChunksCollapsed: boolean;
     canToggleExtraWhitespace: boolean;
-    comments_hint: object;
+    comments_hint: DiffCommentsHintParseData;
     commit_history_diff: object[];
     commits: object[];
     filename_patterns: string[];
-    files: object[];
+    files: DiffFileResourceData[];
     num_diffs: number;
     pagination: object;
     revision: {
@@ -115,7 +121,7 @@ export class DiffViewerPage extends ReviewablePage<DiffViewerPageAttrs> {
      **********************/
 
     /** The hint for comments in other revisions. */
-    commentsHint: RB.DiffCommentsHint;
+    commentsHint: DiffCommentsHint;
 
     /** The diff of all the files between currently-shown commits. */
     commitHistoryDiff: RB.CommitHistoryDiffEntryCollection;
@@ -127,7 +133,7 @@ export class DiffViewerPage extends ReviewablePage<DiffViewerPageAttrs> {
     diffReviewables: RB.DiffReviewableCollection;
 
     /** The set of currently-shown files. */
-    files: RB.DiffFileCollection;
+    files: DiffFileCollection;
 
     /** Paginator for all of the diff files. */
     pagination: RB.Pagination;
@@ -143,10 +149,10 @@ export class DiffViewerPage extends ReviewablePage<DiffViewerPageAttrs> {
      * the instance.
      */
     preinitialize() {
-        this.commentsHint = new RB.DiffCommentsHint();
+        this.commentsHint = new DiffCommentsHint();
         this.commits = new RB.DiffCommitCollection();
         this.commitHistoryDiff = new RB.CommitHistoryDiffEntryCollection();
-        this.files = new RB.DiffFileCollection();
+        this.files = new DiffFileCollection();
         this.pagination = new RB.Pagination();
         this.revision = new RB.DiffRevision();
     }
