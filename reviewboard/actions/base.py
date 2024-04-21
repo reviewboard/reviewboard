@@ -175,6 +175,23 @@ class BaseAction:
         else:
             return self.parent_action.depth + 1
 
+    def is_custom_rendered(self) -> bool:
+        """Whether this action uses custom rendering.
+
+        By default, this will return ``True`` if a custom template name is
+        used. If the JavaScript side needs to override rendering, the subclass
+        should explicitly return ``True``.
+
+        Version Added:
+            7.0
+
+        Returns:
+            bool:
+            ``True`` if this action uses custom rendering. ``False`` if it
+            does not.
+        """
+        return self.template_name != BaseAction.template_name
+
     def should_render(
         self,
         *,
@@ -237,10 +254,33 @@ class BaseAction:
             dict:
             A dictionary of attributes to pass to the model instance.
         """
-        return {
+        dom_id = self.get_dom_element_id()
+        icon_class = self.icon_class
+        label = self.get_label(context=context)
+        url = self.get_url(context=context)
+        visible = self.get_visible(context=context)
+
+        data: dict = {
             'actionId': self.action_id,
-            'visible': self.visible,
+            'visible': visible,
         }
+
+        if dom_id:
+            data['domID'] = dom_id
+
+        if icon_class:
+            data['iconClass'] = icon_class
+
+        if self.is_custom_rendered():
+            data['isCustomRendered'] = True
+
+        if label:
+            data['label'] = str(label)
+
+        if url:
+            data['url'] = url
+
+        return data
 
     def get_js_view_data(
         self,
@@ -435,6 +475,23 @@ class BaseMenuAction(BaseAction):
     #: are registered with this menu as their parent but do not appear in this
     #: list will be added at the end of the menu.
     children: List[str] = []
+
+    def is_custom_rendered(self) -> bool:
+        """Whether this menu action uses custom rendering.
+
+        By default, this will return ``True`` if a custom template name is
+        used. If the JavaScript side needs to override rendering, the subclass
+        should explicitly return ``True``.
+
+        Version Added:
+            7.0
+
+        Returns:
+            bool:
+            ``True`` if this action uses custom rendering. ``False`` if it
+            does not.
+        """
+        return self.template_name != BaseMenuAction.template_name
 
     def get_extra_context(
         self,

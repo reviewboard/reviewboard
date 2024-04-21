@@ -171,7 +171,8 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
  * Version Added:
  *     6.0
  */
-abstract class BaseVisibilityActionView extends Actions.ActionView {
+@spina
+class BaseVisibilityActionView extends Actions.ActionView {
     static events: EventsHash = {
         'click': '_toggle',
     };
@@ -208,9 +209,9 @@ abstract class BaseVisibilityActionView extends Actions.ActionView {
      *     BaseVisibilityActionView:
      *     This object, for chaining.
      */
-    onRender() {
-        this.$('span').text(
-            this.getLabel(this.#reviewRequest.get('visibility')));
+    protected onRender() {
+        this.model.set('label',
+                       this.getLabel(this.#reviewRequest.get('visibility')));
     }
 
     /**
@@ -224,9 +225,13 @@ abstract class BaseVisibilityActionView extends Actions.ActionView {
      *     string:
      *     The label to show based on the current visibility state.
      */
-    abstract getLabel(
+    getLabel(
         visibility: number,
-    ): string;
+    ): string {
+        console.assert(false, 'Not reached.');
+
+        return null;
+    }
 
     /**
      * Toggle the archive state of the review request.

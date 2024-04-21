@@ -44,7 +44,7 @@ export class MenuActionView<
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const menuItems = new MenuItemsCollection();
         const page = RB.PageManager.getPage();
 
@@ -57,13 +57,79 @@ export class MenuActionView<
                 const childActionView = page.getActionView(childId);
 
                 if (childActionView) {
-                    menuItems.add({
-                        childEl: childActionView.el,
-                        onClick: () => childActionView.activate(),
-                    });
+                    const childAction = childActionView.model;
+                    const visible = childAction.get('visible');
+                    const domID = childAction.get('domID');
 
-                    if (childActionView.model.get('visible')) {
-                        childActionView.$el.show();
+                    const onClick = () => {
+                        if (childActionView['activate']) {
+                            childActionView.activate();
+                        } else {
+                            childActionView.el.click();
+                        }
+                    }
+
+                    if (childAction.get('isCustomRendered')) {
+                        menuItems.add({
+                            childEl: childActionView.el,
+                            id: domID,
+                            onClick: onClick,
+                        });
+
+                        if (visible) {
+                            childActionView.$el.show();
+                        }
+                    } else {
+                        if (!visible) {
+                            /*
+                             * Don't include this at all.
+                             *
+                             * In the future, we may want to re-add this
+                             * (or rebuild the whole menu) if this changes.
+                             */
+                            continue;
+                        }
+
+                        /*
+                         * "#" is the default URL, and really indicates that
+                         * a JavaScript-backed action is taking place. If we
+                         * get this, normalize it to null.
+                         */
+                        let url = childAction.get('url');
+
+                        if (url === '#') {
+                            url = null;
+                        }
+
+                        const menuItem = menuItems.add({
+                            iconName: childAction.get('iconClass'),
+                            id: domID,
+                            label: childAction.get('label'),
+                            onClick: onClick,
+                            url: url,
+                        });
+
+                        /* Update the menu item when these change. */
+                        this.listenTo(
+                            childAction,
+                            'change:iconClass',
+                            (model, newIconClass) => {
+                                menuItem.set('iconName', newIconClass);
+                            });
+
+                        this.listenTo(
+                            childAction,
+                            'change:label',
+                            (model, newLabel) => {
+                                menuItem.set('label', newLabel);
+                            });
+
+                        this.listenTo(
+                            childAction,
+                            'change:url',
+                            (model, newURL) => {
+                                menuItem.set('url', newURL);
+                            });
                     }
                 } else {
                     console.error('Unable to find action for %s', childId);
