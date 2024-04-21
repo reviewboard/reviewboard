@@ -1,3 +1,6 @@
+@import (reference) "@beanbag/ink/lib/ink.less";
+
+
 /**
  * The top product, search, and navigation bar for Review Board.
  *
@@ -289,6 +292,14 @@
     grid-area: search;
   }
 
+  #ink-ns-ui.base.customize-component(
+    @name: ink-c-menu;
+    @schema: #ink-ns-schema[@menu];
+    @vars: {
+      --ink-c-menu-bg: var(--ink-p-header-bg);
+      --ink-c-menu-border: 1px var(--ink-p-header-border-color) solid;
+    });
+
   #rb-ns-pages.base.on-shell-mobile-mode({
     height: auto;
     position: relative;
@@ -404,14 +415,8 @@
     z-index: @z-index-base;
   }
 
-  .rb-c-menu {
-    background: var(--ink-p-header-bg);
-    border: var(--ink-g-border-header);
-    border-radius: 0 0 @box-border-radius @box-border-radius;
-    margin: 0;
-    margin-right: -1px;
+  .ink-c-menu {
     right: 0;
-    overflow: hidden;
   }
 
   .rb-c-menu__item {
