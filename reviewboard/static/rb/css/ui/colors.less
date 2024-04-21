@@ -129,12 +129,23 @@
       @prefix: rb-p;
       @vars: {
         /** Background for draft elements. */
-        draft-bg: var(--ink-p-green-200);
+        draft-bg:
+          var(--if-light, var(--ink-p-green-200))
+          var(--if-dark, var(--ink-p-cool-grey-300));
+
+        /** Hover background color for draft elements. */
+        draft-hover-bg:
+          var(--if-light, var(--ink-p-green-300))
+          var(--if-dark, var(--ink-p-accent-primary-bg));
+
+        draft-hover-fg:
+          var(--if-light, var(--ink-p-text-on-light-color))
+          var(--if-dark, var(--ink-p-accent-primary-fg));
 
         /** Border color for draft elements. */
         draft-border-color:
           var(--if-light, var(--ink-p-green-500))
-          var(--if-dark, var(--ink-p-green-100));
+          var(--if-dark, var(--ink-p-black));
 
         issue-bg: var(--ink-p-light__yellow-300);
 

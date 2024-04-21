@@ -1,9 +1,14 @@
 import {
+    type MenuView,
+    MenuItemType,
+    MenuItemsCollection,
+    craft,
+    renderInto,
+} from '@beanbag/ink';
+import {
     type EventsHash,
     spina,
 } from '@beanbag/spina';
-
-import { MenuView } from 'reviewboard/ui';
 
 import { type MenuAction } from '../models/menuActionModel';
 import { ActionView } from './actionView';
@@ -40,23 +45,21 @@ export class MenuActionView<
      * Render the view.
      */
     onInitialRender() {
-        this.menu = new MenuView({
-            $controller: this.$el,
-        });
-
-        this.$el.append(this.menu.render().$el);
-
+        const menuItems = new MenuItemsCollection();
         const page = RB.PageManager.getPage();
 
         for (const childId of this.model.get('children')) {
             if (childId === '--') {
-                this.menu.addSeparator();
+                menuItems.add({
+                    type: MenuItemType.SEPARATOR,
+                });
             } else {
                 const childActionView = page.getActionView(childId);
 
                 if (childActionView) {
-                    this.menu.addItem({
-                        $child: childActionView.$el,
+                    menuItems.add({
+                        childEl: childActionView.el,
+                        onClick: () => childActionView.activate(),
                     });
 
                     if (childActionView.model.get('visible')) {
@@ -67,13 +70,19 @@ export class MenuActionView<
                 }
             }
         }
+
+        this.menu = craft<MenuView>`
+            <Ink.Menu controllerEl=${this.el}
+                      menuItems=${menuItems}/>
+        `;
+        renderInto(this.el, this.menu);
     }
 
     /**
      * Open the menu.
      */
     protected openMenu() {
-        if (this.menu.el.children.length > 0) {
+        if (!this.menu.menuItems.isEmpty()) {
             this.menu.open({ animate: true });
         }
     }
@@ -82,7 +91,7 @@ export class MenuActionView<
      * Close the menu.
      */
     protected closeMenu() {
-        if (this.menu.el.children.length > 0) {
+        if (!this.menu.menuItems.isEmpty()) {
             this.menu.close({ animate: true });
         }
     }
@@ -129,20 +138,22 @@ export class MenuActionView<
             evt.key === 'ArrowDown' ||
             evt.key === 'ArrowUp' ||
             evt.key === 'Enter') {
-            this.menu.open({
-                animate: false,
-            });
-            this.menu.focusFirstItem();
-
+            /* Open the menu and select the first item. */
             evt.stopPropagation();
             evt.preventDefault();
+
+            this.menu.open({
+                currentItemIndex: 0,
+                animate: false,
+            });
         } else if (evt.key === 'Escape') {
+            /* Close the menu. */
+            evt.stopPropagation();
+            evt.preventDefault();
+
             this.menu.close({
                 animate: false,
             });
-
-            evt.stopPropagation();
-            evt.preventDefault();
         }
     }
 

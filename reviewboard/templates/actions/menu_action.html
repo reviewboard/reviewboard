@@ -6,9 +6,11 @@
  <a href="#" role="presentation"
     aria-label="{{label}}">
 {%  if action.icon_class %}
-  <span class="{{action.icon_class}}"></span>
+  <label class="rb-c-actions__action-label">
+   <span class="{{action.icon_class}}"></span>
 {%  endif %}
-  {{label}}
+   {{label}}
+  </label>
   <span class="ink-i-dropdown"></span>
  </a>
 {%  child_actions_html %}

@@ -1,13 +1,16 @@
+@import (reference) "@beanbag/ink/lib/ink.less";
+
 @import (reference) "rb/css/defs.less";
 
-@banner-padding: 10px;
-@banner-padding-horizontal: 10px;
+
+@banner-padding: var(--ink-u-spacing-ml);
+@banner-padding-horizontal: var(--ink-u-spacing-ml);
 
 
 .banner {
-  background: @draft-color;
+  background: var(--rb-p-draft-bg);
   border-width: 1px;
-  border-color: @draft-border-color;
+  border-color: var(--rb-p-draft-border-color);
   border-style: solid;
   margin-bottom: 10px;
   padding: @banner-padding;
@@ -79,8 +82,8 @@
     box-shadow: none;
 
     &::after {
-      background: @draft-color;
-      border-color: @draft-border-color;
+      background: var(--rb-p-draft-bg);
+      border-color: var(--rb-p-draft-border-color);
       border-style: solid;
       border-width: 0 1px 1px 1px;
       box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
@@ -92,7 +95,7 @@
   }
 
   a {
-    color: #rb-ns-ui.colors[@black];
+    color: inherit;
     cursor: pointer;
     text-decoration: none;
   }
@@ -112,16 +115,17 @@
    *     </div>
    */
   &__review {
-    background: @review-request-bg;
-    border-bottom: 1px @review-request-border-color solid;
+    background: var(--rb-c-review-request-bg-color);
+    border-bottom: var(--rb-c-review-request-border);
     display: flex;
     flex-direction: column;
+    gap: @banner-padding;
     padding: 0 @banner-padding;
     position: relative;
 
     .-has-draft & {
-      background: @draft-color;
-      border-bottom: 1px @draft-border-color solid;
+      background: var(--rb-p-draft-bg);
+      border-bottom: 1px var(--rb-p-draft-border-color) solid;
     }
   }
 
@@ -175,13 +179,26 @@
    *     </div>
    */
   &__controls {
-    align-items: baseline;
+    align-items: center;
     display: flex;
     gap: @banner-padding;
 
     > div:not(:empty) {
       margin-right: 1em;
     }
+  }
+
+  /**
+   * The label shown for a menu.
+   *
+   * Structure:
+   *     <label class="rb-c-unified-banner__menu-label">
+   *      ...
+   *     </label>
+   */
+  &__menu-label {
+    display: flex;
+    gap: var(--ink-u-spacing-s);
   }
 
   /**
@@ -193,26 +210,42 @@
    *       <a class="rb-c-unified-banner__mode">
    *        <span class="rb-c-unified-banner__menu-label">...<?span>
    *       </a>
-   *       <div class="rb-c-menu">...</div>
+   *       <div class="ink-c-menu">...</div>
    *      </div>
    *     </div>
    */
   &__mode-selector {
-    margin-left: -@banner-padding;
-
-    .rb-c-menu {
-      background: @draft-color;
-      border-color: @draft-border-color;
-      font-weight: bold;
-      margin-left: -1px;
-      min-width: 30em;
+    /*
+     * We'd normally put this in @vars below in customize-component(), but
+     * we need these same variables to be usable by the menu dropdown action
+     * element.
+     */
+    &, .ink-c-menu {
+      --ink-c-menu-bg: var(--rb-p-draft-bg);
+      --ink-c-menu-border: 1px var(--rb-p-draft-border-color) solid;
+      --ink-c-menu-item-selected-bg: var(--rb-p-draft-hover-bg);
+      --ink-c-menu-item-selected-fg: var(--rb-p-draft-hover-fg);
     }
 
-    .rb-c-menu__item:not(.rb-c-button) {
-      &:focus, &:hover {
-        background: @draft-hover-color;
-      }
-    }
+    margin-left: calc(-1 * @banner-padding);
+
+    #ink-ns-ui.base.customize-component(
+      @name: ink-c-menu;
+      @schema: #ink-ns-schema[@menu];
+      @schema-rules: {
+        @__default__: {
+          border-left: 0;
+          min-width: 30em;
+        };
+        @item-inner: {
+          padding: var(--ink-u-spacing-l);
+        };
+        @item-label: {
+          font-size: var(--ink-u-font-sm);
+          font-weight: bold;
+        };
+      };
+    );
   }
 
   /**
@@ -229,16 +262,6 @@
    */
   &__mode {}
 
-  &__menu.-is-open &__mode {
-    border-bottom: 1px @draft-color solid;
-    border-left: 1px @draft-border-color solid;
-    border-right: 1px @draft-border-color solid;
-    box-sizing: border-box;
-    margin: 0 -1px -1px -1px;
-    position: relative;
-    z-index: @z-index-menu + 1;
-  }
-
   /**
    * The "Review" menu and other actions.
    */
@@ -249,29 +272,97 @@
 
   .rb-c-actions {
     list-style: none;
-  }
 
-  &__mode,
-  #action-review-menu > a {
-    box-sizing: border-box;
-    display: block;
-    font-weight: bold;
-    padding: @banner-padding;
+    &__action a {
+      display: flex;
+      gap: var(--ink-u-spacing-s);
+    }
   }
 
   /*
    * This makes sure that items in the review menu are clickable across
    * their entire breadth.
    */
-  #action-review-menu .rb-c-menu__item {
-    padding: 0;
+  #action-review-menu {
+    position: relative;
 
-    & > a {
-      @_menu-vars: #rb-ns-ui.menus();
+    #ink-ns-ui.base.customize-component(
+      @name: ink-c-menu;
+      @schema: #ink-ns-schema[@menu];
+      @schema-rules: {
+        @item-inner: {
+          padding: 0;
+        };
+        @item-label: {
+          > a {
+            display: inline-block;
+            padding: var(--ink-c-menu-item-padding);
+          }
+        };
+      };
+    );
+  }
 
-      display: inline-block;
-      padding: @_menu-vars[@item-padding-vert] @_menu-vars[@item-padding-horiz];
-    }
+  /*
+   * Handle styling for the embedded menus for the draft mode and Reviews
+   * menu.
+   *
+   * NOTE: Ideally, a lot of this would be common, and be based on action
+   *       styling. However, we don't have styling specific to menu actions
+   *       as of this writing (April 15, 2024), and the draft mode and review
+   *       menus have different layouts. For now, we're just handling each
+   *       specially.
+   */
+
+  /*
+   * Move the menu up one so that the top-level menu item's border will
+   * overlap, making it appear seamless.
+   */
+  #action-review-menu,
+  &__mode-selector {
+    #ink-ns-ui.base.customize-component(
+      @name: ink-c-menu;
+      @schema: #ink-ns-schema[@menu];
+      @schema-rules: {
+        @__default__: {
+          margin-top: -1px;
+        };
+      };
+    );
+  }
+
+  /* Set up layout for the top-level menu item. */
+  #action-review-menu > a,
+  &__mode-selector &__menu &__mode {
+    border-right: 1px transparent solid;
+    box-sizing: border-box;
+    display: flex;
+    font-weight: bold;
+    padding: @banner-padding;
+    position: relative;
+    z-index: @z-index-menu + 1;
+  }
+
+  /* Increase the top level menu item's font size to be more header-sized. */
+  #action-review-menu .rb-c-unified-banner__menu-label,
+  &__mode-selector .rb-c-actions__action-label {
+    font-size: var(--ink-u-font-sm);
+  }
+
+  /* Ensure the labels have menu background/border styling when open. */
+  #action-review-menu.-is-menu-open > a,
+  &__mode-selector &__menu.-is-menu-open &__mode {
+    background: var(--ink-c-menu-bg);
+    border-right: var(--ink-c-menu-border);
+  }
+
+  /* Give the review menu a left border to match the right. */
+  #action-review-menu > a {
+    border-left: 1px transparent solid;
+  }
+
+  #action-review-menu.-is-menu-open > a {
+    border-left: var(--ink-c-menu-border);
   }
 
   /**
