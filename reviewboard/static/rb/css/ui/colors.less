@@ -150,6 +150,21 @@
         issue-bg: var(--ink-p-light__yellow-300);
 
         issue-border-color: var(--ink-p-container-outline);
+
+        /** Color used for graph data representing diff insert operations. */
+        diff-insert-graph-color:
+          var(--if-light, var(--ink-p-green-500))
+          var(--if-dark, var(--ink-p-green-700));
+
+        /** Color used for graph data representing diff delete operations. */
+        diff-delete-graph-color:
+          var(--if-light, var(--ink-p-red-500))
+          var(--if-dark, var(--ink-p-red-700));
+
+        /** Color used for graph data representing diff replace operations. */
+        diff-replace-graph-color:
+          var(--if-light, var(--ink-p-yellow-800))
+          var(--if-dark, var(--ink-p-yellow-600));
       };
     );
   }
