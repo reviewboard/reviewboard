@@ -115,15 +115,18 @@
    * ``-is-sortable`` modifier class indicating that the header is clickable.
    */
   &__data {
-    border: @_border-width @_color-vars[@border] solid;
+    border: var(--ink-c-data-table-border);
     border-radius: @box-border-radius;
     border-spacing: 0;
     overflow: hidden;
     width: 100%;
 
     tbody {
+      background: var(--ink-c-data-table-body-bg);
+      color: var(--ink-c-data-table-body-text-color);
+
       tr {
-        background: @_data-vars[@cell-bg];
+        background: var(--ink-c-data-table-row-bg);
 
         &.-is-hidden {
           display: none;
@@ -131,34 +134,32 @@
       }
 
       td {
-        padding: @_cell-padding;
+        padding: var(--ink-c-data-table-cell-padding);
         vertical-align: top;
       }
     }
 
     thead {
       th {
-        border-bottom: @_border-width @_color-vars[@border] solid;
+        color: var(--ink-c-data-table-header-text-color);
         cursor: pointer;
-        padding: (@_cell-padding / 2) @_cell-padding;
+        padding: var(--ink-c-data-table-cell-padding);
         text-align: left;
         white-space: nowrap;
 
         &.-is-sortable:hover {
-          background: @_color-vars[@hover-bg];
+          text-decoration: underline;
         }
       }
 
       tr {
-        background: @_color-vars[@bg];
+        background: var(--ink-c-data-table-header-bg);
       }
     }
   }
 
   .rb-c-tabs {
     margin-left: @_tabs-vars[@margin-left];
-
-    #rb-ns-ui.tabs.set-flush-with-border(@_border-width);
 
     .on-mobile-medium-screen-720({
       margin-left: @_tabs-vars[@mobile-margin-left];

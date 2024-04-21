@@ -50,9 +50,14 @@
   /**
    * A special row indicating that no issues exist matching the filter.
    */
-  &__no-issues {
-    td {
-      background-color: #FFF;
+  & .rb-c-review-request-field-tabular__data tr&__no-issues {
+    --_rb-c-issue-summary-table-row-text-color-dark: var(--ink-p-text-color);
+
+    td,
+    td:hover {
+      background:
+        var(--if-dark, none)
+        var(--if-light, white);
     }
   }
 
@@ -61,18 +66,9 @@
    */
   .rb-c-review-request-field-tabular__data {
     tr {
-      /*
-       * Sets the background and hover colors for an issue row of a given type.
-       */
-      ._issue-row-colors(@bg, @hover-bg) {
-        &:hover td {
-          background-color: @hover-bg;
-        }
-
-        td {
-          background-color: @bg;
-        }
-      }
+      --_rb-c-issue-summary-table-row-bg-light: var(--rb-p-issue-bg);
+      --_rb-c-issue-summary-table-row-hover-bg-light: @issue-opened-hover-bg;
+      --_rb-c-issue-summary-table-row-text-color-dark: var(--ink-p-yellow-500);
 
       &[data-issue-id] {
         cursor: pointer;
@@ -93,30 +89,50 @@
         }
       }
 
-      &.-is-open {
-        ._issue-row-colors(@issue-opened-bg, @issue-opened-hover-bg);
-      }
-
       &.-is-dropped {
-        ._issue-row-colors(@issue-discarded-bg, @issue-discarded-hover-bg);
+        --_rb-c-issue-summary-table-row-bg-light: @issue-discarded-bg;
+        --_rb-c-issue-summary-table-row-hover-bg-light:
+          @issue-discarded-hover-bg;
+        --_rb-c-issue-summary-table-row-text-color-dark:
+          var(--ink-p-text-on-dark-color-weak);
       }
 
       &.-is-resolved {
-        ._issue-row-colors(@issue-resolved-bg, @issue-resolved-hover-bg);
+        --_rb-c-issue-summary-table-row-bg-light: @issue-resolved-bg;
+        --_rb-c-issue-summary-table-row-hover-bg-light:
+          @issue-resolved-hover-bg;
+        --_rb-c-issue-summary-table-row-text-color-dark:
+          var(--ink-p-green-700);
       }
 
       &.-is-verifying-dropped,
       &.-is-verifying-resolved {
-        ._issue-row-colors(@issue-verifying-bg, @issue-verifying-hover-bg);
+        --_rb-c-issue-summary-table-row-bg-light: @issue-verifying-bg;
+        --_rb-c-issue-summary-table-row-hover-bg-light:
+          @issue-verifying-hover-bg;
       }
 
       td {
+        background:
+          var(--if-dark, none)
+          var(--if-light, var(--_rb-c-issue-summary-table-row-bg-light));
+        color:
+          var(--if-dark, var(--_rb-c-issue-summary-table-row-text-color-dark))
+          var(--if-light, var(--ink-p-text-on-light-color));
+
         /*
          * All text should be vertically centered in relation to the issue
          * status icon, meaning we need to give them all the line height of
          * the icon. From there, we'll make further adjustments below.
          */
         line-height: @_common-vars[@status-icon-size];
+
+        &:hover {
+          background:
+            var(--if-dark, var(--ink-p-container-hover-bg))
+            var(--if-light,
+                var(--_rb-c-issue-summary-table-row-hover-bg-light));
+        }
 
         /* Description column */
         &:nth-child(1) {
