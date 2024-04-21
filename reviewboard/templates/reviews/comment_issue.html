@@ -1,27 +1,71 @@
 {% load i18n reviewtags static %}
+{% comment %}
+ NOTE: Keep this file in sync with
+       reviewboard/static/rb/js/reviews/views/commentIssueBarView.ts
+{% endcomment %}
 
 {% if comment.issue_opened %}
 <div class="issue-indicator">
- <div class="issue-state"
+ <div class="rb-c-issue-bar"
+      aria-labelledby="issue-bar-{{comment.pk}}_label"
+      data-can-verify="{{can_verify|yesno:'true,false'}}"
       data-comment-id="{{comment.pk}}"
       data-comment-type="{{comment_type}}"
-      data-issue-status="{{issue_status}}"
       data-interactive="{{interactive|yesno:'true,false'}}"
-      data-can-verify="{{can_verify|yesno:'true,false'}}">
-  <div class="issue-container">
-   <span class="rb-icon"></span>
-   <span class="issue-details">
-    <span class="issue-message"></span>
-    <span class="issue-actions">
-     <input type="button" value="Fixed" class="issue-button resolve" style="display:none;"/>
-     <input type="button" value="Drop" class="issue-button drop" style="display:none;"/>
-     <input type="button" value="Re-open" class="issue-button reopen" style="display:none;"/>
-     <input type="button" value="Verify Dropped" class="issue-button verify-dropped" style="display:none;"/>
-     <input type="button" value="Verify Fixed" class="issue-button verify-resolved" style="display:none;"/>
-    </span>
-    <a class="back-to-issue-summary" href="#issue-summary">{% trans "Show all issues" %}</a>
-   </span>
-  </div>
+      data-issue-status="{{issue_status}}">
+  <span class="rb-c-issue-bar__icon" aria-hidden="true"></span>
+  <label class="rb-c-issue-bar__message"
+         id="issue-bar-{{comment.pk}}_label">
+{%  if issue_status == "open" %}
+   {% trans "An issue was opened." %}
+{%  elif issue_status == "dropped" %}
+   {% trans "The issue has been dropped." %}
+{%  elif issue_status == "resolved" %}
+   {% trans "The issue has been resolved." %}
+{%  elif issue_status == "verifying-dropped" %}
+   {% trans "Waiting for verification before dropping..." %}
+{%  elif issue_status == "verifying-resolved" %}
+   {% trans "Waiting for verification before resolving..." %}
+{%  endif %}
+  </label>
+  <span class="rb-c-issue-bar__actions">
+{%  if interactive %}
+{%   if issue_status == "open" %}
+   <button class="ink-c-button" type="button" data-action="resolve">
+    {% trans "Fixed" %}
+   </button>
+   <button class="ink-c-button" type="button" data-action="drop">
+    {% trans "Drop" %}
+   </button>
+{%   elif issue_status == "dropped" or issue_status == "resolved" %}
+   <button class="ink-c-button" type="button" data-action="reopen">
+    {% trans "Re-open" %}
+   </button>
+{%   elif issue_status == "verifying-dropped" %}
+   <button class="ink-c-button" type="button" data-action="reopen">
+    {% trans "Re-open" %}
+   </button>
+{%    if can_verify %}
+   <button class="ink-c-button" type="button" data-action="verify-dropped">
+    {% trans "Verify Dropped" %}
+   </button>
+{%    endif %}
+{%   elif issue_status == "verifying-resolved" %}
+   <button class="ink-c-button" type="button" data-action="reopen">
+    {% trans "Re-open" %}
+   </button>
+{%    if can_verify %}
+   <button class="ink-c-button" type="button" data-action="verify-resolved">
+    {% trans "Verify Fixed" %}
+   </button>
+{%    endif %}
+{%   endif %}
+{%  endif %}
+  </span>
+  <a class="rb-c-issue-bar__all-issues-link"
+     href="#issue-summary">
+   {% trans "Show all issues" %}
+  </a>
  </div>
 </div>
 {% endif %}

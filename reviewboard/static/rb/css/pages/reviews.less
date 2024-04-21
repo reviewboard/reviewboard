@@ -777,6 +777,10 @@
 
   .review-comment {
     padding: @review-comment-padding;
+
+    .rb-c-issue-bar {
+      margin-bottom: 2em;
+    }
   }
 
   &.comment-details-empty .review-comment {
@@ -2252,119 +2256,6 @@
   .ui-icon-gripsmall-diagonal-se {
     background: url('@{rb-images-root}/resize-grip.png') no-repeat top left;
   }
-}
-
-.issue-state {
-  @issue-state-height: 26px;
-
-  border: 1px transparent solid;
-  font-weight: bold;
-  line-height: @issue-state-height;
-  margin-bottom: 2em;
-  min-height: @issue-state-height;
-  padding: 0.6em;
-  transition: 0.1s linear all;
-  visibility: hidden;
-
-  input, .back-to-issue-summary {
-    /*
-     * This keeps a consistency with the browser. By default, Chrome uses
-     * a margin of 2px, and changing it to 0 actually makes things look
-     * off-center.
-     */
-    margin: 2px 2px 2px 0.2em;
-    vertical-align: middle;
-  }
-
-  .issue-container {
-    position: relative;
-  }
-
-  .rb-icon {
-    margin: 0 0.2em;
-  }
-
-  &.dropped, &.open, &.resolved, &.verifying-resolved, &.verifying-dropped {
-    visibility: visible;
-  }
-
-  &.dropped {
-    background: @issue-discarded-bg;
-    border-color: @issue-discarded-border-color;
-
-    .back-to-issue-summary, .back-to-issue-summary:visited {
-      color: @issue-discarded-link-color;
-    }
-  }
-
-  &.open {
-    background: @issue-opened-bg;
-    border-color: @issue-opened-border-color;
-
-    .back-to-issue-summary, .back-to-issue-summary:visited {
-      color: @issue-opened-link-color;
-    }
-  }
-
-  &.resolved {
-    background: @issue-resolved-bg;
-    border-color: @issue-resolved-border-color;
-
-    .back-to-issue-summary, .back-to-issue-summary:visited {
-      color: @issue-resolved-link-color;
-    }
-  }
-
-  &.verifying-resolved,
-  &.verifying-dropped {
-    background: @issue-verifying-bg;
-    border-color: @issue-opened-border-color;
-
-    .back-to-issue-summary, .back-to-issue-summary:visited {
-      color: @issue-opened-link-color;
-    }
-  }
-
-  .back-to-issue-summary {
-    font-size: 13px;
-    font-weight: normal;
-    text-decoration: none;
-    padding: 0 0.5em;
-    position: absolute;
-    right: 0;
-    height: 24px;
-    line-height: 24px;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
-  .issue-message {
-    margin-right: 0.5em;
-    vertical-align: middle;
-  }
-
-  .on-mobile-medium-screen-720({
-    .back-to-issue-summary {
-      display: none;
-    }
-
-    .issue-actions {
-      display: block;
-      margin-top: 0.5em;
-
-      input:first-child {
-        margin-left: 0;
-      }
-    }
-
-    .issue-details {
-      display: inline-block;
-      overflow: hidden;
-      vertical-align: top;
-    }
-  });
 }
 
 

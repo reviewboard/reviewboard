@@ -87,34 +87,32 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
             }
         });
 
-        _.each(this._$reviewComments.find('.issue-indicator'), el => {
-            const $issueState = $('.issue-state', el);
+        const issueBarEls = this._$reviewComments.find('.rb-c-issue-bar');
 
-            /*
-             * Not all issue-indicator divs have an issue-state div for the
-             * issue bar.
-             */
-            if ($issueState.length > 0) {
-                const issueStatus = $issueState.data('issue-status');
+        for (const issueBarEl of issueBarEls) {
+            const issueStatus = issueBarEl.dataset.issueStatus;
 
-                if (RB.BaseComment.isStateOpen(issueStatus)) {
-                    this._openIssueCount++;
-                }
+            if (RB.BaseComment.isStateOpen(issueStatus)) {
+                this._openIssueCount++;
+            }
 
-                const issueBar = new RB.CommentIssueBarView({
-                    el: el,
-                    reviewID: this.model.id,
-                    canVerify: $issueState.data('can-verify'),
-                    commentID: $issueState.data('comment-id'),
-                    commentType: $issueState.data('comment-type'),
-                    interactive: $issueState.data('interactive'),
-                    issueStatus: issueStatus,
-                });
+            const issueBar = new RB.CommentIssueBarView({
+                el: issueBarEl,
 
-                issueBar.render();
+                canVerify: issueBarEl.dataset.canVerify === 'true',
+                commentID: parseInt(issueBarEl.dataset.commentId, 10),
+                commentType: issueBarEl.dataset.commentType,
+                interactive: issueBarEl.dataset.interactive === 'true',
+                issueStatus: issueStatus,
+                reviewID: this.model.id,
+            });
 
-                this.listenTo(issueBar, 'statusChanged',
-                              (oldStatus, newStatus) => {
+            issueBar.render();
+
+            this.listenTo(
+                issueBar,
+                'statusChanged',
+                (oldStatus, newStatus) => {
                     const oldOpen = RB.BaseComment.isStateOpen(oldStatus);
                     const newOpen = RB.BaseComment.isStateOpen(newStatus);
 
@@ -128,8 +126,7 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
 
                     this.trigger('openIssuesChanged');
                 });
-            }
-        });
+        }
 
         _.each(this.$('.comment-section'), el => {
             const $el = $(el);

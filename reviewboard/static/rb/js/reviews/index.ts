@@ -37,6 +37,7 @@ export * from './views/reviewRequestActions';
 export { AbstractCommentBlockView } from './views/abstractCommentBlockView';
 export { AbstractReviewableView } from './views/abstractReviewableView';
 export { CommentDialogView } from './views/commentDialogView';
+export { CommentIssueBarView } from './views/commentIssueBarView';
 export { DiffCommentBlockView } from './views/diffCommentBlockView';
 export { DiffCommentsHintView } from './views/diffCommentsHintView';
 export { DiffComplexityIconView } from './views/diffComplexityIconView';
