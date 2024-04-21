@@ -314,10 +314,12 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
         content = t.render(context).strip()
 
         self.assertIn(('id="action-%s"' % action['id']), content)
+
+        label = action['label']
         self.assertInHTML(
-            ('<a href="#" role="presentation" aria-label="%s">%s '
-             '<span class="rb-icon rb-icon-dropdown-arrow"></span></a>'
-             % (action['label'], action['label'])),
+            f'<a href="#" role="presentation" aria-label="{label}">'
+            f'<label class="rb-c-actions__action-label">{label}</label>'
+            f'<span class="ink-i-dropdown"></span></a>',
             content)
 
     def _test_base_review_request_action_hook(
@@ -415,8 +417,7 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
             self.assertEqual(entries[1].action_id, 'with-id')
             self.assertEqual(entries[2].action_id, 'no-id')
 
-            dropdown_icon_html = \
-                '<span class="rb-icon rb-icon-dropdown-arrow"></span>'
+            dropdown_icon_html = '<span class="ink-i-dropdown"></span>'
 
             template = Template(
                 '{% load actions %}'
@@ -426,9 +427,9 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
 
             self.assertIn('Yes ID', content)
             self.assertInHTML(
-                ('<a href="#" role="presentation" aria-label="Menu Dict">'
-                 'Menu Dict %s</a>'
-                 % dropdown_icon_html),
+                f'<a href="#" role="presentation" aria-label="Menu Dict">'
+                f'<label class="rb-c-actions__action-label">Menu Dict</label>'
+                f'{dropdown_icon_html}</a>',
                 content)
 
             self.assertIn('id="action-test-menu-dict"', content)

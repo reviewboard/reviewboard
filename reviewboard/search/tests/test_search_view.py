@@ -35,7 +35,7 @@ class SearchViewTests(TestCase):
         self.assertEqual(rsp.status_code, 200)
 
         # Check for the search form.
-        self.assertIn(b'<form method="get" action="/search/" role="search">',
+        self.assertIn(b'<form method="get" action="/search/">',
                       rsp.content)
 
         # And the filtered search links.

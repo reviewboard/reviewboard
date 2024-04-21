@@ -34,8 +34,11 @@ class NavigationBarHookTests(BaseExtensionHookTestCase):
             '{% load rb_extensions %}'
             '{% navigation_bar_hooks %}')
 
-        self.assertEqual(t.render(context).strip(),
-                         '<li><a href="%(url)s">%(label)s</a></li>' % entry)
+        self.assertEqual(
+            t.render(context).strip(),
+            ('<li class="rb-c-topbar__nav-item">'
+             '<a href="%(url)s">%(label)s</a></li>'
+             % entry))
 
     def test_get_entries_with_url_name(self):
         """Testing NavigationbarHook.get_entries with URL names"""
@@ -63,7 +66,9 @@ class NavigationBarHookTests(BaseExtensionHookTestCase):
 
         self.assertEqual(
             t.render(context).strip(),
-            '<li><a href="%(url)s">%(label)s</a></li>' % {
+            '<li class="rb-c-topbar__nav-item">'
+            '<a href="%(url)s">%(label)s</a></li>'
+            % {
                 'label': entry['label'],
                 'url': '/dashboard/',
             })
@@ -100,8 +105,11 @@ class NavigationBarHookTests(BaseExtensionHookTestCase):
             '{% load rb_extensions %}'
             '{% navigation_bar_hooks %}')
 
-        self.assertEqual(t.render(context).strip(),
-                         '<li><a href="%(url)s">%(label)s</a></li>' % entry)
+        self.assertEqual(
+            t.render(context).strip(),
+            ('<li class="rb-c-topbar__nav-item">'
+             '<a href="%(url)s">%(label)s</a></li>'
+             % entry))
 
     def test_is_enabled_for_false(self):
         """Testing NavigationBarHook.is_enabled_for and returns false"""
