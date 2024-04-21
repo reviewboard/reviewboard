@@ -1,0 +1,104 @@
+/**
+ * Styles for a trophy list component.
+ *
+ * Version Added:
+ *     7.0
+ */
+
+
+/**
+ * A list of trophies earned on a review request.
+ *
+ * All trophies are shown centered, with the trophy image on either side,
+ * slanted away from the text.
+ *
+ * Multiple trophies can be shown at once.
+ *
+ * Version Added:
+ *     7.0
+ *
+ * Structure:
+ *     <div class="rb-c-trophies">
+ *      <div class="rb-c-trophies__trophy">...</div>  [1+]
+ *     </div>
+ */
+.rb-c-trophies {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ink-u-spacing-l);
+  padding: 0 var(--ink-u-spacing-m);
+  margin: var(--ink-u-spacing-xxl) 0;
+
+  /**
+   * A trophy shown to the user.
+   *
+   * Structure:
+   *     <div class="rb-c-trophies__trophy">
+   *      <img class="rb-c-trophies__trophy-image" ...>
+   *      <h2 class="rb-c-trophies__trophy-text" ...>...</h2>
+   *      <img class="rb-c-trophies__trophy-image" ...>
+   *     </div>
+   */
+  &__trophy {
+    display: flex;
+    align-items: center;
+    gap: var(--ink-u-spacing-l);
+  }
+
+  /**
+   * The trophy image.
+   *
+   * DOM Attributes:
+   *     alt (string):
+   *         Text describing the trophy.
+   *
+   *     height (number):
+   *         The width of the image.
+   *
+   *     src (string):
+   *         The main URL to the image.
+   *
+   *     srcset (string):
+   *         URLs to the images for different DPIs.
+   *
+   *     width (number):
+   *         The width of the image.
+   *
+   * Structure:
+   *     <img class="rb-c-trophies__trophy-image"
+   *          alt="..."
+   *          src="..."
+   *          srcset="..."
+   *          width="..."
+   *          height="..."/>
+   */
+  &__trophy-image {
+    &:first-of-type {
+      transform: rotateZ(-10deg);
+    }
+
+    &:last-of-type {
+      transform: rotateZ(10deg);
+    }
+  }
+
+  /**
+   * The text accompanying the trophy image.
+   *
+   * This should tell the user that they got a trophy, in some form.
+   *
+   * Structure:
+   *     <h2 class="rb-c-trophies__trophy-text">
+   *      text...
+   *     </h2>
+   */
+  &__trophy-text {
+    color: var(--if-dark, gold)
+           var(--if-light, #6a5001);
+    font-size: var(--ink-u-font-ml);
+    margin: 0;
+    padding: 0;
+    text-align: center;
+  }
+}
