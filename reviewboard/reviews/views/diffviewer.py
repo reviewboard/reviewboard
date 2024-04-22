@@ -7,6 +7,7 @@ import logging
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING, cast
 
+from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.utils.translation import gettext
 from typing_extensions import NotRequired, TypeAlias, TypedDict
@@ -484,7 +485,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                     pass
 
         all_commits: list[DiffCommit] = list(DiffCommit.objects.filter(
-            diffset__history__pk=review_request.diffset_history_id))
+            Q(diffset__history=review_request.diffset_history_id) |
+            Q(diffset__review_request_draft__review_request=review_request)))
 
         if base_commit_id or tip_commit_id:
             base_commit, tip_commit = get_base_and_tip_commits(
