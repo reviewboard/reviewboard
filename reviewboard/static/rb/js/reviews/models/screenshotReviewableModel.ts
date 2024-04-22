@@ -8,22 +8,8 @@ import {
     type AbstractReviewableAttrs,
     AbstractReviewable,
 } from './abstractReviewableModel';
-import { type SerializedComment } from './commentData';
+import { type SerializedRegionComment } from './commentData';
 import { ScreenshotCommentBlock } from './screenshotCommentBlockModel';
-
-
-/**
- * Serialized data for a screenshot comment block.
- *
- * Version Added:
- *     7.0
- */
-export interface SerializedScreenshotComment extends SerializedComment {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-}
 
 
 /**
@@ -73,13 +59,13 @@ export class ScreenshotReviewable extends AbstractReviewable<
      *         The serialized data for the new comment block(s).
      */
     loadSerializedCommentBlock(
-        serializedCommentBlock: SerializedScreenshotComment[],
+        serializedCommentBlock: SerializedRegionComment[],
     ) {
         this.createCommentBlock({
-            height: serializedCommentBlock[0].h,
+            height: serializedCommentBlock[0].height,
             screenshotID: this.get('screenshotID'),
             serializedComments: serializedCommentBlock,
-            width: serializedCommentBlock[0].w,
+            width: serializedCommentBlock[0].width,
             x: serializedCommentBlock[0].x,
             y: serializedCommentBlock[0].y,
         });
