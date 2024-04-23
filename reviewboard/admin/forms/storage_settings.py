@@ -221,7 +221,7 @@ class SwiftStorageSettingsForm(SiteSettingsForm):
 class StorageSettingsForm(SiteSettingsForm):
     """File storage backend settings for Review Board."""
 
-    storage_backend_id = forms.ChoiceField(
+    storage_backend = forms.ChoiceField(
         label=_('File storage method'),
         choices=(
             ('filesystem', _('Host file system')),
@@ -270,7 +270,7 @@ class StorageSettingsForm(SiteSettingsForm):
         if not super(StorageSettingsForm, self).is_valid():
             return False
 
-        backend_id = self.cleaned_data['storage_backend_id']
+        backend_id = self.cleaned_data['storage_backend']
         backend_form = self.storage_backend_forms.get(backend_id)
 
         return backend_form is None or backend_form.is_valid()
@@ -283,7 +283,7 @@ class StorageSettingsForm(SiteSettingsForm):
         """
         super(StorageSettingsForm, self).save()
 
-        backend_id = self.cleaned_data['storage_backend_id']
+        backend_id = self.cleaned_data['storage_backend']
 
         if backend_id in self.storage_backend_forms:
             backend_form = self.storage_backend_forms[backend_id]
@@ -296,6 +296,6 @@ class StorageSettingsForm(SiteSettingsForm):
         subforms = (
             {
                 'subforms_attr': 'storage_backend_forms',
-                'controller_field': 'storage_backend_id',
+                'controller_field': 'storage_backend',
             },
         )

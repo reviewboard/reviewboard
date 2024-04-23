@@ -259,11 +259,11 @@ def get_can_enable_ldap():
 def get_can_use_amazon_s3():
     """Check whether django-storages (Amazon S3 backend) is installed."""
     try:
-        if has_module('storages.backends.s3boto', members=['S3BotoStorage']):
+        if has_module('storages.backends.s3', members=['S3Storage']):
             return (True, None)
         else:
             return (False, _(
-                'Amazon S3 depends on django-storages, which is not installed'
+                'Amazon S3 depends on ReviewBoard[s3], which is not installed'
             ))
     except ImproperlyConfigured as e:
         return (False, _('Amazon S3 backend failed to load: %s') % e)
@@ -284,10 +284,14 @@ def get_can_use_openstack_swift():
 
 
 def get_can_use_couchdb():
-    """Check whether django-storages (CouchDB backend) is installed."""
-    if has_module('storages.backends.couchdb', members=['CouchDBStorage']):
-        return (True, None)
-    else:
-        return (False, _(
-            'CouchDB depends on django-storages, which is not installed'
-        ))
+    """Check whether django-storages (CouchDB backend) is installed.
+
+    Version Changed:
+        7.0:
+        This now always returns ``False``. The support for CouchDB in
+        django-storages was deprecated in 1.5.0, and has since been removed.
+    """
+    return (False, _(
+        'CouchDB support has been removed from django-storages, and can '
+        'no longer be used in Review Board.'
+    ))

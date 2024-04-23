@@ -1,40 +1,16 @@
-#
-# reviewboard/admin/siteconfig.py -- Siteconfig definitions for the admin app
-#                                    in Review Board. This expands on
-#                                    djblets.siteconfig to let administrators
-#                                    configure special authentication and
-#                                    storage methods, as well as all our
-#                                    reviewboard-specific settings.
-#
-# Copyright (c) 2008-2009  Christian Hammond
-# Copyright (c) 2009  David Trowbridge
-#
-# Permission is hereby granted, free of charge, to any person obtaining
-# a copy of this software and associated documentation files (the
-# "Software"), to deal in the Software without restriction, including
-# without limitation the rights to use, copy, modify, merge, publish,
-# distribute, sublicense, and/or sell copies of the Software, and to
-# permit persons to whom the Software is furnished to do so, subject to
-# the following conditions:
-#
-# The above copyright notice and this permission notice shall be included
-# in all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#
+"""Loads and manages site configuration settings."""
+
+from __future__ import annotations
 
 import logging
 import os
 import re
+from typing import cast
 
 from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
+from django.core.files.storage import default_storage, storages
+from django.utils.functional import empty
 from djblets.log import restart_logging, siteconfig as log_siteconfig
 from djblets.recaptcha import siteconfig as recaptcha_siteconfig
 from djblets.siteconfig.django_settings import (apply_django_settings,
@@ -57,7 +33,7 @@ from reviewboard.signals import site_settings_loaded
 # A mapping of our supported storage backend names to backend class paths.
 storage_backend_map = {
     'builtin': 'django.core.files.storage.FileSystemStorage',
-    's3':      'storages.backends.s3boto.S3BotoStorage',
+    's3':      'storages.backends.s3.S3Storage',
     'swift':   'swift.storage.SwiftStorage',
 }
 
@@ -191,8 +167,8 @@ defaults.update({
     'aws_default_acl': 'public-read',
     'aws_headers': {},
     'aws_querystring_active': False,
-    'aws_querystring_auth': False,
-    'aws_querystring_expire': 60,
+    'aws_querystring_auth': True,
+    'aws_querystring_expire': 3600,
     'aws_s3_bucket_name': '',
     'aws_s3_secure_urls': False,
     'aws_secret_access_key': '',
@@ -381,42 +357,7 @@ def load_site_config(full_reload=False):
             '.WebAPIOAuth2TokenAuthBackend',
         )
 
-    # Set the storage backend
-    storage_backend = siteconfig.settings.get('storage_backend', 'builtin')
-
-    if storage_backend in storage_backend_map:
-        settings.DEFAULT_FILE_STORAGE = storage_backend_map[storage_backend]
-    else:
-        settings.DEFAULT_FILE_STORAGE = storage_backend_map['builtin']
-
-    # These blow up if they're not the perfectly right types
-    settings.AWS_QUERYSTRING_AUTH = siteconfig.get('aws_querystring_auth')
-    settings.AWS_ACCESS_KEY_ID = str(
-        siteconfig.get('aws_access_key_id'))
-    settings.AWS_SECRET_ACCESS_KEY = str(
-        siteconfig.get('aws_secret_access_key'))
-    settings.AWS_STORAGE_BUCKET_NAME = str(
-        siteconfig.get('aws_s3_bucket_name'))
-
-    try:
-        settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))
-    except ValueError:
-        settings.AWS_CALLING_FORMAT = 0
-
-    settings.SWIFT_AUTH_URL = str(
-        siteconfig.get('swift_auth_url'))
-    settings.SWIFT_USERNAME = str(
-        siteconfig.get('swift_username'))
-    settings.SWIFT_KEY = str(
-        siteconfig.get('swift_key'))
-
-    try:
-        settings.SWIFT_AUTH_VERSION = int(siteconfig.get('swift_auth_version'))
-    except ValueError:
-        settings.SWIFT_AUTH_VERSION = 1
-
-    settings.SWIFT_CONTAINER_NAME = str(
-        siteconfig.get('swift_container_name'))
+    _load_storage_settings(siteconfig)
 
     is_https = (
         siteconfig.settings.get('site_domain_method', 'http') == 'https'
@@ -444,3 +385,89 @@ def load_site_config(full_reload=False):
     site_settings_loaded.send(sender=None)
 
     return siteconfig
+
+
+def _load_storage_settings(
+    siteconfig: SiteConfiguration,
+) -> None:
+    """Load settings for the storage backend.
+
+    This will configure Django's STORAGES and the django-storage library
+    for any storage settings configured for Review Board.
+
+    Version Added:
+        7.0
+
+    Args:
+        siteconfig (djblets.siteconfig.models.SiteConfiguration):
+            The Site Configuration to load from.
+    """
+    # Set the storage backend
+    settings.STORAGES['default'] = {
+        'BACKEND': storage_backend_map.get(
+            siteconfig.settings.get('storage_backend', 'builtin'),
+            'builtin'),
+    }
+
+    # Load the S3 storage information.
+    #
+    # Note that these blow up if they're not the perfectly right types
+    settings.AWS_QUERYSTRING_AUTH = siteconfig.get('aws_querystring_auth')
+    settings.AWS_ACCESS_KEY_ID = str(
+        siteconfig.get('aws_access_key_id'))
+    settings.AWS_SECRET_ACCESS_KEY = str(
+        siteconfig.get('aws_secret_access_key'))
+    settings.AWS_STORAGE_BUCKET_NAME = str(
+        siteconfig.get('aws_s3_bucket_name'))
+
+    # The following converts the legacy django-storages Calling Format IDs
+    # to modern Addressing Style strings.
+    try:
+        aws_calling_format = int(
+            cast(int, siteconfig.get('aws_calling_format')))
+    except ValueError:
+        aws_calling_format = 0
+
+    if aws_calling_format == 1:
+        # Path
+        settings.AWS_S3_ADDRESSING_STYLE = 'path'
+    elif aws_calling_format == 2:
+        # Subdomain
+        settings.AWS_S3_ADDRESSING_STYLE = 'virtual'
+    elif aws_calling_format == 3:
+        # Vanity.
+        #
+        # We never fully supported this outside of adding custom settings
+        # to settings_local.py. There isn't a direct equivalent anymore.
+        # We'll go with the default of None.
+        settings.AWS_S3_ADDRESSING_STYLE = None
+
+    # Laod the Swift storage information.
+    settings.SWIFT_AUTH_URL = str(
+        siteconfig.get('swift_auth_url'))
+    settings.SWIFT_USERNAME = str(
+        siteconfig.get('swift_username'))
+    settings.SWIFT_KEY = str(
+        siteconfig.get('swift_key'))
+
+    try:
+        settings.SWIFT_AUTH_VERSION = int(
+            cast(int, siteconfig.get('swift_auth_version')))
+    except ValueError:
+        settings.SWIFT_AUTH_VERSION = 1
+
+    settings.SWIFT_CONTAINER_NAME = str(
+        siteconfig.get('swift_container_name'))
+
+    # Reset the storage settings cache.
+    #
+    # Note that this is the same logic performed in django.test.signals.
+    # Unfortunately, Django doesn't offer official API for clearing this.
+    try:
+        del storages.backends
+    except AttributeError:
+        pass
+
+    storages._backends = None
+    storages._storages = {}
+    default_storage._wrapped = empty

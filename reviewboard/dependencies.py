@@ -57,6 +57,7 @@ package_dependencies = {
     'django_evolution': '~=2.2',
     'django-haystack': '~=3.2.1',
     'django_oauth_toolkit': '~=1.6.3',
+    'django-storages': '~=1.14.2',
     'Djblets': djblets_version,
     'docutils': '',
     'markdown': '~=3.3.7',

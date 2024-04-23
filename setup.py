@@ -438,7 +438,7 @@ setup(
         'mysql': ['mysqlclient>=1.4,<=2.1.999'],
         'p4': ['p4python'],
         'postgres': ['psycopg2-binary'],
-        's3': ['django-storages>=1.8,<1.9'],
+        's3': ['django-storages[s3]'],
         'saml': ['python3-saml'],
         'subvertpy': ['subvertpy'],
         'swift': ['django-storage-swift'],
