@@ -72,17 +72,28 @@
 .rb-c-diff-collapse-button {
   @_button-vars: #rb-ns-ui.diff-collapse-button();
 
-  background: @_button-vars[@bg-color];
-  border: 1px @_button-vars[@border-color] solid;
+  background:
+    var(--if-dark, var(--ink-c-button-primary-bg))
+    var(--if-light, @_button-vars[@bg-color]);
+  border:
+    1px
+    var(--if-dark, rgba(0, 0, 0, 0.4))
+    var(--if-light, @_button-vars[@border-color])
+    solid;
   border-radius: @_button-vars[@border-radius];
   box-shadow: @_button-vars[@shadow];
+  color:
+    var(--if-dark, var(--ink-c-button-primary-text-color))
+    var(--if-light, var(--ink-p-text-color));
   padding: @_button-vars[@padding];;
   cursor: pointer;
   user-select: none;
   z-index: @_button-vars[@z-index];
 
   &:hover {
-    background: @_button-vars[@hover-bg-color];
+    background:
+      var(--if-dark, var(--ink-c-button-primary-hover-bg))
+      var(--if-light, @_button-vars[@hover-bg-color]);
   }
 
   /**
