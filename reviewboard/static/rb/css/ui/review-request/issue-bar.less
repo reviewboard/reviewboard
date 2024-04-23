@@ -36,8 +36,16 @@
  *     data-issue-status (string):
  *         The current issue status.
  *
+ * Modifiers:
+ *     -is-compact:
+ *         Place the issue bar in a compact mode.
+ *
+ *         This will remove the issues link, and use a more vertical
+ *         orientation useful in short widths.
+ *
  * Structure:
- *     <div class="rb-c-issue-bar"
+ *     <div class="rb-c-issue-bar
+ *                 [-is-compact]"
  *          aria-labelledby="<<string>>"
  *          data-can-verify="<<boolean>>"
  *          data-comment-id="<<number>>"
@@ -97,6 +105,22 @@
   align-items: center;
   gap: var(--ink-u-spacing-std);
   padding: var(--ink-u-spacing-sm) var(--ink-u-spacing-l);
+
+  &.-is-compact {
+    grid-template-areas:
+      "icon message"
+      ".    actions";
+    grid-template-columns: min-content auto min-content;
+    grid-template-rows: 1fr 1fr;
+
+    .rb-c-issue-bar__actions {
+      margin-left: 0;
+    }
+
+    .rb-c-issue-bar__all-issues-link {
+      display: none;
+    }
+  }
 
   &[data-issue-status="open"] {
     --_rb-c-issue-status-bg-light: var(--rb-p-issue-bg);

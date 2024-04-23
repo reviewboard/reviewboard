@@ -2107,9 +2107,9 @@
  * Comment detail dialog
  ****************************************************************************/
 .comment-dlg {
-  border: 1px @comment-dlg-border-color solid;
-  border-radius: @box-border-radius;
-  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.35);
+  border: 1px var(--rb-p-draft-border-color) solid;
+  border-radius: var(--ink-u-border-radius-std);
+  box-shadow: var(--ink-g-shadow-std);
   box-sizing: border-box;
   cursor: default;
   margin-top: 8px;
@@ -2118,7 +2118,7 @@
   max-width: calc(100vw - 2em);
 
   form {
-    background-color: @comment-dlg-bg;
+    background: var(--rb-p-draft-bg);
     display: block;
     padding: @comment-dlg-padding;
     max-width: 100%;
@@ -2180,6 +2180,8 @@
     padding: @comment-dlg-padding 0 0 0;
 
     li {
+      display: flex;
+      align-items: center;
       margin: (@comment-dlg-padding / 2) 0;
       padding: 0;
 
@@ -2190,6 +2192,10 @@
       &:last-child {
         margin-bottom: 0;
       }
+
+      > input:not(:first-child) {
+        margin-left: var(--ink-u-spacing-l);
+      }
     }
   }
 
@@ -2198,12 +2204,18 @@
   }
 
   .other-comments {
-    background-color: @comment-dlg-other-comments-bg;
-    border-right: 1px @comment-dlg-border-color solid;
+    background:
+      var(--if-dark, var(--ink-p-cool-grey-500))
+      var(--if-light, @comment-dlg-other-comments-bg);
+    border-right:
+      1px
+      var(--if-dark, rgba(0, 0, 0, 0.5))
+      var(--if-light, @comment-dlg-border-color)
+      solid;
     padding: @comment-dlg-padding;
 
     ul {
-      background-color: white;
+      background: var(--ink-c-data-table-body-bg);
       border: 1px #333333 solid;
       list-style: none;
       margin: @comment-dlg-padding 0 0 0;
@@ -2215,7 +2227,11 @@
         padding: @comment-dlg-padding;
 
         &.even {
-          background-color: #F3F3F3;
+          background: var(--ink-c-data-table-row-alt-bg);
+        }
+
+        &.odd {
+          background: var(--ink-c-data-table-row-bg)
         }
 
         h2 {
@@ -2228,14 +2244,10 @@
             right: @comment-dlg-padding;
 
             a {
-              color: blue;
-              cursor: pointer;
-              text-decoration: none;
               margin-left: @comment-dlg-padding;
               padding: 3px;
 
               &:hover {
-                background-color: #F6F6F6;
               }
             }
           }

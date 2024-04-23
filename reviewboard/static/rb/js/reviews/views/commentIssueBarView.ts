@@ -45,6 +45,14 @@ export interface CommentIssueBarViewOptions extends BaseComponentViewOptions {
     /** Whether the issue bar is interactive. */
     interactive: boolean;
 
+    /**
+     * Whether the issue bar should be displayed in a compact mode.
+     *
+     * Version Added:
+     *     7.0
+     */
+    isCompact: boolean;
+
     /** The currently-set issue status. */
     issueStatus: CommentIssueStatusType;
 
@@ -231,6 +239,10 @@ export class CommentIssueBarView<
     protected onComponentInitialRender() {
         const options = this.initialComponentState.options;
         const el = this.el;
+
+        if (options.isCompact) {
+            el.classList.add('-is-compact');
+        }
 
         if (el.children.length === 0) {
             if (!el.id) {
