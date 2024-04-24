@@ -96,7 +96,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
 
         if isinstance(updated_object, ReviewRequest):
             if updated_object.status == ReviewRequest.SUBMITTED:
-                summary = _('Review request submitted')
+                summary = _('Review request completed')
             elif updated_object.status == ReviewRequest.DISCARDED:
                 summary = _('Review request discarded')
             else:
