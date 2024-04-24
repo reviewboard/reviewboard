@@ -399,6 +399,10 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
 
         # Get the list of diffsets. We only want to calculate this once.
         diffsets = review_request.get_diffsets()
+
+        if draft_diffset:
+            diffsets.append(draft_diffset)
+
         num_diffs = len(diffsets)
 
         if num_diffs > 0:
