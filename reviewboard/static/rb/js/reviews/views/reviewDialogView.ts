@@ -1687,7 +1687,7 @@ export class ReviewDialogView extends BaseView<
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    _saveReview(
+    async _saveReview(
         publish: boolean,
         options: {
             publishAndArchive?: boolean;
@@ -1705,36 +1705,36 @@ export class ReviewDialogView extends BaseView<
         this._$buttons.prop('disabled');
 
         let madeChanges = false;
-        $.funcQueue('reviewForm').clear();
 
-        function maybeSave(view) {
-            if (view.needsSave()) {
-                $.funcQueue('reviewForm').add(() => {
-                    madeChanges = true;
-                    view.save()
-                        .then(() => $.funcQueue('reviewForm').next());
-                });
+        try {
+            if (this._bodyTopView.needsSave()) {
+                madeChanges = true;
+                await this._bodyTopView.save();
             }
-        }
 
-        maybeSave(this._bodyTopView);
-        maybeSave(this._bodyBottomView);
-        this._commentViews.forEach(view => maybeSave(view));
+            if (this._bodyBottomView.needsSave()) {
+                madeChanges = true;
+                await this._bodyBottomView.save();
+            }
 
-        $.funcQueue('reviewForm').add(() => {
+            for (const view of this._commentViews) {
+                if (view.needsSave()) {
+                    madeChanges = true;
+                    await view.save();
+                }
+            }
+
             const shipIt = this._$shipIt.prop('checked');
             const saveFunc = publish ? this.model.publish : this.model.save;
 
-            if (this.model.get('public') === publish &&
-                this.model.get('shipIt') === shipIt) {
-                $.funcQueue('reviewForm').next();
-            } else {
+            if (this.model.get('public') !== publish ||
+                this.model.get('shipIt') !== shipIt) {
                 madeChanges = true;
                 this.model.set({
                     shipIt: shipIt,
                 });
 
-                saveFunc.call(this.model, {
+                await saveFunc.call(this.model, {
                     attrs: [
                         'forceTextType',
                         'includeTextTypes',
@@ -1742,23 +1742,10 @@ export class ReviewDialogView extends BaseView<
                         'publishAndArchive',
                         'publishToOwnerOnly',
                         'shipIt',
-                    ]})
-                    .then(() => $.funcQueue('reviewForm').next())
-                    .catch(err => {
-                        console.error('Failed to save review', err);
-
-                        this.model.set({
-                            public: false,
-                            publishAndArchive: false,
-                            publishToOwnerOnly: false,
-                        });
-
-                        alert(err.message);
-                    });
+                    ],
+                });
             }
-        });
 
-        $.funcQueue('reviewForm').add(() => {
             this.close();
 
             if (EnabledFeatures.unifiedBanner) {
@@ -1780,14 +1767,17 @@ export class ReviewDialogView extends BaseView<
                     }
                 }
             }
+        } catch (err) {
+            console.error('Failed to save review', err);
 
-            $.funcQueue('reviewForm').next();
-        });
+            this.model.set({
+                public: false,
+                publishAndArchive: false,
+                publishToOwnerOnly: false,
+            });
 
-        return new Promise<void>(resolve => {
-            $.funcQueue('reviewForm').add(() => resolve());
-            $.funcQueue('reviewForm').start();
-        });
+            alert(err.message);
+        }
     }
 
     /**
