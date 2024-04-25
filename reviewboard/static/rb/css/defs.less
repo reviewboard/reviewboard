@@ -279,9 +279,9 @@
  */
 // Equals lines
 @diff-background-color: @default-code-theme-light-diff-equal-bg;
-@diff-linenum-color: #777777;
+@diff-linenum-color: @default-code-theme-light-diff-linenum-fg;
 @diff-linenum-background-color: #F0F0F0;
-@diff-selected-color: #E2E2E2;
+@diff-selected-color: @default-code-theme-light-diff-equal-highlight-bg;
 
 
 /*
@@ -294,7 +294,7 @@
  */
 @diff-delete-color: @default-code-theme-light-diff-delete-bg;
 @diff-delete-border-color: desaturate(darken(@diff-delete-color, 9%), 55%);
-@diff-delete-linenum-color: desaturate(darken(@diff-delete-color, 5%), 35%);
+@diff-delete-linenum-color: @default-code-theme-light-diff-linenum-fg;
 @diff-delete-linenum-border-color:
   desaturate(darken(@diff-delete-linenum-color, 7%), 55%);
 @diff-delete-selected-color: @default-code-theme-light-diff-delete-highlight-bg;
@@ -311,10 +311,10 @@
  */
 @diff-insert-color: @default-code-theme-light-diff-insert-bg;
 @diff-insert-border-color: desaturate(darken(@diff-insert-color, 5%), 55%);
-@diff-insert-linenum-color: desaturate(darken(@diff-insert-color, 7%), 35%);
+@diff-insert-linenum-color: @default-code-theme-light-diff-linenum-fg;
 @diff-insert-linenum-border-color:
   desaturate(darken(@diff-insert-linenum-color, 7%), 35%);
-@diff-insert-selected-color: darken(@diff-insert-linenum-color, 5%);
+@diff-insert-selected-color: @default-code-theme-light-diff-insert-highlight-bg;
 @diff-insert-dot-color: desaturate(darken(@diff-insert-color, 35%), 35%);
 
 
@@ -328,10 +328,11 @@
  */
 @diff-replace-color: @default-code-theme-light-diff-replace-bg;
 @diff-replace-border-color: desaturate(darken(@diff-replace-color, 20%), 30%);
-@diff-replace-linenum-color: desaturate(darken(@diff-replace-color, 7%), 25%);
+@diff-replace-linenum-color: @default-code-theme-light-diff-linenum-fg;
 @diff-replace-linenum-border-color:
   desaturate(darken(@diff-replace-linenum-color, 10%), 30%);
-@diff-replace-selected-color: darken(@diff-replace-linenum-color, 10%);
+@diff-replace-selected-color:
+  @default-code-theme-light-diff-replace-highlight-bg;
 @diff-replace-dot-color: darken(@diff-replace-color, 50%);
 
 // Diff line counts

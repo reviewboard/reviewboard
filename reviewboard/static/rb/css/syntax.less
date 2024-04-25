@@ -6,22 +6,27 @@
  * Pygments/CodeMirror's conventions.
  */
 
+
 /* Dark diff UI colors. */
 @default-code-theme-light-diff-delete-bg: #FDE9ED;
 @default-code-theme-light-diff-delete-highlight-bg:
   rgba(200, 0, 0, 0.15);
+@default-code-theme-light-diff-delete-linenum-bg: #F6DBDF;
 
 @default-code-theme-light-diff-equal-bg: #FFFFFF;
 @default-code-theme-light-diff-equal-highlight-bg:
   rgba(0, 0, 0, 0.1);
+@default-code-theme-light-diff-equal-linenum-bg: #F2F2F2;
 
 @default-code-theme-light-diff-insert-bg: #E7FFE1;
 @default-code-theme-light-diff-insert-highlight-bg:
   rgba(0, 200, 0, 0.25);
+@default-code-theme-light-diff-insert-linenum-bg: #CFF2CA;
 
 @default-code-theme-light-diff-replace-bg: #FDFECC;
 @default-code-theme-light-diff-replace-highlight-bg:
   rgba(200, 200, 0, 0.25);
+@default-code-theme-light-diff-replace-linenum-bg: #EEEFC0;
 
 @default-code-theme-light-diff-linenum-fg: rgba(0, 0, 0, 0.6);
 
@@ -30,18 +35,22 @@
 @default-code-theme-dark-diff-delete-bg: #572121;
 @default-code-theme-dark-diff-delete-highlight-bg:
   rgba(255, 128, 128, 0.3);
+@default-code-theme-dark-diff-delete-linenum-bg: #792C26;
 
 @default-code-theme-dark-diff-equal-bg: #222222;
 @default-code-theme-dark-diff-equal-highlight-bg:
   rgba(255, 255, 255, 0.2);
+@default-code-theme-dark-diff-equal-linenum-bg: #333333;
 
 @default-code-theme-dark-diff-insert-bg: #16390A;
 @default-code-theme-dark-diff-insert-highlight-bg:
   rgba(255, 255, 255, 0.2);
+@default-code-theme-dark-diff-insert-linenum-bg: #135709;
 
 @default-code-theme-dark-diff-replace-bg: #3E3E28;
 @default-code-theme-dark-diff-replace-highlight-bg:
   rgba(255, 255, 0, 0.2);
+@default-code-theme-dark-diff-replace-linenum-bg: #656520;
 
 @default-code-theme-dark-diff-linenum-fg: rgba(255, 255, 255, 0.8);
 
@@ -66,8 +75,8 @@
     var(--if-dark, @default-code-theme-dark-diff-equal-highlight-bg)
     var(--if-light, @default-code-theme-light-diff-equal-highlight-bg);
   --rb-theme-diff-equals-linenum-bg:
-    var(--if-dark, rgba(128, 128, 128, 0.4))
-    var(--if-light, rgba(0, 0, 0, 0.05));
+    var(--if-dark, @default-code-theme-dark-diff-equal-linenum-bg)
+    var(--if-light, @default-code-theme-light-diff-equal-linenum-bg);
   --rb-theme-diff-equals-linenum-fg: @_linenum-fg;
 
   --rb-theme-diff-delete-bg:
@@ -78,8 +87,8 @@
     var(--if-dark, @default-code-theme-dark-diff-delete-highlight-bg)
     var(--if-light, @default-code-theme-light-diff-delete-highlight-bg);
   --rb-theme-diff-delete-linenum-bg:
-    var(--if-dark, rgba(255, 90, 60, 0.2))
-    var(--if-light, rgba(128, 0, 0, 0.06));
+    var(--if-dark, @default-code-theme-dark-diff-delete-linenum-bg)
+    var(--if-light, @default-code-theme-light-diff-delete-linenum-bg);
   --rb-theme-diff-delete-linenum-fg: @_linenum-fg;
 
   --rb-theme-diff-insert-bg:
@@ -90,8 +99,8 @@
     var(--if-dark, @default-code-theme-dark-diff-insert-highlight-bg)
     var(--if-light, @default-code-theme-light-diff-insert-highlight-bg);
   --rb-theme-diff-insert-linenum-bg:
-    var(--if-dark, rgba(0, 255, 0, 0.15))
-    var(--if-light, rgba(0, 128, 0, 0.1));
+    var(--if-dark, @default-code-theme-dark-diff-insert-linenum-bg)
+    var(--if-light, @default-code-theme-light-diff-insert-linenum-bg);
   --rb-theme-diff-insert-linenum-fg: @_linenum-fg;
 
   --rb-theme-diff-replace-bg:
@@ -102,8 +111,8 @@
     var(--if-dark, @default-code-theme-dark-diff-replace-highlight-bg)
     var(--if-light, @default-code-theme-light-diff-replace-highlight-bg);
   --rb-theme-diff-replace-linenum-bg:
-    var(--if-dark, rgba(255, 255, 0, 0.2))
-    var(--if-light, rgba(0, 0, 0, 0.06));
+    var(--if-dark, @default-code-theme-dark-diff-replace-linenum-bg)
+    var(--if-light, @default-code-theme-light-diff-replace-linenum-bg);
   --rb-theme-diff-replace-linenum-fg: @_linenum-fg;
 }
 

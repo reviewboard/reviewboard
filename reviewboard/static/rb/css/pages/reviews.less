@@ -169,15 +169,19 @@
    *    literal.
    */
   .cm-rb-markdown-code {
-    background-color: @inline-code-bg;
-    color: @inline-code-text-color;
+    background: var(--ink-p-code-literal-bg);
+    color: var(--ink-p-code-literal-fg);
     display: inline-block;
     position: relative;
 
     &:before {
       content: "";
-      border-top: @inline-code-border-size solid @inline-code-border-color;
-      border-bottom: @inline-code-border-size solid @inline-code-border-color;
+      border-top: @inline-code-border-size
+                  var(--ink-p-code-literal-border-color)
+                  solid;
+      border-bottom: @inline-code-border-size
+                     var(--ink-p-code-literal-border-color)
+                     solid;
       position: absolute;
       left: -@inline-code-border-size;
       right: -@inline-code-border-size;
@@ -186,14 +190,18 @@
     }
 
     &.cm-formatting-code:before {
-      border-left: @inline-code-border-size solid @inline-code-border-color;
+      border-left: @inline-code-border-size
+                   var(--ink-p-code-literal-border-color)
+                   solid;
       border-top-left-radius: @inline-code-border-radius;
       border-bottom-left-radius: @inline-code-border-radius;
     }
 
     &:not(.cm-formatting-code) + .cm-rb-markdown-code.cm-formatting-code:before {
       border-left: 0;
-      border-right: @inline-code-border-size solid @inline-code-border-color;
+      border-right: @inline-code-border-size
+                    var(--ink-p-code-literal-border-color)
+                    solid;
       border-top-left-radius: 0;
       border-top-right-radius: @inline-code-border-radius;
       border-bottom-right-radius: @inline-code-border-radius;
