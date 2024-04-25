@@ -1325,6 +1325,9 @@ class ReviewRequest(BaseReviewRequestDetails):
                 # Copy over the draft information if this is a private discard.
                 draft.copy_fields_to_request(self)
 
+                if draft.diffset_id:
+                    draft.diffset.delete()
+
             # TODO: Use the user's default for rich_text.
             changedesc = ChangeDescription(public=True,
                                            text=description or '',
