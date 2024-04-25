@@ -1,3 +1,4 @@
+@import (reference) "rb/css/syntax.less";
 @import (reference) "rb/css/ui/boxes.less";
 @import (reference) "rb/css/ui/colors.less";
 @import (reference) "rb/css/ui/datagrids.less";
@@ -267,23 +268,48 @@
 @diff-moved-from-bg-color: #b0d0ff;
 @diff-moved-to-bg-color: darken(@diff-moved-from-bg-color, 3%);
 
+
+/*
+ * Diff equal lines.
+ *
+ * Deprecated:
+ *     7.0:
+ *     Consumers should use ``--rb-theme-diff-delete-*`` and
+ *     ``--rb-p-diff-delete-*`` CSS variables instead.
+ */
 // Equals lines
-@diff-background-color: #FFFFFF;
+@diff-background-color: @default-code-theme-light-diff-equal-bg;
 @diff-linenum-color: #777777;
 @diff-linenum-background-color: #F0F0F0;
 @diff-selected-color: #E2E2E2;
 
-// Delete lines
-@diff-delete-color: #FDE9ED;
+
+/*
+ * Diff delete lines.
+ *
+ * Deprecated:
+ *     7.0:
+ *     Consumers should use ``--rb-theme-diff-delete-*`` and
+ *     ``--rb-p-diff-delete-*`` CSS variables instead.
+ */
+@diff-delete-color: @default-code-theme-light-diff-delete-bg;
 @diff-delete-border-color: desaturate(darken(@diff-delete-color, 9%), 55%);
 @diff-delete-linenum-color: desaturate(darken(@diff-delete-color, 5%), 35%);
 @diff-delete-linenum-border-color:
   desaturate(darken(@diff-delete-linenum-color, 7%), 55%);
-@diff-delete-selected-color: darken(@diff-delete-linenum-color, 4%);
-@diff-delete-dot-color: desaturate(darken(@diff-delete-color, 30%), 35%);
+@diff-delete-selected-color: @default-code-theme-light-diff-delete-highlight-bg;
+@diff-delete-dot-color: darken(@diff-delete-linenum-color, 4%);
 
-// Insert lines
-@diff-insert-color: #E7FFE1;
+
+/*
+ * Diff insert lines.
+ *
+ * Deprecated:
+ *     7.0:
+ *     Consumers should use ``--rb-theme-diff-insert-*`` and
+ *     ``--rb-p-diff-insert-*`` CSS variables instead.
+ */
+@diff-insert-color: @default-code-theme-light-diff-insert-bg;
 @diff-insert-border-color: desaturate(darken(@diff-insert-color, 5%), 55%);
 @diff-insert-linenum-color: desaturate(darken(@diff-insert-color, 7%), 35%);
 @diff-insert-linenum-border-color:
@@ -291,8 +317,16 @@
 @diff-insert-selected-color: darken(@diff-insert-linenum-color, 5%);
 @diff-insert-dot-color: desaturate(darken(@diff-insert-color, 35%), 35%);
 
-// Replace lines
-@diff-replace-color: #fdfecc;
+
+/*
+ * Diff replace lines.
+ *
+ * Deprecated:
+ *     7.0:
+ *     Consumers should use ``--rb-theme-diff-replace-*`` and
+ *     ``--rb-p-diff-replace-*`` CSS variables instead.
+ */
+@diff-replace-color: @default-code-theme-light-diff-replace-bg;
 @diff-replace-border-color: desaturate(darken(@diff-replace-color, 20%), 30%);
 @diff-replace-linenum-color: desaturate(darken(@diff-replace-color, 7%), 25%);
 @diff-replace-linenum-border-color:

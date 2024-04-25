@@ -20,8 +20,10 @@
    *       Much of this should eventually be moved back into Djblets.
    */
   .codehilite {
+    background: var(--rb-theme-rich-text-code-bg);
     border: 0;
     border-radius: 0;
+    color: var(--rb-theme-rich-text-code-fg);
     position: relative;
     margin: 0;
     padding: 0;
@@ -30,7 +32,7 @@
       content: "";
       position: absolute;
       background: inherit;
-      border: @code-block-border-size @code-block-border-color solid;
+      border: var(--ink-g-border-input);
       border-radius: @code-block-border-radius;
       top: -@code-block-border-size;
       left: -@code-block-padding-horiz;
@@ -69,7 +71,8 @@
       left: -@inline-code-border-size;
       right: -@inline-code-border-size;
       bottom: -@inline-code-border-size;
-      border: @inline-code-border-size @inline-code-border-color solid;
+      border: @inline-code-border-size var(--ink-p-code-literal-border-color)
+              solid;
       border-radius: @inline-code-border-radius;
       visibility: visible;
     }
