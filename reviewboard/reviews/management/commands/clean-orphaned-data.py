@@ -21,7 +21,7 @@ from django.utils.translation import (
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.diffviewer.models import DiffSetHistory
+from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.reviews.models import Screenshot
 
 if TYPE_CHECKING:
@@ -112,17 +112,23 @@ class Command(BaseCommand):
         diffset_histories = DiffSetHistory.objects.filter(
             review_request=None)
 
+        diffsets = DiffSet.objects.filter(
+            history_id=None,
+            review_request_draft=None)
+
         n_attachments = attachments.count()
         n_attachment_histories = attachment_histories.count()
         n_screenshots = screenshots.count()
         n_changedescs = changedescs.count()
         n_diffset_histories = diffset_histories.count()
+        n_diffsets = diffsets.count()
 
         if (n_attachments == 0 and
             n_attachment_histories == 0 and
             n_screenshots == 0 and
             n_changedescs == 0 and
-            n_diffset_histories == 0):
+            n_diffset_histories == 0 and
+            n_diffsets == 0):
             self.stdout.write(_('No orphaned data found.\n'))
             return
 
@@ -152,6 +158,11 @@ class Command(BaseCommand):
                    '%d DiffSetHistory objects\n',
                    n_diffset_histories)
                 % n_diffset_histories)
+            self.stdout.write(
+                N_('%d DiffSet object\n',
+                   '%d DiffSet objects\n',
+                   n_diffsets)
+                % n_diffsets)
             return
 
         if show_progress:
@@ -193,6 +204,12 @@ class Command(BaseCommand):
             total_objects=n_diffset_histories,
             show_progress=show_progress,
             description=_('DiffSetHistory'))
+
+        self._delete_in_batches(
+            queryset=diffsets,
+            total_objects=n_diffsets,
+            show_progress=show_progress,
+            description=_('DiffSet'))
 
         if show_progress:
             self.stdout.write(_('Done.\n'))
@@ -239,7 +256,7 @@ class Command(BaseCommand):
             bar_format='{desc} {bar} [{n_fmt}/{total_fmt}]',
             ncols=80)
 
-        for batch in self._iter_batches(queryset):
+        for batch in self._iter_batches(queryset, total_objects=total_objects):
             n = batch.count()
 
             batch.delete()
@@ -254,7 +271,6 @@ class Command(BaseCommand):
         *,
         total_objects: Optional[int] = None,
         batch_size: int = 50,
-        object_limit: int = 100,
     ) -> Iterator[QuerySet[_ModelT]]:
         """Iterate through items in a queryset, yielding batches.
 
@@ -276,10 +292,6 @@ class Command(BaseCommand):
 
             batch_size (int, optional):
                 The maximum number of objects to yield per batch.
-
-            object_limit (int, optional):
-                The maximum number of objects to fetch from the database per
-                query.
 
         Yields:
             django.db.models.query.QuerySet:
