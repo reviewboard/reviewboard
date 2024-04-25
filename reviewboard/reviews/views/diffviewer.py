@@ -410,9 +410,6 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         else:
             latest_diffset = None
 
-        if draft_diffset:
-            num_diffs += 1
-
         # We'll need this for later lookups. The diffsets returned by
         # get_diffsets() already have the filediffs pre-fetched.
         filediffs_by_id: dict[int, FileDiff] = {}
