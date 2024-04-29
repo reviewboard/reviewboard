@@ -680,8 +680,8 @@ export class DiffFileIndexView extends BaseView<
 
 
         return {
-            height: height,
-            offset: offset,
+            height: Math.round(height),
+            offset: Math.round(offset),
         };
     }
 

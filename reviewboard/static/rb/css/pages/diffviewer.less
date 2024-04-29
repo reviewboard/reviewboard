@@ -1253,7 +1253,7 @@ table.rb-c-diff-file-index {
   @icon-offset: 2px;
 
   border-collapse: collapse;
-  border: @review-request-field-border;
+  border: var(--ink-c-data-table-border);
   padding: 0;
   width: 100%;
 
@@ -1264,20 +1264,21 @@ table.rb-c-diff-file-index {
   }
 
   td {
-    background: #FDFDFD;
+    background: var(--ink-c-data-table-body-bg);
     padding: 0.6em;
     margin: 0;
-    border-top: @review-request-field-table-divider-border;
+    border-top: var(--ink-c-data-table-row-border);
     vertical-align: top;
 
     &.diff-chunks-cell {
-      color: #888;
+      color: var(--ink-p-text-color-weak);
       text-align: right;
       width: 70%;
     }
 
     &.diff-file-icon {
       padding: @icon-offset 0 0 @icon-offset;
+      vertical-align: middle;
 
       .rb-icon {
         width: @icon-size;
@@ -1296,7 +1297,7 @@ table.rb-c-diff-file-index {
       width: 30%;
 
       .diff-file-rename {
-        color: #888;
+        color: var(--ink-p-text-color-weak);
         display: block;
         font-size: 90%;
         font-style: italic;
@@ -1370,7 +1371,7 @@ table.rb-c-diff-file-index {
   }
 
   &__table {
-    border: @review-request-field-border;
+    border: var(--ink-c-data-table-border);
     flex-grow: 1;
     overflow: hidden;
   }
