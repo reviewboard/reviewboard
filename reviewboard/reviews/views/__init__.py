@@ -1,7 +1,9 @@
 """Main application views for Review Board."""
 
-from reviewboard.reviews.views.attachments import (ReviewFileAttachmentView,
-                                                   ReviewScreenshotView)
+from reviewboard.reviews.views.attachments import (
+    DownloadFileAttachmentView,
+    ReviewFileAttachmentView,
+    ReviewScreenshotView)
 from reviewboard.reviews.views.batch import BatchOperationView
 from reviewboard.reviews.views.bug_trackers import (BugInfoboxView,
                                                     BugURLRedirectView)
@@ -35,6 +37,7 @@ __all__ = [
     'BugURLRedirectView',
     'CommentDiffFragmentsView',
     'DownloadDiffFileView',
+    'DownloadFileAttachmentView',
     'DownloadRawDiffView',
     'NewReviewRequestView',
     'PreviewBatchEmailView',

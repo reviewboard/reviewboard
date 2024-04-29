@@ -70,6 +70,21 @@ diffviewer_urls = [
 ]
 
 
+file_attachment_urls = [
+    path('<int:file_attachment_id>/',
+         views.ReviewFileAttachmentView.as_view(),
+         name='file-attachment'),
+
+    path('<int:file_attachment_diff_id>-<int:file_attachment_id>/',
+         views.ReviewFileAttachmentView.as_view(),
+         name='file-attachment'),
+
+    path('<int:file_attachment_id>/download/',
+         views.DownloadFileAttachmentView.as_view(),
+         name='download-file-attachment'),
+]
+
+
 bugs_urls = [
     path('', views.BugURLRedirectView.as_view(), name='bug_url'),
     path('infobox/', views.BugInfoboxView.as_view(), name='bug_infobox'),
@@ -95,13 +110,7 @@ review_request_urls = [
             name='diff-comment-fragments'),
 
     # File attachments
-    path('file/<int:file_attachment_id>/',
-         views.ReviewFileAttachmentView.as_view(),
-         name='file-attachment'),
-
-    path('file/<int:file_attachment_diff_id>-<int:file_attachment_id>/',
-         views.ReviewFileAttachmentView.as_view(),
-         name='file-attachment'),
+    path('file/', include(file_attachment_urls)),
 
     # Screenshots
     path('s/<int:screenshot_id>/',

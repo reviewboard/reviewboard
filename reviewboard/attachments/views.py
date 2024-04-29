@@ -1,5 +1,6 @@
 """Views for serving up attachments."""
 
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.views.static import serve
 
@@ -34,8 +35,12 @@ def user_file_attachment(request, file_attachment_uuid, username,
                                         user__username=username,
                                         local_site=local_site,
                                         file__isnull=False)
+    download_url = file_attachment.get_raw_download_url()
 
-    return redirect(file_attachment)
+    if download_url:
+        return redirect(download_url)
+
+    raise Http404
 
 
 def serve_safe(*args, **kwargs):

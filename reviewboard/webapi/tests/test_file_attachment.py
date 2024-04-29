@@ -454,6 +454,32 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 },
                 'where': Q(file_attachments__id=file_attachment.pk),
             },
+            {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+            {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
         ]
 
         # The purpose of this test is to see what queries are being executed,
@@ -637,6 +663,32 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'model': ReviewRequestDraft,
                 'type': 'UPDATE',
                 'where': Q(pk=review_request_draft.pk)
+            },
+            {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+            {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
             },
             {
                 'join_types': {
@@ -871,6 +923,32 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
                 'model': ReviewRequestDraft,
                 'type': 'UPDATE',
                 'where': Q(pk=review_request_draft.pk)
+            },
+            {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+            {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
+                'model': ReviewRequest,
+                'limit': 1,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequest',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
             },
             {
                 'join_types': {
