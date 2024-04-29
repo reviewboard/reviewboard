@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional, Set, Union
+from typing import Any, Dict, Optional, Set, TYPE_CHECKING, Union
 
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
@@ -29,6 +29,9 @@ from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_file_attachment import \
     BaseFileAttachmentResource
+
+if TYPE_CHECKING:
+    from reviewboard.reviews.models import ReviewRequestDraft
 
 
 logger = logging.getLogger(__name__)
@@ -68,27 +71,48 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         review_request = resources.review_request.get_object(
             request, *args, **kwargs)
 
-        q = (Q(review_request=review_request) &
-             Q(added_in_filediff__isnull=True) &
-             Q(repository__isnull=True) &
-             Q(user__isnull=True))
+        prefetch_related: list[str] = []
+        q = Q()
 
-        if not is_list:
-            q = q | Q(inactive_review_request=review_request)
+        if review_request.file_attachments_count > 0:
+            q |= Q(review_request=review_request)
+            prefetch_related.append('review_request')
+
+        if not is_list and review_request.inactive_file_attachments_count > 0:
+            q |= Q(inactive_review_request=review_request)
+            prefetch_related.append('inactive_review_request')
 
         if review_request.is_mutable_by(request.user):
+            draft: Optional[ReviewRequestDraft] = None
+
             try:
                 draft = resources.review_request_draft.get_object(
                     request, *args, **kwargs)
-
-                q = q | Q(drafts=draft)
-
-                if not is_list:
-                    q = q | Q(inactive_drafts=draft)
             except ObjectDoesNotExist:
-                pass
+                draft = None
 
-        return self.model.objects.filter(q)
+            if draft:
+                if draft.file_attachments_count > 0:
+                    q |= Q(drafts=draft)
+                    prefetch_related.append('drafts')
+
+                if not is_list and draft.inactive_file_attachments_count > 0:
+                    q |= Q(inactive_drafts=draft)
+                    prefetch_related.append('inactive_drafts')
+
+        if not prefetch_related:
+            # There's nothing to fetch. We can bail early.
+            return self.model.objects.none()
+
+        q &= (Q(added_in_filediff__isnull=True) &
+              Q(repository__isnull=True) &
+              Q(user__isnull=True))
+
+        return (
+            self.model.objects
+            .filter(q)
+            .prefetch_related(*prefetch_related)
+        )
 
     def serialize_url_field(self, obj, **kwargs):
         return obj.get_absolute_url()
