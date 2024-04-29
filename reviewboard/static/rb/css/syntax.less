@@ -114,6 +114,18 @@
     var(--if-dark, @default-code-theme-dark-diff-replace-linenum-bg)
     var(--if-light, @default-code-theme-light-diff-replace-linenum-bg);
   --rb-theme-diff-replace-linenum-fg: @_linenum-fg;
+
+  --rb-theme-diff-indent-fg:
+      var(--if-dark, var(--ink-p-green-700))
+      var(--if-light, var(--ink-p-green-600));
+  --rb-theme-diff-unindent-fg:
+      var(--if-dark, var(--ink-p-red-800))
+      var(--if-light, var(--ink-p-red-500));
+
+  --rb-theme-diff-move-from-flag-bg: var(--ink-p-light__green-400);
+  --rb-theme-diff-move-from-flag-fg: var(--ink-p-text-on-light-color);
+  --rb-theme-diff-move-to-flag-bg: var(--ink-p-light__red-200);
+  --rb-theme-diff-move-to-flag-fg: var(--ink-p-text-on-light-color);
 }
 
 

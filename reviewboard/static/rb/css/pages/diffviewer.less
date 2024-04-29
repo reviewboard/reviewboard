@@ -181,11 +181,11 @@
   }
 
   .indent {
-    color: #A3CCA3;
+    color: var(--rb-theme-diff-indent-fg);
   }
 
   .unindent {
-    color: #CCA3A3;
+    color: var(--rb-theme-diff-unindent-fg);
   }
 
   .moved-row-start {
@@ -204,11 +204,17 @@
       }
 
       &.moved-from {
-        border-left: @moved-border-left-width @diff-moved-from-bg-color solid;
+        border-left:
+          @moved-border-left-width
+          var(--rb-theme-diff-move-from-flag-bg)
+          solid;
       }
 
       &.moved-to {
-        border-left: @moved-border-left-width @diff-moved-to-bg-color solid;
+        border-left:
+          @moved-border-left-width
+          var(--rb-theme-diff-move-to-flag-bg)
+          solid;
       }
     }
 
@@ -219,28 +225,36 @@
       }
 
       &.moved-from {
-        border-right: @moved-border-right-width @diff-moved-from-bg-color solid;
+        border-right:
+          @moved-border-right-width
+          var(--rb-theme-diff-move-from-flag-bg)
+          solid;
       }
 
       &.moved-to {
-        border-right: @moved-border-right-width @diff-moved-to-bg-color solid;
+        border-right:
+          @moved-border-right-width
+          var(--rb-theme-diff-move-to-flag-bg)
+          solid;
       }
     }
   }
 
   .moved-to .moved-flag {
-    background-color: @diff-moved-to-bg-color !important;
+    background: var(--rb-theme-diff-move-to-flag-bg);
+    color: var(--rb-theme-diff-move-to-flag-fg);
   }
 
   .moved-from .moved-flag {
-    background-color: @diff-moved-from-bg-color !important;
+    background: var(--rb-theme-diff-move-from-flag-bg);
+    color: var(--rb-theme-diff-move-from-flag-fg);
   }
 
   .moved-flag {
-    background-color: inherit !important;
     display: inline-block;
     font-size: 7pt;
     padding: 0;
+    text-decoration: none;
 
     /*
      * We need to compensate for some spacing in the cells. The TD for the
@@ -260,7 +274,10 @@
     padding-top: 0;
 
     .moved-flag {
-      border-radius: 0, 8px, 8px, 0;
+      border-radius: 0
+                     var(--ink-u-border-radius-std)
+                     var(--ink-u-border-radius-std)
+                     0;
       padding: 3px 1em 3px 0.5em;
     }
   }
@@ -542,23 +559,19 @@
       }
 
       tr {
+        @_border-color:
+          var(--if-light, darken(@diff-header-color, 10%))
+          var(--if-dark, transparent);
+
         &:first-child {
           td, th {
-            border-top:
-              1px
-              var(--if-light, var(--ink-p-container-outline))
-              var(--if-dark, transparent)
-              solid;
+            border-top: var(--ink-u-border-thin) @_border-color solid;
           }
         }
 
         &:last-child {
           td, th {
-            border-bottom:
-              1px
-              var(--if-light, darken(@diff-header-color, 10%))
-              var(--if-dark, transparent)
-              solid;
+            border-bottom: var(--ink-u-border-thin) @_border-color solid;
           }
         }
       }
