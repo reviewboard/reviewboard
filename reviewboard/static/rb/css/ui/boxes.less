@@ -1,3 +1,5 @@
+@import (reference) "@beanbag/ink/lib/ink.less";
+
 @import (reference) "rb/css/defs.less";
 @import (reference) "rb/css/assets/paths.less";
 @import (reference) "rb/css/ui/colors.less";
@@ -51,14 +53,14 @@
     .make-box(@include-padding: true) {
       @_boxes-vars: #rb-ns-ui.boxes();
 
-      background-color: @_boxes-vars[@bg];
-      border: 1px @_boxes-vars[@border-color] solid;
-      border-radius: @_boxes-vars[@border-radius];
-      box-shadow: @_boxes-vars[@shadow];
+      background: var(--ink-p-container-bg);
+      border: var(--ink-g-border-container);
+      border-radius: var(--ink-u-border-radius-std);
+      box-shadow: var(--ink-g-shadow-std);
       box-sizing: border-box;
 
       & when (@include-padding = true) {
-        padding: @_boxes-vars[@padding];
+        padding: var(--ink-u-spacing-std);
       }
     }
 
@@ -111,27 +113,25 @@
   &.important {
     background-color: @_important-vars[@bg];
     background-image: url(@_important-vars[@bg-image]);
+    color: var(--ink-p-text-on-light-color);
+    display: flex;
     border: 1px @_important-vars[@border-color] solid;
     padding: 0 10px;
 
-    .box-inner {
-      background: url("@{rb-images-root}/important.png") no-repeat top left;
-      padding: 0 0 0 50px;
-    }
-  }
+    &:before {
+      display: inline-block;
 
-  &.tip {
-    background-color: @_tip-vars[@bg];
-    background-image: url(@_tip-vars[@bg-image]);
-    border: 1px @_tip-vars[@border-color] solid;
-    padding: 0 10px;
-
-    .box-inner {
-      background: transparent;
+      #ink-ns-ui.icons.svg-icon(@icon: var(--ink-c-alert-warning-icon);
+                                @size: var(--ink-u-icon-l));
+      margin: 10px 10px 0 0;
     }
 
-    h1 {
-      padding-left: 0;
+    a {
+      color: var(--ink-p-link-on-light-color);
+
+      &:hover {
+        color: var(--ink-p-link-on-light-hover-color);
+      }
     }
   }
 }
@@ -140,11 +140,12 @@
 .modalbox-title {
   @_boxes-vars: #rb-ns-ui.boxes();
 
-  background: @_boxes-vars[@title-bg];
-  border-bottom: 1px @_boxes-vars[@title-border-color] solid;
+  background: var(--ink-p-header-bg);
+  border-bottom: var(--ink-g-border-header);
   margin: 0;
-  padding: @_boxes-vars[@title-padding];
-  border-radius: @_boxes-vars[@border-radius] @_boxes-vars[@border-radius]
+  padding: var(--ink-u-spacing-s) var(--ink-u-spacing-sm);
+  border-radius: var(--ink-u-border-radius-std)
+                 var(--ink-u-border-radius-std)
                  0 0;
 }
 
@@ -169,10 +170,7 @@
 
 .box-inner,
 .modalbox-inner {
-  background-image: url('@{rb-images-root}/box_bottom_bg.png');
-  background-position: bottom left;
-  background-repeat: repeat-x;
-  border-radius: #rb-ns-ui.boxes[@border-radius];
+  border-radius: var(--ink-u-border-radius-std);
 }
 
 .box-inner form {
