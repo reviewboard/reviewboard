@@ -6,6 +6,43 @@
 @linenum-padding-left: 2px;
 
 
+:root,
+.sidebyside {
+  --rb-g-diff-box-header-bg:
+    var(--if-light,
+        #E9E9E9
+        linear-gradient(
+          to bottom,
+          #FFFFFF,
+          var(--ink-p-grey-200) 70%,
+          var(--ink-p-grey-200)))
+    var(--if-dark, var(--ink-p-cool-grey-300));
+  --rb-g-diff-box-header-fg: var(--ink-p-container-fg);
+  --rb-g-diff-box-header-border:
+      var(--ink-u-border-thin)
+      var(--if-light, var(--ink-p-container-outline))
+      var(--if-dark, transparent)
+      solid;
+
+  --rb-g-diff-header-bg:
+    var(--if-light, @diff-header-color)
+    var(--if-dark, var(--ink-p-cool-grey-400));
+  --rb-g-diff-header-fg: var(--ink-p-text-color);
+  --rb-g-diff-header-border:
+    var(--ink-u-border-thin)
+    var(--if-light, darken(@diff-header-color, 10%))
+    var(--if-dark, transparent)
+    solid;
+
+  --rb-g-diff-chunk-border: 1px rgba(0, 0, 0, 0.12) solid;
+
+  --rb-g-diff-highlight-text-bg:
+    var(--if-light, #ffdd61)
+    var(--if-dark, goldenrod);
+  --rb-g-diff-highlight-text-fg: black;
+}
+
+
 .sidebyside {
   @diff-cell-padding: 1px;
 
@@ -515,18 +552,14 @@
       }
 
       .hl {
-        background:
-          var(--if-light, #ffdd61)
-          var(--if-dark, goldenrod);
-        color: black;
+        background: var(--rb-g-diff-highlight-text-bg);
+        color: var(--rb-g-diff-highlight-text-fg);
       }
     }
 
     &.diff-header {
-      background:
-        var(--if-light, @diff-header-color)
-        var(--if-dark, var(--ink-p-cool-grey-400));
-      color: var(--ink-p-text-color);
+      background: var(--rb-g-diff-header-bg);
+      color: var(--rb-g-diff-header-fg);
 
       + tbody {
         td, th {
@@ -559,19 +592,15 @@
       }
 
       tr {
-        @_border-color:
-          var(--if-light, darken(@diff-header-color, 10%))
-          var(--if-dark, transparent);
-
         &:first-child {
           td, th {
-            border-top: var(--ink-u-border-thin) @_border-color solid;
+            border-top: var(--rb-g-diff-header-border);
           }
         }
 
         &:last-child {
           td, th {
-            border-bottom: var(--ink-u-border-thin) @_border-color solid;
+            border-bottom: var(--rb-g-diff-header-border);
           }
         }
       }
@@ -579,16 +608,8 @@
   }
 
   thead {
-    background:
-      var(--if-light,
-          #E9E9E9
-          linear-gradient(
-            to bottom,
-            #FFFFFF,
-            var(--ink-p-grey-200) 70%,
-            var(--ink-p-grey-200)))
-      var(--if-dark, var(--ink-p-cool-grey-300));
-    color: var(--ink-p-container-fg);
+    background: var(--rb-g-diff-box-header-bg);
+    color: var(--rb-g-diff-box-header-fg);
 
     /*
      * Remove the top border on the diff header or chunk following the file
@@ -619,11 +640,7 @@
     }
 
     .revision-row th {
-      border-bottom:
-        1px
-        var(--if-light, var(--ink-p-container-outline))
-        var(--if-dark, transparent)
-        solid;
+      border-bottom: var(--rb-g-diff-box-header-border);
       font-size: 100%;
       font-weight: normal;
       padding: 8px 0;
@@ -846,8 +863,8 @@
         &.delete,
         &.insert,
         &.replace {
-          border-top: 1px rgba(0, 0, 0, 0.12) solid;
-          border-bottom: $border-top;
+          border-top: var(--rb-g-diff-chunk-border);
+          border-bottom: var(--rb-g-diff-chunk-border);
         }
 
         /*

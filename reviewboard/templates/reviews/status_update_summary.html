@@ -2,10 +2,11 @@
  <span class="summary">{{summary}}</span>
  {{description}}
  {% if can_run %}
- <input type="button"
-        value="{{action_name}}"
-        class="status-update-request-run"
-        data-status-update-id="{{status_update_id}}">
+ <button type="button"
+         class="ink-c-button status-update-request-run"
+         data-status-update-id="{{status_update_id}}">
+  {{action_name}}
+ </button>
 {% endif %}
 {% if url %}
  <a href="{{url}}">{{url_text|default:url}}</a>

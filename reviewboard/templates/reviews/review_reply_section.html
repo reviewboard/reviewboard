@@ -15,11 +15,13 @@
 {% if user.is_authenticated and not is_read_only %}
  <ul class="controls">
   <li>
-   <a href="#" class="add_comment_link">
+   <a href="#" class="add_comment_link ink-c-button">
 {%  if reply_to_is_empty %}
-    <span class="fa fa-comment"></span> {% trans "Comment" %}
+    <span class="ink-c-button__icon"><span class="fa fa-comment"></span></span>
+    <label class="ink-c-button__label">{% trans "Comment" %}</label>
 {%  else %}
-    <span class="fa fa-reply"></span> {% trans "Reply" %}
+    <span class="ink-c-button__icon"><span class="fa fa-reply"></span></span>
+    <label class="ink-c-button__label">{% trans "Reply" %}</label>
 {%  endif %}
    </a>
   </li>

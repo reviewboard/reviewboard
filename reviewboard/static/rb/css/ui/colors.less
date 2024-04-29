@@ -165,6 +165,42 @@
         diff-replace-graph-color:
           var(--if-light, var(--ink-p-yellow-800))
           var(--if-dark, var(--ink-p-yellow-600));
+
+        /** Diff insert operation indicator background. */
+        diff-insert-op-bg:
+          var(--if-light, @diff-insert-linenum-color)
+          var(--if-dark, var(--ink-p-input-bg-color));
+
+        /** Diff insert operation indicator foreground. */
+        diff-insert-op-fg:
+          var(--if-light, var(--ink-p-text-on-light-color))
+          var(--if-dark, var(--ink-p-green-700));
+
+        /** Diff delete operation indicator background. */
+        diff-delete-op-bg:
+          var(--if-light, @diff-delete-linenum-color)
+          var(--if-dark, var(--ink-p-input-bg-color));
+
+        /** Diff delete operation indicator foreground. */
+        diff-delete-op-fg:
+          var(--if-light, var(--ink-p-text-on-light-color))
+          var(--if-dark, var(--ink-p-red-800));
+
+        /** Diff replace operation indicator background. */
+        diff-replace-op-bg:
+          var(--if-light, @diff-replace-linenum-color)
+          var(--if-dark, var(--ink-p-input-bg-color));
+
+        /** Diff replace operation indicator foreground. */
+        diff-replace-op-fg:
+          var(--if-light, var(--ink-p-text-on-light-color))
+          var(--if-dark, var(--ink-p-yellow-800));
+
+        /** Color used for text representing an insert operation. */
+        diff-insert-text-fg: var(--ink-p-green-800);
+
+        /** Color used for text representing a delete operation. */
+        diff-delete-text-fg: var(--ink-p-red-800);
       };
     );
   }

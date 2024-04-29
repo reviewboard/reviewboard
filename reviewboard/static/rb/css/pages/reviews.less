@@ -9,8 +9,19 @@
 
 
 @changedesc-bg: lighten(@review-request-bg, 5%);
+@changedesc-collapsed-bg: desaturate(darken(@review-request-bg, 4%), 65%);
 @changedesc-border-color: #CABF71;
 @floating-anchor-width: 8em;
+
+
+:root {
+  --rb-c-status-updates-failure-text-color:
+    var(--ink-p-accent-error-fg-on-container);
+  --rb-c-status-updates-not-yet-run-text-color: var(--ink-p-cyan-700);
+  --rb-c-status-updates-pending-text-color: var(--ink-p-brown-700);
+  --rb-c-status-updates-success-text-color:
+    var(--ink-p-accent-success-fg-on-container);
+}
 
 
 /****************************************************************************
@@ -34,7 +45,7 @@
       }
 
       .user {
-        color: @review-comment-author-color;
+        color: var(--ink-p-link-color);
         font-size: 1.1em;
         font-weight: bold;
         text-decoration: none;
@@ -45,7 +56,7 @@
         overflow: hidden;
 
         .timestamp {
-          color: #487858;
+          color: var(--ink-p-text-color-weak);
           display: block;
           text-decoration: none;
 
@@ -366,6 +377,30 @@
  ****************************************************************************/
 
 .review-request-page-entry {
+  --rb-c-review-request-page-entry-content-bg:
+    var(--if-light, @review-request-entry-base-bg)
+    var(--if-dark, var(--ink-p-container-bg));
+
+  --rb-c-review-request-page-entry-content-bg-color:
+    var(--if-light, @review-request-entry-base-bg)
+    var(--if-dark, var(--ink-p-container-bg));
+
+  --rb-c-review-request-page-entry-content-border-color:
+    var(--if-light, @review-request-entry-base-border-color)
+    var(--if-dark, var(--ink-p-container-outline));
+
+  --rb-c-review-request-page-entry-content-collapsed-bg:
+    var(--if-light, @review-request-entry-collapsed-bg)
+    var(--if-dark, var(--ink-p-container-bg));
+
+  --rb-c-review-request-page-entry-content-collapsed-bg-color:
+    var(--if-light, @review-request-entry-collapsed-bg)
+    var(--if-dark, var(--ink-p-container-bg));
+
+  --rb-c-review-request-page-entry-content-collapsed-border-color:
+    var(--if-light, @review-request-entry-collapsed-border-color)
+    var(--if-dark, var(--ink-p-container-outline));
+
   clear: both;
   margin: 2rem 0;
 
@@ -388,8 +423,10 @@
 }
 
 .review-request-page-entry-contents {
-  background-color: @review-request-entry-base-bg;
-  border: 1px @review-request-entry-base-border-color solid;
+  background: var(--rb-c-review-request-page-entry-content-bg);
+  border: var(--ink-u-border-thin)
+          var(--rb-c-review-request-page-entry-content-border-color)
+          solid;
   border-radius: @box-border-radius;
   box-shadow: @box-shadow;
 
@@ -398,9 +435,11 @@
      * Note that we use !important to ensure a consistent look for all
      * collapsed entries, regardless of their open state's styling.
      */
-    background-color: @review-request-entry-collapsed-bg !important;
-    background-image: none !important; // Override any gradients used.
-    border-color: @review-request-entry-collapsed-border-color !important;
+    background: var(--rb-c-review-request-page-entry-content-collapsed-bg)
+                !important;
+    border-color:
+      var(--rb-c-review-request-page-entry-content-collapsed-border-color)
+      !important;
 
     .body,
     .banners {
@@ -416,8 +455,9 @@
     margin-left: 80px;
     width: auto;
 
-    .left-arrow-callout(@review-request-entry-base-bg,
-                        @review-request-entry-base-border-color);
+    .left-arrow-callout(
+      var(--rb-c-review-request-page-entry-content-bg-color),
+      var(--rb-c-review-request-page-entry-content-border-color));
 
     .on-mobile-medium-screen-720({
       margin-left: 0;
@@ -429,34 +469,32 @@
     });
 
     &.collapsed {
-      .left-arrow-callout-color(@review-request-entry-collapsed-bg);
+      .left-arrow-callout-color(
+        var(--rb-c-review-request-page-entry-content-collapsed-bg-color));
       .left-arrow-callout-border-color(
-          @review-request-entry-collapsed-border-color);
+        var(--rb-c-review-request-page-entry-content-collapsed-border-color));
     }
   }
 
   .header {
     border-radius: @box-border-radius @box-border-radius 0 0;
+    display: flex;
     padding: @review-request-entry-padding;
 
     a {
-      color: black;
+      color: inherit;
       text-decoration: none;
     }
 
     .header-details {
-      line-height: 20px;
-      overflow: hidden;
+      display: flex;
+      flex-grow: 1;
     }
 
     .summary {
-      float: left;
+      flex-grow: 1;
       font-size: 110%;
       font-weight: bold;
-
-      .on-mobile-medium-screen-720({
-        float: none;
-      });
 
       .review-request-page-entry-title {
         vertical-align: middle;
@@ -464,9 +502,8 @@
     }
 
     .timestamp {
-      color: #555;
+      color: var(--ink-p-text-color-weak);
       display: block;
-      text-align: right;
 
       .on-mobile-medium-screen-720({
         margin-top: 0.5rem;
@@ -507,11 +544,11 @@
   &.has-draft {
     // Reviews with draft replies have a green header.
     .review-request-page-entry-contents {
-      .left-arrow-callout-color(@draft-color);
+      .left-arrow-callout-color(var(--rb-p-draft-bg));
     }
 
     .header {
-      background: @draft-color;
+      background: var(--rb-p-draft-bg);
     }
 
     .review-request-page-entry-contents:not(.collapsed) .header {
@@ -536,7 +573,6 @@
 .review-comment-screenshot,
 .review-comment-file-attachment,
 .review-comment-diff {
-  background-color: @review-comment-filename-background-color;
   border: 0px @review-comment-filename-border-color solid;
 
   .diffrevision {
@@ -628,21 +664,19 @@
     }
 
     .filename-row th {
-      background: @review-comment-filename-background-color;
-
       /*
        * This replaces the border that would normally be at the top of
        * .review-comment-diff. We put it here instead so that it will appear
        * on the top of the header when it animates, instead of staying fixed
        * above it.
        */
-      border-top: 1px @review-comment-filename-border-color solid;
+      border-top: var(--rb-g-diff-box-header-border);
 
       /*
        * Normally the revision row has this border, but for diff fragments,
        * we want to place it on the filename row.
        */
-      border-bottom: 1px @diff-file-border-color solid;
+      border-bottom: var(--rb-g-diff-box-header-border);
     }
 
     .diff-header {
@@ -791,8 +825,14 @@
     }
   }
 
-  &.comment-details-empty .review-comment {
-    padding: 0;
+  &.comment-details-empty {
+    + .review-comment-thread .controls {
+      margin-top: var(--ink-u-spacing-xxl);
+    }
+
+    .review-comment {
+      padding: 0;
+    }
   }
 }
 
@@ -819,25 +859,6 @@
     margin: 0;
     padding: 0;
     text-align: left;
-
-    a {
-      color: black;
-      display: inline-block;
-      text-decoration: none;
-      background: #ECECEC;
-      border: 1px #C3C3C3 solid;
-      margin-top: 2em;
-      padding: 0.6em 1em;
-      border-radius: @box-border-radius;
-
-      &:hover {
-        background: #F3F3F3;
-      }
-
-      .fa {
-        margin-right: 5px;
-      }
-    }
 
     li {
       display: inline;
@@ -917,8 +938,8 @@
       }
 
       .avatar-container {
-        background: white;
-        border: 2px #CCC dotted;
+        background: var(--ink-p-surface-bg);
+        border: 2px var(--ink-p-container-outline) dotted;
         border-radius: 50%;
         overflow: hidden;
         width: 48px;
@@ -932,7 +953,7 @@
         });
 
         img {
-          border: 2px white solid;
+          border: 2px transparent solid;
           box-sizing: border-box;
         }
       }
@@ -951,6 +972,7 @@
       label {
         border: 1px #888888 solid;
         border-radius: @box-border-radius;
+        color: var(--ink-p-text-on-light-color);
         display: block;
         line-height: 1.5;
         margin-bottom: @page-container-padding;
@@ -1074,14 +1096,23 @@
  ****************************************************************************/
 
 .changedesc {
-  .review-request-page-entry-contents {
-    background-color: @changedesc-bg;
-    border-color: @changedesc-border-color;
-    #gradient > .vertical(@changedesc-bg, @review-request-bg);
+  --rb-c-review-request-page-entry-content-bg-color:
+    var(--if-light, @changedesc-bg)
+    var(--if-dark, var(--rb-c-review-request-bg-color));
 
-    .left-arrow-callout-color(@changedesc-bg);
-    .left-arrow-callout-border-color(@changedesc-border-color);
-  }
+  --rb-c-review-request-page-entry-content-bg:
+    var(--rb-c-review-request-page-entry-content-bg-color);
+
+  --rb-c-review-request-page-entry-content-border-color:
+    var(--if-light, @changedesc-border-color)
+    var(--if-dark, var(--rb-c-review-request-border-color));
+
+  --rb-c-review-request-page-entry-content-collapsed-bg-color:
+    var(--if-light, @changedesc-collapsed-bg)
+    var(--if-dark, var(--ink-p-cool-grey-100));
+
+  --rb-c-review-request-page-entry-content-collapsed-bg:
+    var(--rb-c-review-request-page-entry-content-collapsed-bg-color);
 
   .changed-fields {
     clear: both;
@@ -1112,7 +1143,7 @@
 
     /* Field labels */
     h3 {
-      color: @review-request-label-color;
+      color: var(--rb-p-review-request-field-label-color);
       font-size: 110%;
       margin: 0;
       padding: 0;
@@ -1130,7 +1161,7 @@
         }
 
         .value {
-          color: black;
+          color: inherit;
           font-weight: normal;
         }
       }
@@ -1138,8 +1169,9 @@
 
     /* Used in the textarea field diffs and the Change Summary section. */
     > pre {
-      background-color: #FFFFFF;
-      border: @textarea-border;
+      background-color: var(--ink-p-input-bg-color);
+      border: var(--ink-g-border-input);
+      color: var(--ink-p-input-text-color);
       padding: @textarea-editor-padding;
       font-size: inherit;
       white-space: pre-wrap;
@@ -1175,7 +1207,8 @@
 
     /* Displays changes for field values, with "-" and "+" markers. */
     .changed {
-      border: @textarea-border;
+      background: var(--ink-p-input-bg-color);
+      border: var(--ink-g-border-input);
       border-collapse: collapse;
       display: inline-block;
       margin: 0;
@@ -1183,7 +1216,7 @@
       vertical-align: top;
 
       a {
-        color: blue;
+        color: var(--ink-p-link-color);
         text-decoration: none;
 
         &:first-child {
@@ -1201,15 +1234,17 @@
       }
 
       td {
-        background: #FEFEFE;
+        background: var(--ink-g-border-input);
       }
 
       .new-value .marker {
-        background: @diff-insert-linenum-color;
+        background: var(--rb-theme-diff-insert-linenum-bg);
+        color: var(--rb-theme-diff-insert-linenum-fg);
       }
 
       .old-value .marker {
-        background: @diff-delete-linenum-color;
+        background: var(--rb-theme-diff-delete-linenum-bg);
+        color: var(--rb-theme-diff-delete-linenum-fg);
       }
     }
 
@@ -1230,9 +1265,10 @@
 
     /* The diff for text areas. */
     .diffed-text-area {
-      background: white;
-      border: @textarea-border;
+      background: var(--ink-p-input-bg-color);
+      border: var(--ink-g-border-input);
       border-collapse: collapse;
+      color: var(--ink-p-input-text-color);
       padding: 0;
       width: 100%;
 
@@ -1260,7 +1296,7 @@
         white-space: pre-wrap;
 
         .codehilite {
-          background: rgba(255, 255, 255, 0.4);
+          //background: rgba(255, 255, 255, 0.4);
           border-radius: 0;
           border-left: 0;
           border-right: 0;
@@ -1277,12 +1313,11 @@
           }
 
           &.codehilite-multiline-start {
-            border-top: @code-block-border-size @code-block-border-color solid;
+            border-top: var(--rb-p-code-block-border);
           }
 
           &.codehilite-multiline-end {
-            border-bottom: @code-block-border-size @code-block-border-color
-                           solid;
+            border-bottom: var(--rb-p-code-block-border);
           }
 
           pre:empty {
@@ -1294,29 +1329,40 @@
 
       .delete {
         .line {
-          background: @diff-delete-color;
+          background: var(--rb-theme-diff-delete-bg);
+          color: var(--rb-theme-diff-delete-fg);
         }
 
         /* The '-' or '+' marker. */
         .marker {
-          color: #990000;
-          background: @diff-delete-linenum-color;
+          background: var(--rb-theme-diff-delete-linenum-bg);
+          color: var(--rb-theme-diff-delete-linenum-fg);
         }
       }
 
       .insert {
         .line {
-          background: @diff-insert-color;
+          background: var(--rb-theme-diff-insert-bg);
+          color: var(--rb-theme-diff-insert-fg);
         }
 
         /* The '-' or '+' marker. */
         .marker {
-          background: @diff-insert-linenum-color;
+          background: var(--rb-theme-diff-insert-linenum-bg);
+          color: var(--rb-theme-diff-insert-linenum-fg);
         }
+      }
+
+      /* Add borders between different change types. */
+      :not(.insert) + .insert,
+      :not(.equal) + .equal,
+      :not(.delete) + .delete {
+        border-top: var(--rb-g-diff-chunk-border);
       }
 
       .line {
         width: 100%;
+        word-break: break-all;
 
         /*
          * Make sure any images in the Markdown-rendered text are kept
@@ -1330,7 +1376,8 @@
 
       /* The '-' or '+' marker. */
       .marker {
-        background: #F9F9F9;
+        background: var(--rb-theme-diff-equals-linenum-bg);
+        color: var(--rb-theme-diff-equals-linenum-fg);
         font-family: @textarea-font-family;
         font-size: @textarea-font-size;
         font-weight: bold;
@@ -1339,31 +1386,37 @@
 
       .replace-new {
         .line {
-          background: @diff-insert-color;
+          background: var(--rb-theme-diff-insert-bg);
+          color: var(--rb-theme-diff-insert-fg);
 
           .hl {
-            background: desaturate(darken(@diff-insert-color, 15%), 30%);
+            background: var(--rb-g-diff-highlight-text-bg);
+            color: var(--rb-g-diff-highlight-text-fg);
           }
         }
 
         /* The '-' or '+' marker. */
         .marker {
-          background: @diff-insert-linenum-color;
+          background: var(--rb-theme-diff-insert-linenum-bg);
+          color: var(--rb-theme-diff-insert-linenum-fg);
         }
       }
 
       .replace-old {
         .line {
-          background: @diff-delete-color;
+          background: var(--rb-theme-diff-delete-bg);
+          color: var(--rb-theme-diff-delete-fg);
 
           .hl {
-            background: desaturate(darken(@diff-delete-color, 10%), 20%);
+            background: var(--rb-g-diff-highlight-text-bg);
+            color: var(--rb-g-diff-highlight-text-fg);
           }
         }
 
         /* The '-' or '+' marker. */
         .marker {
-          background: @diff-delete-linenum-color;
+          background: var(--rb-theme-diff-delete-linenum-bg);
+          color: var(--rb-theme-diff-delete-linenum-fg);
         }
       }
     }
@@ -1374,11 +1427,11 @@
         margin-left: 0.5em;
 
         .delete-count {
-          color: @diff-delete-line-count-color;
+          color: var(--rb-p-diff-delete-text-fg);
         }
 
         .insert-count {
-          color: @diff-insert-line-count-color;
+          color: var(--rb-p-diff-insert-text-fg);
         }
       }
     }
@@ -1479,11 +1532,6 @@
       }
     }
   }
-}
-
-.changedesc-status-updates {
-  background-color: white;
-  border-radius: 0 0 @box-border-radius @box-border-radius;
 }
 
 
@@ -2482,7 +2530,7 @@
     overflow: hidden;
 
     &.collapsed .header {
-      background-color: @review-request-entry-collapsed-bg;
+      background: var(--rb-c-review-request-page-entry-content-collapsed-bg);
       border-width: 0;
     }
   }
@@ -2496,27 +2544,44 @@
 
 #initial-status-updates .header,
 .status-update-review-header {
-  @_status-update-vars: #rb-ns-ui.status-updates();
+  --_status-update-review-header-bg-light: var(--ink-p-container-bg);
+  --_status-update-review-header-border-color: var(--ink-p-container-outline);
+  --_status-update-review-header-text-color: var(--ink-p-container-fg);
+
+  background:
+    var(--if-dark, var(--ink-p-container-bg))
+    var(--if-light, var(--_status-update-review-header-bg-light));
+  border: var(--ink-u-border-thin) rgba(0, 0, 0, 0.2) solid;
+  border-left: 0;
+  border-right: 0;
+  color: var(--_status-update-review-header-text-color);
 
   &.status-update-state-failure {
-    .status-update-header(@_status-update-vars[@failure-header-bg-color],
-                          @_status-update-vars[@failure-header-border-color]);
+    --_status-update-review-header-bg-light: var(--ink-p-accent-error-bg);
+    --_status-update-review-header-text-color:
+      var(--if-dark, var(--rb-c-status-updates-failure-text-color))
+      var(--if-light, var(--ink-p-accent-error-fg));
   }
 
   &.status-update-state-pending {
-    .status-update-header(@_status-update-vars[@pending-header-bg-color],
-                          @_status-update-vars[@pending-header-border-color]);
+    --_status-update-review-header-bg-light: var(--ink-p-accent-highlight-bg);
+    --_status-update-review-header-text-color:
+      var(--if-dark, var(--ink-p-accent-highlight-fg-on-container))
+      var(--if-light, var(--ink-p-accent-highlight-fg));
   }
 
   &.status-update-state-not-yet-run {
-    .status-update-header(
-      @_status-update-vars[@not-yet-run-header-bg-color],
-      @_status-update-vars[@not-yet-run-header-border-color]);
+    --_status-update-review-header-bg-light: var(--ink-p-cyan-100);
+    --_status-update-review-header-text-color:
+      var(--if-dark, var(--rb-c-status-updates-not-yet-run-text-color))
+      var(--if-light, var(--ink-p-accent-highlight-fg));
   }
 
   &.status-update-state-success {
-    .status-update-header(@_status-update-vars[@success-header-bg-color],
-                          @_status-update-vars[@success-header-border-color]);
+    --_status-update-review-header-bg-light: var(--ink-p-accent-success-bg);
+    --_status-update-review-header-text-color:
+      var(--if-dark, var(--ink-p-accent-success-fg-on-container))
+      var(--if-light, var(--ink-p-accent-success-fg));
   }
 }
 
@@ -2534,6 +2599,7 @@
   @_icon-size: @_status-update-vars[@icon-size];
 
   line-height: @_icon-size;
+  padding: @review-request-entry-padding;
   vertical-align: middle;
 
   &::before {
@@ -2544,17 +2610,8 @@
     position: absolute;
   }
 
-  .status-update-state(@color) {
-    color: @color;
-    padding: @review-request-entry-padding;
-
-    .fa {
-      margin-right: 0.5em;
-    }
-  }
-
   &.status-update-state-failure {
-    .status-update-state(@_status-update-vars[@failure-color]);
+    color: var(--rb-c-status-updates-failure-text-color);
 
     &::before {
       content: @_status-update-vars[@failure-icon];
@@ -2562,7 +2619,7 @@
   }
 
   &.status-update-state-pending {
-    .status-update-state(@_status-update-vars[@pending-color]);
+    color: var(--rb-c-status-updates-pending-text-color);
 
     &::before {
       animation: fa-spin 1.5s infinite linear;
@@ -2579,7 +2636,7 @@
   }
 
   &.status-update-state-not-yet-run {
-    .status-update-state(@_status-update-vars[@not-yet-run-color]);
+    color: var(--rb-c-status-updates-not-yet-run-text-color);
 
     &::before {
       content: @_status-update-vars[@not-yet-run-icon];
@@ -2587,11 +2644,15 @@
   }
 
   &.status-update-state-success {
-    .status-update-state(@_status-update-vars[@success-color]);
+    color: var(--rb-c-status-updates-success-text-color);
 
     &::before {
       content: @_status-update-vars[@success-icon];
     }
+  }
+
+  .fa {
+    margin-right: 0.5em;
   }
 
   .status-update-request-run {
