@@ -1,0 +1,595 @@
+.. default-intersphinx:: djblets5.x rb7.x
+
+
+==============================
+Review Board 7.0 Release Notes
+==============================
+
+**Release date**: TBD
+
+This release contains all bug fixes and features from Review Board version
+:doc:`6.0.2 <6.0.2>`.
+
+
+Installation/Upgrade
+====================
+
+Review Board 7.0 is compatible with Python 3.8 - 3.12.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install ReviewBoard==7.0
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Upgrade Notes
+=============
+
+* This release contains database schema changes to the following tables:
+
+  * ``notifications_webhooktarget``
+
+  This will take a small amount of time to migrate the database. Please test
+  the upgrade on a copy of your database first, to ensure the upgrade is smooth
+  and to time how long the upgrade takes.
+
+  .. important::
+
+     Do **not** cancel the upgrade on a production system for **any reason**.
+     Doing so will corrupt your database, requiring a backup or our repair
+     service.
+
+
+Compatibility
+=============
+
+* Review Board 7.0 supports Python 3.8 - 3.12.
+
+* :pypi:`Djblets` 5.0 is required.
+* :pypi:`Django` 4.2 is required.
+
+* Switched DMARC checking library from :pypi:`publicsuffix` to
+  :pypi:`publicsuffixlist`
+
+  The old publicsuffix module is deprecated, and was increasingly incompatible
+  with modern Python versions. DMARC support has been switched to the new
+  publicsuffixlist module.
+
+
+New Features
+============
+
+Binary Files in Diffs
+---------------------
+
+Review Board now supports displaying, reviewing, and diffing certain types of
+binary files included as part of your code diffs.
+
+At the moment, this is limited to image files but support for additional file
+types are in the works.
+
+This requires posting your changes with `RBTools`_ 5.0+, and is supported for a
+limited set of version control systems:
+
+* Git
+* Mercurial
+* Perforce
+* Subversion
+
+Support for a wider variety of file types and version control systems is
+coming in future versions. If there's something in particular that you would
+like to see, please let us know.
+
+.. todo:: screenshots
+
+.. _RBTools: https://reviewboard.org/downloads/rbtools/
+
+
+Dark Mode (experimental)
+------------------------
+
+Review Board 7 comes with an experimental Dark Mode. Users can choose in their
+profile settings whether to use Light Mode (the default), Dark Mode, or to
+follow the system theme (which can often be configured to change based on the
+time of day).
+
+.. note::
+
+   Dark Mode is still a work in progress, and there may be isolated parts of
+   the user interface which look odd or incorrect. If you notice anything that
+   does not look good in Dark Mode, please let us know.
+
+.. todo:: screenshots
+
+
+Diff Viewer
+-----------
+
+* Diffs can now be reviewed on mobile devices.
+
+  The diff viewer has been updated with a new responsive mode when viewing on
+  mobile devices. This will change the display from the two-column view into a
+  single column for content. This makes it much easier to read and interact
+  with diffs on phones and other mobile devices.
+
+.. todo:: screenshots
+
+* Added touchscreen support for the revision selector.
+
+* Added commit information to the hint for comments on other revisions.
+
+  When a draft review contains comments on multiple revisions of the diff, the
+  diff viewer will show a hint listing all the revisions that the draft
+  comments are present on. This previously did not include information about
+  comments on commit ranges.
+
+
+Integrations
+------------
+
+* Integration with :rbintegration:`Microsoft Teams <msteams>`
+
+  Microsoft Teams is a team collaboration application, offering workspace
+  chat.
+
+  Review Board can integrate with Microsoft Teams to post notifications
+  whenever review requests and reviews are published. You can have multiple
+  different Microsoft Teams configurations to deliver notifications to
+  different channels (or even different teams).
+
+* Updated compatibility for slash normalization in newer versions of
+  :rbintegration:`Jenkins <jenkins>`.
+
+  For a while, Jenkins disallowed using slashes in job names, and required
+  normalizing them to underscores. In newer versions, slashes are required.
+
+  The jenkins integration now provides separate template variables for
+  ``{branch_name}`` and ``{noslash_branch_name}``, and for
+  ``{repository_name}`` and ``{noslash_repository_name}``.
+
+  Existing configurations may require manual changes, as slashes appearing in a
+  job name outside of a variable are no longer converted to underscores.
+
+* Added guided help to the :rbintegration:`CircleCI <circleci>` and
+  :rbintegration:`Jenkins <jenkins>` configuration forms.
+
+* Added configurable timeouts to all CI integration backends.
+
+  If a build on :rbintegration:`CircleCI <circleci>`, :rbintegration:`Jenkins
+  <jenkins>`, or :rbintegration:`Travis CI <travis-ci>` failed without
+  notifying Review Board, the status update would just show that it was waiting
+  forever. These integrations now allow you to specify an optional timeout
+  value, after which the build will be marked as failed and allow users to
+  trigger a retry.
+
+
+Extensions
+----------
+
+* Added a new ``--pytest`` argument to :ref:`rbext-test`.
+
+  This flag allows opting in to the Pytest_-based test runner instead of
+  :pypi:`nose`.
+
+* Extensions can now be built using modern TypeScript, JavaScript, and CSS
+  tools.
+
+  Review Board 7 includes a new static media building framework that makes it
+  easier to consume Review Board's JavaScript and CSS, as well as build the
+  front-end part of extensions using modern frameworks.
+
+  :py:mod:`reviewboard.extensions.packaging` will now set up symbolic links
+  to the Review Board and Djblets source trees inside of
+  :file:`.npm-workspaces`, as well as create basic configurations for Babel_,
+  Rollup_, and TSC_ (the TypeScript compiler).
+
+
+.. _Pytest: https://pytest.org
+.. _Babel: https://babeljs.io
+.. _Rollup: https://rollupjs.org
+.. _TSC: https://www.typescriptlang.org/docs/handbook/compiler-options.html
+
+
+Security Middleware
+-------------------
+
+The Django :ref:`Security Middleware <django4.2:security-middleware>` has been
+added to the default middleware.
+
+By default, we have set this up to set the :mailheader:`X-Content-Type-Options`
+header to ``nosniff``. Review Board was not vulnerable to this particular
+problem, but having the header can make some security scanning software less
+noisy. This middleware also allows configuring many other policies such as
+HSTS_, `referrer policies`_, and `cross origin opener policies`_.
+
+The settings to enable these and set specific policies can be added to your
+:file:`settings_local.py` file. The particular values for these settings will
+depend on your deployment and environment, so we have not enabled any of them
+by default. See the `Django documentation`_ on the security middleware for
+details.
+
+.. _HSTS: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
+.. _referrer policies: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy
+.. _cross origin opener policies: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy
+.. _Django documentation: https://docs.djangoproject.com/en/4.2/ref/middleware/#module-django.middleware.security
+
+
+``clean-orphaned-data`` management command
+------------------------------------------
+
+Two bugs in prior versions of Review Board could potentially allow data to
+remain in the database in an orphaned state after certain delete or discard
+actions.
+
+A new :ref:`management command <clean-orphaned-data>` has been added that can
+delete this data, saving a bit of space in the database and filesystem.
+
+To run the command, type:
+
+.. code-block:: console
+
+   $ rb-site manage /path/to/sitedir clean-orphaned-data [<options>]
+
+
+Web API
+=======
+
+* Added ``?binary=...`` to the :ref:`webapi2.0-file-diff-list-resource` to query
+  for only files that are marked as binary.
+
+* Added the new ``encoding`` field to the :ref:`webapi2.0-file-diff-resource`.
+
+
+Performance Improvements
+========================
+
+* Improved database query performance when :term:`Local Sites` are not in use.
+
+  Local Sites are an advanced feature for isolating some portions of a server,
+  and are not used by most deployments. The performance of many database
+  queries has been improved for the case where there are no Local Sites.
+
+* Significantly improved the performance of database queries for the dashboard.
+
+  The dashboard is one of the most complicated uses of Review Board's database,
+  and in some cases could experience performance problems. The database queries
+  that drive the dashboard have been significantly optimized, especially when
+  running on MySQL.
+
+* Improved performance when guessing MIME types for uploaded files.
+
+* Improved the performance of querying file attachments via the API.
+
+
+Usability Improvements
+======================
+
+* Finished changing :guilabel:`Close -> Submitted` to :guilabel:`Close ->
+  Completed`.
+
+  The word "submitted" throughout the Review Board UI was a holdover from the
+  very earliest days of the tool, and we had followed the Perforce naming
+  convention for when changes were pushed to a central repository. This has
+  long been a source of confusion, so we've renamed this state to "completed".
+  The bulk of this happened in Review Board 6, but there were a few cases where
+  the old "submitted" label could still be seen.
+
+* Fixed alignment issues when viewing diffs of image file attachments.
+
+* Various components such as buttons and menus use ARIA accessibility APIs more
+  consistently and correctly.
+
+* Fixed a number of user interface elements that did not have sufficient
+  contrast between the background and the text.
+
+* Fixed an issue where using the scroll wheel or gesture when the mouse was
+  hovered over the comment dialog could scroll the page far away from the
+  current position.
+
+* Updated the complexity icon shown for files in the diff to include a better
+  tooltip and accessibility metadata.
+
+* Redesigned the trophy display to be a bit more fun.
+
+
+Bug Fixes
+=========
+
+
+General
+-------
+
+* Fixed a visual glitch with the page background when content did not occupy
+  the full viewport.
+
+* Fixed various thread safety bugs in the Review Board server.
+
+  Review Board is built with several internal "registries" to keep track of
+  things like version control systems, authentication backends, and many other
+  things. These would occasionally hit problems when running in deployments
+  where the web server runs with multiple threads, causing errors to spew into
+  logs, and occasionally to have missing or duplicate items. These thread
+  safety bugs have been fixed.
+
+
+Dashboard
+---------
+
+* Fixed dashboard display in locales that use commas for decimal places.
+
+  Datagrid columns which specify widths (specifically columns which expand to
+  fill the available space) would display incorrectly in locales such as German
+  which use commas for decimals instead of periods. This has been fixed.
+
+* Added some additional default columns to the :guilabel:`All Review Requests` datagrid.
+
+  The :guilabel:`All Review Requests` page was missing a couple important
+  columns. The :guilabel:`Ship It/Issue Counts` and :guilabel:`New Updates`
+  columns have been added to the default configuration.
+
+  Existing users who have configured their columns for this page will need to
+  add these manually if they want them.
+
+* Fixed dashboard errors when URLs contained invalid sort query data.
+
+  For public-facing servers, some web crawlers would assemble URLs with invalid
+  sort querystrings, which was causing error e-mails to be sent to the admin.
+  These will now report an error back to the client but not fail in a way that
+  triggers emails or crash logs.
+
+
+Review Requests
+---------------
+
+* Fixed to delete all appropriate data when permanently deleting review
+  requests or discarding drafts and unpublished review requests.
+
+  When a review request is posted with a diff, and then discarded without ever
+  being published, some data could remain in the database.
+
+  Similarly, permanently deleting a review request could leave various pieces
+  of data in the database or in file storage. Review Board is primarily
+  designed to never delete data, and only administrators had the ability to
+  delete review requests entirely.
+
+  See :ref:`rb-site manage clean-orphaned-data <clean-orphaned-data>` for
+  information on how to clean up orphaned data from existing systems.
+
+* Fixed errors when attempting to use :guilabel:`Update Diff` on a review
+  request that includes commit history.
+
+  When posting a change using RBTools with either Git or Mercurial, the review
+  request will keep track of all the commits included in your change. This
+  allows you to see the individual commits that are part of each diff revision.
+  Updating the diff for these requires using RBTools again.
+
+  Previously, attempting to use the :guilabel:`Update Diff` UI and uploading a
+  diff file would cause an error. Now this UI will show a message indicating
+  that the Review Request is tracking commit history and give instructions for
+  updating via RBTools.
+
+
+Diff Viewer
+-----------
+
+* Fixed scrolling to anchors in the diff viewer.
+
+  Links to particular locations in the diff viewer (such as a link to a
+  particular file/line, or clicking a link from a comment to the Reviews tab to
+  jump to that comment in the diff viewer) were not working correctly. These
+  have been fixed to scroll to the relevant line as soon as the file in
+  question is loaded.
+
+
+Reviews
+-------
+
+* Prevented empty reviews from being published.
+
+  The new review banner in :doc:`Review Board 6 <6.0>` made it easier to accidentally
+  publish empty reviews. This has been fixed.
+
+* Fixed links for comments made on commit ranges.
+
+  When a comment was made on a specific range of commits or an individual
+  commit within a diff, the link from that comment back to the diff viewer
+  would not load the correct commit revisions. This has been fixed.
+
+* Fixed comment flags shown on the diff viewer line numbers when viewing a
+  commit range with comments.
+
+  When viewing a range of commits in the diff viewer, flags for comments
+  corresponding to that commit range were not correctly shown on the files in
+  the diff.
+
+* Fixed an issue where the diff excerpt shown for comments on commit ranges
+  could sometimes display using the wrong tip commit, showing a different diff
+  from the one the commenter was looking at when they made the comment.
+
+* Fixed a bug with the :ref:`issue-summary-table` where comments of different
+  types that happened to have the same database ID could cause web browser
+  caching conflicts.
+
+
+File Attachments
+----------------
+
+* Review UIs now display an error if attempting to show a diff between two
+  revisions of a file where the two revisions do not have the same file type.
+
+* Fixed a case where showing a diff between two revisions of an image
+  attachment could load the page with the two sides having different zoom
+  levels.
+
+* Added ``text/markdown`` as a supported MIME type for the Markdown Review UI.
+
+  Most systems used to use ``text/x-markdown`` as the MIME type for Markdown
+  files, but many are starting to change this. Files uploaded by browsers with
+  a ``text/markdown`` type will now be reviewable.
+
+* Added a dedicated URL for file attachment downloads.
+
+  When using a file storage backend that expires URLs (such as Amazon S3),
+  Review Board could end up caching URLs for assets that expire before the
+  user views them. Review Board will now create a stable URL that can
+  regenerate the storage URL when necessary.
+
+
+New Review Request
+------------------
+
+* Fixed problems with the "New Review Request" UI when uploading diff files
+  using version control systems other than Git. (:bug:`5013`)
+
+  On some version control systems, after providing a diff file, Review Board
+  was supposed to prompt for more information (such as the base directory path
+  between the root of the repository and the directory the diff was created
+  from). This was showing a blank screen instead of prompting for this
+  information.
+
+
+My Account
+----------
+
+* Fixed a bug where Gravatar-based avatar settings were failing to save because
+  of a problem with the form.
+
+
+Authentication
+---------------
+
+* Fixed redirect loops when logging in.
+
+  When attempting to log in from the log-out page, a redirect loop could cause
+  the user to get logged out again immediately after logging in.
+
+
+E-mail Notifications
+--------------------
+
+* Fixed a bug where files in diffs were sometimes listed twice.
+
+
+Local Sites
+-----------
+
+* Fixed URLs for batch operations when using a :term:`Local Site`.
+
+
+Administration
+--------------
+
+* Fixed batch actions (such as delete) for items in the admin database pages.
+
+* Fixed invisible links to file attachments without captions set in
+  :guilabel:`Admin UI -> Database -> File Attachments`.
+
+* Fixed incorrect form validation errors when switching search backends.
+
+* Fixed visual glitches with text alignment in the :guilabel:`Server Cache`
+  dashboard widget.
+
+* Fixed word-wrapping issues with names in the :guilabel:`Repositories`
+  dashboard widget.
+
+* Fixed multiple tooltips showing up when mousing over data points in the
+  :guilabel:`Server Activity` dashboard widget.
+
+* Increased the maximum length of the URL field for WebHook targets.
+
+  The default length for URLs was 200 characters, but some services which
+  accept WebHook notifications create URLs longer than that. This limit has
+  been increased to 512 characters.
+
+* Fixed :rbintegration:`Travis CI <travis-ci>` configuration UI to properly
+  limit repositories to GitHub.
+
+  Travis CI only works with GitHub repositories. A regression had made it
+  so the configuration UI would allow administrators to select non-GitHub
+  repositories, which would then fail to run.
+
+
+Integrations
+------------
+
+* The :rbintegration:`Discord <discord>` Discord integration has been updated
+  to truncate long field values in messages in order to avoid hitting character
+  length limits with the Discord server.
+
+* Fixed links in chat integrations for review replies.
+
+  Notifications sent to chat services for replies to reviews were linking to
+  the correct page, but would not scroll to the relevant reply.
+
+
+Docker
+------
+
+* Fixed bugs with installing Perforce in the Docker image.
+
+* Fixed bundling of LDAP support in Review Board docker images. (:bug:`5023`)
+
+  Patch by Florian Miedniak.
+
+
+Extensions
+==========
+
+* Removed caching of HideActionHook state.
+
+  If an extension was using :ref:`HideActionHook <hide-action-hook>` to hide
+  built-in actions, the state of that could be cached from before or after the
+  extension was enabled or disabled, resulting in inconsistent hiding.
+
+* The following functions now require passing some or all arguments as keyword
+  arguments instead of positional:
+
+  * :py:meth:`UploadFileForm.create()
+    <reviewboard.attachments.forms.UploadFileForm.create>`
+  * :py:meth:`DiffViewerView.get_context_data()
+    <reviewboard.diffviewer.views.DiffviewerView.get_context_data>`
+  * :py:func:`~reviewboard.reviews.context.make_review_request_context`
+
+* The following items are newly deprecated:
+
+  * The ``file_attachment`` argument to :py:meth:`ReviewUI.is_enabled_for()
+    <reviewboard.reviews.ui.base.ReviewUI.is_enabled_for>` has been renamed to
+    ``obj``.
+  * :py:meth:`FileAttachmentReviewUI.get_best_handler()
+    <reviewboard.reviews.ui.base.FileAttachmentReviewUI.get_best_handler>`
+  * :py:meth:`FileAttachmentReviewUI.for_type()
+    <reviewboard.reviews.ui.base.FileAttachmentReviewUI.for_type>`
+  * :js:func:`RB.CommentIssueManager.setCommentState`
+  * :js:func:`RB.CommentIssueManager.getComment`
+
+Djblets 5.0 contains additional deprecations and removals. See the `release
+notes`_ for details.
+
+.. _release notes: https://www.reviewboard.org/docs/releasenotes/djblets/5.0/
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Florian Miedniak
+* Michelle Aubin
