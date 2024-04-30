@@ -7,8 +7,6 @@ PIPELINE_JAVASCRIPT = {
     },
     '3rdparty': {
         'source_filenames': (
-            # The order here matters.
-            'lib/js/3rdparty/jquery-ui-1.12.1.min.js',
             'lib/js/3rdparty/index.ts',
         ),
         'output_filename': 'lib/js/3rdparty.min.js',

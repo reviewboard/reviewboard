@@ -1780,7 +1780,9 @@ export class TextEditorView extends BaseView<
      * Disables the drag-and-drop overlay.
      */
     private _onRemove() {
-        DnDUploader.instance.unregisterDropTarget(this.$el);
+        if (DnDUploader.instance !== null) {
+            DnDUploader.instance.unregisterDropTarget(this.$el);
+        }
     }
 
     /**

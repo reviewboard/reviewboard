@@ -1,4 +1,5 @@
 /* Load the jQuery-related modules */
+import 'jquery-ui/dist/jquery-ui';
 import 'jquery-flot';
 import 'jquery-flot/jquery.flot.pie';
 import 'jquery-flot/jquery.flot.selection';
