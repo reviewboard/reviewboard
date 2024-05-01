@@ -1,6 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 
-from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.auth.models import User
 from django.template import Context
 from django.test.client import RequestFactory
 from django.urls.resolvers import ResolverMatch

@@ -317,7 +317,7 @@ def logout(request, *args, **kwargs):
     # again.
     if sso_auto_login_backend:
         try:
-            backend = sso_backends.get('backend_id', sso_auto_login_backend)
+            sso_backends.get('backend_id', sso_auto_login_backend)
             return LogoutView.as_view()(request, *args, **kwargs)
         except ItemLookupError:
             logging.error('Unable to find sso_auto_login_backend "%s".',

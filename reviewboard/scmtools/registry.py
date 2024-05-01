@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     _ConflictingTools: TypeAlias = List[Tuple[Type[SCMTool], Tool]]
 
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):

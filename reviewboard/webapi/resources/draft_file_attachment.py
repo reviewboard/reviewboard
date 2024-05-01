@@ -5,7 +5,6 @@ from djblets.webapi.decorators import webapi_login_required
 from djblets.webapi.responses import WebAPIResponsePaginated
 
 from reviewboard.webapi.base import WebAPIResource
-from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_review_request_file_attachment import \
     BaseReviewRequestFileAttachmentResource

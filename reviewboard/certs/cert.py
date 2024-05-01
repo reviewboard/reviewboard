@@ -31,8 +31,7 @@ from reviewboard.certs.errors import (CertificateNotFoundError,
                                       InvalidCertificateFormatError)
 
 if TYPE_CHECKING:
-    from djblets.util.typing import (JSONDict,
-                                     SerializableJSONDict,
+    from djblets.util.typing import (SerializableJSONDict,
                                      SerializableJSONDictImmutable)
 
 

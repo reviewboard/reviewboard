@@ -3,7 +3,6 @@
 from uuid import UUID, uuid4
 
 import kgb
-from django.contrib.auth.models import User
 from django.db.models import Count, Q
 
 from reviewboard.site.models import LocalSite

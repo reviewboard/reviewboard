@@ -4,7 +4,7 @@ from django.contrib.auth.models import AnonymousUser, User
 
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools.forms import RepositoryForm
-from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 from reviewboard.testing.testcase import TestCase
 

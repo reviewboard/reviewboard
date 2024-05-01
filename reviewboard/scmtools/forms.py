@@ -14,7 +14,6 @@ from django.core.exceptions import ValidationError
 from django.forms import Select, model_to_dict
 from django.utils.datastructures import MultiValueDict
 from django.utils.html import format_html
-from django.utils.inspect import func_accepts_kwargs
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext, gettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration

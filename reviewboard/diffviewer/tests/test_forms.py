@@ -16,7 +16,7 @@ from reviewboard.diffviewer.forms import (UploadCommitForm, UploadDiffForm,
                                           ValidateCommitForm)
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.scmtools.errors import FileNotFoundError
-from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.scmtools.models import Tool
 from reviewboard.testing import TestCase
 
 

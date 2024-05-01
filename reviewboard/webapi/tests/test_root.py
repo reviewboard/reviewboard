@@ -131,12 +131,6 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             'diff_context':
                 'http://testserver/api/review-requests/{review_request_id}/'
                 'diff-context/',
-            'diff_file_attachment':
-                'http://testserver/api/repositories/{repository_id}/'
-                'diff-file-attachments/{file_attachment_id}/',
-            'diff_file_attachments':
-                'http://testserver/api/repositories/{repository_id}/'
-                'diff-file-attachments/',
             'diff_validation': 'http://testserver/api/validation/diffs/',
             'diffs':
                 'http://testserver/api/review-requests/{review_request_id}/'

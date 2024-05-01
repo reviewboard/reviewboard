@@ -299,7 +299,7 @@ class SSHClient(paramiko.SSHClient):
         """
         try:
             self.storage.write_user_key(key)
-        except UnsupportedSSHKeyError as e:
+        except UnsupportedSSHKeyError:
             logger.error('Failed to write unknown key type %s' % type(key))
             raise
         except IOError as e:

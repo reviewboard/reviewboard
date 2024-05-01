@@ -2,8 +2,7 @@
 
 import re
 
-from reviewboard.diffviewer.diffutils import (get_diff_data_chunks_info,
-                                              split_line_endings)
+from reviewboard.diffviewer.diffutils import get_diff_data_chunks_info
 from reviewboard.diffviewer.features import filter_interdiffs_v2_feature
 
 

@@ -32,7 +32,7 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
         diffset = self.create_diffset(review_request)
         filediff = self.create_filediff(diffset)
         review = self.create_review(review_request, user=user)
-        comment = self.create_diff_comment(review, filediff)
+        self.create_diff_comment(review, filediff)
         reply = self.create_reply(review, user=user)
 
         return get_review_reply_diff_comment_list_url(reply)

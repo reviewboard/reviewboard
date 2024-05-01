@@ -3,7 +3,6 @@
 from reviewboard.admin.server import get_hostname
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.crypto_utils import encrypt_password
-from reviewboard.scmtools.models import Repository, Tool
 
 
 class AssemblaTestCase(HostingServiceTestCase):

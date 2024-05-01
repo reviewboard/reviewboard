@@ -1098,12 +1098,12 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
                           (bool, datetime, dict, int, float, list,
                            str, OrderedDict, SafeString))
 
-        if type(payload) in (dict, OrderedDict):
+        if isinstance(payload, (dict, OrderedDict)):
             for key, value in payload.items():
                 if key is not None:
                     self.assertIn(type(key), (bool, int, float, str))
 
                 self._check_webhook_payload(value)
-        elif type(payload) is list:
+        elif isinstance(payload, list):
             for i in payload:
                 self._check_webhook_payload(i)

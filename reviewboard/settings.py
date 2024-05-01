@@ -195,7 +195,7 @@ RB_BUILTIN_APPS = [
 # If installed, add django_reset to INSTALLED_APPS. This is used for the
 # 'manage.py reset' command, which is very useful during development.
 try:
-    import django_reset
+    import django_reset  # noqa: F401
     RB_BUILTIN_APPS.append('django_reset')
 except ImportError:
     pass
@@ -436,7 +436,7 @@ HEALTHCHECK_IPS = []
 # least it needs to define database connectivity.
 try:
     import settings_local
-    from settings_local import *
+    from settings_local import *  # noqa
 except ImportError as exc:
     dependency_error('Unable to import settings_local.py: %s' % exc)
 

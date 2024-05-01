@@ -457,12 +457,6 @@ class GitDiffParser(DiffParser):
                file, if any.
         """
         lines = self.lines
-
-        # First check if it is a new file with no content, a file mode
-        # change with no content, or a deleted file with no content. If so,
-        # we'll skip this diff.
-        start_linenum = linenum
-
         diff_git_line = lines[linenum]
         linenum += 1
 

@@ -10,7 +10,6 @@ from typing import Any, Callable, Dict, Literal, Optional, TYPE_CHECKING, Type
 
 import kgb
 
-from djblets.webapi.errors import WebAPIError
 from reviewboard.certs.errors import (CertificateVerificationError,
                                       CertificateVerificationFailureCode)
 from reviewboard.webapi.errors import UNVERIFIED_HOST_CERT

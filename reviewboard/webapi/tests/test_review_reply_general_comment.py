@@ -38,7 +38,7 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
             submitter=user,
             publish=True)
         review = self.create_review(review_request, user=user)
-        comment = self.create_general_comment(review)
+        self.create_general_comment(review)
         reply = self.create_reply(review, user=user)
 
         return get_review_reply_general_comment_list_url(reply)

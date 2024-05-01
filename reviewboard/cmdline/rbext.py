@@ -27,12 +27,6 @@ sys.path.insert(0, os.path.join(rbext_dir, 'conf', 'rbext'))
 from django.utils.encoding import force_str
 from importlib_metadata import Prepared
 
-# Ensure we've patched Djblets for Python 3.10 + Django 1.11 compatibility
-# before performing any more imports.
-#
-# This can be removed once we've moved onto a modern version of Django.
-import djblets
-
 from reviewboard import get_manual_url
 from reviewboard.cmdline.utils.argparsing import (HelpFormatter,
                                                   RBProgVersionAction)

@@ -1,7 +1,6 @@
 from djblets.util.decorators import augment_method_from
 
 from reviewboard.accounts.models import ReviewRequestVisit
-from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources.base_archived_object import \
     BaseArchivedObjectResource
 

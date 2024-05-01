@@ -2,11 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from django.contrib.auth.models import User
 from django.db.models import Q
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 
-from reviewboard.accounts.models import Profile
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
 from reviewboard.reviews.models import (

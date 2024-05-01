@@ -4,7 +4,7 @@
 # the list of installed apps in order to load in the bare minimum settings
 # needed for rbssh.
 
-from reviewboard.settings import *
+from reviewboard.settings import *  # noqa
 
 
 # Load only enough to load a SiteConfiguration, needed by rbssh.

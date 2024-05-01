@@ -4,6 +4,7 @@ Version Added:
     5.0
 """
 
+from django.contrib.auth.models import User
 from django.db.models import Q
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields
@@ -11,9 +12,7 @@ from djblets.webapi.fields import (BooleanFieldType,
                                    DateTimeFieldType,
                                    StringFieldType)
 
-from reviewboard.accounts.models import User
 from reviewboard.reviews.models import GeneralComment
-from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources.base_review_general_comment import \
     BaseReviewGeneralCommentResource
 

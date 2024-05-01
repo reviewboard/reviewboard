@@ -281,7 +281,6 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
         """
         review_request = self.review_request
         status = review_request.status
-        review_request_details = review_request_details
 
         if status == ReviewRequest.SUBMITTED:
             timestamp = close_info['timestamp']
@@ -305,8 +304,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
         else:
             logger.error('Unexpected review request status %r for '
                          'review request %s',
-                         status, review_request.display_id,
-                         extra={'request': request})
+                         status, review_request.display_id)
 
             return mark_safe('')
 

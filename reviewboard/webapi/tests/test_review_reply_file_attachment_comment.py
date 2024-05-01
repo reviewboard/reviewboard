@@ -40,7 +40,7 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
             publish=True)
         file_attachment = self.create_file_attachment(review_request)
         review = self.create_review(review_request, user=user)
-        comment = self.create_file_attachment_comment(review, file_attachment)
+        self.create_file_attachment_comment(review, file_attachment)
         reply = self.create_reply(review, user=user)
 
         return get_review_reply_file_attachment_comment_list_url(reply)

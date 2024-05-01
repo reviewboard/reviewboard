@@ -268,7 +268,7 @@ class CodebaseHQClient(HostingServiceClient):
         """
         try:
             doc = parseString(s)
-        except:
+        except Exception:
             return None
 
         root = doc.documentElement
