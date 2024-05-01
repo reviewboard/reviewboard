@@ -13,7 +13,7 @@ const localSiteEmptyText = gettext('You have not registered any OAuth2 applicati
  *
  * Model Attributes:
  *     apiURL (string):
- *         The URL to the application list reosurce.
+ *         The URL to the application list resource.
  *
  *     enabled (boolean):
  *         Whether or not the application is enabled.

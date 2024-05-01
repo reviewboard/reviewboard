@@ -442,7 +442,7 @@ def _load_storage_settings(
         # We'll go with the default of None.
         settings.AWS_S3_ADDRESSING_STYLE = None
 
-    # Laod the Swift storage information.
+    # Load the Swift storage information.
     settings.SWIFT_AUTH_URL = str(
         siteconfig.get('swift_auth_url'))
     settings.SWIFT_USERNAME = str(

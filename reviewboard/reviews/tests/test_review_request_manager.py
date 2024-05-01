@@ -190,7 +190,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_create_with_create_from_commit_id_diffset_uploaded(self) -> None:
-        """Testing ReviewRequest.objects.create with commit ID from a comitted
+        """Testing ReviewRequest.objects.create with commit ID from a committed
         change and create_from_commit_id=True emits a
         review_request_diffset_uploaded signal
         """

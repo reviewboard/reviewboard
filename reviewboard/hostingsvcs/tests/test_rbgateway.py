@@ -40,7 +40,7 @@ class ReviewBoardGatewayTestCase(HostingServiceTestCase):
     }
 
 
-class ReviewBoardGatwayClientTests(ReviewBoardGatewayTestCase):
+class ReviewBoardGatewayClientTests(ReviewBoardGatewayTestCase):
     """Unit tests for ReviewBoardGatewayClient."""
 
     def test_request_includes_private_token(self):

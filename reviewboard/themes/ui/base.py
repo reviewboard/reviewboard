@@ -28,7 +28,7 @@ class InkColorScheme(Enum):
     DARK = 'dark'
 
     #: A high-contrast color scheme.
-    HIGH_CONSTRAST = 'high-contrast'
+    HIGH_CONTRAST = 'high-contrast'
 
     #: A color scheme adapting to current system settings.
     SYSTEM = 'system'

@@ -163,23 +163,23 @@ class ResourceListTests(BaseWebAPITestCase,
         # Comment from a published review from a review request that has an
         # invite-only review group not accessible to the requester, but they
         # have access to through being a targeted reviewer.
-        review_request_targetted = self.create_review_request(publish=True)
-        review_request_targetted.target_groups.add(group)
-        review_request_targetted.target_people.add(self.user)
-        review7 = self.create_review(review_request_targetted, publish=True)
+        review_request_targeted = self.create_review_request(publish=True)
+        review_request_targeted.target_groups.add(group)
+        review_request_targeted.target_people.add(self.user)
+        review7 = self.create_review(review_request_targeted, publish=True)
         comment7 = self._create_file_attachment_comment(
-            review_request_targetted,
+            review_request_targeted,
             review7)
 
         # Comment from a published review from a review request that has an
         # invite-only review group not accessible to the requester, and that
         # they do not have access to because they are not listed as a
         # target reviewer.
-        review_request_untargetted = self.create_review_request(publish=True)
-        review_request_untargetted.target_groups.add(group)
-        review8 = self.create_review(review_request_untargetted, publish=True)
+        review_request_untargeted = self.create_review_request(publish=True)
+        review_request_untargeted.target_groups.add(group)
+        review8 = self.create_review(review_request_untargeted, publish=True)
         self._create_file_attachment_comment(
-            review_request_untargetted,
+            review_request_untargeted,
             review8)
 
         rsp = self.api_get(

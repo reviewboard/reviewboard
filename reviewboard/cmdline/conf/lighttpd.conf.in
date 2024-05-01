@@ -10,7 +10,7 @@ server.modules += (
 )
 
 $HTTP["host"] =~ "@sitedomain_escaped@" {
-    # This is not used directly, it is superceded by our aliases below.
+    # This is not used directly, it is superseded by our aliases below.
     server.document-root = "@sitedir@/htdocs"
     server.errorlog      = "@sitedir@/logs/lighttpd-error.log"
     accesslog.filename   = "@sitedir@/logs/lighttpd-access.log"

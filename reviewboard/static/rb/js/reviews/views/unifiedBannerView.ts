@@ -512,7 +512,7 @@ export class UnifiedBannerView extends FloatingBannerView<
      *     Added the ``forceUpdate`` argument.
      *
      * Args:
-     *     forceUpate (boolean, optional):
+     *     forceUpdate (boolean, optional):
      *         Whether to force updating the state of the banner.
      *
      *         If not provided, this will only update if already rendered.

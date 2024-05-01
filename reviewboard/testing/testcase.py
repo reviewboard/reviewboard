@@ -2487,7 +2487,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 The file content. This is only set if passing
                 ``has_file=True``.
 
-            user (django.contrib.auth.models.User, optonal):
+            user (django.contrib.auth.models.User, optional):
                 The user who owns the file attachment.
 
             with_local_site (bool, optional):

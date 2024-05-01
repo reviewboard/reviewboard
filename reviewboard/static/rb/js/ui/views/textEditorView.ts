@@ -1605,7 +1605,7 @@ export class TextEditorView extends BaseView<
     /**
      * Bind the visibility of an element to the richText property.
      *
-     * If richText ist true, the element will be shown. Otherwise, it
+     * If richText is true, the element will be shown. Otherwise, it
      * will be hidden.
      *
      * Args:

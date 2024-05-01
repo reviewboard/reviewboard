@@ -692,7 +692,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
                 results with the Local Site identified by ``local_site_name``.
 
             local_site_name (str):
-                The name of the Local Site to test againt.
+                The name of the Local Site to test against.
 
                 This will be ``None`` if testing against the global site.
 
@@ -1279,7 +1279,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
                 results with the Local Site identified by ``local_site_name``.
 
             local_site_name (str):
-                The name of the Local Site to test againt.
+                The name of the Local Site to test against.
 
                 This will be ``None`` if testing against the global site.
 
@@ -1829,7 +1829,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
                 results with the Local Site identified by ``local_site_name``.
 
             local_site_name (str):
-                The name of the Local Site to test againt.
+                The name of the Local Site to test against.
 
                 This will be ``None`` if testing against the global site.
 
@@ -2371,7 +2371,7 @@ class BasicPostTestsMixin(BasicTestsMixin):
                 results with the Local Site identified by ``local_site_name``.
 
             local_site_name (str):
-                The name of the Local Site to test againt.
+                The name of the Local Site to test against.
 
                 This will be ``None`` if testing against the global site.
 
@@ -3038,7 +3038,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
                 results with the Local Site identified by ``local_site_name``.
 
             local_site_name (str):
-                The name of the Local Site to test againt.
+                The name of the Local Site to test against.
 
                 This will be ``None`` if testing against the global site.
 

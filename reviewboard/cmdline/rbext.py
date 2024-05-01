@@ -386,12 +386,12 @@ class CreateCommand(BaseCommand):
         """Main function for creating an extension.
 
         Args:
-            options (argparse.Namesapce):
+            options (argparse.Namespace):
                 Options set from the arguments.
 
         Returns:
             int:
-            The comamnd's exit code.
+            The command's exit code.
         """
         self._process_options(options)
 
@@ -499,7 +499,7 @@ class CreateCommand(BaseCommand):
         and to check that others are valid.
 
         Args:
-            options (argparse.Namesapce):
+            options (argparse.Namespace):
                 Options set from the arguments.
         """
         name = options.name.strip()

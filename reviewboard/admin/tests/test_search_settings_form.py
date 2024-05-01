@@ -88,7 +88,7 @@ class SearchSettingsFormTests(TestCase):
         siteconfig = SiteConfiguration.objects.get_current()
         form = SearchSettingsForm(siteconfig, data={
             'search_enable': True,
-            'search_backend_id': 'non-existant',
+            'search_backend_id': 'non-existent',
         })
 
         self.assertFalse(form.is_valid())

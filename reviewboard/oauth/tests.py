@@ -473,10 +473,10 @@ class UserApplicationCreationFormTests(TestCase):
         application = form.save()
         self.assertEqual(application.local_site, local_site)
 
-    def test_assign_local_site_inacessible(self):
+    def test_assign_local_site_inaccessible(self):
         """Testing UserApplicationCreationForm with an inaccessible Local Site
         """
-        local_site = LocalSite.objects.create(name='inacessible')
+        local_site = LocalSite.objects.create(name='inaccessible')
         user = User.objects.get(username='doc')
 
         form = UserApplicationCreationForm(

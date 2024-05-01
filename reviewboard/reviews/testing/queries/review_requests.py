@@ -1102,9 +1102,9 @@ def get_review_requests_to_or_from_user_q(
     return q_result
 
 
-###########################
-# Expected Query utilties #
-###########################
+############################
+# Expected Query utilities #
+############################
 
 def get_review_requests_accessible_prep_equeries(
     *,

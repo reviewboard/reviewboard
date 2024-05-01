@@ -276,7 +276,7 @@ class GitTool(SCMTool):
                 valid number.
 
             Exception:
-                An unexpected exception has ocurred. Callers should check
+                An unexpected exception has occurred. Callers should check
                 for this and handle it.
         """
         client = GitClient(path,

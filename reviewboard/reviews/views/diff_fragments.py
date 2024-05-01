@@ -289,7 +289,7 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
                 A list of comment IDs to render.
 
             *args (tuple, unused):
-                Positional arguments passsed to the handler.
+                Positional arguments passed to the handler.
 
             **kwargs (dict, unused):
                 Keyword arguments passed to the handler.

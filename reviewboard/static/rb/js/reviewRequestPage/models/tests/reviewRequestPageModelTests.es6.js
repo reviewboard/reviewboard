@@ -222,7 +222,7 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                 page.addEntry(entry2);
             });
 
-            it('Updates to outdated entries using timetamps', function(done) {
+            it('Updates to outdated entries using timestamps', function(done) {
                 spyOn(entry1, 'beforeApplyUpdate');
                 spyOn(entry1, 'afterApplyUpdate');
                 spyOn(entry2, 'beforeApplyUpdate');

@@ -215,7 +215,7 @@ class UploadCommitFormTests(SpyAgency, TestCase):
 
     @unittest.skipIf(not is_exe_in_path('hg'),
                      'Hg is not installed')
-    def test_clean_commiter_unsupported(self):
+    def test_clean_committer_unsupported(self):
         """Testing UploadCommitForm.clean when committer_ fields are present
         for a SCMTool that doesn't support them
         """

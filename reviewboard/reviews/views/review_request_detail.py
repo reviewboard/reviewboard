@@ -75,7 +75,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
                 The HTTP request from the client.
 
             *args (tuple, unused):
-                Positional arguments passsed to the handler.
+                Positional arguments passed to the handler.
 
             **kwargs (dict, unused):
                 Keyword arguments passed to the handler.

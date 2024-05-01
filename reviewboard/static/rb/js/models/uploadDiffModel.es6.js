@@ -18,7 +18,7 @@ RB.UploadDiffModel = Backbone.Model.extend({
     State: {
         PROMPT_FOR_DIFF: 0,
         PROMPT_FOR_BASEDIR: 1,
-        PROPMT_FOR_CHANGE_NUMBER: 2,
+        PROMPT_FOR_CHANGE_NUMBER: 2,
         PROCESSING_DIFF: 3,
         UPLOADING: 4,
         PROMPT_FOR_PARENT_DIFF: 5,

@@ -2500,7 +2500,7 @@ class GetDisplayedDiffLineRangesTests(TestCase):
                 'chunk_range': (chunks[0], chunks[0]),
             }, None))
 
-    def test_with_delete_mutiple_lines(self):
+    def test_with_delete_multiple_lines(self):
         """Testing get_displayed_diff_line_ranges with delete chunk and multiple
         virtual lines
         """

@@ -813,7 +813,7 @@ export class BaseResource<
      * This will by default only return the object's ID and list of links.
      * Subclasses should override this to return any additional data that's
      * needed, but they must include the results of
-     * BaseResource.protoype.parse as well.
+     * BaseResource.prototype.parse as well.
      *
      * Args:
      *     rsp (object):

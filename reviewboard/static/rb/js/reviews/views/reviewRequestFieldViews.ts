@@ -246,8 +246,8 @@ export class TextFieldView extends BaseFieldView {
      *
      * Returns:
      *     string:
-     *     The name of the model atribute indicating whether the field contains
-     *     rich text.
+     *     The name of the model attribute indicating whether the field
+     *     contains rich text.
      */
     richTextAttr(): string {
         return this.allowRichText

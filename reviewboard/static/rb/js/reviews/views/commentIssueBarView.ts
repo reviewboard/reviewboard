@@ -56,7 +56,7 @@ export interface CommentIssueBarViewOptions extends BaseComponentViewOptions {
     /** The currently-set issue status. */
     issueStatus: CommentIssueStatusType;
 
-    /** The ID of the reivew that the comment is filed on. */
+    /** The ID of the review that the comment is filed on. */
     reviewID: number;
 
     /**
@@ -169,7 +169,7 @@ export class CommentIssueBarView<
     /** The issue manager for accessing and setting issue statuses. */
     #issueManager: CommentIssueManager;
 
-    /** The ID of the reivew that the comment is filed on. */
+    /** The ID of the review that the comment is filed on. */
     #reviewID: number;
 
     /*

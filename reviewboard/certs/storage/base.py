@@ -459,7 +459,7 @@ class BaseCertificateStorageBackend(
     """Base class for a certificate storage backend.
 
     Store backends are responsible for storing certificate and private key
-    data, CA bundles, and fingerprint verfication information.
+    data, CA bundles, and fingerprint verification information.
 
     Backends must be able to persist certificates, private keys, and CA bundles
     on the filesystem for the lifetime of the web server process in order to

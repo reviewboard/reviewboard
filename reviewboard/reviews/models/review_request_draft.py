@@ -775,7 +775,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
             changedesc_captions_field (str):
                 The field to set in the change description for any caption
-                chagnes.
+                changes.
 
             changedesc_item_name_field (str):
                 The name of the field representing the name of an item.

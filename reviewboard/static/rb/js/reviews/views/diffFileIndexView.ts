@@ -127,7 +127,7 @@ export class DiffFileIndexView extends BaseView<
      * The spacer element for floating mode.
      *
      * This is an element added to the page when we move the index from inline
-     * mode into docked mode. This prevents a visual jump by mantaining space
+     * mode into docked mode. This prevents a visual jump by maintaining space
      * for the file index in the main layout even though we've moved the
      * content into the banner.
      */

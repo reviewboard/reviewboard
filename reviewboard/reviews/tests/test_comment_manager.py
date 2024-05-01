@@ -80,19 +80,19 @@ class CommentManagerTests(TestCase):
         # Comment from a published review from a review request that has an
         # invite-only review group not accessible to the user, but the user
         # has access to through being a targeted reviewer.
-        review_request_targetted = self.create_review_request(publish=True)
-        review_request_targetted.target_groups.add(group)
-        review_request_targetted.target_people.add(user)
-        review7 = self.create_review(review_request_targetted, publish=True)
+        review_request_targeted = self.create_review_request(publish=True)
+        review_request_targeted.target_groups.add(group)
+        review_request_targeted.target_people.add(user)
+        review7 = self.create_review(review_request_targeted, publish=True)
         comment7 = self.create_general_comment(review7)
 
         # Comment from a published review from a review request that has an
         # invite-only review group not accessible to the user, and that the
         # user does not have access to because the user is not listed as a
         # target reviewer.
-        review_request_untargetted = self.create_review_request(publish=True)
-        review_request_untargetted.target_groups.add(group)
-        review8 = self.create_review(review_request_untargetted, publish=True)
+        review_request_untargeted = self.create_review_request(publish=True)
+        review_request_untargeted.target_groups.add(group)
+        review8 = self.create_review(review_request_untargeted, publish=True)
         comment8 = self.create_general_comment(review8)
 
         # 1 query:
@@ -286,7 +286,7 @@ class CommentManagerTests(TestCase):
         ]
 
         with self.assertQueries(queries_superuser):
-            # Testing that superusers can acess any comments.
+            # Testing that superusers can access any comments.
             self.assertQuerySetEqual(
                 GeneralComment.objects.accessible(superuser),
                 [
@@ -568,7 +568,7 @@ class CommentManagerTests(TestCase):
         ]
 
         with self.assertQueries(queries_superuser):
-            # Testing that superusers can acess comments from any repository.
+            # Testing that superusers can access comments from any repository.
             self.assertQuerySetEqual(
                 GeneralComment.objects.accessible(superuser),
                 [

@@ -2,7 +2,7 @@
  * A view for managing state on a form.
  *
  * This provides some standard behavior for setting up form widgets and
- * handling collapsable fieldsets, along with managing subforms.
+ * handling collapsible fieldsets, along with managing subforms.
  */
 RB.FormView = Backbone.View.extend({
     events: {

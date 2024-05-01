@@ -1332,7 +1332,7 @@ class DiffXParser(BaseDiffParser):
                     diffx_file.generate_stats()
                     stats_info = diffx_file.meta.get('stats') or {}
 
-                # We can now poulate the ParsedDiffFile.
+                # We can now populate the ParsedDiffFile.
                 parsed_diff_file.orig_filename = orig_filename.encode('utf-8')
                 parsed_diff_file.orig_file_details = orig_revision
                 parsed_diff_file.modified_filename = \

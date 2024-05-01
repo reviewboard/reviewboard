@@ -270,7 +270,7 @@ class TrophyRegistry(Registry):
         """Return the default trophies for the registry.
 
         This is used internally by the parent registry class to populate the
-        list of default, buit-in trophies available to review requests.
+        list of default, built-in trophies available to review requests.
 
         Returns:
             list of TrophyType:

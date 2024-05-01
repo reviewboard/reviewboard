@@ -535,7 +535,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             # tried to fetch diffsets (Review Bot, in our case) would not see
             # the new diffset.
             #
-            # By having this only in the list condition, we get the perforamnce
+            # By having this only in the list condition, we get the performance
             # benefits we wanted without triggering that sort of bug.
             queryset = (
                 queryset

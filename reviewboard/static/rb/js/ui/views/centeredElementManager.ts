@@ -53,7 +53,7 @@ export class CenteredElementManager extends BaseView<
      */
     _elements: CenteredElements;
 
-    /** A function to throttle postion updates. */
+    /** A function to throttle position updates. */
     #updatePositionThrottled: () => void;
 
     /**

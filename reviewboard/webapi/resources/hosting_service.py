@@ -67,7 +67,7 @@ class HostingServiceResource(WebAPIResource):
                 'type': StringFieldType,
             },
             'description': 'The comprehensive list of repository types '
-                           'suppported by Review Board. Each of these is a '
+                           'supported by Review Board. Each of these is a '
                            'registered SCMTool ID or human-readable name.\n'
                            '\n'
                            'Some of these may not be supported by the service '
