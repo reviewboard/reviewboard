@@ -78,6 +78,7 @@ USE_I18N = True
 
 MIDDLEWARE = [
     # Keep these first, in order
+    'django.middleware.security.SecurityMiddleware',
     'django.middleware.gzip.GZipMiddleware',
     'reviewboard.admin.middleware.init_review_board_middleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -247,6 +248,15 @@ CACHES = {
         'LOCATION': 'reviewboard',
     },
 }
+
+
+# Security middleware settings.
+#
+# We turn on X-Content-Type-Options: nosniff by default, but other features in
+# Django's SecurityMiddleware are left unset. Those may be useful, but are
+# highly dependent on the particulars of the server deployment. Administrators
+# can set them in their settings_local.py if desired.
+SECURE_CONTENT_TYPE_NOSNIFF = True
 
 
 # The default logging configuration is a copy of Django's defaults (at least
