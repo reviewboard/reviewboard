@@ -3,10 +3,10 @@
 {% block datagrid_titlebox %}
 <header class="rb-c-content-header rb-c-datagrid-header -is-main{% if datagrid.tabs %} -has-tabs{% endif %}">
 {%  if datagrid.tabs %}
- <ul class="datagrid-title-tabs">
+ <ul class="datagrid-title-tabs rb-c-tabs">
 {%   for tab_title, url in datagrid.tabs %}
-  <li class="datagrid-tab{% if tab_title == datagrid.tab_title %} active{% endif %}">
-   <a href="{{url}}">{{tab_title}}</a>
+  <li class="rb-c-tabs__tab{% if tab_title == datagrid.tab_title %} -is-active{% endif %}">
+   <a class="rb-c-tabs__tab-label" href="{{url}}">{{tab_title}}</a>
   </li>
 {%   endfor %}
  </ul>
