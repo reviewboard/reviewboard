@@ -3,6 +3,9 @@
 
 {% block js-page-view-type %}RB.Admin.PageView{% endblock %}
 
+{# Disable theme support for the administration UI, until implemented. #}
+{% block ui-theme-attrs %}{% endblock %}
+
 {% block title %}{% block page_title %}{{title}}{% endblock %} | {% trans "Administration" %}{% endblock %}
 
 {% block scripts %}

@@ -14,6 +14,11 @@
 
 
 .admin {
+  --ink-p-header-bg:
+    var(--if-light, var(--ink-p-yellow-300))
+    var(--if-dark, var(--ink-p-mustard-200));
+  --ink-p-header-text-color: var(--ink-p-text-color);
+
   .page-colors(@topbar-bg: #rb-ns-ui.page-colors.admin[@topbar-bg]);
 
   h1.title {
