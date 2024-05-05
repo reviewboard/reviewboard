@@ -63,8 +63,10 @@
   /* Presentation */
   --_rb-c-issue-status-bg-light: transparent;
   --_rb-c-issue-status-border-color-light: transparent;
+  --_rb-c-issue-status-border-color-dark: transparent;
   --_rb-c-issue-status-link-color-light: inherit;
   --_rb-c-issue-status-text-color-light: var(--ink-p-text-on-light-color);
+  --_rb-c-issue-status-text-color-dark: var(--ink-p-text-on-light-color);
 
   /*
    * On dark mode, use a yellow base for the button colors, and keep the
@@ -73,13 +75,13 @@
    */
   --ink-p-accent-primary-bg:
     var(--if-light, inherit)
-    var(--if-dark, var(--ink-p-yellow-300));
+    var(--if-dark, var(--ink-p-grey-500));
   --ink-p-accent-secondary-bg:
     var(--if-light, inherit)
-    var(--if-dark, var(--ink-p-yellow-800));
+    var(--if-dark, white);
   --ink-p-accent-tertiary-bg:
     var(--if-light, inherit)
-    var(--if-dark, var(--ink-p-yellow-500));
+    var(--if-dark, var(--ink-p-grey-500));
   --ink-p-accent-primary-fg:
     var(--if-light, inherit)
     var(--if-dark, var(--ink-p-text-on-light-color));
@@ -90,11 +92,12 @@
   border:
     1px
     var(--if-light, var(--_rb-c-issue-status-border-color-light))
-    var(--if-dark, transparent)
+    var(--if-dark, var(--_rb-c-issue-status-border-color-dark))
     solid;
+  border-radius: var(--ink-u-border-radius-std);
   color:
     var(--if-light, var(--_rb-c-issue-status-text-color-light))
-    var(--if-dark, var(--rb-p-issue-bg));
+    var(--if-dark, var(--_rb-c-issue-status-text-color-dark));
   font-weight: bold;
   transition: 0.1s linear all;
 
@@ -124,10 +127,8 @@
 
   &[data-issue-status="open"] {
     --_rb-c-issue-status-bg-light: var(--rb-p-issue-bg);
-    --_rb-c-issue-status-border-color-light: var(--rb-p-issue-border-color);
     --_rb-c-issue-status-link-color-light:
       var(--ink-p-text-on-light-color-weak);
-    --_rb-c-issue-status-text-color-light: var(--ink-p-text-on-light-color);
 
     .rb-c-issue-bar__icon {
       .rb-icon-issue-open();
@@ -138,6 +139,9 @@
     --_rb-c-issue-status-bg-light: @issue-discarded-bg;
     --_rb-c-issue-status-border-color-light: @issue-discarded-border-color;
     --_rb-c-issue-status-link-color-light: @issue-discarded-link-color;
+    --_rb-c-issue-status-text-color-light: var(--ink-p-text-on-light-color);
+    --_rb-c-issue-status-text-color-dark:
+      var(--rb-p-issue-dropped-accent-text-color);
 
     .rb-c-issue-bar__icon {
       .rb-icon-issue-dropped();
@@ -148,6 +152,8 @@
     --_rb-c-issue-status-bg-light: @issue-resolved-bg;
     --_rb-c-issue-status-border-color-light: @issue-resolved-border-color;
     --_rb-c-issue-status-link-color-light: @issue-resolved-link-color;
+    --_rb-c-issue-status-text-color-dark:
+      var(--rb-p-issue-resolved-accent-text-color);
 
     .rb-c-issue-bar__icon {
       .rb-icon-issue-resolved();
@@ -157,13 +163,34 @@
   &[data-issue-status="verifying-resolved"],
   &[data-issue-status="verifying-dropped"] {
     --_rb-c-issue-status-bg-light: @issue-verifying-bg;
-    --_rb-c-issue-status-border-color-light: @issue-opened-border-color;
-    --_rb-c-issue-status-link-color-light: @issue-opened-link-color;
 
     .rb-c-issue-bar__icon {
       .rb-icon-issue-verifying();
     }
   }
+
+  &[data-issue-status="open"],
+  &[data-issue-status="verifying-resolved"],
+  &[data-issue-status="verifying-dropped"] {
+    --_rb-c-issue-status-border-color-light: var(--rb-p-issue-border-color);
+    --_rb-c-issue-status-border-color-dark: var(--rb-p-issue-border-color);
+    --_rb-c-issue-status-text-color-light: var(--ink-p-text-on-light-color);
+    --_rb-c-issue-status-text-color-dark:
+      var(--rb-p-issue-open-accent-text-color);
+
+    --ink-p-accent-primary-bg:
+      var(--if-light, inherit)
+      var(--if-dark, var(--ink-p-yellow-300));
+    --ink-p-accent-secondary-bg:
+      var(--if-light, inherit)
+      var(--if-dark, var(--ink-p-yellow-800));
+    --ink-p-accent-tertiary-bg:
+      var(--if-light, inherit)
+      var(--if-dark, var(--ink-p-yellow-500));
+    --ink-p-accent-primary-fg:
+      var(--if-light, inherit)
+      var(--if-dark, var(--ink-p-text-on-light-color));
+    }
 
   /**
    * The actions available to the user.

@@ -68,7 +68,8 @@
     tr {
       --_rb-c-issue-summary-table-row-bg-light: var(--rb-p-issue-bg);
       --_rb-c-issue-summary-table-row-hover-bg-light: @issue-opened-hover-bg;
-      --_rb-c-issue-summary-table-row-text-color-dark: var(--ink-p-yellow-500);
+      --_rb-c-issue-summary-table-row-text-color-dark:
+        var(--rb-p-issue-open-accent-text-color);
 
       &[data-issue-id] {
         cursor: pointer;
@@ -94,7 +95,7 @@
         --_rb-c-issue-summary-table-row-hover-bg-light:
           @issue-discarded-hover-bg;
         --_rb-c-issue-summary-table-row-text-color-dark:
-          var(--ink-p-text-on-dark-color-weak);
+          var(--rb-p-issue-dropped-accent-text-color);
       }
 
       &.-is-resolved {
@@ -102,7 +103,7 @@
         --_rb-c-issue-summary-table-row-hover-bg-light:
           @issue-resolved-hover-bg;
         --_rb-c-issue-summary-table-row-text-color-dark:
-          var(--ink-p-green-700);
+          var(--rb-p-issue-resolved-accent-text-color);
       }
 
       &.-is-verifying-dropped,
