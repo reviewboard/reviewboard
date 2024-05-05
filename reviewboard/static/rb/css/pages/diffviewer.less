@@ -1311,6 +1311,7 @@ table.rb-c-diff-file-index {
     &.diff-file-info {
       padding-left: 0.3em;
       white-space: nowrap;
+      vertical-align: middle;
       width: 30%;
 
       .diff-file-rename {
@@ -1428,8 +1429,6 @@ table.rb-c-diff-file-index {
   }
 
   #diff_revision_label h1 {
-    color: @review-request-label-color;
-    font-size: 120%;
     margin: 0;
     padding: 0;
   }
@@ -1443,9 +1442,18 @@ table.rb-c-diff-file-index {
     }
   }
 
+  /*
+   * XXX This should be replaced by rb-c-review-request-fieldset usage, or
+   *     similar.
+   */
+  #diff_revision_label h1,
   .section-header-label {
-    color: @review-request-label-color;
-    font-size: 120%;
+    color: var(--rb-p-review-request-field-label-color);
+    font-size: @review-request-section-label-font-size;
+    font-weight: bold;
+  }
+
+  .section-header-label {
     margin: 1em 0;
     padding: 1em 0 0 0;
   }
