@@ -69,16 +69,12 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
         self._initial_populate_done = False
         self.conflicting_tools = []
 
-    def populate(self) -> None:
-        """Ensure the registry is populated.
+    def on_populated(self) -> None:
+        """Perform initial population tracking after the registry is populated.
 
-        Calling this method when the registry is populated will have no effect.
+        Version Added:
+            7.0
         """
-        if self.populated:
-            return
-
-        super().populate()
-
         if not self._initial_populate_done:
             self._initial_populate_done = True
 
@@ -207,27 +203,49 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
         cls.scmtool_id = entry_point.name
         return cls
 
-    def register(
+    def on_item_registering(
         self,
         scmtool_class: Type[SCMTool],
     ) -> None:
-        """Register an SCMTool.
+        """Prepare a SCMTool class for registration.
 
-        If the tool does not have an existing Tool model instance in the
-        database, this will create it.
+        This will set attributes on the SCMTool class needed for lookup and
+        registration.
+
+        Version Added:
+            7.0
 
         Args:
             scmtool_class (type):
-                The :py:class:`~reviewboard.scmtools.core.SCMTool` subclass.
+                The :py:class:`~reviewboard.scmtools.core.SCMTool` subclass
+                being registered.
         """
         class_name = '%s.%s' % (scmtool_class.__module__,
                                 scmtool_class.__name__)
         scmtool_class.class_name = class_name
 
-        super().register(scmtool_class)
+    def on_item_registered(
+        self,
+        scmtool_class: Type[SCMTool],
+    ) -> None:
+        """Handle database registration after an SCMTool is registered.
 
+        If the tool does not have an existing Tool model instance in the
+        database, this will create it. This will only occur if the initial
+        population is complete.
+
+        Version Added:
+            7.0
+
+        Args:
+            scmtool_class (type):
+                The :py:class:`~reviewboard.scmtools.core.SCMTool` subclass
+                that was registered.
+        """
         if self._initial_populate_done:
             # Make sure the new tool exists in the Tool table as well.
+            class_name = scmtool_class.class_name
+
             if not Tool.objects.filter(class_name=class_name).exists():
                 Tool.objects.create(name=scmtool_class.lookup_name,
                                     class_name=class_name)
