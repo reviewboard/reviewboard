@@ -292,68 +292,43 @@ body.datagrid-page {
  * Column-specific styles
  ****************************************************************************/
 #page-container .datagrid {
-  .datagrid-body tr:first-child {
-    .age1, .age2, .age3, .age4, .age5 {
-      border-top: 0 !important;
-    }
-  }
-
   .age1,
   .age2,
   .age3,
   .age4,
   .age5 {
-    color: var(--ink-p-text-on-light-color);
+    color: var(--ink-p-text-color);
+    white-space: nowrap;
   }
 
   .age1 {
-    background-color: #beedbc;
-    border: 1px #8bbd5c solid !important;
-    white-space: nowrap;
-  }
-
-  tr.even .age1 {
-    background-color: #b4e3b2;
+    background:
+      var(--if-dark, #0a5507)
+      var(--if-light, #beedbc);
   }
 
   .age2 {
-    background-color: #ddfa8e;
-    border: 1px #a3e266 solid !important;
-    white-space: nowrap;
-  }
-
-  tr.even .age2 {
-    background-color: #d3f084;
+    background:
+      var(--if-dark, #304001)
+      var(--if-light, #ddfa8e);
   }
 
   .age3 {
-    background-color: #fdf18c;
-    border: 1px #d8c158 solid !important;
-    white-space: nowrap;
-  }
-
-  tr.even .age3 {
-    background-color: #f3e782;
+    background:
+      var(--if-dark, #4c4501)
+      var(--if-light, #fdf18c);
   }
 
   .age4 {
-    background-color: #fed3a9;
-    border: 1px #d49659 solid !important;
-    white-space: nowrap;
-  }
-
-  tr.even .age4 {
-    background-color: #f4c99f;
+    background:
+      var(--if-dark, #4f2700)
+      var(--if-light, #fed3a9);
   }
 
   .age5 {
-    background-color: lighten(#fab6b6, 3%);
-    border: 1px lighten(#f56363, 10%) solid !important;
-    white-space: nowrap;
-  }
-
-  tr.even .age5 {
-    background-color: lighten(#f0acac, 3%);
+    background:
+      var(--if-dark, #3e0505)
+      var(--if-light, #fbc4c4);
   }
 
   td.bugs {
