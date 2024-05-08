@@ -39,7 +39,7 @@ interface DraftReviewAttrs extends ReviewAttrs {
 @spina({
     mixins: [DraftResourceModelMixin],
 })
-export class DraftReview extends Review {
+export class DraftReview extends Review<DraftReviewAttrs> {
     static defaults(): DraftReviewAttrs {
         return _.defaults({
             publishAndArchive: false,

@@ -95,9 +95,7 @@ export interface FileAttachmentAttrs extends BaseResourceAttrs {
 /**
  * Represents a new or existing file attachment.
  */
-@spina({
-    prototypeAttrs: ['payloadFileKeys'],
-})
+@spina
 export class FileAttachment extends BaseResource<FileAttachmentAttrs> {
     /**
      * Return default values for the model attributes.

@@ -7,6 +7,7 @@ import { spina } from '@beanbag/spina';
 import * as JSONSerializers from '../utils/serializers';
 import {
     type BaseResourceAttrs,
+    type BaseResourceResourceData,
     BaseResource,
 } from './baseResourceModel';
 import { ReviewReply } from './reviewReplyModel';
@@ -90,7 +91,7 @@ export interface ReviewAttrs extends BaseResourceAttrs {
  * Version Added:
  *     6.0
  */
-interface ReviewResourceData {
+interface ReviewResourceData extends BaseResourceResourceData {
     body_bottom: string;
     body_bottom_text_type: string;
     body_top: string;
@@ -151,8 +152,9 @@ interface CreateDiffCommentOptions {
  */
 @spina
 export class Review<
-    TAttributes extends ReviewAttrs = ReviewAttrs
-> extends BaseResource<TAttributes> {
+    TDefaults extends ReviewAttrs = ReviewAttrs,
+    TResourceData extends ReviewResourceData = ReviewResourceData,
+> extends BaseResource<TDefaults, TResourceData> {
     /**
      * Return default values for the model attributes.
      *
@@ -233,9 +235,9 @@ export class Review<
      */
     parseResourceData(
         rsp: ReviewResourceData,
-    ): Partial<TAttributes> {
+    ): Partial<ReviewAttrs> {
         const rawTextFields = rsp.raw_text_fields || rsp;
-        const data = super.parseResourceData(rsp) as Partial<TAttributes>;
+        const data = super.parseResourceData(rsp);
 
         data.bodyTopRichText =
             (rawTextFields.body_top_text_type === 'markdown');

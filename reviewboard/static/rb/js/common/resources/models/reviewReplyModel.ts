@@ -7,6 +7,7 @@ import { spina } from '@beanbag/spina';
 import * as JSONSerializers from '../utils/serializers';
 import {
     type BaseResourceAttrs,
+    type BaseResourceResourceData,
     BaseResource,
 } from './baseResourceModel';
 import { DraftResourceModelMixin } from './draftResourceModelMixin';
@@ -64,7 +65,7 @@ interface ReviewReplyAttrs extends BaseResourceAttrs {
  * Version Added:
  *     6.0
  */
-interface ReviewReplyResourceData {
+interface ReviewReplyResourceData extends BaseResourceResourceData {
     body_bottom: string;
     body_bottom_text_type: string;
     body_top: string;
@@ -100,7 +101,10 @@ interface ReviewReplyPublishOptions extends Backbone.PersistenceOptions {
         'listKey',
     ],
 })
-export class ReviewReply extends BaseResource<ReviewReplyAttrs> {
+export class ReviewReply extends BaseResource<
+    ReviewReplyAttrs,
+    ReviewReplyResourceData
+> {
     /**
      * Return default values for the model attributes.
      *
@@ -187,7 +191,7 @@ export class ReviewReply extends BaseResource<ReviewReplyAttrs> {
         rsp: ReviewReplyResourceData,
     ): Partial<ReviewReplyAttrs> {
         const rawTextFields = rsp.raw_text_fields || rsp;
-        const data = super.parseResourceData(rsp) as ReviewReplyAttrs;
+        const data = super.parseResourceData(rsp);
 
         data.bodyTopRichText =
             (rawTextFields.body_top_text_type === 'markdown');

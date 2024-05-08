@@ -8,6 +8,7 @@ import { UserSession } from '../../models/userSessionModel';
 import * as JSONSerializers from '../utils/serializers';
 import {
     type BaseResourceAttrs,
+    type BaseResourceResourceData,
     BaseResource,
 } from './baseResourceModel';
 
@@ -90,7 +91,7 @@ export interface BaseCommentAttrs extends BaseResourceAttrs {
  * Version Added:
  *     7.0
  */
-export interface BaseCommentResourceData {
+export interface BaseCommentResourceData extends BaseResourceResourceData {
     force_text_type: string;
     html: string;
     html_text_fields: { [key: string]: string };
@@ -114,8 +115,9 @@ export interface BaseCommentResourceData {
  */
 @spina
 export class BaseComment<
-    TAttributes extends BaseCommentAttrs = BaseCommentAttrs
-> extends BaseResource<TAttributes> {
+    TAttributes extends BaseCommentAttrs = BaseCommentAttrs,
+    TResourceData extends BaseCommentResourceData = BaseCommentResourceData,
+> extends BaseResource<TAttributes, TResourceData> {
     /**
      * Return default values for the model attributes.
      *
@@ -267,7 +269,7 @@ export class BaseComment<
      *     Attribute values to set on the model.
      */
     parseResourceData(
-        rsp: BaseCommentResourceData,
+        rsp: TResourceData,
     ): Partial<TAttributes> {
         const rawTextFields = rsp.raw_text_fields || rsp;
         const data = super.parseResourceData(rsp);
@@ -309,7 +311,7 @@ export class BaseComment<
      *     An error string, if appropriate.
      */
     validate(
-        attrs: TAttributes,
+        attrs: Partial<TAttributes>,
     ): string {
         if (_.has(attrs, 'parentObject') && !attrs.parentObject) {
             return BaseResource.strings.UNSET_PARENT_OBJECT;
