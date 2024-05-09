@@ -37,11 +37,27 @@ RB.UploadDiffView = Backbone.View.extend({
         let selectParentDiffText;
 
         if (this._canDragDrop()) {
-            selectDiffText = gettext('<input type="button" id="select-diff-file" value="Select"> or drag and drop a diff file to begin');
-            selectParentDiffText = gettext('<input type="button" id="select-parent-diff-file" value="Select"> or drag and drop a parent diff file if you have one');
+            selectDiffText = _`
+                <button class="ink-c-button" type="button"
+                id="select-diff-file">Select</button>
+                or drag and drop a diff file to begin
+            `;
+            selectParentDiffText = _`
+                <button class="ink-c-button" type="button"
+                id="select-parent-diff-file">Select</button>
+                or drag and drop a parent diff file if you have one
+            `;
         } else {
-            selectDiffText = gettext('<input type="button" id="select-diff-file" value="Select"> a file to begin');
-            selectParentDiffText = gettext('<input type="button" id="select-parent-diff-file" value="Select"> a parent diff file if you have one');
+            selectDiffText = _`
+                <button class="ink-c-button" type="button"
+                id="select-diff-file">Select</button>
+                a file to begin
+            `;
+            selectParentDiffText = _`
+                <button class="ink-c-button" type="button"
+                id="select-parent-diff-file">Select</button>
+                a parent diff file if you have one
+            `;
         }
 
         this.$el.html(this.template({
