@@ -139,8 +139,10 @@ input[type=text],
 input[type=url] {
   @_form-field-vars: #rb-ns-ui.form-field();
 
-  border: @_form-field-vars[@input-border];
+  background: var(--ink-p-input-bg);
+  border: var(--ink-g-border-input);
   border-radius: @_form-field-vars[@input-border-radius];
+  color: var(--ink-p-input-fg);
   box-sizing: border-box;
   font-size: inherit;
   padding: @_form-field-vars[@input-padding-vert]
