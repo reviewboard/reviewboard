@@ -161,9 +161,21 @@ textarea {
 .CodeMirror {
   @_form-field-vars: #rb-ns-ui.form-field();
 
-  border: @_form-field-vars[@textarea-border];
+  background: var(--rb-theme-rich-text-code-bg);
+  border: var(--ink-g-border-input);
   border-radius: @_form-field-vars[@textarea-border-radius];
+  color: var(--rb-theme-rich-text-code-fg);
   cursor: text;
+
+  &-gutters {
+    background: inherit;
+    border-right: var(--ink-g-border-input);
+  }
+
+  &-focused &-selected,
+  &-selected {
+    background: var(--ink-p-input-selection-bg);
+  }
 }
 
 
