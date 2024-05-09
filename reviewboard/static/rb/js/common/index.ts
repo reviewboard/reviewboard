@@ -101,5 +101,6 @@ export { ClientCommChannel } from './models/commChannelModel';
 export { ExtraData } from './models/extraDataModel';
 export { ExtraDataMixin } from './models/extraDataMixin';
 export { Page } from './models/pageModel';
+export { FormView } from './views/formView';
 export { PageView } from './views/pageView';
 export { UserSession } from './models/userSessionModel';

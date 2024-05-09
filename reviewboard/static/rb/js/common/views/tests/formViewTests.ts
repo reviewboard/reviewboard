@@ -1,3 +1,14 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { FormView } from 'reviewboard/admin';
+
+
 suite('rb/ui/views/FormView', function() {
     const template = dedent`
         <form class="rb-c-form">
@@ -43,11 +54,11 @@ suite('rb/ui/views/FormView', function() {
         </form>
     `;
 
-    let view;
-    let $subforms;
+    let view: FormView;
+    let $subforms: JQuery;
 
-    beforeEach(function() {
-        view = new RB.FormView({
+    beforeEach(() => {
+        view = new FormView({
             el: $(template),
         });
         view.render().$el.appendTo($testsScratch);
@@ -55,7 +66,10 @@ suite('rb/ui/views/FormView', function() {
         $subforms = view._$subforms;
     });
 
-    function checkSubformVisibility(index, visible) {
+    function checkSubformVisibility(
+        index: number,
+        visible: boolean,
+    ) {
         const $subform = $subforms.eq(index);
 
         expect($subform.prop('disabled')).toBe(!visible);
@@ -68,7 +82,7 @@ suite('rb/ui/views/FormView', function() {
 
             expect($fieldset.hasClass('-is-collapsed')).toBe(false);
 
-            $fieldset.find('.rb-c-form-fieldset__toggle').click();
+            $fieldset.find('.rb-c-form-fieldset__toggle').trigger('click');
 
             expect($fieldset.hasClass('-is-collapsed')).toBe(true);
             expect($fieldset.find('.rb-c-form-fieldset__toggle').text())
@@ -80,7 +94,7 @@ suite('rb/ui/views/FormView', function() {
 
             expect($fieldset.hasClass('-is-collapsed')).toBe(true);
 
-            $fieldset.find('.rb-c-form-fieldset__toggle').click();
+            $fieldset.find('.rb-c-form-fieldset__toggle').trigger('click');
 
             expect($fieldset.hasClass('-is-collapsed')).toBe(false);
             expect($fieldset.find('.rb-c-form-fieldset__toggle').text())
@@ -91,11 +105,11 @@ suite('rb/ui/views/FormView', function() {
     describe('Subforms', function() {
         it('Loaded state', function() {
             expect($subforms.length).toBe(4);
-            expect(_.keys(view._subformsByGroup))
+            expect(Object.keys(view._subformsByGroup))
                 .toEqual(['group1', 'group2']);
-            expect(_.keys(view._subformsByGroup.group1))
+            expect(Object.keys(view._subformsByGroup.group1))
                 .toEqual(['subform1', 'subform2']);
-            expect(_.keys(view._subformsByGroup.group2))
+            expect(Object.keys(view._subformsByGroup.group2))
                 .toEqual(['subform3', 'subform4']);
             expect(view._subformsByGroup.group1.subform1[0])
                 .toBe($subforms[0]);
@@ -177,9 +191,9 @@ suite('rb/ui/views/FormView', function() {
             it('With group, subformID, visible, hideOthers', function() {
                 view.setSubformVisibility({
                     group: 'group1',
+                    hideOthers: true,
                     subformID: 'subform2',
                     visible: true,
-                    hideOthers: true,
                 });
 
                 checkSubformVisibility(0, false);
@@ -187,9 +201,9 @@ suite('rb/ui/views/FormView', function() {
 
                 view.setSubformVisibility({
                     group: 'group1',
+                    hideOthers: true,
                     subformID: 'subform1',
                     visible: true,
-                    hideOthers: true,
                 });
 
                 checkSubformVisibility(0, true);

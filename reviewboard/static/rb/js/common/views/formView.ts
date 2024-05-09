@@ -1,33 +1,82 @@
 /**
  * A view for managing state on a form.
+ */
+
+import {
+    type EventsHash,
+    BaseView,
+    spina,
+} from '@beanbag/spina';
+
+
+/**
+ * Options for FormView.setSubformVisibility.
+ *
+ * Version Added:
+ *     8.0
+ */
+interface SetSubformVisibilityOptions {
+    /** The registered group for the subforms. */
+    group: string;
+
+    /**
+     * Whether to hide any subforms other than the one specified by
+     * ``subformID``.
+     */
+    hideOthers?: boolean;
+
+    /**
+     * A single subform to set the visibility state for.
+     *
+     * If not provided, this will toggle visibility of all subforms in the
+     * group.
+     */
+    subformID?: string;
+
+    /**
+     * Whether to make the selected subform visible.
+     *
+     * This is only used if ``hideOthers`` is not provided.
+     */
+    visible?: boolean;
+}
+
+
+/**
+ * A view for managing state on a form.
  *
  * This provides some standard behavior for setting up form widgets and
  * handling collapsible fieldsets, along with managing subforms.
  */
-RB.FormView = Backbone.View.extend({
-    events: {
+@spina
+export class FormView extends BaseView<undefined, HTMLFormElement> {
+    static events: EventsHash = {
         'click .rb-c-form-fieldset__toggle': '_onToggleFieldSetClicked',
-    },
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    _$subforms: JQuery = null;
 
     /**
-     * Initialize the view.
+     * The subforms.
+     *
+     * This is a two-layer mapping from group ID and subform ID to the subform
+     * element.
      */
-    initialize() {
-        this._$subforms = null;
-        this._subformsByGroup = {};
-        this._formWidgetsInitialized = false;
-    },
+    _subformsByGroup: { [key: string]: { [key: string]: JQuery} } = {};
+
+    /** Whether the widgets have been initialized. */
+    #formWidgetsInitialized = false;
 
     /**
      * Render the view.
      *
      * This will set up any subforms that might be available within the form.
-     *
-     * Returns:
-     *     RB.FormView:
-     *     This object, for chaining.
      */
-    render() {
+    onRender() {
         this._$subforms = this.$('.rb-c-form-fieldset.-is-subform');
 
         if (this._$subforms.length > 0) {
@@ -35,9 +84,7 @@ RB.FormView = Backbone.View.extend({
         }
 
         this.setupFormWidgets();
-
-        return this;
-    },
+    }
 
     /**
      * Set up state for widgets on the form.
@@ -55,7 +102,7 @@ RB.FormView = Backbone.View.extend({
      *         A starting point for finding the widgets. If not provided, all
      *         widgets in the form will be set up.
      */
-    setupFormWidgets($el) {
+    setupFormWidgets($el?: JQuery) {
         if ($el === undefined) {
             $el = this.$el;
         }
@@ -70,7 +117,7 @@ RB.FormView = Backbone.View.extend({
          */
         if (window.DateTimeShortcuts &&
             $el.find('.datetimeshortcuts').length > 0) {
-            if (this._formWidgetsInitialized) {
+            if (this.#formWidgetsInitialized) {
                 /*
                  * Yep, we have to remove *all* of these... DateTimeShortcuts
                  * has no granular widget support.
@@ -93,8 +140,8 @@ RB.FormView = Backbone.View.extend({
             });
         }
 
-        this._formWidgetsInitialized = true;
-    },
+        this.#formWidgetsInitialized = true;
+    }
 
     /**
      * Set the visibility of one or more subforms.
@@ -103,27 +150,10 @@ RB.FormView = Backbone.View.extend({
      * or hide all subforms except one.
      *
      * Args:
-     *     options (object):
+     *     options (SetSubformVisibilityOptions):
      *         Options to control visibility.
-     *
-     * Option Args:
-     *     group (string):
-     *         The registered group for the subforms.
-     *
-     *     hideOthers (boolean):
-     *         Whether to hide any subforms other than the one specified by
-     *         ``subformID``.
-     *
-     *     subformID (string):
-     *         A single subform to set the visibility state for. If not
-     *         provided, this will toggle visibility of all subforms in the
-     *         group.
-     *
-     *     visible (boolean):
-     *         Whether to make the selected subform visible. This is only used
-     *         if ``hideOthers`` is not provided.
      */
-    setSubformVisibility(options) {
+    setSubformVisibility(options: SetSubformVisibilityOptions) {
         console.assert(_.isObject(options),
                        'An options object must be provided.');
 
@@ -158,7 +188,7 @@ RB.FormView = Backbone.View.extend({
                 hidden: !visible,
             });
         }
-    },
+    }
 
     /**
      * Set up state and event handlers for subforms.
@@ -217,6 +247,7 @@ RB.FormView = Backbone.View.extend({
                     console.error('Subform %o and controller %s have ' +
                                   'different values for data-subform-group',
                                   subformEl, controllerID);
+
                     return;
                 }
             } else if (enablerID) {
@@ -250,9 +281,9 @@ RB.FormView = Backbone.View.extend({
 
                     $controller.on('change', () => this.setSubformVisibility({
                         group: group,
+                        hideOthers: true,
                         subformID: $controller.val(),
                         visible: true,
-                        hideOthers: true,
                     }));
                 }
             }
@@ -277,7 +308,7 @@ RB.FormView = Backbone.View.extend({
                 });
             }
         });
-    },
+    }
 
     /**
      * Handle the showing or collapsing of a fieldset.
@@ -303,5 +334,5 @@ RB.FormView = Backbone.View.extend({
             $fieldset.addClass('-is-collapsed');
             $toggle.text(gettext('(Show)'));
         }
-    },
-});
+    }
+}
