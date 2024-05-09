@@ -20,14 +20,14 @@
   --rb-g-diff-box-header-fg: var(--ink-p-container-fg);
   --rb-g-diff-box-header-border:
       var(--ink-u-border-thin)
-      var(--if-light, var(--ink-p-container-outline))
+      var(--if-light, var(--ink-p-container-border-color))
       var(--if-dark, transparent)
       solid;
 
   --rb-g-diff-header-bg:
     var(--if-light, @diff-header-color)
     var(--if-dark, var(--ink-p-cool-grey-400));
-  --rb-g-diff-header-fg: var(--ink-p-text-color);
+  --rb-g-diff-header-fg: var(--ink-p-fg);
   --rb-g-diff-header-border:
     var(--ink-u-border-thin)
     var(--if-light, darken(@diff-header-color, 10%))
@@ -59,7 +59,7 @@
   background: transparent;
   border-collapse: separate;
   border-spacing: 0;
-  color: var(--ink-p-text-on-light-color);
+  color: var(--ink-p-fg-on-light);
   padding: 0;
   width: 100%;
   overflow: hidden;
@@ -75,7 +75,7 @@
       padding: 1em;
 
       a:not(.btn) {
-        color: var(--ink-p-link-color);
+        color: var(--ink-p-link-fg);
         font-weight: bold;
       }
 
@@ -366,7 +366,7 @@
         vertical-align: top;
 
         a {
-          color: var(--ink-p-link-color);
+          color: var(--ink-p-link-fg);
           text-decoration: underline;
         }
 
@@ -801,7 +801,7 @@
         &.diff-header {
           border-top:
             1px
-            var(--if-light, var(--ink-p-container-outline))
+            var(--if-light, var(--ink-p-container-border-color))
             var(--if-dark, transparent)
             solid;
           border-bottom: $border-top;
@@ -1288,7 +1288,7 @@ table.rb-c-diff-file-index {
     vertical-align: top;
 
     &.diff-chunks-cell {
-      color: var(--ink-p-text-color-weak);
+      color: var(--ink-p-fg-weak);
       text-align: right;
       width: 70%;
     }
@@ -1315,7 +1315,7 @@ table.rb-c-diff-file-index {
       width: 30%;
 
       .diff-file-rename {
-        color: var(--ink-p-text-color-weak);
+        color: var(--ink-p-fg-weak);
         display: block;
         font-size: 90%;
         font-style: italic;
@@ -1324,7 +1324,7 @@ table.rb-c-diff-file-index {
     }
 
     a {
-      color: var(--ink-p-link-color);
+      color: var(--ink-p-link-fg);
       text-decoration: none;
 
       &:hover {
@@ -1580,7 +1580,7 @@ table.rb-c-diff-file-index {
  */
 .sidebyside tbody.rb-c-diff-file-notice {
   a {
-    color: var(--ink-p-link-color);
+    color: var(--ink-p-link-fg);
   }
 
   td {

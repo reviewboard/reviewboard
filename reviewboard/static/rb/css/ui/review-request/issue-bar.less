@@ -65,8 +65,8 @@
   --_rb-c-issue-status-border-color-light: transparent;
   --_rb-c-issue-status-border-color-dark: transparent;
   --_rb-c-issue-status-link-color-light: inherit;
-  --_rb-c-issue-status-text-color-light: var(--ink-p-text-on-light-color);
-  --_rb-c-issue-status-text-color-dark: var(--ink-p-text-on-light-color);
+  --_rb-c-issue-status-text-color-light: var(--ink-p-fg-on-light);
+  --_rb-c-issue-status-text-color-dark: var(--ink-p-fg-on-light);
 
   /*
    * On dark mode, use a yellow base for the button colors, and keep the
@@ -84,7 +84,7 @@
     var(--if-dark, var(--ink-p-grey-500));
   --ink-p-accent-primary-fg:
     var(--if-light, inherit)
-    var(--if-dark, var(--ink-p-text-on-light-color));
+    var(--if-dark, var(--ink-p-fg-on-light));
 
   background:
     var(--if-light, var(--_rb-c-issue-status-bg-light))
@@ -128,7 +128,7 @@
   &[data-issue-status="open"] {
     --_rb-c-issue-status-bg-light: var(--rb-p-issue-bg);
     --_rb-c-issue-status-link-color-light:
-      var(--ink-p-text-on-light-color-weak);
+      var(--ink-p-fg-weak-on-light);
 
     .rb-c-issue-bar__icon {
       .rb-icon-issue-open();
@@ -139,7 +139,7 @@
     --_rb-c-issue-status-bg-light: @issue-discarded-bg;
     --_rb-c-issue-status-border-color-light: @issue-discarded-border-color;
     --_rb-c-issue-status-link-color-light: @issue-discarded-link-color;
-    --_rb-c-issue-status-text-color-light: var(--ink-p-text-on-light-color);
+    --_rb-c-issue-status-text-color-light: var(--ink-p-fg-on-light);
     --_rb-c-issue-status-text-color-dark:
       var(--rb-p-issue-dropped-accent-text-color);
 
@@ -174,7 +174,7 @@
   &[data-issue-status="verifying-dropped"] {
     --_rb-c-issue-status-border-color-light: var(--rb-p-issue-border-color);
     --_rb-c-issue-status-border-color-dark: var(--rb-p-issue-border-color);
-    --_rb-c-issue-status-text-color-light: var(--ink-p-text-on-light-color);
+    --_rb-c-issue-status-text-color-light: var(--ink-p-fg-on-light);
     --_rb-c-issue-status-text-color-dark:
       var(--rb-p-issue-open-accent-text-color);
 
@@ -189,7 +189,7 @@
       var(--if-dark, var(--ink-p-yellow-500));
     --ink-p-accent-primary-fg:
       var(--if-light, inherit)
-      var(--if-dark, var(--ink-p-text-on-light-color));
+      var(--if-dark, var(--ink-p-fg-on-light));
     }
 
   /**

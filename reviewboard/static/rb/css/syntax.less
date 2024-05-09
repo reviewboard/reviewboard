@@ -65,12 +65,12 @@
       var(--if-light, #FBFAF8)
       var(--if-dark, rgba(0, 0, 0, 0.08));
 
-  --rb-theme-rich-text-code-fg: color: var(--ink-p-text-color);
+  --rb-theme-rich-text-code-fg: color: var(--ink-p-fg);
 
   --rb-theme-diff-equals-bg:
     var(--if-dark, @default-code-theme-dark-diff-equal-bg)
     var(--if-light, @default-code-theme-light-diff-equal-bg);
-  --rb-theme-diff-equals-fg: var(--ink-p-text-color);
+  --rb-theme-diff-equals-fg: var(--ink-p-fg);
   --rb-theme-diff-equals-highlight-bg:
     var(--if-dark, @default-code-theme-dark-diff-equal-highlight-bg)
     var(--if-light, @default-code-theme-light-diff-equal-highlight-bg);
@@ -82,7 +82,7 @@
   --rb-theme-diff-delete-bg:
     var(--if-dark, @default-code-theme-dark-diff-delete-bg)
     var(--if-light, @default-code-theme-light-diff-delete-bg);
-  --rb-theme-diff-delete-fg: var(--ink-p-text-color);
+  --rb-theme-diff-delete-fg: var(--ink-p-fg);
   --rb-theme-diff-delete-highlight-bg:
     var(--if-dark, @default-code-theme-dark-diff-delete-highlight-bg)
     var(--if-light, @default-code-theme-light-diff-delete-highlight-bg);
@@ -94,7 +94,7 @@
   --rb-theme-diff-insert-bg:
     var(--if-dark, @default-code-theme-dark-diff-insert-bg)
     var(--if-light, @default-code-theme-light-diff-insert-bg);
-  --rb-theme-diff-insert-fg: var(--ink-p-text-color);
+  --rb-theme-diff-insert-fg: var(--ink-p-fg);
   --rb-theme-diff-insert-highlight-bg:
     var(--if-dark, @default-code-theme-dark-diff-insert-highlight-bg)
     var(--if-light, @default-code-theme-light-diff-insert-highlight-bg);
@@ -106,7 +106,7 @@
   --rb-theme-diff-replace-bg:
     var(--if-dark, @default-code-theme-dark-diff-replace-bg)
     var(--if-light, @default-code-theme-light-diff-replace-bg);
-  --rb-theme-diff-replace-fg: var(--ink-p-text-color);
+  --rb-theme-diff-replace-fg: var(--ink-p-fg);
   --rb-theme-diff-replace-highlight-bg:
     var(--if-dark, @default-code-theme-dark-diff-replace-highlight-bg)
     var(--if-light, @default-code-theme-light-diff-replace-highlight-bg);
@@ -123,9 +123,9 @@
       var(--if-light, var(--ink-p-red-500));
 
   --rb-theme-diff-move-from-flag-bg: var(--ink-p-light__green-400);
-  --rb-theme-diff-move-from-flag-fg: var(--ink-p-text-on-light-color);
+  --rb-theme-diff-move-from-flag-fg: var(--ink-p-fg-on-light);
   --rb-theme-diff-move-to-flag-bg: var(--ink-p-light__red-200);
-  --rb-theme-diff-move-to-flag-fg: var(--ink-p-text-on-light-color);
+  --rb-theme-diff-move-to-flag-fg: var(--ink-p-fg-on-light);
 }
 
 
@@ -149,7 +149,7 @@
  * CodeMirror: Link
  */
 .cm-s-rb .cm-link {
-  color: var(--ink-p-link-color);
+  color: var(--ink-p-link-fg);
   text-decoration: none;
 }
 

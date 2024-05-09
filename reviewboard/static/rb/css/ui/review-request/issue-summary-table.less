@@ -51,7 +51,7 @@
    * A special row indicating that no issues exist matching the filter.
    */
   & .rb-c-review-request-field-tabular__data tr&__no-issues {
-    --_rb-c-issue-summary-table-row-text-color-dark: var(--ink-p-text-color);
+    --_rb-c-issue-summary-table-row-text-color-dark: var(--ink-p-fg);
 
     td,
     td:hover {
@@ -119,7 +119,7 @@
           var(--if-light, var(--_rb-c-issue-summary-table-row-bg-light));
         color:
           var(--if-dark, var(--_rb-c-issue-summary-table-row-text-color-dark))
-          var(--if-light, var(--ink-p-text-on-light-color));
+          var(--if-light, var(--ink-p-fg-on-light));
 
         /*
          * All text should be vertically centered in relation to the issue

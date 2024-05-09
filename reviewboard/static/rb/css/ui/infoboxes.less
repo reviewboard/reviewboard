@@ -20,7 +20,7 @@
   border: var(--rb-c-infobox-border);
   border-radius: var(--ink-u-border-radius-std);
   box-shadow: var(--ink-g-shadow-std);
-  color: var(--ink-p-text-color);
+  color: var(--ink-p-fg);
   display: block;
   font-size: 12px;
   overflow: hidden;
@@ -128,7 +128,7 @@
 
 .infobox-links {
   a {
-    color: var(--ink-p-link-color);
+    color: var(--ink-p-link-fg);
     margin-right: 2em;
   }
 }
@@ -330,11 +330,11 @@
       border-color: var(--rb-p-issue-border-color);
       color:
         var(--if-dark, var(--rb-p-issue-open-accent-text-color))
-        var(--if-light, var(--ink-p-text-on-light-color));
+        var(--if-light, var(--ink-p-fg-on-light));
     }
 
     a {
-      color: var(--ink-p-link-color);
+      color: var(--ink-p-link-fg);
     }
 
     ul {

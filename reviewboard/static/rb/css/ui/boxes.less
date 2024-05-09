@@ -113,7 +113,7 @@
   &.important {
     background-color: @_important-vars[@bg];
     background-image: url(@_important-vars[@bg-image]);
-    color: var(--ink-p-text-on-light-color);
+    color: var(--ink-p-fg-on-light);
     display: flex;
     border: 1px @_important-vars[@border-color] solid;
     padding: 0 10px;
@@ -127,10 +127,10 @@
     }
 
     a {
-      color: var(--ink-p-link-on-light-color);
+      color: var(--ink-p-link-fg-on-light);
 
       &:hover {
-        color: var(--ink-p-link-on-light-hover-color);
+        color: var(--ink-p-link-hover-fg-on-light);
       }
     }
   }

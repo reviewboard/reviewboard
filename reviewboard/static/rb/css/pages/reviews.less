@@ -45,7 +45,7 @@
       }
 
       .user {
-        color: var(--ink-p-link-color);
+        color: var(--ink-p-link-fg);
         font-size: 1.1em;
         font-weight: bold;
         text-decoration: none;
@@ -56,7 +56,7 @@
         overflow: hidden;
 
         .timestamp {
-          color: var(--ink-p-text-color-weak);
+          color: var(--ink-p-fg-weak);
           display: block;
           text-decoration: none;
 
@@ -239,7 +239,7 @@
 }
 
 .markdown-info {
-  color: var(--ink-p-link-color);
+  color: var(--ink-p-link-fg);
   font-size: 8pt;
   font-weight: normal;
   float: right;
@@ -387,7 +387,7 @@
 
   --rb-c-review-request-page-entry-content-border-color:
     var(--if-light, @review-request-entry-base-border-color)
-    var(--if-dark, var(--ink-p-container-outline));
+    var(--if-dark, var(--ink-p-container-border-color));
 
   --rb-c-review-request-page-entry-content-collapsed-bg:
     var(--if-light, @review-request-entry-collapsed-bg)
@@ -399,7 +399,7 @@
 
   --rb-c-review-request-page-entry-content-collapsed-border-color:
     var(--if-light, @review-request-entry-collapsed-border-color)
-    var(--if-dark, var(--ink-p-container-outline));
+    var(--if-dark, var(--ink-p-container-border-color));
 
   clear: both;
   margin: 2rem 0;
@@ -502,7 +502,7 @@
     }
 
     .timestamp {
-      color: var(--ink-p-text-color-weak);
+      color: var(--ink-p-fg-weak);
       display: block;
 
       .on-mobile-medium-screen-720({
@@ -939,7 +939,7 @@
 
       .avatar-container {
         background: var(--ink-p-surface-bg);
-        border: 2px var(--ink-p-container-outline) dotted;
+        border: 2px var(--ink-p-container-border-color) dotted;
         border-radius: 50%;
         overflow: hidden;
         width: 48px;
@@ -972,7 +972,7 @@
       label {
         border: 1px #888888 solid;
         border-radius: @box-border-radius;
-        color: var(--ink-p-text-on-light-color);
+        color: var(--ink-p-fg-on-light);
         display: block;
         line-height: 1.5;
         margin-bottom: @page-container-padding;
@@ -1169,9 +1169,9 @@
 
     /* Used in the textarea field diffs and the Change Summary section. */
     > pre {
-      background-color: var(--ink-p-input-bg-color);
+      background-color: var(--ink-p-input-bg);
       border: var(--ink-g-border-input);
-      color: var(--ink-p-input-text-color);
+      color: var(--ink-p-input-fg);
       padding: @textarea-editor-padding;
       font-size: inherit;
       white-space: pre-wrap;
@@ -1207,7 +1207,7 @@
 
     /* Displays changes for field values, with "-" and "+" markers. */
     .changed {
-      background: var(--ink-p-input-bg-color);
+      background: var(--ink-p-input-bg);
       border: var(--ink-g-border-input);
       border-collapse: collapse;
       display: inline-block;
@@ -1216,7 +1216,7 @@
       vertical-align: top;
 
       a {
-        color: var(--ink-p-link-color);
+        color: var(--ink-p-link-fg);
         text-decoration: none;
 
         &:first-child {
@@ -1265,10 +1265,10 @@
 
     /* The diff for text areas. */
     .diffed-text-area {
-      background: var(--ink-p-input-bg-color);
+      background: var(--ink-p-input-bg);
       border: var(--ink-g-border-input);
       border-collapse: collapse;
-      color: var(--ink-p-input-text-color);
+      color: var(--ink-p-input-fg);
       padding: 0;
       width: 100%;
 
@@ -1555,7 +1555,7 @@
     font-size: 110%;
 
     &:visited {
-      color: var(--ink-p-link-color);
+      color: var(--ink-p-link-fg);
     }
   }
 
@@ -2358,7 +2358,7 @@
 .tooltip {
   background-color: #fef6b3;
   border: 1px #a58600 solid;
-  color: var(--ink-p-text-on-light-color);
+  color: var(--ink-p-fg-on-light);
   padding: 4px;
   position: absolute;
   max-width: 60em;
@@ -2423,7 +2423,7 @@
   background-color: white;
   border: 1px black solid;
   border-radius: 8px;
-  color: var(--ink-p-text-on-light-color);
+  color: var(--ink-p-fg-on-light);
   font-size: 10pt;
   font-weight: bold;
   padding: 6px;
@@ -2519,7 +2519,8 @@
 #initial-status-updates .header,
 .status-update-review-header {
   --_status-update-review-header-bg-light: var(--ink-p-container-bg);
-  --_status-update-review-header-border-color: var(--ink-p-container-outline);
+  --_status-update-review-header-border-color:
+    var(--ink-p-container-border-color);
   --_status-update-review-header-text-color: var(--ink-p-container-fg);
 
   background:

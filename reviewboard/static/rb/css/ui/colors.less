@@ -139,7 +139,7 @@
           var(--if-dark, var(--ink-p-accent-primary-bg));
 
         draft-hover-fg:
-          var(--if-light, var(--ink-p-text-on-light-color))
+          var(--if-light, var(--ink-p-fg-on-light))
           var(--if-dark, var(--ink-p-accent-primary-fg));
 
         /** Border color for draft elements. */
@@ -149,11 +149,11 @@
 
         issue-bg: var(--ink-p-light__yellow-300);
 
-        issue-border-color: var(--ink-p-container-outline);
+        issue-border-color: var(--ink-p-container-border-color);
 
         /** Issue status text accent colors. */
         issue-open-accent-text-color: var(--ink-p-light__yellow-300);
-        issue-dropped-accent-text-color: var(--ink-p-text-on-dark-color-weak);
+        issue-dropped-accent-text-color: var(--ink-p-fg-weak-on-dark);
         issue-resolved-accent-text-color:
           var(--ink-p-accent-success-fg-on-container);
 
@@ -175,31 +175,31 @@
         /** Diff insert operation indicator background. */
         diff-insert-op-bg:
           var(--if-light, @diff-insert-linenum-color)
-          var(--if-dark, var(--ink-p-input-bg-color));
+          var(--if-dark, var(--ink-p-input-bg));
 
         /** Diff insert operation indicator foreground. */
         diff-insert-op-fg:
-          var(--if-light, var(--ink-p-text-on-light-color))
+          var(--if-light, var(--ink-p-fg-on-light))
           var(--if-dark, var(--ink-p-green-700));
 
         /** Diff delete operation indicator background. */
         diff-delete-op-bg:
           var(--if-light, @diff-delete-linenum-color)
-          var(--if-dark, var(--ink-p-input-bg-color));
+          var(--if-dark, var(--ink-p-input-bg));
 
         /** Diff delete operation indicator foreground. */
         diff-delete-op-fg:
-          var(--if-light, var(--ink-p-text-on-light-color))
+          var(--if-light, var(--ink-p-fg-on-light))
           var(--if-dark, var(--ink-p-red-800));
 
         /** Diff replace operation indicator background. */
         diff-replace-op-bg:
           var(--if-light, @diff-replace-linenum-color)
-          var(--if-dark, var(--ink-p-input-bg-color));
+          var(--if-dark, var(--ink-p-input-bg));
 
         /** Diff replace operation indicator foreground. */
         diff-replace-op-fg:
-          var(--if-light, var(--ink-p-text-on-light-color))
+          var(--if-light, var(--ink-p-fg-on-light))
           var(--if-dark, var(--ink-p-yellow-800));
 
         /** Color used for text representing an insert operation. */
