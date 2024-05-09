@@ -1728,6 +1728,12 @@
     opacity: 0.5;
   }
 
+  &.editing {
+    .file .file-caption-container {
+      opacity: 1;
+    }
+  }
+
   .on-mobile-medium-screen-720({
     float: none;
   });
@@ -1749,11 +1755,15 @@
    */
   .file {
     @file-attachment-bg: white;
-    @file-attachment-overlay-bg: #FCFCFC;
-    @file-attachment-overlay-border-color: #EEEEEE;
+    @file-attachment-overlay-bg:
+      var(--if-dark, var(--ink-p-cool-grey-100))
+      var(--if-light, #FCFCFC);
+    @file-attachment-overlay-border-color:
+      var(--if-dark, transparent)
+      var(--if-light, #EEEEEE);
     @file-attachment-height: 150px;
     @file-attachment-width: 300px;
-    @file-attachment-border-color: #CCCCCC;
+    @file-attachment-border-color: var(--ink-p-container-border-color);
     @file-attachment-caption-height: 31px;
 
     border: 1px @file-attachment-border-color solid;
@@ -1826,13 +1836,14 @@
         padding: 0;
 
         a {
-          color: #333;
+          color: var(--ink-p-fg);
           display: block;
           padding: 0.5em 1em;
           text-decoration: none;
 
           &:hover {
-            background: darken(@file-attachment-overlay-bg, 5%);
+            background: var(--ink-p-accent-primary-bg);
+            color: var(--ink-p-accent-primary-fg);
           }
         }
       }
@@ -1900,7 +1911,7 @@
       @file-caption-padding: 30px;
 
       opacity: 0.9;
-      background-color: @file-attachment-overlay-bg;
+      background: @file-attachment-overlay-bg;
       border-top: 1px @file-attachment-overlay-border-color solid;
       bottom: 0;
       box-sizing: border-box;
@@ -1914,11 +1925,11 @@
       width: @file-attachment-width - 2px;
 
       a {
-        color: black;
+        color: inherit;
         text-decoration: none;
 
         &.empty-caption {
-          color: gray;
+          color: var(--ink-p-fg-weak);
           font-style: italic;
         }
       }
@@ -1928,7 +1939,10 @@
         opacity: 1;
         line-height: @file-attachment-caption-height;
         height: @file-attachment-caption-height;
-        text-shadow: 0px 0px 2px white;
+        text-shadow:
+          0px 0px 2px
+          var(--if-dark, black)
+          var(--if-light, white);
       }
 
       .rb-c-inline-editor {
@@ -1950,7 +1964,7 @@
          */
         @buttons-padding-vert: 5px;
 
-        background: darken(@file-attachment-bg, 5%);
+        background: @file-attachment-overlay-bg;
         border: 1px @file-attachment-border-color solid;
         border-top: 0;
         border-radius: 0 0 @box-border-radius @box-border-radius;
@@ -2120,7 +2134,7 @@
    * provide focus to the thumbnail the user is hovering over, and to help
    * separate out the actions menu from other thumbnail contents.
    */
-  .file.faded {
+  .file-container:not(.editing) .file.faded {
     opacity: 0.5;
   }
 
