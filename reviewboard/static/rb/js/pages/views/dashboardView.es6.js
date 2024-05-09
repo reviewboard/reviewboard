@@ -191,7 +191,13 @@ const DashboardActionsView = Backbone.View.extend({
             .modalBox({
                 title: _`Close review requests`,
                 buttons: [
-                    $('<input type="button">').val(_`Close`),
+                    Ink.paintComponent(
+                        'Ink.Button',
+                        {
+                            type: 'primary',
+                        },
+                        _`Close`,
+                    ),
                 ],
             })
             .on('close', () => $dlg.modalBox('destroy'));
@@ -209,21 +215,35 @@ const DashboardActionsView = Backbone.View.extend({
      */
     _confirmClose: function() {
         return new Promise((resolve, reject) => {
+            function resolveAndClose(result) {
+                resolve(result);
+                $dialog.modalBox('destroy');
+            }
+
             const $dialog = $('<div>')
                 .append($('<p>')
                     .text(_`If these review requests have unpublished drafts, they will be discarded.`))
                 .append($('<p>')
                     .text(_`Are you sure you want to close these review requests?`))
+
                 .modalBox({
                     title: _`Close review requests`,
                     buttons: [
-                        $('<input type="button">')
-                            .val(_`Cancel`)
-                            .click(() => resolve(false)),
-
-                        $('<input type="button">')
-                            .val(_`Close Review Requests`)
-                            .click(() => resolve(true)),
+                        Ink.paintComponent(
+                            'Ink.Button',
+                            {
+                                onClick: () => resolveAndClose(false),
+                            },
+                            _`Cancel`,
+                        ),
+                        Ink.paintComponent(
+                            'Ink.Button',
+                            {
+                                onClick: () => resolveAndClose(true),
+                                type: 'danger',
+                            },
+                            _`Close Review Requests`,
+                        ),
                     ],
                 })
                 .on('close', () => {
@@ -281,12 +301,22 @@ const DashboardActionsView = Backbone.View.extend({
             .modalBox({
                 title: _`Mute review requests`,
                 buttons: [
-                    $('<input type="button">')
-                        .val(_`Cancel`),
-
-                    $('<input type="button">')
-                        .val(_`Mute Review Requests`)
-                        .click(() => this.model.updateVisibility('mute')),
+                    Ink.paintComponent(
+                        'Ink.Button',
+                        {},
+                        _`Cancel`,
+                    ),
+                    Ink.paintComponent(
+                        'Ink.Button',
+                        {
+                            onClick: () => {
+                                this.model.updateVisibility('mute');
+                                $dialog.modalBox('destroy');
+                            },
+                            type: 'danger',
+                        },
+                        _`Mute Review Requests`,
+                    ),
                 ],
             })
             .on('close', () => $dialog.modalBox('destroy'));
