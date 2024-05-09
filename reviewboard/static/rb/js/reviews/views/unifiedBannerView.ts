@@ -785,23 +785,38 @@ export class UnifiedBannerView extends FloatingBannerView<
     ): Promise<boolean> {
         return new Promise((resolve, reject) => {
             const text = draftMode.hasReview
-                ? _`If you discard this review, all unpublished comments will be deleted.`
-                : _`If you discard this review request draft, all unpublished data will be deleted.`;
+                ? _`
+                    If you discard this review, all unpublished comments
+                    will be deleted.
+                `
+                : _`
+                    If you discard this review request draft, all unpublished
+                    data will be deleted.
+                `;
             const title = draftMode.hasReview
                 ? _`Are you sure you want to discard this review?`
-                : _`Are you sure you want to discard this review request draft?`;
+                : _`
+                    Are you sure you want to discard this review request
+                    draft?
+                `;
+
+            function resolveAndClose(result: boolean) {
+                resolve(result);
+                $dlg.modalBox('destroy');
+            }
 
             const $dlg = $('<p>')
                 .text(text)
                 .modalBox({
-                    buttons: [
-                        $('<input type="button">')
-                            .val(_`Cancel`)
-                            .click(() => resolve(false)),
-                        $('<input type="button">')
-                            .val(_`Discard`)
-                            .click(() => resolve(true)),
-                    ],
+                    buttons: paint<HTMLButtonElement[]>`
+                        <Ink.Button onClick=${() => resolveAndClose(false)}>
+                         ${_`Cancel`}
+                        </Ink.Button>
+                        <Ink.Button type="danger"
+                                    onClick=${() => resolveAndClose(true)}>
+                         ${_`Discard`}
+                        </Ink.Button>
+                    `,
                     title: title,
                 })
                 .on('close', () => {
