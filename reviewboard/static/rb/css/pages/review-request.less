@@ -661,8 +661,14 @@
  ****************************************************************************/
 #discard-banner,
 #submitted-banner {
-  background: #E0E0E0;
-  border: 1px #808080 solid;
+  background:
+    var(--if-dark, var(--ink-p-grey-200))
+    var(--if-light, #E0E0E0);
+  border:
+    1px
+    var(--if-dark, var(--ink-p-grey-300))
+    var(--if-light, #808080)
+    solid;
 }
 
 #draft-banner,
