@@ -923,28 +923,6 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
     }
 
     /**
-     * Handle a click on "Update -> Update Diff".
-     *
-     * Returns:
-     *     boolean:
-     *     False, always.
-     */
-    _onUpdateDiffClicked() {
-        const reviewRequest = this.model.get('reviewRequest');
-        const updateDiffView = new RB.UpdateDiffView({
-            model: new RB.UploadDiffModel({
-                changeNumber: reviewRequest.get('commitID'),
-                repository: reviewRequest.get('repository'),
-                reviewRequest: reviewRequest,
-            }),
-        });
-
-        updateDiffView.render();
-
-        return false;
-    }
-
-    /**
      * Refresh the page.
      */
     _refreshPage() {

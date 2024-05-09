@@ -584,14 +584,43 @@ export class UpdateDiffActionView extends Actions.MenuItemActionView {
         const reviewRequestEditor = page.reviewRequestEditorView.model;
         const reviewRequest = reviewRequestEditor.get('reviewRequest');
 
-        const updateDiffView = new RB.UpdateDiffView({
-            model: new RB.UploadDiffModel({
-                changeNumber: reviewRequest.get('commitID'),
-                repository: reviewRequest.get('repository'),
-                reviewRequest: reviewRequest,
-            }),
-        });
-        updateDiffView.render();
+        if (reviewRequestEditor.get('commits').length > 0) {
+            const rbtoolsURL = 'https://www.reviewboard.org/docs/rbtools/latest/';
+
+            const $dialog = $('<div>')
+                .append($('<p>')
+                    .html(_`
+                        This review request was created with
+                        <a href="${rbtoolsURL}">RBTools</a>,
+                        and is tracking commit history.
+                    `))
+                .append($('<p>')
+                    .html(_`
+                        To add a new diff revision, you will need to use
+                        <code>rbt post -u</code> instead of uploading a diff
+                        file.
+                    `))
+                .modalBox({
+                    buttons: [
+                        paint<HTMLButtonElement>`
+                            <Ink.Button>${_`Cancel`}</Ink.Button>
+                        `,
+                    ],
+                    title: _`Use RBTools to update the diff`,
+                })
+                .on('close', () => {
+                    $dialog.modalBox('destroy');
+                });
+        } else {
+            const updateDiffView = new RB.UpdateDiffView({
+                model: new RB.UploadDiffModel({
+                    changeNumber: reviewRequest.get('commitID'),
+                    repository: reviewRequest.get('repository'),
+                    reviewRequest: reviewRequest,
+                }),
+            });
+            updateDiffView.render();
+        }
     }
 }
 
