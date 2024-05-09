@@ -1,4 +1,9 @@
 import {
+    type ButtonView,
+    craft,
+    paint,
+} from '@beanbag/ink';
+import {
     type EventsHash,
     spina,
 } from '@beanbag/spina';
@@ -678,21 +683,35 @@ export class DeleteActionView extends Actions.MenuItemActionView {
         const reviewRequestEditor = page.reviewRequestEditorView.model;
         const reviewRequest = reviewRequestEditor.get('reviewRequest');
 
+        const onDeleteConfirmed = () => {
+            deleteButtonView.busy = true;
+            reviewRequest
+                .destroy({
+                    buttons: buttonEls,
+                })
+            .then(() => RB.navigateTo(SITE_ROOT));
+        };
+
+        const deleteButtonView = craft<ButtonView>`
+            <Ink.Button type="danger" onClick=${onDeleteConfirmed}>
+             ${_`Delete`}
+            </Ink.Button>
+        `;
+
+        const buttonEls = paint<HTMLButtonElement[]>`
+            <Ink.Button>
+             ${_`Cancel`}
+            </Ink.Button>
+            ${deleteButtonView.el}
+        `;
+
         const $dlg = $('<p>')
             .text(_`
                 This deletion cannot be undone. All diffs and reviews will be
                 deleted as well.
             `)
             .modalBox({
-                buttons: [
-                    $(`<input type="button" value="${gettext('Cancel')}">`),
-                    $(`<input type="button" value="${gettext('Delete')}">`)
-                        .click(() => reviewRequest
-                            .destroy({
-                                buttons: $('input', $dlg.modalBox('buttons')),
-                            })
-                            .then(() => RB.navigateTo(SITE_ROOT))),
-                ],
+                buttons: buttonEls,
                 title: _`Are you sure you want to delete this review request?`,
             })
             .on('close', () => $dlg.modalBox('destroy'));
