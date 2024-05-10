@@ -155,7 +155,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/ui/views/userInfoboxView.es6.js',
             'rb/js/models/starManagerModel.es6.js',
             'rb/js/views/clientLoginView.es6.js',
-            'rb/js/views/headerView.es6.js',
             'rb/js/views/collectionView.es6.js',
             'rb/js/views/starManagerView.es6.js',
         ),

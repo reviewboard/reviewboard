@@ -1,15 +1,55 @@
 /**
  * Site Header
  */
-RB.HeaderView = Backbone.View.extend({
-    SEARCH_SUMMARY_TRIM_LEN: 28,
-    DESKTOP_SEARCH_RESULTS_WIDTH: 350,
 
-    events: {
+import {
+    type EventsHash,
+    BaseView,
+    spina,
+} from '@beanbag/spina';
+
+
+/**
+ * Options for the HeaderView.
+ *
+ * Version Added:
+ *     8.0
+ */
+interface HeaderViewOptions {
+    /**
+     * The body element to use.
+     *
+     * This is used when running unit tests.
+     */
+    $body?: JQuery;
+
+    /**
+     * The page sidebar to use.
+     *
+     * This is used when running unit tests.
+     */
+    $pageSidebar?: JQuery;
+}
+
+
+/**
+ * Site Header
+ */
+@spina
+export class HeaderView extends BaseView<
+    undefined, HTMLElement, HeaderViewOptions
+> {
+    static SEARCH_SUMMARY_TRIM_LEN = 28;
+    static DESKTOP_SEARCH_RESULTS_WIDTH = 350;
+
+    static events: EventsHash = {
         'click #nav_toggle': '_handleNavClick',
-        'touchstart #nav_toggle': '_handleNavClick',
         'focus #search_field': '_closeMobileMenu',
-    },
+        'touchstart #nav_toggle': '_handleNavClick',
+    };
+
+    /** The instance of the HeaderView. */
+    static instance: HeaderView = null;
 
     /**
      * Ensure that this HeaderView is the only one on the page.
@@ -18,51 +58,58 @@ RB.HeaderView = Backbone.View.extend({
      * check.
      */
     _ensureSingleton() {
-        if (RB.HeaderView.instance !== null) {
+        if (HeaderView.instance !== null) {
             console.warn('There are two instances of RB.HeaderView on the ' +
                          'page. Make sure only one RB.PageView is ' +
                          'instantiated and registered through ' +
                          'RB.PageManager.setupPage().');
         } else {
-            RB.HeaderView.instance = this;
+            HeaderView.instance = this;
         }
-    },
+    }
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** Whether the page is currently in mobile mode. */
+    inMobileMode: boolean = undefined;
+
+    /** Saved options for the view. */
+    options: HeaderViewOptions;
+
+    /** The saved window instance. */
+    #$window: JQuery<Window> = null;
+
+    /** The main body element. */
+    #$body: JQuery = null;
+
+    /** The mobile menu toggle button. */
+    #$navToggle: JQuery = null;
+
+    /** The mask overlay for the mobile menu. */
+    #$mobileMenuMask: JQuery = null;
+
+    /** Whether the mobile menu is open. */
+    #mobileMenuOpened = false;
+
+    /** The function to recalculate whether the page is in mobile mode. */
+    #recalcFunc: () => void;
 
     /**
      * Initialize the header.
      *
      * Args:
-     *     options (object, optional):
+     *     options (HeaderViewOptions, optional):
      *         Options for the view.
-     *
-     * Option Args:
-     *     $body (jQuery, optional):
-     *         The body element. This is useful for unit tests.
-     *
-     *     $pageSidebar (jQuery, optional):
-     *         The page sidebar element. This is useful for unit tests.
      */
-    initialize(options={}) {
+    initialize(options: HeaderViewOptions = {}) {
         this._ensureSingleton();
 
+        this.#$window = $(window);
+        this.#$body = options.$body || $(document.body);
         this.options = options;
-
-        /*
-         * This is used by RB.PageManager to determine if a RB.PageView
-         * subclass has correctly rendered a HeaderView, or if PageManager
-         * needs to take care of it.
-         *
-         * This is deprecated and can be removed in Review Board 5.0.
-         */
-        this.isRendered = false;
-
-        this._mobileMenuOpened = false;
-
-        this._$window = null;
-        this._$body = null;
-        this._$navToggle = null;
-        this._$mobileMenuMask = null;
-    },
+    }
 
     /**
      * Remove the view from the DOM and disable event handling.
@@ -70,46 +117,36 @@ RB.HeaderView = Backbone.View.extend({
      * This will also unset :js:attr:`RB.HeaderView.instance`, if currently
      * set to this instance.
      */
-    remove() {
-        if (RB.HeaderView.instance === this) {
-            RB.HeaderView.instance = null;
+    onRemove() {
+        if (this.$el.attr('id')) {
+            console.trace();
         }
 
-        if (this._$window) {
-            this._$window.off('resize.rbHeaderView', this._recalcFunc);
+        if (HeaderView.instance === this) {
+            HeaderView.instance = null;
         }
 
-        Backbone.View.prototype.remove.call(this);
-    },
+        if (this.#$window) {
+            this.#$window.off('resize.rbHeaderView', this.#recalcFunc);
+        }
+    }
 
     /**
      * Render the header.
-     *
-     * Returns:
-     *     RB.HeaderView:
-     *     This view, for chaining.
      */
-    render() {
-        const options = this.options;
-
-        this._$window = $(window);
-        this._$body = options.body || $(document.body);
-        this._$navToggle = $('#nav_toggle');
-        this._$mobileMenuMask = $('<div id="mobile_menu_mask">')
+    onInitialRender() {
+        this.#$navToggle = $('#nav_toggle');
+        this.#$mobileMenuMask = $('<div id="mobile_menu_mask">')
             .on('click touchstart', this._closeMobileMenu.bind(this))
-            .insertAfter(options.$pageSidebar || $('#page-sidebar'));
+            .insertAfter(this.options.$pageSidebar || $('#page-sidebar'));
 
-        this._recalcFunc = _.throttle(this._recalcMobileMode.bind(this), 100);
+        this.#recalcFunc = _.throttle(this.#recalcMobileMode.bind(this), 100);
 
-        this._$window.on('resize.rbHeaderView', this._recalcFunc);
-        this._recalcMobileMode();
+        this.#$window.on('resize.rbHeaderView', this.#recalcFunc);
+        this.#recalcMobileMode();
 
-        this._setupSearch();
-
-        this.isRendered = true;
-
-        return this;
-    },
+        this.#setupSearch();
+    }
 
     /**
      * Handle a click on the mobile navigation menu.
@@ -118,30 +155,30 @@ RB.HeaderView = Backbone.View.extend({
      *     e (Event):
      *         The click event.
      */
-    _handleNavClick(e) {
+    _handleNavClick(e: Event) {
         e.stopPropagation();
         e.preventDefault();
 
-        this._setMobileMenuOpened(!this._mobileMenuOpened);
-    },
+        this.#setMobileMenuOpened(!this.#mobileMenuOpened);
+    }
 
     /**
      * Recalculate whether the header and nav menu is in mobile mode.
      */
-    _recalcMobileMode() {
-        const inMobileMode = this._$navToggle.is(':visible');
+    #recalcMobileMode() {
+        const inMobileMode = this.#$navToggle.is(':visible');
 
         if (inMobileMode === this.inMobileMode) {
             return;
         }
 
         if (!inMobileMode) {
-            this._setMobileMenuOpened(false);
+            this.#setMobileMenuOpened(false);
         }
 
         this.inMobileMode = inMobileMode;
         this.trigger('mobileModeChanged', inMobileMode);
-    },
+    }
 
     /**
      * Close the mobile menu.
@@ -151,16 +188,23 @@ RB.HeaderView = Backbone.View.extend({
      * event.
      */
     _closeMobileMenu() {
-        this._setMobileMenuOpened(false);
+        this.#setMobileMenuOpened(false);
 
         return false;
-    },
+    }
 
     /**
      * Set up the search auto-complete field.
      */
-    _setupSearch() {
-        this._$search = $('#search_field').rbautocomplete({
+    #setupSearch() {
+        $('#search_field').rbautocomplete({
+            clickToURL: true,
+            enterToURL: true,
+            extraParams: {
+                'only-fields': 'display_name,fullname,id,name,' +
+                               'public,summary,url,username',
+                'only-links': '',
+            },
             formatItem: data => {
                 let s;
 
@@ -178,11 +222,12 @@ RB.HeaderView = Backbone.View.extend({
                     s = `${data.name} <span>(${displayName})</span>`;
                 } else if (data.summary) {
                     // For the format of review requests:
-                    if (data.summary.length < this.SEARCH_SUMMARY_TRIM_LEN) {
+                    if (data.summary.length <
+                        HeaderView.SEARCH_SUMMARY_TRIM_LEN) {
                         s = data.summary;
                     } else {
                         s = data.summary.substring(
-                            0, this.SEARCH_SUMMARY_TRIM_LEN);
+                            0, HeaderView.SEARCH_SUMMARY_TRIM_LEN);
                     }
 
                     s += ` <span>(${_.escape(data.id)})</span>`;
@@ -192,12 +237,6 @@ RB.HeaderView = Backbone.View.extend({
             },
             matchCase: false,
             multiple: false,
-            clickToURL: true,
-            selectFirst: false,
-            width: this.DESKTOP_SEARCH_RESULTS_WIDTH,
-            enterToURL: true,
-            resultsParentEl: $('#page-container'),
-            resultsClass: 'ui-autocomplete-results search-results',
             parse: data => {
                 const objects = ['users', 'groups', 'review_requests'];
                 const keys = ['username', 'name', 'summary'];
@@ -217,8 +256,8 @@ RB.HeaderView = Backbone.View.extend({
                             // For users and groups, always show.
                             parsed.push({
                                 data: value,
-                                value: value[key],
                                 result: value[key],
+                                value: value[key],
                             });
                         } else if (value.public) {
                             /*
@@ -227,8 +266,8 @@ RB.HeaderView = Backbone.View.extend({
                              */
                             parsed.push({
                                 data: value,
-                                value: value[key],
                                 result: value[key],
+                                value: value[key],
                             });
                         }
                     }
@@ -236,13 +275,13 @@ RB.HeaderView = Backbone.View.extend({
 
                 return parsed;
             },
+            resultsClass: 'ui-autocomplete-results search-results',
+            resultsParentEl: $('#page-container'),
+            selectFirst: false,
             url: `${SITE_ROOT}api/search/`,
-            extraParams: {
-                'only-fields': 'display_name,fullname,id,name,public,summary,url,username',
-                'only-links': '',
-            },
+            width: HeaderView.DESKTOP_SEARCH_RESULTS_WIDTH,
         });
-    },
+    }
 
     /**
      * Set whether the mobile menu is opened.
@@ -251,22 +290,19 @@ RB.HeaderView = Backbone.View.extend({
      *     opened (boolean):
      *         Whether the menu is open.
      */
-    _setMobileMenuOpened(opened) {
-        if (opened === this._mobileMenuOpened) {
+    #setMobileMenuOpened(opened: boolean) {
+        if (opened === this.#mobileMenuOpened) {
             return;
         }
 
         if (opened) {
-            this._$mobileMenuMask.show();
-            _.defer(() => this._$body.addClass('js-mobile-menu-open'));
+            this.#$mobileMenuMask.show();
+            _.defer(() => this.#$body.addClass('js-mobile-menu-open'));
         } else {
-            this._$body.removeClass('js-mobile-menu-open');
-            _.delay(() => this._$mobileMenuMask.hide(), 300);
+            this.#$body.removeClass('js-mobile-menu-open');
+            _.delay(() => this.#$mobileMenuMask.hide(), 300);
         }
 
-        this._mobileMenuOpened = opened;
-    },
-}, {
-    /** The instance of the HeaderView. */
-    instance: null,
-});
+        this.#mobileMenuOpened = opened;
+    }
+}

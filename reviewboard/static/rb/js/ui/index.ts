@@ -6,6 +6,7 @@ export {
     FieldStateLabelView,
 } from './views/fieldStateLabelView';
 export { FloatingBannerView } from './views/floatingBannerView';
+export { HeaderView } from './views/headerView';
 export { MenuButtonView } from './views/menuButtonView';
 export { MenuType, MenuView } from './views/menuView';
 export { OverlayView } from './views/overlayView';

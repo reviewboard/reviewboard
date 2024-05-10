@@ -10,6 +10,7 @@ import {
 } from 'jasmine-core';
 
 import { PageView } from 'reviewboard/common';
+import { HeaderView } from 'reviewboard/ui';
 
 
 suite('rb/pages/views/PageView', function() {
@@ -39,7 +40,7 @@ suite('rb/pages/views/PageView', function() {
         $pageContent = $('<div>').appendTo($pageContainer);
         $pageSidebar = $(pageSidebarTemplate).appendTo($body);
 
-        spyOn(RB.HeaderView.prototype, '_ensureSingleton');
+        spyOn(HeaderView.prototype, '_ensureSingleton');
 
         pageView = new PageView({
             $body: $body,

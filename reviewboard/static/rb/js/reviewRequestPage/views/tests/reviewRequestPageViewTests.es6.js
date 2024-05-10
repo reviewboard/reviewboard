@@ -46,6 +46,9 @@ suite('rb/reviewRequestPage/views/ReviewRequestPageView', function() {
             .html(template)
             .appendTo($testsScratch);
 
+        const $header = $('<div>')
+            .appendTo($testsScratch);
+
         RB.DnDUploader.instance = null;
         spyOn(RB.HeaderView.prototype, '_ensureSingleton');
 
@@ -62,6 +65,7 @@ suite('rb/reviewRequestPage/views/ReviewRequestPageView', function() {
         });
 
         pageView = new RB.ReviewRequestPage.ReviewRequestPageView({
+            $headerBar: $header,
             el: $el,
             model: page,
         });

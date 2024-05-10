@@ -19,7 +19,10 @@ import {
     ReviewablePageView,
     UnifiedBannerView,
 } from 'reviewboard/reviews';
-import { DnDUploader } from 'reviewboard/ui';
+import {
+    DnDUploader,
+    HeaderView,
+} from 'reviewboard/ui';
 
 
 suite('rb/pages/views/ReviewablePageView', function() {
@@ -41,6 +44,9 @@ suite('rb/pages/views/ReviewablePageView', function() {
             .html(pageTemplate)
             .appendTo($testsScratch);
 
+        const $header = $('<div>')
+            .appendTo($testsScratch);
+
         DnDUploader.instance = null;
 
         $editReview = $container.find('#action-legacy-edit-review');
@@ -60,9 +66,10 @@ suite('rb/pages/views/ReviewablePageView', function() {
             parse: true,
         });
 
-        spyOn(RB.HeaderView.prototype, '_ensureSingleton');
+        spyOn(HeaderView.prototype, '_ensureSingleton');
 
         pageView = new ReviewablePageView({
+            $headerBar: $header,
             el: $container,
             model: page,
         });

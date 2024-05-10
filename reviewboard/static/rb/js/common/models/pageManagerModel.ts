@@ -300,20 +300,6 @@ export class PageManager extends BaseModel<PageManagerAttrs> {
      */
     _renderPage() {
         this.get('page').render();
-
-        const headerView = RB.HeaderView.instance;
-
-        if (!headerView.isRendered) {
-            /*
-             * The RB.PageView subclass did not render the page. It probably
-             * provided its own render() that didn't call the parent. REnder
-             * it here.
-             *
-             * This is deprecated and can be removed in Review Board 5.0.
-             */
-            headerView.render();
-        }
-
         this.set('rendered', true);
     }
 }

@@ -11,6 +11,7 @@ import {
     PageManager,
     PageView,
 } from 'reviewboard/common';
+import { HeaderView } from 'reviewboard/ui';
 
 
 suite('rb/pages/models/PageManager', function() {
@@ -18,8 +19,16 @@ suite('rb/pages/models/PageManager', function() {
     let page: PageView;
 
     beforeEach(function() {
+        spyOn(HeaderView.prototype, '_ensureSingleton');
+
+        const $container = $('<div>').appendTo($testsScratch);
+        const $header = $('<div>').appendTo($testsScratch);
+
         pageManager = new PageManager();
-        page = new PageView();
+        page = new PageView({
+            $headerBar: $header,
+            el: $container,
+        });
 
         spyOn(page, 'render');
     });
@@ -140,13 +149,11 @@ suite('rb/pages/models/PageManager', function() {
         });
 
         it('setPage', function() {
-            const page = new PageView();
             PageManager.setPage(page);
             expect(pageManager.get('page')).toBe(page);
         });
 
         it('getPage', function() {
-            const page = new PageView();
             pageManager.set('page', page);
             expect(PageManager.getPage()).toBe(page);
         });

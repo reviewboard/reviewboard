@@ -20,7 +20,10 @@ import {
     DiffViewerPageView,
     UnifiedBannerView,
 } from 'reviewboard/reviews';
-import { DnDUploader } from 'reviewboard/ui';
+import {
+    DnDUploader,
+    HeaderView,
+} from 'reviewboard/ui';
 
 
 suite('rb/pages/views/DiffViewerPageView', function() {
@@ -145,6 +148,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
         spyOn(page.get('pendingReview'), 'ready').and.resolveTo();
 
         pageView = new DiffViewerPageView({
+            $headerBar: $('<div>').appendTo($testsScratch),
             el: $(pageTemplate).appendTo($testsScratch),
             model: page,
         });
@@ -158,7 +162,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
          */
         spyOn(window.history, 'pushState');
         spyOn(window.history, 'replaceState');
-        spyOn(RB.HeaderView.prototype, '_ensureSingleton');
+        spyOn(HeaderView.prototype, '_ensureSingleton');
 
         spyOn(RB, 'navigateTo');
 
@@ -1218,6 +1222,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             });
 
             pageView = new DiffViewerPageView({
+                $headerBar: $('<div>').appendTo($testsScratch),
                 el: $(pageTemplate).appendTo($testsScratch),
                 model: page,
             });
