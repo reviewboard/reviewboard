@@ -13,8 +13,12 @@ import { BaseView, spina } from '@beanbag/spina';
 import {
     type Review,
     ClientCommChannel,
+    DiffComment,
     EnabledFeatures,
+    FileAttachmentComment,
+    GeneralComment,
     ResourceCollection,
+    ScreenshotComment,
     UserSession,
 } from 'reviewboard/common';
 import {
@@ -395,7 +399,7 @@ interface DiffCommentViewOptions {
     prototypeAttrs: ['thumbnailTemplate'],
 })
 export class DiffCommentView extends BaseCommentView<
-    RB.DiffComment,
+    DiffComment,
     HTMLDivElement,
     DiffCommentViewOptions
 > {
@@ -501,7 +505,7 @@ export class DiffCommentView extends BaseCommentView<
     prototypeAttrs: ['thumbnailTemplate'],
 })
 class FileAttachmentCommentView extends BaseCommentView<
-    RB.FileAttachmentComment
+    FileAttachmentComment
 > {
     static thumbnailTemplate = _.template(dedent`
         <div class="rb-c-review-comment-thumbnail">
@@ -571,7 +575,7 @@ class GeneralCommentView extends BaseCommentView {
     prototypeAttrs: ['thumbnailTemplate'],
 })
 class ScreenshotCommentView extends BaseCommentView<
-    RB.ScreenshotComment
+    ScreenshotComment
 > {
     static thumbnailTemplate = _.template(dedent`
         <div class="rb-c-review-comment-thumbnail">
@@ -1086,6 +1090,7 @@ export class ReviewDialogView extends BaseView<
         <div class="spinner"><span class="ink-c-spinner"></span></div>
         <div class="edit-field body-bottom"></div>
     `);
+    template: _.CompiledTemplate;
 
     /** The review dialog instance. */
     static instance: ReviewDialogView = null;
@@ -1180,17 +1185,17 @@ export class ReviewDialogView extends BaseView<
     _commentViews: BaseCommentView[] = [];
 
     /** The collection of diff comments. */
-    _diffCommentsCollection: ResourceCollection<RB.DiffComment>;
+    _diffCommentsCollection: ResourceCollection<DiffComment>;
 
     /** The collection of file attachment comments. */
     _fileAttachmentCommentsCollection:
-        ResourceCollection<RB.FileAttachmentComment>;
+        ResourceCollection<FileAttachmentComment>;
 
     /** The collection of general comments. */
-    _generalCommentsCollection: ResourceCollection<RB.GeneralComment>;
+    _generalCommentsCollection: ResourceCollection<GeneralComment>;
 
     /** The collection of screenshot comments. */
-    _screenshotCommentsCollection: ResourceCollection<RB.ScreenshotComment>;
+    _screenshotCommentsCollection: ResourceCollection<ScreenshotComment>;
 
     /** The link to show the tips carousel when hidden. */
     #showTips: JQuery = null;
@@ -1216,11 +1221,11 @@ export class ReviewDialogView extends BaseView<
         });
 
         this._diffCommentsCollection =
-            new ResourceCollection<RB.DiffComment>([], {
+            new ResourceCollection<DiffComment>([], {
                 extraQueryData: {
                     'order-by': 'filediff,first_line',
                 },
-                model: RB.DiffComment,
+                model: DiffComment,
                 parentResource: this.model,
             });
 
@@ -1249,8 +1254,8 @@ export class ReviewDialogView extends BaseView<
         });
 
         this._fileAttachmentCommentsCollection =
-            new ResourceCollection<RB.FileAttachmentComment>([], {
-                model: RB.FileAttachmentComment,
+            new ResourceCollection<FileAttachmentComment>([], {
+                model: FileAttachmentComment,
                 parentResource: this.model,
             });
 
@@ -1261,8 +1266,8 @@ export class ReviewDialogView extends BaseView<
         });
 
         this._generalCommentsCollection =
-            new RB.ResourceCollection<RB.FileAttachmentComment>([], {
-                model: RB.GeneralComment,
+            new ResourceCollection<FileAttachmentComment>([], {
+                model: GeneralComment,
                 parentResource: this.model,
             });
 
@@ -1272,8 +1277,8 @@ export class ReviewDialogView extends BaseView<
         });
 
         this._screenshotCommentsCollection =
-            new ResourceCollection<RB.ScreenshotComment>([], {
-                model: RB.ScreenshotComment,
+            new ResourceCollection<ScreenshotComment>([], {
+                model: ScreenshotComment,
                 parentResource: this.model,
             });
 

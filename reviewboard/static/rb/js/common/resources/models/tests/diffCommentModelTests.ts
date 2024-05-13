@@ -1,13 +1,28 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import {
+    BaseComment,
+    BaseResource,
+    DiffComment,
+} from 'reviewboard/common';
+
+
 suite('rb/resources/models/DiffComment', function() {
-    let model;
+    let model: DiffComment;
 
     beforeEach(function() {
         /* Set some sane defaults needed to pass validation. */
-        model = new RB.DiffComment({
+        model = new DiffComment({
             fileDiffID: 16,
-            parentObject: new RB.BaseResource({
+            parentObject: new BaseResource({
                 'public': true,
-            })
+            }),
         });
     });
 
@@ -23,30 +38,30 @@ suite('rb/resources/models/DiffComment', function() {
     describe('parse', function() {
         it('API payloads', function() {
             const data = model.parse({
-                stat: 'ok',
                 diff_comment: {
-                    id: 42,
-                    issue_opened: true,
-                    issue_status: 'resolved',
-                    text_type: 'markdown',
-                    text: 'foo',
-                    first_line: 10,
-                    num_lines: 5,
                     filediff: {
                         id: 1,
                         source_file: 'my-file',
                     },
+                    first_line: 10,
+                    id: 42,
                     interfilediff: {
                         id: 2,
                         source_file: 'my-file',
                     },
+                    issue_opened: true,
+                    issue_status: 'resolved',
+                    num_lines: 5,
+                    text: 'foo',
+                    text_type: 'markdown',
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);
             expect(data.id).toBe(42);
             expect(data.issueOpened).toBe(true);
-            expect(data.issueStatus).toBe(RB.BaseComment.STATE_RESOLVED);
+            expect(data.issueStatus).toBe(BaseComment.STATE_RESOLVED);
             expect(data.richText).toBe(true);
             expect(data.text).toBe('foo');
             expect(data.beginLineNum).toBe(10);
@@ -62,15 +77,15 @@ suite('rb/resources/models/DiffComment', function() {
 
     describe('toJSON', function() {
         it('BaseComment.toJSON called', function() {
-            spyOn(RB.BaseComment.prototype, 'toJSON').and.callThrough();
+            spyOn(BaseComment.prototype, 'toJSON').and.callThrough();
             model.toJSON();
-            expect(RB.BaseComment.prototype.toJSON).toHaveBeenCalled();
+            expect(BaseComment.prototype.toJSON).toHaveBeenCalled();
         });
 
         it('first_line field', function() {
             model.set({
                 beginLineNum: 100,
-                endLineNum: 100
+                endLineNum: 100,
             });
 
             const data = model.toJSON();
@@ -80,7 +95,7 @@ suite('rb/resources/models/DiffComment', function() {
         it('num_lines field', function() {
             model.set({
                 beginLineNum: 100,
-                endLineNum: 105
+                endLineNum: 105,
             });
 
             const data = model.toJSON();
@@ -149,9 +164,9 @@ suite('rb/resources/models/DiffComment', function() {
 
     describe('validate', function() {
         it('Inherited behavior', function() {
-            spyOn(RB.BaseComment.prototype, 'validate');
+            spyOn(BaseComment.prototype, 'validate');
             model.validate({});
-            expect(RB.BaseComment.prototype.validate).toHaveBeenCalled();
+            expect(BaseComment.prototype.validate).toHaveBeenCalled();
         });
 
         describe('beginLineNum/endLineNum', function() {
@@ -182,21 +197,20 @@ suite('rb/resources/models/DiffComment', function() {
                 it('beginLineNum < 0', function() {
                     expect(model.validate({
                         beginLineNum: -1,
-                    })).toBe(RB.DiffComment.strings.BEGINLINENUM_GTE_0);
+                    })).toBe(DiffComment.strings.BEGINLINENUM_GTE_0);
                 });
 
                 it('endLineNum < 0', function() {
                     expect(model.validate({
                         endLineNum: -1,
-                    })).toBe(RB.DiffComment.strings.ENDLINENUM_GTE_0);
+                    })).toBe(DiffComment.strings.ENDLINENUM_GTE_0);
                 });
 
                 it('endLineNum < beginLineNum', function() {
                     expect(model.validate({
                         beginLineNum: 20,
                         endLineNum: 10,
-                    })).toBe(
-                        RB.DiffComment.strings.BEGINLINENUM_LTE_ENDLINENUM);
+                    })).toBe(DiffComment.strings.BEGINLINENUM_LTE_ENDLINENUM);
                 });
             });
         });
@@ -211,7 +225,7 @@ suite('rb/resources/models/DiffComment', function() {
             it('Unset', function() {
                 expect(model.validate({
                     fileDiffID: null,
-                })).toBe(RB.DiffComment.strings.INVALID_FILEDIFF_ID);
+                })).toBe(DiffComment.strings.INVALID_FILEDIFF_ID);
             });
         });
     });

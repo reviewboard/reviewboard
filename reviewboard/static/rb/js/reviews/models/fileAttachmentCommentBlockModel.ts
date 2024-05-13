@@ -7,7 +7,10 @@ import {
     spina,
 } from '@beanbag/spina';
 
-import { FileAttachmentStates } from 'reviewboard/common';
+import {
+    type FileAttachmentComment,
+    FileAttachmentStates,
+} from 'reviewboard/common';
 import {
     type AbstractCommentBlockAttrs,
     AbstractCommentBlock,
@@ -71,7 +74,7 @@ export class FileAttachmentCommentBlock<
      */
     createComment(
         id: number,
-    ): RB.FileAttachmentComment {
+    ): FileAttachmentComment {
         const comment = this.get('review').createFileAttachmentComment(
             id,
             this.get('fileAttachmentID'),

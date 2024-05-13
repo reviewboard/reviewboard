@@ -1,10 +1,26 @@
+import { suite } from '@beanbag/jasmine-suites';
+
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import {
+    BaseComment,
+    BaseResource,
+    GeneralComment,
+} from 'reviewboard/common';
+
+
 suite('rb/resources/models/GeneralComment', function() {
-    let model;
+    let model: GeneralComment;
 
     beforeEach(function() {
         /* Set some sane defaults needed to pass validation. */
-        model = new RB.GeneralComment({
-            parentObject: new RB.BaseResource({
+        model = new GeneralComment({
+            parentObject: new BaseResource({
                 'public': true,
             }),
         });
@@ -13,14 +29,14 @@ suite('rb/resources/models/GeneralComment', function() {
     describe('parse', function() {
         it('API payloads', function() {
             const data = model.parse({
-                stat: 'ok',
                 general_comment: {
                     id: 42,
                     issue_opened: true,
                     issue_status: 'resolved',
-                    text_type: 'markdown',
                     text: 'foo',
+                    text_type: 'markdown',
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);
@@ -34,17 +50,17 @@ suite('rb/resources/models/GeneralComment', function() {
 
     describe('toJSON', function() {
         it('BaseComment.toJSON called', function() {
-            spyOn(RB.BaseComment.prototype, 'toJSON').and.callThrough();
+            spyOn(BaseComment.prototype, 'toJSON').and.callThrough();
             model.toJSON();
-            expect(RB.BaseComment.prototype.toJSON).toHaveBeenCalled();
+            expect(BaseComment.prototype.toJSON).toHaveBeenCalled();
         });
     });
 
     describe('validate', function() {
         it('Inherited behavior', function() {
-            spyOn(RB.BaseComment.prototype, 'validate');
+            spyOn(BaseComment.prototype, 'validate');
             model.validate({});
-            expect(RB.BaseComment.prototype.validate).toHaveBeenCalled();
+            expect(BaseComment.prototype.validate).toHaveBeenCalled();
         });
     });
 });

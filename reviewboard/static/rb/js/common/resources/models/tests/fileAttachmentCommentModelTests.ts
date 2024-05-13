@@ -1,12 +1,27 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import {
+    BaseComment,
+    BaseResource,
+    FileAttachmentComment,
+} from 'reviewboard/common';
+
+
 suite('rb/resources/models/FileAttachmentComment', function() {
-    const baseStrings = RB.BaseResource.strings;
-    let model;
+    const baseStrings = BaseResource.strings;
+    let model: FileAttachmentComment;
 
     beforeEach(function() {
         /* Set some sane defaults needed to pass validation. */
-        model = new RB.FileAttachmentComment({
+        model = new FileAttachmentComment({
             fileAttachmentID: 16,
-            parentObject: new RB.BaseResource({
+            parentObject: new BaseResource({
                 'public': true,
             }),
         });
@@ -15,33 +30,33 @@ suite('rb/resources/models/FileAttachmentComment', function() {
     describe('parse', function() {
         it('API payloads', function() {
             const data = model.parse({
-                stat: 'ok',
                 file_attachment_comment: {
+                    extra_data: {
+                        my_bool: true,
+                        my_int: 123,
+                        my_null: null,
+                        my_str: 'strvalue',
+                    },
+                    file_attachment: {
+                        filename: 'file.txt',
+                        id: 10,
+                    },
                     id: 42,
                     issue_opened: true,
                     issue_status: 'resolved',
-                    text_type: 'markdown',
-                    text: 'foo',
-                    extra_data: {
-                        my_int: 123,
-                        my_bool: true,
-                        my_str: 'strvalue',
-                        my_null: null,
-                    },
                     link_text: 'my-link-text',
-                    thumbnail_html: '<blink>Boo</blink>',
                     review_url: '/review-ui/',
-                    file_attachment: {
-                        id: 10,
-                        filename: 'file.txt',
-                    },
+                    text: 'foo',
+                    text_type: 'markdown',
+                    thumbnail_html: '<blink>Boo</blink>',
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);
             expect(data.id).toBe(42);
             expect(data.issueOpened).toBe(true);
-            expect(data.issueStatus).toBe(RB.BaseComment.STATE_RESOLVED);
+            expect(data.issueStatus).toBe(BaseComment.STATE_RESOLVED);
             expect(data.richText).toBe(true);
             expect(data.text).toBe('foo');
             expect(data.extraData).not.toBe(undefined);
@@ -61,16 +76,16 @@ suite('rb/resources/models/FileAttachmentComment', function() {
 
     describe('toJSON', function() {
         it('BaseComment.toJSON called', function() {
-            spyOn(RB.BaseComment.prototype, 'toJSON').and.callThrough();
+            spyOn(BaseComment.prototype, 'toJSON').and.callThrough();
             model.toJSON();
-            expect(RB.BaseComment.prototype.toJSON).toHaveBeenCalled();
+            expect(BaseComment.prototype.toJSON).toHaveBeenCalled();
         });
 
         describe('diff_against_file_attachment_id field', function() {
             it('When loaded', function() {
                 model.set({
-                    loaded: true,
                     diffAgainstFileAttachmentID: 123,
+                    loaded: true,
                 });
                 const data = model.toJSON();
                 expect(data.diff_against_file_attachment_id).toBe(undefined);
@@ -94,8 +109,8 @@ suite('rb/resources/models/FileAttachmentComment', function() {
         describe('file_attachment_id field', function() {
             it('When loaded', function() {
                 model.set({
-                    loaded: true,
                     fileAttachmentID: 123,
+                    loaded: true,
                 });
 
                 const data = model.toJSON();
@@ -138,10 +153,10 @@ suite('rb/resources/models/FileAttachmentComment', function() {
         it('extra_data field', function() {
             model.set({
                 extraData: {
-                    my_int: 123,
                     my_bool: true,
-                    my_str: 'strvalue',
+                    my_int: 123,
                     my_null: null,
+                    my_str: 'strvalue',
                 },
             });
 
@@ -155,9 +170,9 @@ suite('rb/resources/models/FileAttachmentComment', function() {
 
     describe('validate', function() {
         it('Inherited behavior', function() {
-            spyOn(RB.BaseComment.prototype, 'validate');
+            spyOn(BaseComment.prototype, 'validate');
             model.validate({});
-            expect(RB.BaseComment.prototype.validate).toHaveBeenCalled();
+            expect(BaseComment.prototype.validate).toHaveBeenCalled();
         });
 
         describe('extraData', function() {

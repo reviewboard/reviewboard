@@ -9,6 +9,7 @@ import {
 } from 'jasmine-core';
 
 import {
+    DiffComment,
     ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
@@ -54,7 +55,7 @@ suite('rb/views/CommentDialogView', function() {
             it('With a comment', function() {
                 const dlg = CommentDialogView.create({
                     animate: false,
-                    comment: new RB.DiffComment(),
+                    comment: new DiffComment(),
                     container: $testsScratch,
                     reviewRequestEditor: reviewRequestEditor,
                 });
@@ -67,7 +68,7 @@ suite('rb/views/CommentDialogView', function() {
             it('Replacing an open dialog', function() {
                 const dlg1 = CommentDialogView.create({
                     animate: false,
-                    comment: new RB.DiffComment(),
+                    comment: new DiffComment(),
                     container: $testsScratch,
                     reviewRequestEditor: reviewRequestEditor,
                 });
@@ -75,7 +76,7 @@ suite('rb/views/CommentDialogView', function() {
 
                 const dlg2 = CommentDialogView.create({
                     animate: false,
-                    comment: new RB.DiffComment(),
+                    comment: new DiffComment(),
                     container: $testsScratch,
                     reviewRequestEditor: reviewRequestEditor,
                 });
@@ -96,7 +97,7 @@ suite('rb/views/CommentDialogView', function() {
         beforeEach(function() {
             editor = new CommentEditor({
                 canEdit: true,
-                comment: new RB.DiffComment(),
+                comment: new DiffComment(),
                 publishedCommentsType: 'diff_comments',
                 reviewRequest: reviewRequest,
                 reviewRequestEditor: reviewRequestEditor,
@@ -346,7 +347,7 @@ suite('rb/views/CommentDialogView', function() {
         describe('Height', function() {
             beforeEach(function() {
                 editor = new CommentEditor({
-                    comment: new RB.DiffComment(),
+                    comment: new DiffComment(),
                     reviewRequest: reviewRequest,
                     reviewRequestEditor: reviewRequestEditor,
                 });
@@ -396,7 +397,7 @@ suite('rb/views/CommentDialogView', function() {
                 let parentCommentReplyLink;
 
                 beforeEach(function() {
-                    comment = new RB.DiffComment();
+                    comment = new DiffComment();
                     comment.user = {
                         'name': 'Test User',
                     };
@@ -407,7 +408,7 @@ suite('rb/views/CommentDialogView', function() {
                     parentCommentReplyLink =
                         `/?reply_id=${comment.comment_id}`;
 
-                    commentReply = new RB.DiffComment();
+                    commentReply = new DiffComment();
                     commentReply.user = {
                         'name': 'Test User',
                     };
@@ -465,7 +466,7 @@ suite('rb/views/CommentDialogView', function() {
                 let comment;
 
                 beforeEach(function() {
-                    comment = new RB.DiffComment();
+                    comment = new DiffComment();
                     comment.user = {
                         'name': 'Test User',
                     };
@@ -989,7 +990,7 @@ suite('rb/views/CommentDialogView', function() {
 
                     it('Existing comment with richText=true', function() {
                         editor = new CommentEditor({
-                            comment: new RB.DiffComment({
+                            comment: new DiffComment({
                                 richText: true,
                             }),
                             reviewRequest: reviewRequest,
@@ -1009,7 +1010,7 @@ suite('rb/views/CommentDialogView', function() {
 
                     it('Existing comment with richText=false', function() {
                         editor = new CommentEditor({
-                            comment: new RB.DiffComment({
+                            comment: new DiffComment({
                                 richText: false,
                             }),
                             reviewRequest: reviewRequest,
@@ -1053,7 +1054,7 @@ suite('rb/views/CommentDialogView', function() {
 
                     it('Existing comment with richText=true', function() {
                         editor = new CommentEditor({
-                            comment: new RB.DiffComment({
+                            comment: new DiffComment({
                                 richText: true,
                             }),
                             reviewRequest: reviewRequest,
@@ -1073,7 +1074,7 @@ suite('rb/views/CommentDialogView', function() {
 
                     it('Existing comment with richText=false', function() {
                         editor = new CommentEditor({
-                            comment: new RB.DiffComment({
+                            comment: new DiffComment({
                                 richText: false,
                             }),
                             reviewRequest: reviewRequest,

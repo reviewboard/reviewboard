@@ -7,6 +7,7 @@ import {
     spina,
 } from '@beanbag/spina';
 
+import { type ScreenshotComment } from 'reviewboard/common';
 import {
     type AbstractCommentBlockAttrs,
     AbstractCommentBlock,
@@ -87,7 +88,7 @@ export class ScreenshotCommentBlock
      */
     createComment(
         id: number,
-    ): RB.ScreenshotComment {
+    ): ScreenshotComment {
         return this.get('review').createScreenshotComment(
             id, this.get('screenshotID'), this.get('x'), this.get('y'),
             this.get('width'), this.get('height'));

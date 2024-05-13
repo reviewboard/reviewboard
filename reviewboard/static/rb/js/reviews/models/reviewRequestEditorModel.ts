@@ -10,6 +10,7 @@ import {
 } from '@beanbag/spina';
 
 import {
+    type FileAttachmentComment,
     ResourceCollection,
     FileAttachment,
     FileAttachmentStates,
@@ -69,7 +70,7 @@ export interface ReviewRequestEditorAttrs extends ModelAttributes {
     fileAttachments: ResourceCollection<FileAttachment>;
 
     /** A mapping of file attachment IDs to their comments. */
-    fileAttachmentComments: Record<string, RB.FileAttachmentComment>;
+    fileAttachmentComments: Record<string, FileAttachmentComment>;
 
     /** Whether or not the user can mutate the review request. */
     mutableByUser: boolean;

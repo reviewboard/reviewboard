@@ -1,47 +1,62 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import {
+    BaseComment,
+    BaseResource,
+    ScreenshotComment,
+} from 'reviewboard/common';
+
+
 suite('rb/resources/models/ScreenshotComment', function() {
-    const strings = RB.ScreenshotComment.strings;
-    let model;
+    const strings = ScreenshotComment.strings;
+    let model: ScreenshotComment;
 
     beforeEach(function() {
         /* Set some sane defaults needed to pass validation. */
-        model = new RB.ScreenshotComment({
-            screenshotID: 16,
-            parentObject: new RB.BaseResource({
+        model = new ScreenshotComment({
+            height: 1,
+            parentObject: new BaseResource({
                 'public': true,
             }),
+            screenshotID: 16,
+            width: 1,
             x: 0,
             y: 0,
-            width: 1,
-            height: 1,
         });
     });
 
     describe('parse', function() {
         it('API payloads', function() {
             const data = model.parse({
-                stat: 'ok',
                 screenshot_comment: {
+                    h: 40,
                     id: 42,
                     issue_opened: true,
                     issue_status: 'resolved',
-                    text_type: 'markdown',
+                    screenshot: {
+                        filename: 'image.png',
+                        id: 10,
+                    },
                     text: 'foo',
+                    text_type: 'markdown',
+                    thumbnail_url: '/thumbnail.png',
+                    w: 30,
                     x: 10,
                     y: 20,
-                    w: 30,
-                    h: 40,
-                    thumbnail_url: '/thumbnail.png',
-                    screenshot: {
-                        id: 10,
-                        filename: 'image.png',
-                    },
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);
             expect(data.id).toBe(42);
             expect(data.issueOpened).toBe(true);
-            expect(data.issueStatus).toBe(RB.BaseComment.STATE_RESOLVED);
+            expect(data.issueStatus).toBe(BaseComment.STATE_RESOLVED);
             expect(data.richText).toBe(true);
             expect(data.text).toBe('foo');
             expect(data.x).toBe(10);
@@ -58,9 +73,9 @@ suite('rb/resources/models/ScreenshotComment', function() {
 
     describe('toJSON', function() {
         it('BaseComment.toJSON called', function() {
-            spyOn(RB.BaseComment.prototype, 'toJSON').and.callThrough();
+            spyOn(BaseComment.prototype, 'toJSON').and.callThrough();
             model.toJSON();
-            expect(RB.BaseComment.prototype.toJSON).toHaveBeenCalled();
+            expect(BaseComment.prototype.toJSON).toHaveBeenCalled();
         });
 
         it('x field', function() {
@@ -116,9 +131,9 @@ suite('rb/resources/models/ScreenshotComment', function() {
 
     describe('validate', function() {
         it('Inherited behavior', function() {
-            spyOn(RB.BaseComment.prototype, 'validate');
+            spyOn(BaseComment.prototype, 'validate');
             model.validate({});
-            expect(RB.BaseComment.prototype.validate).toHaveBeenCalled();
+            expect(BaseComment.prototype.validate).toHaveBeenCalled();
         });
 
         describe('x', function() {

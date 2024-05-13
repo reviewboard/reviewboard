@@ -7,6 +7,8 @@ import {
     spina,
 } from '@beanbag/spina';
 
+import { type DiffComment } from 'reviewboard/common';
+
 import {
     type AbstractCommentBlockAttrs,
     AbstractCommentBlock,
@@ -105,7 +107,7 @@ export class DiffCommentBlock
      */
     createComment(
         id: number,
-    ): RB.DiffComment {
+    ): DiffComment {
         return this.get('review').createDiffComment({
             baseFileDiffID: this.get('baseFileDiffID'),
             beginLineNum: this.get('beginLineNum'),

@@ -10,6 +10,7 @@ import {
 
 import {
     type FileAttachment,
+    type FileAttachmentComment,
     type ReviewRequest,
     FileAttachmentStates,
 } from 'reviewboard/common';
@@ -55,7 +56,7 @@ interface FileAttachmentThumbnailViewOptions {
     canEdit?: boolean;
 
     /** The comments on the file attachment. */
-    comments?: RB.FileAttachmentComment[];
+    comments?: FileAttachmentComment[];
 
     /**
      * Whether the thumbnail should be rendered.
@@ -257,13 +258,13 @@ export class FileAttachmentThumbnailView extends BaseView<
     #canCurrentlyEdit: boolean;
 
     /** The processed comments that are usable in the comment dialog. */
-    #comments: RB.FileAttachmentComment[] = [];
+    #comments: FileAttachmentComment[] = [];
 
     /** Whether the comments have been processed. */
     #commentsProcessed: boolean = null;
 
     /** The current draft comment for the file attachment. */
-    #draftComment: RB.FileAttachmentComment = null;
+    #draftComment: FileAttachmentComment = null;
 
     /** Whether the thumbnail supports scrolling. */
     #scrollingThumbnail: boolean = null;

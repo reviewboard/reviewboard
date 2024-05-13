@@ -71,7 +71,7 @@ export interface BaseCommentAttrs extends BaseResourceAttrs {
      * keys in this object are the field names, and the values are the Markdown
      * source of those fields.
      */
-    markdownTextFields: { [key: string]: string };
+    markdownTextFields: Record<string, string>;
 
     /**
      * The contents of the raw text fields, if forceTextType is used and the
@@ -79,7 +79,7 @@ export interface BaseCommentAttrs extends BaseResourceAttrs {
      * object are the field names, and the values are the raw versions of those
      * attributes.
      */
-    rawTextFields: { [key: string]: string };
+    rawTextFields: Record<string, string>;
 
     /** Whether the comment is saved in rich-text (Markdown) format. */
     richText: boolean;
@@ -98,12 +98,12 @@ export interface BaseCommentAttrs extends BaseResourceAttrs {
 export interface BaseCommentResourceData extends BaseResourceResourceData {
     force_text_type: string;
     html: string;
-    html_text_fields: { [key: string]: string };
+    html_text_fields: Record<string, string>;
     include_text_types: string;
     issue_opened: boolean;
     issue_status: string;
-    markdown_text_fields: { [key: string]: string };
-    raw_text_fields: { [key: string]: string };
+    markdown_text_fields: Record<string, string>;
+    raw_text_fields: Record<string, string>;
     rich_text: boolean;
     text: string;
     timestamp: string;
