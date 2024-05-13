@@ -1,4 +1,5 @@
 export { ResourceCollection } from './collections/resourceCollection';
+export { APIToken } from './models/apiTokenModel';
 export {
     BaseComment,
     CommentIssueStatusType,
