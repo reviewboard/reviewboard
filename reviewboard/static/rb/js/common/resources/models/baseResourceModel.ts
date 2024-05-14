@@ -3,6 +3,7 @@
  */
 import {
     type ModelAttributes,
+    type Result,
     BaseModel,
     spina,
 } from '@beanbag/spina';
@@ -124,12 +125,12 @@ interface SyncOptions extends JQuery.AjaxSettings {
 }
 
 
-type SerializerMap = {
+export type SerializerMap = {
     [key: string]: (value: unknown, state: SerializerState) => unknown,
 }
 
 
-type DeserializerMap = {
+export type DeserializerMap = {
     [key: string]: (value: unknown) => unknown,
 }
 
@@ -146,6 +147,11 @@ type DeserializerMap = {
  * should generally be extending toJSON() and parse().
  */
 @spina({
+    automergeAttrs: [
+        'attrToJsonMap',
+        'deserializers',
+        'serializers',
+    ],
     mixins: [ExtraDataMixin],
     prototypeAttrs: [
         'attrToJsonMap',
@@ -153,6 +159,7 @@ type DeserializerMap = {
         'deserializers',
         'expandedFields',
         'extraQueryArgs',
+        'listKey',
         'payloadFileKeys',
         'rspNamespace',
         'serializedAttrs',
@@ -196,8 +203,8 @@ export class BaseResource<
      * These values can be overridden by the caller when making a request.
      * They function as defaults for the queries.
      */
-    static extraQueryArgs: Backbone._Result<{ [key: string]: unknown }> = {};
-    extraQueryArgs: Backbone._Result<{ [key: string]: unknown }>;
+    static extraQueryArgs: Result<{ [key: string]: unknown }> = {};
+    extraQueryArgs: Result<{ [key: string]: unknown }>;
 
     /** Whether or not extra data can be associated on the resource. */
     static supportsExtraData = false;
@@ -242,7 +249,7 @@ export class BaseResource<
      *     object:
      *     The attribute defaults.
      */
-    static defaults(): BaseResourceAttrs {
+    static defaults(): Result<Partial<BaseResourceAttrs>> {
         return {
             extraData: {},
             links: null,
@@ -250,6 +257,18 @@ export class BaseResource<
             parentObject: null,
         };
     }
+
+    /**
+     * Return the key to use when accessing the list resource.
+     *
+     * Returns:
+     *     string:
+     *     The name of the key to use when loading data from the list resource.
+     */
+    static listKey(): Result<string> {
+        return this.rspNamespace + 's';
+    }
+    listKey: Result<string>;
 
     /**********************
      * Instance variables *
@@ -262,17 +281,6 @@ export class BaseResource<
      * and should otherwise be undefined.
      */
     extraData: ExtraData;
-
-    /**
-     * Return the key to use when accessing the list resource.
-     *
-     * Returns:
-     *     string:
-     *     The name of the key to use when loading data from the list resource.
-     */
-    listKey() {
-        return this.rspNamespace + 's';
-    }
 
     /**
      * Initialize the model.

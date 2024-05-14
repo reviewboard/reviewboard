@@ -2,13 +2,17 @@
  * The base model for a comment.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import { UserSession } from '../../models/userSessionModel';
 import * as JSONSerializers from '../utils/serializers';
 import {
     type BaseResourceAttrs,
     type BaseResourceResourceData,
+    type SerializerMap,
     BaseResource,
 } from './baseResourceModel';
 
@@ -125,8 +129,8 @@ export class BaseComment<
      *     BaseCommentAttrs:
      *     The default values for the model attributes.
      */
-    static defaults(): BaseCommentAttrs {
-        return _.defaults({
+    static defaults(): Result<Partial<BaseCommentAttrs>> {
+        return {
             forceTextType: null,
             html: null,
             includeTextTypes: null,
@@ -136,7 +140,7 @@ export class BaseComment<
             rawTextFields: {},
             richText: null,
             text: '',
-        }, super.defaults());
+        };
     }
 
     /**
@@ -161,7 +165,7 @@ export class BaseComment<
 
     static supportsExtraData = true;
 
-    static attrToJsonMap = {
+    static attrToJsonMap: { [key: string]: string } = {
         forceTextType: 'force_text_type',
         includeTextTypes: 'include_text_types',
         issueOpened: 'issue_opened',
@@ -185,7 +189,7 @@ export class BaseComment<
         'html',
     ];
 
-    static serializers = {
+    static serializers: SerializerMap = {
         forceTextType: JSONSerializers.onlyIfValue,
         includeTextTypes: JSONSerializers.onlyIfValue,
         issueStatus: function(value) {

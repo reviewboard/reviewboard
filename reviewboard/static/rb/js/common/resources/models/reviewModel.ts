@@ -2,12 +2,17 @@
  * A review.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import * as JSONSerializers from '../utils/serializers';
 import {
     type BaseResourceAttrs,
     type BaseResourceResourceData,
+    type DeserializerMap,
+    type SerializerMap,
     BaseResource,
 } from './baseResourceModel';
 import { ReviewReply } from './reviewReplyModel';
@@ -162,8 +167,8 @@ export class Review<
      *     ReviewAttrs:
      *     The attribute defaults.
      */
-    static defaults(): ReviewAttrs {
-        return _.defaults({
+    static defaults(): Result<Partial<ReviewAttrs>> {
+        return {
             'authorName': null,
             'bodyBottom': null,
             'bodyBottomRichText': false,
@@ -178,12 +183,12 @@ export class Review<
             'rawTextFields': {},
             'shipIt': false,
             'timestamp': null,
-        }, super.defaults());
+        };
     }
 
     static rspNamespace = 'review';
 
-    static attrToJsonMap = {
+    static attrToJsonMap: { [key: string]: string } = {
         bodyBottom: 'body_bottom',
         bodyBottomRichText: 'body_bottom_text_type',
         bodyTop: 'body_top',
@@ -204,7 +209,7 @@ export class Review<
         'public',
     ];
 
-    static deserializedAttrs = [
+    static deserializedAttrs: DeserializerMap = [
         'shipIt',
         'bodyTop',
         'bodyBottom',
@@ -212,7 +217,7 @@ export class Review<
         'timestamp',
     ];
 
-    static serializers = {
+    static serializers: SerializerMap = {
         'bodyBottomRichText': JSONSerializers.textType,
         'bodyTopRichText': JSONSerializers.textType,
         'forceTextType': JSONSerializers.onlyIfValue,

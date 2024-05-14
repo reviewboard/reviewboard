@@ -2,7 +2,11 @@
  * A review request.
  */
 
-import { Collection, spina } from '@beanbag/spina';
+import {
+    type Result,
+    Collection,
+    spina,
+} from '@beanbag/spina';
 
 import { UserSession } from '../../models/userSessionModel';
 import {
@@ -163,8 +167,8 @@ export class ReviewRequest extends BaseResource<
      *     ReviewRequestAttrs:
      *     Default values for the model attributes.
      */
-    static defaults(): ReviewRequestAttrs {
-        return _.defaults({
+    static defaults(): Result<Partial<ReviewRequestAttrs>> {
+        return {
             approvalFailure: null,
             approved: false,
             branch: null,
@@ -188,7 +192,7 @@ export class ReviewRequest extends BaseResource<
             targetPeople: [],
             testingDone: null,
             testingDoneRichText: false,
-        }, super.defaults());
+        };
     }
 
     static rspNamespace = 'review_request';
@@ -198,7 +202,7 @@ export class ReviewRequest extends BaseResource<
         'include-text-types': 'raw',
     };
 
-    static attrToJsonMap = {
+    static attrToJsonMap: { [key: string]: string } = {
         approvalFailure: 'approval_failure',
         bugsClosed: 'bugs_closed',
         closeDescription: 'close_description',

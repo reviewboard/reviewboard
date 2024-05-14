@@ -1,10 +1,14 @@
 /** The file attachment resource model. */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import { onlyIfNew } from '../utils/serializers';
 import {
     type BaseResourceAttrs,
+    type SerializerMap,
     BaseResource,
 } from './baseResourceModel';
 
@@ -104,26 +108,24 @@ export class FileAttachment extends BaseResource<FileAttachmentAttrs> {
      *     object:
      *     The attribute defaults.
      */
-    static defaults(): FileAttachmentAttrs {
-        return _.defaults({
-            'attachmentHistoryID': null,
-            'caption': null,
-            'downloadURL': null,
-            'file': null,
-            'filename': null,
-            'publishedCaption': null,
-            'reviewURL': null,
-            'revision': null,
-            'state': FileAttachmentStates.NEW,
-            'thumbnailHTML': null,
-        }, super.defaults());
-    }
+    static defaults: Result<Partial<FileAttachmentAttrs>> = {
+        'attachmentHistoryID': null,
+        'caption': null,
+        'downloadURL': null,
+        'file': null,
+        'filename': null,
+        'publishedCaption': null,
+        'reviewURL': null,
+        'revision': null,
+        'state': FileAttachmentStates.NEW,
+        'thumbnailHTML': null,
+    };
 
     static rspNamespace = 'file_attachment';
     static payloadFileKeys = ['path'];
     static supportsExtraData = true;
 
-    static attrToJsonMap = {
+    static attrToJsonMap: { [key: string]: string } = {
         attachmentHistoryID: 'attachment_history_id',
         downloadURL: 'url',
         file: 'path',
@@ -149,7 +151,7 @@ export class FileAttachment extends BaseResource<FileAttachmentAttrs> {
         'thumbnailHTML',
     ];
 
-    static serializers = {
+    static serializers: SerializerMap = {
         'attachmentHistoryID': onlyIfNew,
         'file': onlyIfNew,
     };
