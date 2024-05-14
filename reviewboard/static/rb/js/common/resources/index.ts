@@ -4,6 +4,7 @@ export {
     CommentIssueStatusType,
 } from './models/baseCommentModel';
 export { BaseResource } from './models/baseResourceModel';
+export { DefaultReviewer } from './models/defaultReviewerModel';
 export { DraftFileAttachment } from './models/draftFileAttachmentModel';
 export {
     DraftResourceChildModelMixin,
