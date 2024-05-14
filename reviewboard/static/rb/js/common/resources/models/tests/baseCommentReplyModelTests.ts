@@ -1,13 +1,27 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import {
+    BaseResource,
+    BaseCommentReply,
+} from 'reviewboard/common';
+
+
 suite('rb/resources/models/BaseCommentReply', function() {
-    let parentObject;
-    let model;
+    let parentObject: BaseResource;
+    let model: BaseCommentReply;
 
     beforeEach(function() {
-        parentObject = new RB.BaseResource({
+        parentObject = new BaseResource({
             'public': true,
         });
 
-        model = new RB.BaseCommentReply({
+        model = new BaseCommentReply({
             parentObject: parentObject,
         });
 
@@ -39,12 +53,12 @@ suite('rb/resources/models/BaseCommentReply', function() {
 
         it('API payloads', function() {
             const data = model.parse({
-                stat: 'ok',
                 my_comment: {
                     id: 42,
                     text: 'foo',
                     text_type: 'markdown',
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);
@@ -85,8 +99,8 @@ suite('rb/resources/models/BaseCommentReply', function() {
         describe('reply_to_id field', function() {
             it('When loaded', function() {
                 model.set({
-                    replyToID: 10,
                     loaded: true,
+                    replyToID: 10,
                 });
                 const data = model.toJSON();
                 expect(data.reply_to_id).toBe(undefined);
@@ -94,8 +108,8 @@ suite('rb/resources/models/BaseCommentReply', function() {
 
             it('When not loaded', function() {
                 model.set({
-                    replyToID: 10,
                     loaded: false,
+                    replyToID: 10,
                 });
                 const data = model.toJSON();
                 expect(data.reply_to_id).toBe(10);
@@ -136,7 +150,7 @@ suite('rb/resources/models/BaseCommentReply', function() {
             it('Unset', function() {
                 expect(model.validate({
                     parentObject: null,
-                })).toBe(RB.BaseResource.strings.UNSET_PARENT_OBJECT);
+                })).toBe(BaseResource.strings.UNSET_PARENT_OBJECT);
             });
         });
     });

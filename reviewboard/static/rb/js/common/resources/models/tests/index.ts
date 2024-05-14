@@ -1,4 +1,5 @@
 import './baseCommentModelTests';
+import './baseCommentReplyModelTests';
 import './baseResourceModelTests';
 import './defaultReviewerModelTests';
 import './diffCommentModelTests';

@@ -4,9 +4,11 @@ export {
     BaseComment,
     CommentIssueStatusType,
 } from './models/baseCommentModel';
+export { BaseCommentReply } from './models/baseCommentReplyModel';
 export { BaseResource } from './models/baseResourceModel';
 export { DefaultReviewer } from './models/defaultReviewerModel';
 export { DiffComment } from './models/diffCommentModel';
+export { DiffCommentReply } from './models/diffCommentReplyModel';
 export { DraftFileAttachment } from './models/draftFileAttachmentModel';
 export {
     DraftResourceChildModelMixin,
@@ -18,11 +20,16 @@ export {
     FileAttachmentStates,
 } from './models/fileAttachmentModel';
 export { FileAttachmentComment } from './models/fileAttachmentCommentModel';
+export {
+    FileAttachmentCommentReply,
+} from './models/fileAttachmentCommentReplyModel';
 export { GeneralComment } from './models/generalCommentModel';
+export { GeneralCommentReply } from './models/generalCommentReplyModel';
 export { Repository } from './models/repositoryModel';
 export { Review } from './models/reviewModel';
 export { ReviewGroup } from './models/reviewGroupModel';
 export { ReviewReply } from './models/reviewReplyModel';
 export { ReviewRequest } from './models/reviewRequestModel';
 export { ScreenshotComment } from './models/screenshotCommentModel';
+export { ScreenshotCommentReply } from './models/screenshotCommentReplyModel';
 export * as JSONSerializers from './utils/serializers';
