@@ -1,14 +1,39 @@
+import { suite } from '@beanbag/jasmine-suites';
+import { spina } from '@beanbag/spina';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { DefaultReviewer } from 'reviewboard/common';
+import {
+    type DefaultReviewerAttrs,
+} from 'reviewboard/common/resources/models/defaultReviewerModel';
+import { ConfigFormsResourceListItem } from 'reviewboard/configForms';
+
+
 suite('rb/configForms/models/ResourceListItem', function() {
-    const TestListItem = RB.Config.ResourceListItem.extend({
-        syncAttrs: ['name', 'fileRegex'],
-        createResource: attrs => new RB.DefaultReviewer(attrs),
-    });
-    let resource;
+    @spina
+    class TestListItem extends ConfigFormsResourceListItem<
+        DefaultReviewerAttrs,
+        DefaultReviewer
+    > {
+        static syncAttrs = ['name', 'fileRegex'];
+        createResource(
+            attrs: DefaultReviewerAttrs,
+        ): DefaultReviewer {
+            return new DefaultReviewer(attrs);
+        }
+    }
+
+    let resource: DefaultReviewer;
 
     beforeEach(function() {
-        resource = new RB.DefaultReviewer({
-            name: 'my-name',
+        resource = new DefaultReviewer({
             fileRegex: '.*',
+            name: 'my-name',
         });
     });
 
@@ -26,9 +51,9 @@ suite('rb/configForms/models/ResourceListItem', function() {
         describe('On creation', function() {
             it('With existing resource', function() {
                 const listItem = new TestListItem({
-                    resource: resource,
-                    name: 'dummy',
                     fileRegex: '/foo/.*',
+                    name: 'dummy',
+                    resource: resource,
                 });
 
                 expect(listItem.get('name')).toBe('my-name');
@@ -37,9 +62,9 @@ suite('rb/configForms/models/ResourceListItem', function() {
 
             it('With created resource', function() {
                 const listItem = new TestListItem({
+                    fileRegex: '/foo/.*',
                     id: 123,
                     name: 'new-name',
-                    fileRegex: '/foo/.*',
                 });
 
                 expect(listItem.get('name')).toBe('new-name');
@@ -54,7 +79,7 @@ suite('rb/configForms/models/ResourceListItem', function() {
     });
 
     describe('Event mirroring', function() {
-        let listItem;
+        let listItem: TestListItem;
 
         beforeEach(function() {
             listItem = new TestListItem({

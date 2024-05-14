@@ -45,7 +45,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/admin/views/tests/inlineFormGroupViewTests.es6.js',
             'rb/js/admin/views/tests/inlineFormViewTests.es6.js',
             'rb/js/collections/tests/filteredCollectionTests.es6.js',
-            'rb/js/configForms/models/tests/resourceListItemModelTests.es6.js',
             'rb/js/diffviewer/models/tests/diffCommitModelTests.es6.js',
             'rb/js/diffviewer/models/tests/diffRevisionModelTests.es6.js',
             'rb/js/diffviewer/models/tests/paginationModelTests.es6.js',
@@ -164,9 +163,6 @@ PIPELINE_JAVASCRIPT = {
     'config-forms': {
         'source_filenames': (
             'rb/js/configForms/index.ts',
-
-            # Legacy JavaScript
-            'rb/js/configForms/models/resourceListItemModel.es6.js',
         ),
         'output_filename': 'rb/js/config-forms.min.js',
     },
