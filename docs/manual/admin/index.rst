@@ -168,6 +168,7 @@ That's not all you can set up.
   * :ref:`Jenkins CI <integrations-jenkins-ci>`
   * :ref:`Matrix <integrations-matrix>`
   * :doc:`Mattermost <integrations/mattermost>`
+  * :ref:`Microsoft Teams <integrations-microsoft-teams>`
   * :doc:`Slack <integrations/slack>`
   * :doc:`Travis CI <integrations/travis-ci>`
   * :doc:`Trello <integrations/trello>`
