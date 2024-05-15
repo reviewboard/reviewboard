@@ -1,14 +1,76 @@
-(function() {
+/**
+ * Renders and manages a page of API tokens.
+ */
+
+import {
+    type EventsHash,
+    type Result,
+    BaseCollection,
+    BaseView,
+    spina,
+} from '@beanbag/spina';
+import {
+    paint,
+} from '@beanbag/ink';
+import CodeMirror from 'codemirror';
+import {
+    ConfigFormsList,
+    ConfigFormsListItemView,
+    ConfigFormsListView,
+} from 'djblets/configForms';
+import { type ListItemAction } from 'djblets/configForms/models/listItemModel';
+import {
+    type ListItemViewRenderContext,
+} from 'djblets/configForms/views/listItemView';
+import moment from 'moment';
+
+import {
+    APIToken,
+    UserSession,
+} from 'reviewboard/common';
+import {
+    type APITokenAttrs,
+} from 'reviewboard/common/resources/models/apiTokenModel';
+import { ConfigFormsResourceListItem } from 'reviewboard/configForms';
+import {
+    ResourceListItemAttrs,
+} from 'reviewboard/configForms/models/resourceListItemModel';
+import {
+    DateTimeInlineEditorView,
+    InlineEditorView,
+} from 'reviewboard/ui';
 
 
 const POLICY_READ_WRITE = 'rw';
 const POLICY_READ_ONLY = 'ro';
 const POLICY_CUSTOM = 'custom';
 const POLICY_LABELS = {
-    [POLICY_READ_WRITE]: gettext('Full access'),
-    [POLICY_READ_ONLY]: gettext('Read-only'),
-    [POLICY_CUSTOM]: gettext('Custom')
+    [POLICY_CUSTOM]: _`Custom`,
+    [POLICY_READ_ONLY]: _`Read-only`,
+    [POLICY_READ_WRITE]: _`Full access`,
 };
+
+
+/**
+ * Attributes for the APITokenItem model.
+ *
+ * Version Added:
+ *     8.0
+ */
+interface APITokenItemAttrs extends ResourceListItemAttrs<APIToken> {
+    /**
+     * The type of policy.
+     *
+     * This is one of POLICY_READ_WRITE, POLICY_READ_ONLY, or POLICY_CUSTOM.
+     */
+    policyType: string;
+
+    /** The date and time of last use for the token. */
+    lastUsed: string | null;
+
+    /** The name of the local site that the token is limited to. */
+    localSiteName: string | null;
+}
 
 
 /**
@@ -17,15 +79,20 @@ const POLICY_LABELS = {
  * This provides actions for editing the policy type for the token and
  * removing the token.
  */
-const APITokenItem = RB.Config.ResourceListItem.extend({
-    defaults: _.defaults({
-        policyType: POLICY_READ_WRITE,
+@spina
+class APITokenItem extends ConfigFormsResourceListItem<
+    APITokenAttrs,
+    APIToken,
+    APITokenItemAttrs
+> {
+    static defaults: Result<Partial<APITokenItemAttrs>> = {
         lastUsed: null,
         localSiteName: null,
+        policyType: POLICY_READ_WRITE,
         showRemove: true,
-    }, RB.Config.ResourceListItem.prototype.defaults),
+    };
 
-    syncAttrs: [
+    static syncAttrs = [
         'deprecated',
         'expired',
         'expires',
@@ -37,7 +104,17 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
         'policy',
         'tokenValue',
         'valid',
-    ],
+    ];
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The collection that owns the item. */
+    collection: APITokenItemCollection;
+
+    /** The policy menu. */
+    #policyMenuAction: ListItemAction;
 
     /**
      * Initialize the item.
@@ -45,30 +122,30 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
      * This computes the type of policy used, for display, and builds the
      * policy actions menu.
      */
-    initialize() {
-        _super(this).initialize.apply(this, arguments);
+    initialize(attributes?: Partial<APITokenItemAttrs>) {
+        super.initialize(attributes);
 
         this.on('change:policyType', this._onPolicyTypeChanged, this);
 
         const policy = this.get('policy') || {};
         const policyType = this._guessPolicyType(policy);
 
-        this._policyMenuAction = {
-            id: 'policy',
-            label: POLICY_LABELS[policyType],
+        this.#policyMenuAction = {
             children: [
                 this._makePolicyAction(POLICY_READ_WRITE),
                 this._makePolicyAction(POLICY_READ_ONLY),
                 this._makePolicyAction(POLICY_CUSTOM, {
+                    dispatchOnClick: true,
                     id: 'policy-custom',
-                    dispatchOnClick: true
-                })
-            ]
+                }),
+            ],
+            id: 'policy',
+            label: POLICY_LABELS[policyType],
         };
-        this.actions.unshift(this._policyMenuAction);
+        this.actions.unshift(this.#policyMenuAction);
 
         this.set('policyType', policyType);
-    },
+    }
 
     /**
      * Create an APIToken resource for the given attributes.
@@ -76,13 +153,19 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
      * Args:
      *     attrs (object):
      *         Additional attributes for the APIToken.
+     *
+     * Returns:
+     *     RB.APIToken:
+     *     The new APIToken instance.
      */
-    createResource(attrs) {
-        return new RB.APIToken(_.defaults({
-            userName: RB.UserSession.instance.get('username'),
-            localSitePrefix: this.collection.localSitePrefix
+    createResource(
+        attrs: APITokenAttrs,
+    ): APIToken {
+        return new APIToken(Object.assign({
+            localSitePrefix: this.collection.localSitePrefix,
+            userName: UserSession.instance.get('username'),
         }, attrs));
-    },
+    }
 
     /**
      * Set the provided expiration date on the token and save it.
@@ -92,9 +175,9 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
      *         The new expiration date for the token. If this is an
      *         empty string, the token will be set to have no expiration.
      */
-    saveExpires(expires) {
+    saveExpires(expires: string) {
         this._saveAttribute('expires', expires);
-    },
+    }
 
     /**
      * Set the provided note on the token and save it.
@@ -103,9 +186,9 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
      *     note (string):
      *         The new note for the token.
      */
-    saveNote(note) {
+    saveNote(note: string) {
         this._saveAttribute('note', note);
-    },
+    }
 
     /**
      * Set the provided policy on the token and save it.
@@ -118,9 +201,9 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    savePolicy(policy) {
+    savePolicy(policy: string) {
         return this._saveAttribute('policy', policy);
-    },
+    }
 
     /**
      * Set an attribute on the token and save it.
@@ -139,11 +222,16 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    async _saveAttribute(attr, value) {
+    async _saveAttribute<
+        TAttrType extends Backbone._StringKey<APITokenAttrs>
+    >(
+        attr: TAttrType,
+        value: APITokenAttrs[A],
+    ) {
         await this.resource.ready();
         this.resource.set(attr, value);
         await this.resource.save();
-    },
+    }
 
     /**
      * Guess the policy type for a given policy definition.
@@ -161,15 +249,15 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
      *     string:
      *     The policy type enumeration corresponding to the policy.
      */
-    _guessPolicyType(policy) {
-        if (_.isEqual(policy, RB.APIToken.defaultPolicies.readOnly)) {
+    _guessPolicyType(policy: unknown) {
+        if (_.isEqual(policy, APIToken.defaultPolicies.readOnly)) {
             return POLICY_READ_ONLY;
-        } else if (_.isEqual(policy, RB.APIToken.defaultPolicies.readWrite)) {
+        } else if (_.isEqual(policy, APIToken.defaultPolicies.readWrite)) {
             return POLICY_READ_WRITE;
         } else {
             return POLICY_CUSTOM;
         }
-    },
+    }
 
     /**
      * Create and return an action for the policy menu.
@@ -185,15 +273,18 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
      *     options (object):
      *         Additional options to include in the new action definition.
      */
-    _makePolicyAction(policyType, options) {
+    _makePolicyAction(
+        policyType: string,
+        options?: Partial<ListItemAction>,
+    ) {
         return _.defaults({
             label: POLICY_LABELS[policyType],
-            type: 'radio',
             name: 'policy-type',
             propName: 'policyType',
-            radioValue: policyType
+            radioValue: policyType,
+            type: 'radio',
         }, options);
-    },
+    }
 
     /**
      * Handler for when the policy type changes.
@@ -207,15 +298,15 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
     _onPolicyTypeChanged() {
         const policyType = this.get('policyType');
 
-        this._policyMenuAction.label = POLICY_LABELS[policyType];
+        this.#policyMenuAction.label = POLICY_LABELS[policyType];
         this.trigger('actionsChanged');
 
         let newPolicy = null;
 
         if (policyType === POLICY_READ_ONLY) {
-            newPolicy = RB.APIToken.defaultPolicies.readOnly;
+            newPolicy = APIToken.defaultPolicies.readOnly;
         } else if (policyType === POLICY_READ_WRITE) {
-            newPolicy = RB.APIToken.defaultPolicies.readWrite;
+            newPolicy = APIToken.defaultPolicies.readWrite;
         } else {
             return;
         }
@@ -226,7 +317,19 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
             this.savePolicy(newPolicy);
         }
     }
-});
+}
+
+
+/**
+ * Options for the APITokenItemCollection.
+ *
+ * Version Added:
+ *     8.0
+ */
+interface APITokenItemCollectionOptions {
+    /** The URL prefix to use for the local site, if present. */
+    localSitePrefix: string;
+}
 
 
 /**
@@ -236,8 +339,19 @@ const APITokenItem = RB.Config.ResourceListItem.extend({
  * a LocalSite URL prefix attached to it, for use in API calls in
  * APITokenItem.
  */
-const APITokenItemCollection = Backbone.Collection.extend({
-    model: APITokenItem,
+@spina
+class APITokenItemCollection extends BaseCollection<
+    APITokenItem,
+    APITokenItemCollectionOptions
+> {
+    static model = APITokenItem;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The URL prefix to add for Local Site specific tokens. */
+    localSitePrefix: string;
 
     /**
      * Initialize the collection.
@@ -253,10 +367,29 @@ const APITokenItemCollection = Backbone.Collection.extend({
      *     localSitePrefix (string):
      *         The URL prefix for the current local site, if any.
      */
-    initialize(models, options) {
+    initialize(
+        models: APITokenItem[],
+        options: APITokenItemCollectionOptions,
+    ) {
         this.localSitePrefix = options.localSitePrefix;
     }
-});
+}
+
+
+/**
+ * Options for the PolicyEditorView.
+ *
+ * Version Added:
+ *     8.0
+ */
+interface PolicyEditorViewOptions {
+    /**
+     * The previous policy type.
+     *
+     * This is used when restoring the value after the edit has been cancelled.
+     */
+    prevPolicyType: string;
+}
 
 
 /**
@@ -266,117 +399,118 @@ const APITokenItemCollection = Backbone.Collection.extend({
  * editor is set to allow easy editing of a JSON payload, complete with
  * lintian checking. Only valid policy payloads can be saved to the server.
  */
-const PolicyEditorView = Backbone.View.extend({
-    id: 'custom_policy_editor',
+@spina
+class PolicyEditorView extends BaseView<
+    APITokenItem,
+    HTMLDivElement,
+    PolicyEditorViewOptions
+> {
+    static id = 'custom_policy_editor';
 
-    template: _.template([
-        '<p><%= instructions %></p>',
-        '<textarea></textarea>'
-    ].join('')),
+    static template = _.template(dedent`
+        <p><%= instructions %></p>
+        <textarea></textarea>
+    `);
+    template: _.CompiledTemplate;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The CodeMirror instance. */
+    #codeMirror: CodeMirror.Editor = null;
+
+    /** The previous policy type to restore if the edit is cancelled. */
+    #prevPolicyType: string;
+
+    /** The policy editor <textarea> element. */
+    #$policy: JQuery<HTMLTextAreaElement> = null;
+
+    /** The save buttons. */
+    #$saveButtons: JQuery = null;
 
     /**
      * Initialize the editor.
      *
      * Args:
-     *     options (object):
+     *     options (PolicyEditorViewOptions):
      *         Additional options for view construction.
-     *
-     * Option Args:
-     *     prevPolicyType (string):
-     *         The previous policy type, to use when restoring the value after
-     *         the edit has been cancelled.
      */
-    initialize(options) {
-        this.prevPolicyType = options.prevPolicyType;
-
-        this._codeMirror = null;
-        this._$policy = null;
-        this._$saveButtons = null;
-    },
+    initialize(options: PolicyEditorViewOptions) {
+        this.#prevPolicyType = options.prevPolicyType;
+    }
 
     /**
      * Render the editor.
      *
      * The CodeMirror editor will be set up and configured, and then the
      * view will be placed inside a modalBox.
-     *
-     * Returns:
-     *     PolicyEditorView:
-     *     This object, for chaining.
      */
-    render() {
+    protected onRender() {
         let policy = this.model.get('policy');
 
         if (_.isEmpty(policy)) {
-            policy = RB.APIToken.defaultPolicies.custom;
+            policy = APIToken.defaultPolicies.custom;
         }
 
-        this.$el.html(this.template({
-            instructions: interpolate(
-                gettext('You can limit access to the API through a custom policy. See the <a href="%s" target="_blank">documentation</a> on how to write policies.'),
-                [MANUAL_URL + 'webapi/2.0/api-token-policy/'])
+        const manualURL = MANUAL_URL + 'webapi/2.0/api-token-policy/';
+
+        this.$el.html(PolicyEditorView.template({
+            instructions: _`
+                You can limit access to the API through a custom policy. See
+                the <a href="${manualURL}" target="_blank">documentation</a>
+                on how to write policies.
+            `,
         }));
 
 
-        this._$policy = this.$('textarea')
+        this.#$policy = (this.$('textarea') as JQuery<HTMLTextAreaElement>)
             .val(JSON.stringify(policy, null, '  '));
 
+        const buttons = paint<HTMLButtonElement[]>`
+            <Ink.Button onClick=${() => this.cancel()}>
+             ${_`Cancel`}
+            </Ink.Button>
+            <Ink.Button class="save-button"
+                        onClick=${() => this.save(false)}>
+             ${_`Save and continue editing`}
+            </Ink.Button>
+            <Ink.Button type="primary" class="save-button"
+                        onClick=${() => this.save(true)}>
+             ${_`Save`}
+            </Ink.Button>
+        `;
         this.$el.modalBox({
-            title: gettext('Custom Token Access Policy'),
-            buttons: [
-                Ink.paintComponent(
-                    'Ink.Button',
-                    {
-                        onClick: () => this.cancel(),
-                    },
-                    _`Cancel`,
-                ),
-                Ink.paintComponent(
-                    'Ink.Button',
-                    {
-                        class: 'save-button',
-                        onClick: () => this.save(false),
-                    },
-                    _`Save and continue editing`,
-                ),
-                Ink.paintComponent(
-                    'Ink.Button',
-                    {
-                        class: 'save-button',
-                        onClick: () => this.save(true),
-                        type: 'primary',
-                    },
-                    _`Save`,
-                ),
-            ]
+            buttons: buttons,
+            title: _`Custom Token Access Policy`,
         });
 
-        this._$saveButtons = this.$el.modalBox('buttons').find('.save-button');
+        this.#$saveButtons = this.$el.modalBox('buttons').find('.save-button');
 
-        this._codeMirror = CodeMirror.fromTextArea(this._$policy[0], {
+        this.#codeMirror = CodeMirror.fromTextArea(this.#$policy[0], {
+            gutters: ['CodeMirror-lint-markers'],
+            lineNumbers: true,
+            lineWrapping: true,
+            lint: {
+                onUpdateLinting: this._onUpdateLinting.bind(this),
+            },
+            matchBrackets: true,
             mode: {
                 highlightFormatting: true,
                 name: 'application/json',
             },
-            lineNumbers: true,
-            lineWrapping: true,
-            matchBrackets: true,
-            lint: {
-                onUpdateLinting: _.bind(this._onUpdateLinting, this)
-            },
-            gutters: ['CodeMirror-lint-markers'],
             styleSelectedText: true,
             theme: 'rb default',
         });
-        this._codeMirror.focus();
-    },
+        this.#codeMirror.focus();
+    }
 
     /**
      * Remove the policy editor from the page.
      */
-    remove() {
+    protected onRemove() {
         this.$el.modalBox('destroy');
-    },
+    }
 
     /**
      * Cancel the editor.
@@ -384,9 +518,9 @@ const PolicyEditorView = Backbone.View.extend({
      * The previously-selected policy type will be set on the model.
      */
     cancel() {
-        this.model.set('policyType', this.prevPolicyType);
+        this.model.set('policyType', this.#prevPolicyType);
         this.remove();
-    },
+    }
 
     /**
      * Save the editor.
@@ -397,8 +531,8 @@ const PolicyEditorView = Backbone.View.extend({
      *     closeOnSave (boolean):
      *         Whether the editor should close after saving.
      */
-    async save(closeOnSave) {
-        const policyStr = this._codeMirror.getValue().trim();
+    async save(closeOnSave: boolean) {
+        const policyStr = this.#codeMirror.getValue().trim();
         let policy;
 
         try {
@@ -431,7 +565,7 @@ const PolicyEditorView = Backbone.View.extend({
                 alert(err.xhr.errorPayload.err.msg);
             }
         }
-    },
+    }
 
     /**
      * Handler for when lintian checking has run.
@@ -442,10 +576,10 @@ const PolicyEditorView = Backbone.View.extend({
      *     annotationsNotSorted (Array):
      *         An array of the linter annotations.
      */
-    _onUpdateLinting(annotationsNotSorted) {
-        this._$saveButtons.prop('disabled', annotationsNotSorted.length > 0);
+    _onUpdateLinting(annotationsNotSorted: unknown[]) {
+        this.#$saveButtons.prop('disabled', annotationsNotSorted.length > 0);
     }
-});
+}
 
 
 /**
@@ -457,15 +591,17 @@ const PolicyEditorView = Backbone.View.extend({
  * This also handles deleting the token when the Remove action is clicked,
  * and displaying the policy editor when choosing a custom policy.
  */
-const APITokenItemView = Djblets.Config.ListItemView.extend({
-    EMPTY_NOTE_PLACEHOLDER: gettext('Click to describe this token'),
+@spina
+class APITokenItemView extends ConfigFormsListItemView<APITokenItem> {
+    static EMPTY_NOTE_PLACEHOLDER = _`Click to describe this token`;
 
-    template: _.template(gettext`
+    static template = _.template(_`
         <div class="rb-c-config-api-tokens__main">
          <div class="rb-c-config-api-tokens__value">
           <input readonly="readonly" value="<%- tokenValue %>">
          </div>
-         <span class="fa fa-clipboard js-copy-token" title="Copy to clipboard"></span>
+         <span class="fa fa-clipboard js-copy-token"
+               title="Copy to clipboard"></span>
         </div>
         <div class="rb-c-config-api-tokens__info">
          <% if (deprecated) { %>
@@ -506,50 +642,54 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
         </div>
         <div class="rb-c-config-api-tokens__actions"></div>
         <span class="rb-c-config-api-tokens__note"></span>
-    `),
+    `);
 
-    events: {
+    static events: EventsHash = {
         'click .js-copy-token': '_onCopyClicked',
-    },
+    };
 
-    actionHandlers: {
+    static actionHandlers: EventsHash = {
         'delete': '_onRemoveClicked',
-        'policy-custom': '_onCustomPolicyClicked'
-    },
+        'policy-custom': '_onCustomPolicyClicked',
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The expiration date. */
+    #$expires: JQuery = null;
+
+    /** The API token note. */
+    #$note: JQuery = null;
+
+    /** The current state of the API token. */
+    #$tokenState: JQuery = null;
 
     /**
      * Initialize the view.
      */
     initialize() {
-        _super(this).initialize.apply(this, arguments);
-
-        this._$expires = null;
-        this._$note = null;
-        this._$tokenState = null;
-
-        this.listenTo(this.model.resource, 'change:expires', this._updateExpires);
+        this.listenTo(this.model.resource, 'change:expires',
+                      this._updateExpires);
         this.listenTo(this.model.resource, 'change:note', this._updateNote);
-    },
+    }
 
     /**
      * Render the view.
-     *
-     * Returns:
-     *     APITokenItemView:
-     *     This object, for chaining.
      */
-    render() {
-        _super(this).render.call(this);
+    protected onRender() {
+        super.onRender();
 
-        this._$tokenState = this.$('.rb-c-config-api-tokens__token-state');
-        this._$expires = this._$tokenState
+        this.#$tokenState = this.$('.rb-c-config-api-tokens__token-state');
+        this.#$expires = this.#$tokenState
             .not('.is-invalid')
             .find('span');
 
-        this._$note = this.$('.rb-c-config-api-tokens__note');
-        const noteEditor = new RB.InlineEditorView({
+        this.#$note = this.$('.rb-c-config-api-tokens__note');
+        const noteEditor = new InlineEditorView({
             editIconClass: 'rb-icon rb-icon-edit',
-            el: this._$note,
+            el: this.#$note,
             hasShortButtons: true,
         });
         noteEditor.render();
@@ -564,9 +704,9 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
             .local()
             .format('YYYY-MM-DDTHH:mm');
 
-        const expiresView = new RB.DateTimeInlineEditorView({
+        const expiresView = new DateTimeInlineEditorView({
             descriptorText: 'Expires ',
-            el: this._$expires[0],
+            el: this.#$expires[0],
             formatResult: value => {
                 if (value) {
                     value = moment(value).local().format();
@@ -575,7 +715,7 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
                     const prefix = expired ? 'Expired' : 'Expires';
 
                     if (expired) {
-                        this._$tokenState.addClass('-is-expired');
+                        this.#$tokenState.addClass('-is-expired');
                     }
 
                     return (dedent`
@@ -583,7 +723,7 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
                         <time class="timesince" datetime="${value}"></time>.
                     `);
                 } else {
-                    this._$tokenState.removeClass('-is-expired');
+                    this.#$tokenState.removeClass('-is-expired');
 
                     return 'Never expires.';
                 }
@@ -592,10 +732,10 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
             rawValue: expires,
         })
         .on({
-            beginEdit: () => this._$tokenState.removeClass('-is-expired'),
+            beginEdit: () => this.#$tokenState.removeClass('-is-expired'),
             cancel: () => {
                 if (this.model.get('expired')) {
-                    this._$tokenState.addClass('-is-expired');
+                    this.#$tokenState.addClass('-is-expired');
                 }
             }
         });
@@ -608,9 +748,7 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
 
         this._updateExpires();
         this._updateNote();
-
-        return this;
-    },
+    }
 
     /**
      * Return the parent element for item actions.
@@ -619,37 +757,37 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
      *     jQuery:
      *     The element to attach the actions to.
      */
-    getActionsParent() {
+    getActionsParent(): JQuery {
         return this.$('.rb-c-config-api-tokens__actions');
-    },
+    }
 
     /**
      * Return additional rendering context.
      *
      * Returns:
-     *     object:
+     *     ListItemViewRenderContext:
      *     Additional rendering context.
      */
-    getRenderContext() {
+    getRenderContext(): ListItemViewRenderContext {
         const expires = this.model.get('expires');
 
         return {
             expiresTimeHTML:
                 `<time class="timesince" datetime="${expires}"></time>`,
         };
-    },
+    }
 
     /**
      * Update the displayed expiration date.
      */
-     _updateExpires() {
-        if (this._$expires) {
+    _updateExpires() {
+        if (this.#$expires) {
             const expires = this.model.resource.get('expires');
 
-            this._$expires.find('time').attr('datetime', expires);
+            this.#$expires.find('time').attr('datetime', expires);
             this.$('.timesince').timesince();
         }
-    },
+    }
 
     /**
      * Update the displayed note.
@@ -659,14 +797,14 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
      * will be shown.
      */
     _updateNote() {
-        if (this._$note) {
+        if (this.#$note) {
             const note = this.model.resource.get('note');
 
-            this._$note
+            this.#$note
                 .toggleClass('empty', !note)
-                .text(note ? note : this.EMPTY_NOTE_PLACEHOLDER);
+                .text(note ? note : APITokenItemView.EMPTY_NOTE_PLACEHOLDER);
         }
-    },
+    }
 
     /**
      * Handler for when the copy icon is clicked.
@@ -675,15 +813,14 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
      *     e (Event):
      *         The click event.
      */
-    _onCopyClicked(e) {
+    async _onCopyClicked(e: Event) {
         e.preventDefault();
         e.stopPropagation();
 
-        this.$('.rb-c-config-api-tokens__value input')
-            .focus()
-            .select();
-        document.execCommand('copy');
-    },
+        const token = this.$('.rb-c-config-api-tokens__value input')
+            .val() as string;
+        await navigator.clipboard.writeText(token);
+    }
 
     /**
      * Handler for when the "Custom" policy action is clicked.
@@ -694,19 +831,20 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
      * The previously selected policy type is passed along to the editor,
      * so that the editor can revert to it if the user cancels.
      *
-     * Returns:
-     *     boolean:
-     *     false, for use as a jQuery event handler.
+     * Args:
+     *     e (Event):
+     *         The event.
      */
-    _onCustomPolicyClicked() {
+    _onCustomPolicyClicked(e: Event){
+        e.preventDefault();
+        e.stopPropagation();
+
         const view = new PolicyEditorView({
             model: this.model,
             prevPolicyType: this.model.get('policyType'),
         });
         view.render();
-
-        return false;
-    },
+    }
 
     /**
      * Handler for when the Remove action is clicked.
@@ -716,19 +854,41 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
      */
     _onRemoveClicked() {
         $('<p>')
-            .html(gettext('This will prevent clients using this token when authenticating.'))
+            .html(_`
+                This will prevent clients using this token when authenticating.
+            `)
             .modalBox({
-                title: gettext('Are you sure you want to remove this token?'),
-                buttons: [
-                    $('<input type="button">')
-                        .val(gettext('Cancel')),
-                    $('<input type="button" class="danger">')
-                        .val(gettext('Remove'))
-                        .click(() => this.model.resource.destroy())
-                ]
+                buttons: paint<HTMLButtonElement[]>`
+                    <Ink.Button type="danger"
+                                onClick=${() => this.model.resource.destroy()}>
+                     ${_`Remove`}
+                    </Ink.Button>
+                    <Ink.Button>
+                     ${_`Cancel`}
+                    </Ink.Button>
+                `,
+                title: _`Are you sure you want to remove this token?`,
             });
     }
-});
+}
+
+
+/**
+ * Options for the SiteAPITokensView.
+ *
+ * Version Added:
+ *     8.0
+ */
+interface SiteAPITokensViewOptions {
+    /** The list of existing API tokens. */
+    apiTokens: APITokenAttrs[];
+
+    /** The name of the local site, if any. */
+    localSiteName: string;
+
+    /** The URL prefix of the local site, if any. */
+    localSitePrefix: string;
+}
 
 
 /**
@@ -738,10 +898,15 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
  * by Local Site name. These can be removed or edited, or new tokens generated
  * through a "Generate a new API token" link.
  */
-const SiteAPITokensView = Backbone.View.extend({
-    className: 'rb-c-config-api-tokens',
+@spina
+class SiteAPITokensView extends BaseView<
+    undefined,
+    HTMLDivElement,
+    SiteAPITokensViewOptions
+> {
+    static className = 'rb-c-config-api-tokens';
 
-    template: _.template(dedent`
+    static template = _.template(dedent`
         <% if (name) { %>
          <div class="djblets-l-config-forms-container">
           <h3><%- name %></h3>
@@ -749,17 +914,39 @@ const SiteAPITokensView = Backbone.View.extend({
         <% } %>
         <div class="api-tokens">
         </div>
-    `),
+    `);
 
-    generateTokenTemplate: _.template(dedent`
+    static generateTokenTemplate = _.template(dedent`
         <li class="generate-api-token djblets-c-config-forms-list__item">
          <a href="#"><%- generateText %></a>
         </li>
-    `),
+    `);
 
-    events: {
+    static events: EventsHash = {
         'click .generate-api-token': '_onGenerateClicked'
-    },
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The config list. */
+    apiTokensList: ConfigFormsList;
+
+    /** The collection of items. */
+    collection: APITokenItemCollection;
+
+    /** The name of the local site, if any. */
+    localSiteName: string;
+
+    /** The URL prefix of the local site, if any. */
+    localSitePrefix: string;
+
+    /** The list view. */
+    #listView: ConfigFormsListView;
+
+    /** The "Generate a new API token" button. */
+    #$generateTokenItem: JQuery;
 
     /**
      * Initialize the view.
@@ -768,62 +955,47 @@ const SiteAPITokensView = Backbone.View.extend({
      * a list for the ListView.
      *
      * Args:
-     *     options (object):
+     *     options (SiteAPITokensViewOptions):
      *         Options for view construction.
-     *
-     * Option Args:
-     *     localSiteName (string):
-     *         The name of the local site, if any.
-     *
-     *     localSitePrefix (string):
-     *         The URL prefix of the local site, if any.
      */
-    initialize(options) {
+    initialize(options: SiteAPITokensViewOptions) {
         this.localSiteName = options.localSiteName;
         this.localSitePrefix = options.localSitePrefix;
 
         this.collection = new APITokenItemCollection(options.apiTokens, {
-            localSitePrefix: this.localSitePrefix
+            localSitePrefix: this.localSitePrefix,
         });
 
-        this.apiTokensList = new Djblets.Config.List({}, {
-            collection: this.collection
+        this.apiTokensList = new ConfigFormsList({}, {
+            collection: this.collection,
         });
-
-        this._listView = null;
-    },
+    }
 
     /**
      * Render the view.
      *
      * This will render the list of API token items, along with a link
      * for generating new tokens.
-     *
-     * Returns:
-     *     SiteAPITokensView:
-     *     This object, for chaining.
      */
-    render() {
-        this._listView = new Djblets.Config.ListView({
+    protected onInitialRender() {
+        this.#listView = new ConfigFormsListView({
             ItemView: APITokenItemView,
             animateItems: true,
-            model: this.apiTokensList
+            model: this.apiTokensList,
         });
 
-        this.$el.html(this.template({
+        this.$el.html(SiteAPITokensView.template({
             name: this.localSiteName,
         }));
 
-        this._listView.render().$el.prependTo(this.$('.api-tokens'));
+        this.#listView.render().$el.prependTo(this.$('.api-tokens'));
 
-        this._$generateTokenItem =
-            $(this.generateTokenTemplate({
+        this.#$generateTokenItem =
+            $(SiteAPITokensView.generateTokenTemplate({
                 generateText: _`Generate a new API token`,
             }))
-            .appendTo(this._listView.getBody());
-
-        return this;
-    },
+            .appendTo(this.#listView.getBody());
+    }
 
     /**
      * Handler for when the "Generate a new API token" link is clicked.
@@ -834,13 +1006,13 @@ const SiteAPITokensView = Backbone.View.extend({
      *     e (Event):
      *         The event which triggered the action.
      */
-    async _onGenerateClicked(e) {
+    async _onGenerateClicked(e: Event) {
         e.preventDefault();
         e.stopPropagation();
 
-        const apiToken = new RB.APIToken({
+        const apiToken = new APIToken({
             localSitePrefix: this.localSitePrefix,
-            userName: RB.UserSession.instance.get('username')
+            userName: UserSession.instance.get('username')
         });
 
         await apiToken.save();
@@ -849,11 +1021,28 @@ const SiteAPITokensView = Backbone.View.extend({
             resource: apiToken,
         });
 
-        this._$generateTokenItem
+        this.#$generateTokenItem
             .detach()
-            .appendTo(this._listView.getBody());
-    },
-});
+            .appendTo(this.#listView.getBody());
+    }
+}
+
+
+/**
+ * Options for the APITokensView.
+ *
+ * Version Added:
+ *     8.0
+ */
+export interface APITokensViewOptions {
+    /** Initial contents of the tokens list. */
+    apiTokens: {
+        [key: string]: {
+            tokens: APITokenAttrs[];
+            localSitePrefix: string;
+        };
+    };
+}
 
 
 /**
@@ -862,61 +1051,65 @@ const SiteAPITokensView = Backbone.View.extend({
  * This will take the provided tokens and group them into SiteAPITokensView
  * instances, one per Local Site and one for the global tokens.
  */
-RB.APITokensView = Backbone.View.extend({
-    template: _.template(dedent`
+@spina
+export class APITokensView extends BaseView<
+    undefined,
+    HTMLDivElement,
+    APITokensViewOptions
+> {
+    static template = _.template(dedent`
         <div class="api-tokens-list djblets-l-config-forms-container
                     -is-recessed -is-top-flush">
         </div>
-    `),
+    `);
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** Initial contents of the tokens list. */
+    apiTokens: {
+        [key: string]: {
+            tokens: APITokenAttrs[];
+            localSitePrefix: string;
+        };
+    };
+
+    /** The list of views for each local site. */
+    #apiTokenViews: SiteAPITokensView[] = [];
 
     /**
      * Initialize the view.
      *
      * Args:
-     *     options (object):
+     *     options (APITokensViewOptions):
      *         Options for view construction.
-     *
-     * Option Args:
-     *     apiTokens (Array of object):
-     *         Initial contents of the tokens list.
      */
-    initialize(options) {
+    initialize(options: APITokensViewOptions) {
         this.apiTokens = options.apiTokens;
-
-        this._$listsContainer = null;
-        this._apiTokenViews = [];
-    },
+    }
 
     /**
      * Render the view.
      *
      * This will set up the elements and the list of SiteAPITokensViews.
-     *
-     * Returns:
-     *     RB.APITokensView:
-     *     This object, for chaining.
      */
-    render() {
-        this.$el.html(this.template());
+    protected onRender() {
+        this.$el.html(APITokensView.template());
 
-        this._$listsContainer = this.$('.api-tokens-list');
+        const $listsContainer = this.$('.api-tokens-list');
 
-        for (let [localSiteName, info] of Object.entries(this.apiTokens)) {
+        for (const [localSiteName, info] of Object.entries(this.apiTokens)) {
             const view = new SiteAPITokensView({
+                apiTokens: info.tokens,
                 localSiteName: localSiteName,
                 localSitePrefix: info.localSitePrefix,
-                apiTokens: info.tokens
             });
 
-            view.$el.appendTo(this._$listsContainer);
+            view.$el.appendTo($listsContainer);
             view.render();
 
-            this._apiTokenViews.push(view);
+            this.#apiTokenViews.push(view);
         }
-
-        return this;
     }
-});
-
-
-})();
+}

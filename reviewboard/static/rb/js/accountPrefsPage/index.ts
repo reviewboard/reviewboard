@@ -1,1 +1,1 @@
-export {};
+export { APITokensView } from './views/apiTokensView';
