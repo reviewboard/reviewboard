@@ -63,17 +63,18 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         _('last updated'))
     diffset = models.ForeignKey(
         DiffSet,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         verbose_name=_('diff set'),
         blank=True,
         null=True,
         related_name='review_request_draft')
     changedesc = models.ForeignKey(
         ChangeDescription,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         verbose_name=_('change description'),
         blank=True,
-        null=True)
+        null=True,
+        related_name='review_request_draft')
     target_groups = models.ManyToManyField(
         Group,
         related_name='drafts',

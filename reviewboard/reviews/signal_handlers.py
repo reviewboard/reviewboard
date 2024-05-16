@@ -52,6 +52,12 @@ def _on_review_request_draft_deleted(
             # This never has been and never will be published, so delete it.
             attachment.delete()
 
+    if instance.changedesc_id:
+        instance.changedesc.delete()
+
+    if instance.diffset_id:
+        instance.diffset.delete()
+
     review_request = instance.get_review_request()
 
     if hasattr(review_request, '_file_attachments_data'):
