@@ -15,7 +15,6 @@ from django.core.management.base import BaseCommand
 from django.db import reset_queries
 from django.utils.translation import (
     gettext as _,
-    gettext_lazy,
     ngettext as N_)
 
 from reviewboard.attachments.models import (FileAttachment,
@@ -40,7 +39,7 @@ class Command(BaseCommand):
         7.0
     """
 
-    help = gettext_lazy('Deletes orphaned file attachments')
+    help = _('Deletes orphaned file attachments')
 
     def add_arguments(
         self,
@@ -107,7 +106,8 @@ class Command(BaseCommand):
             inactive_review_request=None)
 
         changedescs = ChangeDescription.objects.filter(
-            review_request=None)
+            review_request=None,
+            review_request_draft=None)
 
         diffset_histories = DiffSetHistory.objects.filter(
             review_request=None)
