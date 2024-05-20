@@ -7,6 +7,7 @@ export {
 export { BaseCommentReply } from './models/baseCommentReplyModel';
 export { BaseResource } from './models/baseResourceModel';
 export { DefaultReviewer } from './models/defaultReviewerModel';
+export { Diff } from './models/diffModel';
 export { DiffComment } from './models/diffCommentModel';
 export { DiffCommentReply } from './models/diffCommentReplyModel';
 export { DraftFileAttachment } from './models/draftFileAttachmentModel';

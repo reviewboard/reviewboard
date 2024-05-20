@@ -14,6 +14,8 @@ import {
     type BaseResourceResourceData,
     BaseResource,
 } from './baseResourceModel';
+import { Diff } from './diffModel';
+import { DraftReview } from './draftReviewModel';
 import {
     type FileAttachmentAttrs,
     FileAttachment,
@@ -358,8 +360,8 @@ export class ReviewRequest extends BaseResource<
      *     RB.Diff:
      *     The new diff model.
      */
-    createDiff(): RB.Diff {
-        return new RB.Diff({
+    createDiff(): Diff {
+        return new Diff({
             parentObject: this,
         });
     }
@@ -386,14 +388,14 @@ export class ReviewRequest extends BaseResource<
     createReview(
         reviewID?: number,
         extraAttrs: Partial<ReviewAttrs> = {},
-    ): Review {
-        let review;
+    ): Review | DraftReview {
+        let review: Review | DraftReview;
 
         if (reviewID === undefined) {
             review = this.get('draftReview');
 
             if (review === null) {
-                review = new RB.DraftReview({
+                review = new DraftReview({
                     parentObject: this,
                 });
 

@@ -119,7 +119,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/resources/models/repositoryBranchModel.es6.js',
             'rb/js/resources/models/repositoryCommitModel.es6.js',
             'rb/js/resources/models/draftReviewRequestModel.es6.js',
-            'rb/js/resources/models/diffModel.es6.js',
             'rb/js/resources/models/fileDiffModel.es6.js',
             'rb/js/resources/models/userFileAttachmentModel.es6.js',
             'rb/js/resources/models/validateDiffModel.es6.js',
