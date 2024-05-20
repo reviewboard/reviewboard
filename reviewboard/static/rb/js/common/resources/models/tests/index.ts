@@ -3,6 +3,7 @@ import './baseResourceModelTests';
 import './defaultReviewerModelTests';
 import './draftReviewModelTests';
 import './fileAttachmentModelTests';
+import './reviewGroupModelTests';
 import './reviewModelTests';
 import './reviewReplyModelTests';
 import './reviewRequestModelTests';

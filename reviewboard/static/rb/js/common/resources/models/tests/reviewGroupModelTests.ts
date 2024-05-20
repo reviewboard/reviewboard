@@ -1,22 +1,38 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+} from 'jasmine-core';
+
+import {
+    ReviewGroup,
+    UserSession,
+} from 'reviewboard/common';
+
+
 suite('rb/resources/models/ReviewGroup', function() {
     describe('setStarred', function() {
         const url = '/api/users/testuser/watched/groups/';
-        let group;
-        let session;
+        let group: ReviewGroup;
+        let session: UserSession;
 
         beforeEach(function() {
-            RB.UserSession.instance = null;
-            session = RB.UserSession.create({
+            UserSession.instance = null;
+            session = UserSession.create({
                 username: 'testuser',
                 watchedReviewGroupsURL: url,
             });
 
-            group = new RB.ReviewGroup({
+            group = new ReviewGroup({
                 id: 1,
             });
 
             spyOn(session.watchedGroups, 'addImmediately').and.callThrough();
-            spyOn(session.watchedGroups, 'removeImmediately').and.callThrough();
+            spyOn(session.watchedGroups, 'removeImmediately')
+                .and.callThrough();
             spyOn(RB, 'apiCall').and.callThrough();
         });
 
@@ -68,6 +84,7 @@ suite('rb/resources/models/ReviewGroup', function() {
             spyOn(console, 'warn');
 
             group.setStarred(true, {
+                error: () => done.fail(),
                 success: () => {
                     expect(session.watchedGroups.addImmediately)
                         .toHaveBeenCalled();
@@ -77,16 +94,15 @@ suite('rb/resources/models/ReviewGroup', function() {
 
                     done();
                 },
-                error: () => done.fail(),
             });
         });
     });
 
     describe('addUser', function() {
-        let group;
+        let group: ReviewGroup;
 
         beforeEach(function() {
-            group = new RB.ReviewGroup({
+            group = new ReviewGroup({
                 id: 1,
                 name: 'test-group',
             });
@@ -121,6 +137,7 @@ suite('rb/resources/models/ReviewGroup', function() {
             spyOn(console, 'warn');
 
             group.addUser('my-user', {
+                error: () => done.fail(),
                 success: () => {
                     expect(RB.apiCall).toHaveBeenCalled();
                     expect($.ajax).toHaveBeenCalled();
@@ -128,7 +145,6 @@ suite('rb/resources/models/ReviewGroup', function() {
 
                     done();
                 },
-                error: () => done.fail(),
             });
         });
 
@@ -147,10 +163,10 @@ suite('rb/resources/models/ReviewGroup', function() {
     });
 
     describe('removeUser', function() {
-        let group;
+        let group: ReviewGroup;
 
         beforeEach(function() {
-            group = new RB.ReviewGroup({
+            group = new ReviewGroup({
                 id: 1,
                 name: 'test-group',
             });
@@ -179,6 +195,7 @@ suite('rb/resources/models/ReviewGroup', function() {
             spyOn(console, 'warn');
 
             group.removeUser('my-user', {
+                error: () => done.fail(),
                 success: () => {
                     expect(RB.apiCall).toHaveBeenCalled();
                     expect($.ajax).toHaveBeenCalled();
@@ -186,7 +203,6 @@ suite('rb/resources/models/ReviewGroup', function() {
 
                     done();
                 },
-                error: () => done.fail(),
             });
         });
 

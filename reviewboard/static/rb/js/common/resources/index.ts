@@ -17,6 +17,7 @@ export {
 } from './models/fileAttachmentModel';
 export { Repository } from './models/repositoryModel';
 export { Review } from './models/reviewModel';
+export { ReviewGroup } from './models/reviewGroupModel';
 export { ReviewReply } from './models/reviewReplyModel';
 export { ReviewRequest } from './models/reviewRequestModel';
 export * as JSONSerializers from './utils/serializers';

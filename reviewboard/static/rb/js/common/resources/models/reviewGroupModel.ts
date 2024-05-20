@@ -1,4 +1,44 @@
-(function() {
+/**
+ * A review group.
+ */
+
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
+
+import {
+    type BaseResourceAttrs,
+    type BaseResourceResourceData,
+    BaseResource,
+} from './baseResourceModel';
+import { UserSession } from '../../models/userSessionModel';
+
+
+/**
+ * Attributes for the GroupMember model.
+ *
+ * Version Added:
+ *     7.0.1
+ */
+interface GroupMemberAttrs extends BaseResourceAttrs {
+    /** Whether the user has been added to the group. */
+    added: boolean;
+
+    /** The username of the group member. */
+    username: string;
+}
+
+
+/**
+ * Resource data for the GroupMember model.
+ *
+ * Version Added:
+ *     7.0.1
+ */
+interface GroupMemberResourceData extends BaseResourceResourceData {
+    username: string;
+}
 
 
 /**
@@ -6,16 +46,18 @@
  *
  * This is used to handle adding a user to a group or removing from a group.
  */
-const GroupMember = RB.BaseResource.extend({
-    defaults() {
-        return _.defaults({
-            username: null,
-            added: false,
-            loaded: true
-        }, RB.BaseResource.prototype.defaults());
-    },
+@spina
+class GroupMember extends BaseResource<
+    GroupMemberAttrs,
+    GroupMemberResourceData
+> {
+    static defaults: Result<Partial<GroupMemberAttrs>> = {
+        added: false,
+        loaded: true,
+        username: null,
+    };
 
-    serializedAttrs: ['username'],
+    static serializedAttrs = ['username'];
 
     /**
      * Return a URL for this resource.
@@ -27,7 +69,7 @@ const GroupMember = RB.BaseResource.extend({
      *     string:
      *     The URL to use when syncing the model.
      */
-    url() {
+    url(): string {
         let url = this.get('baseURL');
 
         if (this.get('added')) {
@@ -35,7 +77,7 @@ const GroupMember = RB.BaseResource.extend({
         }
 
         return url;
-    },
+    }
 
     /**
      * Return whether the group membership is "new".
@@ -47,9 +89,9 @@ const GroupMember = RB.BaseResource.extend({
      *     boolean:
      *     Whether this member is newly-added to the group.
      */
-    isNew() {
+    isNew(): boolean {
         return !this.get('added');
-    },
+    }
 
     /**
      * Parse the result payload.
@@ -57,8 +99,37 @@ const GroupMember = RB.BaseResource.extend({
      * We don't really care about the result, so we don't bother doing any
      * work to parse.
      */
-    parse() {}
-});
+    parse(
+        rsp: Partial<GroupMemberResourceData & { stat: string }>,
+    ): Partial<GroupMemberAttrs> {
+        // Do nothing.
+        return {};
+    }
+}
+
+
+/**
+ * Attributes for the ReviewGroup model.
+ *
+ * Version Added:
+ *     7.0.1
+ */
+export interface ReviewGroupAttrs extends BaseResourceAttrs {
+    /** The name of the review group. */
+    name: string;
+}
+
+
+/**
+ * Resource data for the ReviewGroup model.
+ *
+ * Version Added:
+ *     7.0.1
+ */
+export interface ReviewGroupResourceData extends BaseResourceResourceData {
+    /** The name of the review group. */
+    name: string;
+}
 
 
 /**
@@ -70,14 +141,16 @@ const GroupMember = RB.BaseResource.extend({
  * At the moment, this consists of marking a review group as
  * starred/unstarred.
  */
-RB.ReviewGroup = RB.BaseResource.extend({
-    defaults() {
-        return _.defaults({
-            name: null
-        }, RB.BaseResource.prototype.defaults());
-    },
+@spina
+export class ReviewGroup extends BaseResource<
+    ReviewGroupAttrs,
+    ReviewGroupResourceData
+> {
+    static defaults: Result<Partial<ReviewGroupAttrs>> = {
+        name: null,
+    };
 
-    rspNamespace: 'group',
+    static rspNamespace = 'group';
 
     /**
      * Return the URL to the review group.
@@ -89,7 +162,7 @@ RB.ReviewGroup = RB.BaseResource.extend({
      *     string:
      *     The URL to use when syncing the model.
      */
-    url() {
+    url(): string {
         let url = SITE_ROOT + (this.get('localSitePrefix') || '') +
                   'api/groups/';
 
@@ -98,7 +171,7 @@ RB.ReviewGroup = RB.BaseResource.extend({
         }
 
         return url;
-    },
+    }
 
     /**
      * Mark a review group as starred or unstarred.
@@ -122,21 +195,27 @@ RB.ReviewGroup = RB.BaseResource.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    setStarred(starred, options={}, context=undefined) {
+    setStarred(
+        starred: boolean,
+        options: Backbone.ModelSaveOptions = {},
+        context: unknown = undefined,
+    ): Promise<void | JQueryXHR> {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
             console.warn('RB.ReviewGroup.setStarred was called using ' +
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
+
             return RB.promiseToCallbacks(
                 options, context, newOptions => this.setStarred(starred));
         }
 
-        const watched = RB.UserSession.instance.watchedGroups;
+        const watched = UserSession.instance.watchedGroups;
+
         return starred ? watched.addImmediately(this)
                        : watched.removeImmediately(this);
-    },
+    }
 
     /**
      * Add a user to this group.
@@ -162,13 +241,18 @@ RB.ReviewGroup = RB.BaseResource.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    addUser(username, options={}, context=undefined) {
+    addUser(
+        username: string,
+        options: Backbone.ModelSaveOptions = {},
+        context: unknown = undefined,
+    ): Promise<JQueryXHR> {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
             console.warn('RB.ReviewGroup.addUser was called using ' +
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
+
             return RB.promiseToCallbacks(
                 options, context, newOptions => this.addUser(username));
         }
@@ -177,8 +261,8 @@ RB.ReviewGroup = RB.BaseResource.extend({
 
         if (url && !this.isNew()) {
             const member = new GroupMember({
+                baseURL: url,
                 username: username,
-                baseURL: url
             });
 
             return member.save();
@@ -187,7 +271,7 @@ RB.ReviewGroup = RB.BaseResource.extend({
                 errorText: 'Unable to add to the group.',
             }, options));
         }
-    },
+    }
 
     /*
      * Remove a user from this group.
@@ -213,13 +297,18 @@ RB.ReviewGroup = RB.BaseResource.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    removeUser(username, options={}, context=undefined) {
+    removeUser(
+        username: string,
+        options: Backbone.ModelSaveOptions = {},
+        context: unknown = undefined,
+    ): Promise<void> {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
             console.warn('RB.ReviewGroup.removeUser was called using ' +
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
+
             return RB.promiseToCallbacks(
                 options, context, newOptions => this.removeUser(username));
         }
@@ -228,9 +317,9 @@ RB.ReviewGroup = RB.BaseResource.extend({
 
         if (url && !this.isNew()) {
             const member = new GroupMember({
-                username: username,
+                added: true,
                 baseURL: url,
-                added: true
+                username: username,
             });
 
             return member.destroy();
@@ -240,7 +329,4 @@ RB.ReviewGroup = RB.BaseResource.extend({
             }, options));
         }
     }
-});
-
-
-})();
+}

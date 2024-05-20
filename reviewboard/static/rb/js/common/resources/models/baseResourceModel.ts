@@ -876,7 +876,7 @@ export class BaseResource<
      */
     parse(
         rsp: Partial<TResourceData & { stat: string }>,
-    ): TDefaults {
+    ): Partial<TDefaults> {
         console.assert(this.rspNamespace,
                        'rspNamespace must be defined on the resource model');
 
@@ -922,7 +922,7 @@ export class BaseResource<
      *     Attributes to set on the model.
      */
     parseResourceData(
-        rsp: TResourceData,
+        rsp: Partial<TResourceData>,
     ): Partial<TDefaults> {
         const attrs = {};
 
