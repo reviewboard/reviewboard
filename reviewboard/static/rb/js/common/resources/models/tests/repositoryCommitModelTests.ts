@@ -1,8 +1,19 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { RepositoryCommit } from 'reviewboard/common';
+
+
 suite('rb/resources/models/RepositoryCommit', function() {
-    let model;
+    let model: RepositoryCommit;
 
     beforeEach(function() {
-        model = new RB.RepositoryCommit();
+        model = new RepositoryCommit();
     });
 
     describe('parse', function() {

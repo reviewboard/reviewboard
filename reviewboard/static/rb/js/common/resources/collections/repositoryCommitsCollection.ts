@@ -1,12 +1,63 @@
 /**
  * A collection of commits in a repository.
+ */
+
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
+
+import { BaseCollection } from '../../collections/baseCollection';
+import {
+    type RepositoryCommitAttrs,
+    RepositoryCommit,
+} from '../models/repositoryCommitModel';
+
+
+/**
+ * Options for the RepositoryCommits collection.
+ *
+ * Version Added:
+ *     8.0
+ */
+export interface RepositoryCommitsOptions {
+    /** The branch to fetch commits from. */
+    branch?: string;
+
+    /** The starting commit (which will be the most recent commit listed). */
+    start?: string;
+
+    /** The base URL to use. */
+    urlBase: string;
+}
+
+
+/**
+ * A collection of commits in a repository.
  *
  * This is expected to be used in an ephemeral manner to get a list of commits
  * from a given start point (usually corresponding to some branch in the
  * repository).
  */
-RB.RepositoryCommits = RB.BaseCollection.extend({
-    model: RB.RepositoryCommit,
+@spina
+export class RepositoryCommits extends BaseCollection<
+    RepositoryCommit,
+    RepositoryCommitsOptions
+> {
+    static model = RepositoryCommit;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The saved options. */
+    options: RepositoryCommitsOptions;
+
+    /** Whether all data has been fetched. */
+    complete = false;
+
+    /** The start commit to use to fetch the next page. */
+    #nextStart: string | null = null;
 
     /**
      * Initialize the collection.
@@ -28,13 +79,13 @@ RB.RepositoryCommits = RB.BaseCollection.extend({
      *     urlBase (string):
      *         The base URL for the API request.
      */
-    initialize(models, options) {
-        Backbone.Collection.prototype.initialize.call(this, models, options);
+    initialize(
+        models: RepositoryCommit[] | RepositoryCommitAttrs[],
+        options: RepositoryCommitsOptions,
+    ) {
+        super.initialize(models, options);
         this.options = options;
-        this.busy = false;
-        this.complete = false;
-        this._nextStart = null;
-    },
+    }
 
     /**
      * Parse the response.
@@ -47,14 +98,18 @@ RB.RepositoryCommits = RB.BaseCollection.extend({
      *     Array of object:
      *     An array of commits.
      */
-    parse(response) {
+    parse(
+        response: {
+            commits: RepositoryCommitAttrs[],
+        },
+    ): RepositoryCommitAttrs[] {
         const commits = response.commits;
 
-        this._nextStart = commits[commits.length - 1].parent;
-        this.complete = !this._nextStart;
+        this.#nextStart = commits[commits.length - 1].parent;
+        this.complete = !this.#nextStart;
 
         return response.commits;
-    },
+    }
 
     /**
      * Get the URL to fetch for the next page of results.
@@ -63,8 +118,8 @@ RB.RepositoryCommits = RB.BaseCollection.extend({
      *     string:
      *     The URL to fetch.
      */
-    url() {
-        const params = {};
+    url(): Result<string> {
+        const params: Record<string, string> = {};
 
         if (this.options.start !== undefined) {
             params.start = this.options.start;
@@ -75,7 +130,7 @@ RB.RepositoryCommits = RB.BaseCollection.extend({
         }
 
         return this.options.urlBase + '?' + $.param(params);
-    },
+    }
 
     /**
      * Return whether another page of commits can be fetched.
@@ -91,9 +146,9 @@ RB.RepositoryCommits = RB.BaseCollection.extend({
      *     boolean:
      *     ``true`` if another page can be fetched. ``false`` if one cannot.
      */
-    canFetchNext() {
-        return !this.busy && !this.complete && this.models.length > 0;
-    },
+    canFetchNext(): boolean {
+        return !this.complete && this.models.length > 0;
+    }
 
     /**
      * Fetch the next page of results.
@@ -134,25 +189,27 @@ RB.RepositoryCommits = RB.BaseCollection.extend({
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    async fetchNext(options={}, context=undefined) {
+    async fetchNext(
+        options={},
+        context=undefined,
+    ): Promise<void> {
         if (_.isFunction(options.success) ||
             _.isFunction(options.error) ||
             _.isFunction(options.complete)) {
             console.warn('RB.RepositoryCommits.fetchNext was called using ' +
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
+
             return RB.promiseToCallbacks(
                 options, context, newOptions => this.fetchNext(newOptions));
         }
 
         if (this.canFetchNext()) {
-            this.options.start = this._nextStart;
+            this.options.start = this.#nextStart;
 
             await this.fetch({
                 remove: false,
             });
-
-            this.busy = false;
         }
     }
-});
+}

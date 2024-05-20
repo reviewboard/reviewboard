@@ -1,3 +1,9 @@
+export {
+    RepositoryBranches,
+} from './collections/repositoryBranchesCollection';
+export {
+    RepositoryCommits,
+} from './collections/repositoryCommitsCollection';
 export { ResourceCollection } from './collections/resourceCollection';
 export { APIToken } from './models/apiTokenModel';
 export {
@@ -28,6 +34,8 @@ export { FileDiff } from './models/fileDiffModel';
 export { GeneralComment } from './models/generalCommentModel';
 export { GeneralCommentReply } from './models/generalCommentReplyModel';
 export { Repository } from './models/repositoryModel';
+export { RepositoryBranch } from './models/repositoryBranchModel';
+export { RepositoryCommit } from './models/repositoryCommitModel';
 export { Review } from './models/reviewModel';
 export { ReviewGroup } from './models/reviewGroupModel';
 export { ReviewReply } from './models/reviewReplyModel';

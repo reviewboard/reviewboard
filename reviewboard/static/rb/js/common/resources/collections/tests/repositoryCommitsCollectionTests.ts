@@ -1,12 +1,23 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { RepositoryCommits } from 'reviewboard/common';
+
+
 suite('rb/resources/collections/RepositoryCommits', function() {
     const url = '/api/repositories/123/commits/';
     const start = '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817';
-    let collection;
+    let collection: RepositoryCommits;
 
     beforeEach(function() {
-        collection = new RB.RepositoryCommits([], {
-            urlBase: url,
+        collection = new RepositoryCommits([], {
             start: start,
+            urlBase: url,
         });
     });
 
@@ -17,7 +28,6 @@ suite('rb/resources/collections/RepositoryCommits', function() {
                 expect(request.type).toBe('GET');
 
                 request.success({
-                    stat: 'ok',
                     commits: [
                         {
                             author_name: 'Christian Hammond',
@@ -52,6 +62,7 @@ suite('rb/resources/collections/RepositoryCommits', function() {
                             review_request_url: '',
                         },
                     ],
+                    stat: 'ok',
                 });
 
             });

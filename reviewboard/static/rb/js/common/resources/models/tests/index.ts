@@ -8,6 +8,8 @@ import './fileAttachmentCommentModelTests';
 import './fileAttachmentModelTests';
 import './fileDiffModelTests';
 import './generalCommentModelTests';
+import './repositoryBranchModelTests';
+import './repositoryCommitModelTests';
 import './reviewGroupModelTests';
 import './reviewModelTests';
 import './reviewReplyModelTests';

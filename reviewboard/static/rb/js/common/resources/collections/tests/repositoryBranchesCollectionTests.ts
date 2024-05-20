@@ -1,8 +1,19 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { RepositoryBranches } from 'reviewboard/common';
+
+
 suite('rb/resources/collections/RepositoryBranches', function() {
-    let collection;
+    let collection: RepositoryBranches;
 
     beforeEach(function() {
-        collection = new RB.RepositoryBranches();
+        collection = new RepositoryBranches();
         collection.url = '/api/repositories/123/branches/';
     });
 
@@ -14,24 +25,24 @@ suite('rb/resources/collections/RepositoryBranches', function() {
                 expect(request.type).toBe('GET');
 
                 request.success({
-                    stat: 'ok',
                     branches: [
                         {
-                            name: 'master',
                             commit: '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
-                            'default': true,
+                            default: true,
+                            name: 'master',
                         },
                         {
-                            name: 'release-1.7.x',
                             commit: '92463764015ef463b4b6d1a1825fee7aeec8cb15',
-                            'default': false,
+                            default: false,
+                            name: 'release-1.7.x',
                         },
                         {
-                            name: 'release-1.6.x',
                             commit: 'a15d0e635064a2e1929ce1bf3bc8d4aa65738b64',
-                            'default': false,
+                            default: false,
+                            name: 'release-1.6.x',
                         },
                     ],
+                    stat: 'ok',
                 });
             });
 
