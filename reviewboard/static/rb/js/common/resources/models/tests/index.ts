@@ -6,6 +6,7 @@ import './diffCommentModelTests';
 import './draftReviewModelTests';
 import './fileAttachmentCommentModelTests';
 import './fileAttachmentModelTests';
+import './fileDiffModelTests';
 import './generalCommentModelTests';
 import './reviewGroupModelTests';
 import './reviewModelTests';

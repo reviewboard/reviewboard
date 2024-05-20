@@ -24,6 +24,7 @@ export { FileAttachmentComment } from './models/fileAttachmentCommentModel';
 export {
     FileAttachmentCommentReply,
 } from './models/fileAttachmentCommentReplyModel';
+export { FileDiff } from './models/fileDiffModel';
 export { GeneralComment } from './models/generalCommentModel';
 export { GeneralCommentReply } from './models/generalCommentReplyModel';
 export { Repository } from './models/repositoryModel';

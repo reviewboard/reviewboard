@@ -16,6 +16,10 @@ import {
 import {
     type SerializerMap,
 } from './baseResourceModel';
+import {
+    type FileDiffResourceData,
+    FileDiff,
+} from './fileDiffModel';
 
 
 /**
@@ -39,7 +43,7 @@ export interface DiffCommentAttrs extends BaseCommentAttrs {
     endLineNum: number;
 
     /** The FileDiff that the comment applies to. */
-    fileDiff: RB.FileDiff | null;
+    fileDiff: FileDiff | null;
 
     /** The ID of the FileDiff that the comment applies to. */
     fileDiffID: number | null;
@@ -49,7 +53,7 @@ export interface DiffCommentAttrs extends BaseCommentAttrs {
      *
      * This attribute is mutually exclusive with ``baseFileDiffID``.
      */
-    interFileDiff: RB.FileDiff | null;
+    interFileDiff: FileDiff | null;
 
     /**
      * The ID of the FileDiff at the end of an interdiff range.
@@ -69,9 +73,9 @@ export interface DiffCommentAttrs extends BaseCommentAttrs {
 export interface DiffCommentResourceData extends BaseCommentResourceData {
     base_filediff_id: number;
     first_line: number;
-    filediff: unknown; // TODO TYPING: future FileDiffResourceData
+    filediff: FileDiffResourceData;
     filediff_id: number;
-    interfilediff: unknown; // TODO TYPING: future FileDiffResourceData
+    interfilediff: FileDiffResourceData;
     interfilediff_id: number;
     num_lines: number;
 }
@@ -167,12 +171,12 @@ export class DiffComment extends BaseComment<
 
         result.endLineNum = rsp.num_lines + result.beginLineNum - 1;
 
-        result.fileDiff = new RB.FileDiff(rsp.filediff, {
+        result.fileDiff = new FileDiff(rsp.filediff, {
             parse: true,
         });
 
         if (rsp.interfilediff) {
-            result.interFileDiff = new RB.FileDiff(rsp.interfilediff, {
+            result.interFileDiff = new FileDiff(rsp.interfilediff, {
                 parse: true,
             });
         }

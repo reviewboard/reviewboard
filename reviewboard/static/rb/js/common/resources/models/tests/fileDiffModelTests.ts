@@ -1,8 +1,19 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { FileDiff } from 'reviewboard/common';
+
+
 suite('rb/resources/models/FileDiff', function() {
-    let model;
+    let model: FileDiff;
 
     beforeEach(function() {
-        model = new RB.FileDiff({
+        model = new FileDiff({
             destFilename: 'dest-file',
             sourceFilename: 'source-file',
             sourceRevision: 'source-revision',
@@ -11,14 +22,14 @@ suite('rb/resources/models/FileDiff', function() {
 
     describe('parse', function() {
         it('API payloads', function() {
-            var data = model.parse({
-                stat: 'ok',
+            const data = model.parse({
                 filediff: {
-                    id: 42,
                     dest_file: 'my-dest-file',
+                    id: 42,
                     source_file: 'my-source-file',
                     source_revision: 'my-source-revision',
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);
