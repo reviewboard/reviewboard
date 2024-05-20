@@ -1,9 +1,23 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import {
+    BaseResource,
+    Screenshot,
+} from 'reviewboard/common';
+
+
 suite('rb/resources/models/Screenshot', function() {
-    let model;
+    let model: Screenshot;
 
     beforeEach(function(){
-        model = new RB.Screenshot({
-            parentObject: new RB.BaseResource({
+        model = new Screenshot({
+            parentObject: new BaseResource({
                 'public': true,
             }),
         });
@@ -25,7 +39,7 @@ suite('rb/resources/models/Screenshot', function() {
         it('With caption and filename', function() {
             model.set({
                 caption: 'My Caption',
-                filename: 'myfile.png'
+                filename: 'myfile.png',
             });
 
             expect(model.getDisplayName()).toBe('My Caption');
@@ -35,13 +49,13 @@ suite('rb/resources/models/Screenshot', function() {
     describe('parse', function() {
         it('API payloads', function() {
             const data = model.parse({
-                stat: 'ok',
                 screenshot: {
-                    id: 42,
                     caption: 'my-caption',
                     filename: 'my-filename',
+                    id: 42,
                     review_url: '/review-ui/',
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);

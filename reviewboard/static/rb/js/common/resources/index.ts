@@ -30,6 +30,7 @@ export { Review } from './models/reviewModel';
 export { ReviewGroup } from './models/reviewGroupModel';
 export { ReviewReply } from './models/reviewReplyModel';
 export { ReviewRequest } from './models/reviewRequestModel';
+export { Screenshot } from './models/screenshotModel';
 export { ScreenshotComment } from './models/screenshotCommentModel';
 export { ScreenshotCommentReply } from './models/screenshotCommentReplyModel';
 export * as JSONSerializers from './utils/serializers';

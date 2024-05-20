@@ -23,6 +23,9 @@ import {
     type ReviewAttrs,
     Review,
 } from './reviewModel';
+import {
+    Screenshot,
+} from './screenshotModel';
 
 
 /**
@@ -425,8 +428,8 @@ export class ReviewRequest extends BaseResource<
      */
     createScreenshot(
         screenshotID: number,
-    ): RB.Screenshot {
-        return new RB.Screenshot({
+    ): Screenshot {
+        return new Screenshot({
             id: screenshotID,
             parentObject: this,
         });

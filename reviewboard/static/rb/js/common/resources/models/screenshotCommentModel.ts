@@ -16,6 +16,9 @@ import {
 import {
     type SerializerMap,
 } from './baseResourceModel';
+import {
+    Screenshot,
+} from './screenshotModel';
 
 
 /**
@@ -25,7 +28,7 @@ import {
  *     8.0
  */
 export interface ScreenshotCommentAttrs extends BaseCommentAttrs {
-    /** height of the comment region, in pixels. */
+    /** Height of the comment region, in pixels. */
     height: number | null;
 
     /** Screenshot that this comment is on. */
@@ -37,7 +40,7 @@ export interface ScreenshotCommentAttrs extends BaseCommentAttrs {
     /** URL to an image file showing the region of the comment. */
     thumbnailURL: string;
 
-    /** width of the comment region, in pixels. */
+    /** Width of the comment region, in pixels. */
     width: number | null;
 
     /** X coordinate of the pixel at the top-left of the comment region. */
@@ -138,7 +141,7 @@ export class ScreenshotComment extends BaseComment<
     ): Partial<ScreenshotCommentAttrs> {
         const result = super.parseResourceData(rsp);
 
-        result.screenshot = new RB.Screenshot(rsp.screenshot, {
+        result.screenshot = new Screenshot(rsp.screenshot, {
             parse: true,
         });
         result.screenshotID = result.screenshot.id;

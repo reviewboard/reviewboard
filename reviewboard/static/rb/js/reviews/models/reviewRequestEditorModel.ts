@@ -15,6 +15,7 @@ import {
     FileAttachment,
     FileAttachmentStates,
     ReviewRequest,
+    Screenshot,
     UserSession,
 } from 'reviewboard/common';
 import {
@@ -82,7 +83,7 @@ export interface ReviewRequestEditorAttrs extends ModelAttributes {
     reviewRequest: ReviewRequest;
 
     /** The legacy screenshots attached to this review request. */
-    screenshots: Backbone.Collection<RB.Screenshot>;
+    screenshots: Backbone.Collection<Screenshot>;
 
     /** Whether or not to show the "Send e-mail" checkbox. */
     showSendEmail: boolean;
@@ -265,7 +266,7 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
 
         if (screenshots === null) {
             screenshots = new Backbone.Collection([], {
-                model: RB.Screenshot,
+                model: Screenshot,
             });
             this.set('screenshots', screenshots);
         }
@@ -690,7 +691,7 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
      *         The new file attachment or screenshot.
      */
     _onFileAttachmentOrScreenshotAdded(
-        attachment: FileAttachment | RB.Screenshot,
+        attachment: FileAttachment | Screenshot,
     ) {
         this.listenTo(attachment, 'saving',
                       () => this.trigger('saving'));

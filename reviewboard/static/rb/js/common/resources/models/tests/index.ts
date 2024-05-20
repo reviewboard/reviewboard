@@ -11,4 +11,5 @@ import './reviewGroupModelTests';
 import './reviewModelTests';
 import './reviewReplyModelTests';
 import './reviewRequestModelTests';
+import './screenshotModelTests';
 import './screenshotCommentModelTests';
