@@ -35,4 +35,5 @@ export { ReviewRequest } from './models/reviewRequestModel';
 export { Screenshot } from './models/screenshotModel';
 export { ScreenshotComment } from './models/screenshotCommentModel';
 export { ScreenshotCommentReply } from './models/screenshotCommentReplyModel';
+export { UserFileAttachment } from './models/userFileAttachmentModel';
 export * as JSONSerializers from './utils/serializers';

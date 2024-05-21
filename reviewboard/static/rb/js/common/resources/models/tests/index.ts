@@ -14,3 +14,4 @@ import './reviewReplyModelTests';
 import './reviewRequestModelTests';
 import './screenshotModelTests';
 import './screenshotCommentModelTests';
+import './userFileAttachmentModelTests';

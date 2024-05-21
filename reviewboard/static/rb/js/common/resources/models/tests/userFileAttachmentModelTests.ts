@@ -1,8 +1,19 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { UserFileAttachment } from 'reviewboard/common';
+
+
 suite('rb/resources/models/UserFileAttachment', function() {
-    let model;
+    let model: UserFileAttachment;
 
     beforeEach(function() {
-        model = new RB.UserFileAttachment();
+        model = new UserFileAttachment();
     });
 
     describe('toJSON', function() {
@@ -41,10 +52,10 @@ suite('rb/resources/models/UserFileAttachment', function() {
             const data = model.parse({
                 stat: 'ok',
                 user_file_attachment: {
-                    id: 42,
-                    caption: 'caption',
                     absolute_url: 'downloadURL',
+                    caption: 'caption',
                     filename: 'filename',
+                    id: 42,
                 },
             });
 
