@@ -143,7 +143,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/resources/models/generalCommentModel.es6.js',
             'rb/js/resources/models/generalCommentReplyModel.es6.js',
             'rb/js/resources/models/fileDiffModel.es6.js',
-            'rb/js/resources/models/repositoryModel.es6.js',
             'rb/js/resources/models/reviewGroupModel.es6.js',
             'rb/js/resources/models/screenshotModel.es6.js',
             'rb/js/resources/models/screenshotCommentModel.es6.js',

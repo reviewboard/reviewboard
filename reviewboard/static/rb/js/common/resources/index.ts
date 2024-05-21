@@ -14,6 +14,7 @@ export {
     FileAttachment,
     FileAttachmentStates,
 } from './models/fileAttachmentModel';
+export { Repository } from './models/repositoryModel';
 export { Review } from './models/reviewModel';
 export { ReviewReply } from './models/reviewReplyModel';
 export { ReviewRequest } from './models/reviewRequestModel';
