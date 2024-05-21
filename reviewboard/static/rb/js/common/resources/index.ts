@@ -22,6 +22,7 @@ export {
 } from './models/draftResourceChildModelMixin';
 export { DraftResourceModelMixin } from './models/draftResourceModelMixin';
 export { DraftReview } from './models/draftReviewModel';
+export { DraftReviewRequest } from './models/draftReviewRequestModel';
 export {
     FileAttachment,
     FileAttachmentStates,

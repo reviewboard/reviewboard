@@ -1,8 +1,23 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+} from 'jasmine-core';
+
+import {
+    type DraftReviewRequest,
+    ReviewRequest,
+} from 'reviewboard/common';
+
+
 suite('rb/resources/models/DraftReviewRequest', function() {
-    let draft;
+    let draft: DraftReviewRequest;
 
     beforeEach(function() {
-        const reviewRequest = new RB.ReviewRequest({
+        const reviewRequest = new ReviewRequest({
             id: 1,
             links: {
                 draft: {
@@ -29,11 +44,11 @@ suite('rb/resources/models/DraftReviewRequest', function() {
                 expect(request.data.public).toBe(1);
 
                 request.success({
-                    stat: 'ok',
                     draft: {
                         id: 1,
                         links: {},
                     },
+                    stat: 'ok',
                 });
             });
 

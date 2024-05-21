@@ -135,12 +135,15 @@ export const DraftResourceModelMixin = {
      * if we have yet to redirect and otherwise delegate to the prototype
      * implementation.
      *
+     * Users of this mixin may set ``_hasOwnURL`` to ``true`` if they implement
+     * their own url() method.
+     *
      * Returns:
      *     string:
      *     The URL to use for the resource.
      */
     url() {
-        if (this._needDraft) {
+        if (this._needDraft && !this._hasOwnURL) {
             const parentObject = this.get('parentObject');
             const linkName = _.result(this, 'listKey');
             const links = parentObject.get('links');

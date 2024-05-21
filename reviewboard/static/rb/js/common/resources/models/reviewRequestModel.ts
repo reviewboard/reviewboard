@@ -16,6 +16,7 @@ import {
 } from './baseResourceModel';
 import { Diff } from './diffModel';
 import { DraftReview } from './draftReviewModel';
+import { DraftReviewRequest } from './draftReviewRequestModel';
 import {
     type FileAttachmentAttrs,
     FileAttachment,
@@ -261,7 +262,7 @@ export class ReviewRequest extends BaseResource<
      **********************/
 
     /** The current draft of the review request, if any. */
-    draft: RB.DraftReviewRequest;
+    draft: DraftReviewRequest;
 
     /** The collection of reviews for this review request. */
     reviews = new Collection<Review>([], {
@@ -289,7 +290,7 @@ export class ReviewRequest extends BaseResource<
             ReviewRequestOptions, this> = {}) {
         super.initialize(attrs, options);
 
-        this.draft = new RB.DraftReviewRequest(_.defaults({
+        this.draft = new DraftReviewRequest(_.defaults({
             branch: this.get('branch'),
             bugsClosed: this.get('bugsClosed'),
             dependsOn: this.get('dependsOn'),

@@ -4,6 +4,7 @@ import './baseResourceModelTests';
 import './defaultReviewerModelTests';
 import './diffCommentModelTests';
 import './draftReviewModelTests';
+import './draftReviewRequestModelTests';
 import './fileAttachmentCommentModelTests';
 import './fileAttachmentModelTests';
 import './fileDiffModelTests';
