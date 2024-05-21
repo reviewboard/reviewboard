@@ -44,4 +44,5 @@ export { Screenshot } from './models/screenshotModel';
 export { ScreenshotComment } from './models/screenshotCommentModel';
 export { ScreenshotCommentReply } from './models/screenshotCommentReplyModel';
 export { UserFileAttachment } from './models/userFileAttachmentModel';
+export { ValidateDiffModel } from './models/validateDiffModel';
 export * as JSONSerializers from './utils/serializers';

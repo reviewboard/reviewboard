@@ -17,3 +17,4 @@ import './reviewRequestModelTests';
 import './screenshotModelTests';
 import './screenshotCommentModelTests';
 import './userFileAttachmentModelTests';
+import './validateDiffModelTests';

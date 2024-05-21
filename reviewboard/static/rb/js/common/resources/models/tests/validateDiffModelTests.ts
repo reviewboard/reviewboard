@@ -1,8 +1,19 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { ValidateDiffModel } from 'reviewboard/common';
+
+
 suite('rb/resources/models/ValidateDiffModel', function() {
-    let model;
+    let model: ValidateDiffModel;
 
     beforeEach(function() {
-        model = new RB.ValidateDiffModel();
+        model = new ValidateDiffModel();
     });
 
     describe('methods', function() {
@@ -13,7 +24,8 @@ suite('rb/resources/models/ValidateDiffModel', function() {
 
             it('With local site', function() {
                 model.set('localSitePrefix', 's/test-site/');
-                expect(_.result(model, 'url')).toBe('/s/test-site/api/validation/diffs/');
+                expect(model.getURL())
+                    .toBe('/s/test-site/api/validation/diffs/');
             });
 
             it('With a null local site', function() {

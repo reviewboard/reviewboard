@@ -51,9 +51,12 @@ export interface DiffResourceData extends BaseResourceResourceData {
  * It is expected that parentObject will be set to a ReviewRequest instance.
  */
 @spina
-export class Diff extends BaseResource<
-    DiffAttrs,
-    DiffResourceData
+export class Diff<
+    TDefaults extends DiffAttrs = DiffAttrs,
+    TResourceData extends DiffResourceData = DiffResourceData,
+> extends BaseResource<
+    TDefaults,
+    TResourceData
 > {
     static defaults: Result<Partial<DiffAttrs>> = {
         basedir: null,
