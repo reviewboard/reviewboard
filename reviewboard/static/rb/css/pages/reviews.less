@@ -1546,9 +1546,12 @@
   padding: @review-dialog-padding;
 
   label[for="id_shipit"] {
-    color: black;
     font-weight: bold;
-    margin-top: 10px;
+  }
+
+  #id_shipit,
+  label[for="id_shipit"] {
+    vertical-align: middle;
   }
 
   .add-link {
@@ -1560,30 +1563,52 @@
   }
 
   .delete-comment {
-    color: #000000;
+    color: var(--ink-p-fg);
   }
 
   .comment-label {
-    color: #AB5603;
+    .inline-editor-label();
+
+    color: var(--rb-p-draft-label-fg);
+    display: flex;
+    justify-items: center;
     font-size: 1.1em;
     font-weight: bold;
-    margin: 1em 0 2em 0;
+    margin: 0 0 var(--ink-u-spacing-l) 0;
     text-decoration: none;
-
-    .inline-editor-label();
   }
 
-  .comment-text-field {
-    margin-bottom: 1em;
+  .edit-field {
+    > * {
+      vertical-align: middle;
+    }
+
+    .comment-label {
+      margin-right: var(--ink-u-spacing-ml);
+    }
   }
 
-  .rich-text {
-    margin-bottom: 2em;
+  .edit-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-l);
   }
 
   #review-form-comments {
+    @_comment-border-color:
+      var(--if-dark, transparent)
+      var(--if-light, var(--ink-p-grey-400));
+
     background: none;
+    display: flex;
+    flex-direction: column;
     position: relative;
+    gap: var(--ink-u-spacing-xl);
+
+    /* Don't incorporate empty elements into the gap calculations. */
+    > :empty {
+      display: none !important;
+    }
 
     pre {
       white-space: pre-wrap;
@@ -1620,12 +1645,15 @@
     }
 
     .review-comments {
+      display: flex;
+      flex-direction: column;
+      gap: inherit;
       list-style: none;
       margin: 0;
       padding: 0;
 
       > li {
-        margin: 2em 0;
+        margin: 0;
         padding: 0;
 
         .review-comments-inline();
@@ -1652,9 +1680,8 @@
     }
 
     .delete-comment {
+      display: inline-block;
       margin-left: 0.5em;
-      font-size: 1.25em;
-      line-height: normal;
     }
   }
 
@@ -1693,6 +1720,11 @@
        */
       position: absolute;
       left: 0;
+      margin-left: 0;
+
+      > :first-child {
+        margin-left: 0;
+      }
     }
 
     .on-mobile-medium-screen-720({
@@ -2390,6 +2422,9 @@
       > li {
         background-color: @comments-tooltip-background;
         border-bottom: 1px @comments-tooltip-border-color solid;
+        display: flex;
+        flex-direction: column;
+        gap: inherit;
         margin: 0;
         padding: @comments-tooltip-padding;
 

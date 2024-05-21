@@ -378,9 +378,9 @@ suite('rb/views/ReviewDialogView', function() {
 
                             dlg = await createReviewDialog();
 
-                            const $button = dlg._$buttons.find(
-                                'input[value="Add General Comment"]');
+                            const $button = dlg._$buttons.find('button:first');
                             expect($button.length).toBe(1);
+                            expect($button.text()).toBe('Add General Comment');
 
                             expect($.ajax).toHaveBeenCalled();
                             expect($.ajax.calls.argsFor(0)[0].url).toBe(
