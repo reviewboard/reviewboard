@@ -183,36 +183,41 @@ RB.DialogView = Backbone.View.extend({
     _makeButtons() {
         this.$buttonsMap = {};
         this.$buttonsList = this.buttons.map(buttonInfo => {
-            const $button = $('<input type="button">')
-                .val(buttonInfo.label)
-                .attr('id', buttonInfo.id);
+            const buttonAttrs = {
+                id: buttonInfo.id,
+            };
 
             if (buttonInfo.class) {
-                $button.addClass(buttonInfo.class);
+                buttonAttrs.class = buttonInfo.class;
             }
 
             if (buttonInfo.disabled) {
-                $button.attr('disabled', true);
+                buttonAttrs.disabled = true;
             }
 
             if (buttonInfo.primary) {
-                $button.addClass('primary');
-                this._$primaryButton = $button;
-            }
-
-            if (buttonInfo.danger) {
-                $button.addClass('danger');
+                buttonAttrs.type = 'primary';
+            } else if (buttonInfo.danger) {
+                buttonAttrs.type = 'danger';
             }
 
             if (buttonInfo.onClick) {
-                if (_.isFunction(buttonInfo.onClick)) {
-                    $button.click(buttonInfo.onClick);
-                } else {
-                    $button.click(this[buttonInfo.onClick].bind(this));
-                }
+                buttonAttrs.onClick =
+                    _.isFunction(buttonInfo.onClick)
+                    ? buttonInfo.onClick
+                    : this[buttonInfo.onClick].bind(this);
             }
 
+            const $button = $(Ink.paintComponent(
+                'Ink.Button',
+                buttonAttrs,
+                buttonInfo.label));
+
             this.$buttonsMap[buttonInfo.id] = $button;
+
+            if (buttonInfo.primary) {
+                this._$primaryButton = $button;
+            }
 
             return $button;
         });
