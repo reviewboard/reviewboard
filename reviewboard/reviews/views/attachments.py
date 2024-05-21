@@ -142,7 +142,26 @@ class DownloadFileAttachmentView(_FileAttachmentViewMixin,
             draft=draft,
             file_attachment_id=file_attachment_id)
 
-        download_url = file_attachment.get_raw_download_url()
+        download_url: Optional[str] = None
+
+        if request.GET.get('thumbnail'):
+            # The caller requested a thumbnail. Determine the requested size.
+            try:
+                thumbnail_width = int(request.GET.get('width', ''))
+            except ValueError:
+                thumbnail_width = None
+
+            try:
+                thumbnail_height = int(request.GET.get('height', ''))
+            except ValueError:
+                thumbnail_height = None
+
+            if thumbnail_width or thumbnail_height:
+                download_url = file_attachment.get_raw_thumbnail_image_url(
+                    width=thumbnail_width,
+                    height=thumbnail_height)
+        else:
+            download_url = file_attachment.get_raw_download_url()
 
         if download_url:
             return HttpResponseRedirect(download_url)

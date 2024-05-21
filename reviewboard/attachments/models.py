@@ -279,6 +279,9 @@ class FileAttachment(models.Model):
         accessible for only a limited amount of time, and may or may not be
         cacheable by the browser.
 
+        Version Added:
+            7.0
+
         Returns:
             str:
             The absolute URL to the file.
@@ -289,6 +292,48 @@ class FileAttachment(models.Model):
             return None
 
         url = self.file.url
+
+        if not url or url.startswith(('http:', 'https:')):
+            return url
+
+        return build_server_url(url)
+
+    def get_raw_thumbnail_image_url(
+        self,
+        *,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+    ) -> Optional[str]:
+        """Return the absolute URL for an image thumbnail for this file.
+
+        The URL will be determined by the storage backend. It may be
+        accessible for only a limited amount of time, and may or may not be
+        cacheable by the browser.
+
+        Not all file attachments support image thumbnails. If not supported,
+        this will be ``None``.
+
+        Version Added:
+            7.0
+
+        Returns:
+            str:
+            The absolute URL to the file.
+
+            This will be ``None`` if there's no file backing for any reason,
+            or if the attachment doesn't support image thumbnails.
+        """
+        url: Optional[str] = None
+        mimetype_handler = self.mimetype_handler
+
+        if mimetype_handler:
+            try:
+                url = mimetype_handler.get_raw_thumbnail_image_url(
+                    width=width,
+                    height=height)
+            except NotImplementedError:
+                # This file type doesn't support image thumbnails.
+                pass
 
         if not url or url.startswith(('http:', 'https:')):
             return url
