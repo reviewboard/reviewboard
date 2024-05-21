@@ -71,11 +71,12 @@
 
   &.diff-error {
     td {
-      background: @diff-error-color;
+      background: var(--ink-p-accent-warning-bg);
+      color: var(--ink-p-accent-warning-fg);
       padding: 1em;
 
       a:not(.btn) {
-        color: var(--ink-p-link-fg);
+        color: var(--ink-p-link-fg-on-light);
         font-weight: bold;
       }
 
