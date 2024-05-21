@@ -400,20 +400,22 @@ export class DiffCommentView extends BaseCommentView<
     DiffCommentViewOptions
 > {
     static thumbnailTemplate = _.template(dedent`
-        <div class="review-dialog-comment-diff"
-             id="review_draft_comment_container_<%= id %>">
-         <table class="sidebyside loading">
-          <thead>
-           <tr>
-            <th class="filename"><%- revisionText %></th>
-           </tr>
-          </thead>
-          <tbody>
-           <% for (var i = 0; i < numLines; i++) { %>
-            <tr><td><pre>&nbsp;</pre></td></tr>
-           <% } %>
-          </tbody>
-         </table>
+        <div class="rb-c-review-comment-thumbnail">
+         <div class="rb-c-review-comment-thumbnail__content"
+              id="review_draft_comment_container_<%= id %>">
+          <table class="sidebyside loading">
+           <thead>
+            <tr>
+             <th class="filename"><%- revisionText %></th>
+            </tr>
+           </thead>
+           <tbody>
+            <% for (var i = 0; i < numLines; i++) { %>
+             <tr><td><pre>&nbsp;</pre></td></tr>
+            <% } %>
+           </tbody>
+          </table>
+         </div>
         </div>
     `);
 
@@ -502,12 +504,20 @@ class FileAttachmentCommentView extends BaseCommentView<
     RB.FileAttachmentComment
 > {
     static thumbnailTemplate = _.template(dedent`
-        <div class="file-attachment">
-         <span class="filename">
-          <a href="<%- reviewURL %>"><%- linkText %></a>
-         </span>
-         <span class="diffrevision"><%- revisionsStr %></span>
-         <div class="thumbnail"><%= thumbnailHTML %></div>
+        <div class="rb-c-review-comment-thumbnail">
+         <a class="rb-c-review-comment-thumbnail__header"
+            href="<%- reviewURL %>">
+          <span class="rb-c-review-comment-thumbnail__name"
+                href="<%- reviewURL %>"><%-
+           linkText
+          %></span>
+          <span class="rb-c-review-comment-thumbnail__revision"><%-
+           revisionsStr
+          %></span>
+         </a>
+         <div class="rb-c-review-comment-thumbnail__content"><%=
+          thumbnailHTML
+         %></div>
         </div>
     `);
 
@@ -564,12 +574,17 @@ class ScreenshotCommentView extends BaseCommentView<
     RB.ScreenshotComment
 > {
     static thumbnailTemplate = _.template(dedent`
-        <div class="screenshot">
-         <span class="filename">
-          <a href="<%- screenshot.reviewURL %>"><%- displayName %></a>
-         </span>
-         <img src="<%- thumbnailURL %>" width="<%- width %>"
-              height="<%- height %>" alt="<%- displayName %>">
+        <div class="rb-c-review-comment-thumbnail">
+         <a class="rb-c-review-comment-thumbnail__header"
+            href="<%- screenshot.reviewURL %>">
+          <span class="rb-c-review-comment-thumbnail__name"><%-
+           displayName
+          %></span>
+         </a>
+         <div class="rb-c-review-comment-thumbnail__content">
+          <img src="<%- thumbnailURL %>" width="<%- width %>"
+               height="<%- height %>" alt="<%- displayName %>">
+         </div>
         </div>
     `);
 
