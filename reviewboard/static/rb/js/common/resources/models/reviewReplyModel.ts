@@ -102,7 +102,6 @@ interface ReviewReplyPublishOptions extends Backbone.PersistenceOptions {
     prototypeAttrs: [
         'COMMENT_LINK_NAMES',
         'extraQueryArgs',
-        'listKey',
     ],
 })
 export class ReviewReply extends BaseResource<
