@@ -935,12 +935,6 @@ def reviewable_page_model_data(
                     args=[review_request.display_id, '--bug_id--'],
                     request=request)
 
-    if draft:
-        review_request_data['submitter'] = {
-            'title': draft.submitter.username,
-            'url': draft.submitter.get_absolute_url(),
-        }
-
     # Build the data for the RB.ReviewRequestEditor.
     editor_data = {
         'closeDescriptionRenderedText': _render_markdown(
@@ -970,6 +964,12 @@ def reviewable_page_model_data(
 
     # Build extra data for the RB.ReviewRequest.
     extra_review_request_draft_data = {}
+
+    if draft:
+        extra_review_request_draft_data['submitter'] = {
+            'title': draft.submitter.username,
+            'href': draft.submitter.get_absolute_url(),
+        }
 
     if draft and draft.changedesc:
         extra_review_request_draft_data.update({

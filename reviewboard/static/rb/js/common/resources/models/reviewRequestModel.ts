@@ -12,11 +12,15 @@ import { UserSession } from '../../models/userSessionModel';
 import {
     type BaseResourceAttrs,
     type BaseResourceResourceData,
+    type ResourceLink,
     BaseResource,
 } from './baseResourceModel';
 import { Diff } from './diffModel';
 import { DraftReview } from './draftReviewModel';
-import { DraftReviewRequest } from './draftReviewRequestModel';
+import {
+    type DraftReviewRequestAttrs,
+    DraftReviewRequest,
+} from './draftReviewRequestModel';
 import {
     type FileAttachmentAttrs,
     FileAttachment,
@@ -63,7 +67,7 @@ export interface ReviewRequestAttrs extends BaseResourceAttrs {
     closeDescriptionRichText: boolean;
 
     /** A list of other review requests that this one depends on. */
-    dependsOn: ReviewRequest[];
+    dependsOn: ResourceLink[];
 
     /** The review request description */
     description: string;
@@ -101,10 +105,10 @@ export interface ReviewRequestAttrs extends BaseResourceAttrs {
     summary: string;
 
     /** A list of group names that this review request is assigned to. */
-    targetGroups: string[];
+    targetGroups: ResourceLink[];
 
     /** A list of user names that this review request is assigned to. */
-    targetPeople: string[];
+    targetPeople: ResourceLink[];
 
     /** The testing done field for the review request. */
     testingDone: string;
@@ -150,7 +154,8 @@ export interface ReviewRequestResourceData extends BaseResourceResourceData {
  *     7.0
  */
 interface ReviewRequestOptions {
-    extraDraftAttrs?: { [key: string]: unknown };
+    /** Extra attributes to set on the draft object. */
+    extraDraftAttrs?: Partial<DraftReviewRequestAttrs>;
 }
 
 
@@ -290,19 +295,21 @@ export class ReviewRequest extends BaseResource<
             ReviewRequestOptions, this> = {}) {
         super.initialize(attrs, options);
 
-        this.draft = new DraftReviewRequest(_.defaults({
-            branch: this.get('branch'),
-            bugsClosed: this.get('bugsClosed'),
-            dependsOn: this.get('dependsOn'),
-            description: this.get('description'),
-            descriptionRichText: this.get('descriptionRichText'),
-            parentObject: this,
-            summary: this.get('summary'),
-            targetGroups: this.get('targetGroups'),
-            targetPeople: this.get('targetPeople'),
-            testingDone: this.get('testingDone'),
-            testingDoneRichText: this.get('testingDoneRichText'),
-        }, options.extraDraftAttrs));
+        this.draft = new DraftReviewRequest(Object.assign(
+            _.pick(this.attributes, [
+                'branch',
+                'bugsClosed',
+                'dependsOn',
+                'description',
+                'descriptionRichText',
+                'summary',
+                'targetGroups',
+                'targetPeople',
+                'testingDone',
+                'testingDoneRichText',
+            ]),
+            { parentObject: this },
+            options.extraDraftAttrs));
     }
 
     /**

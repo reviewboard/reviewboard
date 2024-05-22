@@ -5,12 +5,25 @@
 import { BaseView, spina } from '@beanbag/spina';
 
 import {
+    type ResourceLink,
+} from 'reviewboard/common/resources/models/baseResourceModel';
+import {
+    type ReviewGroupResourceData,
+} from 'reviewboard/common/resources/models/reviewGroupModel';
+import {
+    type ReviewRequestResourceData,
+} from 'reviewboard/common/resources/models/reviewRequestModel';
+import {
+    type UserResourceData,
+} from 'reviewboard/common/resources/models/userModel';
+import {
     InlineEditorView,
     RichTextInlineEditorView,
 } from 'reviewboard/ui';
 import {
     type InlineEditorViewOptions,
 } from 'reviewboard/ui/views/inlineEditorView';
+
 import {
     type GetDraftFieldOptions,
     type ReviewRequestEditor,
@@ -441,12 +454,12 @@ export class TextFieldView extends BaseFieldView {
      *     jQuery:
      *     The resulting link element wrapped in jQuery.
      */
-    _convertToLink(
-        item: unknown,
+    _convertToLink<T>(
+        item: T,
         options: {
             cssClass?: string;
-            makeItemText?: (unknown) => string;
-            makeItemURL?: (unknown) => string;
+            makeItemText?: (item: T) => string;
+            makeItemURL?: (item: T) => string;
         } = {},
     ): JQuery {
         if (!item) {
@@ -780,19 +793,19 @@ export class CommaSeparatedValuesTextFieldView extends TextFieldView {
      *     jQuery:
      *     The resulting link elements in a jQuery list.
      */
-    _urlizeList(
-        list: unknown[],
+    _urlizeList<T>(
+        list: T[],
         options: {
             cssClass?: string;
-            makeItemText?: (unknown) => string;
-            makeItemURL?: (unknown) => string;
+            makeItemText?: (item: T) => string;
+            makeItemURL?: (item: T) => string;
         } = {},
     ): JQuery {
         let $links = $();
 
         if (list) {
             for (let i = 0; i < list.length; i++) {
-                $links = $links.add(this._convertToLink(list[i], options));
+                $links = $links.add(this._convertToLink<T>(list[i], options));
 
                 if (i < list.length - 1) {
                     $links = $links.add(document.createTextNode(', '));
@@ -810,7 +823,7 @@ export class CommaSeparatedValuesTextFieldView extends TextFieldView {
      *     data (Array):
      *         The new value of the field.
      */
-    formatValue(data?: string[]) {
+    formatValue(data?: unknown[]) {
         data = data || [];
         this.$el.html(data.join(', '));
     }
@@ -942,7 +955,7 @@ export class BugsFieldView extends CommaSeparatedValuesTextFieldView {
         if (bugTrackerURL) {
             this.$el
                 .empty()
-                .append(this._urlizeList(data, {
+                .append(this._urlizeList<string>(data, {
                     cssClass: 'bug',
                     makeItemURL: item => bugTrackerURL.replace(
                         '--bug_id--', item),
@@ -1084,14 +1097,20 @@ export class DependsOnFieldView extends CommaSeparatedValuesTextFieldView {
      *     data (Array):
      *         The new value of the field.
      */
-    formatValue(data: string[]) {
+    formatValue(data: ReviewRequestResourceData[]) {
         data = data || [];
 
         this.$el
             .empty()
-            .append(this._urlizeList(data, {
+            .append(this._urlizeList<ReviewRequestResourceData>(data, {
                 cssClass: 'review-request-link',
-                makeItemText: item => item.id,
+                makeItemText: item => {
+                    if (typeof item.id === 'number') {
+                        return item.id.toString();
+                    } else {
+                        return item.id;
+                    }
+                },
                 makeItemURL: item => item.url,
             }))
             .find('.review-request-link').review_request_infobox();
@@ -1156,8 +1175,8 @@ export class OwnerFieldView extends TextFieldView {
      *     data (string):
      *         The new value of the field.
      */
-    formatValue(data: string) {
-        const $link = this._convertToLink(
+    formatValue(data: ResourceLink) {
+        const $link = this._convertToLink<ResourceLink>(
             data,
             {
                 cssClass: 'user',
@@ -1209,12 +1228,12 @@ export class TargetGroupsFieldView extends CommaSeparatedValuesTextFieldView {
      *     data (Array):
      *         The new value of the field.
      */
-    formatValue(data: string[]) {
+    formatValue(data: ReviewGroupResourceData[]) {
         data = data || [];
 
         this.$el
             .empty()
-            .append(this._urlizeList(data, {
+            .append(this._urlizeList<ReviewGroupResourceData>(data, {
                 makeItemText: item => item.name,
                 makeItemURL: item => item.url,
             }));
@@ -1268,7 +1287,7 @@ export class TargetPeopleFieldView extends CommaSeparatedValuesTextFieldView {
      *     data (Array):
      *         The new value of the field.
      */
-    formatValue(data: string[]) {
+    formatValue(data: UserResourceData[]) {
         data = data || [];
         this.$el
             .empty()

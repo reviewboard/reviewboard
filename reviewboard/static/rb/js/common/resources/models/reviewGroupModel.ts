@@ -127,8 +127,8 @@ export interface ReviewGroupAttrs extends BaseResourceAttrs {
  *     7.0.1
  */
 export interface ReviewGroupResourceData extends BaseResourceResourceData {
-    /** The name of the review group. */
     name: string;
+    url: string;
 }
 
 
