@@ -310,7 +310,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/admin/models/widgetModel.es6.js',
             'rb/js/admin/models/newsWidgetModel.es6.js',
             'rb/js/admin/models/serverActivityWidgetModel.es6.js',
-            'rb/js/admin/views/pageView.es6.js',
             'rb/js/admin/views/changeFormPageView.es6.js',
             'rb/js/admin/views/changeListPageView.es6.js',
             'rb/js/admin/views/dashboardPageView.es6.js',
