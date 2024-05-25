@@ -1,9 +1,19 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { MenuView } from 'reviewboard/ui';
+
+
 suite('rb/ui/views/MenuView', function() {
     const ANIMATE_WAIT_MS = 300;
 
     describe('Rendering', function() {
         it('Standard menus', function() {
-            const view = new RB.MenuView();
+            const view = new MenuView();
             view.render().$el.appendTo($testsScratch);
 
             expect(view.el.id).toBe(view.id);
@@ -19,8 +29,8 @@ suite('rb/ui/views/MenuView', function() {
         });
 
         it('Button menus', function() {
-            const view = new RB.MenuView({
-                type: RB.MenuView.TYPE_BUTTON_MENU,
+            const view = new MenuView({
+                type: MenuView.TYPE_BUTTON_MENU,
             });
             view.render().$el.appendTo($testsScratch);
 
@@ -37,10 +47,10 @@ suite('rb/ui/views/MenuView', function() {
         });
 
         it('With ariaLabelledBy', function() {
-            const view = new RB.MenuView({
+            const view = new MenuView({
                 ariaLabel: 'unused label',
                 ariaLabelledBy: 'abc123',
-                type: RB.MenuView.TYPE_BUTTON_MENU,
+                type: MenuView.TYPE_BUTTON_MENU,
             });
             view.render().$el.appendTo($testsScratch);
 
@@ -49,9 +59,9 @@ suite('rb/ui/views/MenuView', function() {
         });
 
         it('With ariaLabel', function() {
-            const view = new RB.MenuView({
+            const view = new MenuView({
                 ariaLabel: 'ARIA label',
-                type: RB.MenuView.TYPE_BUTTON_MENU,
+                type: MenuView.TYPE_BUTTON_MENU,
             });
             view.render();
 
@@ -62,9 +72,9 @@ suite('rb/ui/views/MenuView', function() {
         it('With $controller', function() {
             const $controller = $('<div>');
 
-            const view = new RB.MenuView({
+            const view = new MenuView({
                 $controller: $controller,
-                type: RB.MenuView.TYPE_BUTTON_MENU,
+                type: MenuView.TYPE_BUTTON_MENU,
             });
             view.render();
 
@@ -79,7 +89,7 @@ suite('rb/ui/views/MenuView', function() {
     describe('Methods', function() {
         describe('addItem', function() {
             it('For standard menus', function() {
-                const view = new RB.MenuView();
+                const view = new MenuView();
                 view.render();
 
                 const $menuItem = view.addItem();
@@ -97,8 +107,8 @@ suite('rb/ui/views/MenuView', function() {
             });
 
             it('For button menus', function() {
-                const view = new RB.MenuView({
-                    type: RB.MenuView.TYPE_BUTTON_MENU,
+                const view = new MenuView({
+                    type: MenuView.TYPE_BUTTON_MENU,
                 });
                 view.render();
 
@@ -118,8 +128,8 @@ suite('rb/ui/views/MenuView', function() {
             });
 
             it('With text', function() {
-                const view = new RB.MenuView({
-                    type: RB.MenuView.TYPE_BUTTON_MENU,
+                const view = new MenuView({
+                    type: MenuView.TYPE_BUTTON_MENU,
                 });
                 view.render();
 
@@ -131,14 +141,14 @@ suite('rb/ui/views/MenuView', function() {
         });
 
         describe('open', function() {
-            let $controller;
-            let view;
+            let $controller: JQuery;
+            let view: MenuView;
 
             beforeEach(function() {
                 $controller = $('<div>')
                     .appendTo($testsScratch);
 
-                view = new RB.MenuView({
+                view = new MenuView({
                     $controller: $controller,
                 });
                 view.render().$el.appendTo($testsScratch);
@@ -189,14 +199,14 @@ suite('rb/ui/views/MenuView', function() {
         });
 
         describe('close', function() {
-            let $controller;
-            let view;
+            let $controller: JQuery;
+            let view: MenuView;
 
             beforeEach(function() {
                 $controller = $('<div aria-expanded="true">')
                     .appendTo($testsScratch);
 
-                view = new RB.MenuView({
+                view = new MenuView({
                     $controller: $controller,
                 });
                 view.render().$el.appendTo($testsScratch);
@@ -249,7 +259,7 @@ suite('rb/ui/views/MenuView', function() {
         });
 
         it('focusFirstItem', function() {
-            const view = new RB.MenuView();
+            const view = new MenuView();
             view.render().$el.appendTo($testsScratch);
             view.open({
                 animate: false,
@@ -274,7 +284,7 @@ suite('rb/ui/views/MenuView', function() {
         });
 
         it('focusLastItem', function() {
-            const view = new RB.MenuView();
+            const view = new MenuView();
             view.render().$el.appendTo($testsScratch);
             view.open({
                 animate: false,
@@ -300,11 +310,11 @@ suite('rb/ui/views/MenuView', function() {
     });
 
     describe('Keyboard Accessibility', function() {
-        let $controller;
-        let $item1;
-        let $item2;
-        let $item3;
-        let view;
+        let $controller: JQuery;
+        let $item1: JQuery;
+        let $item2: JQuery;
+        let $item3: JQuery;
+        let view: MenuView;
 
         function sendKeyDown(keyCode) {
             view.$el.trigger($.Event('keydown', {
@@ -316,7 +326,7 @@ suite('rb/ui/views/MenuView', function() {
             $controller = $('<div>')
                 .appendTo($testsScratch);
 
-            view = new RB.MenuView({
+            view = new MenuView({
                 $controller: $controller,
             });
             view.render().$el.appendTo($testsScratch);

@@ -68,8 +68,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/reviewRequestPage/views/tests/reviewViewTests.es6.js',
             'rb/js/ui/views/tests/drawerViewTests.es6.js',
             'rb/js/ui/views/tests/infoboxManagerViewTests.es6.js',
-            'rb/js/ui/views/tests/menuButtonViewTests.es6.js',
-            'rb/js/ui/views/tests/menuViewTests.es6.js',
             'rb/js/ui/views/tests/notificationManagerTests.es6.js',
             'rb/js/ui/views/tests/scrollManagerViewTests.es6.js',
             'rb/js/utils/tests/apiUtilsTests.es6.js',

@@ -1,7 +1,17 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { MenuButtonView } from 'reviewboard/ui';
+
+
 suite('rb/ui/views/MenuButtonView', function() {
     describe('Rendering', function() {
         it('With primary button', function() {
-            const view = new RB.MenuButtonView({
+            const view = new MenuButtonView({
                 ariaMenuLabel: 'Test ARIA label',
                 menuItems: [
                     {text: 'Item 1'},
@@ -32,7 +42,7 @@ suite('rb/ui/views/MenuButtonView', function() {
         });
 
         it('Without primary button', function() {
-            const view = new RB.MenuButtonView({
+            const view = new MenuButtonView({
                 ariaMenuLabel: 'Test ARIA label',
                 menuItems: [
                     {text: 'Item 1'},
@@ -65,7 +75,7 @@ suite('rb/ui/views/MenuButtonView', function() {
     describe('Events', function() {
         let view;
 
-        function sendDropDownButtonEvent(name, options) {
+        function sendDropDownButtonEvent(name, options?) {
             const evt = $.Event(name, options);
             view.$('.rb-c-menu-button__toggle').trigger(evt);
 
@@ -79,7 +89,7 @@ suite('rb/ui/views/MenuButtonView', function() {
         }
 
         beforeEach(function() {
-            view = new RB.MenuButtonView({
+            view = new MenuButtonView({
                 text: 'Text',
             });
             view.render();
