@@ -8,6 +8,7 @@ import {
 import { onlyIfNew } from '../utils/serializers';
 import {
     type BaseResourceAttrs,
+    type BaseResourceResourceData,
     type SerializerMap,
     BaseResource,
 } from './baseResourceModel';
@@ -97,10 +98,31 @@ export interface FileAttachmentAttrs extends BaseResourceAttrs {
 
 
 /**
+ * Resource data for the FileAttachment model.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface FileAttachmentResourceData extends BaseResourceResourceData {
+    attachment_history_id: number;
+    caption: string;
+    filename: string;
+    review_url: string;
+    revision: string;
+    state: string;
+    thumbnail: string;
+    url: string;
+}
+
+
+/**
  * Represents a new or existing file attachment.
  */
 @spina
-export class FileAttachment extends BaseResource<FileAttachmentAttrs> {
+export class FileAttachment extends BaseResource<
+    FileAttachmentAttrs,
+    FileAttachmentResourceData
+> {
     /**
      * Return default values for the model attributes.
      *
@@ -144,7 +166,6 @@ export class FileAttachment extends BaseResource<FileAttachmentAttrs> {
         'caption',
         'downloadURL',
         'filename',
-        'publishedCaption',
         'reviewURL',
         'revision',
         'state',
