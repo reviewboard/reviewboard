@@ -1419,7 +1419,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
                 Additional keyword arguments, for future expansion.
 
         Raises:
-            reviewboard.cert.errors.CertificateNotFoundErro:
+            reviewboard.cert.errors.CertificateNotFoundError:
                 The fingerprints were not found.
 
             reviewboard.cert.errors.CertificateStorageError:

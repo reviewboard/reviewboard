@@ -98,7 +98,7 @@ class DiffCommitManagerTests(kgb.SpyAgency, TestCase):
             revision=1)
 
         with self.assertRaises(IntegrityError):
-            commit = DiffCommit.objects.create_from_data(
+            DiffCommit.objects.create_from_data(
                 repository=repository,
                 diff_file_name='diff',
                 diff_file_contents=self.commit_test_diff,

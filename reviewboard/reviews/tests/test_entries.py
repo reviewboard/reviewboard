@@ -475,9 +475,9 @@ class StatusUpdatesEntryMixinTests(TestCase):
              ' status-update-state-failure">\n'
              ' <span class="summary">My summary.</span>\n'
              ' timed out.\n'
-             ' <input class="status-update-request-run"'
-             '        data-status-update-id="1"'
-             '        type="button" value="Retry" />'
+             ' <button class="ink-c-button status-update-request-run"'
+             '         data-status-update-id="1"'
+             '         type="button">Retry</button>'
              '</div>'))
 
     @add_fixtures(['test_users'])
@@ -500,9 +500,9 @@ class StatusUpdatesEntryMixinTests(TestCase):
              ' status-update-state-not-yet-run">\n'
              ' <span class="summary">My summary.</span>\n'
              ' not yet run.\n'
-             ' <input class="status-update-request-run"'
-             '        data-status-update-id="1"'
-             '        type="button" value="Run" />'
+             ' <button class="ink-c-button status-update-request-run"'
+             '         data-status-update-id="1"'
+             '         type="button">Run</button>'
              '</div>'))
 
     @add_fixtures(['test_users'])

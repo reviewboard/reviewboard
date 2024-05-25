@@ -54,7 +54,6 @@ class ThemeFormTests(kgb.SpyAgency, TestCase):
 
         self.assertEqual(form.fields['ui_theme'].choices, [
             ('default', 'Default appearance (Light mode)'),
-            ('light', 'Light mode'),
             ('dark', 'Dark mode (beta)'),
             ('system', 'Use system theme (beta)'),
         ])

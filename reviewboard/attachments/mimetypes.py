@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
-import docutils.core
+from collections import OrderedDict
 import logging
 import os
 import subprocess
-from typing import Optional, TYPE_CHECKING
+from typing import ClassVar, Final, Optional, TYPE_CHECKING
 
+import docutils.core
 import mimeparse
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.templatetags.static import static
 from django.utils.html import format_html, format_html_join
 from django.utils.encoding import force_str, smart_str
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext as _
 from djblets.cache.backend import cache_memoize
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.filesystem import is_exe_in_path
@@ -266,16 +268,32 @@ class MimetypeHandler(object):
             The mimetype for the file attachment.
     """
 
-    MIMETYPES_DIR = 'rb/images/mimetypes'
+    MIMETYPES_DIR: Final[str] = 'rb/images/mimetypes'
+
+    #: All scaling factors for multi-DPI thumbnail images.
+    #:
+    #: This is only used for mimetype handlers that support thumbnail images.
+    #:
+    #: Version Added:
+    #:     7.0
+    THUMBNAIL_IMAGE_SCALES: Final[tuple[int, ...]] = (1, 2, 3)
+
+    #: The base size for thumbnail images.
+    #:
+    #: This is only used for mimetype handlers that support thumbnail images.
+    #:
+    #: Version Added:
+    #:     7.0
+    BASE_THUMBNAIL_IMAGE_WIDTH: Final[int] = 300
 
     #: A list of mimetypes supported by this handler.
-    supported_mimetypes = []
+    supported_mimetypes: ClassVar[list[str]] = []
 
     #: Whether HD thumbnails are provided by this handler.
     #:
     #: Subclasses (especially in extensions) can use this to introspect what
     #: size thumbnails they should generate.
-    use_hd_thumbnails = True
+    use_hd_thumbnails: ClassVar[bool] = True
 
     def __init__(self, attachment, mimetype):
         """Initialize the handler.
@@ -413,6 +431,100 @@ class MimetypeHandler(object):
         """
         raise NotImplementedError
 
+    def get_raw_thumbnail_image_url(
+        self,
+        *,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+    ) -> Optional[str]:
+        """Return the URL to a thumbnail of a given size.
+
+        For mimetype handlers that support image-based thumbnails, this will
+        compute a thumbnail matching the given size requirements, and then
+        return the URL to that thumbnail in file storage.
+
+        The caller must provide a width or a height at minimum, and may provide
+        both. If providing only a width or a height, the thumbnail size is
+        expected to be constrained only to that dimension.
+
+        Subclasses must override :py:meth:`generate_thumbnail_image` to
+        provide the logic for creating a thumbnail.
+
+        Version Added:
+            7.0
+
+        Args:
+            width (int, optional):
+                The width to constrain the thumbnail image to.
+
+            height (int, optional):
+                The height to constrain the thumbnail image to.
+
+        Raises:
+            NotImplementedError:
+                The mimetype handler does not support thumbnail images.
+
+            ValueError:
+                Neither a width nor a height was provided.
+
+        Returns:
+            str:
+            The URL to the thumbnail, or ``None`` if one could not be
+            generated.
+        """
+        if not width and not height:
+            raise ValueError(
+                _('Either a thumbnail width or height must be provided.'))
+
+        return self.generate_thumbnail_image(width=width,
+                                             height=height)
+
+    def generate_thumbnail_image(
+        self,
+        *,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        create_if_missing: bool = True,
+    ) -> Optional[str]:
+        """Generate a thumbnail of a given size.
+
+        For mimetype handlers that support image-based thumbnails, this must
+        generate a thumbnail matching the given size requirements, and then
+        return the URL to that thumbnail.
+
+        The caller must provide a width or a height at minimum, and may provide
+        both. If providing only a width or a height, the thumbnail size is
+        expected to be constrained only to that dimension.
+
+        Version Added:
+            7.0
+
+        Args:
+            width (int, optional):
+                The width to constrain the thumbnail image to.
+
+            height (int, optional):
+                The height to constrain the thumbnail image to.
+
+            create_if_missing (bool, optional):
+                Whether to create the thumbnail if one does not already exist.
+
+                If ``False``, the existing thumbnail URL will be returned if
+                it exists, but a new one will not otherwise be created.
+
+        Raises:
+            NotImplementedError:
+                The mimetype handler does not support thumbnail images.
+
+        Returns:
+            str:
+            The URL to the thumbnail, or ``None`` if one could not be
+            generated.
+        """
+        raise NotImplementedError(
+            _('%s does not support generating thumbnail images.')
+            % type(self).__name__)
+
     def delete_associated_files(self) -> None:
         """Delete any extra files associated with this attachment.
 
@@ -435,27 +547,6 @@ class ImageMimetype(MimetypeHandler):
 
     supported_mimetypes = ['image/*']
 
-    def __init__(
-        self,
-        attachment: FileAttachment,
-        mimetype: str,
-    ) -> None:
-        """Initialize the handler.
-
-        Args:
-            attachment (reviewboard.attachments.models.FileAttachment):
-                The file attachment being handled.
-
-            mimetype (str):
-                The mimetype for the file attachment.
-        """
-        super().__init__(attachment, mimetype)
-
-        self._thumbnails = {
-            '1x': thumbnail(attachment.file, (300, None)),
-            '2x': thumbnail(attachment.file, (600, None)),
-        }
-
     def get_thumbnail(self):
         """Return a thumbnail of the image.
 
@@ -463,16 +554,79 @@ class ImageMimetype(MimetypeHandler):
             django.utils.safestring.SafeText:
             The HTML for the thumbnail for the associated attachment.
         """
-        thumbnails = self._thumbnails
+        attachment = self.attachment
+        url = attachment.get_absolute_url()
+        base_size = self.BASE_THUMBNAIL_IMAGE_WIDTH
+
+        thumbnails = OrderedDict(
+            (f'{scale}x', f'{url}?thumbnail=1&width={base_size * scale}')
+            for scale in self.THUMBNAIL_IMAGE_SCALES
+        )
 
         return format_html(
             '<div class="file-thumbnail">'
-            ' <img src="{src_1x}" srcset="{src_1x} 1x, {src_2x} 2x"'
+            ' <img src="{src}" srcset="{srcset}"'
             ' alt="{caption}" width="300" />'
             '</div>',
-            src_1x=thumbnails['1x'],
-            src_2x=thumbnails['2x'],
-            caption=self.attachment.caption)
+            src=thumbnails['1x'],
+            srcset=', '.join(
+                f'{_url} {_scale}'
+                for _scale, _url in thumbnails.items()
+            ),
+            caption=attachment.caption)
+
+    def generate_thumbnail_image(
+        self,
+        *,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        create_if_missing: bool = True,
+    ) -> Optional[str]:
+        """Generate a thumbnail of a given size.
+
+        For mimetype handlers that support image-based thumbnails, this must
+        generate a thumbnail matching the given size requirements, and then
+        return the URL to that thumbnail.
+
+        The caller must provide a width or a height at minimum, and may provide
+        both. If providing only a width or a height, the thumbnail size is
+        expected to be constrained only to that dimension.
+
+        Version Added:
+            7.0
+
+        Args:
+            width (int, optional):
+                The width to constrain the thumbnail image to.
+
+            height (int, optional):
+                The height to constrain the thumbnail image to.
+
+            create_if_missing (bool, optional):
+                Whether to create the thumbnail if one does not already exist.
+
+                If ``False``, the existing thumbnail URL will be returned if
+                it exists, but a new one will not otherwise be created.
+
+        Raises:
+            NotImplementedError:
+                The mimetype handler does not support thumbnail images.
+
+        Returns:
+            str:
+            The URL to the thumbnail, or ``None`` if one could not be
+            generated.
+        """
+        file = self.attachment.file
+
+        if not file or not file.name:
+            # This may occur during tests. There's no file contents saved,
+            # so nothing to delete.
+            return None
+
+        return thumbnail(file,
+                         size=(width, height),
+                         create_if_missing=create_if_missing)
 
     def delete_associated_files(self) -> None:
         """Delete the thumbnail files for this attachment.
@@ -484,17 +638,23 @@ class ImageMimetype(MimetypeHandler):
         site_media_url = siteconfig.get('site_media_url')
         storage = self.attachment.file.storage
 
-        for t in self._thumbnails.values():
+        base_size = self.BASE_THUMBNAIL_IMAGE_WIDTH
+
+        for scale in self.THUMBNAIL_IMAGE_SCALES:
+            url = self.generate_thumbnail_image(width=base_size * scale,
+                                                create_if_missing=False)
+
+            if not url:
+                # There's no image to delete.
+                continue
+
             filename: Optional[str] = None
 
-            if t.startswith(site_media_url):
-                filename = t[len(site_media_url):]
+            if url.startswith(site_media_url):
+                filename = url[len(site_media_url):]
 
             if filename and storage.exists(filename):
                 storage.delete(filename)
-            else:
-                logger.warning('Unable to find and delete thumbnail file '
-                               'at %s', t)
 
 
 class TextMimetype(MimetypeHandler):

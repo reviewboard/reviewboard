@@ -276,7 +276,7 @@ class GitTool(SCMTool):
                 valid number.
 
             Exception:
-                An unexpected exception has ocurred. Callers should check
+                An unexpected exception has occurred. Callers should check
                 for this and handle it.
         """
         client = GitClient(path,
@@ -457,12 +457,6 @@ class GitDiffParser(DiffParser):
                file, if any.
         """
         lines = self.lines
-
-        # First check if it is a new file with no content, a file mode
-        # change with no content, or a deleted file with no content. If so,
-        # we'll skip this diff.
-        start_linenum = linenum
-
         diff_git_line = lines[linenum]
         linenum += 1
 

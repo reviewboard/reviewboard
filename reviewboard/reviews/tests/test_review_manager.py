@@ -862,23 +862,23 @@ class ReviewManagerTests(TestCase):
         # Published review from a review request that has an invite-only review
         # group not accessible to the user, but the user has access to through
         # being a targeted reviewer.
-        review_request_targetted = self.create_review_request(
+        review_request_targeted = self.create_review_request(
             publish=True,
             local_site=local_site,
             local_id=3)
-        review_request_targetted.target_groups.add(group)
-        review_request_targetted.target_people.add(user)
-        review7 = self.create_review(review_request_targetted, publish=True)
+        review_request_targeted.target_groups.add(group)
+        review_request_targeted.target_people.add(user)
+        review7 = self.create_review(review_request_targeted, publish=True)
 
         # Published review from a review request that has an invite-only review
         # group not accessible to the user, and that the user does not have
         # access to because the user is not listed as a target reviewer.
-        review_request_untargetted = self.create_review_request(
+        review_request_untargeted = self.create_review_request(
             publish=True,
             local_site=local_site,
             local_id=4)
-        review_request_untargetted.target_groups.add(group)
-        review8 = self.create_review(review_request_untargetted, publish=True)
+        review_request_untargeted.target_groups.add(group)
+        review8 = self.create_review(review_request_untargeted, publish=True)
 
         self._prime_caches(user=user,
                            local_site=local_site)
@@ -1307,7 +1307,7 @@ class ReviewManagerTests(TestCase):
             **accessible_kwargs)
 
         with self.assertQueries(equeries):
-            # Testing that superusers can acess any reviews.
+            # Testing that superusers can acesss any reviews.
             self.assertQuerySetEqual(
                 Review.objects.accessible(user,
                                           local_site=local_site,

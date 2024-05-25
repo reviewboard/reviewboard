@@ -13,8 +13,8 @@
   }
 
   .CodeMirror {
-    border-top: 1px #DDD solid;
-    border-bottom: 1px #DDD solid;
+    border-left: 0;
+    border-right: 0;
   }
 }
 
@@ -23,7 +23,7 @@
    * The API tokens configuration.
    *
    * Structure:
-   *     <div classs="rb-c-config-api-tokens">
+   *     <div class="rb-c-config-api-tokens">
    *      <div class="rb-c-config-api-tokens__main">
    *       <div class="rb-c-config-api-tokens__value">
    *        <input readonly="readonly" value="...">
@@ -149,7 +149,7 @@
     }
 
     .config-forms-list-action-label-policy-custom {
-      color: blue;
+      color: var(--ink-p-link-fg);
       cursor: pointer;
       text-decoration: underline;
     }

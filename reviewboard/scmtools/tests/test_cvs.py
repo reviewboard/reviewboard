@@ -11,7 +11,6 @@ from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
 from reviewboard.scmtools.core import PRE_CREATION, Revision
 from reviewboard.scmtools.cvs import CVSTool
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
-from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing.testcase import TestCase
 

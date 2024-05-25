@@ -146,6 +146,9 @@ These commands help with your site's data management.
   Import the host's SSH keys into the database, for shared SSH storage.
   This requires `Power Pack`_.
 
+* :rb-management-command:`clean-orphaned-data`:
+  Clean up orphaned data in the database.
+
 
 .. rb-management-command:: condensediffs
 .. program:: condensediffs
@@ -214,6 +217,45 @@ This will automatically import the keys into storage and then exit.
 
    `Power Pack`_ must be installed and licensed in order to run this command
    or use distributed SSH keys.
+
+
+.. rb-management-command:: clean-orphaned-data
+.. program:: clean-orphaned-data
+
+``clean-orphaned-data`` - Clean Up Orphaned Objects in the Database
+-------------------------------------------------------------------
+
+Prior to Review Board 7.0, deleting a Review Request could potentially leave
+related data in the database.
+
+Review Board is primarily designed to never delete data, and only
+administrators had the ability to delete Review Requests entirely. However, if
+this functionality was used, there may be items left over in the database or
+filesystem which are no longer accessible.
+
+This command will delete those items. It works in batches, so if it is taking a
+long time, you can interrupt the process and resume it later.
+
+
+Usage
+~~~~~
+
+.. code-block:: console
+
+   $ rb-site manage /path/to/sitedir clean-orphaned-data [<options>]
+
+
+Options
+~~~~~~~
+
+.. option:: --no-progress
+
+   Don't show progress information or totals while running.
+
+.. option:: --show-counts-only
+
+   Show the number of each type of object expected to be deleted, without
+   deleting any data.
 
 
 .. _management-commands-debugging:

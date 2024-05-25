@@ -215,7 +215,7 @@ RB.ReviewRequestPage.ReviewEntryView = ParentView.extend({
     /**
      * Clear the Revoke Ship It state.
      *
-     * This will clear the CSS classes related to the revokation.
+     * This will clear the CSS classes related to the revocation.
      */
     _clearRevokingShipIt() {
         this._$boxStatus.removeClass('revoking-ship-it');

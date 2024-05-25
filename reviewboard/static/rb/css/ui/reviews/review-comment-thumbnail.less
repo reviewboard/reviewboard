@@ -1,0 +1,274 @@
+@import (reference) "rb/css/defs.less";
+
+
+/**
+ * A component for rendering the thumbnail context for a comment.
+ *
+ * This is used for both draft comments (in the Review Dialog) and in
+ * published comments (on a review).
+ *
+ * It manages a consistent header style, along with a content area that
+ * contains the rendered thumbnail content. The thumbnail content may be
+ * an image, lines of text, or an entire diff.
+ *
+ * There is a special case when it comes to diffs. For a diff, the header
+ * is fully rendered as part of the diff display (as it may contain multiple
+ * columns). In this case, this component will style the header within the
+ * diff, and should not be given a separate header.
+ *
+ * Version Added:
+ *     7.0
+ *
+ * DOM Attributes:
+ *     aria-label (string):
+ *         A label describing this thumbnail.
+ *
+ *         It should contain an identifier beyond just the filename/revision.
+ *         For example, "File attachment thumbnail for my-filename.png".
+ *
+ * Modifiers:
+ *     -expands-on-hover:
+ *         Whether a contained diff will expand additional controls on hover.
+ *
+ *         This requires the ``-has-diff`` modifier.
+ *
+ *     -has-diff:
+ *         Whether this thumbnail contains a diff.
+ *
+ * Structure:
+ *     <div class="rb-c-review-comment-thumbnail
+ *                 [-has-diff
+ "                  [-expands-on-hover]]">
+ *          aria-labelledby="<<string>>">
+ *      [<div class="rb-c-review-comment-thumbnail__header">...</div>]
+ *      <div class="rb-c-review-comment-thumbnail__content">...</div>
+ *     </div>
+ */
+.rb-c-review-comment-thumbnail {
+  @_border:
+    var(--ink-u-border-thin)
+    var(--ink-p-container-border-color)
+    solid;
+
+  &.-has-diff {
+    &.-expands-on-hover {
+      /*
+       * Set up some animations for the hover effects.
+       *
+       * For diffs, when collapsed, the contents of the headers will be
+       * transparent, showing just a few pixels of the background to show
+       * that there's something there.
+       *
+       * When expanding, the contents will be fully opaque.
+       *
+       * Both are done as transitions and their states managed in JavaScript.
+       * The result is that the controls will appear to expand outward from the
+       * diff (using transforms, without impacting the layout of the rest of the
+       * page), with the contents fading in/out.
+       */
+      .sidebyside {
+        &,
+        thead,
+        .diff-header,
+        .diff-header td > div {
+          transition: all 0.3s linear;
+        }
+      }
+    }
+
+    /*
+     * Disable the border on the content, since we want the bottom part of the
+     * diff to expand.
+     */
+    .rb-c-review-comment-thumbnail__content {
+      border-bottom: 0;
+    }
+
+    .sidebyside {
+      &:not(.has-diff-header-above) {
+        /*
+         * If there's no diff header above, then we won't have a file
+         * header that's retracted. In this case, we want to add back the
+         * margin that we'd normally have in a comment section.
+         */
+        margin-top: @review-comment-section-margin-top;
+      }
+
+      &:not(.has-diff-header-below) {
+        /*
+         * Diff comment sections don't have a bottom border. We leave it
+         * up to the diff headers to supply one normally. If there isn't a
+         * diff header below the diff, add our own border.
+         */
+        border-bottom: 1px @_border solid;
+      }
+
+      .diff-header {
+        &-above {
+          transform-origin: bottom;
+        }
+
+        &-below {
+          transform-origin: top;
+        }
+
+        td > div {
+          overflow: hidden;
+        }
+      }
+    }
+  }
+
+  /**
+   * The content of the thumbnail.
+   *
+   * This may contain any arbitrary HTML needed to represent the thumbnail.
+   *
+   * Structure:
+   *     <div class="rb-c-review-comment-thumbnail__content">
+   *      html...
+   *     </div>
+   */
+  &__content {
+    border-bottom: @_border;
+
+    > img {
+      display: block;
+    }
+  }
+
+  /**
+   * The header area for the thumbnail.
+   *
+   * This must be present for all comment thumbnail types except for diffs.
+   *
+   * Clicking it should navigate to the reviewed content.
+   *
+   * DOM Attributes:
+   *     href (string):
+   *         The URL to the exact content that was commented on.
+   *
+   * Structure:
+   *     <a class="rb-c-review-comment-thumbnail__header"
+   *        href="<<string>>">
+   *      <span class="rb-c-review-comment-thumbnail__name">...</span>
+   *      [<span class="rb-c-review-comment-thumbnail__revision">...</span>]
+   *     </a>
+   */
+  &__header {
+    display: block;
+  }
+
+  /**
+   * The name of the content that was commented on.
+   *
+   * Structure:
+   *     <span class="rb-c-review-comment-thumbnail__name">
+   *      text...
+   *     </span>
+   */
+  &__name {
+    font-size: var(--ink-u-font-m);
+    font-weight: bold;
+    text-align: left;
+    text-overflow: ellipsis;
+  }
+
+  /**
+   * The revision of the content that was commented on.
+   *
+   * Structure:
+   *     <span class="rb-c-review-comment-thumbnail__revision">
+   *      text...
+   *     </span>
+   */
+  &__revision {
+  }
+
+  /*
+   * The following provides styling for both the parts of this component and
+   * an embedded diff.
+   */
+
+  /* Ensure the header's revision uses a consistent font size and style. */
+  &__revision,
+  .diffrevision {
+    font-size: var(--ink-u-font-sm);
+    font-weight: normal;
+  }
+
+  /*
+   * Set the borders around the header.
+   */
+  &__header,
+  .sidebyside .filename-row th {
+    background: var(--rb-g-diff-box-header-bg);
+    border-top: @_border;
+    padding: var(--ink-u-spacing-sm);
+
+    /*
+     * For diffs, normally the revision row has this border, but for diff
+     * fragments, we want to place it on the filename row.
+     */
+    border-bottom: @_border;
+  }
+
+  /* Ensure a consistent color and text decoration for headers. */
+  &__header,
+  .sidebyside .filename-row a {
+    &:link,
+    &:visited {
+      color: var(--rb-g-diff-box-header-fg);
+      text-decoration: none;
+    }
+  }
+
+  &__header:hover .rb-c-review-comment-thumbnail__name,
+  .sidebyside .filename-row a:hover {
+    text-decoration: underline;
+  }
+
+  .diff-error tbody {
+    border: var(--ink-u-border-thin)
+            var(--ink-p-accent-warning-border-color)
+            solid;
+  }
+
+  /* Additional styling for embedded diffs. */
+  .sidebyside {
+    @_comment-range-border-color:
+      var(--if-light, black)
+      var(--if-dark, yellow);
+
+    border: 0;
+    margin: 0;
+
+    th {
+      /*
+       * The line numbers aren't clickable in the comment fragments in reviews,
+       * so show a standard cursor instead of a pointer.
+       */
+      cursor: initial;
+    }
+
+    &.collapsed .diff-header td > div {
+      opacity: 0;
+    }
+
+    &.expanded .diff-header td > div {
+      opacity: 1;
+    }
+
+    .first-comment-line {
+      td, th {
+        border-top: 1px @_comment-range-border-color solid;
+      }
+    }
+
+    .last-comment-line {
+      td, th {
+        border-bottom: 1px @_comment-range-border-color solid;
+      }
+    }
+  }
+}

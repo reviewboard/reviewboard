@@ -321,9 +321,10 @@ class ReviewRequest(BaseReviewRequestDetails):
                                         default=None, blank=True)
 
     diffset_history = models.ForeignKey(DiffSetHistory,
-                                        on_delete=models.CASCADE,
+                                        on_delete=models.SET_NULL,
                                         related_name='review_request',
                                         verbose_name=_('diff set history'),
+                                        null=True,
                                         blank=True)
     target_groups = models.ManyToManyField(
         Group,
@@ -1323,6 +1324,9 @@ class ReviewRequest(BaseReviewRequestDetails):
                 not self.public and close_type == self.DISCARDED):
                 # Copy over the draft information if this is a private discard.
                 draft.copy_fields_to_request(self)
+
+                if draft.diffset_id:
+                    draft.diffset.delete()
 
             # TODO: Use the user's default for rich_text.
             changedesc = ChangeDescription(public=True,

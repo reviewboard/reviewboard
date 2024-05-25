@@ -566,7 +566,7 @@ class HeaderDropdownActionHook(ActionHook,
 class HideActionHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """A hook for hiding built-in actions.
 
-    Extensions may want to replace bulit-in functionality with their own custom
+    Extensions may want to replace built-in functionality with their own custom
     versions, or disable some things entirely (such as the quick ship-it
     button).
     """

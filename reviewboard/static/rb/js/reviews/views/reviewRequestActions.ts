@@ -1,4 +1,9 @@
 import {
+    type ButtonView,
+    craft,
+    paint,
+} from '@beanbag/ink';
+import {
     type EventsHash,
     spina,
 } from '@beanbag/spina';
@@ -171,7 +176,8 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
  * Version Added:
  *     6.0
  */
-abstract class BaseVisibilityActionView extends Actions.ActionView {
+@spina
+class BaseVisibilityActionView extends Actions.ActionView {
     static events: EventsHash = {
         'click': '_toggle',
     };
@@ -208,9 +214,9 @@ abstract class BaseVisibilityActionView extends Actions.ActionView {
      *     BaseVisibilityActionView:
      *     This object, for chaining.
      */
-    onRender() {
-        this.$('span').text(
-            this.getLabel(this.#reviewRequest.get('visibility')));
+    protected onRender() {
+        this.model.set('label',
+                       this.getLabel(this.#reviewRequest.get('visibility')));
     }
 
     /**
@@ -224,9 +230,13 @@ abstract class BaseVisibilityActionView extends Actions.ActionView {
      *     string:
      *     The label to show based on the current visibility state.
      */
-    abstract getLabel(
+    getLabel(
         visibility: number,
-    ): string;
+    ): string {
+        console.assert(false, 'Not reached.');
+
+        return null;
+    }
 
     /**
      * Toggle the archive state of the review request.
@@ -574,14 +584,43 @@ export class UpdateDiffActionView extends Actions.MenuItemActionView {
         const reviewRequestEditor = page.reviewRequestEditorView.model;
         const reviewRequest = reviewRequestEditor.get('reviewRequest');
 
-        const updateDiffView = new RB.UpdateDiffView({
-            model: new RB.UploadDiffModel({
-                changeNumber: reviewRequest.get('commitID'),
-                repository: reviewRequest.get('repository'),
-                reviewRequest: reviewRequest,
-            }),
-        });
-        updateDiffView.render();
+        if (reviewRequestEditor.get('commits').length > 0) {
+            const rbtoolsURL = 'https://www.reviewboard.org/docs/rbtools/latest/';
+
+            const $dialog = $('<div>')
+                .append($('<p>')
+                    .html(_`
+                        This review request was created with
+                        <a href="${rbtoolsURL}">RBTools</a>,
+                        and is tracking commit history.
+                    `))
+                .append($('<p>')
+                    .html(_`
+                        To add a new diff revision, you will need to use
+                        <code>rbt post -u</code> instead of uploading a diff
+                        file.
+                    `))
+                .modalBox({
+                    buttons: [
+                        paint<HTMLButtonElement>`
+                            <Ink.Button>${_`Cancel`}</Ink.Button>
+                        `,
+                    ],
+                    title: _`Use RBTools to update the diff`,
+                })
+                .on('close', () => {
+                    $dialog.modalBox('destroy');
+                });
+        } else {
+            const updateDiffView = new RB.UpdateDiffView({
+                model: new RB.UploadDiffModel({
+                    changeNumber: reviewRequest.get('commitID'),
+                    repository: reviewRequest.get('repository'),
+                    reviewRequest: reviewRequest,
+                }),
+            });
+            updateDiffView.render();
+        }
     }
 }
 
@@ -673,21 +712,35 @@ export class DeleteActionView extends Actions.MenuItemActionView {
         const reviewRequestEditor = page.reviewRequestEditorView.model;
         const reviewRequest = reviewRequestEditor.get('reviewRequest');
 
+        const onDeleteConfirmed = () => {
+            deleteButtonView.busy = true;
+            reviewRequest
+                .destroy({
+                    buttons: buttonEls,
+                })
+            .then(() => RB.navigateTo(SITE_ROOT));
+        };
+
+        const deleteButtonView = craft<ButtonView>`
+            <Ink.Button type="danger" onClick=${onDeleteConfirmed}>
+             ${_`Delete`}
+            </Ink.Button>
+        `;
+
+        const buttonEls = paint<HTMLButtonElement[]>`
+            <Ink.Button>
+             ${_`Cancel`}
+            </Ink.Button>
+            ${deleteButtonView.el}
+        `;
+
         const $dlg = $('<p>')
             .text(_`
                 This deletion cannot be undone. All diffs and reviews will be
                 deleted as well.
             `)
             .modalBox({
-                buttons: [
-                    $(`<input type="button" value="${gettext('Cancel')}">`),
-                    $(`<input type="button" value="${gettext('Delete')}">`)
-                        .click(() => reviewRequest
-                            .destroy({
-                                buttons: $('input', $dlg.modalBox('buttons')),
-                            })
-                            .then(() => RB.navigateTo(SITE_ROOT))),
-                ],
+                buttons: buttonEls,
                 title: _`Are you sure you want to delete this review request?`,
             })
             .on('close', () => $dlg.modalBox('destroy'));

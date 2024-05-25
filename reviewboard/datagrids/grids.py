@@ -731,6 +731,7 @@ class GroupDataGrid(DataGrid):
                          *args,
                          **kwargs)
 
+        self.listview_template = 'datagrids/listview.html'
         self.profile_sort_field = 'sort_group_columns'
         self.profile_columns_field = 'group_columns'
         self.default_sort = ['name']

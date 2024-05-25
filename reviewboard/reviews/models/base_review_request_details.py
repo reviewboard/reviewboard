@@ -226,7 +226,7 @@ class BaseReviewRequestDetails(models.Model):
         for default_reviewer in default_reviewers:
             try:
                 regex = re.compile(default_reviewer.file_regex)
-            except:
+            except Exception:
                 continue
 
             for source_file, dest_file in files:

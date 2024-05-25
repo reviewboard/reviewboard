@@ -12,7 +12,7 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.generic.base import View
 
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 @method_decorator([sensitive_post_parameters(), never_cache],

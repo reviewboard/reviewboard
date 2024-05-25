@@ -2,13 +2,12 @@
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
-from django.template.defaultfilters import timesince
+from django.utils.timesince import timesince
 from djblets.util.decorators import augment_method_from
 
 from reviewboard.reviews.features import general_comments_feature
 from reviewboard.reviews.models import GeneralComment
 from reviewboard.webapi.base import WebAPIResource
-from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_comment import BaseCommentResource
 

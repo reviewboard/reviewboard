@@ -8,7 +8,7 @@ import sys
 
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand, CommandError
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext as _
 
 from reviewboard.cmdline.utils.console import get_console
 from reviewboard.webapi.models import WebAPIToken

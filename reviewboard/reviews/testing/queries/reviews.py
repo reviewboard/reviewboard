@@ -318,9 +318,9 @@ def get_reviews_from_user_q(
     return q_result
 
 
-###########################
-# Expected Query utilties #
-###########################
+############################
+# Expected Query utilities #
+############################
 
 def get_reviews_accessible_equeries(
     *,

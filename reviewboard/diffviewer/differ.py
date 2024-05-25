@@ -51,7 +51,7 @@ class Differ(object):
         """Registers for interesting lines for headers based on filename.
 
         This is a convenience over add_interesting_line_regex that will watch
-        for headers (functions, clases, etc.) for the file type matching
+        for headers (functions, classes, etc.) for the file type matching
         the given filename.
         """
         regexes = []

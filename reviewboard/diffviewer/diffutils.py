@@ -631,7 +631,7 @@ def get_original_and_patched_files(
     filediff: FileDiff,
     request: Optional[HttpRequest] = None,
     update_mimetypes: bool = True,
-) -> Tuple[Optional[bytes], Optional[bytes]]:
+) -> tuple[Optional[bytes], Optional[bytes]]:
     """Return the original and patched version of a file.
 
     Args:

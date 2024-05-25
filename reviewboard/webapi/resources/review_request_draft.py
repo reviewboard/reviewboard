@@ -697,7 +697,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
         # See if the caller has set or patched extra_data values. For
         # compatibility, we're going to do this after processing the rich
-        # text fields ine extra_data above.
+        # text fields in extra_data above.
         try:
             if self.import_extra_data(draft, draft.extra_data, extra_fields):
                 # Track extra_data for saving.

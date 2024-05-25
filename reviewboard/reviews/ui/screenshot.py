@@ -110,7 +110,7 @@ class LegacyScreenshotReviewUI(ReviewUI[
         result: SerializedCommentBlocks[SerializedRegionComment] = {}
 
         for comment in self.flat_serialized_comments(comments):
-            position = '%(x)sx%(y)s+%(w)s+%(h)s' % comment
+            position = '%(x)sx%(y)s+%(width)s+%(height)s' % comment
             result.setdefault(position, []).append(comment)
 
         return result

@@ -8,7 +8,6 @@ from djblets.webapi.fields import (ChoiceFieldType,
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.fields import get_review_request_field
 from reviewboard.webapi.base import WebAPIResource
-from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 

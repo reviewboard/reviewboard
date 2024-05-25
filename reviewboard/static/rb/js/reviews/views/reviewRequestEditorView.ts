@@ -503,10 +503,10 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
 
         this.listenTo(view, 'fieldError', err => {
             this.#$warning
+                .text(err)
+                .show()
                 .delay(6000)
-                .fadeOut(400, () => this.#$warning.hide())
-                .html(err.errorText)
-                .show();
+                .fadeOut(400, () => this.#$warning.hide());
         });
 
         this.listenTo(view, 'fieldSaved', this.showBanner);
@@ -920,28 +920,6 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
 
         view.on('beginEdit', () => this.model.incr('editCount'));
         view.on('endEdit', () => this.model.decr('editCount'));
-    }
-
-    /**
-     * Handle a click on "Update -> Update Diff".
-     *
-     * Returns:
-     *     boolean:
-     *     False, always.
-     */
-    _onUpdateDiffClicked() {
-        const reviewRequest = this.model.get('reviewRequest');
-        const updateDiffView = new RB.UpdateDiffView({
-            model: new RB.UploadDiffModel({
-                changeNumber: reviewRequest.get('commitID'),
-                repository: reviewRequest.get('repository'),
-                reviewRequest: reviewRequest,
-            }),
-        });
-
-        updateDiffView.render();
-
-        return false;
     }
 
     /**

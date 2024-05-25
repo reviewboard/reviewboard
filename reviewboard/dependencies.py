@@ -57,6 +57,7 @@ package_dependencies = {
     'django_evolution': '~=2.2',
     'django-haystack': '~=3.2.1',
     'django_oauth_toolkit': '~=1.6.3',
+    'django-storages': '~=1.14.2',
     'Djblets': djblets_version,
     'docutils': '',
     'markdown': '~=3.3.7',
@@ -78,6 +79,7 @@ package_dependencies = {
     'pymdown-extensions': '~=6.3.0',
     'pymemcache': '',
     'pytz': '>=2015.2',
+    'tqdm': '~=4.66.2',
     'Whoosh': '>=2.6',
 
     # The following are pinned versions/ranges needed to satisfy dependency
@@ -95,7 +97,7 @@ package_dependencies = {
 #: The dependencies here are generally intended to be those that themselves
 #: require Review Board.
 package_only_dependencies = {
-    'rbintegrations': '~=3.1.1',
+    'rbintegrations': '~=4.0.dev',
 }
 
 
@@ -117,14 +119,13 @@ runtime_npm_dependencies: Dict[str, str] = {
     '@beanbag/jasmine-suites': '~2.0.0',
     '@prantlf/jsonlint': '^11.7.0',
     '@rollup/plugin-commonjs': '^24.0.1',
-    '@types/jqueryui': '^1.12.21',
     'babel-polyfill': '^6.26.0',
     'codemirror': '^5.65.11',
     'jasmine-core': '~5.1.0',
-    'jquery': '^3.3.1',
+    'jquery': '^3.7.1',
     'jquery-flot': '^0.8.3',
     'jquery-form': '^4.2.2',
-    'jquery-ui': '~1.12.1',
+    'jquery-ui': '~1.13.3',
     'jquery.cookie': '^1.4.1',
     'moment': '^2.29.4',
     'moment-timezone': '^0.5.40',

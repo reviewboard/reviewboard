@@ -2,7 +2,6 @@
 
 from django import forms
 from django.core.exceptions import ValidationError
-from django.utils.inspect import func_accepts_kwargs
 from django.utils.translation import gettext, gettext_lazy as _
 from djblets.siteconfig.forms import SiteSettingsForm
 

@@ -2,6 +2,12 @@
  * The review dialog.
  */
 
+import {
+    type MenuButtonView,
+    MenuItemsCollection,
+    craft,
+    paint,
+} from '@beanbag/ink';
 import { BaseView, spina } from '@beanbag/spina';
 
 import {
@@ -13,7 +19,6 @@ import {
 } from 'reviewboard/common';
 import {
     type TextEditorView,
-    MenuButtonView,
     RichTextInlineEditorView,
     SlideshowView,
 } from 'reviewboard/ui';
@@ -50,10 +55,10 @@ class BaseCommentView<
           <div class="comment-text-field">
            <label class="comment-label" for="<%= id %>">
             <%- commentText %>
-            <a href="#" role="button" class="delete-comment"
+            <a href="#" role="button" class="delete-comment ink-i-delete-item"
                aria-label="<%- deleteCommentText %>"
                title="<%- deleteCommentText %>"
-               ><span class="fa fa-trash-o" aria-hidden="true"></span></a>
+               ></a>
            </label>
            <pre id="<%= id %>" class="reviewtext rich-text"
                 data-rich-text="true"><%- text %></pre>
@@ -395,20 +400,22 @@ export class DiffCommentView extends BaseCommentView<
     DiffCommentViewOptions
 > {
     static thumbnailTemplate = _.template(dedent`
-        <div class="review-dialog-comment-diff"
-             id="review_draft_comment_container_<%= id %>">
-         <table class="sidebyside loading">
-          <thead>
-           <tr>
-            <th class="filename"><%- revisionText %></th>
-           </tr>
-          </thead>
-          <tbody>
-           <% for (var i = 0; i < numLines; i++) { %>
-            <tr><td><pre>&nbsp;</pre></td></tr>
-           <% } %>
-          </tbody>
-         </table>
+        <div class="rb-c-review-comment-thumbnail">
+         <div class="rb-c-review-comment-thumbnail__content"
+              id="review_draft_comment_container_<%= id %>">
+          <table class="sidebyside loading">
+           <thead>
+            <tr>
+             <th class="filename"><%- revisionText %></th>
+            </tr>
+           </thead>
+           <tbody>
+            <% for (var i = 0; i < numLines; i++) { %>
+             <tr><td><pre>&nbsp;</pre></td></tr>
+            <% } %>
+           </tbody>
+          </table>
+         </div>
         </div>
     `);
 
@@ -435,7 +442,7 @@ export class DiffCommentView extends BaseCommentView<
      * to display. The view will show a spinner until the fragment has
      * loaded.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         super.onInitialRender();
 
         const fileDiffID = this.model.get('fileDiffID');
@@ -497,12 +504,20 @@ class FileAttachmentCommentView extends BaseCommentView<
     RB.FileAttachmentComment
 > {
     static thumbnailTemplate = _.template(dedent`
-        <div class="file-attachment">
-         <span class="filename">
-          <a href="<%- reviewURL %>"><%- linkText %></a>
-         </span>
-         <span class="diffrevision"><%- revisionsStr %></span>
-         <div class="thumbnail"><%= thumbnailHTML %></div>
+        <div class="rb-c-review-comment-thumbnail">
+         <a class="rb-c-review-comment-thumbnail__header"
+            href="<%- reviewURL %>">
+          <span class="rb-c-review-comment-thumbnail__name"
+                href="<%- reviewURL %>"><%-
+           linkText
+          %></span>
+          <span class="rb-c-review-comment-thumbnail__revision"><%-
+           revisionsStr
+          %></span>
+         </a>
+         <div class="rb-c-review-comment-thumbnail__content"><%=
+          thumbnailHTML
+         %></div>
         </div>
     `);
 
@@ -559,12 +574,17 @@ class ScreenshotCommentView extends BaseCommentView<
     RB.ScreenshotComment
 > {
     static thumbnailTemplate = _.template(dedent`
-        <div class="screenshot">
-         <span class="filename">
-          <a href="<%- screenshot.reviewURL %>"><%- displayName %></a>
-         </span>
-         <img src="<%- thumbnailURL %>" width="<%- width %>"
-              height="<%- height %>" alt="<%- displayName %>">
+        <div class="rb-c-review-comment-thumbnail">
+         <a class="rb-c-review-comment-thumbnail__header"
+            href="<%- screenshot.reviewURL %>">
+          <span class="rb-c-review-comment-thumbnail__name"><%-
+           displayName
+          %></span>
+         </a>
+         <div class="rb-c-review-comment-thumbnail__content">
+          <img src="<%- thumbnailURL %>" width="<%- width %>"
+               height="<%- height %>" alt="<%- displayName %>">
+         </div>
         </div>
     `);
 
@@ -699,7 +719,7 @@ class HeaderFooterCommentView extends BaseView<
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const text = this.model.get(this.propertyName);
 
         this.$el
@@ -890,7 +910,7 @@ class HeaderFooterCommentView extends BaseView<
  */
 @spina
 class TipsSlideshowView extends SlideshowView {
-    static className = 'rb-c-alert -is-info';
+    static className = 'ink-c-alert';
     static template = dedent`
         <div class="rb-c-slideshow -is-auto-cycled">
          <span class="rb-c-alert__close"
@@ -961,12 +981,13 @@ class TipsSlideshowView extends SlideshowView {
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el
             .html(TipsSlideshowView.template)
             .attr({
                 'aria-label': _`Tips`,
                 'aria-roledescription': 'carousel',
+                'data-type': 'info',
             });
 
         const $slides = this.$('.rb-c-slideshow__slides');
@@ -1515,35 +1536,61 @@ export class ReviewDialogView extends BaseView<
      * this view's element as the child.
      */
     _renderDialog() {
-        const $leftButtons = $('<div class="review-dialog-buttons-left">');
-        const $rightButtons = $('<div class="review-dialog-buttons-right">');
-        const buttons = [$leftButtons, $rightButtons];
+        const leftButtonsEl = craft<HTMLElement>`
+            <div class="review-dialog-buttons-left">
+             <Ink.Button
+               ariaLabel="${_`Add a new general comment to the review`}"
+               onClick=${() => this.#onAddCommentClicked()}>
+              ${_`Add General Comment`}
+             </Ink.Button>
+            </div>
+        `;
 
-        if (EnabledFeatures.generalComments) {
-            $leftButtons.append(
-                $('<input type="button">')
-                    .val(_`Add General Comment`)
-                    .attr('title',
-                          _`Add a new general comment to the review`)
-                    .click(() => this.#onAddCommentClicked())
-            );
-        }
+        const menuItems = new MenuItemsCollection([
+            {
+                label: _`... and only e-mail the owner`,
+                onClick: () => {
+                    this._saveReview(true, {
+                        publishToOwnerOnly: true,
+                    });
+                },
+            },
+            {
+                label: _`... and archive the review request`,
+                onClick: () => {
+                    this._saveReview(true, {
+                        publishAndArchive: true,
+                    });
+                },
+            },
+        ]);
 
-        $rightButtons.append(
-            $('<div id="review-form-publish-split-btn-container">'));
+        const publishButton = craft<MenuButtonView>`
+            <Ink.MenuButton
+              hasActionButton
+              label="${_`Publish Review`}"
+              menuAriaLabel="${_`More publishing options`}"
+              menuItems=${menuItems}
+              onActionButtonClick=${() => this._saveReview(true)}
+              type="primary"/>
+        `;
 
-        $rightButtons.append(
-            $('<input type="button">')
-                .val(_`Discard Review`)
-                .click(() => this._onDiscardClicked()));
+        const rightButtonsEl = craft<HTMLElement>`
+            <div class="review-dialog-buttons-right">
+             ${publishButton}
 
-        $rightButtons.append(
-            $('<input type="button">')
-                .val(_`Close`)
-                .click(() => {
-                    this._saveReview(false);
-                    return false;
-                }));
+             <Ink.Button onClick=${() => this._onDiscardClicked()}
+                         type="danger">
+              ${_`Discard Review`}
+             </Ink.Button>
+
+             <Ink.Button onClick=${() => this._saveReview(false)}>
+              ${_`Close`}
+             </Ink.Button>
+            </div>
+        `;
+
+        this.#publishButton = publishButton;
 
         const reviewRequest = this.model.get('parentObject');
 
@@ -1552,7 +1599,7 @@ export class ReviewDialogView extends BaseView<
             .append(this.$el)
             .modalBox({
                 boxID: 'review-form-modalbox',
-                buttons: buttons,
+                buttons: [leftButtonsEl, rightButtonsEl],
                 container: this.options.container || 'body',
                 stretchX: true,
                 stretchY: true,
@@ -1564,43 +1611,6 @@ export class ReviewDialogView extends BaseView<
 
         /* Must be done after the dialog is rendered. */
 
-        this.#publishButton = new MenuButtonView({
-            ariaMenuLabel: _`More publishing options`,
-            direction: 'up',
-            el: $('#review-form-publish-split-btn-container'),
-            menuItems: [
-                {
-                    onClick: () => {
-                        this._saveReview(true, {
-                            publishToOwnerOnly: true,
-                        });
-                        this.close();
-
-                        return false;
-                    },
-                    text: _`... and only e-mail the owner`,
-                },
-                {
-                    onClick: () => {
-                        this._saveReview(true, {
-                            publishAndArchive: true,
-                        });
-                        this.close();
-
-                        return false;
-                    },
-                    text: _`... and archive the review request`,
-                },
-            ],
-            onPrimaryButtonClick: () => {
-                this._saveReview(true);
-
-                return false;
-            },
-            text: _`Publish Review`,
-        });
-
-        this.#publishButton.render();
 
         this._$buttons = this.#$dlg.modalBox('buttons');
     }
@@ -1638,12 +1648,17 @@ export class ReviewDialogView extends BaseView<
      *     close.
      */
     _onDiscardClicked() {
-        const $cancelButton = $('<input type="button">')
-            .val(_`Cancel`);
+        const cancelButtonEl = paint<HTMLButtonElement>`
+            <Ink.Button>
+             ${_`Cancel`}
+            </Ink.Button>
+        `;
 
-        const $discardButton = $('<input type="button">')
-            .val(_`Discard`)
-            .click(async () => {
+        const discardButtonEl = paint<HTMLButtonElement>`
+            <Ink.Button
+              type="danger"
+              onClick=${async () => {
+                $dlg.modalBox('destroy');
                 this.close();
                 await this.model.destroy();
 
@@ -1652,20 +1667,24 @@ export class ReviewDialogView extends BaseView<
                 if (!EnabledFeatures.unifiedBanner) {
                     RB.DraftReviewBannerView.instance.hideAndReload();
                 }
-            });
+              }}>
+             ${_`Discard`}
+            </Ink.Button>
+        `;
 
-        $('<p>')
+        const $dlg = $('<p>')
             .text(_`
                 If you discard this review, all related comments will be
                 permanently deleted.
             `)
             .modalBox({
                 buttons: [
-                    $cancelButton,
-                    $discardButton,
+                    cancelButtonEl,
+                    discardButtonEl,
                 ],
                 title: _`Are you sure you want to discard this review?`,
-            });
+            })
+            .on('close', () => $dlg.modalBox('destroy'));
 
         return false;
     }
@@ -1687,7 +1706,7 @@ export class ReviewDialogView extends BaseView<
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    _saveReview(
+    async _saveReview(
         publish: boolean,
         options: {
             publishAndArchive?: boolean;
@@ -1705,36 +1724,36 @@ export class ReviewDialogView extends BaseView<
         this._$buttons.prop('disabled');
 
         let madeChanges = false;
-        $.funcQueue('reviewForm').clear();
 
-        function maybeSave(view) {
-            if (view.needsSave()) {
-                $.funcQueue('reviewForm').add(() => {
-                    madeChanges = true;
-                    view.save()
-                        .then(() => $.funcQueue('reviewForm').next());
-                });
+        try {
+            if (this._bodyTopView.needsSave()) {
+                madeChanges = true;
+                await this._bodyTopView.save();
             }
-        }
 
-        maybeSave(this._bodyTopView);
-        maybeSave(this._bodyBottomView);
-        this._commentViews.forEach(view => maybeSave(view));
+            if (this._bodyBottomView.needsSave()) {
+                madeChanges = true;
+                await this._bodyBottomView.save();
+            }
 
-        $.funcQueue('reviewForm').add(() => {
+            for (const view of this._commentViews) {
+                if (view.needsSave()) {
+                    madeChanges = true;
+                    await view.save();
+                }
+            }
+
             const shipIt = this._$shipIt.prop('checked');
             const saveFunc = publish ? this.model.publish : this.model.save;
 
-            if (this.model.get('public') === publish &&
-                this.model.get('shipIt') === shipIt) {
-                $.funcQueue('reviewForm').next();
-            } else {
+            if (this.model.get('public') !== publish ||
+                this.model.get('shipIt') !== shipIt) {
                 madeChanges = true;
                 this.model.set({
                     shipIt: shipIt,
                 });
 
-                saveFunc.call(this.model, {
+                await saveFunc.call(this.model, {
                     attrs: [
                         'forceTextType',
                         'includeTextTypes',
@@ -1742,23 +1761,10 @@ export class ReviewDialogView extends BaseView<
                         'publishAndArchive',
                         'publishToOwnerOnly',
                         'shipIt',
-                    ]})
-                    .then(() => $.funcQueue('reviewForm').next())
-                    .catch(err => {
-                        console.error('Failed to save review', err);
-
-                        this.model.set({
-                            public: false,
-                            publishAndArchive: false,
-                            publishToOwnerOnly: false,
-                        });
-
-                        alert(err.message);
-                    });
+                    ],
+                });
             }
-        });
 
-        $.funcQueue('reviewForm').add(() => {
             this.close();
 
             if (EnabledFeatures.unifiedBanner) {
@@ -1780,14 +1786,17 @@ export class ReviewDialogView extends BaseView<
                     }
                 }
             }
+        } catch (err) {
+            console.error('Failed to save review', err);
 
-            $.funcQueue('reviewForm').next();
-        });
+            this.model.set({
+                public: false,
+                publishAndArchive: false,
+                publishToOwnerOnly: false,
+            });
 
-        return new Promise<void>(resolve => {
-            $.funcQueue('reviewForm').add(() => resolve());
-            $.funcQueue('reviewForm').start();
-        });
+            alert(err.message);
+        }
     }
 
     /**

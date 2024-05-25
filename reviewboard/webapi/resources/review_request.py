@@ -47,8 +47,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.ssh.errors import SSHError
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
-from reviewboard.webapi.decorators import (webapi_check_local_site,
-                                           webapi_check_login_required)
+from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
                                        CLOSE_ERROR,
                                        COMMIT_ID_ALREADY_EXISTS,
@@ -535,7 +534,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             # tried to fetch diffsets (Review Bot, in our case) would not see
             # the new diffset.
             #
-            # By having this only in the list condition, we get the perforamnce
+            # By having this only in the list condition, we get the performance
             # benefits we wanted without triggering that sort of bug.
             queryset = (
                 queryset

@@ -2,11 +2,17 @@
  * A review.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import * as JSONSerializers from '../utils/serializers';
 import {
     type BaseResourceAttrs,
+    type BaseResourceResourceData,
+    type DeserializerMap,
+    type SerializerMap,
     BaseResource,
 } from './baseResourceModel';
 import { ReviewReply } from './reviewReplyModel';
@@ -90,7 +96,7 @@ export interface ReviewAttrs extends BaseResourceAttrs {
  * Version Added:
  *     6.0
  */
-interface ReviewResourceData {
+interface ReviewResourceData extends BaseResourceResourceData {
     body_bottom: string;
     body_bottom_text_type: string;
     body_top: string;
@@ -151,8 +157,9 @@ interface CreateDiffCommentOptions {
  */
 @spina
 export class Review<
-    TAttributes extends ReviewAttrs = ReviewAttrs
-> extends BaseResource<TAttributes> {
+    TDefaults extends ReviewAttrs = ReviewAttrs,
+    TResourceData extends ReviewResourceData = ReviewResourceData,
+> extends BaseResource<TDefaults, TResourceData> {
     /**
      * Return default values for the model attributes.
      *
@@ -160,8 +167,8 @@ export class Review<
      *     ReviewAttrs:
      *     The attribute defaults.
      */
-    static defaults(): ReviewAttrs {
-        return _.defaults({
+    static defaults(): Result<Partial<ReviewAttrs>> {
+        return {
             'authorName': null,
             'bodyBottom': null,
             'bodyBottomRichText': false,
@@ -176,12 +183,12 @@ export class Review<
             'rawTextFields': {},
             'shipIt': false,
             'timestamp': null,
-        }, super.defaults());
+        };
     }
 
     static rspNamespace = 'review';
 
-    static attrToJsonMap = {
+    static attrToJsonMap: { [key: string]: string } = {
         bodyBottom: 'body_bottom',
         bodyBottomRichText: 'body_bottom_text_type',
         bodyTop: 'body_top',
@@ -202,7 +209,7 @@ export class Review<
         'public',
     ];
 
-    static deserializedAttrs = [
+    static deserializedAttrs: DeserializerMap = [
         'shipIt',
         'bodyTop',
         'bodyBottom',
@@ -210,7 +217,7 @@ export class Review<
         'timestamp',
     ];
 
-    static serializers = {
+    static serializers: SerializerMap = {
         'bodyBottomRichText': JSONSerializers.textType,
         'bodyTopRichText': JSONSerializers.textType,
         'forceTextType': JSONSerializers.onlyIfValue,
@@ -233,9 +240,9 @@ export class Review<
      */
     parseResourceData(
         rsp: ReviewResourceData,
-    ): Partial<TAttributes> {
+    ): Partial<ReviewAttrs> {
         const rawTextFields = rsp.raw_text_fields || rsp;
-        const data = super.parseResourceData(rsp) as Partial<TAttributes>;
+        const data = super.parseResourceData(rsp);
 
         data.bodyTopRichText =
             (rawTextFields.body_top_text_type === 'markdown');

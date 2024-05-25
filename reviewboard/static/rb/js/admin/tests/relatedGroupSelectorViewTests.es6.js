@@ -18,7 +18,7 @@ suite('rb/admin/views/relatedGroupSelectorView', function() {
     });
 
     describe('Rendering', function() {
-        it('with inital options', function() {
+        it('with initial options', function() {
             let view = new RB.RelatedGroupSelectorView({
                 $input: $('<input id="id_groups" type="hidden">'),
                 initialOptions: [{

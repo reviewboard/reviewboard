@@ -109,166 +109,14 @@ body.datagrid-page {
   }
 }
 
-.datagrid {
-  @_cells-vars: #rb-ns-ui.datagrids.cells();
-  @_datagrid-vars: #rb-ns-ui.datagrids();
-
-  tr {
-    &,
-    &:hover {
-      background: @_cells-vars[@bg];
-    }
-
-    &.even {
-      &,
-      &:hover {
-        background: @_cells-vars[@even-bg];
-      }
-    }
-  }
-
-  tbody {
-    td, th {
-      padding: @_cells-vars[@padding];
-      vertical-align: middle;
-
-      &:last-child {
-        border-right: 0 !important;
-      }
-    }
-
-    tr:first-child {
-      td, th {
-        border-top: 0 !important;
-      }
-    }
-
-    tr {
-      background: @_datagrid-vars[@bg];
-
-      .on-mobile-medium-screen-720({
-        &.even th:first-child {
-          background: #E3E3E3;
-        }
-
-        &.odd th:first-child {
-          background: #EEE;
-        }
-
-        td, th {
-          padding-top: 10px;
-          border-bottom-width: 2px;
-        }
-
-        th:first-child {
-          border-right: 1px #CCC solid;
-          border-bottom: 0;
-          font-weight: normal;
-          color: #444;
-          padding-left: 10px;
-        }
-
-        &.mobile-only-row {
-          td, th {
-            padding-top: @_cells-vars[@padding];
-          }
-        }
-      });
-    }
-  }
-
-  td,
-  th {
-    text-align: left;
-
-    tbody a {
-      &,
-      &:link,
-      &:visited {
-        color: var(--ink-p-link-color);
-      }
-    }
-  }
-}
-
-.datagrid-body-container {
-  background: #rb-ns-ui.datagrids[@bg];
-}
-
-/*
- * Give both the fixed header table and the (eventually) hidden headers
- * row in the body table a matching background and border style.
- */
-.datagrid-head,
-.datagrid-body .datagrid-headers {
-  @_datagrid-vars: #rb-ns-ui.datagrids();
-  @_header-vars: #rb-ns-ui.datagrids.header();
-
-  background: @_header-vars[@bg];
-  border-bottom: 1px @_datagrid-vars[@border-color] solid;
-  border-radius: @_datagrid-vars[@border-radius]
-                 @_datagrid-vars[@border-radius]
-                 0 0;
-}
-
-.datagrid-headers {
-  border-collapse: collapse;
-  border-spacing: 0;
-  overflow: hidden;
-}
-
 .datagrid-header {
-  @_datagrid-vars: #rb-ns-ui.datagrids();
-  @_header-vars: #rb-ns-ui.datagrids.header();
-
-  padding: @_header-vars[@padding];
-
-  a {
-    color: inherit;
-  }
-
   .rb-icon-datagrid-column-shipits-issues {
     margin-left: 4px;
   }
 }
 
 .datagrid-main {
-  @_datagrid-vars: #rb-ns-ui.datagrids();
-
-  border: 1px @_datagrid-vars[@border-color] solid;
-  border-radius: @_datagrid-vars[@border-radius];
-  box-shadow: @_datagrid-vars[@box-shadow];
-  box-sizing: border-box;
-  overflow: hidden;
   z-index: @z-index-base;
-}
-
-.datagrid-menu {
-  @_datagrid-vars: #rb-ns-ui.datagrids();
-
-  a {
-    color: inherit;
-  }
-
-  /*
-   * Override the Edit Columns menu to only show a border on the left.
-   * The menu should be flush with the top, bottom, and right of the
-   * table.
-   */
-  border: 0;
-  border-left: 1px @_datagrid-vars[@border-color] solid;
-  margin-top: 1px;
-
-  /*
-   * Override the default style for the "checkboxes" to not show a border.
-   * The actual checkmarks will be indication enough.
-   *
-   * Note that we still retain a faint hover style, showing a light grey
-   * box where the checkbox is.
-   */
-  .datagrid-menu-checkbox {
-    border: 0;
-  }
 }
 
 .datagrid-title-tabs {
@@ -288,253 +136,110 @@ body.datagrid-page {
   vertical-align: middle;
   z-index: @z-index-deco;
 
-  .datagrid-tab {
-    background: white;
-    border: 1px @_datagrid-vars[@border-color] solid;
-    border-right-width: 0;
-    float: left;
-    padding: 0;
-
-    /*
-     * Position the bottom of the tab so it's sitting right on the header's
-     * border. We'll then turn off the border for the active tab below,
-     * so it's flush with the header.
-     */
-    margin: 0 0 -1px 0;
-
-    &:first-child {
-      border-top-left-radius: @_datagrid-vars[@border-radius];
-    }
-
-    &:last-child {
-      border-top-right-radius: @_datagrid-vars[@border-radius];
-      border-right-width: 1px;
-    }
-
-    &.active {
-      background: @_header-vars[@bg];
-      border-bottom-color: transparent;
-    }
-
-    a {
-      color: black;
-      display: inline-block;
-      font-size: 110%;
-      text-decoration: none;
-      padding: 0.8em 1em;
-    }
-  }
-
   .datagrid-showclosed, .datagrid-showarchived {
     padding: 2px 0 0 10px;
   }
 }
 
-.datagrid-wrapper {
-  @_datagrid-vars: #rb-ns-ui.datagrids();
+.datagrid-top-filters {
+  @_content-header-vars: #rb-ns-ui.content-header();
   @_filter-menu-vars: #rb-ns-ui.datagrids.filter-menu();
-  @_paginator-vars: #rb-ns-ui.datagrids.paginator();
 
-  .datagrid-titlebox {
-    /* Turn off the default styles from Djblet's datagrid stylesheet. */
-    background: none;
-    border-bottom: 0;
+  display: inline-block;
+  top: -@_content-header-vars[@spacing];
+  right: 0;
 
-    /*
-     * Set the titlebox to be aligned properly with any content that
-     * comes immediately before it in .datagrid-main. This may be tabs,
-     * for instance.
-     */
-    display: inline-block;
-    margin: 1em 0.5em;
-    padding: 0;
-    vertical-align: middle;
+  a {
+    color: var(--ink-p-link-fg);
+    text-decoration: none;
 
-    .datagrid-title {
-      background: transparent;
-      border-bottom: 0;
-      color: #444;
-      text-transform: uppercase;
+    &:hover {
+      text-decoration: underline;
     }
   }
 
-  .datagrid-top-filters {
-    @_content-header-vars: #rb-ns-ui.content-header();
+  .datagrid-filters {
+    list-style: none;
+    margin: 0 0 0 0;
+    padding: 0;
 
-    display: inline-block;
-    top: -@_content-header-vars[@spacing];
-    right: 0;
+    > li {
+      display: inline-block;
+      margin: 0 0 0 @_filter-menu-vars[@spacing];
+      padding: 0;
+    }
+  }
 
-    a {
-      color: var(--ink-p-link-color);
-      text-decoration: none;
+  .datagrid-filters-menu {
+    .mobile-only();
 
-      &:hover {
-        text-decoration: underline;
+    border: 1px transparent solid;
+    border-bottom: 0;
+    position: relative;
+    text-align: center;
+    padding: @_content-header-vars[@spacing];
+
+    .fa {
+      color: #333;
+      font-size: 1.5em;
+    }
+  }
+
+  .on-mobile-medium-screen-720({
+    &:hover {
+      .datagrid-filters {
+        opacity: 1;
+        visibility: visible;
+
+
+        /* Overlap the border of the action. */
+        margin-top: -1px;
+      }
+
+      .datagrid-filters-menu {
+        background: @_filter-menu-vars[@bg];
+        border-color: @_filter-menu-vars[@border-color];
+        border-radius: @_filter-menu-vars[@border-radius]
+                       @_filter-menu-vars[@border-radius]
+                       0 0;
+        transition: 0.1s border-color linear, 0.1s background linear;
+        z-index: (@z-index-menu + 1);
       }
     }
 
     .datagrid-filters {
-      list-style: none;
-      margin: 0 0 0 0;
-      padding: 0;
-
-      > li {
-        display: inline-block;
-        margin: 0 0 0 @_filter-menu-vars[@spacing];
-        padding: 0;
-      }
-    }
-
-    .datagrid-filters-menu {
-      .mobile-only();
-
-      border: 1px transparent solid;
-      border-bottom: 0;
-      position: relative;
-      text-align: center;
-      padding: @_content-header-vars[@spacing];
-
-      .fa {
-        color: #333;
-        font-size: 1.5em;
-      }
-    }
-
-    .on-mobile-medium-screen-720({
+      background: @_filter-menu-vars[@bg];
+      border: 1px @_filter-menu-vars[@border-color] solid;
+      border-radius: @_filter-menu-vars[@border-radius]
+                     0
+                     @_filter-menu-vars[@border-radius]
+                     @_filter-menu-vars[@border-radius];
+      opacity: 0;
       position: absolute;
       right: 0;
+      transition: 0.1s opacity linear;
+      visibility: hidden;
+      z-index: @z-index-menu;
 
-      &:hover {
-        .datagrid-filters {
-          opacity: 1;
-          visibility: visible;
+      li {
+        white-space: nowrap;
 
+        a {
+          color: black;
+          display: block;
+          padding: 1em;
 
-          /* Overlap the border of the action. */
-          margin-top: -1px;
-        }
-
-        .datagrid-filters-menu {
-          background: @_filter-menu-vars[@bg];
-          border-color: @_filter-menu-vars[@border-color];
-          border-radius: @_filter-menu-vars[@border-radius]
-                         @_filter-menu-vars[@border-radius]
-                         0 0;
-          transition: 0.1s border-color linear, 0.1s background linear;
-          z-index: (@z-index-menu + 1);
-        }
-      }
-
-      .datagrid-filters {
-        background: @_filter-menu-vars[@bg];
-        border: 1px @_filter-menu-vars[@border-color] solid;
-        border-radius: @_filter-menu-vars[@border-radius]
-                       0
-                       @_filter-menu-vars[@border-radius]
-                       @_filter-menu-vars[@border-radius];
-        opacity: 0;
-        position: absolute;
-        right: 0;
-        transition: 0.1s opacity linear;
-        visibility: hidden;
-        z-index: @z-index-menu;
-
-        li {
-          white-space: nowrap;
-
-          a {
-            color: black;
-            display: block;
-            padding: 1em;
-
-            &:hover {
-              text-decoration: none;
-            }
+          &:hover {
+            text-decoration: none;
           }
         }
       }
-    });
-  }
-
-  .paginator {
-    background: @_paginator-vars[@bg];
-    border-top: 1px @_paginator-vars[@border-color] solid;
-    padding: 0 0 0 1em;
-
-    a:hover {
-      background: none;
-      color: black;
     }
-
-    a, span {
-      display: inline-block;
-    }
-
-    a, .current-page {
-      border: 0;
-      color: #999;
-      font-weight: bold;
-      min-width: 1em;
-      text-align: center;
-    }
-
-    a,
-    .current-page,
-    .page-count {
-      padding: @_paginator-vars[@item-padding];
-    }
-
-    .current-letter {
-      background: none;
-      border: 0;
-      padding: 0;
-    }
-
-    .current-letter,
-    .current-page {
-      background: none;
-      color: black;
-    }
-
-    .current-page {
-      border-bottom: 3px #777 solid;
-    }
-
-    .page-count {
-      color: #666;
-      font-weight: normal;
-      padding-left: 0;
-      padding-right: 0;
-    }
-  }
-}
-
-
-/*
- * Set some common styles for the datagrid header cells.
- *
- * Borders will be turned off by default and the background will match that
- * of the header. When a header is being dragged, the left and right borders
- * will turn on again, to help provide a guide as to boundaries of the
- * column.
- */
-#page-container .datagrid-header,
-.datagrid-header-drag.datagrid-header {
-  background: #rb-ns-ui.datagrids.header()[@bg];
-  border: 0;
+  });
 }
 
 .datagrid-header-drag.datagrid-header {
-  border: 1px #rb-ns-ui.datagrids.header[@border-color] solid;
-  border-top: 0;
-  border-bottom: 0;
   z-index: @z-index-deco;
-}
-
-.edit-columns .djblets-o-spinner {
-  font-size: 16px;
-  text-align: center;
 }
 
 
@@ -569,6 +274,10 @@ body.datagrid-page {
  *     </header>
  */
 .rb-c-datagrid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
   &.-has-tabs {
     margin-bottom: 0;
     padding-bottom: 0;
@@ -580,60 +289,43 @@ body.datagrid-page {
  * Column-specific styles
  ****************************************************************************/
 #page-container .datagrid {
-  .datagrid-body tr:first-child {
-    .age1, .age2, .age3, .age4, .age5 {
-      border-top: 0 !important;
-    }
+  .age1,
+  .age2,
+  .age3,
+  .age4,
+  .age5 {
+    color: var(--ink-p-fg);
+    white-space: nowrap;
   }
 
   .age1 {
-    background-color: #beedbc;
-    border: 1px #8bbd5c solid !important;
-    white-space: nowrap;
-  }
-
-  tr.even .age1 {
-    background-color: #b4e3b2;
+    background:
+      var(--if-dark, #0a5507)
+      var(--if-light, #beedbc);
   }
 
   .age2 {
-    background-color: #ddfa8e;
-    border: 1px #a3e266 solid !important;
-    white-space: nowrap;
-  }
-
-  tr.even .age2 {
-    background-color: #d3f084;
+    background:
+      var(--if-dark, #304001)
+      var(--if-light, #ddfa8e);
   }
 
   .age3 {
-    background-color: #fdf18c;
-    border: 1px #d8c158 solid !important;
-    white-space: nowrap;
-  }
-
-  tr.even .age3 {
-    background-color: #f3e782;
+    background:
+      var(--if-dark, #4c4501)
+      var(--if-light, #fdf18c);
   }
 
   .age4 {
-    background-color: #fed3a9;
-    border: 1px #d49659 solid !important;
-    white-space: nowrap;
-  }
-
-  tr.even .age4 {
-    background-color: #f4c99f;
+    background:
+      var(--if-dark, #4f2700)
+      var(--if-light, #fed3a9);
   }
 
   .age5 {
-    background-color: lighten(#fab6b6, 3%);
-    border: 1px lighten(#f56363, 10%) solid !important;
-    white-space: nowrap;
-  }
-
-  tr.even .age5 {
-    background-color: lighten(#f0acac, 3%);
+    background:
+      var(--if-dark, #3e0505)
+      var(--if-light, #fbc4c4);
   }
 
   td.bugs {
@@ -641,7 +333,7 @@ body.datagrid-page {
 
     a.bug {
       text-decoration: underline;
-      color: var(--ink-p-link-color);
+      color: var(--ink-p-link-fg);
     }
 
     .bug {
@@ -653,11 +345,11 @@ body.datagrid-page {
     font-size: 90%;
 
     &.delete {
-      color: @diff-delete-line-count-color;
+      color: var(--rb-p-diff-delete-text-fg);
     }
 
     &.insert {
-      color: @diff-insert-line-count-color;
+      color: var(--rb-p-diff-insert-text-fg);
     }
   }
 
@@ -742,7 +434,7 @@ body.datagrid-page {
     position: relative;
 
     .no-summary {
-      color: #888;
+      color: var(--ink-p-fg-weak);
       font-style: italic;
     }
 
@@ -818,7 +510,7 @@ body.datagrid-page {
   }
 
   .email, .group {
-    color: #0000C0;
+    color: var(--ink-p-link-fg);
   }
 
   .fn, .email {

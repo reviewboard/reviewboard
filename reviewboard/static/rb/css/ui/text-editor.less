@@ -43,9 +43,9 @@
 .rb-c-text-editor {
   @_text-editor-vars: #rb-ns-ui.text-editor();
 
-  background: var(--ink-p-input-bg-color);
+  background: var(--ink-p-input-bg);
   border: var(--ink-g-border-input);
-  color: var(--ink-p-input-text-color);
+  color: var(--ink-p-input-fg);
   display: flex;
   flex-direction: column;
   margin: @_text-editor-vars[@margin];;
@@ -103,14 +103,6 @@
     }
 
     &.-is-rich {
-      .CodeMirror-cursor {
-        border-left-color: var(--ink-p-input-text-color);
-      }
-
-      .CodeMirror-selected {
-        background: var(--ink-p-input-selection-bg);
-      }
-
       .CodeMirror-scroll {
         margin-bottom: -@_text-editor-vars[@toolbar-spacing] !important;
       }

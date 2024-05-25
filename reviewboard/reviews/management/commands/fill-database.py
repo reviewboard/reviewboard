@@ -276,7 +276,9 @@ class Command(BaseCommand):
                     # Add the reviews if any.
                     review_val = self.pick_random_value(num_of_reviews)
 
-                    for l in range(0, review_val):
+                    # E741 is about `l` being a bad variable name. Apparently
+                    # 4-deep nested index loops are probably bad.
+                    for l in range(review_val):  # noqa: E741
                         if int(verbosity) > NORMAL:
                             self.stdout.write("%s:%s:\t\tReview #%s:" %
                                               (i, j, l))

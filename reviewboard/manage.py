@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-# This has come before anything else
-import djblets.util.compat.python.collections
-
 import os
 import shutil
 import subprocess

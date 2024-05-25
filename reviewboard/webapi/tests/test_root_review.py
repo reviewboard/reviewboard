@@ -550,18 +550,18 @@ class ResourceListTests(BaseWebAPITestCase):
         # Published review from a review request that has an invite-only review
         # group not accessible to the requester, but the requester has access
         # to through being a targeted reviewer.
-        review_request_targetted = self.create_review_request(publish=True)
-        review_request_targetted.target_groups.add(group)
-        review_request_targetted.target_people.add(self.user)
-        review7 = self.create_review(review_request_targetted, publish=True)
+        review_request_targeted = self.create_review_request(publish=True)
+        review_request_targeted.target_groups.add(group)
+        review_request_targeted.target_people.add(self.user)
+        review7 = self.create_review(review_request_targeted, publish=True)
 
         # Published review from a review request that has an invite-only review
         # group not accessible to the requester, and that the requester does
         # not have access to because the requester is not listed as a target
         # reviewer.
-        review_request_untargetted = self.create_review_request(publish=True)
-        review_request_untargetted.target_groups.add(group)
-        review8 = self.create_review(review_request_untargetted, publish=True)
+        review_request_untargeted = self.create_review_request(publish=True)
+        review_request_untargeted.target_groups.add(group)
+        review8 = self.create_review(review_request_untargeted, publish=True)
 
         return (
             review1, review2, review3, review4,

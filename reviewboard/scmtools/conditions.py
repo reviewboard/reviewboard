@@ -13,7 +13,7 @@ from djblets.conditions.operators import (AnyOperator,
 from djblets.conditions.values import ConditionValueMultipleChoiceField
 
 from reviewboard.scmtools import scmtools_registry
-from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 
 

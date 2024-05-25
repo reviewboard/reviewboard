@@ -141,7 +141,7 @@ export class TextBasedCommentBlockView<
      * just to the bottom of the flag.
      *
      * Args:
-     *     commntDlg (RB.CommentDialogView):
+     *     commentDlg (RB.CommentDialogView):
      *          The view for the comment dialog.
      */
     positionCommentDlg(commentDlg: CommentDialogView) {

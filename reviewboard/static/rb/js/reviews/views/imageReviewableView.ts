@@ -661,7 +661,7 @@ class ImageSplitDiffView extends BaseImageView {
     /** The slider element. */
     #$slider: JQuery = null;
 
-    /** The maximimum height of the original and modified images. */
+    /** The maximum height of the original and modified images. */
     #maxHeight = 0;
 
     /** The maximum width of the original and modified images. */

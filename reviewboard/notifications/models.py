@@ -72,6 +72,7 @@ class WebHookTarget(models.Model):
 
     url = models.URLField(
         'URL',
+        max_length=512,
         help_text=_('When the event is triggered, HTTP requests will be '
                     'made against this URL.'))
 

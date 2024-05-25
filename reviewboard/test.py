@@ -8,7 +8,6 @@ import os
 import sys
 
 from django.conf import settings
-from django.contrib import admin
 from djblets.testing.testrunners import TestRunner
 
 

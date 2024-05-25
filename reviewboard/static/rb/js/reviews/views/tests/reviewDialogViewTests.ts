@@ -378,9 +378,9 @@ suite('rb/views/ReviewDialogView', function() {
 
                             dlg = await createReviewDialog();
 
-                            const $button = dlg._$buttons.find(
-                                'input[value="Add General Comment"]');
+                            const $button = dlg._$buttons.find('button:first');
                             expect($button.length).toBe(1);
+                            expect($button.text()).toBe('Add General Comment');
 
                             expect($.ajax).toHaveBeenCalled();
                             expect($.ajax.calls.argsFor(0)[0].url).toBe(
@@ -580,12 +580,22 @@ suite('rb/views/ReviewDialogView', function() {
                             .toBe(fileAttachmentCommentPayload.text);
                         expect(commentView.$issueOpened.prop('checked')).toBe(
                             fileAttachmentCommentPayload.issue_opened);
-                        expect(commentView.$('.filename a').attr('href')).toBe(
-                            fileAttachmentCommentPayload.review_url);
-                        expect(commentView.$('.filename a').text()).toBe(
-                            fileAttachmentCommentPayload.link_text);
-                        expect(commentView.$('.thumbnail').html()).toBe(
-                            fileAttachmentCommentPayload.thumbnail_html);
+
+                        expect(
+                            commentView
+                            .$('.rb-c-review-comment-thumbnail__header')
+                            .attr('href')
+                        ).toBe(fileAttachmentCommentPayload.review_url);
+                        expect(
+                            commentView
+                            .$('.rb-c-review-comment-thumbnail__name')
+                            .text()
+                        ).toBe(fileAttachmentCommentPayload.link_text);
+                        expect(
+                            commentView
+                            .$('.rb-c-review-comment-thumbnail__content')
+                            .html()
+                        ).toBe(fileAttachmentCommentPayload.thumbnail_html);
 
                         expect(dlg._bodyBottomView.$el.is(':visible'))
                             .toBe(true);
@@ -692,11 +702,16 @@ suite('rb/views/ReviewDialogView', function() {
                         expect($img.attr('alt')).toBe(
                             screenshotCommentPayload.screenshot.caption);
 
-                        const $filenameA = commentView.$('.filename a');
-                        expect($filenameA.attr('href')).toBe(
-                            screenshotCommentPayload.screenshot.review_url);
-                        expect($filenameA.text()).toBe(
-                            screenshotCommentPayload.screenshot.caption);
+                        expect(
+                            commentView
+                            .$('.rb-c-review-comment-thumbnail__header')
+                            .attr('href')
+                        ).toBe(screenshotCommentPayload.screenshot.review_url);
+                        expect(
+                            commentView
+                            .$('.rb-c-review-comment-thumbnail__name')
+                            .text()
+                        ).toBe(screenshotCommentPayload.screenshot.caption);
 
                         expect(dlg._bodyBottomView.$el.is(':visible'))
                             .toBe(true);

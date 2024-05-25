@@ -21,8 +21,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.urls import reviewable_url_names, review_request_url_names
 
 if TYPE_CHECKING:
-    # This is available only in django-stubs.
-    from django.utils.functional import _StrOrPromise
+    from djblets.util.typing import StrOrPromise
 
 
 all_review_request_url_names = reviewable_url_names + review_request_url_names
@@ -581,7 +580,7 @@ class UploadDiffAction(BaseAction):
         self,
         *,
         context: Context,
-    ) -> _StrOrPromise:
+    ) -> StrOrPromise:
         """Return the label for the action.
 
         Args:
@@ -777,9 +776,10 @@ class ArchiveAction(BaseAction):
     parent_id = ArchiveMenuAction.action_id
     attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
-    label = ''
-    template_name = 'reviews/archive_action.html'
     js_view_class = 'RB.ArchiveActionView'
+
+    # This is only shown on page load. It will be overridden at runtime.
+    label = _('Toggle Archived')
 
 
 class MuteAction(BaseAction):
@@ -793,9 +793,10 @@ class MuteAction(BaseAction):
     parent_id = ArchiveMenuAction.action_id
     attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
-    label = ''
-    template_name = 'reviews/archive_action.html'
     js_view_class = 'RB.MuteActionView'
+
+    # This is only shown on page load. It will be overridden at runtime.
+    label = _('Toggle Muted')
 
 
 class BaseReviewRequestAction(BaseAction):

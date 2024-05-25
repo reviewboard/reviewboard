@@ -1,8 +1,10 @@
+"""Template tags for working with avatars."""
+
 import json
 import logging
 
 from django import template
-from django.utils.html import mark_safe
+from django.utils.safestring import mark_safe
 
 from reviewboard.avatars import avatar_services
 
@@ -31,7 +33,7 @@ def avatar(context, user, size, service_id=None):
         size (int):
             The height and width of the avatar, in pixels.
 
-        service_id (unicode, optional):
+        service_id (str, optional):
             The unique identifier of the avatar service to use. If this is
             omitted, or the specified service is not registered and enabled,
             the default avatar service will be used.
@@ -48,6 +50,9 @@ def avatar(context, user, size, service_id=None):
             logger.exception('Invalid size passed to avatar template tag: %r',
                              size)
             return mark_safe('')
+
+    if user is None:
+        return mark_safe('')
 
     service = avatar_services.for_user(user, service_id)
 
@@ -73,11 +78,11 @@ def avatar_url(context, user, size, resolution='1x', service_id=None):
         size (int):
             The height and width of the avatar, in pixels.
 
-        resolution (unicode, optional):
+        resolution (str, optional):
             The resolution of the avatar. This should be one of ``'1x'``, for
             normal DPI, or ``'2x'``, for high DPI. This defaults to normal DPI.
 
-        service_id (unicode, optional):
+        service_id (str, optional):
             The unique identifier of the avatar service to use. If this is
             omitted, or the specified service is not registered and enabled,
             the default avatar service will be used.
@@ -118,7 +123,7 @@ def avatar_urls(context, user, size, service_id=None):
         size (int):
             The height and width of the avatar, in pixels.
 
-        service_id (unicode, optional):
+        service_id (str, optional):
             The unique identifier of the avatar service to use. If this is
             omitted, or the specified service is not registered and enabled,
             the default avatar service will be used.

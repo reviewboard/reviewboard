@@ -2,10 +2,21 @@
  * The unified banner view.
  */
 import {
+    MenuButtonView,
+    MenuItem,
+    MenuItemType,
+    MenuItemsCollection,
+    MenuView,
+    craft,
+    paint,
+    renderInto,
+} from '@beanbag/ink';
+import {
     type EventsHash,
     BaseView,
     spina,
 } from '@beanbag/spina';
+import _ from 'underscore';
 
 import {
     ClientCommChannel,
@@ -14,11 +25,8 @@ import {
 } from 'reviewboard/common';
 import {
     FloatingBannerView,
-    MenuButtonView,
-    MenuView,
     contentViewport,
 } from 'reviewboard/ui';
-import { MenuType } from 'reviewboard/ui/views/menuView';
 
 import {
     type DraftMode,
@@ -64,27 +72,29 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
      * Render the view.
      */
     onInitialRender() {
-        const label = _`Mode`;
+        const labelID = 'unified-banner-mode-label';
 
-        this.#menuView = new MenuView({
-            $controller: this.$el,
-            ariaLabel: label,
-        });
+        const menuView = craft<MenuView>`
+            <Ink.Menu aria-labelledby="${labelID}"
+                      controllerEl=${this.el}/>
+        `;
+        this.#menuView = menuView;
 
-        this.$el.html(dedent`
+        renderInto(this.el, paint`
             <a class="rb-c-unified-banner__mode" tabindex="0">
-             <span class="rb-c-unified-banner__menu-label">
-              <span class="rb-icon rb-icon-edit-review"></span>
-              ${label}
-             </span>
-             <span class="rb-icon rb-icon-dropdown-arrow"></span>
+             <label class="rb-c-unified-banner__menu-label"
+                    id="${labelID}">
+              <span class="rb-icon rb-icon-edit-review"
+                    aria-hidden="true"/>
+              ${_`Mode`}
+             </label>
+             <span class="ink-i-dropdown"></span>
             </a>
+            ${menuView}
         `);
 
-        this.#menuView.renderInto(this.$el);
-
         this.#$label = this.$('.rb-c-unified-banner__menu-label');
-        this.#$arrow = this.$('.rb-icon-dropdown-arrow');
+        this.#$arrow = this.$('.ink-i-dropdown');
 
         this._update();
     }
@@ -93,7 +103,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
      * Open the menu.
      */
     private _openMenu() {
-        if (this.#menuView.$el.children().length > 0) {
+        if (!this.#menuView.menuItems.isEmpty()) {
             this.#menuView.open({
                 animate: false,
             });
@@ -104,7 +114,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
      * Close the menu.
      */
     private _closeMenu() {
-        if (this.#menuView.$el.children().length > 0) {
+        if (!this.#menuView.menuItems.isEmpty()) {
             this.#menuView.close({
                 animate: false,
             });
@@ -155,8 +165,8 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
 
             this.#menuView.open({
                 animate: false,
+                currentItemIndex: 0,
             });
-            this.#menuView.focusFirstItem();
         } else if (evt.key === 'Escape') {
             evt.preventDefault();
             evt.stopPropagation();
@@ -175,23 +185,29 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
         const draftModes = model.get('draftModes');
         const selectedDraftMode = model.get('selectedDraftMode');
 
-        this.#menuView.clearItems();
+        const newMenuItems: MenuItem[] = [];
 
         for (let i = 0; i < draftModes.length; i++) {
             const text = draftModes[i].text;
 
             if (i === selectedDraftMode) {
-                this.#$label.html(dedent`
-                    <span class="rb-icon rb-icon-edit-review"></span>
-                    ${text}
-                    `);
+                renderInto(
+                    this.#$label[0],
+                    paint`
+                        <span class="rb-icon rb-icon-edit-review"
+                              aria-hidden="true"/>
+                        ${text}
+                    `,
+                    {empty: true});
             } else {
-                this.#menuView.addItem({
+                newMenuItems.push(new MenuItem({
+                    label: text,
                     onClick: () => model.set('selectedDraftMode', i),
-                    text: text,
-                });
+                }));
             }
         }
+
+        this.#menuView.menuItems.reset(newMenuItems);
 
         this.#$arrow.toggle(draftModes.length > 1);
     }
@@ -221,74 +237,67 @@ class PublishButtonView extends MenuButtonView<UnifiedBanner> {
      * Initialize the view.
      */
     initialize() {
-        super.initialize({
-            ariaMenuLabel: _`Publish All`,
-            hasPrimaryButton: true,
-            menuIconClass: 'fa fa-gear',
-            menuType: MenuType.Button,
-            onPrimaryButtonClick: this.#onPublishClicked,
-            text: _`Publish All`,
-        });
-    }
-
-    /**
-     * Render the view.
-     */
-    onInitialRender() {
-        super.onInitialRender();
-
-        this.#$trivialCheckbox = $(
-            '<input checked type="checkbox" id="publish-button-trivial">');
-        this.#$archiveCheckbox = $(
-            '<input type="checkbox" id="publish-button-archive">');
-
         const reviewRequestEditor = this.model.get('reviewRequestEditor');
+        const menuItems = new MenuItemsCollection();
+
+        let showSendEmailItem: MenuItem | null = null;
 
         if (reviewRequestEditor.get('showSendEmail')) {
-            const $onlyEmail = this.menu.addItem()
-                .append(this.#$trivialCheckbox);
-
-            $('<label for="publish-button-trivial">')
-                .text(_`Send E-Mail`)
-                .appendTo($onlyEmail);
+            showSendEmailItem = new MenuItem({
+                checked: true,
+                label: _`Send E-Mail`,
+                type: MenuItemType.CHECKBOX_ITEM,
+            });
+            menuItems.add(showSendEmailItem);
         }
 
-        const $archive = this.menu.addItem()
-            .append(this.#$archiveCheckbox);
+        const archiveItem = new MenuItem({
+            label: _`Archive after publishing`,
+            type: MenuItemType.CHECKBOX_ITEM,
+        });
+        menuItems.add(archiveItem);
 
-        $('<label for="publish-button-archive">')
-            .text(_`Archive after publishing`)
-            .appendTo($archive);
-
-        this._update();
+        super.initialize({
+            dropdownButtonAriaLabel: _`Open publish options`,
+            hasActionButton: true,
+            label: _`Publish All`,
+            menuAriaLabel: _`Publish options`,
+            menuIconName: 'fa fa-gear',
+            menuItems: menuItems,
+            onActionButtonClick: () => {
+                this.trigger('publish', {
+                    archive: archiveItem.get('checked'),
+                    trivial: showSendEmailItem === null ||
+                             !showSendEmailItem.get('checked'),
+                });
+            },
+        });
     }
 
     /**
-     * Callback for when the publish button is clicked.
+     * Handle the initial rendering of the menu button.
      */
-    #onPublishClicked() {
-        this.trigger('publish', {
-            archive: this.#$archiveCheckbox.is(':checked'),
-            trivial: !this.#$trivialCheckbox.is(':checked'),
-        });
+    protected onComponentInitialRender() {
+        super.onComponentInitialRender();
+
+        this._update()
     }
 
     /**
      * Update the state of the publish button.
      */
     private _update() {
-        const draftModes = this.model.get('draftModes');
-        const selectedDraftMode = this.model.get('selectedDraftMode');
+        const model = this.model;
+        const draftModes = model.get('draftModes');
+        const selectedDraftMode = model.get('selectedDraftMode');
 
         if (!this.rendered || draftModes.length === 0) {
             return;
         }
 
-        if (draftModes[selectedDraftMode].multiple) {
-            this.$primaryButton.text(_`Publish All`);
-        } else {
-            this.$primaryButton.text(_`Publish`);
-        }
+        this.label = (draftModes[selectedDraftMode].multiple
+                      ? _`Publish All`
+                      : _`Publish`);
     }
 }
 
@@ -458,7 +467,13 @@ export class UnifiedBannerView extends FloatingBannerView<
         this.listenTo(this.#publishButton, 'publish', this.publish);
         this.#publishButton.render();
 
-        this.#$discardButton = this.$('#btn-review-request-discard');
+        this.#$discardButton =
+            $(paint`
+                <Ink.Button id="btn-review-request-discard">
+                 ${_`Discard`}
+                </Ink.Button>
+            `)
+            .appendTo(this.#$draftActions);
 
         const reviewRequestEditor = model.get('reviewRequestEditor');
         const reviewRequest = model.get('reviewRequest');
@@ -486,14 +501,29 @@ export class UnifiedBannerView extends FloatingBannerView<
      * Handle re-renders.
      */
     onRender() {
-        this._update();
+        this._update(true);
     }
 
     /**
      * Update the state of the banner.
+     *
+     * Version Changed:
+     *     7.0:
+     *     Added the ``forceUpdate`` argument.
+     *
+     * Args:
+     *     forceUpdate (boolean, optional):
+     *         Whether to force updating the state of the banner.
+     *
+     *         If not provided, this will only update if already rendered.
+     *
+     *         Version Added:
+     *             7.0
      */
-    private _update() {
-        if (!this.rendered) {
+    private _update(
+        forceUpdate?: boolean,
+    ) {
+        if (!this.rendered && !forceUpdate) {
             return;
         }
 
@@ -755,23 +785,38 @@ export class UnifiedBannerView extends FloatingBannerView<
     ): Promise<boolean> {
         return new Promise((resolve, reject) => {
             const text = draftMode.hasReview
-                ? _`If you discard this review, all unpublished comments will be deleted.`
-                : _`If you discard this review request draft, all unpublished data will be deleted.`;
+                ? _`
+                    If you discard this review, all unpublished comments
+                    will be deleted.
+                `
+                : _`
+                    If you discard this review request draft, all unpublished
+                    data will be deleted.
+                `;
             const title = draftMode.hasReview
                 ? _`Are you sure you want to discard this review?`
-                : _`Are you sure you want to discard this review request draft?`;
+                : _`
+                    Are you sure you want to discard this review request
+                    draft?
+                `;
+
+            function resolveAndClose(result: boolean) {
+                resolve(result);
+                $dlg.modalBox('destroy');
+            }
 
             const $dlg = $('<p>')
                 .text(text)
                 .modalBox({
-                    buttons: [
-                        $('<input type="button">')
-                            .val(_`Cancel`)
-                            .click(() => resolve(false)),
-                        $('<input type="button">')
-                            .val(_`Discard`)
-                            .click(() => resolve(true)),
-                    ],
+                    buttons: paint<HTMLButtonElement[]>`
+                        <Ink.Button onClick=${() => resolveAndClose(false)}>
+                         ${_`Cancel`}
+                        </Ink.Button>
+                        <Ink.Button type="danger"
+                                    onClick=${() => resolveAndClose(true)}>
+                         ${_`Discard`}
+                        </Ink.Button>
+                    `,
                     title: title,
                 })
                 .on('close', () => {

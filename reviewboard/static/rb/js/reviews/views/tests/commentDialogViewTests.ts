@@ -97,6 +97,7 @@ suite('rb/views/CommentDialogView', function() {
             editor = new CommentEditor({
                 canEdit: true,
                 comment: new RB.DiffComment(),
+                publishedCommentsType: 'diff_comments',
                 reviewRequest: reviewRequest,
                 reviewRequestEditor: reviewRequestEditor,
             });
@@ -470,6 +471,7 @@ suite('rb/views/CommentDialogView', function() {
                     };
                     comment.url = 'http://example.com/';
                     comment.comment_id = 1;
+                    comment.review_id = 1;
                     comment.text = 'Sample comment.';
                     comment.issue_opened = true;
                     comment.issue_status = 'open';
@@ -488,8 +490,8 @@ suite('rb/views/CommentDialogView', function() {
                     dlg.open();
 
                     const $buttons = dlg.$el
-                        .find('.other-comments .issue-button');
-                    expect($buttons.length).toBe(5);
+                        .find('.rb-c-issue-bar__actions button');
+                    expect($buttons.length).toBe(2);
                     expect($buttons.is(':visible')).toBe(true);
                 });
 
@@ -506,7 +508,7 @@ suite('rb/views/CommentDialogView', function() {
                     dlg.open();
 
                     const $buttons = dlg.$el
-                        .find('.other-comments .issue-button');
+                        .find('.rb-c-issue-bar__actions button');
                     expect($buttons.length).toBe(0);
                 });
             });

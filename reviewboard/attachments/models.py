@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import ClassVar, List, Sequence
+from typing import ClassVar, List, Optional, Sequence
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -20,6 +20,7 @@ from reviewboard.attachments.mimetypes import MimetypeHandler
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 logger = logging.getLogger(__name__)
@@ -271,17 +272,114 @@ class FileAttachment(models.Model):
 
         return self._comments
 
-    def get_absolute_url(self):
-        """Return the absolute URL to download this file."""
+    def get_raw_download_url(self) -> Optional[str]:
+        """Return the absolute URL to download this file.
+
+        The URL will be determined by the storage backend. It may be
+        accessible for only a limited amount of time, and may or may not be
+        cacheable by the browser.
+
+        Version Added:
+            7.0
+
+        Returns:
+            str:
+            The absolute URL to the file.
+
+            This will be ``None`` if there's no file backing for any reason.
+        """
         if not self.file:
             return None
 
         url = self.file.url
 
-        if url.startswith('http:') or url.startswith('https:'):
+        if not url or url.startswith(('http:', 'https:')):
             return url
 
         return build_server_url(url)
+
+    def get_raw_thumbnail_image_url(
+        self,
+        *,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+    ) -> Optional[str]:
+        """Return the absolute URL for an image thumbnail for this file.
+
+        The URL will be determined by the storage backend. It may be
+        accessible for only a limited amount of time, and may or may not be
+        cacheable by the browser.
+
+        Not all file attachments support image thumbnails. If not supported,
+        this will be ``None``.
+
+        Version Added:
+            7.0
+
+        Returns:
+            str:
+            The absolute URL to the file.
+
+            This will be ``None`` if there's no file backing for any reason,
+            or if the attachment doesn't support image thumbnails.
+        """
+        url: Optional[str] = None
+        mimetype_handler = self.mimetype_handler
+
+        if mimetype_handler:
+            try:
+                url = mimetype_handler.get_raw_thumbnail_image_url(
+                    width=width,
+                    height=height)
+            except NotImplementedError:
+                # This file type doesn't support image thumbnails.
+                pass
+
+        if not url or url.startswith(('http:', 'https:')):
+            return url
+
+        return build_server_url(url)
+
+    def get_absolute_url(self) -> Optional[str]:
+        """Return the absolute URL for accessing the file.
+
+        This will return the correct URL for either user-uploaded or
+        review request file attachments.
+
+        If the association could not be determined, this will return ``None``.
+
+        The URL will always be a full absolute URL, usable in e-mails and
+        other sources.
+
+        Returns:
+            str:
+            The URL to access the file attachment contents.
+        """
+        if self.user is not None:
+            # This is a user-uploaded file attachment.
+            path = local_site_reverse(
+                'user-file-attachment',
+                local_site=self.local_site,
+                kwargs={
+                    'file_attachment_uuid': self.uuid,
+                    'username': self.user.username,
+                })
+        else:
+            # This is a file attachment on a review request.
+            try:
+                review_request = self.get_review_request()
+
+                path = local_site_reverse(
+                    'download-file-attachment',
+                    local_site=self.local_site,
+                    kwargs={
+                        'file_attachment_id': self.pk,
+                        'review_request_id': review_request.get_display_id(),
+                    })
+            except ObjectDoesNotExist:
+                return None
+
+        return build_server_url(path)
 
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to this FileAttachment.

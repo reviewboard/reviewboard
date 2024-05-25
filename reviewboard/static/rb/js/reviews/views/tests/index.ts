@@ -1,4 +1,5 @@
 import './commentDialogViewTests';
+import './commentIssueBarViewTests';
 import './diffReviewableViewTests';
 import './diffViewerPageViewTests';
 import './fileAttachmentThumbnailViewTests';

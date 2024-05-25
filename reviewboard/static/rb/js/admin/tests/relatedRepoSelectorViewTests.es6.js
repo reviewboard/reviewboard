@@ -16,7 +16,7 @@ suite('rb/admin/views/relatedRepoSelectorView', function() {
     });
 
     describe('Rendering', function() {
-        it('with inital options', function() {
+        it('with initial options', function() {
             let view = new RB.RelatedRepoSelectorView({
                 $input: $('<input id="id_repos" type="hidden">'),
                 initialOptions: [{

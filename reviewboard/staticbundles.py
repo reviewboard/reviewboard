@@ -7,8 +7,6 @@ PIPELINE_JAVASCRIPT = {
     },
     '3rdparty': {
         'source_filenames': (
-            # The order here matters.
-            'lib/js/3rdparty/jquery-ui-1.12.1.min.js',
             'lib/js/3rdparty/index.ts',
         ),
         'output_filename': 'lib/js/3rdparty.min.js',
@@ -101,7 +99,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/utils/tests/urlUtilsTests.es6.js',
             'rb/js/views/tests/clientLoginViewTests.es6.js',
             'rb/js/views/tests/collectionViewTests.es6.js',
-            'rb/js/views/tests/commentIssueBarViewTests.es6.js',
             'rb/js/views/tests/diffFragmentQueueViewTests.es6.js',
             'rb/js/views/tests/diffFragmentViewTests.es6.js',
             'rb/js/views/tests/draftReviewBannerViewTests.es6.js',
@@ -221,7 +218,6 @@ PIPELINE_JAVASCRIPT = {
             # Note: These are roughly in dependency order.
             'rb/js/models/uploadDiffModel.es6.js',
             'rb/js/utils/textUtils.es6.js',
-            'rb/js/views/commentIssueBarView.es6.js',
             'rb/js/views/diffFragmentQueueView.es6.js',
             'rb/js/views/diffFragmentView.es6.js',
             'rb/js/views/draftReviewBannerView.es6.js',

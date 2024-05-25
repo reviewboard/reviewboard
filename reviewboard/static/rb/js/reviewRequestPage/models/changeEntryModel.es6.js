@@ -16,7 +16,7 @@ const parentModel = RB.ReviewRequestPage.StatusUpdatesEntry;
  *
  * See Also:
  *     :js:class:`RB.ReviewRequestPage.StatusUpdatesEntry`:
- *         For additional model attribtues.
+ *         For additional model attributes.
  *
  */
 RB.ReviewRequestPage.ChangeEntry = parentModel.extend({

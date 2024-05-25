@@ -178,7 +178,7 @@ class DiffCommentLineNumbersTests(TestCase):
 
         self.assertEqual(result, 'Line 30 (original)')
 
-    def test_delete_mutiple_lines(self):
+    def test_delete_multiple_lines(self):
         """Testing diff_comment_line_numbers with delete chunk and multiple
         commented lines
         """

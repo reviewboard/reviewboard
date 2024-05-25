@@ -1,0 +1,340 @@
+@import (reference) "rb/css/assets/icons.less";
+
+
+/**
+ * A component for viewing and changing the issue status of a comment.
+ *
+ * This displays a horizontal bar that shows an icon and text reflecting the
+ * current issue status for a published comment, with action buttons for
+ * fixing, dropping, reopening, or verifying an issue, along with a link for
+ * viewing the Issue Summary Table.
+ *
+ * Version Added:
+ *     7.0
+ *
+ * DOM Attributes:
+ *     aria-labelledby (string):
+ *         The ID of the inner label.
+ *
+ *     data-can-verify (boolean):
+ *         Whether the user requires verification.
+ *
+ *     data-comment-id (number):
+ *         The ID of the comment.
+ *
+ *     data-comment-type (string):
+ *         The type of the comment.
+ *
+ *         Valid values include those present in
+ *         :js:class:`RB.IssueCommentManagerCommentType`.
+ *
+ *     data-interactive (boolean):
+ *         Whether the issue can be interacted with by the user.
+ *
+ *         If ``true``, action buttons will be available.
+ *
+ *     data-issue-status (string):
+ *         The current issue status.
+ *
+ * Modifiers:
+ *     -is-compact:
+ *         Place the issue bar in a compact mode.
+ *
+ *         This will remove the issues link, and use a more vertical
+ *         orientation useful in short widths.
+ *
+ * Structure:
+ *     <div class="rb-c-issue-bar
+ *                 [-is-compact]"
+ *          aria-labelledby="<<string>>"
+ *          data-can-verify="<<boolean>>"
+ *          data-comment-id="<<number>>"
+ *          data-comment-type="<<string>>"
+ *          data-interactive="<<boolean>>"
+ *          data-issue-status="open | dropped | resolved |
+ *                             verifying-dropped | verifying-resolved">
+ *      <span class="rb-c-issue-bar__icon" ...></span>
+ *      <label class="rb-c-issue-bar__message" ...></label>
+ *      <span class="rb-c-issue-bar__actions" ...></span>
+ *      <a class="rb-c-issue-bar__all-issues-link" ...></a>
+ *     </div>
+ */
+.rb-c-issue-bar {
+  /* Presentation */
+  --_rb-c-issue-status-bg-light: transparent;
+  --_rb-c-issue-status-border-color-light: transparent;
+  --_rb-c-issue-status-border-color-dark: transparent;
+  --_rb-c-issue-status-link-color-light: inherit;
+  --_rb-c-issue-status-text-color-light: var(--ink-p-fg-on-light);
+  --_rb-c-issue-status-text-color-dark: var(--ink-p-fg-on-light);
+
+  /*
+   * On dark mode, use a yellow base for the button colors, and keep the
+   * background neutral. Our splashes of color will be purely on the icon,
+   * text, and buttons.
+   */
+  --ink-p-accent-primary-bg:
+    var(--if-light, inherit)
+    var(--if-dark, var(--ink-p-grey-500));
+  --ink-p-accent-secondary-bg:
+    var(--if-light, inherit)
+    var(--if-dark, white);
+  --ink-p-accent-tertiary-bg:
+    var(--if-light, inherit)
+    var(--if-dark, var(--ink-p-grey-500));
+  --ink-p-accent-primary-fg:
+    var(--if-light, inherit)
+    var(--if-dark, var(--ink-p-fg-on-light));
+
+  background:
+    var(--if-light, var(--_rb-c-issue-status-bg-light))
+    var(--if-dark, rgba(255, 255, 255, 0.1));
+  border:
+    1px
+    var(--if-light, var(--_rb-c-issue-status-border-color-light))
+    var(--if-dark, var(--_rb-c-issue-status-border-color-dark))
+    solid;
+  border-radius: var(--ink-u-border-radius-std);
+  color:
+    var(--if-light, var(--_rb-c-issue-status-text-color-light))
+    var(--if-dark, var(--_rb-c-issue-status-text-color-dark));
+  font-weight: bold;
+  transition: 0.1s linear all;
+
+  /* Layout */
+  display: grid;
+  grid-template-areas: "icon message actions link";
+  grid-template-columns: min-content auto 1fr auto;
+  align-items: center;
+  gap: var(--ink-u-spacing-std);
+  padding: var(--ink-u-spacing-s) var(--ink-u-spacing-m);
+
+  &.-is-compact {
+    grid-template-areas:
+      "icon message"
+      ".    actions";
+    grid-template-columns: min-content auto min-content;
+    grid-template-rows: 1fr 1fr;
+
+    .rb-c-issue-bar__actions {
+      margin-left: 0;
+    }
+
+    .rb-c-issue-bar__all-issues-link {
+      display: none;
+    }
+  }
+
+  &[data-issue-status="open"] {
+    --_rb-c-issue-status-bg-light: var(--rb-p-issue-bg);
+    --_rb-c-issue-status-link-color-light:
+      var(--ink-p-fg-weak-on-light);
+
+    .rb-c-issue-bar__icon {
+      .rb-icon-issue-open();
+    }
+  }
+
+  &[data-issue-status="dropped"] {
+    --_rb-c-issue-status-bg-light: @issue-discarded-bg;
+    --_rb-c-issue-status-border-color-light: @issue-discarded-border-color;
+    --_rb-c-issue-status-link-color-light: @issue-discarded-link-color;
+    --_rb-c-issue-status-text-color-light: var(--ink-p-fg-on-light);
+    --_rb-c-issue-status-text-color-dark:
+      var(--rb-p-issue-dropped-accent-text-color);
+
+    .rb-c-issue-bar__icon {
+      .rb-icon-issue-dropped();
+    }
+  }
+
+  &[data-issue-status="resolved"] {
+    --_rb-c-issue-status-bg-light: @issue-resolved-bg;
+    --_rb-c-issue-status-border-color-light: @issue-resolved-border-color;
+    --_rb-c-issue-status-link-color-light: @issue-resolved-link-color;
+    --_rb-c-issue-status-text-color-dark:
+      var(--rb-p-issue-resolved-accent-text-color);
+
+    .rb-c-issue-bar__icon {
+      .rb-icon-issue-resolved();
+    }
+  }
+
+  &[data-issue-status="verifying-resolved"],
+  &[data-issue-status="verifying-dropped"] {
+    --_rb-c-issue-status-bg-light: @issue-verifying-bg;
+
+    .rb-c-issue-bar__icon {
+      .rb-icon-issue-verifying();
+    }
+  }
+
+  &[data-issue-status="open"],
+  &[data-issue-status="verifying-resolved"],
+  &[data-issue-status="verifying-dropped"] {
+    --_rb-c-issue-status-border-color-light: var(--rb-p-issue-border-color);
+    --_rb-c-issue-status-border-color-dark: var(--rb-p-issue-border-color);
+    --_rb-c-issue-status-text-color-light: var(--ink-p-fg-on-light);
+    --_rb-c-issue-status-text-color-dark:
+      var(--rb-p-issue-open-accent-text-color);
+
+    --ink-p-accent-primary-bg:
+      var(--if-light, inherit)
+      var(--if-dark, var(--ink-p-yellow-300));
+    --ink-p-accent-secondary-bg:
+      var(--if-light, inherit)
+      var(--if-dark, var(--ink-p-yellow-800));
+    --ink-p-accent-tertiary-bg:
+      var(--if-light, inherit)
+      var(--if-dark, var(--ink-p-yellow-500));
+    --ink-p-accent-primary-fg:
+      var(--if-light, inherit)
+      var(--if-dark, var(--ink-p-fg-on-light));
+    }
+
+  /**
+   * The actions available to the user.
+   *
+   * The following buttons are available based on the current issue status:
+   *
+   * ``open``:
+   *     Resolve and Drop.
+   *
+   * ``dropped``:
+   *     Re-open.
+   *
+   * ``resolved``:
+   *     Re-open.
+   *
+   * ``verifying-dropped``:
+   *     Re-open and Verify Dropped.
+   *
+   * ``verifying-resolved``:
+   *     Re-open and Verify Fixed.
+   *
+   * Structure:
+   *     <div class="rb-c-issue-bar__actions">
+   *      [
+   *       <button class="ink-c-button"
+   *               type="button"
+   *               data-action="resolve">
+   *        Fixed
+   *       </button>
+   *      ]
+   *      [
+   *       <button class="ink-c-button"
+   *               type="button"
+   *               data-action="drop">
+   *        Drop
+   *       </button>
+   *      ]
+   *      [
+   *       <button class="ink-c-button"
+   *               type="button"
+   *               data-action="reopen">
+   *        Re-open
+   *       </button>
+   *      ]
+   *      [
+   *       <button class="ink-c-button"
+   *               type="button"
+   *               data-action="verify-dropped">
+   *        Verify Dropped
+   *       </button>
+   *      ]
+   *      [
+   *       <button class="ink-c-button"
+   *               type="button"
+   *               data-action="verify-resolved">
+   *        Verify Fixed
+   *       </button>
+   *      ]
+   *     </div>
+   */
+  &__actions {
+    grid-area: actions;
+    display: flex;
+    flex-grow: 1;
+    gap: var(--ink-u-spacing-s);
+    margin-left: var(--ink-u-spacing-std);
+  }
+
+  /**
+   * A link taking the user to the Issue Summary Table.
+   *
+   * Structure:
+   *     <a class="rb-c-issue-bar__all-issues-link"
+   *        href="...">
+   *      Show all issues
+   *     </a>
+   */
+  &__all-issues-link {
+    grid-area: link;
+    font-size: var(--ink-u-font-sm);
+    font-weight: normal;
+    white-space: nowrap;
+
+    &,
+    &:link,
+    &:visited,
+    &:hover {
+      color:
+        var(--if-light, var(--_rb-c-issue-status-link-color-light))
+        var(--if-dark, inherit);
+    }
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  /**
+   * The icon representing the issue status.
+   *
+   * DOM Attributes:
+   *     aria-hidden (boolean):
+   *         ``true``, always.
+   *
+   * Structure:
+   *     <span class="rb-c-issue-bar__icon"
+   *           aria-hidden="true"></span>
+   */
+  &__icon {
+    grid-area: icon;
+    .rb-icon();
+  }
+
+  /**
+   * The message describing the current issue status.
+   *
+   * DOM Attributes:
+   *     id (string):
+   *         A unique ID for the label.
+   *
+   *         This value must be placed in ``aria-labelledby` in
+   *         ``.rb-c-issue-bar``.
+   *
+   * Structure:
+   *     <label class="rb-c-issue-bar__message"
+   *            id="<<string>>"
+   *      text...
+   *     </label>
+   */
+  &__message {
+    grid-area: message;
+  }
+
+  .on-mobile-medium-screen-720({
+    & {
+      grid-template-areas:
+        "icon message message"
+        ".    actions link";
+      grid-template-columns: min-content auto min-content;
+      grid-template-rows: 1fr 1fr;
+    }
+
+    &__actions {
+      margin-left: 0;
+    }
+  });
+}

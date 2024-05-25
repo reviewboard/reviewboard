@@ -65,7 +65,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         review_request = self.create_review_request(
             submitter=user,
             publish=True)
-        screenshot = self.create_screenshot(review_request)
+        self.create_screenshot(review_request)
         review = self.create_review(review_request, user=user)
 
         return get_review_screenshot_comment_list_url(review)

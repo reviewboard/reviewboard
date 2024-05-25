@@ -308,7 +308,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                 for model in models:
                     models_to_delete.append("%s:%s" % (DJANGO_CT, get_model_ct(model)))
 
-                # Delete by query in Elasticsearch asssumes you're dealing with
+                # Delete by query in Elasticsearch assumes you're dealing with
                 # a ``query`` root object. :/
                 query = {
                     "query": {"query_string": {"query": " OR ".join(models_to_delete)}}
@@ -531,7 +531,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
             lng, lat = dwithin["point"].coords
 
             # NB: the 1.0.0 release of elasticsearch introduce an
-            #     incompatible change on the distance filter formating
+            #     incompatible change on the distance filter formatting
             if elasticsearch.VERSION >= (1, 0, 0):
                 distance = "%(dist).6f%(unit)s" % {
                     "dist": dwithin["distance"].km,
@@ -976,7 +976,7 @@ class ElasticsearchSearchQuery(BaseSearchQuery):
                 if value.input_type_name == "exact":
                     query_frag = prepared_value
                 else:
-                    # Iterate over terms & incorportate the converted form of each into the query.
+                    # Iterate over terms & incorporate the converted form of each into the query.
                     terms = []
 
                     if isinstance(prepared_value, str):

@@ -130,8 +130,6 @@ body {
   }
 
   #rb-ns-pages.base.on-shell-mobile-mode({
-    background: #rb-ns-ui.colors[@white];
-
     &.js-mobile-menu-open {
       /*
        * When opening the mobile sidebar menu, lock the viewport so the user
@@ -271,12 +269,12 @@ html, body {
 
 
 a:link, a:visited {
-  color: var(--ink-p-link-color);
+  color: var(--ink-p-link-fg);
   text-decoration: none;
 }
 
 a:hover {
-  color: var(--ink-p-link-hover-color);
+  color: var(--ink-p-link-hover-fg);
   text-decoration: underline;
 }
 
@@ -460,6 +458,7 @@ textarea {
   --ink-p-header-bg:
     var(--if-light, @review-request-action-bg)
     var(--if-dark, var(--ink-p-cool-grey-100));
+  --ink-p-header-fg: var(--ink-p-fg);
 
   .page-colors(@topbar-bg: @review-request-action-bg;
                @topbar-border-color: @review-request-action-border-color);

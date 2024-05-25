@@ -22,7 +22,6 @@ from random import choice as random_choice
 from typing import Dict, List, Optional
 from urllib.request import urlopen
 
-import importlib_metadata
 import importlib_resources
 from packaging.version import parse as parse_version
 from django.db.utils import OperationalError
@@ -790,7 +789,7 @@ class Site(object):
 
         try:
             return FileDiff.objects.unmigrated().exists()
-        except:
+        except Exception:
             # Very likely, there was no diffviewer_filediff.diff_hash_id
             # column, indicating a pre-1.7 database. We want to assume
             # a dedup is needed.
@@ -1157,7 +1156,7 @@ class Site(object):
 
         try:
             urlopen(url, timeout=5).read()
-        except:
+        except Exception:
             # There may be a number of issues preventing this from working,
             # such as a restricted network environment or a server issue on
             # our side. This isn't a catastrophic issue, so don't bother them
@@ -1171,8 +1170,7 @@ class Site(object):
 
         try:
             from django.core.management import (BaseCommand,
-                                                ManagementUtility,
-                                                get_commands)
+                                                ManagementUtility)
 
             os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
                                   str('reviewboard.settings'))
@@ -1770,7 +1768,7 @@ class SiteList(object):
             # only for others.
             try:
                 os.makedirs(os.path.dirname(self.path), 0o755)
-            except:
+            except Exception:
                 # We can't store the site list file. We'll just skip it.
                 return
 
@@ -3018,7 +3016,6 @@ class ManageCommand(Command):
             ),
         },
         'Package Management and Runtime': {
-            'python': 'Run the version of Python for the site.',
             'pip': (
                 'Run the version of the pip Python package management tool '
                 'for the site.'

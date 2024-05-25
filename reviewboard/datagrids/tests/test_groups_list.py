@@ -14,7 +14,7 @@ from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import Profile
 from reviewboard.datagrids.tests.base import BaseViewTestCase
-from reviewboard.reviews.models import Group, ReviewRequest
+from reviewboard.reviews.models import Group
 from reviewboard.reviews.testing.queries.review_groups import (
     get_review_groups_accessible_prep_equeries,
     get_review_groups_accessible_q,

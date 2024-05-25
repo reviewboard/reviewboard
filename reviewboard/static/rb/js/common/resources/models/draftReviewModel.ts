@@ -2,10 +2,16 @@
  * A draft review.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import * as JSONSerializers from '../utils/serializers';
-import { type SaveOptions } from './baseResourceModel';
+import {
+    type SerializerMap,
+    type SaveOptions,
+} from './baseResourceModel';
 import { DraftResourceModelMixin } from './draftResourceModelMixin';
 import {
     type ReviewAttrs,
@@ -39,28 +45,26 @@ interface DraftReviewAttrs extends ReviewAttrs {
 @spina({
     mixins: [DraftResourceModelMixin],
 })
-export class DraftReview extends Review {
-    static defaults(): DraftReviewAttrs {
-        return _.defaults({
-            publishAndArchive: false,
-            publishToOwnerOnly: false,
-        }, super.defaults());
-    }
+export class DraftReview extends Review<DraftReviewAttrs> {
+    static defaults: Result<Partial<DraftReviewAttrs>> = {
+        publishAndArchive: false,
+        publishToOwnerOnly: false,
+    };
 
-    static attrToJsonMap = _.defaults({
+    static attrToJsonMap: { [key: string]: string } = {
         publishAndArchive: 'publish_and_archive',
         publishToOwnerOnly: 'publish_to_owner_only',
-    }, Review.attrToJsonMap);
+    };
 
     static serializedAttrs = [
         'publishAndArchive',
         'publishToOwnerOnly',
     ].concat(Review.serializedAttrs);
 
-    static serializers = _.defaults({
+    static serializers: SerializerMap = {
         publishAndArchive: JSONSerializers.onlyIfValue,
         publishToOwnerOnly: JSONSerializers.onlyIfValue,
-    }, Review.serializers);
+    };
 
     /**
      * Publish the review.

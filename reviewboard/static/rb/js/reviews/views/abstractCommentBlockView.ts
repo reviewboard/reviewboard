@@ -111,7 +111,7 @@ export class AbstractCommentBlockView<
      * be displayed.
      *
      * Args:
-     *     commntDlg (RB.CommentDialogView):
+     *     commentDlg (RB.CommentDialogView):
      *          The view for the comment dialog.
      */
     positionCommentDlg(commentDlg: CommentDialogView) {

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Dict, Set, TYPE_CHECKING, Union
 
-from django.contrib.auth.models import AnonymousUser, Permission, User
+from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
 from djblets.db.query_comparator import ExpectedQueries
 

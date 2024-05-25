@@ -70,12 +70,10 @@
             border-bottom-right-radius: 0;
           }
 
-          &:hover {
-            border-right: 1px @_sidebars-vars[@connected-border-color] solid;
-          }
-
+          &:hover,
           &.-is-active {
-            border-right: 1px transparent solid;
+            /* Ensure the sidebar can overlay the border. */
+            border-right: var(--ink-u-border-thin) transparent solid;
           }
         }
       }
@@ -307,7 +305,7 @@
 .rb-c-sidebar__item-value {
   @_sidebars-vars: #rb-ns-ui.sidebars();
 
-  color: @_sidebars-vars[@value-color];
+  color: var(--ink-p-blue-800);
   position: absolute;
   right: 2 * @_sidebars-vars[@padding-horiz];
   font-size: 95%;
@@ -454,22 +452,19 @@
 
   cursor: pointer;
 
-  &:hover {
-    background: @_sidebars-vars[@hover-bg];
-    border: 1px @_sidebars-vars[@hover-border-color] solid;
-  }
-
   &:hover,
   &.-is-active {
     @_border-radius: @_sidebars-vars[@active-border-radius];
 
+    background: var(--ink-c-data-table-body-bg);
+    border: var(--ink-c-data-table-border);
     border-radius: @_border-radius;
     box-shadow: @_sidebars-vars[@active-shadow];
+    color: var(--ink-p-fg);
   }
 
   &.-is-active {
-    background: @_sidebars-vars[@active-bg];
-    border: 1px @_sidebars-vars[@active-border-color] solid;
+    z-index: @z-index-deco;
   }
 }
 

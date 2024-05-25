@@ -17,7 +17,7 @@ suite('rb/admin/views/relatedUserSelectorView', function() {
     });
 
     describe('Rendering', function() {
-        it('with inital options', function() {
+        it('with initial options', function() {
             let view = new RB.RelatedUserSelectorView({
                 $input: $('<input id="id_people" type="hidden">'),
                 initialOptions: [{

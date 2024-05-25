@@ -51,7 +51,7 @@
      * Args:
      *     @width (units):
      *         The width of the labels. This should be given in pixels,
-     *         to avoid issues with font size discrepencies.
+     *         to avoid issues with font size discrepancies.
      */
     .set-labels-width(@width) {
       .rb-c-form-field__label {
@@ -139,8 +139,10 @@ input[type=text],
 input[type=url] {
   @_form-field-vars: #rb-ns-ui.form-field();
 
-  border: @_form-field-vars[@input-border];
+  background: var(--ink-p-input-bg);
+  border: var(--ink-g-border-input);
   border-radius: @_form-field-vars[@input-border-radius];
+  color: var(--ink-p-input-fg);
   box-sizing: border-box;
   font-size: inherit;
   padding: @_form-field-vars[@input-padding-vert]
@@ -159,9 +161,25 @@ textarea {
 .CodeMirror {
   @_form-field-vars: #rb-ns-ui.form-field();
 
-  border: @_form-field-vars[@textarea-border];
+  background: var(--rb-theme-rich-text-code-bg);
+  border: var(--ink-g-border-input);
   border-radius: @_form-field-vars[@textarea-border-radius];
+  color: var(--rb-theme-rich-text-code-fg);
   cursor: text;
+
+  &-cursor {
+    border-left-color: var(--ink-p-input-fg);
+  }
+
+  &-gutters {
+    background: inherit;
+    border-right: var(--ink-g-border-input);
+  }
+
+  &-focused &-selected,
+  &-selected {
+    background: var(--ink-p-input-selection-bg);
+  }
 }
 
 
@@ -518,7 +536,7 @@ textarea {
   &__help {
     @_icon-size: @_form-field-vars[@help-icon-size];
 
-    color: @_form-field-vars[@help-text-color];
+    color: var(--ink-p-fg-weak);
     font-size: @_form-field-vars[@help-text-font-size];
     margin: 0;
     padding: @_form-field-vars[@help-text-padding-vert] 0
@@ -614,7 +632,7 @@ textarea {
 /**
  * A fieldset containing an optional title and one or more rows of fields.
  *
- * Fieldsets can optionally be collapsable, allowing more advanced fields
+ * Fieldsets can optionally be collapsible, allowing more advanced fields
  * to be hidden by default.
  *
  * DOM Attributes:

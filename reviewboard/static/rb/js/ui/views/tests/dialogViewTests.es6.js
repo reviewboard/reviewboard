@@ -16,11 +16,11 @@ suite('rb/ui/views/DialogView', function() {
                 const button = buttons.testid;
 
                 expect(Object.keys(buttons).length).toBe(1);
-                expect(button.val()).toBe('Test');
+                expect(button.text()).toBe('Test');
                 expect(button.prop('id')).toBe('testid');
                 expect(button.prop('disabled')).toBe(false);
-                expect(button.hasClass('primary')).toBe(false);
-                expect(button.hasClass('danger')).toBe(false);
+                expect(button.hasClass('-is-primary')).toBe(false);
+                expect(button.hasClass('-is-danger')).toBe(false);
             });
 
             it('Primary', function() {
@@ -39,11 +39,11 @@ suite('rb/ui/views/DialogView', function() {
                 const button = buttons.testid;
 
                 expect(Object.keys(buttons).length).toBe(1);
-                expect(button.val()).toBe('Test');
+                expect(button.text()).toBe('Test');
                 expect(button.prop('id')).toBe('testid');
                 expect(button.prop('disabled')).toBe(false);
-                expect(button.hasClass('primary')).toBe(true);
-                expect(button.hasClass('danger')).toBe(false);
+                expect(button.hasClass('-is-primary')).toBe(true);
+                expect(button.hasClass('-is-danger')).toBe(false);
             });
 
             it('Disabled', function() {
@@ -62,11 +62,11 @@ suite('rb/ui/views/DialogView', function() {
                 const button = buttons.testid;
 
                 expect(Object.keys(buttons).length).toBe(1);
-                expect(button.val()).toBe('Test');
+                expect(button.text()).toBe('Test');
                 expect(button.prop('id')).toBe('testid');
                 expect(button.prop('disabled')).toBe(true);
-                expect(button.hasClass('primary')).toBe(false);
-                expect(button.hasClass('danger')).toBe(false);
+                expect(button.hasClass('-is-primary')).toBe(false);
+                expect(button.hasClass('-is-danger')).toBe(false);
             });
 
             it('Danger', function() {
@@ -85,11 +85,11 @@ suite('rb/ui/views/DialogView', function() {
                 const button = buttons.testid;
 
                 expect(Object.keys(buttons).length).toBe(1);
-                expect(button.val()).toBe('Test');
+                expect(button.text()).toBe('Test');
                 expect(button.prop('id')).toBe('testid');
                 expect(button.prop('disabled')).toBe(false);
-                expect(button.hasClass('primary')).toBe(false);
-                expect(button.hasClass('danger')).toBe(true);
+                expect(button.hasClass('-is-primary')).toBe(false);
+                expect(button.hasClass('-is-danger')).toBe(true);
             });
         });
 
@@ -112,7 +112,7 @@ suite('rb/ui/views/DialogView', function() {
                     const button = buttons.testid;
 
                     expect(Object.keys(buttons).length).toBe(1);
-                    expect(button.val()).toBe('Test');
+                    expect(button.text()).toBe('Test');
                     button.click();
                     expect(myFunc).toHaveBeenCalled();
                 });
@@ -136,7 +136,7 @@ suite('rb/ui/views/DialogView', function() {
                     const button = buttons.testid;
 
                     expect(Object.keys(buttons).length).toBe(1);
-                    expect(button.val()).toBe('Test');
+                    expect(button.text()).toBe('Test');
                     button.click();
                     expect(dialogView._onClicked).toHaveBeenCalled();
                 });
@@ -157,7 +157,7 @@ suite('rb/ui/views/DialogView', function() {
 
                         const buttons = dialogView.$buttonsMap;
                         expect(Object.keys(buttons).length).toBe(1);
-                        expect(buttons.testid.val()).toBe('Test');
+                        expect(buttons.testid.text()).toBe('Test');
 
                         dialogView.$el.trigger(
                             $.Event('keydown', { which: $.ui.keyCode.ESCAPE }));
@@ -193,9 +193,9 @@ suite('rb/ui/views/DialogView', function() {
                         const form = dialogView.$el.find('form');
 
                         expect(Object.keys(buttons).length).toBe(1);
-                        expect(button.val()).toBe('Test');
+                        expect(button.text()).toBe('Test');
                         expect(button.prop('disabled')).toBe(false);
-                        expect(button.hasClass('primary')).toBe(true);
+                        expect(button.hasClass('-is-primary')).toBe(true);
 
                         form.trigger($.Event('submit'));
                         expect(myFunc).toHaveBeenCalled();
@@ -227,9 +227,9 @@ suite('rb/ui/views/DialogView', function() {
                         const form = dialogView.$el.find('form');
 
                         expect(Object.keys(buttons).length).toBe(1);
-                        expect(button.val()).toBe('Test')
+                        expect(button.text()).toBe('Test');
                         expect(button.prop('disabled')).toBe(true);
-                        expect(button.hasClass('primary')).toBe(true);
+                        expect(button.hasClass('-is-primary')).toBe(true);
 
                         form.trigger($.Event('submit'));
                         expect(myFunc).not.toHaveBeenCalled();
@@ -264,9 +264,9 @@ suite('rb/ui/views/DialogView', function() {
                         form.submit(myFunc2);
 
                         expect(Object.keys(buttons).length).toBe(1);
-                        expect(button.val()).toBe('Test');
+                        expect(button.text()).toBe('Test');
                         expect(button.prop('disabled')).toBe(false);
-                        expect(button.hasClass('primary')).toBe(true);
+                        expect(button.hasClass('-is-primary')).toBe(true);
 
                         form.trigger($.Event('submit'));
                         expect(myFunc1).not.toHaveBeenCalled();

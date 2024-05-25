@@ -324,35 +324,49 @@ const PolicyEditorView = Backbone.View.extend({
         this.$el.modalBox({
             title: gettext('Custom Token Access Policy'),
             buttons: [
-                $('<input type="button">')
-                    .val(gettext('Cancel'))
-                    .click(_.bind(this.cancel, this)),
-                $('<input type="button" class="save-button">')
-                    .val(gettext('Save and continue editing'))
-                    .click(() => {
-                        this.save(false);
-                        return false;
-                    }),
-                $('<input type="button" class="btn primary save-button">')
-                    .val(gettext('Save'))
-                    .click(() => {
-                        this.save(true);
-                        return false;
-                    })
+                Ink.paintComponent(
+                    'Ink.Button',
+                    {
+                        onClick: () => this.cancel(),
+                    },
+                    _`Cancel`,
+                ),
+                Ink.paintComponent(
+                    'Ink.Button',
+                    {
+                        class: 'save-button',
+                        onClick: () => this.save(false),
+                    },
+                    _`Save and continue editing`,
+                ),
+                Ink.paintComponent(
+                    'Ink.Button',
+                    {
+                        class: 'save-button',
+                        onClick: () => this.save(true),
+                        type: 'primary',
+                    },
+                    _`Save`,
+                ),
             ]
         });
 
         this._$saveButtons = this.$el.modalBox('buttons').find('.save-button');
 
         this._codeMirror = CodeMirror.fromTextArea(this._$policy[0], {
-            mode: 'application/json',
+            mode: {
+                highlightFormatting: true,
+                name: 'application/json',
+            },
             lineNumbers: true,
             lineWrapping: true,
             matchBrackets: true,
             lint: {
                 onUpdateLinting: _.bind(this._onUpdateLinting, this)
             },
-            gutters: ['CodeMirror-lint-markers']
+            gutters: ['CodeMirror-lint-markers'],
+            styleSelectedText: true,
+            theme: 'rb default',
         });
         this._codeMirror.focus();
     },
@@ -371,6 +385,7 @@ const PolicyEditorView = Backbone.View.extend({
      */
     cancel() {
         this.model.set('policyType', this.prevPolicyType);
+        this.remove();
     },
 
     /**

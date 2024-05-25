@@ -27,12 +27,6 @@ sys.path.insert(0, os.path.join(rbext_dir, 'conf', 'rbext'))
 from django.utils.encoding import force_str
 from importlib_metadata import Prepared
 
-# Ensure we've patched Djblets for Python 3.10 + Django 1.11 compatibility
-# before performing any more imports.
-#
-# This can be removed once we've moved onto a modern version of Django.
-import djblets
-
 from reviewboard import get_manual_url
 from reviewboard.cmdline.utils.argparsing import (HelpFormatter,
                                                   RBProgVersionAction)
@@ -386,12 +380,12 @@ class CreateCommand(BaseCommand):
         """Main function for creating an extension.
 
         Args:
-            options (argparse.Namesapce):
+            options (argparse.Namespace):
                 Options set from the arguments.
 
         Returns:
             int:
-            The comamnd's exit code.
+            The command's exit code.
         """
         self._process_options(options)
 
@@ -499,7 +493,7 @@ class CreateCommand(BaseCommand):
         and to check that others are valid.
 
         Args:
-            options (argparse.Namesapce):
+            options (argparse.Namespace):
                 Options set from the arguments.
         """
         name = options.name.strip()

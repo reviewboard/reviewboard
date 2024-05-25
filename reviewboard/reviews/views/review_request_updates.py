@@ -87,7 +87,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
                 The HTTP request from the client.
 
             *args (tuple, unused):
-                Positional arguments passsed to the view.
+                Positional arguments passed to the view.
 
             **kwargs (dict, unused):
                 Keyword arguments passed to the view.
@@ -151,7 +151,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
                 The HTTP request from the client.
 
             *args (tuple, unused):
-                Positional arguments passsed to the handler.
+                Positional arguments passed to the handler.
 
             **kwargs (dict, unused):
                 Keyword arguments passed to the handler.

@@ -3,7 +3,6 @@ from djblets.webapi.decorators import webapi_response_errors
 from djblets.webapi.errors import INVALID_FORM_DATA
 
 from reviewboard.reviews.errors import RevokeShipItError
-from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.errors import REVOKE_SHIP_IT_ERROR
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_review import BaseReviewResource

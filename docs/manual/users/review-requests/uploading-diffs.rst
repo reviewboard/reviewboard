@@ -12,6 +12,11 @@ like the New Review Request page.
 
 See :ref:`review-requests-for-diffs` for more information on the fields.
 
+.. important:: If a review request was initially posted with
+               :ref:`rbt post <rbtools:rbt-post>` and is tracking commit
+               history (such as when using Git or Mercurial), you must use
+               RBTools to post new revisions of the diff instead of this UI.
+
 .. note:: When updating the diff on a review request, you need to upload a
           full diff between the upstream code (what's present in the
 	  repository) and your change. You can't just upload a diff of the

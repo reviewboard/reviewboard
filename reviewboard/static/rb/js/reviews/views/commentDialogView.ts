@@ -130,6 +130,7 @@ class CommentsListView extends BaseView<
                     commentIssueManager: commentIssueManager,
                     commentType: replyType,
                     interactive: interactive,
+                    isCompact: true,
                     issueStatus: serializedComment.issue_status,
                     reviewID: serializedComment.review_id,
                 });
@@ -272,6 +273,8 @@ export class CommentDialogView extends BaseView<
         'click .btn-delete': '_onDeleteClicked',
         'click .btn-save': 'save',
         'keydown .comment-text-field': '_onTextKeyDown',
+        'scroll': '_onScroll',
+        'wheel': '_onScroll',
     };
 
     /** The singleton instance. */
@@ -968,5 +971,22 @@ export class CommentDialogView extends BaseView<
 
             this.model.set('richText', !this.model.get('richText'));
         }
+    }
+
+    /**
+     * Callback for scroll or wheel events.
+     *
+     * This will prevent the page from scrolling when the scroll wheel is
+     * used over the comment dialog.
+     *
+     * Version Added:
+     *     7.0
+     *
+     * Args:
+     *     evt (Event):
+     *         The scroll or wheel event.
+     */
+    _onScroll(evt: Event) {
+        evt.preventDefault();
     }
 }

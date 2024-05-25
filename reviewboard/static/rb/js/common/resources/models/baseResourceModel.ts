@@ -3,10 +3,12 @@
  */
 import {
     type ModelAttributes,
+    type Result,
     BaseModel,
     spina,
 } from '@beanbag/spina';
 
+import { ExtraData } from '../../models/extraDataModel';
 import { ExtraDataMixin } from '../../models/extraDataMixin';
 import { type SerializerState } from '../utils/serializers';
 
@@ -44,6 +46,19 @@ export interface BaseResourceAttrs extends ModelAttributes {
 
     /** The parent object. */
     parentObject: BaseResource;
+}
+
+
+/**
+ * Resource data returned by the server.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface BaseResourceResourceData {
+    extra_data: { [key: string]: unknown };
+    id: number | string;
+    links: { [key: string]: ResourceLink };
 }
 
 
@@ -110,13 +125,13 @@ interface SyncOptions extends JQuery.AjaxSettings {
 }
 
 
-type SerializerMap = {
-    [key: string]: (unknown, SerializerState) => unknown,
+export type SerializerMap = {
+    [key: string]: (value: unknown, state: SerializerState) => unknown,
 }
 
 
-type DeserializerMap = {
-    [key: string]: (unknown) => unknown,
+export type DeserializerMap = {
+    [key: string]: (value: unknown) => unknown,
 }
 
 
@@ -132,6 +147,11 @@ type DeserializerMap = {
  * should generally be extending toJSON() and parse().
  */
 @spina({
+    automergeAttrs: [
+        'attrToJsonMap',
+        'deserializers',
+        'serializers',
+    ],
     mixins: [ExtraDataMixin],
     prototypeAttrs: [
         'attrToJsonMap',
@@ -139,6 +159,8 @@ type DeserializerMap = {
         'deserializers',
         'expandedFields',
         'extraQueryArgs',
+        'listKey',
+        'payloadFileKeys',
         'rspNamespace',
         'serializedAttrs',
         'serializers',
@@ -148,9 +170,10 @@ type DeserializerMap = {
 })
 export class BaseResource<
     TDefaults extends BaseResourceAttrs = BaseResourceAttrs,
+    TResourceData extends BaseResourceResourceData = BaseResourceResourceData,
+    TExtraOptions = unknown,
     TOptions = Backbone.ModelSetOptions,
-    TExtraOptions = unknown
-> extends BaseModel<TDefaults, TOptions, TExtraOptions> {
+> extends BaseModel<TDefaults, TExtraOptions, TOptions> {
     static strings: { [key: string]: string } = {
         INVALID_EXTRADATA_TYPE:
             'extraData must be an object or undefined',
@@ -158,15 +181,19 @@ export class BaseResource<
             'extraData.{key} must be null, a number, boolean, or string',
         UNSET_PARENT_OBJECT: 'parentObject must be set',
     };
+    strings: { [key: string]: string };
 
     /** The key for the namespace for the object's payload in a response. */
     static rspNamespace = '';
+    rspNamespace: string;
 
     /** The attribute used for the ID in the URL. */
     static urlIDAttr = 'id';
+    urlIDAttr: string;
 
     /** The list of fields to expand in resource payloads. */
     static expandedFields: string[] = [];
+    expandedFields: string[];
 
     /**
      * Extra query arguments for GET requests.
@@ -176,10 +203,12 @@ export class BaseResource<
      * These values can be overridden by the caller when making a request.
      * They function as defaults for the queries.
      */
-    static extraQueryArgs = {};
+    static extraQueryArgs: Result<{ [key: string]: unknown }> = {};
+    extraQueryArgs: Result<{ [key: string]: unknown }>;
 
     /** Whether or not extra data can be associated on the resource. */
     static supportsExtraData = false;
+    supportsExtraData: boolean;
 
     /**
      * A map of attribute names to resulting JSON field names.
@@ -190,19 +219,28 @@ export class BaseResource<
      * It's also needed if using attribute names in any save({attrs: [...]})
      * calls.
      */
-    static attrToJsonMap = {};
+    static attrToJsonMap: { [key: string]: string } = {};
+    attrToJsonMap: { [key: string]: string };
 
     /** A list of attributes to serialize in toJSON(). */
     static serializedAttrs: string[] = [];
+    serializedAttrs: string[];
 
     /** A list of attributes to deserialize in parseResourceData(). */
     static deserializedAttrs: string[] = [];
+    deserializedAttrs: string[];
 
     /** Special serializer functions called in toJSON(). */
     static serializers: SerializerMap = {};
+    serializers: SerializerMap;
 
     /** Special deserializer functions called in parseResourceData(). */
     static deserializers: DeserializerMap = {};
+    deserializers: DeserializerMap;
+
+    /** Files to send along with the API payload. */
+    static payloadFileKeys: string[] = [];
+    payloadFileKeys: string[];
 
     /**
      * Return default values for the model attributes.
@@ -211,7 +249,7 @@ export class BaseResource<
      *     object:
      *     The attribute defaults.
      */
-    static defaults(): BaseResourceAttrs {
+    static defaults(): Result<Partial<BaseResourceAttrs>> {
         return {
             extraData: {},
             links: null,
@@ -227,9 +265,22 @@ export class BaseResource<
      *     string:
      *     The name of the key to use when loading data from the list resource.
      */
-    listKey() {
+    static listKey(): Result<string> {
         return this.rspNamespace + 's';
     }
+    listKey: Result<string>;
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /**
+     * Extra data storage.
+     *
+     * This will be set by ExtraDataMixin if the resource supports extra data,
+     * and should otherwise be undefined.
+     */
+    extraData: ExtraData;
 
     /**
      * Initialize the model.
@@ -621,16 +672,16 @@ export class BaseResource<
      *         Options for the save operation.
      */
     _saveWithFiles(
-        files,
+        files: File[] | Blob[],
         fileReaders: FileReader[],
         options: SaveWithFilesOptions,
     ) {
         const boundary = options.boundary ||
                          ('-----multipartformboundary' + new Date().getTime());
         const blob = [];
+        const fileIter = _.zip(this.payloadFileKeys, files, fileReaders);
 
-        for (const [key, file, reader] of
-             _.zip(this.payloadFileKeys, files, fileReaders)) {
+        for (const [key, file, reader] of fileIter) {
             if (!file || !reader) {
                 continue;
             }
@@ -813,7 +864,7 @@ export class BaseResource<
      * This will by default only return the object's ID and list of links.
      * Subclasses should override this to return any additional data that's
      * needed, but they must include the results of
-     * BaseResource.protoype.parse as well.
+     * BaseResource.prototype.parse as well.
      *
      * Args:
      *     rsp (object):
@@ -824,11 +875,19 @@ export class BaseResource<
      *     Attributes to set on the model.
      */
     parse(
-        rsp: object,
+        rsp: Partial<TResourceData & { stat: string }>,
     ): TDefaults {
         console.assert(this.rspNamespace,
                        'rspNamespace must be defined on the resource model');
 
+        /*
+         * TODO: we really shouldn't be using the same method to "parse"
+         * attributes provided by code and API responses, since they're
+         * separate formats.
+         *
+         * API responses ought to get pre-processed to check stat and pull out
+         * the payload, and then pass that data through to here.
+         */
         if (rsp.stat !== undefined) {
             /*
              * This resource payload is inside an envelope from an API
@@ -842,7 +901,7 @@ export class BaseResource<
             extraData: rsp.extra_data,
             id: rsp.id,
             links: rsp.links,
-            loaded: true
+            loaded: true,
         }, this.parseResourceData(rsp));
     }
 
@@ -863,7 +922,7 @@ export class BaseResource<
      *     Attributes to set on the model.
      */
     parseResourceData(
-        rsp: object,
+        rsp: TResourceData,
     ): Partial<TDefaults> {
         const attrs = {};
 
@@ -905,7 +964,7 @@ export class BaseResource<
      */
     toJSON(
         options?: object,
-    ): object {
+    ): Partial<TResourceData> {
         const serializerState: SerializerState = {
             isNew: this.isNew(),
             loaded: this.get('loaded'),
@@ -959,7 +1018,7 @@ export class BaseResource<
         options: SyncOptions = {},
     ) {
         let data;
-        let contentType;
+        let contentType: string;
 
         if (method === 'read') {
             data = options.data || {};
@@ -1035,7 +1094,7 @@ export class BaseResource<
      *     An error string or ``undefined``.
      */
     validate(
-        attrs: TDefaults,
+        attrs: Partial<TDefaults>,
     ): string | undefined {
         if (this.supportsExtraData && attrs.extraData !== undefined) {
             const strings = BaseResource.strings;

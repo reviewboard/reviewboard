@@ -127,8 +127,10 @@
   &__tab {
     @_padding: #rb-ns-ui.tabs.tab.padding();
 
-    border: @_tabs-vars[@border-width] transparent solid;
-    border-radius: @box-border-radius @box-border-radius 0 0;
+    border-bottom: var(--ink-u-border-medium) transparent solid;
+    border-radius: var(--ink-u-border-radius-std)
+                   var(--ink-u-border-radius-std)
+                   0 0;
     cursor: pointer;
     display: inline-block;
     margin: 0 @_tab-vars[@margin-right] 0 0;
@@ -139,6 +141,20 @@
     .on-mobile-medium-screen-720({
       margin-right: @_tab-vars[@mobile-margin-right];
     });
+
+    &:hover {
+      background:
+        var(--if-dark, var(--ink-p-container-hover-bg))
+        var(--if-light, none);
+      border-bottom-color: var(--ink-p-accent-secondary-bg);
+    }
+
+    &.-is-active {
+      background:
+        var(--if-dark, var(--ink-p-container-active-bg))
+        var(--if-light, none);
+      border-bottom-color: var(--ink-p-accent-primary-bg);
+    }
 
     * {
       cursor: pointer;
@@ -160,7 +176,7 @@
    * If providing only a full label, this is not needed.
    */
   &__tab-label {
-    color: black;
+    color: var(--ink-p-fg);
     display: inline;
     font-weight: normal;
     line-height: 16px;
@@ -181,6 +197,3 @@
     .desktop-only();
   }
 }
-
-/* Make tabs grey by default. */
-#rb-ns-ui.tabs.set-color-scheme(#rb-ns-ui.color-schemes.grey());

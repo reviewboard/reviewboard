@@ -406,3 +406,96 @@ class CommitsTests(BaseFileDiffAncestorTests):
             else:
                 # All other files in the diff should show no comments on them.
                 self.assertEqual(comment_blocks, {})
+
+    def test_commits_in_diff_context(self) -> None:
+        """Testing that commits are listed properly in diff context"""
+        response = self.client.get(
+            local_site_reverse(
+                'view-diff-revision',
+                kwargs={
+                    'review_request_id': self.review_request.display_id,
+                    'revision': self.diffset.revision,
+                },
+            ),
+            {
+                'base-commit-id': self.diff_commits[1].pk,
+                'tip-commit-id': self.diff_commits[2].pk,
+            })
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(
+            response.context['diff_context']['commits'],
+            [
+                {
+                    'author_name': 'Author',
+                    'commit_id': 'r1',
+                    'commit_message': 'Commit message',
+                    'id': 1,
+                    'parent_id': 'r0',
+                },
+                {
+                    'author_name': 'Author',
+                    'commit_id': 'r2',
+                    'commit_message': 'Commit message',
+                    'id': 2,
+                    'parent_id': 'r1',
+                },
+                {
+                    'author_name': 'Author',
+                    'commit_id': 'r3',
+                    'commit_message': 'Commit message',
+                    'id': 3,
+                    'parent_id': 'r2',
+                },
+                {
+                    'author_name': 'Author',
+                    'commit_id': 'r4',
+                    'commit_message': 'Commit message',
+                    'id': 4,
+                    'parent_id': 'r3',
+                },
+            ])
+
+    def test_commits_in_diff_context_with_draft(self) -> None:
+        """Testing that commits are listed properly in diff context with a
+        draft diffset
+        """
+        self.client.login(username='doc', password='doc')
+
+        draft_diffset = self.create_diffset(
+            review_request=self.review_request,
+            revision=2,
+            draft=True)
+
+        self.create_diffcommit(
+            diffset=draft_diffset,
+            commit_id='r5',
+            parent_id='r4',
+            diff_contents=self._COMMITS[0]['diff'])
+        draft_diffset.finalize_commit_series(
+            cumulative_diff=self._COMMITS[0]['diff'],
+            validation_info=None,
+            validate=False,
+            save=True)
+
+        response = self.client.get(
+            local_site_reverse(
+                'view-diff-revision',
+                kwargs={
+                    'review_request_id': self.review_request.display_id,
+                    'revision': draft_diffset.revision,
+                },
+            ))
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(
+            response.context['diff_context']['commits'],
+            [
+                {
+                    'author_name': 'Author',
+                    'commit_id': 'r5',
+                    'commit_message': 'Commit message',
+                    'id': 5,
+                    'parent_id': 'r4',
+                },
+            ])

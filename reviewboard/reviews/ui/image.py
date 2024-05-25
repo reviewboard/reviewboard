@@ -83,11 +83,12 @@ class ImageReviewUI(ReviewUI[
             The attributes to pass to the model.
         """
         data = super(ImageReviewUI, self).get_js_model_data()
-        data['imageURL'] = self.obj.file.url
+        data['imageURL'] = self.obj.get_absolute_url()
 
         if self.diff_against_obj:
             assert isinstance(self.diff_against_obj, FileAttachment)
-            data['diffAgainstImageURL'] = self.diff_against_obj.file.url
+            data['diffAgainstImageURL'] = \
+                self.diff_against_obj.get_absolute_url()
 
         return data
 

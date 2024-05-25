@@ -6,6 +6,129 @@
  * Pygments/CodeMirror's conventions.
  */
 
+
+/* Dark diff UI colors. */
+@default-code-theme-light-diff-delete-bg: #FDE9ED;
+@default-code-theme-light-diff-delete-highlight-bg:
+  rgba(200, 0, 0, 0.15);
+@default-code-theme-light-diff-delete-linenum-bg: #F6DBDF;
+
+@default-code-theme-light-diff-equal-bg: #FFFFFF;
+@default-code-theme-light-diff-equal-highlight-bg:
+  rgba(0, 0, 0, 0.1);
+@default-code-theme-light-diff-equal-linenum-bg: #F2F2F2;
+
+@default-code-theme-light-diff-insert-bg: #E7FFE1;
+@default-code-theme-light-diff-insert-highlight-bg:
+  rgba(0, 200, 0, 0.25);
+@default-code-theme-light-diff-insert-linenum-bg: #CFF2CA;
+
+@default-code-theme-light-diff-replace-bg: #FDFECC;
+@default-code-theme-light-diff-replace-highlight-bg:
+  rgba(200, 200, 0, 0.25);
+@default-code-theme-light-diff-replace-linenum-bg: #EEEFC0;
+
+@default-code-theme-light-diff-linenum-fg: rgba(0, 0, 0, 0.6);
+
+
+/* Dark diff UI colors. */
+@default-code-theme-dark-diff-delete-bg: #572121;
+@default-code-theme-dark-diff-delete-highlight-bg:
+  rgba(255, 128, 128, 0.3);
+@default-code-theme-dark-diff-delete-linenum-bg: #792C26;
+
+@default-code-theme-dark-diff-equal-bg: #222222;
+@default-code-theme-dark-diff-equal-highlight-bg:
+  rgba(255, 255, 255, 0.2);
+@default-code-theme-dark-diff-equal-linenum-bg: #333333;
+
+@default-code-theme-dark-diff-insert-bg: #16390A;
+@default-code-theme-dark-diff-insert-highlight-bg:
+  rgba(255, 255, 255, 0.2);
+@default-code-theme-dark-diff-insert-linenum-bg: #135709;
+
+@default-code-theme-dark-diff-replace-bg: #3E3E28;
+@default-code-theme-dark-diff-replace-highlight-bg:
+  rgba(255, 255, 0, 0.2);
+@default-code-theme-dark-diff-replace-linenum-bg: #656520;
+
+@default-code-theme-dark-diff-linenum-fg: rgba(255, 255, 255, 0.8);
+
+
+/* Ensure the variables don't leak out of the scope of this theme. */
+&:root {
+  @_linenum-fg:
+    var(--if-light, @default-code-theme-light-diff-linenum-fg)
+    var(--if-dark, @default-code-theme-dark-diff-linenum-fg);
+
+  --rb-theme-rich-text-code-bg:
+      var(--if-light, #FBFAF8)
+      var(--if-dark, rgba(0, 0, 0, 0.08));
+
+  --rb-theme-rich-text-code-fg: color: var(--ink-p-fg);
+
+  --rb-theme-diff-equals-bg:
+    var(--if-dark, @default-code-theme-dark-diff-equal-bg)
+    var(--if-light, @default-code-theme-light-diff-equal-bg);
+  --rb-theme-diff-equals-fg: var(--ink-p-fg);
+  --rb-theme-diff-equals-highlight-bg:
+    var(--if-dark, @default-code-theme-dark-diff-equal-highlight-bg)
+    var(--if-light, @default-code-theme-light-diff-equal-highlight-bg);
+  --rb-theme-diff-equals-linenum-bg:
+    var(--if-dark, @default-code-theme-dark-diff-equal-linenum-bg)
+    var(--if-light, @default-code-theme-light-diff-equal-linenum-bg);
+  --rb-theme-diff-equals-linenum-fg: @_linenum-fg;
+
+  --rb-theme-diff-delete-bg:
+    var(--if-dark, @default-code-theme-dark-diff-delete-bg)
+    var(--if-light, @default-code-theme-light-diff-delete-bg);
+  --rb-theme-diff-delete-fg: var(--ink-p-fg);
+  --rb-theme-diff-delete-highlight-bg:
+    var(--if-dark, @default-code-theme-dark-diff-delete-highlight-bg)
+    var(--if-light, @default-code-theme-light-diff-delete-highlight-bg);
+  --rb-theme-diff-delete-linenum-bg:
+    var(--if-dark, @default-code-theme-dark-diff-delete-linenum-bg)
+    var(--if-light, @default-code-theme-light-diff-delete-linenum-bg);
+  --rb-theme-diff-delete-linenum-fg: @_linenum-fg;
+
+  --rb-theme-diff-insert-bg:
+    var(--if-dark, @default-code-theme-dark-diff-insert-bg)
+    var(--if-light, @default-code-theme-light-diff-insert-bg);
+  --rb-theme-diff-insert-fg: var(--ink-p-fg);
+  --rb-theme-diff-insert-highlight-bg:
+    var(--if-dark, @default-code-theme-dark-diff-insert-highlight-bg)
+    var(--if-light, @default-code-theme-light-diff-insert-highlight-bg);
+  --rb-theme-diff-insert-linenum-bg:
+    var(--if-dark, @default-code-theme-dark-diff-insert-linenum-bg)
+    var(--if-light, @default-code-theme-light-diff-insert-linenum-bg);
+  --rb-theme-diff-insert-linenum-fg: @_linenum-fg;
+
+  --rb-theme-diff-replace-bg:
+    var(--if-dark, @default-code-theme-dark-diff-replace-bg)
+    var(--if-light, @default-code-theme-light-diff-replace-bg);
+  --rb-theme-diff-replace-fg: var(--ink-p-fg);
+  --rb-theme-diff-replace-highlight-bg:
+    var(--if-dark, @default-code-theme-dark-diff-replace-highlight-bg)
+    var(--if-light, @default-code-theme-light-diff-replace-highlight-bg);
+  --rb-theme-diff-replace-linenum-bg:
+    var(--if-dark, @default-code-theme-dark-diff-replace-linenum-bg)
+    var(--if-light, @default-code-theme-light-diff-replace-linenum-bg);
+  --rb-theme-diff-replace-linenum-fg: @_linenum-fg;
+
+  --rb-theme-diff-indent-fg:
+      var(--if-dark, var(--ink-p-green-700))
+      var(--if-light, var(--ink-p-green-600));
+  --rb-theme-diff-unindent-fg:
+      var(--if-dark, var(--ink-p-red-800))
+      var(--if-light, var(--ink-p-red-500));
+
+  --rb-theme-diff-move-from-flag-bg: var(--ink-p-light__green-400);
+  --rb-theme-diff-move-from-flag-fg: var(--ink-p-fg-on-light);
+  --rb-theme-diff-move-to-flag-bg: var(--ink-p-light__red-200);
+  --rb-theme-diff-move-to-flag-fg: var(--ink-p-fg-on-light);
+}
+
+
 /*
  * Pygments: Comment
  * Pygments: Comment.Multiline
@@ -16,8 +139,18 @@
 .cm,
 .c1,
 .cm-s-rb .cm-comment {
-  color: #0000C0;
+  color:
+    var(--if-light, #0000C0)
+    var(--if-dark, #05f3f2);
   font-style: italic;
+}
+
+/*
+ * CodeMirror: Link
+ */
+.cm-s-rb .cm-link {
+  color: var(--ink-p-link-fg);
+  text-decoration: none;
 }
 
 /* Pygments: Error */
@@ -30,7 +163,7 @@
  */
 .o,
 .cm-s-rb .cm-operator {
-  color: black;
+  color: inherit;
 }
 
 /*
@@ -39,12 +172,14 @@
  */
 .cp,
 .cm-s-rb .cm-meta {
-  color: #612B00;
+  color:
+    var(--if-light, #612B00)
+    var(--if-dark, #ff7100);
 }
 
 /* Pygments: Generic.Deleted */
 .gd {
-  color: #A00000;
+  color: var(--rb-p-diff-delete-text-fg);
 }
 
 /* Pygments: Generic.Emph */
@@ -54,28 +189,36 @@
 
 /* Pygments: Generic.Error */
 .gr {
-  color: #FF0000;
+  color:
+    var(--if-light, #FF0000)
+    var(--if-dark, #ff7979);
 }
 
 /* Pygments: Generic.Heading */
 .gh {
-  color: #000080;
+  color:
+    var(--if-light, #000080)
+    var(--if-dark, #ffa5ff);
   font-weight: bold;
 }
 
 /* Pygments: Generic.Inserted */
 .gi {
-  color: #004000;
+  color: var(--rb-p-diff-insert-text-fg);
 }
 
 /* Pygments: Generic.Output */
 .go {
-  color: #808080;
+  color:
+    var(--if-light, #808080)
+    var(--if-dark, #bcbcbc);
 }
 
 /* Pygments: Generic.Prompt */
 .gp {
-  color: #000080;
+  color:
+    var(--if-light, #000080)
+    var(--if-dark, #9cf0fb);
   font-weight: bold;
 }
 
@@ -86,45 +229,51 @@
 
 /* Pygments: Generic.Subheading */
 .gu {
-  color: #800080;
+  color:
+    var(--if-light, #800080)
+    var(--if-dark, #ff6aff);
   font-weight: bold;
 }
 
 /* Pygments: Generic.Traceback */
 .gt {
-  color: #0040D0;
-}
-
-/* Pygments: Keyword.Constant */
-.kc {
-  font-weight: bold;
+  color:
+    var(--if-light, #0040D0)
+    var(--if-dark, #aeccfe);
 }
 
 /*
+ * Pygments: Name.Decorator
  * Pygments: Keyword
  * Pygments: Keyword.Constant
  * Pygments: Keyword.Declaration
  * Pygments: Keyword.Namespace
+ * CodeMirror: Atom
  * CodeMirror: Keyword (var, function)
- * CodeMirror: CSS Property
+ * CodeMirror: Property on an object
  */
 .k,
 .kc,
 .kd,
 .kn,
+.cm-s-rb .cm-atom,
 .cm-s-rb .cm-keyword,
 .cm-s-rb .cm-property {
-  color: #770088;
+  color:
+    var(--if-light, #770088)
+    var(--if-dark, #f0bbf8);
   font-weight: bold;
 }
 
 /* Pygments: Keyword.Pseudo */
 .kp {
-  color: #AA22FF;
+  color:
+    var(--if-light, #AA22FF)
+    var(--if-dark, #e6a6ef);
 }
 
 /* Pygments: Keyword.Reserved */
-.kr, .kwd {
+.kr {
   font-weight: bold;
 }
 
@@ -134,29 +283,55 @@
 }
 
 /*
+ * Pygments: Name.Builtin.Pseudo
  * Pygments: Literal.Number
+ * Pygments: Literal.Number.Float
+ * Pygments: Literal.Number.Hex
+ * Pygments: Literal.Number.Integer
+ * Pygments: Literal.Number.Integer.Long
+ * Pygments: Literal.Number.Oct
  * CodeMirror: Number
+ * CodeMirror: Variable 2 (self, this, etc.)
  */
-.m, .lit,
-.cm-s-rb .cm-number {
-  color: darkred;
+.bp,
+.m,
+.mf,
+.mh,
+.mi,
+.il,
+.mo,
+.cm-s-rb .cm-number,
+.cm-s-rb .cm-variable-2 {
+  color:
+    var(--if-light, darkred)
+    var(--if-dark, #fe9c9c);
   font-weight: bold;
 }
 
 /*
- * Pygments: Literal.String
- * Pygments: Literal.String.Doc
- * CodeMirror: String
+ * Pygments: Name.Constant
+ * Pygments: Name.Other
+ * CodeMirror: Type
+ * CodeMirror: Variable (case constants, ...)
+ * CodeMirror: Variable 3 (CSS pseudo-elements, ...)
  */
-.s, .str, .atv,
-.sd,
-.cm-s-rb .cm-string {
-  color: darkred;
+.no,
+.nx,
+.cm-s-rb .cm-type,
+.cm-s-rb .cm-variable,
+.cm-s-rb .cm-variable-3 {
+  color: inherit;
 }
 
-/* Pygments: Name.Attribute */
-.na, .atn {
-  color: #000080;
+/*
+ * Pygments: Name.Attribute
+ * CodeMirror: Attribute
+ */
+.na,
+.cm-s-rb .cm-attribute {
+  color:
+    var(--if-light, #000080)
+    var(--if-dark, #cfcfff);
 }
 
 /*
@@ -165,67 +340,70 @@
  */
 .nb,
 .cm-s-rb .cm-builtin {
-  color: black;
+  color: inherit;
   font-weight: bold;
 }
 
 /* Pygments: Name.Class */
 .nc {
-  color: black;
-}
-
-/* Pygments: Name.Constant */
-.no {
-  color: #880000;
+  color: inherit;
 }
 
 /* Pygments: Name.Decorator */
 .nd {
-  color: darkBlue;
+  color:
+    var(--if-light, darkblue)
+    var(--if-dark, #89cecd);
   font-weight: bold;
 }
 
 /* Pygments: Name.Entity */
 .ni {
-  color: #999999;
+  color:
+    var(--if-light, #999999)
+    var(--if-dark, #aaaaaa);
   font-weight: bold
 }
 
 /* Pygments: Name.Exception */
 .ne {
-  color: #D2413A;
+  color:
+    var(--if-light, #D2413A)
+    var(--if-dark, #ffb862);
   font-weight: bold;
 }
 
 /* Pygments: Name.Function */
-.nf, .fun,
+.nf,
 .cm-s-rb .cm-def {
-  color: black;
+  color: inherit;
 }
 
 /* Pygments: Name.Label */
 .nl {
-  color: black;
+  color: inherit;
 }
 
 /* Pygments: Name.Namespace */
 .nn {
-  color: black;
+  color: inherit;
 }
 
 /*
  * Pygments: Name.Tag
  * CodeMirror: Tag
  */
-.nt, .tag, .tag,
+.nt,
 .cm-s-rb .cm-tag {
-  color: #000080;
+  color:
+    var(--if-light, #000080)
+    var(--if-dark, #a3a3f8);
   font-weight: bold;
 }
 
 /* Pygments: Name.Variable */
-.nv, .dec, .var {
-  color: black;
+.nv {
+  color: inherit;
 }
 
 /* Pygments: Operator.Word */
@@ -234,104 +412,89 @@
 }
 
 /*
- * Pygments: Literal.Number.Float
- * Pygments: Literal.Number.Hex
- * Pygments: Literal.Number.Integer
- * Pygments: Literal.Number.Oct
+ * Pygments: Literal.String
+ * Pygments: Literal.String.Single
+ * Pygments: Literal.String.Double
+ * Pygments: Literal.String.Backtick
+ * Pygments: Literal.String.Char
+ * Pygments: Literal.String.Doc
+ * Pygments: Literal.String.Heredoc
+ * CodeMirror: String
+ * CodeMirror: String 2
  */
-.mf,
-.mh,
-.mi,
-.mo {
-  color: darkred;
-  font-weight: bold;
-}
-
-/* Pygments: Literal.String.Backtick */
-.sb {
-  color: #BB4444;
-}
-
-/* Pygments: Literal.String.Char */
-.sc {
-  color: #BB4444;
-}
-
-/* Pygments: Literal.String.Double */
-.s2 {
-  color: #BB4444;
+.s,
+.s1,
+.s2,
+.sb,
+.sc,
+.sd,
+.sh,
+.cm-s-rb .cm-string,
+.cm-s-rb .cm-string-2 {
+  color:
+    var(--if-light, #BB4444)
+    var(--if-dark, #ffc1a6);
 }
 
 /* Pygments: Literal.String.Escape */
 .se {
-  color: #BB6622;
+  color:
+    var(--if-light, #BB6622)
+    var(--if-dark, #ffe1c8);
   font-weight: bold;
-}
-
-/* Pygments: Literal.String.Heredoc */
-.sh {
-  color: #BB4444;
 }
 
 /* Pygments: Literal.String.Interpol */
 .si {
-  color: red;
+  color:
+    var(--if-light, red)
+    var(--if-dark, #ff7979);
   font-weight: bold;
 }
 
 /* Pygments: Literal.String.Other */
 .sx {
-  color: #008000;
+  color:
+    var(--if-light, #008000)
+    var(--if-dark, #aeffae);
 }
 
-/* Pygments: Literal.String.Regex */
-.sr {
-  color: #BB6688;
-}
-
-/* Pygments: Literal.String.Single */
-.s1 {
-  color: #BB4444;
+/*
+ * Pygments: Literal.String.Regex
+ * CodeMirror: Meta
+ */
+.sr,
+.cm-s-rb .cm-meta {
+  color:
+    var(--if-light, #bb6688)
+    var(--if-dark, #feb9d5);
 }
 
 /* Pygments: Literal.String.Symbol */
 .ss {
-  color: #B8860B;
+  color:
+    var(--if-light, #b8860b)
+    var(--if-dark, #ffb603);
 }
 
 /*
- * Pygments: Name.Builtin.Pseudo
- * CodeMirror: Variable 2 (self, this, etc.)
+ * Pygments: Name.Variable.Class
+ * Pygments: Name.Variable.Global
+ * Pygments: Name.Variable.Instance
  */
-.bp,
-.cm-s-rb .cm-variable-2 {
-  color: darkred;
-  font-weight: bold;
-}
-
-/* Pygments: Name.Variable.Class */
-.vc {
-  color: #B8860B;
-}
-
-/* Pygments: Name.Variable.Global */
-.vg {
-  color: #B8860B;
-}
-
-/* Pygments: Name.Variable.Instance */
+.vc,
+.vg,
 .vi {
-  color: #B8860B;
-}
-
-/* Pygments: Literal.Number.Integer.Long */
-.il {
-  color: #666666;
+  color:
+    var(--if-light, #b8860b)
+    var(--if-dark, #ecba40);
 }
 
 /* Pygments: Comment.Special */
 .cs {
-  color: red;
+  color:
+    var(--if-light, red)
+    var(--if-dark, #ff6060);
   font-weight: bold;
   font-style: italic;
 }

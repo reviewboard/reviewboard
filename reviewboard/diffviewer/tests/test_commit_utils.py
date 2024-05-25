@@ -621,7 +621,7 @@ class DiffHistoriesTests(TestCase):
         self.assertEqual(list(diff_histories(old_history, new_history)),
                          expected_result)
 
-    def test_diff_histories_addedd_middle(self):
+    def test_diff_histories_added_middle(self):
         """Testing diff_histories with a new history that adds commits in the
         middle of the history
         """

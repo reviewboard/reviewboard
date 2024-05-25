@@ -7,7 +7,10 @@ from inspect import signature
 from typing import Optional, TYPE_CHECKING
 
 from django.db.models import Q
-from django.http import Http404, HttpRequest, HttpResponse
+from django.http import (Http404,
+                         HttpRequest,
+                         HttpResponse,
+                         HttpResponseRedirect)
 from django.shortcuts import get_object_or_404
 from django.views.generic.base import View
 
@@ -21,13 +24,153 @@ from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 
 
 if TYPE_CHECKING:
-    from reviewboard.reviews.models import ReviewRequest
+    from reviewboard.reviews.models import (ReviewRequest,
+                                            ReviewRequestDraft)
 
 
 logger = logging.getLogger(__name__)
 
 
-class ReviewFileAttachmentView(ReviewRequestViewMixin,
+class _FileAttachmentViewMixin:
+    """Mixin for file attachment views.
+
+    Version Added:
+        7.0
+    """
+
+    def get_file_attachment(
+        self,
+        *,
+        review_request: ReviewRequest,
+        draft: Optional[ReviewRequestDraft],
+        file_attachment_id: int,
+        extra_q: Q = Q(),
+    ) -> FileAttachment:
+        """Return a file attachment accessible on the review request.
+
+        This will check for the file attachment on the review request or
+        draft, both active and inactive file attachments.
+
+        If the file attachment could not be found, this will raise a
+        :http:`404`.
+
+        Args:
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request the file attachment is on.
+
+            draft (reviewboard.reviews.models.ReviewRequestDraft):
+                The optional draft that the file attachment may (or may not)
+                be on.
+
+            file_attachment_id (int):
+                The ID of the file attachment.
+
+            extra_q (django.db.models.Q, optional):
+                Extra query arguments to include for filtering.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The file attachment matching the criteria.
+
+        Raises:
+            django.http.Http404:
+                The file attachment was not found.
+        """
+        # Make sure the attachment returned is part of either the review
+        # request or an accessible draft.
+        review_request_q = (Q(review_request=review_request) |
+                            Q(inactive_review_request=review_request))
+
+        if draft is not None:
+            review_request_q |= Q(drafts=draft) | Q(inactive_drafts=draft)
+
+        return get_object_or_404(
+            FileAttachment,
+            Q(pk=file_attachment_id) & extra_q & review_request_q)
+
+
+class DownloadFileAttachmentView(_FileAttachmentViewMixin,
+                                 ReviewRequestViewMixin,
+                                 View):
+    """Redirects the request to the file attachment on the storage backend.
+
+    This will check first for an accessible file attachment matching the
+    URL and the user's access to the review request and draft. If found, the
+    client will be redirected to the location of the file attachment in the
+    storage backend.
+
+    The redirected file may or may not be cacheable, and may only be
+    accessible temporarily, depending on the backend.
+
+    Version Added:
+        7.0
+    """
+
+    def get(
+        self,
+        request: HttpRequest,
+        *,
+        file_attachment_id: int,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle HTTP GET requests for this view.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            file_attachment_id (int):
+                The revision of the file attachment to download the file from.
+
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
+
+        Returns:
+            django.http.HttpResponse:
+            The HTTP response to send to the client.
+        """
+        user = request.user
+        review_request = self.review_request
+
+        if user is not None:
+            draft = review_request.get_draft(user)
+        else:
+            draft = None
+
+        file_attachment = self.get_file_attachment(
+            review_request=review_request,
+            draft=draft,
+            file_attachment_id=file_attachment_id)
+
+        download_url: Optional[str] = None
+
+        if request.GET.get('thumbnail'):
+            # The caller requested a thumbnail. Determine the requested size.
+            try:
+                thumbnail_width = int(request.GET.get('width', ''))
+            except ValueError:
+                thumbnail_width = None
+
+            try:
+                thumbnail_height = int(request.GET.get('height', ''))
+            except ValueError:
+                thumbnail_height = None
+
+            if thumbnail_width or thumbnail_height:
+                download_url = file_attachment.get_raw_thumbnail_image_url(
+                    width=thumbnail_width,
+                    height=thumbnail_height)
+        else:
+            download_url = file_attachment.get_raw_download_url()
+
+        if download_url:
+            return HttpResponseRedirect(download_url)
+
+        raise Http404
+
+
+class ReviewFileAttachmentView(_FileAttachmentViewMixin,
+                               ReviewRequestViewMixin,
                                UserProfileRequiredViewMixin,
                                View):
     """Displays a file attachment with a review UI."""
@@ -65,27 +208,24 @@ class ReviewFileAttachmentView(ReviewRequestViewMixin,
         review_request = self.review_request
         draft = review_request.get_draft(request.user)
 
-        # Make sure the attachment returned is part of either the review
-        # request or an accessible draft.
-        review_request_q = (Q(review_request=review_request) |
-                            Q(inactive_review_request=review_request))
+        file_attachment = self.get_file_attachment(
+            review_request=review_request,
+            draft=draft,
+            file_attachment_id=file_attachment_id)
 
-        if draft:
-            review_request_q |= Q(drafts=draft) | Q(inactive_drafts=draft)
-
-        file_attachment = get_object_or_404(
-            FileAttachment,
-            Q(pk=file_attachment_id) & review_request_q)
         diff_against_attachment: Optional[FileAttachment] = None
 
         review_ui_class = ReviewUI.for_object(file_attachment)
 
         if file_attachment_diff_id:
-            diff_against_attachment = get_object_or_404(
-                FileAttachment,
-                Q(pk=file_attachment_diff_id) &
-                Q(attachment_history=file_attachment.attachment_history) &
-                review_request_q)
+            diff_against_attachment = self.get_file_attachment(
+                review_request=review_request,
+                draft=draft,
+                file_attachment_id=file_attachment_diff_id,
+                extra_q=Q(
+                    attachment_history=file_attachment.attachment_history
+                ))
+
             diff_review_ui_class = ReviewUI.for_object(diff_against_attachment)
 
             if review_ui_class is not diff_review_ui_class:

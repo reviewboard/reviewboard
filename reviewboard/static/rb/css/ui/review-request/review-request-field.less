@@ -1,6 +1,14 @@
 @import (reference) "rb/css/defs.less";
 
 
+.rb-c-review-request-field,
+:root {
+  --rb-p-review-request-field-label-color:
+    var(--if-light, @review-request-label-color)
+    var(--if-dark, var(--ink-p-fg-weak));
+}
+
+
 /**
  * A container for a field on a review request.
  *
@@ -48,7 +56,8 @@
    *     </label>
    */
   &__label {
-    color: @review-request-label-color;
+    color: var(--rb-p-review-request-field-label-color);
+
     font-size: inherit;
     font-weight: bold;
   }

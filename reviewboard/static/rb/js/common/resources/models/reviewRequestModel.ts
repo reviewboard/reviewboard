@@ -2,11 +2,16 @@
  * A review request.
  */
 
-import { Collection, spina } from '@beanbag/spina';
+import {
+    type Result,
+    Collection,
+    spina,
+} from '@beanbag/spina';
 
 import { UserSession } from '../../models/userSessionModel';
 import {
     type BaseResourceAttrs,
+    type BaseResourceResourceData,
     BaseResource,
 } from './baseResourceModel';
 import {
@@ -102,7 +107,7 @@ export interface ReviewRequestAttrs extends BaseResourceAttrs {
 }
 
 
-interface ReviewRequestResourceData {
+interface ReviewRequestResourceData extends BaseResourceResourceData {
     absolute_url: string;
     approvalFailure: string;
     approved: boolean;
@@ -151,7 +156,10 @@ interface ReviewRequestOptions {
  */
 @spina
 export class ReviewRequest extends BaseResource<
-    ReviewRequestAttrs, Backbone.ModelSetOptions, ReviewRequestOptions> {
+    ReviewRequestAttrs,
+    ReviewRequestResourceData,
+    ReviewRequestOptions
+> {
     /**
      * Return default values for the model attributes.
      *
@@ -159,8 +167,8 @@ export class ReviewRequest extends BaseResource<
      *     ReviewRequestAttrs:
      *     Default values for the model attributes.
      */
-    static defaults(): ReviewRequestAttrs {
-        return _.defaults({
+    static defaults(): Result<Partial<ReviewRequestAttrs>> {
+        return {
             approvalFailure: null,
             approved: false,
             branch: null,
@@ -184,7 +192,7 @@ export class ReviewRequest extends BaseResource<
             targetPeople: [],
             testingDone: null,
             testingDoneRichText: false,
-        }, super.defaults());
+        };
     }
 
     static rspNamespace = 'review_request';
@@ -194,7 +202,7 @@ export class ReviewRequest extends BaseResource<
         'include-text-types': 'raw',
     };
 
-    static attrToJsonMap = {
+    static attrToJsonMap: { [key: string]: string } = {
         approvalFailure: 'approval_failure',
         bugsClosed: 'bugs_closed',
         closeDescription: 'close_description',
@@ -267,7 +275,7 @@ export class ReviewRequest extends BaseResource<
         attrs?: ReviewRequestAttrs,
         options: Backbone.CombinedModelConstructorOptions<
             ReviewRequestOptions, this> = {}) {
-        super.initialize();
+        super.initialize(attrs, options);
 
         this.draft = new RB.DraftReviewRequest(_.defaults({
             branch: this.get('branch'),

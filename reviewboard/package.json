@@ -15,14 +15,13 @@
     "@beanbag/jasmine-suites": "~2.0.0",
     "@prantlf/jsonlint": "^11.7.0",
     "@rollup/plugin-commonjs": "^24.0.1",
-    "@types/jqueryui": "^1.12.21",
     "babel-polyfill": "^6.26.0",
     "codemirror": "^5.65.11",
     "jasmine-core": "~5.1.0",
-    "jquery": "^3.3.1",
+    "jquery": "^3.7.1",
     "jquery-flot": "^0.8.3",
     "jquery-form": "^4.2.2",
-    "jquery-ui": "~1.12.1",
+    "jquery-ui": "~1.13.3",
     "jquery.cookie": "^1.4.1",
     "moment": "^2.29.4",
     "moment-timezone": "^0.5.40",
@@ -40,6 +39,8 @@
     "@storybook/html": "^8.0.8",
     "@storybook/html-vite": "^8.0.8",
     "@storybook/test": "^8.0.8",
+    "@types/codemirror": "^5.60.15",
+    "@types/jqueryui": "^1.12.21",
     "storybook": "^8.0.8"
   }
 }

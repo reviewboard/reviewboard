@@ -38,6 +38,7 @@ There are several integrations which are bundled with Review Board:
 * :ref:`Jenkins CI <integrations-jenkins-ci>`
 * :ref:`Matrix <integrations-matrix>`
 * :ref:`Mattermost <integrations-mattermost>`
+* :ref:`Microsoft Teams <integrations-microsoft-teams>`
 * :ref:`Slack <integrations-slack>`
 * :ref:`Travis CI <integrations-travis-ci>`
 * :ref:`Trello <integrations-trello>`
@@ -56,6 +57,7 @@ Additional integrations may be provided by extensions.
    jenkins-ci
    matrix
    mattermost
+   microsoft-teams
    slack
    travis-ci
    trello

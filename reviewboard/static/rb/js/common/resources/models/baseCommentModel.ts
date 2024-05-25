@@ -2,12 +2,17 @@
  * The base model for a comment.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import { UserSession } from '../../models/userSessionModel';
 import * as JSONSerializers from '../utils/serializers';
 import {
     type BaseResourceAttrs,
+    type BaseResourceResourceData,
+    type SerializerMap,
     BaseResource,
 } from './baseResourceModel';
 
@@ -90,7 +95,7 @@ export interface BaseCommentAttrs extends BaseResourceAttrs {
  * Version Added:
  *     7.0
  */
-export interface BaseCommentResourceData {
+export interface BaseCommentResourceData extends BaseResourceResourceData {
     force_text_type: string;
     html: string;
     html_text_fields: { [key: string]: string };
@@ -114,8 +119,9 @@ export interface BaseCommentResourceData {
  */
 @spina
 export class BaseComment<
-    TAttributes extends BaseCommentAttrs = BaseCommentAttrs
-> extends BaseResource<TAttributes> {
+    TAttributes extends BaseCommentAttrs = BaseCommentAttrs,
+    TResourceData extends BaseCommentResourceData = BaseCommentResourceData,
+> extends BaseResource<TAttributes, TResourceData> {
     /**
      * Return default values for the model attributes.
      *
@@ -123,8 +129,8 @@ export class BaseComment<
      *     BaseCommentAttrs:
      *     The default values for the model attributes.
      */
-    static defaults(): BaseCommentAttrs {
-        return _.defaults({
+    static defaults(): Result<Partial<BaseCommentAttrs>> {
+        return {
             forceTextType: null,
             html: null,
             includeTextTypes: null,
@@ -134,7 +140,7 @@ export class BaseComment<
             rawTextFields: {},
             richText: null,
             text: '',
-        }, super.defaults());
+        };
     }
 
     /**
@@ -159,7 +165,7 @@ export class BaseComment<
 
     static supportsExtraData = true;
 
-    static attrToJsonMap = {
+    static attrToJsonMap: { [key: string]: string } = {
         forceTextType: 'force_text_type',
         includeTextTypes: 'include_text_types',
         issueOpened: 'issue_opened',
@@ -183,7 +189,7 @@ export class BaseComment<
         'html',
     ];
 
-    static serializers = {
+    static serializers: SerializerMap = {
         forceTextType: JSONSerializers.onlyIfValue,
         includeTextTypes: JSONSerializers.onlyIfValue,
         issueStatus: function(value) {
@@ -267,7 +273,7 @@ export class BaseComment<
      *     Attribute values to set on the model.
      */
     parseResourceData(
-        rsp: BaseCommentResourceData,
+        rsp: TResourceData,
     ): Partial<TAttributes> {
         const rawTextFields = rsp.raw_text_fields || rsp;
         const data = super.parseResourceData(rsp);
@@ -309,7 +315,7 @@ export class BaseComment<
      *     An error string, if appropriate.
      */
     validate(
-        attrs: TAttributes,
+        attrs: Partial<TAttributes>,
     ): string {
         if (_.has(attrs, 'parentObject') && !attrs.parentObject) {
             return BaseResource.strings.UNSET_PARENT_OBJECT;

@@ -22,11 +22,14 @@
 {# Screenshot comments #}
 {% for comment in screenshot_comments %}
 {%  definevar "comment_context" %}
- <div class="review-comment-screenshot">
-  <a class="filename" href="{{comment.screenshot.get_absolute_url}}">
-   {{comment.screenshot.caption|default_if_none:comment.screenshot.filename}}
+ <div class="rb-c-review-comment-thumbnail">
+  <a class="rb-c-review-comment-thumbnail__header"
+     href="{{comment.screenshot.get_absolute_url}}">
+   <span class="rb-c-review-comment-thumbnail__name">
+    {{comment.screenshot.caption|default:comment.screenshot.filename}}
+   </span>
   </a>
-  <div class="thumbnail">{{comment.image|safe}}</div>
+  <div class="rb-c-review-comment-thumbnail__content">{{comment.image|safe}}</div>
  </div>
 {%  enddefinevar %}
 {%  include "reviews/entries/_review_comment.html" with comment_type="screenshot_comments" %}
@@ -35,11 +38,12 @@
 {# File attachment comments #}
 {% for comment in file_attachment_comments %}
 {%  definevar "comment_context" %}
- <div class="review-comment-file-attachment">
-  <a class="filename" href="{{comment.get_absolute_url}}">
-   {{comment.get_link_text}}
+ <div class="rb-c-review-comment-thumbnail">
+  <a class="rb-c-review-comment-thumbnail__header"
+     href="{{comment.get_absolute_url}}">
+   <span class="rb-c-review-comment-thumbnail__name">{{comment.get_link_text}}</span>
 {%  if comment.file_attachment.attachment_revision %}
-   <span class="diffrevision">
+   <span class="rb-c-review-comment-thumbnail__revision">
 {%   if comment.diff_against_file_attachment %}
 {%    blocktrans with revision1=comment.diff_against_file_attachment.attachment_revision revision2=comment.file_attachment.attachment_revision %}
     (Revisions {{revision1}} - {{revision2}})
@@ -54,7 +58,7 @@
   </a>
 {%  with comment.thumbnail as thumbnail %}
 {%   if thumbnail %}
-  <div class="thumbnail">{{thumbnail|default:''|safe}}</div>
+  <div class="rb-c-review-comment-thumbnail__content">{{thumbnail|default:''|safe}}</div>
 {%   endif %}
 {%  endwith %}
  </div>
@@ -65,33 +69,36 @@
 {# Diff comments #}
 {% for comment in diff_comments %}
 {%  definevar "comment_context" %}
- <div class="review-comment-diff" id="comment_container_{{comment.pk}}">
-  <table class="sidebyside loading">
-   <thead>
-    <tr class="filename-row">
-     <th class="filename">
-      <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file_display}}</a>
-      <span class="diffrevision">
+ <div class="rb-c-review-comment-thumbnail -has-diff -expands-on-hover">
+  <div class="rb-c-review-comment-thumbnail__content"
+       id="comment_container_{{comment.pk}}">
+   <table class="sidebyside loading">
+    <thead>
+     <tr class="filename-row">
+      <th class="filename">
+       <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file_display}}</a>
+       <span class="diffrevision">
 {%  if comment.interfilediff %}
 {%   blocktrans with revision1=comment.filediff.diffset.revision revision2=comment.interfilediff.diffset.revision %}
-       (Diff revisions {{revision1}} - {{revision2}})
+        (Diff revisions {{revision1}} - {{revision2}})
 {%   endblocktrans %}
 {%  else %}
 {%   blocktrans with revision=comment.filediff.diffset.revision %}
-       (Diff revision {{revision}})
+        (Diff revision {{revision}})
 {%   endblocktrans %}
 {%  endif %}
-      </span>
-     </th>
-    </tr>
-   </thead>
-   <tbody>
-    <tr><td><pre>&nbsp;</pre></td></tr>{# header #}
+       </span>
+      </th>
+     </tr>
+    </thead>
+    <tbody>
+     <tr><td><pre>&nbsp;</pre></td></tr>{# header #}
 {%  for i in comment.num_lines|default_if_none:1|range %}
-    <tr><td><pre>&nbsp;</pre></td></tr>
+     <tr><td><pre>&nbsp;</pre></td></tr>
 {%  endfor %}
-   </tbody>
-  </table>
+    </tbody>
+   </table>
+  </div>
  </div>
 {%  enddefinevar %}
 {%  include "reviews/entries/_review_comment.html" with comment_type="diff_comments" %}

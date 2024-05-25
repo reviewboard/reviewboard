@@ -14,7 +14,6 @@ from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import Profile
 from reviewboard.datagrids.tests.base import BaseViewTestCase
-from reviewboard.reviews.models import ReviewRequest
 from reviewboard.site.models import LocalSite
 from reviewboard.testing.queries.http import get_http_request_start_equeries
 

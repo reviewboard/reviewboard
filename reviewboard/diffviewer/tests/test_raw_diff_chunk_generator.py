@@ -586,7 +586,7 @@ class RawDiffChunkGeneratorTests(TestCase):
         custom lexer mapping that maps to a non existent lexer class
         """
         settings = {
-            'diffviewer_custom_pygments_lexers': {'.less': 'NonExistantClass'},
+            'diffviewer_custom_pygments_lexers': {'.less': 'NonExistentClass'},
         }
 
         with self.siteconfig_settings(settings):
@@ -598,7 +598,7 @@ class RawDiffChunkGeneratorTests(TestCase):
                 diff_settings=DiffSettings.create())
             data = '.test() { .a { margin: 0; } }'
             expected_log_output = (
-                'Pygments lexer "NonExistantClass" for ".less" files in '
+                'Pygments lexer "NonExistentClass" for ".less" files in '
                 'Diff Viewer Settings was not found.'
             )
             with self.assertLogs() as captured:

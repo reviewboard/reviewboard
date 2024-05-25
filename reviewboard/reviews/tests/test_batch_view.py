@@ -6,7 +6,7 @@ import json
 from typing import List, TYPE_CHECKING
 
 import kgb
-from django.contrib.auth.models import Permission, User
+from django.contrib.auth.models import User
 from django.core import mail
 from django.db.models import Q
 from django.http.response import HttpResponse
@@ -25,7 +25,6 @@ from reviewboard.reviews.models import (Group,
 from reviewboard.reviews.testing.queries.review_requests import (
     get_review_requests_accessible_equeries,
 )
-from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase

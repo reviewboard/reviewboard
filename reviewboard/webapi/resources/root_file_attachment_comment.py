@@ -4,6 +4,7 @@ Version Added:
     5.0
 """
 
+from django.contrib.auth.models import User
 from django.db.models import Q
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields
@@ -11,10 +12,8 @@ from djblets.webapi.fields import (BooleanFieldType,
                                    DateTimeFieldType,
                                    StringFieldType)
 
-from reviewboard.accounts.models import User
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.models import FileAttachmentComment
-from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources.base_file_attachment_comment import \
     BaseFileAttachmentCommentResource
 

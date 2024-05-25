@@ -129,12 +129,87 @@
       @prefix: rb-p;
       @vars: {
         /** Background for draft elements. */
-        draft-bg: var(--ink-p-green-200);
+        draft-bg:
+          var(--if-light, var(--ink-p-green-200))
+          var(--if-dark, var(--ink-p-cool-grey-400));
+
+        /** Hover background color for draft elements. */
+        draft-hover-bg:
+          var(--if-light, var(--ink-p-green-300))
+          var(--if-dark, var(--ink-p-accent-primary-bg));
+
+        draft-hover-fg:
+          var(--if-light, var(--ink-p-fg-on-light))
+          var(--if-dark, var(--ink-p-accent-primary-fg));
 
         /** Border color for draft elements. */
         draft-border-color:
           var(--if-light, var(--ink-p-green-500))
-          var(--if-dark, var(--ink-p-green-100));
+          var(--if-dark, var(--ink-p-black));
+
+        /** Label color for draft items. */
+        draft-label-fg: var(--ink-p-green-600);
+
+        issue-bg: var(--ink-p-light__yellow-300);
+
+        issue-border-color: var(--ink-p-container-border-color);
+
+        /** Issue status text accent colors. */
+        issue-open-accent-text-color: var(--ink-p-light__yellow-300);
+        issue-dropped-accent-text-color: var(--ink-p-fg-weak-on-dark);
+        issue-resolved-accent-text-color:
+          var(--ink-p-accent-success-fg-on-container);
+
+        /** Color used for graph data representing diff insert operations. */
+        diff-insert-graph-color:
+          var(--if-light, var(--ink-p-green-500))
+          var(--if-dark, var(--ink-p-green-700));
+
+        /** Color used for graph data representing diff delete operations. */
+        diff-delete-graph-color:
+          var(--if-light, var(--ink-p-red-500))
+          var(--if-dark, var(--ink-p-red-700));
+
+        /** Color used for graph data representing diff replace operations. */
+        diff-replace-graph-color:
+          var(--if-light, var(--ink-p-yellow-800))
+          var(--if-dark, var(--ink-p-yellow-600));
+
+        /** Diff insert operation indicator background. */
+        diff-insert-op-bg:
+          var(--if-light, @diff-insert-linenum-color)
+          var(--if-dark, var(--ink-p-input-bg));
+
+        /** Diff insert operation indicator foreground. */
+        diff-insert-op-fg:
+          var(--if-light, var(--ink-p-fg-on-light))
+          var(--if-dark, var(--ink-p-green-700));
+
+        /** Diff delete operation indicator background. */
+        diff-delete-op-bg:
+          var(--if-light, @diff-delete-linenum-color)
+          var(--if-dark, var(--ink-p-input-bg));
+
+        /** Diff delete operation indicator foreground. */
+        diff-delete-op-fg:
+          var(--if-light, var(--ink-p-fg-on-light))
+          var(--if-dark, var(--ink-p-red-800));
+
+        /** Diff replace operation indicator background. */
+        diff-replace-op-bg:
+          var(--if-light, @diff-replace-linenum-color)
+          var(--if-dark, var(--ink-p-input-bg));
+
+        /** Diff replace operation indicator foreground. */
+        diff-replace-op-fg:
+          var(--if-light, var(--ink-p-fg-on-light))
+          var(--if-dark, var(--ink-p-yellow-800));
+
+        /** Color used for text representing an insert operation. */
+        diff-insert-text-fg: var(--ink-p-green-800);
+
+        /** Color used for text representing a delete operation. */
+        diff-delete-text-fg: var(--ink-p-red-800);
       };
     );
   }

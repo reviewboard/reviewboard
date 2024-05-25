@@ -17,6 +17,7 @@ from kgb import SpyAgency
 
 from reviewboard.attachments.forms import UploadFileForm, UploadUserFileForm
 from reviewboard.attachments.mimetypes import (MimetypeHandler,
+                                               logger as mimetypes_logger,
                                                register_mimetype_handler,
                                                score_match,
                                                unregister_mimetype_handler)
@@ -1224,8 +1225,20 @@ class TextMimetypeTests(SpyAgency, TestCase):
 
         self.assertIsInstance(thumbnail, SafeText)
 
+    def test_get_raw_thumbnail_image_url(self) -> None:
+        """Testing TextMimetype.test_get_raw_thumbnail_image_url"""
+        mimetype_handler = self.file_attachment.mimetype_handler
+        assert mimetype_handler
 
-class ImageMimetypeTests(BaseFileAttachmentTestCase):
+        message = (
+            'TextMimetype does not support generating thumbnail images.'
+        )
+
+        with self.assertRaisesMessage(NotImplementedError, message):
+            mimetype_handler.get_raw_thumbnail_image_url(width=300)
+
+
+class ImageMimetypeTests(SpyAgency, BaseFileAttachmentTestCase):
     """Unit tests for reviewboard.attachments.mimetypes.ImageMimetype.
 
     Version Added:
@@ -1251,46 +1264,84 @@ class ImageMimetypeTests(BaseFileAttachmentTestCase):
         """Testing ImageMimetype.get_thumbnail"""
         file = self.file_attachment.file
         storage = file.storage
-        file_url_base = os.path.splitext(storage.url(file.name))[0]
         filename_base = os.path.splitext(file.name)[0]
+        download_url = 'http://example.com/r/1/file/1/download/?thumbnail=1'
 
         self.assertHTMLEqual(
             self.file_attachment.thumbnail,
             f'<div class="file-thumbnail">'
-            f'<img src="{file_url_base}_300.png" '
-            f'srcset="{file_url_base}_300.png 1x, {file_url_base}_600.png 2x"'
+            f'<img src="{download_url}&width=300"'
+            f' srcset="{download_url}&width=300 1x,'
+            f' {download_url}&width=600 2x, {download_url}&width=900 3x"'
             f'alt="" width="300" />'
             f'</div>')
 
+        # These shouldn't exist until the URLs are accessed.
+        self.assertFalse(storage.exists(f'{filename_base}_300.png'))
+        self.assertFalse(storage.exists(f'{filename_base}_600.png'))
+        self.assertFalse(storage.exists(f'{filename_base}_900.png'))
+
+    def test_get_raw_thumbnail_image_url(self) -> None:
+        """Testing ImageMimetype.get_raw_thumbnail_image_url"""
+        file = self.file_attachment.file
+        storage = file.storage
+        filename_base = os.path.splitext(file.name)[0]
+
+        mimetype_handler = self.file_attachment.mimetype_handler
+        assert mimetype_handler
+
+        filename = mimetype_handler.get_raw_thumbnail_image_url(width=300)
+        self.assertTrue(filename)
         self.assertTrue(storage.exists(f'{filename_base}_300.png'))
-        self.assertTrue(storage.exists(f'{filename_base}_600.png'))
+
+    def test_generate_thumbnail_image_with_create_if_missing_false(
+        self,
+    ) -> None:
+        """Testing ImageMimetype.get_raw_thumbnail_image_url with
+        create_if_missing=False
+        """
+        file = self.file_attachment.file
+        storage = file.storage
+        filename_base = os.path.splitext(file.name)[0]
+
+        mimetype_handler = self.file_attachment.mimetype_handler
+        assert mimetype_handler
+
+        filename = mimetype_handler.generate_thumbnail_image(
+            width=300,
+            create_if_missing=False)
+
+        self.assertIsNone(filename)
+        self.assertFalse(storage.exists(f'{filename_base}_300.png'))
 
     def test_delete_associated_files(self) -> None:
         """Testing ImageMimetype.delete_associated_files"""
         file = self.file_attachment.file
         storage = file.storage
+
+        mimetype_handler = self.file_attachment.mimetype_handler
+        assert mimetype_handler
+
         filename_base = os.path.splitext(file.name)[0]
         filename_300 = f'{filename_base}_300.png'
         filename_600 = f'{filename_base}_600.png'
 
-        self.file_attachment.thumbnail
+        mimetype_handler.generate_thumbnail_image(width=300)
+        mimetype_handler.generate_thumbnail_image(width=600)
 
         self.assertTrue(storage.exists(filename_300))
         self.assertTrue(storage.exists(filename_600))
 
-        self.file_attachment.mimetype_handler.delete_associated_files()
+        mimetype_handler.delete_associated_files()
 
         self.assertFalse(storage.exists(filename_300))
         self.assertFalse(storage.exists(filename_600))
 
-        with self.assertLogs() as logs:
-            self.file_attachment.mimetype_handler.delete_associated_files()
+        self.spy_on(storage.delete)
+        self.spy_on(mimetypes_logger.warning)
 
-            self.assertEqual(
-                logs.records[0].getMessage(),
-                'Unable to find and delete thumbnail file at %s'
-                % storage.url(filename_300))
-            self.assertEqual(
-                logs.records[1].getMessage(),
-                'Unable to find and delete thumbnail file at %s'
-                % storage.url(filename_600))
+        # A second call shouldn't do anything, outside of checking thumbnail
+        # existence.
+        mimetype_handler.delete_associated_files()
+
+        self.assertSpyNotCalled(storage.delete)

@@ -266,6 +266,23 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
         self.assertEqual(review_request.description, description)
         self.assertEqual(review_request.testing_done, testing_done)
 
+    @add_fixtures(['test_scmtools'])
+    def test_discard_unpublished_deletes_diffset(self) -> None:
+        """Testing ReviewRequest.close with an unpublished review request
+        deletes the draft DiffSet
+        """
+        review_request = self.create_review_request(
+            publish=False,
+            create_repository=True)
+        diffset = self.create_diffset(review_request, draft=True)
+
+        self.assertFalse(review_request.public)
+        self.assertNotEqual(review_request.status, ReviewRequest.DISCARDED)
+
+        review_request.close(ReviewRequest.DISCARDED)
+
+        self.assertFalse(DiffSet.objects.filter(pk=diffset.pk).exists())
+
     def test_discard_unpublished_public(self):
         """Testing ReviewRequest.close with public requests on discard
         to ensure changes from draft are not copied over

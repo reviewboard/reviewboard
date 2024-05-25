@@ -21,15 +21,15 @@ RB.UpdateDiffView = RB.UploadDiffView.extend({
          <form id="basedir-form">
           <%- baseDir %>
           <input id="basedir-input">
-          <input type="submit" value="<%- ok %>">
+          <button class="ink-c-button" type="submit">"<%- ok %>"</button>
          </form>
          <a href="#" class="startover"><%- startOver %></a>
         </div>
         <div class="input" id="processing-diff">
-         <div class="spinner"><span class="djblets-o-spinner"></div>
+         <div class="spinner"><span class="ink-c-spinner"></span></div>
         </div>
         <div class="input" id="uploading-diffs">
-         <div class="spinner"><span class="djblets-o-spinner"></div>
+         <div class="spinner"><span class="ink-c-spinner"></span></div>
         </div>
         <div class="input" id="error-indicator">
          <div id="error-contents"></div>
@@ -49,11 +49,14 @@ RB.UpdateDiffView = RB.UploadDiffView.extend({
 
         this.$el
             .modalBox({
-                title: gettext('Update Diff'),
                 buttons: [
-                    $('<input type="button">')
-                        .val(gettext('Cancel')),
+                    Ink.paintComponent(
+                        'Ink.Button',
+                        {},
+                        _`Cancel`
+                    ),
                 ],
+                title: _`Update Diff`,
             })
             .on('close', () => this.$el.modalBox('destroy'));
 

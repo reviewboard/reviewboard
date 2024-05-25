@@ -96,7 +96,7 @@ class ValidPrefsRequiredTests(TestCase):
         self.assertIs(type(response), HttpResponse)
 
     def test_with_consent_required_pending_consent_enabled_decorator(self):
-        """Testing @valid_prefs_required with disbled_consent_checks= set to a
+        """Testing @valid_prefs_required with disabled_consent_checks= set to a
         function that always returns False
         """
         @valid_prefs_required(disable_consent_checks=lambda request: False)
@@ -109,7 +109,7 @@ class ValidPrefsRequiredTests(TestCase):
         self.assertIs(type(response), HttpResponseRedirect)
 
     def test_with_consent_required_pending_consent_disabled_decorator(self):
-        """Testing @valid_prefs_required with disbled_consent_checks= set to a
+        """Testing @valid_prefs_required with disabled_consent_checks= set to a
         function that always returns True
         """
         @valid_prefs_required(disable_consent_checks=lambda request: True)
@@ -122,7 +122,7 @@ class ValidPrefsRequiredTests(TestCase):
         self.assertIs(type(response), HttpResponse)
 
     def test_with_consent_required_pending_consent_decorator_function(self):
-        """Testing @valid_prefs_required with disbled_consent_checks= set to a
+        """Testing @valid_prefs_required with disabled_consent_checks= set to a
         function
         """
         def disable_consent_checks(request):

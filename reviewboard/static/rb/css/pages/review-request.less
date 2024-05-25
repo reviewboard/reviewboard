@@ -13,6 +13,47 @@
 @details-width: 32em;
 
 
+:root,
+.rb-c-review-request {
+  @_review-request-gradient-top-bg: #FFFDF3;
+
+  /* Review request variables. */
+  --rb-c-review-request-bg-color:
+    var(--if-light, @review-request-bg)
+    var(--if-dark, var(--ink-p-cool-grey-200));
+
+  --rb-c-review-request-bg:
+    var(--if-light,
+      linear-gradient(
+        to bottom,
+        @_review-request-gradient-top-bg,
+        #FEFADF
+      )
+    )
+    var(--if-dark, var(--rb-c-review-request-bg-color));
+
+  --rb-c-review-request-border-color:
+    var(--if-light, @review-request-action-border-color)
+    var(--if-dark, var(--ink-p-cool-grey-300));
+
+  --rb-c-review-request-border-radius: var(--ink-u-border-radius-std);
+
+  --rb-c-review-request-border: 1px var(--rb-c-review-request-border-color)
+                                solid;
+
+  /* Review request action bar variables. */
+  --rb-c-review-request-actions-bg: var(--ink-p-header-bg);
+  --rb-c-review-request-actions-active-bg:
+    var(--if-light, @_review-request-gradient-top-bg)
+    var(--if-dark, var(--rb-c-review-request-bg-color));
+  --rb-c-review-request-actions-hover-bg:
+    var(--if-light, @review-request-action-hover-bg)
+    var(--if-dark, rgba(0, 0, 0, 0.2));
+  --rb-c-review-request-actions-border: var(--rb-c-review-request-border);
+  --rb-c-review-request-actions-text-color: var(--ink-p-header-fg);
+}
+
+
 /****************************************************************************
  * Review request box
  ****************************************************************************/
@@ -40,7 +81,7 @@
  */
 .rb-c-review-request {
   background: none;
-  border-radius: @box-border-radius;
+  border-radius: var(--rb-c-review-request-border-radius);
   box-shadow: @box-shadow;
 
   /**
@@ -110,12 +151,13 @@
    *     </div>
    */
   &__fields {
-    background-color: @review-request-bg;
-    #gradient > .vertical(@review-request-bg-gradient-start,
-                          @review-request-bg-gradient-end);
-    border: 1px @review-request-border-color solid;
+    background: var(--rb-c-review-request-bg);
+
+    border: var(--rb-c-review-request-border);
     border-top: 0;
-    border-radius: 0 0 @box-border-radius @box-border-radius;
+    border-radius: 0 0
+                   var(--rb-c-review-request-border-radius)
+                   var(--rb-c-review-request-border-radius);
     clear: both;
     padding: 0.5rem;
     display: grid;
@@ -141,7 +183,9 @@
    *     </header>
    */
   &__header {
-    border-bottom: 1px @review-request-action-border-color solid;
+    border-bottom: var(--rb-c-review-request-border);
+    display: flex;
+    gap: var(--ink-u-spacing-xxl);
 
     .on-mobile-medium-screen-720({
       text-align: center;
@@ -246,8 +290,9 @@
    *     </div>
    */
   &__warning {
-    background-color: @review-request-warning-bg;
-    border: 1px solid @review-request-warning-border-color;
+    background-color: var(--ink-p-accent-error-bg);
+    border: 1px var(--ink-p-accent-error-border-color) solid;
+    color: var(--ink-p-accent-error-fg);
     display: none;
     font-weight: bold;
     grid-area: warning;
@@ -274,10 +319,13 @@
 .banner pre.field,
 .rb-c-unified-banner pre.field,
 .rb-c-review-request-field pre.field {
-  background-color: @textarea-editor-background;
-  border: @textarea-border;
-  margin: @textarea-editor-margin;
-  padding: @textarea-editor-padding;
+  @_form-field-vars: #rb-ns-ui.form-field();
+
+  background-color: var(--ink-p-input-bg);
+  border: var(--ink-u-border-thin) var(--ink-p-input-border-color) solid;
+  color: var(--ink-p-input-fg);
+  margin: @_form-field-vars[@textarea-editor-margin];
+  padding: @_form-field-vars[@textarea-editor-padding];
   white-space: pre-wrap;
   word-wrap: break-word;
 
@@ -285,8 +333,8 @@
     .flush-codehilite();
 
     @codehilite-margin-horiz: (@code-block-border-size +
-                                @code-block-padding-horiz -
-                                @textarea-border-size);
+                               @code-block-padding-horiz -
+                               @textarea-border-size);
     @codehilite-margin-vert: @code-block-padding-vert;
     margin: -@codehilite-margin-vert -@codehilite-margin-horiz;
     padding: @codehilite-margin-vert @codehilite-margin-horiz;
@@ -315,7 +363,7 @@
 }
 
 .review-request-section-label {
-  color: @review-request-label-color;
+  color: var(--rb-p-review-request-field-label-color);
   font-size: @review-request-section-label-font-size;
   font-weight: bold;
 }
@@ -360,23 +408,32 @@
  *     </div>
  */
 .rb-c-review-request .rb-c-actions {
-  background: @review-request-action-bg;
-  border-color: @review-request-action-border-color;
-  border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
-  border-style: solid;
-  border-width: 1px 1px 0 1px;
+  background: var(--rb-c-review-request-actions-bg);
+  border: var(--rb-c-review-request-actions-border);
+  border-radius: var(--rb-c-review-request-border-radius)
+                 var(--rb-c-review-request-border-radius)
+                 0 0;
+  border-bottom-width: 0;
   box-sizing: border-box;
+  color: var(--rb-c-review-request-actions-text-color);
+  display: flex;
+  flex-grow: 1;
+  justify-content: space-between;
   min-height: (@review-request-action-line-height +
                2 * @review-request-action-padding-vert +
                1);
   overflow: hidden;
 
-  .review-ui-box & {
-    border-radius: @box-inner-border-radius;
-  }
+  #ink-ns-ui.base.customize-component(
+    @name: ink-c-menu;
+    @schema: #ink-ns-schema[@menu];
+    @vars: {
+      --ink-c-menu-bg: var(--rb-c-review-request-actions-bg);
+      --ink-c-menu-border: var(--rb-c-review-request-actions-border);
+    });
 
-  .review-ui-box.has-review-ui-box-content & {
-    border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
+  .review-ui-box:not(.has-review-ui-box-content) & {
+    border-radius: var(--rb-c-review-request-border-radius);
   }
 
   /**
@@ -390,19 +447,18 @@
    *         The menu should be floated to the right.
    */
   &__content {
+    /*
+     * NOTE: It's important we use a standard block here and not a flexbox
+     *       of any kind. We depend on the mobile menu being able to
+     *       absolutely-position itself relative to its initial layout
+     *       coordinates, and it can't do that in a flexbox. It'll end up
+     *       overlapping the whole action bar.
+     */
     box-sizing: border-box;
     list-style: none;
     margin: 0;
     padding: 0;
     white-space: nowrap;
-
-    &.-is-left {
-      float: left;
-    }
-
-    &.-is-right {
-      float: right;
-    }
   }
 
   /**
@@ -418,20 +474,26 @@
    *     </li>
    */
   &__action {
+    /*
+     * NOTE: It's important we use a standard inline-block here and not a
+     *       flexbox of any kind. We depend on any inner menu components being
+     *       able to absolutely-position themselves relative to their initial
+     *       layout coordinates, and they can't do that in a flexbox. They'll
+     *       end up overlapping the menu controller.
+     */
     display: inline-block;
 
+    &:active,
     &:hover {
-      background: @review-request-action-hover-bg;
-    }
-
-    &:active {
-      background: @review-request-action-active-bg;
+      background: var(--rb-c-review-request-actions-hover-bg);
     }
 
     a {
-      color: black;
+      color: inherit;
       cursor: pointer;
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 0.2em;
       margin: 0;
       line-height: @review-request-action-line-height;
       text-decoration: none;
@@ -449,30 +511,6 @@
       display: none;
     }
   }
-
-  .rb-c-menu {
-    background: @review-request-action-bg;
-    border: 1px @review-request-action-menu-border-color solid;
-    border-radius: 0 0 @box-border-radius @box-border-radius;
-    box-shadow: @box-shadow;
-    margin: 0;
-  }
-
-  .rb-c-menu__item {
-    background: @review-request-action-bg;
-    border: 0;
-    float: none;
-    margin: 0;
-    padding: 0;
-
-    &:hover {
-      background-color: @review-request-action-menu-item-hover-bg;
-    }
-
-    &:last-child {
-      border-radius: 0 0 @box-border-radius @box-border-radius;
-    }
-  }
 }
 
 .on-mobile-medium-screen-720({
@@ -480,7 +518,6 @@
     &__action {
       &.rb-o-mobile-menu-label {
         display: inline-block;
-        float: none;
       }
 
       a, &.-is-icon a {
@@ -492,8 +529,8 @@
     .rb-o-mobile-menu {
       .rb-c-menu();
 
-      background: @review-request-action-bg;
-      border-color: @review-request-action-border-color;
+      background: var(--rb-c-review-request-actions-bg);
+      border: var(--rb-c-review-request-actions-border);
       box-sizing: border-box;
       left: 0;
       width: 100%;
@@ -537,14 +574,15 @@
  *     </menu>
  */
 .rb-c-review-request-tabs {
-  background-color: @review-request-action-bg;
-  border-color: @review-request-border-color;
-  border-radius: @box-border-radius @box-border-radius 0 0;
-  border-style: solid;
-  border-width: 1px 1px 0 1px;
-  float: right;
+  background-color: var(--rb-c-review-request-actions-bg);
+  border: var(--rb-c-review-request-actions-border);
+  border-radius: var(--rb-c-review-request-border-radius)
+                 var(--rb-c-review-request-border-radius)
+                 0 0;
+  border-bottom-width: 0;
+  display: flex;
   list-style: none;
-  margin: 0 0 0 1.5rem;
+  margin: 0 0 -1px 1.5rem;
   overflow: hidden;
   padding: 0;
 
@@ -566,45 +604,40 @@
    *     </li>
    */
   &__tab {
-    border-bottom: 1px @review-request-action-border-color solid;
-    float: left;
+    border-bottom: var(--rb-c-review-request-actions-border);
+    border-left: var(--rb-c-review-request-actions-border);
     min-width: 4rem;
     text-align: center;
 
-    &:active {
-      background-color: @review-request-action-active-bg;
-    }
-
-    &:hover {
-      background-color: @review-request-action-hover-bg;
+    &:first-child {
+      border-left: 0;
     }
 
     &.-is-active {
-      background: @review-request-bg-gradient-start;
-      border-color: @review-request-border-color;
+      background: var(--rb-c-review-request-actions-active-bg);
       border-bottom-color: transparent;
-      border-style: solid;
       border-width: 0 1px 1px 1px;
+    }
 
-      &:first-child {
-        border-left: 0;
-      }
-
-      &:last-child {
-        border-right: 0;
+    &:not(.-is-active) {
+      &:active,
+      &:hover {
+        a {
+          background: var(--rb-c-review-request-actions-hover-bg);
+        }
       }
     }
 
     .review-ui-box &.-is-active {
       /*
-       * The active tab in review UIs has a slightly different color to match the
-       * review UI header color.
+       * The active tab in review UIs has a slightly different color to match
+       * the review UI header color.
        */
        background-color: @review-ui-header-bg;
     }
 
     a {
-      color: black;
+      color: inherit;
       cursor: pointer;
       display: block;
       margin: 0;
@@ -628,8 +661,14 @@
  ****************************************************************************/
 #discard-banner,
 #submitted-banner {
-  background: #E0E0E0;
-  border: 1px #808080 solid;
+  background:
+    var(--if-dark, var(--ink-p-grey-200))
+    var(--if-light, #E0E0E0);
+  border:
+    1px
+    var(--if-dark, var(--ink-p-grey-300))
+    var(--if-light, #808080)
+    solid;
 }
 
 #draft-banner,
@@ -671,20 +710,23 @@
  ****************************************************************************/
 
 #updates-bubble {
-  background: @alert-color;
-  border-top: 1px #888866 solid;
-  border-left: 1px #888866 solid;
+  background: var(--ink-p-accent-warning-bg);
+  color: var(--ink-p-fg-on-light);
+  border: 1px #888866 solid;
+  border-bottom: 0;
   bottom: 0;
-  border-radius: 10px 0 0 0;
-  box-shadow: -1px -1px 2px rgba(0, 0, 0, 0.15);
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.15);
   font-size: 110%;
   padding: 1em;
   position: fixed;
-  right: 0;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
   z-index: @z-index-page-overlay;
 
   a, a:visited {
-    color: #0000CC;
+    color: var(--ink-p-link-fg-on-light);
     text-decoration: none;
   }
 

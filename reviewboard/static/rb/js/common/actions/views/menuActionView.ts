@@ -1,9 +1,14 @@
 import {
+    type MenuView,
+    MenuItemType,
+    MenuItemsCollection,
+    craft,
+    renderInto,
+} from '@beanbag/ink';
+import {
     type EventsHash,
     spina,
 } from '@beanbag/spina';
-
-import { MenuView } from 'reviewboard/ui';
 
 import { type MenuAction } from '../models/menuActionModel';
 import { ActionView } from './actionView';
@@ -39,41 +44,111 @@ export class MenuActionView<
     /**
      * Render the view.
      */
-    onInitialRender() {
-        this.menu = new MenuView({
-            $controller: this.$el,
-        });
-
-        this.$el.append(this.menu.render().$el);
-
+    protected onInitialRender() {
+        const menuItems = new MenuItemsCollection();
         const page = RB.PageManager.getPage();
 
         for (const childId of this.model.get('children')) {
             if (childId === '--') {
-                this.menu.addSeparator();
+                menuItems.add({
+                    type: MenuItemType.SEPARATOR,
+                });
             } else {
                 const childActionView = page.getActionView(childId);
 
                 if (childActionView) {
-                    this.menu.addItem({
-                        $child: childActionView.$el,
-                    });
+                    const childAction = childActionView.model;
+                    const visible = childAction.get('visible');
+                    const domID = childAction.get('domID');
 
-                    if (childActionView.model.get('visible')) {
-                        childActionView.$el.show();
+                    const onClick = () => {
+                        if (childActionView['activate']) {
+                            childActionView.activate();
+                        } else {
+                            childActionView.el.click();
+                        }
+                    }
+
+                    if (childAction.get('isCustomRendered')) {
+                        menuItems.add({
+                            childEl: childActionView.el,
+                            id: domID,
+                            onClick: onClick,
+                        });
+
+                        if (visible) {
+                            childActionView.$el.show();
+                        }
+                    } else {
+                        if (!visible) {
+                            /*
+                             * Don't include this at all.
+                             *
+                             * In the future, we may want to re-add this
+                             * (or rebuild the whole menu) if this changes.
+                             */
+                            continue;
+                        }
+
+                        /*
+                         * "#" is the default URL, and really indicates that
+                         * a JavaScript-backed action is taking place. If we
+                         * get this, normalize it to null.
+                         */
+                        let url = childAction.get('url');
+
+                        if (url === '#') {
+                            url = null;
+                        }
+
+                        const menuItem = menuItems.add({
+                            iconName: childAction.get('iconClass'),
+                            id: domID,
+                            label: childAction.get('label'),
+                            onClick: onClick,
+                            url: url,
+                        });
+
+                        /* Update the menu item when these change. */
+                        this.listenTo(
+                            childAction,
+                            'change:iconClass',
+                            (model, newIconClass) => {
+                                menuItem.set('iconName', newIconClass);
+                            });
+
+                        this.listenTo(
+                            childAction,
+                            'change:label',
+                            (model, newLabel) => {
+                                menuItem.set('label', newLabel);
+                            });
+
+                        this.listenTo(
+                            childAction,
+                            'change:url',
+                            (model, newURL) => {
+                                menuItem.set('url', newURL);
+                            });
                     }
                 } else {
                     console.error('Unable to find action for %s', childId);
                 }
             }
         }
+
+        this.menu = craft<MenuView>`
+            <Ink.Menu controllerEl=${this.el}
+                      menuItems=${menuItems}/>
+        `;
+        renderInto(this.el, this.menu);
     }
 
     /**
      * Open the menu.
      */
     protected openMenu() {
-        if (this.menu.el.children.length > 0) {
+        if (!this.menu.menuItems.isEmpty()) {
             this.menu.open({ animate: true });
         }
     }
@@ -82,7 +157,7 @@ export class MenuActionView<
      * Close the menu.
      */
     protected closeMenu() {
-        if (this.menu.el.children.length > 0) {
+        if (!this.menu.menuItems.isEmpty()) {
             this.menu.close({ animate: true });
         }
     }
@@ -129,20 +204,22 @@ export class MenuActionView<
             evt.key === 'ArrowDown' ||
             evt.key === 'ArrowUp' ||
             evt.key === 'Enter') {
-            this.menu.open({
-                animate: false,
-            });
-            this.menu.focusFirstItem();
-
+            /* Open the menu and select the first item. */
             evt.stopPropagation();
             evt.preventDefault();
+
+            this.menu.open({
+                currentItemIndex: 0,
+                animate: false,
+            });
         } else if (evt.key === 'Escape') {
+            /* Close the menu. */
+            evt.stopPropagation();
+            evt.preventDefault();
+
             this.menu.close({
                 animate: false,
             });
-
-            evt.stopPropagation();
-            evt.preventDefault();
         }
     }
 

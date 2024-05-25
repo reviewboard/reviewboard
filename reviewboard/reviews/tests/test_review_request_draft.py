@@ -855,7 +855,7 @@ class PostCommitTests(SpyAgency, TestCase):
 
     def test_update_from_commit_id_without_repository_support(self):
         """Testing ReviewRequestDraft.update_from_commit_id without
-        supports_post_commmit for repository
+        supports_post_commit for repository
         """
         scmtool_cls = type(self.repository.get_scmtool())
 

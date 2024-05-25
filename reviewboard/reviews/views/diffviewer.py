@@ -7,6 +7,7 @@ import logging
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING, cast
 
+from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.utils.translation import gettext
 from typing_extensions import NotRequired, TypeAlias, TypedDict
@@ -398,15 +399,16 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
 
         # Get the list of diffsets. We only want to calculate this once.
         diffsets = review_request.get_diffsets()
+
+        if draft_diffset:
+            diffsets.append(draft_diffset)
+
         num_diffs = len(diffsets)
 
         if num_diffs > 0:
             latest_diffset = diffsets[-1]
         else:
             latest_diffset = None
-
-        if draft_diffset:
-            num_diffs += 1
 
         # We'll need this for later lookups. The diffsets returned by
         # get_diffsets() already have the filediffs pre-fetched.
@@ -484,7 +486,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                     pass
 
         all_commits: list[DiffCommit] = list(DiffCommit.objects.filter(
-            diffset__history__pk=review_request.diffset_history_id))
+            Q(diffset__history=review_request.diffset_history_id) |
+            Q(diffset__review_request_draft__review_request=review_request)))
 
         if base_commit_id or tip_commit_id:
             base_commit, tip_commit = get_base_and_tip_commits(

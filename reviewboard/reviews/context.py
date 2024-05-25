@@ -14,7 +14,6 @@ from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import build_server_url
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.forms import UploadDiffForm
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:

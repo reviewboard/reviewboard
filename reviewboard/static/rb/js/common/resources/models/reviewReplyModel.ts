@@ -2,11 +2,16 @@
  * A review reply.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import * as JSONSerializers from '../utils/serializers';
 import {
     type BaseResourceAttrs,
+    type BaseResourceResourceData,
+    type SerializerMap,
     BaseResource,
 } from './baseResourceModel';
 import { DraftResourceModelMixin } from './draftResourceModelMixin';
@@ -64,7 +69,7 @@ interface ReviewReplyAttrs extends BaseResourceAttrs {
  * Version Added:
  *     6.0
  */
-interface ReviewReplyResourceData {
+interface ReviewReplyResourceData extends BaseResourceResourceData {
     body_bottom: string;
     body_bottom_text_type: string;
     body_top: string;
@@ -97,10 +102,12 @@ interface ReviewReplyPublishOptions extends Backbone.PersistenceOptions {
     prototypeAttrs: [
         'COMMENT_LINK_NAMES',
         'extraQueryArgs',
-        'listKey',
     ],
 })
-export class ReviewReply extends BaseResource<ReviewReplyAttrs> {
+export class ReviewReply extends BaseResource<
+    ReviewReplyAttrs,
+    ReviewReplyResourceData
+> {
     /**
      * Return default values for the model attributes.
      *
@@ -108,8 +115,8 @@ export class ReviewReply extends BaseResource<ReviewReplyAttrs> {
      *     ReviewReplyAttrs:
      *     The default attributes.
      */
-    static defaults(): ReviewReplyAttrs {
-        return _.defaults({
+    static defaults(): Result<Partial<ReviewReplyAttrs>> {
+        return {
             bodyBottom: null,
             bodyBottomRichText: false,
             bodyTop: null,
@@ -120,7 +127,7 @@ export class ReviewReply extends BaseResource<ReviewReplyAttrs> {
             rawTextFields: {},
             review: null,
             timestamp: null,
-        }, super.defaults());
+        };
     }
 
     static rspNamespace = 'reply';
@@ -131,7 +138,7 @@ export class ReviewReply extends BaseResource<ReviewReplyAttrs> {
         'include-text-types': 'raw',
     };
 
-    static attrToJsonMap = {
+    static attrToJsonMap: { [key: string]: string } = {
         bodyBottom: 'body_bottom',
         bodyBottomRichText: 'body_bottom_text_type',
         bodyTop: 'body_top',
@@ -157,7 +164,7 @@ export class ReviewReply extends BaseResource<ReviewReplyAttrs> {
         'timestamp',
     ];
 
-    static serializers = {
+    static serializers: SerializerMap = {
         bodyBottomRichText: JSONSerializers.textType,
         bodyTopRichText: JSONSerializers.textType,
         forceTextType: JSONSerializers.onlyIfValue,
@@ -187,7 +194,7 @@ export class ReviewReply extends BaseResource<ReviewReplyAttrs> {
         rsp: ReviewReplyResourceData,
     ): Partial<ReviewReplyAttrs> {
         const rawTextFields = rsp.raw_text_fields || rsp;
-        const data = super.parseResourceData(rsp) as ReviewReplyAttrs;
+        const data = super.parseResourceData(rsp);
 
         data.bodyTopRichText =
             (rawTextFields.body_top_text_type === 'markdown');

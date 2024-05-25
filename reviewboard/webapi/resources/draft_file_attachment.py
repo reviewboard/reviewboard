@@ -5,7 +5,6 @@ from djblets.webapi.decorators import webapi_login_required
 from djblets.webapi.responses import WebAPIResponsePaginated
 
 from reviewboard.webapi.base import WebAPIResource
-from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_review_request_file_attachment import \
     BaseReviewRequestFileAttachmentResource
@@ -30,12 +29,22 @@ class DraftFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
             draft = resources.review_request_draft.get_object(
                 request, review_request_id=review_request_id, *args, **kwargs)
 
-            inactive_ids = \
-                draft.inactive_file_attachments.values_list('pk', flat=True)
+            if draft.file_attachments_count == 0:
+                # There's nothing to fetch. We can bail early.
+                return self.model.objects.none()
 
             q = Q(review_request=review_request_id) | Q(drafts=draft)
             query = self.model.objects.filter(q)
-            query = query.exclude(pk__in=inactive_ids)
+
+            if draft.inactive_file_attachments_count > 0:
+                inactive_ids = (
+                    draft.inactive_file_attachments
+                    .values_list('pk', flat=True)
+                )
+
+                if inactive_ids:
+                    query = query.exclude(pk__in=inactive_ids)
+
             return query
         except ObjectDoesNotExist:
             return self.model.objects.none()

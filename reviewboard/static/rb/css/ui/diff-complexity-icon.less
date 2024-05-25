@@ -1,0 +1,94 @@
+/**
+ * Styles and variables for the rb-c-diff-complexity-icon component.
+ *
+ * Version Added:
+ *     7.0
+ */
+
+
+/**
+ * An icon indicating the proportions of changes made to a file.
+ *
+ * This is a donut graph that shows the relative number of inserts, deletes,
+ * and replaces made to a file, and how much of the file was modified.
+ *
+ * The graph is used to approximate how complex it may be to review a change.
+ *
+ * Version Added:
+ *     7.0
+ *
+ * DOM Attributes:
+ *     aria-label (string):
+ *         A string describing the data shown in the graph.
+ *
+ *         This should match the inner ``<svg>``'s ``<title>``, more or less.
+ *
+ *     role (string):
+ *         ``figure``, always.
+ *
+ * Structure:
+ *     <div class="rb-c-diff-complexity-icon"
+ *          aria-label="<<string>>"
+ *          role="figure">
+ *      <svg width="..."
+ *           height="..."
+ *           viewBox="..."
+ *           aria-hidden="true">
+ *       [<path class="rb-c-diff-complexity-icon__insert" ...></path>]
+ *       [<path class="rb-c-diff-complexity-icon__delete" ...></path>]
+ *       [<path class="rb-c-diff-complexity-icon__replace" ...></path>]
+ *       <title>...</title>
+ *      </svg>
+ *     </div>
+ */
+.rb-c-diff-complexity-icon {
+  position: relative;
+
+  /**
+   * The path segment representing the deleted lines.
+   *
+   * DOM Attributes:
+   *     d (string):
+   *         The path arc data.
+   *
+   * Structure:
+   *     <path class="rb-c-diff-complexity-icon__insert"
+   *           d="...">
+   *     </path>
+   */
+  &__delete {
+    fill: var(--rb-p-diff-delete-graph-color);
+  }
+
+  /**
+   * The path segment representing the deleted lines.
+   *
+   * DOM Attributes:
+   *     d (string):
+   *         The path arc data.
+   *
+   * Structure:
+   *     <path class="rb-c-diff-complexity-icon__delete"
+   *           d="...">
+   *     </path>
+   */
+  &__insert {
+    fill: var(--rb-p-diff-insert-graph-color);
+  }
+
+  /**
+   * The path segment representing the deleted lines.
+   *
+   * DOM Attributes:
+   *     d (string):
+   *         The path arc data.
+   *
+   * Structure:
+   *     <path class="rb-c-diff-complexity-icon__replace"
+   *           d="...">
+   *     </path>
+   */
+  &__replace {
+    fill: var(--rb-p-diff-replace-graph-color);
+  }
+}
