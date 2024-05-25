@@ -4,6 +4,7 @@
 
 import {
     type ModelAttributes,
+    type Result,
     BaseModel,
     spina,
 } from '@beanbag/spina';
@@ -159,7 +160,7 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
             _`There is an internal error balancing the edit count`,
     };
 
-    static defaults(): Partial<ReviewRequestEditorAttrs> {
+    static defaults(): Result<Partial<ReviewRequestEditorAttrs>> {
         return {
             changeDescriptionRenderedText: '',
             closeDescriptionRenderedText: '',

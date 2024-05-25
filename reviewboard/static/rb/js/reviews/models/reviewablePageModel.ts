@@ -3,6 +3,7 @@
  */
 import {
     type ModelAttributes,
+    type Result,
     spina,
 } from '@beanbag/spina';
 
@@ -85,7 +86,7 @@ export class ReviewablePage<
     TDefaults extends ReviewablePageAttrs = ReviewablePageAttrs,
     TExtraModelOptions = unknown
 > extends Page<TDefaults, TExtraModelOptions> {
-    static defaults: ReviewablePageAttrs = {
+    static defaults: Result<Partial<ReviewablePageAttrs>> = {
         checkForUpdates: false,
         checkUpdatesType: null,
         lastActivityTimestamp: null,

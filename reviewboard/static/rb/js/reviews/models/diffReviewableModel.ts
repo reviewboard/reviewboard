@@ -2,7 +2,10 @@
  * Provides state and utility functions for loading and reviewing diffs.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import {
     type AbstractReviewableAttrs,
@@ -53,7 +56,7 @@ export interface DiffReviewableAttrs extends AbstractReviewableAttrs {
 @spina
 export class DiffReviewable
     extends AbstractReviewable<DiffReviewableAttrs, DiffCommentBlock> {
-    static defaults: DiffReviewableAttrs = _.defaults({
+    static defaults: Result<Partial<DiffReviewableAttrs>> = {
         baseFileDiffID: null,
         file: null,
         fileDiffID: null,
@@ -61,7 +64,7 @@ export class DiffReviewable
         interdiffRevision: null,
         public: false,
         revision: null,
-    }, super.defaults);
+    };
 
     static commentBlockModel = DiffCommentBlock;
 

@@ -2,7 +2,10 @@
  * Provides generic review capabilities for text-based file attachments.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import {
     type FileAttachmentReviewableAttrs,
@@ -43,10 +46,10 @@ export class TextBasedReviewable<
     TAttributes extends TextBasedReviewableAttrs = TextBasedReviewableAttrs,
     TCommentBlockType extends TextCommentBlock = TextCommentBlock
 > extends FileAttachmentReviewable<TAttributes, TCommentBlockType> {
-    static defaults: FileAttachmentReviewableAttrs = _.defaults({
+    static defaults: Result<Partial<FileAttachmentReviewableAttrs>> = {
         hasRenderedView: false,
         viewMode: 'source',
-    }, super.defaults);
+    };
 
     static commentBlockModel = TextCommentBlock;
 

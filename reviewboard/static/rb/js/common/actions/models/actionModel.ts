@@ -1,4 +1,8 @@
-import { BaseModel, spina } from '@beanbag/spina';
+import {
+    type Result,
+    BaseModel,
+    spina,
+} from '@beanbag/spina';
 
 
 /**
@@ -81,7 +85,7 @@ export interface ActionAttrs {
 export class Action<
     TAttrs extends ActionAttrs = ActionAttrs,
 > extends BaseModel<TAttrs> {
-    static defaults: Partial<ActionAttrs> = {
+    static defaults: Result<Partial<ActionAttrs>> = {
         actionId: '',
         domID: null,
         iconClass: null,

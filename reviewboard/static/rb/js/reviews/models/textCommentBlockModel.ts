@@ -2,7 +2,10 @@
  * Represents the comments on an element in a text-based file attachment.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import {
     type FileAttachmentCommentBlockAttrs,
@@ -72,13 +75,13 @@ interface SerializedTextCommentFields {
 export class TextCommentBlock<
     TAttributes extends TextCommentBlockAttrs = TextCommentBlockAttrs
 > extends FileAttachmentCommentBlock<TAttributes> {
-    static defaults: TextCommentBlockAttrs = _.defaults({
+    static defaults: Result<Partial<TextCommentBlockAttrs>> = {
         $beginRow: null,
         $endRow: null,
         beginLineNum: null,
         endLineNum: null,
-        viewMode: false,
-    }, super.defaults);
+        viewMode: null,
+    };
 
     static serializedFields = ['beginLineNum', 'endLineNum', 'viewMode'];
 

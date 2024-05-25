@@ -2,7 +2,10 @@
  * Provides review capabilities for screenshots.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import {
     type AbstractReviewableAttrs,
@@ -42,11 +45,11 @@ export class ScreenshotReviewable extends AbstractReviewable<
     ScreenshotReviewableAttrs,
     ScreenshotCommentBlock
 > {
-    static defaults: ScreenshotReviewableAttrs = _.defaults({
+    static defaults: Partial<Result<ScreenshotReviewableAttrs>> = {
         caption: '',
         imageURL: '',
         screenshotID: null,
-    }, super.defaults);
+    };
 
     static commentBlockModel = ScreenshotCommentBlock;
     static defaultCommentBlockFields = ['screenshotID'];

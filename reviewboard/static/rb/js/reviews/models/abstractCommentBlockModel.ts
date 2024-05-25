@@ -4,6 +4,7 @@
 
 import {
     type ModelAttributes,
+    type Result,
     BaseModel,
     spina,
 } from '@beanbag/spina';
@@ -69,15 +70,17 @@ export class AbstractCommentBlock<
         = AbstractCommentBlockAttrs
 > extends BaseModel<TAttributes> {
     /** Default values for the model attributes. */
-    static defaults: AbstractCommentBlockAttrs = {
-        canDelete: false,
-        count: 0,
-        draftComment: null,
-        hasDraft: false,
-        review: null,
-        reviewRequest: null,
-        serializedComments: [],
-    };
+    static defaults(): Result<Partial<AbstractCommentBlockAttrs>> {
+        return {
+            canDelete: false,
+            count: 0,
+            draftComment: null,
+            hasDraft: false,
+            review: null,
+            reviewRequest: null,
+            serializedComments: [],
+        };
+    }
 
     /**
      * The list of extra fields on this model.

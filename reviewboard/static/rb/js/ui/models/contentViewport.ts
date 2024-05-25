@@ -8,7 +8,11 @@
  *     6.0
  */
 
-import { BaseModel, spina } from '@beanbag/spina';
+import {
+    type Result,
+    BaseModel,
+    spina,
+} from '@beanbag/spina';
 
 
 /**
@@ -94,7 +98,7 @@ interface TrackedElementData {
  */
 @spina
 export class ContentViewport extends BaseModel<ContentViewportAttrs> {
-    static defaults: ContentViewportAttrs = {
+    static defaults: Result<Partial<ContentViewportAttrs>> = {
         bottom: 0,
         left: 0,
         right: 0,

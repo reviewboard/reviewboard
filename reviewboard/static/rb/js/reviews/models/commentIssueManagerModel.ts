@@ -3,6 +3,7 @@
  */
 
 import {
+    type Result,
     BaseModel,
     spina,
 } from '@beanbag/spina';
@@ -204,7 +205,7 @@ export interface IssueStatusUpdatedEventData {
 export class CommentIssueManager extends BaseModel<
     CommentIssueManagerAttrs
 >{
-    static defaults: CommentIssueManagerAttrs = {
+    static defaults: Result<Partial<CommentIssueManagerAttrs>> = {
         reviewRequest: null,
     };
 

@@ -2,7 +2,10 @@
  * Represents the comments on a region of a screenshot.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import {
     type AbstractCommentBlockAttrs,
@@ -49,13 +52,13 @@ export interface ScreenshotCommentBlockAttrs
 export class ScreenshotCommentBlock
     extends AbstractCommentBlock<ScreenshotCommentBlockAttrs> {
     /** The default values for the model attributes. */
-    static defaults = _.defaults({
+    static defaults: Result<Partial<ScreenshotCommentBlockAttrs>> = {
         height: null,
         screenshotID: null,
         width: null,
         x: null,
         y: null,
-    }, super.defaults);
+    };
 
     /**
      * Return whether the bounds of this region can be updated.
