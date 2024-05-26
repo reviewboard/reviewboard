@@ -1671,10 +1671,6 @@ export class ReviewDialogView extends BaseView<
                 await this.model.destroy();
 
                 ClientCommChannel.getInstance().reload();
-
-                if (!EnabledFeatures.unifiedBanner) {
-                    RB.DraftReviewBannerView.instance.hideAndReload();
-                }
               }}>
              ${_`Discard`}
             </Ink.Button>
@@ -1775,24 +1771,10 @@ export class ReviewDialogView extends BaseView<
 
             this.close();
 
-            if (EnabledFeatures.unifiedBanner) {
-                if (publish) {
-                    // Reload the page.
-                    RB.navigateTo(
-                        this.model.get('parentObject').get('reviewURL'));
-                }
-            } else {
-                const reviewBanner = RB.DraftReviewBannerView.instance;
-
-                if (reviewBanner) {
-                    if (publish) {
-                        reviewBanner.hideAndReload();
-                    } else if (this.model.isNew() && !madeChanges) {
-                        reviewBanner.hide();
-                    } else {
-                        reviewBanner.show();
-                    }
-                }
+            if (publish) {
+                // Reload the page.
+                RB.navigateTo(
+                    this.model.get('parentObject').get('reviewURL'));
             }
         } catch (err) {
             console.error('Failed to save review', err);

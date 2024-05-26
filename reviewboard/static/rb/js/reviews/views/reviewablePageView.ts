@@ -243,9 +243,6 @@ export class ReviewablePageView<
     /** The review request editor. */
     reviewRequestEditorView: ReviewRequestEditorView;
 
-    /** The draft review banner, if present. */
-    draftReviewBanner: RB.DraftReviewBannerView;
-
     /** The unified banner, if present. */
     unifiedBanner: UnifiedBannerView = null;
 
@@ -331,28 +328,17 @@ export class ReviewablePageView<
         const pendingReview = this.model.get('pendingReview');
         const reviewRequest = this.model.get('reviewRequest');
 
-        if (EnabledFeatures.unifiedBanner) {
-            if (UserSession.instance.get('authenticated')) {
-                this.unifiedBanner = new UnifiedBannerView({
-                    el: $('#unified-banner'),
-                    model: new UnifiedBanner({
-                        pendingReview: pendingReview,
-                        reviewRequest: reviewRequest,
-                        reviewRequestEditor: this.model.reviewRequestEditor,
-                    }),
-                    reviewRequestEditorView: this.reviewRequestEditorView,
-                });
-                this.unifiedBanner.render();
-            }
-        } else {
-            this.draftReviewBanner = RB.DraftReviewBannerView.create({
-                el: $('#review-banner'),
-                model: pendingReview,
-                reviewRequestEditor: this.model.reviewRequestEditor,
+        if (UserSession.instance.get('authenticated')) {
+            this.unifiedBanner = new UnifiedBannerView({
+                el: $('#unified-banner'),
+                model: new UnifiedBanner({
+                    pendingReview: pendingReview,
+                    reviewRequest: reviewRequest,
+                    reviewRequestEditor: this.model.reviewRequestEditor,
+                }),
+                reviewRequestEditorView: this.reviewRequestEditorView,
             });
-
-            this.listenTo(pendingReview, 'destroy published',
-                          () => this.draftReviewBanner.hideAndReload());
+            this.unifiedBanner.render();
         }
 
         this.listenTo(this.model.reviewRequestEditor,
@@ -370,10 +356,6 @@ export class ReviewablePageView<
      *     This object, for chaining.
      */
     remove(): this {
-        if (this.draftReviewBanner) {
-            this.draftReviewBanner.remove();
-        }
-
         if (this.unifiedBanner) {
             this.unifiedBanner.remove();
         }
@@ -553,11 +535,6 @@ export class ReviewablePageView<
         const comment = pendingReview.createGeneralComment(
             undefined,
             UserSession.instance.get('commentsOpenAnIssue'));
-
-        if (!EnabledFeatures.unifiedBanner) {
-            this.listenTo(comment, 'saved',
-                          () => RB.DraftReviewBannerView.instance.show());
-        }
 
         RB.CommentDialogView.create({
             comment: comment,

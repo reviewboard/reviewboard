@@ -768,10 +768,6 @@ export class DiffViewerPageView extends ReviewablePageView<
                     anchorOffset - DiffViewerPageView.DIFF_SCROLLDOWN_AMOUNT);
                 scrollAmount = this.#computeScrollHeight(
                     anchorOffset - newOffset);
-
-            } else if (RB.DraftReviewBannerView.instance) {
-                scrollAmount = (DiffViewerPageView.DIFF_SCROLLDOWN_AMOUNT +
-                                RB.DraftReviewBannerView.instance.getHeight());
             }
 
             this.#$window.scrollTop(anchorOffset - scrollAmount);
