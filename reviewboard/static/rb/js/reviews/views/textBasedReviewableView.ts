@@ -110,7 +110,7 @@ export class TextBasedReviewableView<
      * Render the view.
      */
     renderContent() {
-        this.#$viewTabs = this.$('.text-review-ui-views li');
+        this.#$viewTabs = this.$('.text-review-ui-views .rb-c-tabs__tab');
 
         // Set up the source text table.
         this.#$textTable = this.$('.text-review-ui-text-table') as
@@ -334,9 +334,9 @@ export class TextBasedReviewableView<
         const viewMode = this.model.get('viewMode');
 
         this.#$viewTabs
-            .removeClass('active')
+            .removeClass('-is-active')
             .filter(`[data-view-mode=${viewMode}]`)
-                .addClass('active');
+                .addClass('-is-active');
 
         this.#$textTable.toggle(viewMode === 'source');
         this.#$renderedTable.toggle(viewMode === 'rendered');

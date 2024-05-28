@@ -15,9 +15,13 @@
 
 {%  if review_ui.can_render_text and not diff_type_mismatch %}
     <div class="text-review-ui-views">
-     <ul>
-      <li class="active" data-view-mode="rendered"><a href="#rendered">{% trans "Rendered" %}</a></li>
-      <li data-view-mode="source"><a href="#source">{% trans "Source" %}</a></li>
+     <ul class="rb-c-tabs">
+      <li class="rb-c-tabs__tab -is-active" data-view-mode="rendered">
+       <a class="rb-c-tabs__tab-label" href="#rendered">{% trans "Rendered" %}</a>
+      </li>
+      <li class="rb-c-tabs__tab" data-view-mode="source">
+       <a class="rb-c-tabs__tab-label" href="#source">{% trans "Source" %}</a>
+      </li>
      </ul>
     </div>
 {%  endif %}
