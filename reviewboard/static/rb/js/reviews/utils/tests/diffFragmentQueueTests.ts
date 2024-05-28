@@ -1,31 +1,42 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { DataUtils } from 'reviewboard/common';
+import { DiffFragmentQueue } from 'reviewboard/reviews';
+
+
 suite('rb/views/DiffFragmentQueueView', function() {
     const URL_PREFIX = '/r/123/_fragments/diff-comments/';
 
-    let fragmentQueue;
+    let fragmentQueue: DiffFragmentQueue;
 
     beforeEach(function() {
-        fragmentQueue = new RB.DiffFragmentQueueView({
+        fragmentQueue = new DiffFragmentQueue({
             containerPrefix: 'container1',
             reviewRequestPath: '/r/123/',
-            queueName: 'diff_fragments'
         });
     });
 
     describe('Diff fragment loading', function() {
-        let $container1;
-        let $container2;
-        let $container3;
-        let $container4;
+        let $container1: JQuery;
+        let $container2: JQuery;
+        let $container3: JQuery;
+        let $container4: JQuery;
 
         beforeEach(function() {
             $container1 = $('<div id="container1_123">')
-                .appendTo(window.$testsScratch);
+                .appendTo($testsScratch);
             $container2 = $('<div id="container1_124">')
-                .appendTo(window.$testsScratch);
+                .appendTo($testsScratch);
             $container3 = $('<div id="container1_125">')
-                .appendTo(window.$testsScratch);
+                .appendTo($testsScratch);
             $container4 = $('<div id="container1_126">')
-                .appendTo(window.$testsScratch);
+                .appendTo($testsScratch);
 
             fragmentQueue.queueLoad('123', 'key1');
             fragmentQueue.queueLoad('124', 'key1');
@@ -34,7 +45,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
         });
 
         it('Fragment queueing', function() {
-            const queue = fragmentQueue._queue;
+            const queue = fragmentQueue._queuedFragments;
 
             expect(queue.length).not.toBe(0);
 
@@ -58,19 +69,18 @@ suite('rb/views/DiffFragmentQueueView', function() {
             });
         });
 
-        it('Batch loading', function(done) {
-            spyOn($, 'ajax').and.callFake(function(options) {
-                expect(options.dataType).toBe('arraybuffer');
+        it('Batch loading', async function() {
+            spyOn(window, 'fetch').and.callFake((url: string) => {
+                const [baseURL] = url.split('?', 1);
 
-                const url = options.url;
-                let blob;
+                let blob: Blob;
 
-                if (url === `${URL_PREFIX}123,124,125/`) {
+                if (baseURL === `${URL_PREFIX}123,124,125/`) {
                     const html1 = new Blob(['<span>Comment one</span>']);
                     const html2 = new Blob(['<span>Comment two</span>']);
                     const html3 = new Blob(['<span>Comment three</span>']);
 
-                    blob = RB.DataUtils.buildBlob([
+                    blob = DataUtils.buildBlob([
                         [{
                             type: 'uint32',
                             values: [123, html1.size],
@@ -87,10 +97,10 @@ suite('rb/views/DiffFragmentQueueView', function() {
                         }],
                         html3,
                     ]);
-                } else if (url === `${URL_PREFIX}126/`) {
+                } else if (baseURL === `${URL_PREFIX}126/`) {
                     const html = new Blob(['<span>Comment 4</span>']);
 
-                    blob = RB.DataUtils.buildBlob([
+                    blob = DataUtils.buildBlob([
                         [{
                             type: 'uint32',
                             values: [126, html.size],
@@ -98,40 +108,36 @@ suite('rb/views/DiffFragmentQueueView', function() {
                         html,
                     ]);
                 } else {
-                    fail(`Unexpected URL ${url}`);
-                    return;
+                    return Promise.reject(`Unexpected URL ${url}`);
                 }
 
-                RB.DataUtils.readBlobAsArrayBuffer(blob, options.success);
+                return Promise.resolve(new Response(blob));
             });
 
-            fragmentQueue.loadFragments(() => {
-                expect($.ajax.calls.count()).toBe(2);
+            await fragmentQueue.loadFragments();
 
-                expect($container1.data('diff-fragment-view')).toBeTruthy();
-                expect($container1.html()).toBe('<span>Comment one</span>');
+            expect(window.fetch.calls.count()).toBe(2);
 
-                expect($container2.data('diff-fragment-view')).toBeTruthy();
-                expect($container2.html()).toBe('<span>Comment two</span>');
+            expect($container1.data('diff-fragment-view')).toBeTruthy();
+            expect($container1.html()).toBe('<span>Comment one</span>');
 
-                expect($container3.data('diff-fragment-view')).toBeTruthy();
-                expect($container3.html()).toBe('<span>Comment three</span>');
+            expect($container2.data('diff-fragment-view')).toBeTruthy();
+            expect($container2.html()).toBe('<span>Comment two</span>');
 
-                expect($container4.data('diff-fragment-view')).toBeTruthy();
-                expect($container4.html()).toBe('<span>Comment 4</span>');
+            expect($container3.data('diff-fragment-view')).toBeTruthy();
+            expect($container3.html()).toBe('<span>Comment three</span>');
 
-                done();
-            });
+            expect($container4.data('diff-fragment-view')).toBeTruthy();
+            expect($container4.html()).toBe('<span>Comment 4</span>');
         });
 
-        it('With Unicode content', function(done) {
-            spyOn($, 'ajax').and.callFake(function(options) {
-                expect(options.dataType).toBe('arraybuffer');
+        it('With Unicode content', async function() {
+            spyOn(window, 'fetch').and.callFake((url: string) => {
+                const [baseURL] = url.split('?', 1);
 
-                const url = options.url;
-                let arrayBuffer;
+                let arrayBuffer: ArrayBuffer;
 
-                if (url === `${URL_PREFIX}123,124,125/`) {
+                if (baseURL === `${URL_PREFIX}123,124,125/`) {
                     /* UTF-8 bytes for "<span>áéíóú 🔥</span>" */
                     const html1 = [
                         60, 115, 112, 97, 110, 62, 195, 161, 195, 169,
@@ -156,7 +162,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
                     expect(html2.length).toBe(30);
                     expect(html3.length).toBe(21);
 
-                    arrayBuffer = RB.DataUtils.buildArrayBuffer([
+                    arrayBuffer = DataUtils.buildArrayBuffer([
                         {
                             type: 'uint32',
                             values: [123, html1.length],
@@ -182,7 +188,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
                             values: html3,
                         },
                     ]);
-                } else if (url === `${URL_PREFIX}126/`) {
+                } else if (baseURL === `${URL_PREFIX}126/`) {
                     /* UTF-8 bytes for "<span>ĀĒĪŌ 👿</span>" */
                     const html = [
                         60, 115, 112, 97, 110, 62, 196, 128, 196, 146,
@@ -192,7 +198,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
 
                     expect(html.length).toBe(26);
 
-                    arrayBuffer = RB.DataUtils.buildArrayBuffer([
+                    arrayBuffer = DataUtils.buildArrayBuffer([
                         {
                             type: 'uint32',
                             values: [126, html.length],
@@ -203,53 +209,48 @@ suite('rb/views/DiffFragmentQueueView', function() {
                         },
                     ]);
                 } else {
-                    fail(`Unexpected URL ${url}`);
-                    return;
+                    return Promise.reject(`Unexpected URL ${url}`);
                 }
 
-                options.success(arrayBuffer);
+                return Promise.resolve(new Response(arrayBuffer));
             });
 
-            fragmentQueue.loadFragments(() => {
-                expect($.ajax.calls.count()).toBe(2);
+            await fragmentQueue.loadFragments();
 
-                expect($container1.data('diff-fragment-view')).toBeTruthy();
-                expect($container1.html()).toBe('<span>áéíóú 🔥</span>');
+            expect(window.fetch.calls.count()).toBe(2);
 
-                expect($container2.data('diff-fragment-view')).toBeTruthy();
-                expect($container2.html()).toBe('<span>ÄËÏÖÜŸ 😱</span>');
+            expect($container1.data('diff-fragment-view')).toBeTruthy();
+            expect($container1.html()).toBe('<span>áéíóú 🔥</span>');
 
-                expect($container3.data('diff-fragment-view')).toBeTruthy();
-                expect($container3.html()).toBe('<span>🔥😱</span>');
+            expect($container2.data('diff-fragment-view')).toBeTruthy();
+            expect($container2.html()).toBe('<span>ÄËÏÖÜŸ 😱</span>');
 
-                expect($container4.data('diff-fragment-view')).toBeTruthy();
-                expect($container4.html()).toBe('<span>ĀĒĪŌ 👿</span>');
+            expect($container3.data('diff-fragment-view')).toBeTruthy();
+            expect($container3.html()).toBe('<span>🔥😱</span>');
 
-                done();
-            });
+            expect($container4.data('diff-fragment-view')).toBeTruthy();
+            expect($container4.html()).toBe('<span>ĀĒĪŌ 👿</span>');
         });
 
-        it('With saved fragments', function(done) {
-            spyOn($, 'ajax').and.callFake(function(options) {
-                expect(options.dataType).toBe('arraybuffer');
+        it('With saved fragments', async function() {
+            spyOn(window, 'fetch').and.callFake((url: string) => {
+                const [baseURL] = url.split('?', 1);
+                let blob: Blob;
 
-                const url = options.url;
-                let blob;
-
-                if (url === `${URL_PREFIX}124/`) {
+                if (baseURL === `${URL_PREFIX}124/`) {
                     const html = new Blob(['<span>New comment 2</span>']);
 
-                    blob = RB.DataUtils.buildBlob([
+                    blob = DataUtils.buildBlob([
                         [{
                             type: 'uint32',
                             values: [124, html.size],
                         }],
                         html,
                     ]);
-                } else if (url === `${URL_PREFIX}126/`) {
+                } else if (baseURL === `${URL_PREFIX}126/`) {
                     const html = new Blob(['<span>New comment 4</span>']);
 
-                    blob = RB.DataUtils.buildBlob([
+                    blob = DataUtils.buildBlob([
                         [{
                             type: 'uint32',
                             values: [126, html.size],
@@ -257,11 +258,10 @@ suite('rb/views/DiffFragmentQueueView', function() {
                         html,
                     ]);
                 } else {
-                    fail(`Unexpected URL ${url}`);
-                    return;
+                    return Promise.reject(`Unexpected URL ${url}`);
                 }
 
-                RB.DataUtils.readBlobAsArrayBuffer(blob, options.success);
+                return Promise.resolve(new Response(blob));
             });
 
             /*
@@ -297,26 +297,24 @@ suite('rb/views/DiffFragmentQueueView', function() {
             /* Disassociate container 3's view. */
             $container3.removeData('diff-fragment-view');
 
-            fragmentQueue.loadFragments(() => {
-                expect($.ajax.calls.count()).toBe(2);
+            await fragmentQueue.loadFragments();
 
-                expect($container1.data('diff-fragment-view')).toBe(view1);
-                expect($container1.html()).toBe('<span>Comment 1</span>');
+            expect(window.fetch.calls.count()).toBe(2);
 
-                expect($container2.data('diff-fragment-view')).toBe(view2);
-                expect($container2.html()).toBe('<span>New comment 2</span>');
+            expect($container1.data('diff-fragment-view')).toBe(view1);
+            expect($container1.html()).toBe('<span>Comment 1</span>');
 
-                expect($container3.data('diff-fragment-view')).toBeTruthy();
-                expect($container3.data('diff-fragment-view')).not.toBe(view3);
-                expect($container3.html()).toBe('<span>Comment 3</span>');
+            expect($container2.data('diff-fragment-view')).toBe(view2);
+            expect($container2.html()).toBe('<span>New comment 2</span>');
 
-                expect($container4.data('diff-fragment-view')).toBeTruthy();
-                expect($container4.html()).toBe('<span>New comment 4</span>');
+            expect($container3.data('diff-fragment-view')).toBeTruthy();
+            expect($container3.data('diff-fragment-view')).not.toBe(view3);
+            expect($container3.html()).toBe('<span>Comment 3</span>');
 
-                expect(fragmentQueue._saved).toEqual({});
+            expect($container4.data('diff-fragment-view')).toBeTruthy();
+            expect($container4.html()).toBe('<span>New comment 4</span>');
 
-                done();
-            });
+            expect(fragmentQueue._savedFragments).toEqual({});
         });
     });
 });

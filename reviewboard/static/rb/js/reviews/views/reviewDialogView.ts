@@ -28,6 +28,7 @@ import {
 } from 'reviewboard/ui';
 
 import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { DiffFragmentQueue } from '../utils/diffFragmentQueue';
 
 
 const REVIEW_DOCS_URL = `${MANUAL_URL}users/#reviewing-code-and-documents`;
@@ -388,7 +389,7 @@ class BaseCommentView<
  */
 interface DiffCommentViewOptions {
     /** The view that handles loading diff fragments. */
-    diffQueue: RB.DiffFragmentQueueView;
+    diffQueue: DiffFragmentQueuew;
 }
 
 
@@ -1157,7 +1158,7 @@ export class ReviewDialogView extends BaseView<
     #defaultUseRichText: boolean;
 
     /** The queue for loading diff fragments. */
-    #diffQueue: RB.DiffFragmentQueueView;
+    #diffQueue: DiffFragmentQueue;
 
     /** The set of additional views added by extension hooks. */
     #hookViews: Backbone.View[] = [];
@@ -1216,7 +1217,7 @@ export class ReviewDialogView extends BaseView<
         this.options = options;
 
         const reviewRequest = this.model.get('parentObject');
-        this.#diffQueue = new RB.DiffFragmentQueueView({
+        this.#diffQueue = new DiffFragmentQueue({
             containerPrefix: 'review_draft_comment_container',
             queueName: 'review_draft_diff_comments',
             reviewRequestPath: reviewRequest.get('reviewURL'),

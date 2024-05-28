@@ -96,7 +96,7 @@ suite('rb/reviewRequestPage/views/BaseStatusUpdatesEntryView', function() {
         });
 
         page = new TestPage();
-        page.diffFragmentQueue = new RB.DiffFragmentQueueView({
+        page.diffFragmentQueue = new RB.DiffFragmentQueue({
             containerPrefix: 'comment',
         });
         entry.set('page', page);

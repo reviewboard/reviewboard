@@ -16,6 +16,7 @@ import {
     UserSession,
 } from 'reviewboard/common';
 import {
+    DiffFragmentQueue,
     ReviewDialogView,
     ReviewRequestEditor,
 } from 'reviewboard/reviews';
@@ -138,8 +139,8 @@ suite('rb/views/ReviewDialogView', function() {
         });
 
         /* Prevent these from being called. */
-        spyOn(RB.DiffFragmentQueueView.prototype, 'queueLoad');
-        spyOn(RB.DiffFragmentQueueView.prototype, 'loadFragments');
+        spyOn(DiffFragmentQueue.prototype, 'queueLoad');
+        spyOn(DiffFragmentQueue.prototype, 'loadFragments');
 
         /* By default, general comments should be enabled. */
         EnabledFeatures.generalComments = true;
@@ -468,8 +469,7 @@ suite('rb/views/ReviewDialogView', function() {
 
                 describe('Diff comments', function() {
                     async function testLoadDiffComments() {
-                        const diffQueueProto =
-                            RB.DiffFragmentQueueView.prototype;
+                        const diffQueueProto = DiffFragmentQueue.prototype;
 
                         diffCommentsPayload.total_results = 1;
                         diffCommentsPayload.diff_comments =
