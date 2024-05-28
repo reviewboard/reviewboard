@@ -1,3 +1,4 @@
+@import (reference) "@beanbag/ink/lib/ink.less";
 @import (reference) "rb/css/defs.less";
 
 
@@ -20,13 +21,28 @@
 }
 
 .image-review-ui {
-  background: white;
+  background: var(--rb-c-review-request-bg);
   border-radius: 0 0 @box-border-radius @box-border-radius;
   position: relative;
 
   .image-content {
+    background:
+      var(--if-dark, black)
+      var(--if-light, white);
     overflow-x: auto;
     position: relative;
+
+    /* Center the image within the box. */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /*
+     * We set a minimum height primarily so that we have room for the
+     * zoom level menu, both in the file attachment review UI and in the
+     * diff viewer. 15em is a good number for the resolutions we offer today.
+     */
+    min-height: 15em;
   }
 
   .review-ui-header {
@@ -44,6 +60,16 @@
     padding: 0;
   }
 
+  .image-single-revision {
+    display: grid;
+    align-items: center;
+    grid-template-columns: 1fr auto 1fr;
+
+    .caption {
+      grid-column: 2;
+    }
+  }
+
   img {
     display: block;
     margin: 0 auto;
@@ -51,7 +77,6 @@
   }
 
   .caption {
-    margin-bottom: 1em;
     text-align: center;
   }
 
@@ -127,29 +152,14 @@
   }
 
   .image-diff-modes {
-    background: darken(#f0f0f0, 3%);
-    border-bottom: 1px darken(#f0f0f0, 18%) solid;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    text-align: center;
+    align-items: center;
+    display: grid;
 
-    > li {
-      display: inline-block;
-      text-align: center;
-      white-space: nowrap;
+    &.-has-modes {
+      grid-template-columns: 1fr repeat(4, min-content) 1fr;
 
-      &.selected {
-        a {
-          font-weight: bold;
-          color: #333;
-        }
-      }
-
-      > a {
-        color: #444;
-        display: block;
-        margin: 1em;
+      > li:first-child {
+        grid-column: 2;
       }
     }
   }
@@ -204,88 +214,25 @@
     border: 1px #ff0000 dashed;
     position: absolute;
   }
-}
 
-.image-resolution-menu {
-  @menu-width: 8em;
-
-  float: right;
-  margin-left: -@menu-width;
-  min-width: @menu-width;
-  text-align: left;
-
-  .on-mobile-medium-screen-720({
-    float: none;
-    margin-left: 0;
-  });
-
-  .menu-header {
-    display: inline-block;
-    text-decoration: none;
-    text-align: center;
-    width: @menu-width;
-  }
-
-  .menu {
-    border-radius: 0 0 @box-border-radius @box-border-radius;
-    box-shadow: @box-shadow;
-    box-sizing: border-box;
-    min-width: @menu-width;
-    text-align: left;
-  }
-
-  .menu-item {
-    cursor: pointer;
-    color: #444;
-    padding: 8px 10px;
-
-    &:last-child {
-      border-radius: 0 0 @box-border-radius @box-border-radius;
-    }
-  }
-}
-
-// Version of the menu when there's a diff
-.image-diff-modes .image-resolution-menu {
-  .menu-header {
-    margin: 1em 0;
-  }
-
-  .menu {
-    background: darken(#f0f0f0, 3%);
-    border: 1px darken(#f0f0f0, 18%) solid;
-  }
-
-  .menu-item:hover {
-    background-color: darken(#f0f0f0, 10%);
-  }
-}
-
-// Version of the menu when there's a single revision
-.image-single-revision {
-  text-align: center;
-
-  .caption,
-  .image-resolution-menu {
-    display: inline-block;
+  .image-resolution-menu,
+  .image-resolution-menu-wrapper {
+    justify-self: end;
   }
 
   .image-resolution-menu {
-    padding: 8px 0;
+    #ink-ns-ui.base.customize-component(
+      @name: ink-c-menu-label;
+      @schema: #ink-ns-schema[@menu-label];
+      @schema-rules: {
+        @menu: {
+          /* Overlap the right border of the review UI. */
+          margin-right: -1px;
 
-    .menu {
-      border: 1px @diff-file-border-color solid;
-      background: @review-ui-header-bg;
-      margin: 8px 0 0 0;
-    }
-
-    .menu-header {
-      color: #444;
-      line-height: 16px;
-    }
-
-    .menu-item:hover {
-      background-color: darken(@review-ui-header-bg, 10%);
-    }
+          /* Anchor the menu to the right. */
+          right: 0;
+        };
+      };
+    );
   }
 }

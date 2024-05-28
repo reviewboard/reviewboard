@@ -278,27 +278,26 @@
   }
 
   .review-ui-box-content {
-    border: 1px @review-request-border-color solid;
+    border: var(--rb-c-review-request-border);
     border-top: 0;
     clear: both;
     padding: 0;
     min-height: 5em;
   }
+}
 
-  .review-ui-header {
-    border-bottom: 1px @diff-file-border-color solid;
-    background: @review-ui-header-bg;
-    min-height: 2em;
+.review-ui-header {
+  border-bottom: var(--rb-c-review-request-border);
+  background: var(--rb-c-review-request-bg);
+  min-height: 2em;
 
-    h1 {
-      margin: 0;
-      padding: 8px;
-      font-size: 10pt;
-      line-height: 16px;
+  h1 {
+    margin: 0;
+    padding: var(--ink-u-spacing-s);
+    font-size: 10pt;
 
-      &.file-attachment-single-revision {
-        text-align: center;
-      }
+    &.file-attachment-single-revision {
+      text-align: center;
     }
   }
 }

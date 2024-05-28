@@ -3,6 +3,12 @@
  */
 
 import {
+    type MenuLabelView,
+    type MenuView,
+    craft,
+    paint,
+} from '@beanbag/ink';
+import {
     type EventsHash,
     BaseView,
     spina,
@@ -884,20 +890,11 @@ export class ImageReviewableView<
     static commentBlockView = RegionCommentBlockView;
 
     static events: EventsHash = {
-        'click .image-diff-mode': '_onImageModeClicked',
-        'click .image-resolution-menu .menu-item': '_onImageZoomLevelClicked',
+        'click .image-diff-modes .rb-c-tabs__tab': '_onImageModeClicked',
         'mousedown .selection-container': '_onMouseDown',
         'mousemove .selection-container': '_onMouseMove',
         'mouseup .selection-container': '_onMouseUp',
     };
-
-    static modeItemTemplate = _.template(dedent`
-        <li>
-         <a class="image-diff-mode" href="#" data-mode="<%- mode %>">
-          <%- name %>
-         </a>
-        </li>
-    `);
 
     static captionTableTemplate = _.template(
         '<table><tr><%= items %></tr></table>'
@@ -952,6 +949,14 @@ export class ImageReviewableView<
     #imageView: ImageAttachmentView = null;
 
     /**
+     * The image zoom level drop-down menu.
+     *
+     * Version Added:
+     *     7.0
+     */
+    #imageZoomLevelMenuLabelView: MenuLabelView | null = null;
+
+    /**
      * Initialize the view.
      */
     initialize(options: Partial<AbstractReviewableViewOptions> = {}) {
@@ -981,9 +986,7 @@ export class ImageReviewableView<
 
         this.listenTo(this.model, 'change:scale', (model, scale) => {
             this.#commentBlockViews.forEach(view => view.setScale(scale));
-
-            this.$('.image-resolution-menu-current')
-                .text(scalingFactors.get(scale));
+            this.#imageZoomLevelMenuLabelView.text = scalingFactors.get(scale);
 
             /*
              * We must wait for the image views to finish scaling themselves,
@@ -1002,7 +1005,12 @@ export class ImageReviewableView<
      * Any time the window resizes, the comment positions will be adjusted.
      */
     renderContent() {
-        const hasDiff = !!this.model.get('diffAgainstFileAttachmentID');
+        const model = this.model;
+        const hasDiff = !!model.get('diffAgainstFileAttachmentID');
+
+        const $header = $('<div>')
+            .addClass('review-ui-header')
+            .prependTo(this.$el);
 
         this.#$selectionArea = $('<div>')
             .addClass('selection-container')
@@ -1035,15 +1043,15 @@ export class ImageReviewableView<
         const $wrapper = $('<div class="image-content">')
             .append(this.#$selectionArea);
 
-        if (this.model.get('diffTypeMismatch')) {
+        if (model.get('diffTypeMismatch')) {
             this.$el.append(ImageReviewableView.errorTemplate({
                 errorStr: _`
                     These revisions cannot be compared because they
                     are different file types.`,
             }));
         } else if (hasDiff) {
-            this.#$modeBar = $('<ul class="image-diff-modes">')
-                .appendTo(this.$el);
+            this.#$modeBar =
+                $('<ul class="rb-c-tabs image-diff-modes -has-modes">');
 
             this.#$imageDiffs = $('<div class="image-diffs">');
 
@@ -1059,23 +1067,11 @@ export class ImageReviewableView<
             this._setDiffMode(ImageTwoUpDiffView.mode);
         } else {
             if (this.renderedInline) {
-                /*
-                 * When we're rendered inline, even if we don't have a diff, we
-                 * add the mode bar so that we have somewhere to stick the
-                 * resolution drop-down. This needs to have an empty anchor in
-                 * it for layout to succeed.
-                 *
-                 * This will be reworked later once we spend some time giving
-                 * review UIs some love, possibly with something like a
-                 * floating toolbar.
-                 */
-                this.#$modeBar = $('<ul class="image-diff-modes">')
-                    .append('<li><a>&nbsp;</a></li>')
-                    .appendTo(this.$el);
+                this.#$modeBar = $('<ul class="rb-c-tabs image-diff-modes">');
             }
 
             this.#imageView = new ImageAttachmentView({
-                model: this.model,
+                model: model,
             });
 
             $wrapper
@@ -1094,16 +1090,12 @@ export class ImageReviewableView<
             'resize': this._adjustPos,
         });
 
-        const $header = $('<div>')
-            .addClass('review-ui-header')
-            .prependTo(this.$el);
-
-        if (this.model.get('numRevisions') > 1) {
+        if (model.get('numRevisions') > 1) {
             const $revisionLabel = $('<div id="revision_label">')
                 .appendTo($header);
             const revisionLabelView = new RB.FileAttachmentRevisionLabelView({
                 el: $revisionLabel,
-                model: this.model,
+                model: model,
             });
             revisionLabelView.render();
             this.listenTo(revisionLabelView, 'revisionSelected',
@@ -1115,7 +1107,7 @@ export class ImageReviewableView<
             const revisionSelectorView =
                 new RB.FileAttachmentRevisionSelectorView({
                     el: $revisionSelector,
-                    model: this.model,
+                    model: model,
                 });
             revisionSelectorView.render();
             this.listenTo(revisionSelectorView, 'revisionSelected',
@@ -1123,10 +1115,10 @@ export class ImageReviewableView<
 
             if (!this.renderedInline) {
                 if (hasDiff) {
-                    const caption = this.model.get('caption');
-                    const revision = this.model.get('fileRevision');
-                    const diffCaption = this.model.get('diffCaption');
-                    const diffRevision = this.model.get('diffRevision');
+                    const caption = model.get('caption');
+                    const revision = model.get('fileRevision');
+                    const diffCaption = model.get('diffCaption');
+                    const diffRevision = model.get('diffRevision');
 
                     const captionItems = [
                         ImageReviewableView.captionItemTemplate({
@@ -1146,8 +1138,8 @@ export class ImageReviewableView<
                         $('<div class="image-single-revision">')
                         .appendTo($header);
 
-                    const caption = this.model.get('caption');
-                    const revision = this.model.get('fileRevision');
+                    const caption = model.get('caption');
+                    const revision = model.get('fileRevision');
                     $('<h1 class="caption">')
                         .text(_`${caption} (revision ${revision})`)
                         .appendTo($captionBar);
@@ -1158,33 +1150,35 @@ export class ImageReviewableView<
                 $header.addClass('image-single-revision');
 
                 $('<h1 class="caption">')
-                    .text(this.model.get('caption'))
+                    .text(model.get('caption'))
                     .appendTo($header);
             }
         }
 
-        const $resolutionMenu = $(dedent`
-            <li class="image-resolution-menu has-menu">
-             <a href="#" class="menu-header">
-              <span class="fa fa-search-plus"></span>
-              <span class="image-resolution-menu-current">100%</span>
-              <span class="rb-icon rb-icon-dropdown-arrow">
-             </a>
-             <ul class="menu"></ul>
-            </li>
-        `);
-        const $menu = $resolutionMenu.find('.menu');
+        const imageZoomLevelMenuLabelView = craft<MenuLabelView>`
+            <Ink.MenuLabel class="image-resolution-menu"
+                           iconName="ink-i-zoom-in"
+                           text="100%">
+             ${Array.from(scalingFactors.entries(), ([scale, text]) => craft`
+              <Ink.MenuLabel.Item onClick=${() => model.set('scale', scale)}>
+               ${text}
+              </Ink.MenuLabel.Item>
+             `)}
+            </Ink.MenuLabel>
+        `;
 
-        scalingFactors.forEach((text, scale) => {
-            $(`<li class="menu-item" data-image-scale="${scale}">`)
-                .text(text)
-                .appendTo($menu);
-        });
+        this.#imageZoomLevelMenuLabelView = imageZoomLevelMenuLabelView;
 
         if (this.#$modeBar !== null) {
-            this.#$modeBar.append($resolutionMenu);
+            this.#$modeBar
+                .append(paint`
+                    <li class="image-resolution-menu-wrapper">
+                     ${imageZoomLevelMenuLabelView.el}
+                    </li>
+                `)
+                .appendTo($header);
         } else {
-            this.$('.caption').after($resolutionMenu);
+            this.$('.caption').after(imageZoomLevelMenuLabelView.el);
         }
     }
 
@@ -1247,28 +1241,15 @@ export class ImageReviewableView<
         this.#$imageDiffs.append(view.$el);
         view.render();
 
-        const $selector = $(ImageReviewableView.modeItemTemplate({
-            mode: mode,
-            name: view.modeName,
-        }));
-
-        /*
-         * Since we're making the text bold when selected, we need to reserve
-         * the right amount of space for the bold text, so that the contents
-         * don't shift.
-         *
-         * This is kind of ugly, but really the only good way.
-         */
-        $selector
-            .appendTo(this.#$modeBar)
-            .addClass('selected');
-        const selectorWidth = $selector.outerWidth(true);
-
-        $selector
-            .removeClass('selected')
-            .width(selectorWidth);
-
-        this.#diffModeSelectors[mode] = $selector;
+        this.#diffModeSelectors[mode] =
+            $(paint`
+                <li class="rb-c-tabs__tab" data-mode="${mode}">
+                 <label class="rb-c-tabs__tab-label">
+                  ${view.modeName}
+                 </label>
+                </li>
+            `)
+            .appendTo(this.#$modeBar);
     }
 
     /**
@@ -1288,7 +1269,7 @@ export class ImageReviewableView<
 
         if (this.#imageView) {
             this.#diffModeSelectors[this.#imageView.mode]
-                .removeClass('selected');
+                .removeClass('-is-active');
 
             newView.$el.show();
             const height = newView.$el.height();
@@ -1308,7 +1289,7 @@ export class ImageReviewableView<
         }
 
         this.#diffModeSelectors[newView.mode]
-            .addClass('selected');
+            .addClass('-is-active');
     }
 
     /**
@@ -1363,21 +1344,10 @@ export class ImageReviewableView<
         e.preventDefault();
         e.stopPropagation();
 
-        this._setDiffMode($(e.target).data('mode'));
-    }
+        const tabEl = (e.target as HTMLElement)
+            .closest<HTMLElement>('.rb-c-tabs__tab');
 
-    /**
-     * Handler for when a zoom level is clicked.
-     *
-     * Args:
-     *     e (Event):
-     *         The event which triggered the callback.
-     */
-    _onImageZoomLevelClicked(e: Event) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        this.model.set('scale', $(e.target).data('image-scale'));
+        this._setDiffMode(tabEl.dataset.mode);
     }
 
     /**
