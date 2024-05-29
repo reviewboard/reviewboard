@@ -52,11 +52,17 @@ def _on_review_request_draft_deleted(
             # This never has been and never will be published, so delete it.
             attachment.delete()
 
-    if instance.changedesc_id:
-        instance.changedesc.delete()
+    changedesc = instance.changedesc
 
-    if instance.diffset_id:
-        instance.diffset.delete()
+    if changedesc and not changedesc.review_request.exists():
+        changedesc.delete()
+
+    diffset = instance.diffset
+
+    if (diffset and
+        diffset.pk is not None and
+        diffset.history is None):
+        diffset.delete()
 
     review_request = instance.get_review_request()
 
