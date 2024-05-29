@@ -151,27 +151,43 @@
   </tr>
  </tbody>
 {% elif file.moved_or_copied and file.num_changes == 0 %}
- <tbody class="no-changes">
+ <tbody class="rb-c-diff-file-notice">
   <tr>
-   <td colspan="4">{% trans "No changes were made to this file." %}</td>
+   <td colspan="4">
+    <div class="rb-c-diff-file-notice__body">
+     <div class="rb-c-diff-file-notice__message">
+      {% trans "No changes were made to this file." %}
+     </div>
+    </div>
+   </td>
   </tr>
  </tbody>
 {% elif file.newfile and file.num_chunks == 0 %}
- <tbody class="new-empty-file">
+ <tbody class="rb-c-diff-file-notice -is-new-file-notice">
   <tr>
-   <td colspan="4">{% trans "This is an empty file." %}</td>
+   <td colspan="4">
+    <div class="rb-c-diff-file-notice__body">
+     <div class="rb-c-diff-file-notice__message">
+      {% trans "This is a newly-added empty file." %}
+     </div>
+    </div>
+   </td>
   </tr>
  </tbody>
 {% elif file.deleted and not show_deleted %}
- <tbody class="deleted">
+ <tbody class="rb-c-diff-file-notice -is-deleted-file-notice">
   <tr>
    <td colspan="4">
+    <div class="rb-c-diff-file-notice__body">
+     <div class="rb-c-diff-file-notice__message">
 {%  if file.num_changes == 0 %}
 {%   trans "This empty file was deleted. The content cannot be displayed." %}
 {%  else %}
 {%   trans "This file was deleted." %}
-    <a class="show-deleted-content-action" href="#">{% trans "Show content." %}</a>
+      <a class="show-deleted-content-action" href="#">{% trans "Show content." %}</a>
 {%  endif %}
+     </div>
+    </div>
    </td>
   </tr>
  </tbody>
@@ -179,7 +195,7 @@
 {%  if not standalone %}
 {%   if file.code_safety_results %}
 {%    for checker_id, checker_results in file.code_safety_results.items %}
-<tbody class="rb-c-diff-file-notice">
+<tbody class="rb-c-diff-file-notice -is-warning">
   <tr>
    <td colspan="4">
 {%     diff_code_safety_file_alert checker_id checker_results %}
@@ -189,9 +205,15 @@
 {%    endfor %}
 {%   endif %}
 {%   if file.whitespace_only %}
- <tbody class="whitespace-file">
+ <tbody class="rb-c-diff-file-notice">
   <tr>
-   <td colspan="4">{% trans "This file contains only whitespace changes." %}</td>
+   <td colspan="4">
+    <div class="rb-c-diff-file-notice__body">
+     <div class="rb-c-diff-file-notice__message">
+      {% trans "This file contains only whitespace changes." %}
+     </div>
+    </div>
+   </td>
   </tr>
  </tbody>
 {%   endif %}
