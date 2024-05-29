@@ -1,1 +1,2 @@
 import './dataUtilsTests';
+import './promiseQueueTests';
