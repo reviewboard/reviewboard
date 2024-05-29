@@ -42,6 +42,7 @@ export { DiffCommentBlockView } from './views/diffCommentBlockView';
 export { DiffCommentsHintView } from './views/diffCommentsHintView';
 export { DiffComplexityIconView } from './views/diffComplexityIconView';
 export { DiffFileIndexView } from './views/diffFileIndexView';
+export { DiffFragmentView } from './views/diffFragmentView';
 export { DiffReviewableView } from './views/diffReviewableView';
 export { DiffViewerPageView } from './views/diffViewerPageView';
 export { DummyReviewableView } from './views/dummyReviewableView';

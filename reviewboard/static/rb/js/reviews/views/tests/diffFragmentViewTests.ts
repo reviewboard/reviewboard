@@ -1,3 +1,17 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+} from 'jasmine-core';
+
+import { DiffFragmentView } from 'reviewboard/reviews';
+import { CenteredElementManager } from 'reviewboard/ui';
+
+
 suite('rb/views/DiffFragmentView', function() {
     const fragmentTemplate = _.template(dedent`
         <table>
@@ -35,15 +49,15 @@ suite('rb/views/DiffFragmentView', function() {
         </table>
     `);
 
-    let view;
-    let loadDiff;
+    let view: DiffFragmentView;
+    let loadDiff: jasmine.Spy;
 
     beforeEach(function() {
-        loadDiff = jasmine.createSpy('loadDiff');
+        loadDiff = jasmine.createSpy('loadDiff').and.resolveTo(undefined);
 
-        view = new RB.DiffFragmentView({
-            loadDiff: loadDiff,
+        view = new DiffFragmentView({
             collapsible: true,
+            loadDiff: loadDiff,
         });
         view.$el.html(fragmentTemplate());
         $testsScratch.append(view.$el);
@@ -51,6 +65,11 @@ suite('rb/views/DiffFragmentView', function() {
         /* Make all the deferred/delayed functions run immediately. */
         spyOn(_, 'defer').and.callFake(cb => cb());
         spyOn(_, 'delay').and.callFake(cb => cb());
+        spyOn(CenteredElementManager.prototype, 'updatePosition');
+    });
+
+    afterEach(() => {
+        view.remove();
     });
 
     describe('render', function() {
@@ -68,7 +87,7 @@ suite('rb/views/DiffFragmentView', function() {
              */
             expect(view._$thead.css('transform')).not.toBe('none');
 
-            _.each(view._$diffHeaders, headerEl => {
+            view._$diffHeaders.each((i, headerEl) => {
                 expect($(headerEl).css('transform')).not.toBe('none');
             });
         });
@@ -88,7 +107,7 @@ suite('rb/views/DiffFragmentView', function() {
              */
             expect(view._$thead.css('transform')).toBe('none');
 
-            _.each(view._$diffHeaders, headerEl => {
+            view._$diffHeaders.each((i, headerEl) => {
                 expect($(headerEl).css('transform')).toBe('none');
             });
         });
@@ -108,25 +127,27 @@ suite('rb/views/DiffFragmentView', function() {
              */
             expect(view._$thead.css('transform')).toBe('none');
 
-            _.each(view._$diffHeaders, headerEl => {
+            view._$diffHeaders.each((i, headerEl) => {
                 expect($(headerEl).css('transform')).toBe('none');
             });
         });
     });
 
     describe('Events', function() {
-        it('click expansion button', function() {
+        it('click expansion button', async () => {
             view.render();
-            view.$('.diff-expand-btn').eq(0).click();
+
+            await view._expandOrCollapse(view.$('.diff-expand-btn'));
 
             expect(loadDiff).toHaveBeenCalled();
             expect(loadDiff.calls.mostRecent().args[0].linesOfContext)
                 .toBe('20,0');
         });
 
-        it('click collapse button', function() {
+        it('click collapse button', async () => {
             view.render();
-            view.$('.rb-c-diff-collapse-button').eq(0).click();
+
+            await view._expandOrCollapse(view.$('.rb-c-diff-collapse-button'));
 
             expect(loadDiff).toHaveBeenCalled();
             expect(loadDiff.calls.mostRecent().args[0].linesOfContext)
@@ -148,7 +169,7 @@ suite('rb/views/DiffFragmentView', function() {
                 expect(view._$table.hasClass('expanded')).toBe(true);
                 expect(view._$thead.css('transform')).toBe('none');
 
-                _.each(view._$diffHeaders, headerEl => {
+                view._$diffHeaders.each((i, headerEl) => {
                     expect($(headerEl).css('transform')).toBe('none');
                 });
             });
@@ -168,7 +189,7 @@ suite('rb/views/DiffFragmentView', function() {
                 expect(view._$table.hasClass('expanded')).toBe(true);
                 expect(view._$thead.css('transform')).toBe('none');
 
-                _.each(view._$diffHeaders, headerEl => {
+                view._$diffHeaders.each((i, headerEl) => {
                     expect($(headerEl).css('transform')).toBe('none');
                 });
             });
@@ -181,7 +202,7 @@ suite('rb/views/DiffFragmentView', function() {
                 view.render();
 
                 /* First, trigger a mouseenter. */
-                spyOn(view.$el, 'is').and.callFake(sel => {
+                spyOn(view.$el, 'is').and.callFake((sel: string) => {
                     expect(sel).toBe(':hover');
 
                     return isHovering;
@@ -196,7 +217,7 @@ suite('rb/views/DiffFragmentView', function() {
                 expect(view._$table.hasClass('expanded')).toBe(false);
                 expect(view._$thead.css('transform')).not.toBe('none');
 
-                _.each(view._$diffHeaders, headerEl => {
+                view._$diffHeaders.each((i, headerEl) => {
                     expect($(headerEl).css('transform')).not.toBe('none');
                 });
             });
@@ -208,7 +229,7 @@ suite('rb/views/DiffFragmentView', function() {
                 view.render();
 
                 /* First, trigger a mouseenter. */
-                spyOn(view.$el, 'is').and.callFake(sel => {
+                spyOn(view.$el, 'is').and.callFake((sel: string) => {
                     expect(sel).toBe(':hover');
 
                     return isHovering;
@@ -223,7 +244,7 @@ suite('rb/views/DiffFragmentView', function() {
                 expect(view._$table.hasClass('expanded')).toBe(true);
                 expect(view._$thead.css('transform')).toBe('none');
 
-                _.each(view._$diffHeaders, headerEl => {
+                view._$diffHeaders.each((i, headerEl) => {
                     expect($(headerEl).css('transform')).toBe('none');
                 });
             });

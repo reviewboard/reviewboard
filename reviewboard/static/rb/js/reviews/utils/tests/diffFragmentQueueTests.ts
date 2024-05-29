@@ -7,7 +7,13 @@ import {
 } from 'jasmine-core';
 
 import { DataUtils } from 'reviewboard/common';
-import { DiffFragmentQueue } from 'reviewboard/reviews';
+import {
+    DiffFragmentQueue,
+    DiffFragmentView,
+} from 'reviewboard/reviews';
+import {
+    type LoadDiffOptions,
+} from 'reviewboard/reviews/utils/diffFragmentQueue';
 
 
 suite('rb/views/DiffFragmentQueueView', function() {
@@ -271,17 +277,23 @@ suite('rb/views/DiffFragmentQueueView', function() {
              * will be loaded. The disassociated container (3) will have a
              * new view set up.
              */
-            const view1 = new RB.DiffFragmentView();
+            const view1 = new DiffFragmentView({
+                loadDiff: (options: LoadDiffOptions) => Promise.resolve(),
+            });
             $container1
                 .html('<span>Comment 1</span>')
                 .data('diff-fragment-view', view1);
 
-            const view2 = new RB.DiffFragmentView();
+            const view2 = new DiffFragmentView({
+                loadDiff: (options: LoadDiffOptions) => Promise.resolve(),
+            });
             $container2
                 .html('<span>Comment 2</span>')
                 .data('diff-fragment-view', view2);
 
-            const view3 = new RB.DiffFragmentView();
+            const view3 = new DiffFragmentView({
+                loadDiff: (options: LoadDiffOptions) => Promise.resolve(),
+            });
             $container3
                 .html('<span>Comment 3</span>')
                 .data('diff-fragment-view', view3);

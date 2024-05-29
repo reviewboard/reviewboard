@@ -75,7 +75,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/utils/tests/linkifyUtilsTests.es6.js',
             'rb/js/utils/tests/urlUtilsTests.es6.js',
             'rb/js/views/tests/collectionViewTests.es6.js',
-            'rb/js/views/tests/diffFragmentViewTests.es6.js',
             'rb/js/views/tests/screenshotThumbnailViewTests.es6.js',
             'rb/js/views/tests/uploadAttachmentViewTests.es6.js',
         ),
@@ -154,7 +153,6 @@ PIPELINE_JAVASCRIPT = {
             # Note: These are roughly in dependency order.
             'rb/js/models/uploadDiffModel.es6.js',
             'rb/js/utils/textUtils.es6.js',
-            'rb/js/views/diffFragmentView.es6.js',
             'rb/js/views/uploadAttachmentView.es6.js',
             'rb/js/views/revisionSelectorView.es6.js',
             'rb/js/views/fileAttachmentRevisionLabelView.es6.js',

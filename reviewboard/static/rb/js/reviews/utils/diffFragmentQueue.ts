@@ -4,6 +4,11 @@
 
 import { DataUtils } from 'reviewboard/common';
 
+import {
+    type DiffFragmentViewOptions,
+    DiffFragmentView,
+} from '../views/diffFragmentView';
+
 
 /**
  * Options for the DiffFragmentQueue.
@@ -15,13 +20,34 @@ export interface DiffFragmentQueueOptions {
     /** The prefix to use for container element IDs. */
     containerPrefix: string;
 
-    /** Options to pass to each :js:class:`RB.DiffFragmentView`. */
-    diffFragmentViewOptions?: unknown; // TODO TYPING
-
     /**
      * The URL for the review request.
      */
     reviewRequestPath: string;
+
+    /** Options to pass to each :js:class:`DiffFragmentView`. */
+    diffFragmentViewOptions?: DiffFragmentViewOptions;
+}
+
+
+/**
+ * Options for the loadDiff operation.
+ *
+ * Version Added:
+ *     8.0
+ */
+export interface LoadDiffOptions {
+    /**
+     * The lines of context to load for the diff.
+     *
+     * This is a string containing a comma-separated set of line counts
+     * in the form of ``numLinesBefore,numLinesAfter``.
+     */
+    linesOfContext?: string;
+
+    /** A function to call for each fragment that gets rendered. */
+    onFragmentRendered?: (commentID: string,
+                          view: DiffFragmentView) => void;
 }
 
 
@@ -36,7 +62,7 @@ interface QueuedLoad {
     commentID: string;
 
     /** An optional callback for when the fragment is rendered. */
-    onFragmentRendered: ((view: RB.DiffFragmentView) => void) | null;
+    onFragmentRendered: ((view: DiffFragmentView) => void) | null;
 }
 
 
@@ -60,7 +86,7 @@ export class DiffFragmentQueue {
     #containerPrefix: string;
 
     /** Options to pass to each :js:class:`RB.DiffFragmentView`. */
-    #diffFragmentViewOptions: unknown; // TODO TYPING
+    #diffFragmentViewOptions: DiffFragmentViewOptions;
 
     /** The base URL for loading diff fragments. */
     #fragmentsBasePath: string;
@@ -114,7 +140,7 @@ export class DiffFragmentQueue {
     queueLoad(
         commentID: string,
         key: string,
-        onFragmentRendered?: (view: RB.DiffFragmentView) => void,
+        onFragmentRendered?: (view: DiffFragmentView) => void,
     ) {
         const queue = this._queuedFragments;
 
@@ -166,7 +192,7 @@ export class DiffFragmentQueue {
         for (const queuedLoads of Object.values(this._queuedFragments)) {
             const pendingCommentIDs: string[] = [];
             const onFragmentRenderedFuncs: {
-                [key: string]: (view: RB.DiffFragmentView) => void;
+                [key: string]: (view: DiffFragmentView) => void;
             } = {};
 
             /*
@@ -259,30 +285,12 @@ export class DiffFragmentQueue {
      *     commentIDs (string):
      *         A string of comment IDs to load fragments for.
      *
-     *     options (object, optional):
+     *     options (LoadDiffOptions, optional):
      *         Options for the loaded diff fragments.
-     *
-     * Option Args:
-     *     linesOfContext (string):
-     *         The lines of context to load for the diff. This is a string
-     *         containing a comma-separated set of line counts in the form
-     *         of ``numLinesBefore,numLinesAfter``.
-     *
-     *     onDone (function):
-     *         A function to call after the diff has been loaded.
-     *
-     *     queueName (string):
-     *         The name of the load queue. This is used to load batches of
-     *         fragments sequentially.
      */
     async #loadDiff(
         commentIDs: string,
-        options: {
-            linesOfContext?: string;
-            onDone?: () => void;
-            onFragmentRendered?: (commentID: string,
-                                  view: RB.DiffFragmentView) => void;
-        } = {},
+        options: LoadDiffOptions = {},
     ) {
         const containerPrefix = this.#containerPrefix;
         const queryArgs = new URLSearchParams();
@@ -345,14 +353,6 @@ export class DiffFragmentQueue {
                     onFragmentRendered(commentID, view);
                 }
             }
-        }
-
-        if (typeof options.onDone === 'function') {
-            /*
-             * We've parsed and rendered all fragments, so we're
-             * officially done.
-             */
-            options.onDone();
         }
     }
 
@@ -450,25 +450,14 @@ export class DiffFragmentQueue {
         let view = $container.data('diff-fragment-view');
 
         if (!view) {
-            view = new RB.DiffFragmentView(_.defaults({
+            view = new DiffFragmentView(_.defaults({
                 el: $container,
-                loadDiff: async options => {
+                loadDiff: async (options: LoadDiffOptions) => {
                     RB.setActivityIndicator(true, {type: 'GET'});
 
-                    /*
-                     * TODO: Once DiffFragmentView is converted to expect the
-                     * loadDiff function to be async, remove the onDone stuff
-                     * here.
-                     */
-                    await this.#loadDiff(
-                        commentID,
-                        _.omit(options, 'onDone'));
+                    await this.#loadDiff(commentID, options);
 
                     RB.setActivityIndicator(false, {});
-
-                    if (options.onDone) {
-                        options.onDone();
-                    }
                 },
             }, this.#diffFragmentViewOptions));
 
