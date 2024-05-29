@@ -18,11 +18,13 @@ suite('rb/views/TextBasedReviewableView', function() {
     const template = dedent`
       <div id="container">
        <div class="text-review-ui-views">
-        <ul>
-         <li class="active" data-view-mode="rendered">
+        <ul class="rb-c-tabs">
+         <li class="rb-c-tabs__tab -is-active" data-view-mode="rendered">
           <a href="#rendered">Rendered</a>
          </li>
-         <li data-view-mode="source"><a href="#source">Source</a></li>
+         <li class="rb-c-tabs__tab" data-view-mode="source">
+          <a href="#source">Source</a>
+         </li>
         </ul>
        </div>
        <table class="text-review-ui-rendered-table"></table>
@@ -87,21 +89,21 @@ suite('rb/views/TextBasedReviewableView', function() {
         view.router.navigate('#rendered');
         expect(view.router.trigger).toHaveBeenCalledWith(
             'route:viewMode', 'rendered', null, null);
-        expect($container.find('.active').attr('data-view-mode'))
+        expect($container.find('.-is-active').attr('data-view-mode'))
             .toBe('rendered');
         expect(model.get('viewMode')).toBe('rendered');
 
         view.router.navigate('#source');
         expect(view.router.trigger).toHaveBeenCalledWith(
             'route:viewMode', 'source', null, null);
-        expect($container.find('.active').attr('data-view-mode'))
+        expect($container.find('.-is-active').attr('data-view-mode'))
             .toBe('source');
         expect(model.get('viewMode')).toBe('source');
 
         view.router.navigate('#rendered');
         expect(view.router.trigger).toHaveBeenCalledWith(
             'route:viewMode', 'rendered', null, null);
-        expect($container.find('.active').attr('data-view-mode'))
+        expect($container.find('.-is-active').attr('data-view-mode'))
             .toBe('rendered');
         expect(model.get('viewMode')).toBe('rendered');
     });
