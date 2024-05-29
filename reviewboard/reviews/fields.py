@@ -5,7 +5,10 @@ from html import unescape
 
 from django.template.loader import render_to_string
 from django.utils.functional import cached_property
-from django.utils.html import escape, format_html_join, strip_tags
+from django.utils.html import (escape,
+                               format_html,
+                               format_html_join,
+                               strip_tags)
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from djblets.markdown import iter_markdown_lines
@@ -628,8 +631,15 @@ class BaseReviewRequestField(object):
         value_html = self.render_change_entry_value_html(info, value)
 
         if value_html:
-            return ('<tr class="new-value"><th class="marker">+</th>'
-                    '<td class="value">%s</td></tr>' % value_html)
+            # TODO: Deprecate non-safe value_html strings, and later treat
+            #       them as unsafe.
+            return format_html(
+                '<tr class="new-value">'
+                '<th class="marker" aria-label="{label}"></th>'
+                '<td class="value">{value_html}</td>'
+                '</tr>',
+                label=_('New value'),
+                value_html=mark_safe(value_html))
         else:
             return ''
 
@@ -650,8 +660,15 @@ class BaseReviewRequestField(object):
         value_html = self.render_change_entry_value_html(info, value)
 
         if value_html:
-            return ('<tr class="old-value"><th class="marker">-</th>'
-                    '<td class="value">%s</td></tr>' % value_html)
+            # TODO: Deprecate non-safe value_html strings, and later treat
+            #       them as unsafe.
+            return format_html(
+                '<tr class="old-value">'
+                '<th class="marker" aria-label="{label}"></th>'
+                '<td class="value">{value_html}</td>'
+                '</tr>',
+                label=_('Old value'),
+                value_html=mark_safe(value_html))
         else:
             return ''
 

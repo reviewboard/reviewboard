@@ -1063,7 +1063,12 @@
       }
     }
 
-    /* Displays changes for field values, with "-" and "+" markers. */
+    /*
+     * Displays changes for field values, with "-" and "+" markers.
+     *
+     * NOTE: Keep font, colors, and icons in sync with rb-c-commit-list until we
+     *       come up with common definitions.
+     */
     .changed {
       background: var(--ink-p-input-bg);
       border: var(--ink-g-border-input);
@@ -1088,7 +1093,7 @@
 
       td, th {
         font-family: @textarea-font-family;
-        padding: 0.3em 0.6em;
+        padding: var(--ink-c-data-table-cell-padding);
       }
 
       td {
@@ -1096,13 +1101,23 @@
       }
 
       .new-value .marker {
-        background: var(--rb-theme-diff-insert-linenum-bg);
-        color: var(--rb-theme-diff-insert-linenum-fg);
+        background: var(--rb-p-diff-insert-op-bg);
+        color: var(--rb-p-diff-insert-op-fg);
+
+        &::before {
+          .fa-icon();
+          content: @fa-var-plus;
+        }
       }
 
       .old-value .marker {
-        background: var(--rb-theme-diff-delete-linenum-bg);
-        color: var(--rb-theme-diff-delete-linenum-fg);
+        background: var(--rb-p-diff-delete-op-bg);
+        color: var(--rb-p-diff-delete-op-fg);
+
+        &::before {
+          .fa-icon();
+          content: @fa-var-minus;
+        }
       }
     }
 

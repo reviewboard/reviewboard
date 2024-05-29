@@ -100,7 +100,8 @@
   &__commit {
     &.-is-added {
       .rb-c-commit-list__op {
-        background: @diff-insert-linenum-color;
+        background: var(--rb-p-diff-insert-op-bg);
+        color: var(--rb-p-diff-insert-op-fg);
 
         &::before {
           .fa-icon();
@@ -111,7 +112,8 @@
 
     &.-is-modified {
       .rb-c-commit-list__op {
-        background: @diff-replace-linenum-color;
+        background: var(--rb-p-diff-replace-op-bg);
+        color: var(--rb-p-diff-replace-op-fg);
 
         &::before {
           content: "~";
@@ -122,7 +124,8 @@
 
     &.-is-removed {
       .rb-c-commit-list__op {
-        background: @diff-delete-linenum-color;
+        background: var(--rb-p-diff-delete-op-bg);
+        color: var(--rb-p-diff-delete-op-fg);
 
         &::before {
           .fa-icon();
@@ -169,8 +172,8 @@
    *     </td>
    */
   &__message {
-    font-family: @textarea-font-family;
-    font-size: @textarea-font-size;
+    font-family: var(--ink-ff-monospace);
+    font-size: inherit;
     width: 100%;
 
     details,
