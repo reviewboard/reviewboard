@@ -81,8 +81,9 @@
   }
 
   &.-is-error {
-    background: @_alert-vars[@error-bg];
-    border-color: @_alert-vars[@error-border-color];
+    background: var(--ink-c-alert-error-bg);
+    border-color: var(--ink-c-alert-error-border-color);
+    color: var(--ink-c-alert-error-fg);
 
     &:before {
       content: @fa-var-exclamation-circle;
@@ -90,8 +91,9 @@
   }
 
   &.-is-info {
-    background: @_alert-vars[@info-bg];
-    border-color: @_alert-vars[@info-border-color];
+    background: var(--ink-c-alert-info-bg);
+    border-color: var(--ink-c-alert-info-border-color);
+    color: var(--ink-c-alert-info-fg);
 
     &:before {
       content: @fa-var-info-circle;
@@ -99,8 +101,9 @@
   }
 
   &.-is-success {
-    background: @_alert-vars[@success-bg];
-    border-color: @_alert-vars[@success-border-color];
+    background: var(--ink-c-alert-success-bg);
+    border-color: var(--ink-c-alert-success-border-color);
+    color: var(--ink-c-alert-success-fg);
 
     &:before {
       content: @fa-var-check;
@@ -108,8 +111,9 @@
   }
 
   &.-is-warning {
-    background: @_alert-vars[@warning-bg];
-    border-color: @_alert-vars[@warning-border-color];
+    background: var(--ink-c-alert-warning-bg);
+    border-color: var(--ink-c-alert-warning-border-color);
+    color: var(--ink-c-alert-warning-fg);
 
     &:before {
       content: @fa-var-warning;
