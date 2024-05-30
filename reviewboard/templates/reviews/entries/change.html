@@ -1,5 +1,5 @@
 {% extends "reviews/entries/base.html" %}
-{% load i18n reviewtags %}
+{% load djblets_utils i18n reviewtags %}
 
 
 {% block entry_classes %}changedesc has-avatar{% endblock %}
@@ -11,55 +11,61 @@
 
 {% block entry_content %}
 {%  with changedesc=entry.changedesc %}
-<div class="changed-fields">
+{%   definevar "entry_id_prefix" %}{{entry.entry_type_id}}-{{entry.entry_id}}{% enddefinevar %}
+<dl class="rb-c-review-request-changed-fields"
+    aria-label="{% trans "Changed fields" %}">
 {%   if entry.new_status %}
- <h3 class="status">
-  {% trans "Status:" %}
-  <span class="value">
+  <div class="rb-c-review-request-changed-fields__field">
+   <dt class="rb-c-review-request-changed-fields__label"
+       id="{{entry_id_prefix}}-status-label">
+    {% trans "Status:" %}
+   </dt>
+   <dd class="rb-c-review-request-changed-fields__value"
+       aria-labelledby="{{entry_id_prefix}}-status-label">
 {%   if entry.new_status == 'submitted' %}
-  {% trans "Closed (submitted)" %}
+    {% trans "Completed" %}
 {%   elif entry.new_status == 'discarded' %}
-  {% trans "Discarded" %}
+    {% trans "Discarded" %}
 {%   elif entry.new_status == 'pending' %}
-  {% trans "Re-opened" %}
+    {% trans "Re-opened" %}
 {%   endif %}
-  </span>
- </h3>
+   </dd>
+  </div>
 {%   endif %}
 
 {%   if changedesc.text %}
- <h3>{% trans "Change Summary:" %}</h3>
- <pre class="changedesc-text {% rich_text_classname changedesc.rich_text %}">{{changedesc.text|render_markdown:changedesc.rich_text}}</pre>
+  <div class="rb-c-review-request-changed-fields__field -is-wide">
+   <dt class="rb-c-review-request-changed-fields__label"
+       id="{{entry_id_prefix}}-changesummary-label">
+    {% trans "Change Summary:" %}
+   </dt>
+   <dd class="rb-c-review-request-changed-fields__value"
+       aria-labelledby="{{entry_id_prefix}}-changesummary-label">
+    <pre class="changedesc-text {% rich_text_classname changedesc.rich_text %}">{{changedesc.text|render_markdown:changedesc.rich_text}}</pre>
+   </dd>
+  </div>
 {%   endif %}
 
-{%   for group in entry.fields_changed_groups %}
-{%    if group.inline %}
- <table class="secondary-fields">
-{%     for fieldinfo in group.fields %}
-{%      if fieldinfo.rendered_html %}
-  <tr>
-   <th><h3>{{fieldinfo.title}}:</h3></th>
-   <td>
-    {{fieldinfo.rendered_html}}
-   </td>
-  </tr>
+{%   if entry.fields_changed_groups %}
+{%    for group in entry.fields_changed_groups %}
+{%     for field_info in group.fields %}
+{%      if field_info.rendered_html %}
+{%       definevar "field_id_prefix" %}{{entry_id_prefix}}-{{field_info.title|slugify}}{% enddefinevar %}
+  <div class="rb-c-review-request-changed-fields__field{% if not group.inline %} -is-wide{% endif %}">
+   <dt class="rb-c-review-request-changed-fields__label"
+       id="{{field_id_prefix}}-label">
+    {{field_info.title}}:
+   </dt>
+   <dd class="rb-c-review-request-changed-fields__value"
+       aria-labelledby="{{field_id_prefix}}-label">
+    {{field_info.rendered_html}}
+   </dd>
+  </div>
 {%      endif %}
 {%     endfor %}
- </table>
-{%    else %}
- <ul class="primary-fields">
-{%     for fieldinfo in group.fields %}
-{%      if fieldinfo.rendered_html %}
-  <li class="clearfix">
-   <h3>{{fieldinfo.title}}:</h3>
-   {{fieldinfo.rendered_html}}
-  </li>
-{%      endif %}
-{%     endfor %}
- </ul>
-{%    endif %}
-{%   endfor %}
-</div>
+{%    endfor %}
+{%   endif %}
+</dl>
 
 {%   if entry.status_updates %}
 <div class="changedesc-status-updates">

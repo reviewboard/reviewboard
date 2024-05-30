@@ -600,7 +600,7 @@ class BaseReviewRequestField(object):
         if 'new' in info:
             new_value = info['new'][0]
 
-        s = ['<table class="changed">']
+        s = ['<div class="rb-c-review-request-changed-value">']
 
         if old_value:
             s.append(self.render_change_entry_removed_value_html(
@@ -610,7 +610,7 @@ class BaseReviewRequestField(object):
             s.append(self.render_change_entry_added_value_html(
                 info, new_value))
 
-        s.append('</table>')
+        s.append('</div>')
 
         return ''.join(s)
 
@@ -634,10 +634,12 @@ class BaseReviewRequestField(object):
             # TODO: Deprecate non-safe value_html strings, and later treat
             #       them as unsafe.
             return format_html(
-                '<tr class="new-value">'
-                '<th class="marker" aria-label="{label}"></th>'
-                '<td class="value">{value_html}</td>'
-                '</tr>',
+                '<div class="rb-c-review-request-changed-value__new">'
+                '<div class="rb-c-review-request-changed-value__marker"'
+                ' aria-label="{label}"></div>'
+                '<div class="rb-c-review-request-changed-value__value">'
+                '{value_html}</div>'
+                '</div>',
                 label=_('New value'),
                 value_html=mark_safe(value_html))
         else:
@@ -663,10 +665,12 @@ class BaseReviewRequestField(object):
             # TODO: Deprecate non-safe value_html strings, and later treat
             #       them as unsafe.
             return format_html(
-                '<tr class="old-value">'
-                '<th class="marker" aria-label="{label}"></th>'
-                '<td class="value">{value_html}</td>'
-                '</tr>',
+                '<div class="rb-c-review-request-changed-value__old">'
+                '<div class="rb-c-review-request-changed-value__marker"'
+                ' aria-label="{label}"></div>'
+                '<div class="rb-c-review-request-changed-value__value">'
+                '{value_html}</div>'
+                '</div>',
                 label=_('Old value'),
                 value_html=mark_safe(value_html))
         else:
@@ -976,7 +980,7 @@ class BaseCommaEditableField(BaseEditableField):
             unicode:
             The HTML representation of the change entry.
         """
-        s = ['<table class="changed">']
+        s = ['<div class="rb-c-review-request-changed-value">']
 
         if 'removed' in info:
             values = info['removed']

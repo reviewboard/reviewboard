@@ -1,0 +1,447 @@
+@import (reference) "rb/css/defs.less";
+
+
+/**
+ * A list of fields that were changed in a review request update.
+ *
+ * This groups together all the field changes that were made in a single
+ * review request update, along with the change description itself.
+ *
+ * This will hold a label and a value for each field. The value is free-form,
+ * and many types (legacy and modern) are supported. For simple field changes,
+ * this can be paired with ``.rb-c-review-request-changed-field``.
+ *
+ * Version Added:
+ *     7.0
+ *
+ * DOM Attributes:
+ *     aria-label (string):
+ *         A label describing the list.
+ *
+ *         This can be ``Changed fields``.
+ *
+ * Structure:
+ *     <dl class="rb-c-review-request-changed-fields"
+ *         aria-label="<<string>>">
+ *      <div class="rb-c-review-request-changed-fields__field">...</div> [1+]
+ *     </dl>
+ */
+.rb-c-review-request-changed-fields {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: min-content auto;
+  gap: var(--ink-u-spacing-l) var(--ink-u-spacing-std);
+  margin: 0;
+  padding: @review-request-entry-padding;
+  width: 100%;
+
+  /**
+   * A changed field in the list.
+   *
+   * By default, the field's label and value will be shown side-by-side in a grid
+   * form, if space permits. A field can instead be made wide using the ``-is-wide``
+   * modifier, forcing the label to appear above the value, giving the value the
+   * full available width.
+   *
+   * Modifiers:
+   *     -is-wide:
+   *         Whether to show the field in a wide view.
+   *
+   * Structure:
+   *     <div class="rb-c-review-request-changed-fields__field">
+   *      <dt class="rb-c-review-request-changed-fields__label" ...>
+   *       ...
+   *      </dt>
+   *      <dd class="rb-c-review-request-changed-fields__value" ...>
+   *       ...
+   *      </dd>
+   *     </div>
+   */
+  &__field {
+    align-items: baseline;
+    grid-column: 1 / 3;
+
+    .set-wide() {
+      display: flex;
+      flex-direction: column;
+      gap: var(--ink-u-spacing-std);
+
+      .rb-c-review-request-changed-fields__label,
+      .rb-c-review-request-changed-fields__value {
+        text-align: left;
+        width: 100%;
+      }
+    }
+
+    &.-is-wide {
+      .set-wide();
+    }
+
+    &:not(.-is-wide) {
+      display: grid;
+
+      .rb-c-review-request-changed-fields__label {
+        text-align: right;
+      }
+
+      /*
+       * For browsers that don't support subgrids, we'll have to set a minimum field
+       * width in order to ideally keep things aligned, while allowing the label to
+       * grow if needed. This can create a staggered look for older browsers.
+       */
+      @supports not (grid-template-columns: subgrid) {
+        gap: var(--ink-u-spacing-std);
+        grid-template-columns: minmax(10em, min-content) auto;
+      }
+
+      /*
+       * For browsers that support subgrids, we can easily keep all the fields
+       * aligned.
+       */
+      @supports (grid-template-columns: subgrid) {
+        grid-template-columns: subgrid;
+      }
+
+      .on-mobile-medium-screen-720({
+        .set-wide();
+      });
+    }
+
+    /*
+     * We have a variety of types of content in the values, and not all can be
+     * aligned with a baseline. Tweak these for the built-in types of content.
+     *
+     * Note that :has support is available in all browsers that support subgrid.
+     */
+    &:has(.rb-c-review-request-field-tabular) {
+      align-self: start;
+
+      .rb-c-review-request-changed-fields__label {
+        align-self: start;
+        padding-top: calc(var(--ink-u-border-thin) +
+                          var(--ink-c-data-table-cell-padding-vert));
+      }
+    }
+
+    &:has(.diffed-text-area, .file-container) {
+      align-items: start;
+
+      .rb-c-review-request-changed-fields__label {
+        padding-top: var(--ink-u-spacing-xs);
+      }
+    }
+  }
+
+  /*
+   * The label for a changed field.
+   *
+   * DOM Attributes:
+   *     id (string):
+   *         A unique ID assumed to this label.
+   *
+   * Structure:
+   *     <dt class="rb-c-review-request-changed-fields__label"
+   *         id="<<string>>">
+   *      text...
+   *     </dt>
+   */
+  &__label {
+    color: var(--rb-p-review-request-field-label-color);
+    font-weight: bold;
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+  }
+
+  /*
+   * The value for a changed field.
+   *
+   * DOM Attributes:
+   *     aria-labelledby (string):
+   *         The ID of the matching ``.rb-c-review-request-changed-fields__label``.
+   *
+   * Structure:
+   *     <dd class="rb-c-review-request-changed-fields__value"
+   *         aria-labelledby="<<string>>">
+   *      html...
+   *     </dd>
+   */
+  &__value {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+
+/*
+ * Special styles for different types of rendered values.
+ *
+ * In time, each of these should be given their own components with proper
+ * styling. For now, we need to specially handle each of these.
+ */
+.rb-c-review-request-changed-fields__value {
+  /* Used in the textarea field diffs and the Change Summary section. */
+  > pre {
+    background-color: var(--ink-p-input-bg);
+    border: var(--ink-g-border-input);
+    color: var(--ink-p-input-fg);
+    padding: @textarea-editor-padding;
+    font-size: inherit;
+    white-space: pre-wrap;
+  }
+
+  /* Reset the content within the value to display properly. */
+  .file-container,
+  .file-container .file,
+  .rb-c-review-request-field-tabular {
+    margin: 0;
+  }
+
+  .rb-c-file-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ink-u-spacing-std);
+
+    .file-container {
+      float: none;
+    }
+
+    .file-container .file {
+      margin: 0;
+    }
+  }
+
+  /*
+   * File attachment/screenshot change lists.
+   *
+   * These differ from the other field change lists in that they have
+   * mini-section labels underneath for each file.
+   */
+  .caption-changed {
+    margin: 0 0 0 var(--ink-u-spacing-std);
+    padding: 0;
+
+    a {
+      /* Treat the link like a field. */
+      font-weight: bold;
+    }
+
+    td, th {
+      vertical-align: top;
+    }
+
+    td {
+      padding-left: 1em;
+    }
+
+    th {
+      text-align: right;
+    }
+  }
+
+  /* The "Change Summary" section. */
+  .changedesc-text {
+    margin: 0;
+    padding: @textarea-editor-padding;
+    overflow: hidden;
+    width: 100%;
+
+    .codehilite {
+      .flush-codehilite();
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  /* The diff for text areas. */
+  .diffed-text-area {
+    background: var(--ink-p-input-bg);
+    border: var(--ink-g-border-input);
+    border-collapse: collapse;
+    color: var(--ink-p-input-fg);
+    padding: 0;
+    width: 100%;
+
+    a {
+      text-decoration: underline;
+    }
+
+    p {
+      padding-top: 2px;
+      padding-bottom: 2px;
+    }
+
+    pre {
+      background: none;
+      border: 0;
+      margin: 0;
+      padding: 0;
+      white-space: pre-wrap;
+    }
+
+    td {
+      font-family: @textarea-font-family;
+      padding: 0 4px;
+      vertical-align: top;
+      white-space: pre-wrap;
+
+      .codehilite {
+        border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+
+        /* Make this flush with the sides of the row. */
+        margin: 0 -4px;
+
+        /* Don't obscure the text or shift it to any side. Make it flush. */
+        .flush-codehilite();
+
+        &::before {
+          background: none;
+          border: 0;
+        }
+
+        &.codehilite-multiline-start {
+          border-top: var(--rb-p-code-block-border);
+        }
+
+        &.codehilite-multiline-end {
+          border-bottom: var(--rb-p-code-block-border);
+        }
+
+        pre:empty {
+          /* Give this a reasonable height so it's not just blank. */
+          height: 1rem;
+        }
+      }
+    }
+
+    .delete {
+      .line {
+        background: var(--rb-theme-diff-delete-bg);
+        color: var(--rb-theme-diff-delete-fg);
+      }
+
+      /* The '-' or '+' marker. */
+      .marker {
+        background: var(--rb-theme-diff-delete-linenum-bg);
+        color: var(--rb-theme-diff-delete-linenum-fg);
+      }
+    }
+
+    .insert {
+      .line {
+        background: var(--rb-theme-diff-insert-bg);
+        color: var(--rb-theme-diff-insert-fg);
+      }
+
+      /* The '-' or '+' marker. */
+      .marker {
+        background: var(--rb-theme-diff-insert-linenum-bg);
+        color: var(--rb-theme-diff-insert-linenum-fg);
+      }
+    }
+
+    /* Add borders between different change types. */
+    :not(.insert) + .insert,
+    :not(.equal) + .equal,
+    :not(.delete) + .delete {
+      border-top: var(--rb-g-diff-chunk-border);
+    }
+
+    .line {
+      width: 100%;
+      word-break: break-all;
+
+      /*
+       * Make sure any images in the Markdown-rendered text are kept
+       * small, but with the correct aspect ratio.
+       */
+      img {
+        width: auto;
+        max-height: 100px;
+      }
+    }
+
+    /* The '-' or '+' marker. */
+    .marker {
+      background: var(--rb-theme-diff-equals-linenum-bg);
+      color: var(--rb-theme-diff-equals-linenum-fg);
+      font-family: @textarea-font-family;
+      font-size: @textarea-font-size;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .replace-new {
+      .line {
+        background: var(--rb-theme-diff-insert-bg);
+        color: var(--rb-theme-diff-insert-fg);
+
+        .hl {
+          background: var(--rb-g-diff-highlight-text-bg);
+          color: var(--rb-g-diff-highlight-text-fg);
+        }
+      }
+
+      /* The '-' or '+' marker. */
+      .marker {
+        background: var(--rb-theme-diff-insert-linenum-bg);
+        color: var(--rb-theme-diff-insert-linenum-fg);
+      }
+    }
+
+    .replace-old {
+      .line {
+        background: var(--rb-theme-diff-delete-bg);
+        color: var(--rb-theme-diff-delete-fg);
+
+        .hl {
+          background: var(--rb-g-diff-highlight-text-bg);
+          color: var(--rb-g-diff-highlight-text-fg);
+        }
+      }
+
+      /* The '-' or '+' marker. */
+      .marker {
+        background: var(--rb-theme-diff-delete-linenum-bg);
+        color: var(--rb-theme-diff-delete-linenum-fg);
+      }
+    }
+  }
+
+  /* Styling for the "Diff" field updates. */
+  .diff-changes {
+    margin-top: 0;
+    padding-top: 0;
+
+    .line-counts {
+      margin-left: 0.5em;
+
+      .delete-count {
+        color: var(--rb-p-diff-delete-text-fg);
+      }
+
+      .insert-count {
+        color: var(--rb-p-diff-insert-text-fg);
+      }
+    }
+  }
+
+  /* Styles for the file listing for the "Diff" field. */
+  .diff-index {
+    margin-bottom: 0;
+
+    .diff-file-icon {
+      min-width: 20px;
+      min-height: 20px;
+    }
+
+    .diff-file-info {
+      /* Compensate for the lack of diff-chunks-cell column. */
+      width: 100%;
+    }
+  }
+}

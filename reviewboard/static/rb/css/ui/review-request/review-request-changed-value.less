@@ -1,0 +1,138 @@
+@import (reference) "rb/css/defs.less";
+
+
+/**
+ * A diffed change to a simple field value on a review request.
+ *
+ * This shows a change in a value, such as a summary or list of bugs. It's
+ * presented as a deleted line and an added line, using ``-`` and ``+`` markers.
+ *
+ * The old and new values are optional, but at least one must be provided.
+ *
+ * This is not suitable for all types of changes. It should not be used for
+ * multi-line text fields or anything requiring a graphical representation.
+ *
+ * Version Added:
+ *     7.0
+ *
+ * Structure:
+ *     <div class="rb-c-review-request-changed-value">
+ *      [<div class="rb-c-review-request-changed-value__old">...</div>]
+ *      [<div class="rb-c-review-request-changed-value__new">...</div>]
+ *     </div>
+ */
+.rb-c-review-request-changed-value {
+  /*
+   * NOTE: Keep font, colors, and icons in sync with rb-c-commit-list until we
+   *       come up with common definitions.
+   */
+  background: var(--ink-p-input-bg);
+  border: var(--ink-g-border-input);
+  border-radius: var(--ink-u-border-radius-s);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: fit-content;
+
+  /**
+   * A marker showing whether a value is old or new.
+   *
+   * DOM Attributes:
+   *     aria-label (string):
+   *         A label describing whether this is an old or new value.
+   *
+   * Structure:
+   *     <div class="rb-c-review-request-changed-value__marker"
+   *          aria-label="<<string>>"></div>
+   */
+  &__marker {
+    align-self: stretch;
+
+    &::before {
+      .fa-icon();
+    }
+  }
+
+  /**
+   * The new value for a field.
+   *
+   * DOM Attributes:
+   *     aria-label (string):
+   *         A label stating this is a new value.
+   *
+   * Structure:
+   *     <div class="rb-c-review-request-changed-value__new">
+   *      <div class="rb-c-review-request-changed-value__marker" ...></div>
+   *      <div class="rb-c-review-request-changed-value__value" ...>...</div>
+   *     </div>
+   */
+  &__new {
+    .rb-c-review-request-changed-value__marker {
+      background: var(--rb-p-diff-insert-op-bg);
+      color: var(--rb-p-diff-insert-op-fg);
+
+      &::before {
+        content: @fa-var-plus;
+      }
+    }
+  }
+
+  /**
+   * The old value for a field.
+   *
+   * DOM Attributes:
+   *     aria-label (string):
+   *         A label stating this is an old value.
+   *
+   * Structure:
+   *     <div class="rb-c-review-request-changed-value__new">
+   *      <div class="rb-c-review-request-changed-value__marker" ...></div>
+   *      <div class="rb-c-review-request-changed-value__value" ...>...</div>
+   *     </div>
+   */
+  &__old {
+    .rb-c-review-request-changed-value__marker {
+      background: var(--rb-p-diff-delete-op-bg);
+      color: var(--rb-p-diff-delete-op-fg);
+
+      &::before {
+        content: @fa-var-minus;
+      }
+    }
+  }
+
+  /**
+   * The displayed old or new value.
+   *
+   * Structure:
+   *     <div class="rb-c-review-request-changed-value__value">html...</div>
+   */
+  &__value {
+    font-family: @textarea-font-family;
+
+    a {
+      color: var(--ink-p-link-fg);
+      text-decoration: none;
+
+      &:first-child {
+        margin-left: 0;
+      }
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  &__new,
+  &__old {
+    display: flex;
+    align-items: baseline;
+  }
+
+  &__marker,
+  &__value {
+    display: table-cell;
+    padding: var(--ink-c-data-table-cell-padding);
+  }
+}
