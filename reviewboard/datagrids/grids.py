@@ -288,7 +288,13 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
         self.submitter_url_name = 'user'
         self.default_sort = ['-last_updated']
         self.default_columns = [
-            'star', 'summary', 'submitter', 'time_added', 'last_updated_since'
+            'star',
+            'new_updates',
+            'ship_it',
+            'summary',
+            'submitter',
+            'time_added',
+            'last_updated_since',
         ]
 
         # Add local timezone info to the columns.
