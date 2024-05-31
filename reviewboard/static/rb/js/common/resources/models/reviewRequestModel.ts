@@ -9,6 +9,7 @@ import {
 } from '@beanbag/spina';
 
 import { UserSession } from '../../models/userSessionModel';
+import { API } from '../../utils/apiUtils';
 import {
     type BaseResourceAttrs,
     type BaseResourceResourceData,
@@ -645,7 +646,7 @@ export class ReviewRequest extends BaseResource<
      * server, and if there is, trigger the 'updated' event.
      */
     _checkForUpdates() {
-        RB.apiCall({
+        API.request({
             noActivityIndicator: true,
             prefix: this.get('sitePrefix'),
             success: rsp => {

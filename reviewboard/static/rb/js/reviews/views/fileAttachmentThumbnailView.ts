@@ -12,6 +12,7 @@ import {
     type FileAttachment,
     type FileAttachmentComment,
     type ReviewRequest,
+    API,
     FileAttachmentStates,
 } from 'reviewboard/common';
 import {
@@ -888,7 +889,7 @@ export class FileAttachmentThumbnailView extends BaseView<
 
         const model = this.model;
 
-        RB.apiCall({
+        API.request({
             data: {
                 'pending_deletion': false,
             },

@@ -435,8 +435,14 @@ textarea {
 /*
  * The box containing information on an AJAX error.
  */
-.server-error-box .response-data {
-  margin-top: 2em;
+#server-error-box .ink-c-dialog__body {
+  display: flex;
+  flex-direction: column;
+  row-gap: var(--ink-u-spacing-m);
+
+  iframe {
+    flex-grow: 1;
+  }
 }
 
 

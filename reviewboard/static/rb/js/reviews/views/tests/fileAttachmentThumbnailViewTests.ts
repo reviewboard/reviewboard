@@ -8,6 +8,7 @@ import {
 } from 'jasmine-core';
 
 import {
+    API,
     FileAttachment,
     FileAttachmentStates,
     ReviewRequest,
@@ -400,12 +401,12 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
             spyOn(model, 'url').and.callFake(() => {
                 return '/test-file-attachment/';
             });
-            spyOn(RB, 'apiCall').and.callFake(options => options.success());
+            spyOn(API, 'request').and.callFake(options => options.success());
             spyOn(view, '_onUndoDeleteClicked').and.callThrough();
 
             view.$('.file-undo-delete').click();
 
-            expect(RB.apiCall).toHaveBeenCalled();
+            expect(API.request).toHaveBeenCalled();
             expect(model.get('state'))
                 .toBe(FileAttachmentStates.PUBLISHED);
         });

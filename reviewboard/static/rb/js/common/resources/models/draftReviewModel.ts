@@ -7,6 +7,7 @@ import {
     spina,
 } from '@beanbag/spina';
 
+import { API } from '../../utils/apiUtils';
 import * as JSONSerializers from '../utils/serializers';
 import {
     type SerializerMap,
@@ -115,7 +116,7 @@ export class DraftReview extends Review<
             console.warn(`RB.DraftReview.publish was called using callbacks.
                           Callers should be updated to use promises instead.`);
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.publish(newOptions));
         }
 

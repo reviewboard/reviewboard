@@ -9,6 +9,7 @@ import {
 import {
     type BaseComment,
     type ReviewRequest,
+    API,
     ExtraDataMixin,
     UserSession,
 } from 'reviewboard/common';
@@ -264,7 +265,8 @@ export class CommentEditor extends BaseModel<CommentEditorAttrs> {
             console.warn('RB.CommentEditor.save was called using ' +
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
-            return RB.promiseToCallbacks(
+
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.save(newOptions));
         }
 

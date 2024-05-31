@@ -17,6 +17,8 @@ import {
 } from 'djblets/configForms';
 import { type ListItemAttrs } from 'djblets/configForms/models/listItemModel';
 
+import { API } from 'reviewboard/common';
+
 
 /**
  * Attributes for the OAuthAppItem model
@@ -171,7 +173,7 @@ class OAuthAppItemView extends ConfigFormsListItemView<OAuthAppItem> {
      * Delete the OAuth2 application.
      */
     _onDeleteClicked() {
-        RB.apiCall({
+        API.request({
             method: 'DELETE',
             success: () => this.model.trigger('destroy'),
             url: this.model.get('apiURL'),

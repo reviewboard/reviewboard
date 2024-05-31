@@ -9,6 +9,7 @@ import {
 } from 'jasmine-core';
 
 import {
+    API,
     ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
@@ -105,7 +106,7 @@ suite('rb/resources/models/ReviewRequest', function() {
 
         describe('reopen', function() {
             it('With promises', async function() {
-                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn(API, 'request').and.callThrough();
                 spyOn($, 'ajax').and.callFake(request => {
                     expect(request.type).toBe('PUT');
                     expect(request.data.status).toBe('pending');
@@ -121,7 +122,7 @@ suite('rb/resources/models/ReviewRequest', function() {
 
                 await reviewRequest.reopen();
 
-                expect(RB.apiCall).toHaveBeenCalled();
+                expect(API.request).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
             });
         });
@@ -164,7 +165,7 @@ suite('rb/resources/models/ReviewRequest', function() {
                     .and.callThrough();
                 spyOn(session.watchedReviewRequests, 'removeImmediately')
                     .and.callThrough();
-                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn(API, 'request').and.callThrough();
             });
 
             it('true', async function() {
@@ -181,7 +182,7 @@ suite('rb/resources/models/ReviewRequest', function() {
 
                 expect(session.watchedReviewRequests.addImmediately)
                     .toHaveBeenCalled();
-                expect(RB.apiCall).toHaveBeenCalled();
+                expect(API.request).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
             });
 
@@ -199,14 +200,14 @@ suite('rb/resources/models/ReviewRequest', function() {
 
                 expect(session.watchedReviewRequests.removeImmediately)
                     .toHaveBeenCalled();
-                expect(RB.apiCall).toHaveBeenCalled();
+                expect(API.request).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
             });
         });
 
         describe('close', function() {
             it('With type=CLOSE_DISCARDED', async function() {
-                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn(API, 'request').and.callThrough();
                 spyOn($, 'ajax').and.callFake(request => {
                     expect(request.type).toBe('PUT');
                     expect(request.data.status).toBe('discarded');
@@ -225,12 +226,12 @@ suite('rb/resources/models/ReviewRequest', function() {
                     type: ReviewRequest.CLOSE_DISCARDED,
                 });
 
-                expect(RB.apiCall).toHaveBeenCalled();
+                expect(API.request).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
             });
 
             it('With type=CLOSE_SUBMITTED', async function() {
-                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn(API, 'request').and.callThrough();
                 spyOn($, 'ajax').and.callFake(request => {
                     expect(request.type).toBe('PUT');
                     expect(request.data.status).toBe('submitted');
@@ -249,23 +250,23 @@ suite('rb/resources/models/ReviewRequest', function() {
                     type: ReviewRequest.CLOSE_SUBMITTED,
                 });
 
-                expect(RB.apiCall).toHaveBeenCalled();
+                expect(API.request).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
             });
 
             it('With invalid type', async function() {
-                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn(API, 'request').and.callThrough();
                 spyOn($, 'ajax');
 
                 await expectAsync(reviewRequest.close({type: 'foo'})).
                     toBeRejectedWith(Error('Invalid close type'));
 
-                expect(RB.apiCall).not.toHaveBeenCalled();
+                expect(API.request).not.toHaveBeenCalled();
                 expect($.ajax).not.toHaveBeenCalled();
             });
 
             it('With description', async function() {
-                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn(API, 'request').and.callThrough();
                 spyOn($, 'ajax').and.callFake(request => {
                     expect(request.type).toBe('PUT');
                     expect(request.data.status).toBe('submitted');
@@ -285,12 +286,12 @@ suite('rb/resources/models/ReviewRequest', function() {
                     type: ReviewRequest.CLOSE_SUBMITTED,
                 });
 
-                expect(RB.apiCall).toHaveBeenCalled();
+                expect(API.request).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
             });
 
             it('With callbacks', function(done) {
-                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn(API, 'request').and.callThrough();
                 spyOn($, 'ajax').and.callFake(request => {
                     expect(request.type).toBe('PUT');
                     expect(request.data.status).toBe('discarded');
@@ -309,7 +310,7 @@ suite('rb/resources/models/ReviewRequest', function() {
                 reviewRequest.close({
                     error: () => done.fail(),
                     success: () => {
-                        expect(RB.apiCall).toHaveBeenCalled();
+                        expect(API.request).toHaveBeenCalled();
                         expect($.ajax).toHaveBeenCalled();
                         expect(console.warn).toHaveBeenCalled();
 

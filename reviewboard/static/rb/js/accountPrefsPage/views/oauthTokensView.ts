@@ -17,6 +17,8 @@ import {
 } from 'djblets/configForms';
 import { type ListItemAttrs } from 'djblets/configForms/models/listItemModel';
 
+import { API } from 'reviewboard/common';
+
 
 /**
  * Attributes for tho OAuthTokenItem model.

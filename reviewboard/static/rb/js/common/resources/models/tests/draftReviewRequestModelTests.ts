@@ -9,6 +9,7 @@ import {
 
 import {
     type DraftReviewRequest,
+    API,
     ReviewRequest,
 } from 'reviewboard/common';
 
@@ -39,7 +40,7 @@ suite('rb/resources/models/DraftReviewRequest', function() {
 
     describe('publish', function() {
         it('With promises', async function() {
-            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn(API, 'request').and.callThrough();
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.data.public).toBe(1);
 
@@ -64,12 +65,12 @@ suite('rb/resources/models/DraftReviewRequest', function() {
 
             await draft.publish();
 
-            expect(RB.apiCall).toHaveBeenCalled();
+            expect(API.request).toHaveBeenCalled();
             expect($.ajax).toHaveBeenCalled();
         });
 
         it('With callbacks', function(done) {
-            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn(API, 'request').and.callThrough();
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.data.public).toBe(1);
 
@@ -95,7 +96,7 @@ suite('rb/resources/models/DraftReviewRequest', function() {
 
             draft.publish({
                 success: () => {
-                    expect(RB.apiCall).toHaveBeenCalled();
+                    expect(API.request).toHaveBeenCalled();
                     expect($.ajax).toHaveBeenCalled();
                     expect(console.warn).toHaveBeenCalled();
 

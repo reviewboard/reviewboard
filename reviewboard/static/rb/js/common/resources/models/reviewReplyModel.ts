@@ -7,6 +7,10 @@ import {
     spina,
 } from '@beanbag/spina';
 
+import {
+    API,
+    BackboneError,
+} from '../../utils/apiUtils';
 import * as JSONSerializers from '../utils/serializers';
 import {
     type BaseResourceAttrs,
@@ -230,14 +234,14 @@ export class ReviewReply extends BaseResource<
         options: ReviewReplyPublishOptions = {},
         context: unknown = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
+        if (typeof options.success === 'function' ||
+            typeof options.error === 'function' ||
+            typeof options.complete === 'function') {
             console.warn('RB.ReviewReply.publish was called using ' +
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
 
-            return RB.promiseToCallbacks(options, context, newOptions =>
+            return API.promiseToCallbacks<void>(options, context, newOptions =>
                 this.publish(newOptions));
         }
 
@@ -295,7 +299,7 @@ export class ReviewReply extends BaseResource<
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
 
-            return RB.promiseToCallbacks(options, context, newOptions =>
+            return API.promiseToCallbacks(options, context, newOptions =>
                 this.discardIfEmpty(newOptions));
         }
 
@@ -334,9 +338,8 @@ export class ReviewReply extends BaseResource<
             const linkName = ReviewReply.COMMENT_LINK_NAMES[linkNameIndex];
             const url = this.get('links')[linkName].href;
 
-            RB.apiCall({
-                error: (model, xhr, options) => reject(
-                    new BackboneError(model, xhr, options)),
+            API.request({
+                error: (xhr) => reject(new BackboneError(this, xhr, {})),
                 success: rsp => {
                     if (rsp[linkName].length > 0) {
                         resolve(false);

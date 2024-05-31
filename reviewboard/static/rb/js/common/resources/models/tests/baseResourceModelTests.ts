@@ -8,7 +8,11 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { BaseResource } from 'reviewboard/common';
+import {
+    API,
+    BackboneError,
+    BaseResource,
+} from 'reviewboard/common';
 
 
 suite('rb/resources/models/BaseResource', function() {
@@ -377,7 +381,7 @@ suite('rb/resources/models/BaseResource', function() {
 
             model.set('parentObject', parentObject);
 
-            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn(API, 'request').and.callThrough();
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('POST');
 
@@ -388,7 +392,7 @@ suite('rb/resources/models/BaseResource', function() {
 
             expect(Backbone.Model.prototype.save).toHaveBeenCalled();
             expect(parentObject.ensureCreated).toHaveBeenCalled();
-            expect(RB.apiCall).toHaveBeenCalled();
+            expect(API.request).toHaveBeenCalled();
             expect($.ajax).toHaveBeenCalled();
 
             expect(model.trigger).toHaveBeenCalledWith('saved', {});
@@ -396,7 +400,7 @@ suite('rb/resources/models/BaseResource', function() {
 
         it('With isNew=true and no parentObject', async function() {
             spyOn(Backbone.Model.prototype, 'save').and.callThrough();
-            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn(API, 'request').and.callThrough();
             spyOn($, 'ajax');
 
             try {
@@ -405,7 +409,7 @@ suite('rb/resources/models/BaseResource', function() {
             } catch (err) {
                 expect(Backbone.Model.prototype.save)
                     .not.toHaveBeenCalled();
-                expect(RB.apiCall).not.toHaveBeenCalled();
+                expect(API.request).not.toHaveBeenCalled();
                 expect($.ajax).not.toHaveBeenCalled();
 
                 expect(err.message).toBe(
@@ -443,7 +447,7 @@ suite('rb/resources/models/BaseResource', function() {
 
             spyOn(parentObject, 'ready').and.resolveTo();
 
-            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn(API, 'request').and.callThrough();
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('PUT');
 
@@ -457,7 +461,7 @@ suite('rb/resources/models/BaseResource', function() {
 
             expect(parentObject.ready).toHaveBeenCalled();
             expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-            expect(RB.apiCall).toHaveBeenCalled();
+            expect(API.request).toHaveBeenCalled();
             expect($.ajax).toHaveBeenCalled();
             expect(model.trigger).toHaveBeenCalledWith('saved', {});
         });
@@ -502,7 +506,7 @@ suite('rb/resources/models/BaseResource', function() {
 
             model.set('parentObject', parentObject);
 
-            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn(API, 'request').and.callThrough();
             spyOn($, 'ajax').and.callFake(request => {
                 expect(request.type).toBe('POST');
 
@@ -515,7 +519,7 @@ suite('rb/resources/models/BaseResource', function() {
                 success: () => {
                     expect(Backbone.Model.prototype.save).toHaveBeenCalled();
                     expect(parentObject.ensureCreated).toHaveBeenCalled();
-                    expect(RB.apiCall).toHaveBeenCalled();
+                    expect(API.request).toHaveBeenCalled();
                     expect($.ajax).toHaveBeenCalled();
 
                     expect(model.trigger).toHaveBeenCalledWith('saved', {});
@@ -541,7 +545,7 @@ suite('rb/resources/models/BaseResource', function() {
 
                 spyOn(model, 'ready').and.resolveTo();
 
-                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn(API, 'request').and.callThrough();
                 spyOn($, 'ajax').and.callFake(request => {
                     expect(request.url).toBe(model.url);
                     expect(request.contentType)
@@ -567,7 +571,7 @@ suite('rb/resources/models/BaseResource', function() {
                 await model.save();
 
                 expect(model.toJSON).toHaveBeenCalled();
-                expect(RB.apiCall).toHaveBeenCalled();
+                expect(API.request).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
             });
         });
@@ -585,7 +589,7 @@ suite('rb/resources/models/BaseResource', function() {
                 };
 
                 spyOn(Backbone.Model.prototype, 'save').and.callThrough();
-                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn(API, 'request').and.callThrough();
             });
 
             it('With file', async function() {
@@ -638,7 +642,7 @@ suite('rb/resources/models/BaseResource', function() {
                 await model.save({ boundary });
 
                 expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                expect(RB.apiCall).toHaveBeenCalled();
+                expect(API.request).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
             });
 
@@ -714,7 +718,7 @@ suite('rb/resources/models/BaseResource', function() {
                 await model.save({ boundary });
 
                 expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                expect(RB.apiCall).toHaveBeenCalled();
+                expect(API.request).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
             });
 
@@ -736,7 +740,7 @@ suite('rb/resources/models/BaseResource', function() {
                 await model.save();
 
                 expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                expect(RB.apiCall).toHaveBeenCalled();
+                expect(API.request).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
             });
         });
@@ -755,18 +759,18 @@ suite('rb/resources/models/BaseResource', function() {
                 });
 
                 spyOn(Backbone, 'sync').and.callThrough();
-                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn(API, 'request').and.callThrough();
                 spyOn($, 'ajax');
                 spyOn(form, 'ajaxSubmit').and.callFake(
                     request => request.success({}));
 
                 await model.save({ form: form });
 
-                expect(RB.apiCall).toHaveBeenCalled();
+                expect(API.request).toHaveBeenCalled();
                 expect(form.ajaxSubmit).toHaveBeenCalled();
                 expect($.ajax).not.toHaveBeenCalled();
                 expect(Backbone.sync.calls.argsFor(0)[2].data).toBe(null);
-                expect(RB.apiCall.calls.argsFor(0)[0].data).toBe(null);
+                expect(API.request.calls.argsFor(0)[0].data).toBe(null);
             });
 
             it('Overriding file attributes', async function() {
@@ -783,7 +787,7 @@ suite('rb/resources/models/BaseResource', function() {
 
                 spyOn(model, '_saveWithFiles').and.callThrough();
                 spyOn(Backbone, 'sync').and.callThrough();
-                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn(API, 'request').and.callThrough();
                 spyOn($, 'ajax');
                 spyOn(form, 'ajaxSubmit').and.callFake(
                     request => request.success({}));
@@ -791,11 +795,11 @@ suite('rb/resources/models/BaseResource', function() {
                 await model.save({ form: form });
 
                 expect(model._saveWithFiles).not.toHaveBeenCalled();
-                expect(RB.apiCall).toHaveBeenCalled();
+                expect(API.request).toHaveBeenCalled();
                 expect(form.ajaxSubmit).toHaveBeenCalled();
                 expect($.ajax).not.toHaveBeenCalled();
                 expect(Backbone.sync.calls.argsFor(0)[2].data).toBe(null);
-                expect(RB.apiCall.calls.argsFor(0)[0].data).toBe(null);
+                expect(API.request.calls.argsFor(0)[0].data).toBe(null);
             });
         });
     });

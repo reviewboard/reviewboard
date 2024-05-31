@@ -2,7 +2,10 @@
  * Queue for loading diff fragments.
  */
 
-import { DataUtils } from 'reviewboard/common';
+import {
+    API,
+    DataUtils,
+} from 'reviewboard/common';
 
 import {
     type DiffFragmentViewOptions,
@@ -453,11 +456,11 @@ export class DiffFragmentQueue {
             view = new DiffFragmentView(_.defaults({
                 el: $container,
                 loadDiff: async (options: LoadDiffOptions) => {
-                    RB.setActivityIndicator(true, {type: 'GET'});
+                    API.setActivityIndicator(true, {type: 'GET'});
 
                     await this.#loadDiff(commentID, options);
 
-                    RB.setActivityIndicator(false, {});
+                    API.setActivityIndicator(false, {});
                 },
             }, this.#diffFragmentViewOptions));
 

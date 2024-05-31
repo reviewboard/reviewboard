@@ -7,6 +7,8 @@ import {
     spina,
 } from '@beanbag/spina';
 
+import { API } from 'reviewboard/common';
+
 
 /**
  * Options for the OAuthClientSecretView.
@@ -110,7 +112,7 @@ export class OAuthClientSecretView extends BaseView<
 
         this.#$regen.attr('aria-busy', 'true');
 
-        RB.apiCall({
+        API.request({
             data: {
                 'regenerate_client_secret': 1,
             },

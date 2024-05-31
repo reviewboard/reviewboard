@@ -157,7 +157,7 @@ export class CommitView extends BaseView {
               <Ink.DialogAction action="close">
                ${_`Cancel`}
               </Ink.DialogAction>
-             </Ink.Dialog.Body>
+             </Ink.Dialog.PrimaryActions>
             </Ink.Dialog>
         `;
         dialog.open();

@@ -8,6 +8,10 @@ import {
 } from '@beanbag/spina';
 
 import {
+    API,
+    BackboneError,
+} from '../../utils/apiUtils';
+import {
     type BaseResourceAttrs,
     type BaseResourceResourceData,
     type ResourceLink,
@@ -253,7 +257,7 @@ export class DraftReviewRequest extends BaseResource<
                 'RB.DraftReview.publish was called using callbacks. ' +
                 'Callers should be updated to use promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.publish(newOptions));
         }
 

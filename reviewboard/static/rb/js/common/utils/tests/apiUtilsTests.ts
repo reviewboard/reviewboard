@@ -4,6 +4,21 @@
  * Version Added:
  *     5.0
  */
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import {
+    ajaxOptions,
+    API,
+} from 'reviewboard/common';
+
+
 suite('rb/utils/apiUtils', function() {
     const STATUS_TEXTS = {
         200: 'OK',
@@ -12,20 +27,20 @@ suite('rb/utils/apiUtils', function() {
         500: 'Internal Server Error',
     };
 
-    let oldEnableQueuing;
-    let oldEnableIndicator;
+    let oldEnableQueuing: boolean;
+    let oldEnableIndicator: boolean;
 
     beforeEach(function() {
-        oldEnableQueuing = RB.ajaxOptions.enableQueuing;
-        oldEnableIndicator = RB.ajaxOptions.enableIndicator;
+        oldEnableQueuing = ajaxOptions.enableQueuing;
+        oldEnableIndicator = ajaxOptions.enableIndicator;
 
-        RB.ajaxOptions.enableQueuing = true;
-        RB.ajaxOptions.enableIndicator = true;
+        ajaxOptions.enableQueuing = true;
+        ajaxOptions.enableIndicator = true;
     });
 
     afterEach(function() {
-        RB.ajaxOptions.enableQueuing = oldEnableQueuing;
-        RB.ajaxOptions.enableIndicator = oldEnableIndicator;
+        ajaxOptions.enableQueuing = oldEnableQueuing;
+        ajaxOptions.enableIndicator = oldEnableIndicator;
     });
 
 
@@ -106,11 +121,11 @@ suite('rb/utils/apiUtils', function() {
         });
     }
 
-    describe('apiCall', function() {
+    describe('API.request', function() {
         /**
-         * Run a RB.apiCall test.
+         * Run a API.request test.
          *
-         * This sets up a call to :js:func:`RB.apiCall` with a mock AJAX
+         * This sets up a call to :js:func:`API.request` with a mock AJAX
          * implementation and UI. It handles checking all the common state
          * in the UI and the callbacks, matching expectations against provided
          * arguments.
@@ -207,7 +222,7 @@ suite('rb/utils/apiUtils', function() {
                         }
                     }
 
-                    /* Check DOM state from RB.apiCall. */
+                    /* Check DOM state from API.request. */
                     expect($buttons.attr('disabled')).toBeUndefined();
 
                     const activityIndicatorHasError =
@@ -257,7 +272,7 @@ suite('rb/utils/apiUtils', function() {
 
                         expect(arguments[0]).toEqual(options.rsp);
                     } else {
-                        done.fail('API call unexpectedly returned success.');
+                        done.fail('API request unexpectedly returned success.');
                     }
                 };
             }
@@ -265,7 +280,7 @@ suite('rb/utils/apiUtils', function() {
             if (options.addErrorHandler !== false) {
                 data.error = function(xhr, statusText, httpStatusText) {
                     if (options.expectSuccess) {
-                        done.fail('API call unexpectedly returned error.');
+                        done.fail('API request unexpectedly returned error.');
                     } else {
                         runCommonSuccessErrorChecks();
 
@@ -275,7 +290,7 @@ suite('rb/utils/apiUtils', function() {
                         /*
                          * This seems like a tautology, given the setup code,
                          * but we're making sure it's preserved through
-                         * RB.apiCall's handlers.
+                         * API.request's handlers.
                          */
                         expect(httpStatusText).toBe(STATUS_TEXTS[xhr.status]);
                         expect(xhr.statusText).toBe(httpStatusText);
@@ -293,11 +308,11 @@ suite('rb/utils/apiUtils', function() {
                 spyOn(data, 'error').and.callThrough();
             }
 
-            RB.apiCall(data);
+            API.request(data);
         }
 
         /**
-         * Add a suite of RB.apiCall tests for a given HTTP method.
+         * Add a suite of API.request tests for a given HTTP method.
          *
          * Args:
          *     method (string):

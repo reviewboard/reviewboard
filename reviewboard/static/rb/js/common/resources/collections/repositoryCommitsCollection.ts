@@ -8,6 +8,7 @@ import {
 } from '@beanbag/spina';
 
 import { BaseCollection } from '../../collections/baseCollection';
+import { API } from '../../utils/apiUtils';
 import {
     type RepositoryCommitAttrs,
     RepositoryCommit,
@@ -200,7 +201,7 @@ export class RepositoryCommits extends BaseCollection<
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.fetchNext(newOptions));
         }
 

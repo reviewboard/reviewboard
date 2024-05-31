@@ -8,6 +8,7 @@ import {
 } from 'jasmine-core';
 
 import {
+    API,
     BaseResource,
     ReviewReply,
 } from 'reviewboard/common';
@@ -125,7 +126,7 @@ suite('rb/resources/models/ReviewReply', function() {
                     loaded: true,
                 });
 
-                spyOn(RB, 'apiCall').and.callFake(options => {
+                spyOn(API, 'request').and.callFake(options => {
                     const links = model.get('links');
                     const data = {};
                     const key = _.find(

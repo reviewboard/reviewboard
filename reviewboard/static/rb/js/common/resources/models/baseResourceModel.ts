@@ -10,6 +10,10 @@ import {
 
 import { ExtraData } from '../../models/extraDataModel';
 import { ExtraDataMixin } from '../../models/extraDataMixin';
+import {
+    API,
+    BackboneError,
+} from '../../utils/apiUtils';
 import { type SerializerState } from '../utils/serializers';
 
 
@@ -379,7 +383,7 @@ export class BaseResource<
             console.warn('BaseResource.ready was called using callbacks. ' +
                          'Callers should be updated to use promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, () => this.ready());
         }
 
@@ -436,7 +440,7 @@ export class BaseResource<
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, () => this.ensureCreated());
         }
 
@@ -485,7 +489,7 @@ export class BaseResource<
             console.warn('BaseResource.fetch was called using callbacks. ' +
                          'Callers should be updated to use promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.fetch(newOptions));
         }
 
@@ -557,7 +561,7 @@ export class BaseResource<
             console.warn('BaseResource.save was called using callbacks. ' +
                          'Callers should be updated to use promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.save(newOptions));
         }
 
@@ -750,7 +754,7 @@ export class BaseResource<
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.destroy(newOptions));
         }
 
@@ -1059,7 +1063,7 @@ export class BaseResource<
         }
 
         syncOptions.error = (xhr, textStatus, jqXHR) => {
-            RB.storeAPIError(xhr);
+            API.storeError(xhr);
 
             const rsp = xhr.errorPayload;
 

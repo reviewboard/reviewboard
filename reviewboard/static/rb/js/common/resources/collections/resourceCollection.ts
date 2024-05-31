@@ -5,6 +5,7 @@
 import { spina } from '@beanbag/spina';
 
 import { BaseCollection } from '../../collections/baseCollection';
+import { API } from '../../utils/apiUtils';
 import {
     type ResourceLink,
     BaseResource,
@@ -244,7 +245,7 @@ export class ResourceCollection<
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.fetch(newOptions));
         }
 
@@ -338,7 +339,7 @@ export class ResourceCollection<
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.fetchPrev(newOptions));
         }
 
@@ -390,7 +391,7 @@ export class ResourceCollection<
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.fetchNext(newOptions));
         }
 
@@ -444,7 +445,7 @@ export class ResourceCollection<
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.fetchAll(newOptions));
         }
 

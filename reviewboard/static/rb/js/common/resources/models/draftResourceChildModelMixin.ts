@@ -1,5 +1,6 @@
 /** Mixin for resources that are children of a draft resource. */
 
+import { API } from '../../utils/apiUtils';
 import { type ReadyOptions } from './baseResourceModel';
 
 
@@ -37,7 +38,7 @@ export const DraftResourceChildModelMixin = {
             console.warn('RB.DraftResourceChildModelMixin.destroy was ' +
                          'called using callbacks. Callers should be updated ' +
                          'to use promises instead.');
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.destroy(newOptions));
         }
 
@@ -77,7 +78,7 @@ export const DraftResourceChildModelMixin = {
             console.warn('RB.DraftResourceChildModelMixin.ready was ' +
                          'called using callbacks. Callers should be updated ' +
                          'to use promises instead.');
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.ready());
         }
 

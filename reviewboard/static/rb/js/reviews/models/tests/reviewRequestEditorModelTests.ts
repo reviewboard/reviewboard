@@ -8,7 +8,10 @@ import {
     spyOn,
 } from 'jasmine-core';
 
-import { ReviewRequest } from 'reviewboard/common';
+import {
+    BackboneError,
+    ReviewRequest,
+} from 'reviewboard/common';
 import { ReviewRequestEditor } from 'reviewboard/reviews';
 
 

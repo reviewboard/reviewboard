@@ -2,7 +2,11 @@
  * Mixin for resources that have special "draft" URLs.
  */
 
-import { UserSession } from 'reviewboard/common';
+import { UserSession } from '../../models/userSessionModel';
+import {
+    API,
+    BackboneError,
+} from '../../utils/apiUtils';
 
 
 /**
@@ -64,7 +68,7 @@ export const DraftResourceModelMixin = {
                          'called using callbacks. Callers should be updated ' +
                          'to use promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.ready(newOptions));
         }
 
@@ -117,7 +121,7 @@ export const DraftResourceModelMixin = {
                          'called using callbacks. Callers should be updated ' +
                          'to use promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.destroy(newOptions));
         }
 

@@ -7,6 +7,9 @@ import {
     spina,
 } from '@beanbag/spina';
 
+import { API } from 'reviewboard/common';
+import { APIRequestOptions } from 'reviewboard/common/utils/apiUtils';
+
 import {
     type AbstractReviewableAttrs,
     AbstractReviewable,
@@ -207,10 +210,10 @@ export class DiffReviewable
      *     A promise which resolves when the operation is complete.
      */
     _fetchFragment(
-        options, // TODO TYPING: convert once RB.apiCall has an interface
+        options: APIRequestOptions,
     ): Promise<string> {
         return new Promise<string>(resolve => {
-            RB.apiCall(_.defaults(
+            API.request(_.defaults(
                 {
                     complete: xhr => resolve(xhr.responseText),
                     dataType: 'html',

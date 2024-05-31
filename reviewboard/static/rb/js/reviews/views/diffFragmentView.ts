@@ -8,6 +8,7 @@ import {
     spina,
 } from '@beanbag/spina';
 
+import { API } from 'reviewboard/common';
 import { CenteredElementManager } from 'reviewboard/ui';
 
 import { type LoadDiffOptions } from '../utils/diffFragmentQueue';
@@ -254,7 +255,7 @@ export class DiffFragmentView extends BaseView<
             linesOfContext: $btn.data('lines-of-context'),
         });
 
-        RB.setActivityIndicator(false, {});
+        API.setActivityIndicator(false, {});
 
         /* All our HTML has changed, so clean up and re-render everything. */
         if (this.#centeredMgr !== null) {

@@ -3,6 +3,11 @@
  * */
 import { BaseCollection as SpinaCollection, spina } from '@beanbag/spina';
 
+import {
+    API,
+    BackboneError,
+} from '../utils/apiUtils';
+
 
 /**
  * The base class used for Review Board collections.
@@ -53,7 +58,7 @@ export class BaseCollection<
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.fetch(newOptions));
         }
 
@@ -92,7 +97,7 @@ export class BaseCollection<
     ) {
         return Backbone.sync.call(this, method, model, _.defaults({
             error: (xhr, textStatus, errorThrown) => {
-                RB.storeAPIError(xhr);
+                API.storeError(xhr);
 
                 if (_.isFunction(options.error)) {
                     options.error(xhr, textStatus, errorThrown);

@@ -20,6 +20,7 @@ import {
 import _ from 'underscore';
 
 import {
+    API,
     ClientCommChannel,
     ReviewRequest,
     UserSession,
@@ -863,7 +864,7 @@ export class UnifiedBannerView extends FloatingBannerView<
         archive: boolean,
     ): Promise<void> {
         return new Promise((resolve, reject) => {
-            RB.apiCall({
+            API.request({
                 data: {
                     batch: JSON.stringify({
                         archive: archive,

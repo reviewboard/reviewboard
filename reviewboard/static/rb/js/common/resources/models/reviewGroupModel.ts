@@ -8,6 +8,10 @@ import {
 } from '@beanbag/spina';
 
 import {
+    API,
+    BackboneError,
+} from '../../utils/apiUtils';
+import {
     type BaseResourceAttrs,
     type BaseResourceResourceData,
     BaseResource,
@@ -207,7 +211,7 @@ export class ReviewGroup extends BaseResource<
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.setStarred(starred));
         }
 
@@ -253,7 +257,7 @@ export class ReviewGroup extends BaseResource<
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.addUser(username));
         }
 
@@ -309,7 +313,7 @@ export class ReviewGroup extends BaseResource<
                          'callbacks. Callers should be updated to use ' +
                          'promises instead.');
 
-            return RB.promiseToCallbacks(
+            return API.promiseToCallbacks(
                 options, context, newOptions => this.removeUser(username));
         }
 
