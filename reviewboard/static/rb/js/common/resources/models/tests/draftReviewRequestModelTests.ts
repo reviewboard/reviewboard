@@ -68,43 +68,6 @@ suite('rb/resources/models/DraftReviewRequest', function() {
             expect(API.request).toHaveBeenCalled();
             expect($.ajax).toHaveBeenCalled();
         });
-
-        it('With callbacks', function(done) {
-            spyOn(API, 'request').and.callThrough();
-            spyOn($, 'ajax').and.callFake(request => {
-                expect(request.data.public).toBe(1);
-
-                request.success({
-                    stat: 'ok',
-                    draft: {
-                        id: 1,
-                        links: {},
-                    },
-                });
-            });
-            spyOn(console, 'warn');
-
-            /* Set some fields in order to pass validation. */
-            draft.set({
-                targetGroups: [{
-                    name: 'mygroup',
-                    url: '/groups/mygroup',
-                }],
-                summary: 'My summary',
-                description: 'My description',
-            });
-
-            draft.publish({
-                success: () => {
-                    expect(API.request).toHaveBeenCalled();
-                    expect($.ajax).toHaveBeenCalled();
-                    expect(console.warn).toHaveBeenCalled();
-
-                    done();
-                },
-                error: () => done.fail(),
-            });
-        });
     });
 
     it('parse', function() {

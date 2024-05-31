@@ -3,10 +3,7 @@
  */
 
 import { UserSession } from '../../models/userSessionModel';
-import {
-    API,
-    BackboneError,
-} from '../../utils/apiUtils';
+import { BackboneError } from '../../utils/apiUtils';
 
 
 /**
@@ -42,6 +39,10 @@ export const DraftResourceModelMixin = {
      * Otherwise, we delegate to the parent's ready().
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and changed to return a promise.
      *
@@ -49,28 +50,21 @@ export const DraftResourceModelMixin = {
      *     options (object, optional):
      *         Options for the operation, including callbacks.
      *
-     *     context (object, optional):
-     *         Context to bind when calling callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     async ready(
         options: ReadyOptions = {},
-        context: unknown = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete) ||
-            _.isFunction(options.ready)) {
-            console.warn('RB.DraftResourceModelMixin.ready was ' +
-                         'called using callbacks. Callers should be updated ' +
-                         'to use promises instead.');
-
-            return API.promiseToCallbacks(
-                options, context, newOptions => this.ready(newOptions));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete ||
+              options.ready),
+            dedent`
+                RB.DraftResourceModelMixin.ready was called using callbacks.
+                This has been removed in Review Board 8.0 in favor of
+                promises.
+            `);
 
         if (!this.get('loaded') && this.isNew() &&
             this._needDraft === undefined) {
@@ -96,6 +90,10 @@ export const DraftResourceModelMixin = {
      * look up the draft the next time an operation is performed.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and changed to return a promise.
      *
@@ -103,27 +101,20 @@ export const DraftResourceModelMixin = {
      *     options (object, optional):
      *         Options for the operation, including callbacks.
      *
-     *     context (object, optional):
-     *         Context to bind when calling callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     async destroy(
         options: Backbone.ModelDestroyOptions = {},
-        context: unknown = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.DraftResourceModelMixin.destroy was ' +
-                         'called using callbacks. Callers should be updated ' +
-                         'to use promises instead.');
-
-            return API.promiseToCallbacks(
-                options, context, newOptions => this.destroy(newOptions));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                RB.DraftResourceModelMixin.destroy was called using callbacks.
+                This has been removed in Review Board 8.0 in favor of
+                promises.
+            `);
 
         await this.ready();
         await _super(this).destroy.call(this, options);

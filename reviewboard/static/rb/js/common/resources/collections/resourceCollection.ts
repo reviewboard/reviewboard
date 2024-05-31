@@ -5,7 +5,6 @@
 import { spina } from '@beanbag/spina';
 
 import { BaseCollection } from '../../collections/baseCollection';
-import { API } from '../../utils/apiUtils';
 import {
     type ResourceLink,
     BaseResource,
@@ -224,30 +223,26 @@ export class ResourceCollection<
      * pages.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and added a promise return value.
      *
      * Args:
      *     options (ResourceCollectionFetchOptions):
      *         Options for the fetch operation.
-     *
-     *     context (object):
-     *         Context to be used when calling callbacks.
      */
     async fetch(
         options: ResourceCollectionFetchOptions = {},
-        context: object = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.ResourceCollection.fetch was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return API.promiseToCallbacks(
-                options, context, newOptions => this.fetch(newOptions));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                RB.ResourceCollection.fetch was called using callbacks. This
+                has been removed in Review Board 8.0 in favor of promises.
+            `);
 
         const data = _.extend({}, options.data);
 
@@ -314,6 +309,10 @@ export class ResourceCollection<
      * by providing `reset: false` in options.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and added a promise return value.
      *
@@ -321,26 +320,19 @@ export class ResourceCollection<
      *     options (ResourceCollectionFetchOptions):
      *         Options for the fetch operation.
      *
-     *     context (object):
-     *         Context to bind when calling callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     fetchPrev(
         options: ResourceCollectionFetchOptions = {},
-        context: object = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.ResourceCollection.fetchPrev was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return API.promiseToCallbacks(
-                options, context, newOptions => this.fetchPrev(newOptions));
+        if (options.success || options.error || options.complete) {
+            console.error(dedent`
+                RB.ResourceCollection.fetchPrev was called using callbacks.
+                This has been removed in Review Board 8.0 in favor of
+                promises.
+            `);
         }
 
         if (!this.hasPrev) {
@@ -366,6 +358,10 @@ export class ResourceCollection<
      * by providing `reset: false` in options.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and added a promise return value.
      *
@@ -373,26 +369,19 @@ export class ResourceCollection<
      *     options (ResourceCollectionFetchOptions):
      *         Options for the fetch operation.
      *
-     *     context (object):
-     *         Context to bind when calling callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     fetchNext(
         options: ResourceCollectionFetchOptions = {},
-        context: object = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.ResourceCollection.fetchNext was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return API.promiseToCallbacks(
-                options, context, newOptions => this.fetchNext(newOptions));
+        if (options.success || options.error || options.complete) {
+            console.error(dedent`
+                RB.ResourceCollection.fetchNext was called using callbacks.
+                This has been removed in Review Board 8.0 in favor of
+                promises.
+            `);
         }
 
         if (!this.hasNext && options.enforceHasNext !== false) {
@@ -420,6 +409,10 @@ export class ResourceCollection<
      * This can end up slowing down the server. Use it carefully.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and added a promise return value.
      *
@@ -427,26 +420,19 @@ export class ResourceCollection<
      *     options (ResourceCollectionFetchOptions):
      *         Options for the fetch operation.
      *
-     *     context (object):
-     *         Context to bind when calling callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     async fetchAll(
         options: ResourceCollectionFetchOptions = {},
-        context: object = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.ResourceCollection.fetchNext was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return API.promiseToCallbacks(
-                options, context, newOptions => this.fetchAll(newOptions));
+        if (options.success || options.error || options.complete) {
+            console.error(dedent`
+                RB.ResourceCollection.fetchAll was called using callbacks.
+                This has been removed in Review Board 8.0 in favor of
+                promises.
+            `);
         }
 
         const fetchOptions = _.defaults({

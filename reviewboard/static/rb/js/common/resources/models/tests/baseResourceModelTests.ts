@@ -71,26 +71,6 @@ suite('rb/resources/models/BaseResource', function() {
             expect(model.fetch).toHaveBeenCalled();
             expect(model.save).toHaveBeenCalled();
         });
-
-        it('With callbacks', function(done) {
-            model.set({
-                id: 1,
-                loaded: false,
-            });
-            spyOn(console, 'warn');
-
-            model.ensureCreated({
-                error: () => done.fail(),
-                success: () => {
-                    expect(model.ready).toHaveBeenCalled();
-                    expect(model.fetch).toHaveBeenCalled();
-                    expect(model.save).toHaveBeenCalled();
-                    expect(console.warn).toHaveBeenCalled();
-
-                    done();
-                },
-            });
-        });
     });
 
     describe('fetch', function() {
@@ -150,28 +130,6 @@ suite('rb/resources/models/BaseResource', function() {
                 expect(parentObject.ready).toHaveBeenCalled();
                 expect(Backbone.Model.prototype.fetch)
                     .not.toHaveBeenCalled();
-            });
-
-            it('With callbacks', function(done) {
-                model.set({
-                    id: 123,
-                    parentObject: parentObject,
-                });
-
-                spyOn(parentObject, 'ready').and.resolveTo();
-                spyOn(console, 'warn');
-
-                model.fetch({
-                    error: () => done.fail(),
-                    success: () => {
-                        expect(parentObject.ready).toHaveBeenCalled();
-                        expect(Backbone.Model.prototype.fetch)
-                            .toHaveBeenCalled();
-                        expect(console.warn).toHaveBeenCalled();
-
-                        done();
-                    },
-                });
             });
         });
 
@@ -335,25 +293,6 @@ suite('rb/resources/models/BaseResource', function() {
             await model.ready();
             expect(model.fetch).toHaveBeenCalled();
         });
-
-        it('With callbacks', function(done) {
-            model.set({
-                id: 123,
-                loaded: false,
-            });
-            expect(model.isNew()).toBe(false);
-            spyOn(console, 'warn');
-
-            model.ready({
-                error: () => done.fail(),
-                success: () => {
-                    expect(model.fetch).toHaveBeenCalled();
-                    expect(console.warn).toHaveBeenCalled();
-
-                    done();
-                },
-            });
-        });
     });
 
     describe('save', function() {
@@ -491,43 +430,6 @@ suite('rb/resources/models/BaseResource', function() {
             expect(Backbone.Model.prototype.save)
                 .not.toHaveBeenCalled();
             expect(model.trigger).not.toHaveBeenCalledWith('saved');
-        });
-
-        it('With callbacks', function(done) {
-            const responseData = {
-                foo: {},
-                stat: 'ok',
-            };
-
-            spyOn(parentObject, 'ensureCreated').and.resolveTo();
-            spyOn(parentObject, 'ready').and.resolveTo();
-
-            spyOn(Backbone.Model.prototype, 'save').and.callThrough();
-
-            model.set('parentObject', parentObject);
-
-            spyOn(API, 'request').and.callThrough();
-            spyOn($, 'ajax').and.callFake(request => {
-                expect(request.type).toBe('POST');
-
-                request.success(responseData);
-            });
-            spyOn(console, 'warn');
-
-            model.save({
-                error: () => done.fail(),
-                success: () => {
-                    expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                    expect(parentObject.ensureCreated).toHaveBeenCalled();
-                    expect(API.request).toHaveBeenCalled();
-                    expect($.ajax).toHaveBeenCalled();
-
-                    expect(model.trigger).toHaveBeenCalledWith('saved', {});
-                    expect(console.warn).toHaveBeenCalled();
-
-                    done();
-                },
-            });
         });
 
         describe('Request payload', function() {

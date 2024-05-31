@@ -163,47 +163,35 @@ export class RepositoryCommits extends BaseCollection<
      * this if they want callbacks to fire.
      *
      * Version Changed:
-     *     4.0.3:
-     *     Added the ``options`` argument with ``error`` and ``success``
-     *     callbacks.
+     *     8.0:
+     *     Removed callbacks and the context parameter.
      *
      * Version Changed:
      *     5.0:
      *     Added the promise return value.
      *
+     * Version Changed:
+     *     4.0.3:
+     *     Added the ``options`` argument with ``error`` and ``success``
+     *     callbacks.
+     *
      * Args:
      *     options (object, optional):
      *         Options for fetching the next page of results.
-     *
-     *     context (object, optional):
-     *         Context to use when calling callbacks.
-     *
-     * Option Args:
-     *     error (function):
-     *         A function to call if fetching a page fails. This must take
-     *         ``collection, xhr`` arguments.
-     *
-     *     success (function):
-     *         A function to call if fetching a page succeeds.
      *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     async fetchNext(
-        options={},
-        context=undefined,
+        options: Backbone.PersistenceOptions = {},
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.RepositoryCommits.fetchNext was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return API.promiseToCallbacks(
-                options, context, newOptions => this.fetchNext(newOptions));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                RB.RepositoryCommits.fetchNext was called using callbacks.
+                This has been removed in Review Board 8.0 in favor of promises.
+            `);
 
         if (this.canFetchNext()) {
             this.options.start = this.#nextStart;

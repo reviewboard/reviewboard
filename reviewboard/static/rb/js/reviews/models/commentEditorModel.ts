@@ -9,7 +9,6 @@ import {
 import {
     type BaseComment,
     type ReviewRequest,
-    API,
     ExtraDataMixin,
     UserSession,
 } from 'reviewboard/common';
@@ -244,36 +243,34 @@ export class CommentEditor extends BaseModel<CommentEditorAttrs> {
      * to the caller.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and added a promise return value.
      *
      * Args:
      *     options (object, optional):
-     *         Options for the save operation.
-     *
-     *     context (object, optional):
-     *         The context to use when calling callbacks.
+     *         Legacy options for the save operation.
      *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    async save(options={}, context=undefined) {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.CommentEditor.save was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return API.promiseToCallbacks(
-                options, context, newOptions => this.save(newOptions));
-        }
+    async save(options = {}) {
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                RB.CommentEditor.save was called using callbacks. This has
+                been removed in Review Board 8.0 in favor of promises.
+            `);
 
         console.assert(this.get('canSave'),
                        'save() called when canSave is false.');
 
-        const extraData = _.clone(this.get('extraData'));
+        const extraData = <{ [key: string]: unknown }>_.clone(
+            this.get('extraData'));
         extraData.require_verification = this.get('requireVerification');
 
         const comment = this.get('comment');

@@ -289,36 +289,6 @@ suite('rb/resources/models/ReviewRequest', function() {
                 expect(API.request).toHaveBeenCalled();
                 expect($.ajax).toHaveBeenCalled();
             });
-
-            it('With callbacks', function(done) {
-                spyOn(API, 'request').and.callThrough();
-                spyOn($, 'ajax').and.callFake(request => {
-                    expect(request.type).toBe('PUT');
-                    expect(request.data.status).toBe('discarded');
-                    expect(request.data.description).toBe(undefined);
-
-                    request.success({
-                        review_request: {
-                            id: 1,
-                            links: {},
-                        },
-                        stat: 'ok',
-                    });
-                });
-                spyOn(console, 'warn');
-
-                reviewRequest.close({
-                    error: () => done.fail(),
-                    success: () => {
-                        expect(API.request).toHaveBeenCalled();
-                        expect($.ajax).toHaveBeenCalled();
-                        expect(console.warn).toHaveBeenCalled();
-
-                        done();
-                    },
-                    type: ReviewRequest.CLOSE_DISCARDED,
-                });
-            });
         });
     });
 });
