@@ -55,6 +55,7 @@ export interface TextCommentBlockAttrs
 interface SerializedTextCommentFields {
     beginLineNum: string;
     endLineNum: string;
+    viewMode: string;
 }
 
 
@@ -105,6 +106,7 @@ export class TextCommentBlock<
         return {
             beginLineNum: parseInt(fields.beginLineNum, 10),
             endLineNum: parseInt(fields.endLineNum, 10),
+            viewMode: fields.viewMode,
         };
     }
 }
