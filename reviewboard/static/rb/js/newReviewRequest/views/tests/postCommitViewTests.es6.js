@@ -142,23 +142,22 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
 
             it('UI state', function() {
                 expect(repository.branches.fetch).toHaveBeenCalled();
-
-                expect(view._showLoadError).toHaveBeenCalled();
-                expect(view._showLoadError.calls.argsFor(0)[1]).toBe(errorText);
-
+                expect(view._showLoadError).toHaveBeenCalledWith(
+                    'branches', errorText);
                 expect(view._branchesView.$el.css('display')).toBe('none');
-                expect(view._errorView).toBeTruthy();
+                expect(view._$error).toBeTruthy();
+                expect(view._$error.length).toBe(1);
                 expect(view._commitsView).toBeFalsy();
-                expect(view._errorView.$el.find('.error-text').text().trim())
+                expect(view._$error.find('.error-text').text().trim())
                     .toBe('Oh no');
+                expect(view._$error.find('a')[0].id).toBe('reload_branches');
             });
 
             it('Reloading', function(done) {
                 spyOn(view, '_onReloadBranchesClicked').and.callFake(() => {
                     view._loadBranches().finally(() => {
-                        expect(view._errorView).toBe(null);
-                        expect(view._branchesView.$el.css('display'))
-                            .not.toBe('none');
+                        expect(view._$error).toBe(null);
+                        expect(view._branchesView.$el.css('display')).not.toBe('none');
 
                         done();
                     });
@@ -169,8 +168,8 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
 
                 returnError = false;
 
-                expect(view._errorView).toBeTruthy();
-                const $reload = view._errorView.$el.find('.ink-c-button');
+                expect(view._$error).toBeTruthy();
+                const $reload = view._$error.find('#reload_branches');
                 expect($reload.length).toBe(1);
                 $reload.click();
             });
@@ -199,22 +198,22 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
 
             it('UI state', function() {
                 expect(view._commitsCollection.fetch).toHaveBeenCalled();
-
-                expect(view._showLoadError).toHaveBeenCalled();
-                expect(view._showLoadError.calls.argsFor(0)[1]).toBe(errorText);
-
+                expect(view._showLoadError).toHaveBeenCalledWith(
+                    'commits', errorText);
                 expect(view._commitsView.$el.css('display')).toBe('none');
-                expect(view._errorView).toBeTruthy();
+                expect(view._$error).toBeTruthy();
+                expect(view._$error.length).toBe(1);
                 expect(view._commitsView).toBeTruthy();
                 expect(view._commitsView.$el.css('display')).toBe('none');
-                expect(view._errorView.$el.find('.error-text').text().trim())
+                expect(view._$error.find('.error-text').text().trim())
                     .toBe('Oh no');
+                expect(view._$error.find('a')[0].id).toBe('reload_commits');
             });
 
             it('Reloading', function(done) {
                 spyOn(view, '_onReloadCommitsClicked').and.callFake(() => {
                     view._loadCommits().finally(() => {
-                        expect(view._errorView).toBe(null);
+                        expect(view._$error).toBe(null);
 
                         /*
                          * Chrome returns an empty string, while Firefox
@@ -233,8 +232,8 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
 
                 returnError = false;
 
-                expect(view._errorView).toBeTruthy();
-                const $reload = view._errorView.$el.find('.ink-c-button');
+                expect(view._$error).toBeTruthy();
+                const $reload = view._$error.find('#reload_commits');
                 expect($reload.length).toBe(1);
                 $reload.click();
             });

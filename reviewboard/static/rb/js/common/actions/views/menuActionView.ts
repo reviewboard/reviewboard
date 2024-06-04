@@ -61,10 +61,13 @@ export class MenuActionView<
                     const visible = childAction.get('visible');
                     const domID = childAction.get('domID');
 
-                    const onClick =
-                        childActionView['activate']
-                        ? () => childActionView.activate()
-                        : null;
+                    const onClick = () => {
+                        if (childActionView['activate']) {
+                            childActionView.activate();
+                        } else {
+                            childActionView.el.click();
+                        }
+                    }
 
                     if (childAction.get('isCustomRendered')) {
                         menuItems.add({

@@ -193,7 +193,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
         });
     });
 
-    describe('Update bubble', () => {
+    describe('Update bubble', function() {
         const summary = 'My summary';
         const user = {
             fullname: 'Mr. User',
@@ -203,7 +203,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
         let $bubble;
         let bubbleView;
 
-        beforeEach(() => {
+        beforeEach(function() {
             page.get('reviewRequest').trigger('updated', {
                 summary: summary,
                 user: user,
@@ -213,40 +213,40 @@ suite('rb/pages/views/ReviewablePageView', function() {
             bubbleView = pageView._updatesBubble;
         });
 
-        it('Displays', () => {
+        it('Displays', function() {
             expect($bubble.length).toBe(1);
             expect(bubbleView.$el[0]).toBe($bubble[0]);
             expect($bubble.is(':visible')).toBe(true);
-            expect($bubble.find('.rb-c-page-updates-bubble__message').html())
-                .toBe('My summary by <a href="/users/foo/">Mr. User</a>');
+            expect($bubble.find('#updates-bubble-summary').text())
+                .toBe(summary);
+            expect($bubble.find('#updates-bubble-user').text())
+                .toBe(user.fullname);
+            expect($bubble.find('#updates-bubble-user').attr('href'))
+                .toBe(user.url);
         });
 
-        describe('Actions', () => {
-            it('Ignore', done => {
+        describe('Actions', function() {
+            it('Ignore', function() {
                 spyOn(bubbleView, 'close').and.callThrough();
                 spyOn(bubbleView, 'trigger').and.callThrough();
                 spyOn(bubbleView, 'remove').and.callThrough();
 
-                $bubble.find('[data-action="ignore"]').click();
+                $bubble.find('.ignore').click();
 
-                _.defer(() => {
-                    expect(bubbleView.close).toHaveBeenCalled();
-                    expect(bubbleView.remove).toHaveBeenCalled();
-                    expect(bubbleView.trigger).toHaveBeenCalledWith('closed');
-
-                    done();
-                });
+                expect(bubbleView.close).toHaveBeenCalled();
+                expect(bubbleView.remove).toHaveBeenCalled();
+                expect(bubbleView.trigger).toHaveBeenCalledWith('closed');
             });
 
-            it('Update Page displays Updates Bubble', () => {
+            it('Update Page displays Updates Bubble', function() {
                 spyOn(bubbleView, 'trigger');
 
-                $bubble.find('[data-action="update"]').click();
+                $bubble.find('.update-page').click();
 
                 expect(bubbleView.trigger).toHaveBeenCalledWith('updatePage');
             });
 
-            it('Update Page calls notify if shouldNotify', () => {
+            it('Update Page calls notify if shouldNotify', function() {
                 const info = {
                     user: {
                         fullname: 'Hello',

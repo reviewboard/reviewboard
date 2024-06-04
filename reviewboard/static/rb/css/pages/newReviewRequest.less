@@ -2,6 +2,7 @@
 
 @import (reference) "rb/css/defs.less";
 @import (reference) "rb/css/mixins/upload-diff.less";
+@import (reference) "rb/css/ui/colors.less";
 
 
 /**
@@ -23,7 +24,7 @@
   #rb-ns-pages.base.on-shell-desktop-mode({
     .rb-c-new-review-request__main,
     .rb-c-new-review-request__hint {
-      border-radius: var(--ink-u-border-radius-std);
+      border-radius: @box-border-radius;
     }
   }, @else: {
     /*
@@ -102,22 +103,21 @@
    *     </div>
    */
   &__repo-detail {
-    background: var(--ink-p-container-bg);
+    background-color: @new-review-request-bg;
     box-sizing: border-box;
-    color: var(--ink-p-container-fg);
     overflow: hidden;
 
     #rb-ns-pages.base.on-shell-desktop-mode({
-      border: var(--ink-g-border-container);
-      border-radius: var(--ink-u-border-radius-std);
-      box-shadow: var(--ink-g-shadow-std);
+      border: 1px solid @box-border-color;
+      border-radius: @box-border-radius;
+      box-shadow: @box-shadow;
       position: absolute;
       left: 0;
       right: 0;
       top: 0;
       bottom: 0;
     }, @else: {
-      border-top: var(--ink-g-border-container);
+      border-top: 1px solid @box-border-color;
     });
   }
 
@@ -190,7 +190,7 @@
       height: 14em;
       line-height: 14em;
       margin: 2em;
-      border: var(--ink-u-border-medium) var(--ink-p-grey-400) dashed;
+      border: 2px dashed #rb-ns-ui.colors[@grey-60];
 
       .on-mobile-medium-screen-720({
         height: 6em;
@@ -215,8 +215,8 @@
   }
 
   .section-header {
-    background-color: var(--ink-p-header-bg);
-    border-bottom: var(--ink-g-border-header);
+    background-color: @box-title-bg;
+    border-bottom: 1px @box-border-color solid;
     padding: 0.5em;
     font-size: 120%;
     font-weight: bold;
@@ -224,7 +224,7 @@
   }
 
   .branches {
-    border-top: var(--ink-g-border-header);
+    border-top: 1px @box-border-color solid;
     padding: 0;
 
     span, select {
@@ -235,7 +235,7 @@
   }
 
   .commit {
-    border-bottom: var(--ink-c-data-table-row-border);
+    border-bottom: 1px @datagrid-row-border-color solid;
     position: relative;
     padding: 1em;
     cursor: pointer;
@@ -247,12 +247,12 @@
 
     &.has-review-request {
       .summary {
-        color: var(--ink-p-fg-weak);
+        color: @new-review-request-summary-posted-color;
       }
     }
 
     .commit-info {
-      color: var(--ink-p-fg-weak);
+      color: @new-review-request-commit-info-color;
 
       .author, .revision {
         margin-right: 1em;
@@ -284,7 +284,7 @@
     }
 
     .fa {
-      color: var(--ink-p-fg-weak);
+      color: @new-review-request-commit-icon-color;
       font-size: 1.2em;
 
       &.fa-code-fork {
@@ -301,7 +301,7 @@
     }
 
     .jump-to-commit {
-      color: var(--ink-p-accent-primary-bg);
+      color: @new-review-request-jump-to-commit-color;
       margin: 0;
       float: right;
       font-size: 1.5em;
@@ -317,30 +317,31 @@
     }
 
     &:nth-child(even) {
-      background: var(--ink-c-data-table-row-alt-bg);
+      background-color: @datagrid-row-even-bg;
     }
 
     &:nth-child(odd) {
-      background: var(--ink-c-data-table-row-bg);
+      background-color: @datagrid-row-odd-bg;
     }
-  }
 
-  .commits {
-    background: var(--ink-c-data-table-body-bg);
-    color: var(--ink-c-data-table-body-fg);
+    &:hover {
+      background-color: darken(@datagrid-row-even-bg, 3%);
+    }
   }
 
   .post-commit {
-    .ink-c-alert {
-      border-left: 0;
-      border-top: 0;
-      border-right: 0;
-      border-radius: 0;
-    }
+    .error {
+      background: #FFE9E9;
+      padding: 1em;
+      font-size: 110%;
 
-    .error-text {
-      color: #CC0000;
-      white-space: pre-wrap;
+      a {
+        color: blue;
+      }
+
+      .error-text {
+        color: #CC0000;
+      }
     }
   }
 
