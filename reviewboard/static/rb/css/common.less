@@ -308,8 +308,10 @@
  ****************************************************************************/
 
 .ui-autocomplete-results {
-  background: #ffffff;
-  border: 1px solid #808080;
+  background: var(--ink-c-menu-bg);
+  border: var(--ink-c-menu-border);
+  border-radius: var(--ink-c-menu-border-radius);
+  color: var(--ink-p-fg);
   overflow: hidden;
   position: absolute;
   width: 100%;
@@ -322,10 +324,11 @@
        * the #page-container, overriding anything set by the widget.
        */
       left: 0 !important;
-      top: -@page-container-padding !important;
+      top: 0 !important;
       width: 100% !important;
       height: 100%;
       border: 0;
+      border-radius: 0;
       overflow-y: auto;
     }
   });
@@ -343,19 +346,9 @@
     li {
       cursor: pointer;
       margin: 0;
-      padding: 3px 6px;
+      padding: var(--ink-c-menu-item-padding);
       position: relative;
       white-space: nowrap;
-
-      .on-mobile-medium-screen-720({
-        /*
-         * Give each item a border and more padding to help define the click
-         * area (and to fit in with typical search results on mobile devices.
-         */
-        border-top: 1px #EEE solid;
-        margin: 0 1em;
-        padding: 1.5em;
-      });
 
       span {
         margin-left: 6px;
@@ -366,15 +359,15 @@
   }
 
   .ui-autocomplete-over {
-    background: #71a5db;
-    color: #FFF;
+    background: var(--ink-c-menu-item-selected-bg);
+    color: var(--ink-c-menu-item-selected-fg);
   }
 }
 
 .ui-autocomplete-footer {
-  background: #ECECEC;
-  border-top: 1px #C0C0C0 solid;
-  padding: 3px 6px;
+  background: var(--ink-p-footer-bg);
+  border-top: var(--ink-u-border-thin) var(--ink-p-footer-border-color) solid;
+  padding: var(--ink-c-menu-item-padding);
 }
 
 #submitter {
