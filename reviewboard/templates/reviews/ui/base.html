@@ -17,39 +17,47 @@
 {%  definevar "review_ui_box_content" %}{% block review_ui_box_content %}{% endblock %}{% enddefinevar %}
 
 {%  if prev_file_attachment %}
+{%   with prev_file_attachment_name=prev_file_attachment.display_name %}
 <div class="review-ui-prev-attachment">
- <a href="{% url 'file-attachment' review_request_id=review_request.display_id file_attachment_id=prev_file_attachment.pk %}">
-  <div class="file-container">
-   <div class="file">
-    <div class="file-thumbnail-container">
-     <div class="file-thumbnail">{{prev_file_attachment.thumbnail}}</div>
-    </div>
-    <div class="file-caption-container">
-     <div class="file-caption">{{prev_file_attachment.display_name}}</div>
-    </div>
+ <a class="review-ui-file-attachment-nav-button-overlay"
+    href="{% url 'file-attachment' review_request_id=review_request.display_id file_attachment_id=prev_file_attachment.pk %}"
+    role="button"
+    aria-label="{% blocktrans %}View previous file attachment ({{prev_file_attachment_name}}){% endblocktrans %}"></a>
+ <div class="file-container" aria-hidden="true">
+  <div class="file">
+   <div class="file-thumbnail-container">
+    {{prev_file_attachment.thumbnail}}
+   </div>
+   <div class="file-caption-container">
+    <div class="file-caption">{{prev_file_attachment.display_name}}</div>
    </div>
   </div>
-  <span class="fa fa-chevron-left" aria-hidden="true"></span>
- </a>
+ </div>
+ <span class="fa fa-chevron-left" aria-hidden="true"></span>
 </div>
+{%   endwith %}
 {%  endif %}
 
 {%  if next_file_attachment %}
+{%   with next_file_attachment_name=next_file_attachment.display_name %}
 <div class="review-ui-next-attachment">
- <a href="{% url 'file-attachment' review_request_id=review_request.display_id file_attachment_id=next_file_attachment.pk %}">
-  <span class="fa fa-chevron-right" aria-hidden="true"></span>
-  <div class="file-container">
-   <div class="file">
-    <div class="file-thumbnail-container">
-     <div class="file-thumbnail">{{next_file_attachment.thumbnail}}</div>
-    </div>
-    <div class="file-caption-container">
-     <div class="file-caption">{{next_file_attachment.display_name}}</div>
-    </div>
+ <a class="review-ui-file-attachment-nav-button-overlay"
+    href="{% url 'file-attachment' review_request_id=review_request.display_id file_attachment_id=next_file_attachment.pk %}"
+    role="button"
+    aria-label="{% blocktrans %}View next file attachment ({{next_file_attachment_name}}){% endblocktrans %}"></a>
+ <span class="fa fa-chevron-right" aria-hidden="true"></span>
+ <div class="file-container" aria-hidden="true">
+  <div class="file">
+   <div class="file-thumbnail-container">
+    {{next_file_attachment.thumbnail}}
+   </div>
+   <div class="file-caption-container">
+    <div class="file-caption">{{next_file_attachment.display_name}}</div>
    </div>
   </div>
- </a>
+ </div>
 </div>
+{%   endwith %}
 {%  endif %}
 
 <div id="review-request" class="review-ui-box{% if review_ui_box_content %} has-review-ui-box-content{% endif %}{% if prev_file_attachment %} has-prev-attachment{% endif %}{% if next_file_attachment %} has-next-attachment{% endif %}">

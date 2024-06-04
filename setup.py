@@ -352,6 +352,9 @@ class InstallNodeDependenciesCommand(Command):
 
             os.symlink(os.path.dirname(mod.__file__), symlink_path)
 
+        os.symlink('/Users/chipx86/src/beanbag/ink/',
+                   os.path.join(npm_workspaces_dir, 'ink'))
+
         print('Installing node.js modules...')
         result = os.system('%s install' % npm_command)
 

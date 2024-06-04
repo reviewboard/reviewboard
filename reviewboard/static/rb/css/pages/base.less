@@ -460,4 +460,16 @@ textarea {
 
   .page-colors(@topbar-bg: @review-request-action-bg;
                @topbar-border-color: @review-request-action-border-color);
+
+  &.-has-next-attachment {
+    #page-container {
+      padding-right: (@page-container-padding * 2);
+    }
+  }
+
+  &.-has-prev-attachment {
+    #page-container {
+      padding-left: (@page-container-padding * 2);
+    }
+  }
 }

@@ -2,6 +2,10 @@
  * A page managing reviewable content for a review request.
  */
 import {
+    craft,
+    renderInto,
+} from '@beanbag/ink';
+import {
     type EventsHash,
     BaseView,
     spina,
@@ -60,23 +64,12 @@ class UpdatesBubbleView extends BaseView<
     HTMLDivElement,
     UpdatesBubbleViewOptions
 > {
+    static className = 'rb-c-page-updates-bubble';
     static id = 'updates-bubble';
 
-    static template = _.template([
-        '<span id="updates-bubble-summary"><%- summary %></span>',
-        ' by ',
-        '<a href="<%- user.url %>" id="updates-bubble-user">',
-        '<%- user.fullname || user.username %>',
-        '</a>',
-        '<span id="updates-bubble-buttons">',
-        ' <a href="#" class="update-page"><%- updatePageText %></a>',
-        ' | ',
-        ' <a href="#" class="ignore"><%- ignoreText %></a>',
-    ].join(''));
-
     static events: EventsHash = {
-        'click .ignore': '_onIgnoreClicked',
-        'click .update-page': '_onUpdatePageClicked',
+        'click [data-action=ignore]': '_onIgnoreClicked',
+        'click [data-action=update]': '_onUpdatePageClicked',
     };
 
     /**********************
@@ -102,22 +95,55 @@ class UpdatesBubbleView extends BaseView<
      *
      * The bubble starts hidden. The caller must call open() to display it.
      */
-    onInitialRender() {
-        this.$el
-            .html(UpdatesBubbleView.template(_.defaults({
-                ignoreText: _`Ignore`,
-                updatePageText: _`Update Page`,
-            }, this.options.updateInfo)))
-            .hide();
+    protected onInitialRender() {
+        const el = this.el;
+        const updateInfo = this.options.updateInfo;
+        const user = updateInfo.user;
+
+        el.setAttribute('role', 'status');
+
+        const updateText = _`Update page`;
+        const closeText = _`Close notification`;
+
+        /*
+         * NOTE: Icons are elements within an <a>, instead of mixed in to the
+         *       action, in order to ensure focus outlines work correctly
+         *       across all browsers.
+         */
+        renderInto(this.el, craft`
+            <div class="rb-c-page-updates-bubble__message">
+             ${`${updateInfo.summary} by `}
+             <a href="${user.url}">
+              ${user.fullname || user.username}
+             </a>
+            </div>
+            <div class="rb-c-page-updates-bubble__actions">
+             <a class="rb-c-page-updates-bubble__action"
+                data-action="update"
+                title="${updateText}"
+                role="button"
+                tabindex="0"
+                href="#">
+              <span class="ink-i-refresh" aria-hidden="true"></span>
+             </a>
+             <a class="rb-c-page-updates-bubble__action"
+                data-action="ignore"
+                title="${closeText}"
+                role="button"
+                tabindex="0"
+                href="#">
+              <span class="ink-i-close" aria-hidden="true"></span>
+             </a>
+            </div>
+        `);
     }
 
     /**
      * Open the bubble on the screen.
      */
     open() {
-        this.$el
-            .css('position', 'fixed')
-            .fadeIn();
+        /* Give the element time to settle before we animate it. */
+        _.defer(() => this.el.classList.add('-is-open'));
     }
 
     /**
@@ -126,8 +152,12 @@ class UpdatesBubbleView extends BaseView<
      * After closing, the bubble will be removed from the DOM.
      */
     close() {
-        this.trigger('closed');
-        this.$el.fadeOut(_.bind(this.remove, this));
+        this.el.classList.remove('-is-open');
+
+        _.defer(() => {
+            this.trigger('closed');
+            this.remove();
+        });
     }
 
     /**
@@ -139,7 +169,7 @@ class UpdatesBubbleView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event which triggered the action.
      */
-    _onUpdatePageClicked(e: JQuery.ClickEvent) {
+    protected _onUpdatePageClicked(e: JQuery.ClickEvent) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -155,7 +185,7 @@ class UpdatesBubbleView extends BaseView<
      *     e (JQuery.ClickEvent):
      *         The event which triggered the action.
      */
-    _onIgnoreClicked(e: JQuery.ClickEvent) {
+    protected _onIgnoreClicked(e: JQuery.ClickEvent) {
         e.preventDefault();
         e.stopPropagation();
 

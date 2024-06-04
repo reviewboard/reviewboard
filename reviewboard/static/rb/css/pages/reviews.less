@@ -263,12 +263,12 @@
     }
   }
 
-  &.has-prev-attachment .review-request {
-    margin-left: 1em;
+  &.has-prev-attachment .rb-c-review-request {
+    margin-left: @page-container-padding;
   }
 
-  &.has-next-attachment .review-request {
-    margin-right: 1em;
+  &.has-next-attachment .rb-c-review-request {
+    margin-right: @page-container-padding;
   }
 
   .actions-container {
@@ -319,8 +319,10 @@
 
 .review-ui-next-attachment,
 .review-ui-prev-attachment {
-  background: @box-bg;
-  border: 1px solid @box-border-color;
+  background: var(--rb-c-review-request-bg);
+  border: var(--rb-c-review-request-border);
+  color: var(--ink-p-fg);
+  cursor: pointer;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
   padding: 2px;
   position: fixed;
@@ -329,22 +331,34 @@
   z-index: @z-index-base;
 
   &:hover {
-    background: darken(@box-bg, 10%);
     transform: translateY(-50%);
   }
 
   a {
-    color: black;
+    color: inherit;
     text-decoration: none;
   }
 
   .file-container {
     display: inline-block;
     float: none;
+    padding: var(--ink-u-spacing-s) 0;
     vertical-align: middle;
+
+    .file {
+      margin: 0;
+    }
   }
 }
 
+.review-ui-file-attachment-nav-button-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: @z-index-event-overlay;
+}
 
 .review-ui-next-attachment {
   border-right-width: 0;
@@ -355,6 +369,10 @@
 
   &:hover {
     margin-right: 0;
+  }
+
+  .file-container {
+    padding-right: var(--ink-u-spacing-m);
   }
 }
 
@@ -367,6 +385,10 @@
 
   &:hover {
     margin-left: 0;
+  }
+
+  .file-container {
+    padding-left: var(--ink-u-spacing-m);
   }
 }
 
@@ -1281,12 +1303,13 @@
     }
 
     .file-thumbnail-container {
-      background: @file-attachment-bg;
+      background: var(--rb-theme-diff-equals-bg);
+      color: var(--rb-theme-diff-equals-fg);
       height: @file-attachment-height;
       text-align: center;
 
       a {
-        color: black;
+        color: inherit;
         text-decoration: none;
       }
 
@@ -1294,7 +1317,7 @@
         font-size: x-small;
       }
 
-      .thumbnail-properties () {
+      .thumbnail-properties() {
         box-sizing: border-box;
         max-height: @file-attachment-height;
         max-width: 100%;

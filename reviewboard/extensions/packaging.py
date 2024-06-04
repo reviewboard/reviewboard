@@ -51,6 +51,7 @@ class RBStaticMediaBuildContext(StaticMediaBuildContext):
         """
         return {
             'reviewboard': Path(reviewboard.__file__).parent.absolute(),
+            'ink': '/Users/chipx86/src/beanbag/ink/',
             **super().get_npm_workspace_dirs(),
         }
 
