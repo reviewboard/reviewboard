@@ -428,6 +428,12 @@ Reviews
   types that happened to have the same database ID could cause web browser
   caching conflicts.
 
+* Fixed expanding collapsed reviews when clicking links to them.
+
+  When clicking a link to a review, the page would scroll to it but if the
+  review was collapsed, it would not get expanded. These links will now scroll
+  to the correct place and expand the review box.
+
 
 File Attachments
 ----------------
