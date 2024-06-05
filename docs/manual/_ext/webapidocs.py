@@ -1634,7 +1634,18 @@ def iterate_fake_resource_paths(request, resource, child_keys, include_child):
 
         for parent_path, parent_keys in parents:
             if iterate_children:
-                q = resource.get_queryset(request, **parent_keys)
+                # BaseResource.get_object has a bug with singleton resources
+                # where it tries to cache the resulting object inside the
+                # request, but it doesn't take into account any parent
+                # resources. Ideally we *should* be able to just keep the same
+                # request object everywhere, but we were hitting a bug where
+                # the ReviewRequestDraftResource was returning the same draft
+                # no matter what the value of the review_request_id kwarg was.
+                #
+                # Once the caching bug has been fixed in djblets' BaseResource,
+                # we can switch back to reusing the same request here.
+                new_request = DummyRequest(user=request.user)
+                q = resource.get_queryset(new_request, **parent_keys)
 
                 for obj in q:
                     value = getattr(obj, resource.model_object_key)
