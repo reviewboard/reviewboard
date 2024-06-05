@@ -71,6 +71,7 @@ export class AbstractCommentBlockView<
             $.tooltip(
                 this.$el,
                 { side: AbstractCommentBlockView.tooltipSides })
+            .attr('data-ink-color-scheme', 'light')
             .addClass('comments');
 
         this.renderContent();
