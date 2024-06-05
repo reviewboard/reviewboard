@@ -303,15 +303,15 @@ class TrojanSourceCodeSafetyCheckerTests(TestCase):
 
         self.assertIsNotNone(html)
         self.assertIn(
-            '<h4 class="rb-c-alert__heading">\n\n'
+            '<h4 class="rb-c-diff-file-notice__subheading">\n\n'
             '   Bi-directional Unicode Characters',
             html)
         self.assertNotIn(
-            '<h4 class="rb-c-alert__heading">\n\n'
+            '<h4 class="rb-c-diff-file-notice__subheading">\n\n'
             '   Confusable/homoglyph Unicode Characters',
             html)
         self.assertNotIn(
-            '<h4 class="rb-c-alert__heading">\n\n'
+            '<h4 class="rb-c-diff-file-notice__subheading">\n\n'
             '   Zero-width Spaces',
             html)
 
@@ -325,15 +325,15 @@ class TrojanSourceCodeSafetyCheckerTests(TestCase):
 
         self.assertIsNotNone(html)
         self.assertIn(
-            '<h4 class="rb-c-alert__heading">\n\n'
+            '<h4 class="rb-c-diff-file-notice__subheading">\n\n'
             '   Confusable/homoglyph Unicode Characters',
             html)
         self.assertNotIn(
-            '<h4 class="rb-c-alert__heading">\n\n'
+            '<h4 class="rb-c-diff-file-notice__subheading">\n\n'
             '   Bi-directional Unicode Characters',
             html)
         self.assertNotIn(
-            '<h4 class="rb-c-alert__heading">\n\n'
+            '<h4 class="rb-c-diff-file-notice__subheading">\n\n'
             '   Zero-width Spaces',
             html)
 
@@ -347,15 +347,15 @@ class TrojanSourceCodeSafetyCheckerTests(TestCase):
 
         self.assertIsNotNone(html)
         self.assertIn(
-            '<h4 class="rb-c-alert__heading">\n\n'
+            '<h4 class="rb-c-diff-file-notice__subheading">\n\n'
             '   Zero-width Spaces',
             html)
         self.assertNotIn(
-            '<h4 class="rb-c-alert__heading">\n\n'
+            '<h4 class="rb-c-diff-file-notice__subheading">\n\n'
             '   Bi-directional Unicode Characters',
             html)
         self.assertNotIn(
-            '<h4 class="rb-c-alert__heading">\n\n'
+            '<h4 class="rb-c-diff-file-notice__subheading">\n\n'
             '   Confusable/homoglyph Unicode Characters',
             html)
 
@@ -369,14 +369,14 @@ class TrojanSourceCodeSafetyCheckerTests(TestCase):
 
         self.assertIsNotNone(html)
         self.assertIn(
-            '<h4 class="rb-c-alert__heading">\n\n'
+            '<h4 class="rb-c-diff-file-notice__subheading">\n\n'
             '   Bi-directional Unicode Characters',
             html)
         self.assertIn(
-            '<h4 class="rb-c-alert__heading">\n\n'
+            '<h4 class="rb-c-diff-file-notice__subheading">\n\n'
             '   Confusable/homoglyph Unicode Characters',
             html)
         self.assertIn(
-            '<h4 class="rb-c-alert__heading">\n\n'
+            '<h4 class="rb-c-diff-file-notice__subheading">\n\n'
             '   Zero-width Spaces',
             html)
