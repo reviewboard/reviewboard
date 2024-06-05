@@ -9,7 +9,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.actions import actions_registry
-from reviewboard.deprecation import RemovedInReviewBoard70Warning
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.reviews.actions import (BaseReviewRequestAction,
                                          BaseReviewRequestMenuAction)
 from reviewboard.reviews.default_actions import (AddGeneralCommentAction,
@@ -165,12 +165,12 @@ class ActionRegistrationTests(ActionsTestCase):
 
     deprecation_message = (
         'BaseReviewRequestAction is deprecated and will be removed in '
-        'Review Board 7.0. Please update your code to use '
+        'Review Board 8.0. Please update your code to use '
         'reviewboard.actions.base.BaseAction')
 
     def test_action_register_methods(self) -> None:
         """Testing BaseReviewRequestAction.register and unregister"""
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               self.deprecation_message):
             foo_action = FooAction()
             foo_action.register()
@@ -186,7 +186,7 @@ class ActionRegistrationTests(ActionsTestCase):
         """Testing BaseReviewRequestAction.register and unregister with
         parent
         """
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               self.deprecation_message):
             bar_action = BarAction('action-1')
             foo_action = FooAction()
@@ -207,7 +207,7 @@ class ActionRegistrationTests(ActionsTestCase):
 
     def test_menuaction_register_methods(self) -> None:
         """Testing BaseReviewRequestMenuAction.register and unregister"""
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               self.deprecation_message):
             foo_action = FooAction()
             bar_action = BarAction('action-1', [foo_action])
@@ -232,7 +232,7 @@ class ActionRegistrationTests(ActionsTestCase):
         """Testing BaseReviewRequestMenuAction.register and unregister with
         parent
         """
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               self.deprecation_message):
             foo_action = FooAction()
             bar_action = BarAction('action-1', [foo_action])
@@ -262,7 +262,7 @@ class ActionRegistrationTests(ActionsTestCase):
 
     def test_register_max_depth_exceeded(self) -> None:
         """Testing BaseReviewRequestAction.register with max depth exceeded"""
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               self.deprecation_message):
             foo_action = FooAction()
             bar_action1 = BarAction('action-1', [foo_action])

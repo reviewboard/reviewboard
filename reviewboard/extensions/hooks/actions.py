@@ -13,7 +13,7 @@ from reviewboard.actions import (AttachmentPoint,
                                  BaseAction,
                                  BaseMenuAction,
                                  actions_registry)
-from reviewboard.deprecation import RemovedInReviewBoard70Warning
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.urls import (diffviewer_url_names,
                               main_review_request_url_name)
 
@@ -300,9 +300,9 @@ class ReviewRequestActionHook(BaseReviewRequestActionHook,
 
         super().initialize(actions=actions, apply_to=apply_to)
 
-        RemovedInReviewBoard70Warning.warn(
+        RemovedInReviewBoard80Warning.warn(
             'ReviewRequestActionHook is deprecated and will be removed in '
-            'Review Board 7.0. Your extension "%s" will need to be updated to '
+            'Review Board 8.0. Your extension "%s" will need to be updated to '
             'derive actions from reviewboard.actions.BaseAction and use '
             'ActionHook.'
             % self.extension.id)
@@ -384,9 +384,9 @@ class ReviewRequestDropdownActionHook(ActionHook,
 
         super().initialize(actions=converted_actions)
 
-        RemovedInReviewBoard70Warning.warn(
+        RemovedInReviewBoard80Warning.warn(
             'ReviewRequestDropdownActionHook is deprecated and will be '
-            'removed in Review Board 7.0. Your extension "%s" will need to be '
+            'removed in Review Board 8.0. Your extension "%s" will need to be '
             'updated to derive actions from reviewboard.actions.BaseAction '
             'and use ActionHook.'
             % self.extension.id)
@@ -423,9 +423,9 @@ class DiffViewerActionHook(BaseReviewRequestActionHook,
             actions,
             apply_to=apply_to or diffviewer_url_names)
 
-        RemovedInReviewBoard70Warning.warn(
+        RemovedInReviewBoard80Warning.warn(
             'DiffViewerActionHook is deprecated and will be removed in '
-            'Review Board 7.0. Your extension "%s" will need to be updated to '
+            'Review Board 8.0. Your extension "%s" will need to be updated to '
             'derive actions from reviewboard.actions.BaseAction and use '
             'ActionHook.'
             % self.extension.id)
@@ -477,7 +477,7 @@ class HeaderActionHook(BaseReviewRequestActionHook,
                 Keyword arguments to pass through to the superclass.
         """
         super().__init__(*args, **kwargs)
-        RemovedInReviewBoard70Warning.warn(
+        RemovedInReviewBoard80Warning.warn(
             'HeaderActionHook is deprecated and will be removed in Review '
             'Board 7.0. Your extension "%s" will need to be updated to derive '
             'actions from reviewboard.actions.BaseAction and use ActionHook.'
@@ -555,9 +555,9 @@ class HeaderDropdownActionHook(ActionHook,
 
         super().initialize(actions=converted_actions)
 
-        RemovedInReviewBoard70Warning.warn(
+        RemovedInReviewBoard80Warning.warn(
             'HeaderDropdownActionHook is deprecated and will be removed in '
-            'Review Board 7.0. Your extension "%s" will need to be updated to '
+            'Review Board 8.0. Your extension "%s" will need to be updated to '
             'derive actions from reviewboard.actions.BaseAction and use '
             'ActionHook.'
             % self.extension.id)

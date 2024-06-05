@@ -14,7 +14,7 @@ from django.utils.text import slugify
 from djblets.db.managers import ConcurrencyManager
 from housekeeping.functions import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard70Warning
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.signals import review_request_diffset_uploaded
 from reviewboard.scmtools.errors import ChangeNumberInUseError
@@ -257,7 +257,7 @@ class DefaultReviewerManager(Manager):
 class ReviewGroupManager(Manager):
     """A manager for Group models."""
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard70Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
     def accessible(self,
                    user,
                    *,

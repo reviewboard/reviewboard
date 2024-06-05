@@ -204,7 +204,7 @@ Legacy Action Hooks
 
 Prior to Review Board 6.0, there were separate hooks for injecting
 clickable actions into various parts of the UI. These are deprecated and will
-be removed in Review Board 7.
+be removed in Review Board 8.
 
 :py:mod:`reviewboard.extensions.hooks` contains the following hooks:
 

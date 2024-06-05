@@ -5,7 +5,7 @@ from django.utils.translation import gettext as _, get_language
 from djblets.cache.backend import cache_memoize
 from housekeeping.functions import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard70Warning
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header
 from reviewboard.diffviewer.diffutils import populate_diff_chunks
 from reviewboard.diffviewer.errors import UserVisibleError
@@ -46,7 +46,7 @@ class DiffRenderer(object):
     #:     reviewboard.diffviewer.settings.DiffSettings
     diff_settings: DiffSettings
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard70Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
     def __init__(self,
                  diff_file,
                  *,

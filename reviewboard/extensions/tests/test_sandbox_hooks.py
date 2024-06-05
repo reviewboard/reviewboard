@@ -5,7 +5,7 @@ from django.template import Context, Template
 from django.test.client import RequestFactory
 from djblets.extensions.models import RegisteredExtension
 
-from reviewboard.deprecation import RemovedInReviewBoard70Warning
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
                                           DiffViewerActionHook,
@@ -227,13 +227,13 @@ class SandboxTests(BaseExtensionHookTestCase):
         """Testing DiffViewerActionHook.get_actions with raised exception"""
         deprecationMessage = (
             'DiffViewerActionHook is deprecated and will be removed in '
-            'Review Board 7.0. Your extension '
+            'Review Board 8.0. Your extension '
             '"reviewboard.extensions.tests.test_sandbox_hooks.'
             'SandboxExtension" will need to be updated to derive actions '
             'from reviewboard.actions.BaseAction and use ActionHook.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecationMessage):
             SandboxDiffViewerActionTestHook(extension=self.extension)
 
@@ -252,13 +252,13 @@ class SandboxTests(BaseExtensionHookTestCase):
         """Testing ReviewRequestActionHook.get_actions with raised exception"""
         deprecationMessage = (
             'ReviewRequestActionHook is deprecated and will be removed in '
-            'Review Board 7.0. Your extension '
+            'Review Board 8.0. Your extension '
             '"reviewboard.extensions.tests.test_sandbox_hooks.'
             'SandboxExtension" will need to be updated to derive actions '
             'from reviewboard.actions.BaseAction and use ActionHook.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecationMessage):
             SandboxReviewRequestActionTestHook(extension=self.extension)
 
@@ -279,13 +279,13 @@ class SandboxTests(BaseExtensionHookTestCase):
         """
         deprecationMessage = (
             'ReviewRequestDropdownActionHook is deprecated and will be '
-            'removed in Review Board 7.0. Your extension '
+            'removed in Review Board 8.0. Your extension '
             '"reviewboard.extensions.tests.test_sandbox_hooks.'
             'SandboxExtension" will need to be updated to derive actions '
             'from reviewboard.actions.BaseAction and use ActionHook.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecationMessage):
             SandboxReviewRequestDropdownActionTestHook(
                 extension=self.extension)

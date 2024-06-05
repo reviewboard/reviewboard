@@ -1,7 +1,7 @@
 """Default actions for the reviews app.
 
 These have moved to :py:mod:`reviewboard.reviews.actions`. The imports here
-are for legacy compatibility, and will be removed in Review Board 7.0.
+are for legacy compatibility, and will be removed in Review Board 8.0.
 """
 
 from reviewboard.reviews.actions import (
