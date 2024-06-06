@@ -16,59 +16,119 @@ review request.
 Integration Configuration
 =========================
 
-To configure integration with Travis CI, click :guilabel:`Add a new
-configuration` on the :guilabel:`Integrations` page in the :ref:`Administration
-UI <administration-ui>`. You can create multiple configurations of the
-integration to do builds for each repository which supports Travis CI builds.
+To configure an integration with Travis CI:
 
-The :guilabel:`Name` field can be used to set a name for this particular
-configuration. This allows you to keep track of which is which in the case
-where you have multiple Travis CI configurations.
+1. Navigate to the :ref:`Administration UI <administration-ui>` ->
+   :guilabel:`Integrations`.
 
-If at any point you want to stop triggering builds but do not want to delete
-the configuration, you can uncheck :guilabel:`Enable this integration`.
+2. Click :guilabel:`Add Integration` and select :guilabel:`Travis CI`.
 
-:guilabel:`Conditions` allows you to set conditions for when Review Board will
-trigger a build. At a minimum, you should set a condition to match a specific
-repository. Even if you only have one repository configured now, you'll want to
-set this up so things don't break if you connect a second one. If needed, you
-can create complex rules for which review requests get matched with this config
-(for example, if you only want to run a test suite for certain branches).
+3. Fill out the general fields:
 
-.. image:: images/ci-conditions.png
+   :guilabel:`Name`:
+       A name for this particular configuration.
 
-The :guilabel:`Build Config` allows you to specify a replacement for the
-repository's :file:`.travis.yml` file. This should define the build for your
-project in isolation, removing any deployment or notification steps. The
-required steps for building the patch and reporting results back to Review
-Board will be automatically included when the build is triggered.
+       Each integration must have its own name. You can provide any name
+       you choose. This will be shown whenever a build is in progress.
 
-.. warning:: This configuration should not include any secrets, since code
-             submitted through Review Board will have access to the decrypted
-             data (and these secrets are not needed when there is no deployment
-             or notification).
+   :guilabel:`Enable this integration`
+       This will be on by default. You can turn this off to temporarily or
+       permanently disable this Travis CI configuration without having to
+       delete it.
 
-.. code-block:: yaml
+   :guilabel:`Local Site`
+       If you're using the advanced :term:`Local Site` (multi-server
+       partition) support, you can specify which site contains this
+       configuration.
 
-    language: python
-    python: 2.7
-    install:
-        - python setup.py develop
-        - pip install -r dev-requirements.txt
+       Most users can leave this blank.
 
-    script:
-        - python ./tests/runtests.py
+4. Set the :guilabel:`Conditions` for when Review Board will trigger a build.
 
-There's one additional optional field, :guilabel:`Build Branch`. By default,
-the Travis CI user interface will show all builds as occurring on ``master``.
-This field allows you to override the branch name to be something else, as to
-separate review request builds from regular builds.
+   At a minimum, you should set a condition to match a specific repository.
+   Even if you only have one repository configured now, you'll want to set
+   this up so things don't break if you connect a second one. If needed, you
+   can create complex rules for which review requests get matched with this
+   config (for example, if you only want to run a test suite for certain
+   branches).
 
-.. note:: We recommend creating and pushing a dummy branch named
-          "review-requests" to your repository, and then filling in that name
-          here. The actual contents of that branch are unimportant, and it
-          never needs to be updated, since the source will be completely
-          replaced during the build process.
+   .. image:: images/ci-conditions.png
+
+   Because Travis CI only works with GitHub repositories, only changes on
+   repositories configured with those hosting services will trigger builds.
+
+5. Fill out the endpoint and authentication credentials for the Travis CI
+   server handling your project:
+
+   :guilabel:`Travis CI`:
+       The Travis CI endpoint for your project.
+
+   :guilabel:`API Token`:
+       The API token used for authentication. To get an API token, follow
+       the instructions in their documentation_.
+
+6. Fill out the information for the build processes in Travis CI.
+
+   This configuration will be used instead of anything that is set in the
+   repository's :file:`.travis.yml` file.
+
+   :guilabel:`Build Config`:
+       The configuration needed to do a test build, without any notification
+       or deploy stages.
+
+       The required steps for building the patch and reporting results back
+       to Review Board will be automatically included when the build is
+       triggered.
+
+   .. warning:: This configuration should not include any secrets, since code
+                submitted through Review Board will have access to the
+                decrypted data (and these secrets are not needed when there
+                is no deployment or notification).
+
+   .. code-block:: yaml
+
+       language: python
+       python: 3.12
+       install:
+           - pip install -e .
+           - pip install -r dev-requirements.txt
+
+       script:
+           - python -m pytest ./project/
+
+   :guilabel:`Build Branch`:
+       An optional branch name to use for review request builds within the
+       Travis CI user interface.
+
+       By default, the Travis CI user interface will show all builds as
+       occurring on ``master``. This field allows you to override the
+       branch name to be something else, as to separate review request builds
+       from regular builds.
+
+   .. note:: We recommend creating and pushing a dummy branch named
+             "review-requests" to your repository, and then filling in that
+             name here. The actual contents of that branch are unimportant,
+             and it never needs to be updated, since the source will be
+             completely replaced during the build process.
+
+7. Set the information for when to run builds.
+
+   :guilabel:`Run builds manually`:
+       Enable this if you want Travis CI builds to only run when manually
+       started.
+
+       When enabled, this will add a :guilabel:`Run` button to the build
+       entry.
+
+   :guilabel:`Build timeout`
+       The amount of time until the build is considered to have timed out.
+
+       If the build takes longer than this, it will be marked as timed out
+       and can be re-run.
+
+You can create multiple configurations of the integration to do builds for
+each repository which supports Travis CI builds.
 
 
 .. _Travis CI: https://travis-ci.org/
+.. _documentation: https://developer.travis-ci.com/authentication

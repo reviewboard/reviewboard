@@ -16,42 +16,106 @@ review request.
 Integration Configuration
 =========================
 
-To configure integration with Jenkins CI, click :guilabel:`Add a new
-configuration` on the :guilabel:`Integrations` page in the :ref:`Administration
-UI <administration-ui>`. You can create multiple configurations of the
-integration to do builds for each repository which supports Jenkins CI builds.
+To configure an integration with Jenkins CI:
 
-The :guilabel:`Name` field can be used to set a name for this particular
-configuration. This allows you to keep track of which is which in the case
-where you have multiple Jenkins CI configurations.
+1. Navigate to the :ref:`Administration UI <administration-ui>` ->
+   :guilabel:`Integrations`.
 
-If at any point you want to stop triggering builds but do not want to delete
-the configuration, you can uncheck :guilabel:`Enable this integration`.
+2. Click :guilabel:`Add Integration` and select :guilabel:`Jenkins CI`.
 
-:guilabel:`Conditions` allows you to set conditions for when Review Board will
-trigger a build. At a minimum, you should set a condition to match a specific
-repository. Even if you only have one repository configured now, you'll want to
-set this up so things don't break if you connect a second one. If needed, you
-can create complex rules for which review requests get matched with this config
-(for example, if you only want to run a test suite for certain branches).
+3. Fill out the general fields:
 
-.. image:: images/ci-conditions.png
+   :guilabel:`Name`:
+       A name for this particular configuration.
 
-The :guilabel:`Server` field should be set to the base URL of your Jenkins CI
-server.
+       Each integration must have its own name. You can provide any name
+       you choose. This will be shown whenever a build is in progress.
 
-The :guilabel:`Job Name` field allows you to specify which job to run on your
-Jenkins CI server. This field also allows for variables like `{repository}`
-and `{branch}`, which will be auto-populated with the appropriate fields from
-a review request.
+   :guilabel:`Enable this integration`
+       This will be on by default. You can turn this off to temporarily or
+       permanently disable this Jenkins configuration without having to
+       delete it.
 
-The :guilabel:`User` field specifies the username for a Jenkins CI user who has
-the appropriate permissions for starting the above :guilabel:`Job name`.
+   :guilabel:`Local Site`
+       If you're using the advanced :term:`Local Site` (multi-server
+       partition) support, you can specify which site contains this
+       configuration.
 
-:guilabel:`Password` should be set to the above :guilabel:`User`'s password.
+       Most users can leave this blank.
 
-:guilabel:`ReviewBoard API Token` specifies the API token to use when
-configuring your Jenkins CI server.
+4. Set the :guilabel:`Conditions` for when Review Board will trigger a build.
+
+   At a minimum, you should set a condition to match a specific repository.
+   Even if you only have one repository configured now, you'll want to set
+   this up so things don't break if you connect a second one. If needed, you
+   can create complex rules for which review requests get matched with this
+   config (for example, if you only want to run a test suite for certain
+   branches).
+
+   .. image:: images/ci-conditions.png
+
+5. Fill out the address and authentication credentials for the Jenkins server
+   handling your builds:
+
+   :guilabel:`Server`:
+       The base URL of your Jenkins server.
+
+   :guilabel:`Username`:
+       The username for a Jenkins user who has the appropriate permissions
+       for starting the above :guilabel:`Job name`.
+
+   :guilabel:`API Token / Password`:
+       The API token used for authentication. Older versions may require
+       the user's password instead.
+
+6. Fill out the information for the build processes in Jenkins.
+
+   :guilabel:`Job Name`:
+       This allows you to specify which job to run on your Jenkins server.
+
+       This field allows for the following variables, which will be
+       auto-populated with the appropriate fields from a review request:
+
+       ``{branch_name}``:
+           The branch name.
+
+       ``{repository_name}``:
+           The repository name.
+
+       ``{noslash_branch_name}``:
+           The branch name with slashes converted to underscores.
+
+       ``{noslash_repository_name}``:
+           The repository name with slashes converted to underscores.
+
+       Older versions of Jenkins disallowed using slashes in job names, and
+       required normalizing them to underscores. In newer versions, slashes
+       are required. Use the appropriate variables for your version of
+       Jenkins.
+
+   :guilabel:`Review Board API Token`:
+       This specifies the API token to use when configuring your Jenkins CI
+       server.
+
+       If you switch the local site, this will be regenerated upon saving.
+
+7. Set the information for when to run builds.
+
+   :guilabel:`Run builds manually`:
+       Enable this if you want Jenkins builds to only run when manually
+       started.
+
+       When enabled, this will add a :guilabel:`Run` button to the build
+       entry.
+
+   :guilabel:`Build timeout`
+       The amount of time until the build is considered to have timed out.
+
+       If the build takes longer than this, it will be marked as timed out
+       and can be re-run.
+
+You can create multiple configurations of the integration to do builds for
+each repository which supports Jenkins builds.
 
 
 Jenkins Plugin Installation
