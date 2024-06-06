@@ -2,7 +2,10 @@
  * Represents the comments on a region of an image or document.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import {
     type FileAttachmentCommentBlockAttrs,
@@ -64,12 +67,12 @@ export class RegionCommentBlock<
     TAttributes extends RegionCommentBlockAttrs = RegionCommentBlockAttrs
 > extends FileAttachmentCommentBlock<TAttributes> {
     /** Default values for the model attributes. */
-    static defaults: RegionCommentBlockAttrs = _.defaults({
+    static defaults: Result<Partial<RegionCommentBlockAttrs>> = {
         height: null,
         width: null,
         x: null,
         y: null,
-    }, super.defaults);
+    };
 
     static serializedFields = ['x', 'y', 'width', 'height'];
 

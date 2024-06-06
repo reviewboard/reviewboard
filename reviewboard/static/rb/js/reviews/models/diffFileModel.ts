@@ -4,6 +4,7 @@
 
 import {
     type ModelAttributes,
+    type Result,
     BaseModel,
     spina,
 } from '@beanbag/spina';
@@ -154,7 +155,7 @@ export interface DiffFileResourceData {
  */
 @spina
 export class DiffFile extends BaseModel<DiffFileAttrs> {
-    static defaults: DiffFileAttrs = {
+    static defaults: Result<Partial<DiffFileAttrs>> = {
         baseFileDiffID: null,
         binary: false,
         deleted: false,

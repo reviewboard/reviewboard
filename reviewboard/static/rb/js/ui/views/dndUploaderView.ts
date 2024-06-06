@@ -1,9 +1,10 @@
 import {
+    type EventsHash,
+    type ModelAttributes,
+    type Result,
     BaseModel,
     BaseView,
     Collection,
-    type EventsHash,
-    type ModelAttributes,
     spina,
 } from '@beanbag/spina';
 
@@ -36,7 +37,7 @@ interface DnDDropTargetAttrs extends ModelAttributes {
  */
 @spina
 class DnDDropTarget extends BaseModel<DnDDropTargetAttrs> {
-    static defaults(): DnDDropTargetAttrs {
+    static defaults(): Result<Partial<DnDDropTargetAttrs>> {
         return {
             $target: $(window),
             callback: _.noop,

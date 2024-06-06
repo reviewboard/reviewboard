@@ -17,7 +17,7 @@ from reviewboard.attachments.errors import FileTooBigError
 from reviewboard.attachments.mimetypes import get_uploaded_file_mimetype
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
-from reviewboard.deprecation import RemovedInReviewBoard70Warning
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.reviews.models import ReviewRequestDraft
 
 if TYPE_CHECKING:
@@ -79,7 +79,7 @@ class UploadFileForm(forms.Form):
 
         return history
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard70Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
     def create(
         self,
         *,

@@ -215,7 +215,7 @@
   }
 
   .fa-warning {
-    color: #rb-ns-ui.colors[@red-50];
+    color: var(--ink-p-red-700);
   }
 
   .indent {
@@ -320,7 +320,7 @@
     }
   }
 
-  tbody {
+  > tbody {
     --_rb-diff-bg: var(--rb-theme-diff-equals-bg);
     --_rb-diff-fg: var(--rb-theme-diff-equals-fg);
     --_rb-diff-linenum-bg: var(--rb-theme-diff-equals-linenum-bg);
@@ -330,7 +330,7 @@
     background: var(--_rb-diff-bg);
     color: var(--_rb-diff-fg);
 
-    tr {
+    > tr {
       &.selected {
         > td,
         > th {
@@ -360,7 +360,7 @@
         }
       }
 
-      td {
+      > td {
         background: inherit;
         color: inherit;
         padding: @diff-cell-padding;
@@ -387,7 +387,7 @@
         }
       }
 
-      th {
+      > th {
         font-weight: normal;
         background: var(--_rb-diff-linenum-bg);
         color: var(--_rb-diff-linenum-fg);
@@ -409,28 +409,6 @@
         .fa-warning {
           margin-left: 0.5em;
         }
-      }
-    }
-
-    &.whitespace-file {
-      td {
-        //border-bottom: 1px @diff-file-border-color solid;
-        padding: 1em;
-      }
-
-      + .diff-header tr:first-child {
-        td, th {
-          border-top: 0;
-        }
-      }
-    }
-
-    &.deleted,
-    &.new-empty-file,
-    &.no-changes,
-    &.whitespace-file {
-      td {
-        padding: 1em;
       }
     }
 
@@ -476,14 +454,8 @@
       }
 
       .inline-files-container {
-        td {
-          &:first-child {
-            border-right: 1px @diff-line-border-color solid;
-          }
-
-          &.diff-review-ui {
-            padding: 0;
-          }
+        td.diff-review-ui {
+          padding: 0;
         }
       }
 
@@ -505,8 +477,7 @@
       }
     }
 
-    &.delete,
-    &.deleted {
+    &.delete {
       --_rb-diff-bg: var(--rb-theme-diff-delete-bg);
       --_rb-diff-fg: var(--rb-theme-diff-delete-fg);
       --_rb-diff-linenum-bg: var(--rb-theme-diff-delete-linenum-bg);
@@ -526,8 +497,7 @@
       }
     }
 
-    &.insert,
-    &.new-empty-file {
+    &.insert {
       --_rb-diff-bg: var(--rb-theme-diff-insert-bg);
       --_rb-diff-fg: var(--rb-theme-diff-insert-fg);
       --_rb-diff-linenum-bg: var(--rb-theme-diff-insert-linenum-bg);
@@ -535,8 +505,7 @@
       --_rb-diff-highlight-bg: var(--rb-theme-diff-insert-highlight-bg);
     }
 
-    &.replace,
-    &.whitespace-file {
+    &.replace {
       --_rb-diff-bg: var(--rb-theme-diff-replace-bg);
       --_rb-diff-fg: var(--rb-theme-diff-replace-fg);
       --_rb-diff-linenum-bg: var(--rb-theme-diff-replace-linenum-bg);
@@ -1553,45 +1522,19 @@ table.rb-c-diff-file-index {
  */
 .rb-o-duc {
   &::before {
-    background: white;
+    background:
+      var(--if-dark, var(--ink-p-red-100))
+      var(--if-light, white);
     border-radius: 2px;
-    color: red;
+    color:
+      var(--if-dark, white)
+      var(--if-light, red);
     font-weight: normal;
     font-style: normal;
     padding: 0 0.5ch;
 
     /* Use outline instead of border to avoid affecting layout. */
-    outline: 1px red solid;
+    outline: 1px var(--ink-p-red-300) solid;
     content: "U+" attr(data-codepoint);
-  }
-}
-
-
-/**
- * A notice at the top of a file diff.
- *
- * Structure:
- *     <tbody class="rb-c-diff-file-notice">
- *      <tr>
- *       <td>
- *        <div class="rb-c-alert ...">...</div>
- *       </td>
- *      </tr>
- *     </tbody>
- */
-.sidebyside tbody.rb-c-diff-file-notice {
-  a {
-    color: var(--ink-p-link-fg);
-  }
-
-  td {
-    padding: 0;
-  }
-
-  .rb-c-alert {
-    border-left: 0;
-    border-right: 0;
-    border-top: 0;
-    border-radius: 0;
   }
 }

@@ -14,6 +14,10 @@ RB.Admin.ServerActivityWidgetView = RB.Admin.WidgetView.extend({
             .bind('plothover', (ev, pos, item) => {
                 if (item) {
                     if (previousHoverPoint !== item.dataIndex) {
+                        if (this._$tooltip) {
+                            this._$tooltip.remove();
+                        }
+
                         const x = new Date(item.datapoint[0]).toLocaleDateString();
                         const y = item.datapoint[1];
 

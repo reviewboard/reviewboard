@@ -183,25 +183,33 @@ export class TextBasedCommentBlockView<
      * Update the size of the comment flag.
      */
     _updateSize() {
+        const $endRow = this.$endRow;
         const windowWidth = this.#$window.width();
 
-        if (this.#prevWindowWidth === windowWidth) {
+        if (this.#prevWindowWidth === windowWidth ||
+            $endRow.is(':hidden')) {
+            /*
+             * The view mode that the comment is on is hidden, so bail and
+             * try again when its visible. Or the comment size has already
+             * been calculated for this window size, so no-op.
+             */
             return;
         }
 
         this.#prevWindowWidth = windowWidth;
+        const $el = this.$el;
 
         /*
          * On IE and Safari, the marginTop in getExtents may be wrong.
          * We force a value that ends up working for us.
          */
-        const commentHeight = this.$endRow.offset().top +
-                              this.$endRow.outerHeight() -
+        const commentHeight = $endRow.offset().top +
+                              $endRow.outerHeight() -
                               this.$beginRow.offset().top -
-                              (this.$el.getExtents('m', 't') || -4);
+                              ($el.getExtents('m', 't') || -4);
 
         if (commentHeight !== this.#prevCommentHeight) {
-            this.$el.height(commentHeight);
+            $el.height(commentHeight);
             this.#prevCommentHeight = commentHeight;
         }
     }

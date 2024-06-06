@@ -177,11 +177,7 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
  *     6.0
  */
 @spina
-class BaseVisibilityActionView extends Actions.ActionView {
-    static events: EventsHash = {
-        'click': '_toggle',
-    };
-
+class BaseVisibilityActionView extends Actions.MenuItemActionView {
     /**********************
      * Instance variables *
      **********************/
@@ -240,15 +236,8 @@ class BaseVisibilityActionView extends Actions.ActionView {
 
     /**
      * Toggle the archive state of the review request.
-     *
-     * Args:
-     *     e (Event):
-     *         The event that triggered the action.
      */
-    private async _toggle(e: Event) {
-        e.preventDefault();
-        e.stopPropagation();
-
+    async activate() {
         const visibility = this.#reviewRequest.get('visibility');
         const visible = (visibility !== this.visibilityType);
 

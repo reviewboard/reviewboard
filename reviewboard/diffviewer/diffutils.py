@@ -24,7 +24,7 @@ from housekeeping.functions import deprecate_non_keyword_only_args
 from typing_extensions import NotRequired, TypedDict
 
 from reviewboard.attachments.mimetypes import guess_mimetype
-from reviewboard.deprecation import RemovedInReviewBoard70Warning
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
 from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
 from reviewboard.diffviewer.settings import DiffSettings
@@ -1382,7 +1382,7 @@ def get_diff_files(
             key=lambda f: f['interfilediff'] or f['filediff'])
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard70Warning)
+@deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
 def populate_diff_chunks(
     files,
     *,

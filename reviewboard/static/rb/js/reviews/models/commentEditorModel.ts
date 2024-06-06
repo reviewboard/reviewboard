@@ -1,5 +1,10 @@
 /** The state for editing a new or existing draft comment. */
-import { BaseModel, spina } from '@beanbag/spina';
+
+import {
+    type Result,
+    BaseModel,
+    spina,
+} from '@beanbag/spina';
 
 import {
     type BaseComment,
@@ -82,7 +87,7 @@ export class CommentEditor extends BaseModel<CommentEditorAttrs> {
      *     CommentEditorAttrs:
      *     The default values for the attributes.
      */
-    static defaults(): CommentEditorAttrs {
+    static defaults(): Result<Partial<CommentEditorAttrs>> {
         const userSession = UserSession.instance;
 
         return {

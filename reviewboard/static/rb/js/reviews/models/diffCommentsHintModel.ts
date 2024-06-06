@@ -4,6 +4,7 @@
 
 import {
     type ModelAttributes,
+    type Result,
     BaseModel,
     spina,
 } from '@beanbag/spina';
@@ -91,7 +92,7 @@ export class DiffCommentsHint extends BaseModel<DiffCommentsHintAttrs> {
      *     object:
      *     The defaults for the model.
      */
-    static defaults(): DiffCommentsHintAttrs {
+    static defaults(): Result<Partial<DiffCommentsHintAttrs>> {
         return {
             commitsWithComments: [],
             diffsetsWithComments: [],

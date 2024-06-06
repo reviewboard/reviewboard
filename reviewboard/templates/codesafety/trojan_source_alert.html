@@ -2,9 +2,9 @@
 {% definevar "CVE_2021_42574_URL" %}https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-42574{% enddefinevar %}
 {% definevar "CVE_2021_42694_URL" %}https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-42694{% enddefinevar %}
 
-<div class="rb-c-alert -is-warning">
- <div class="rb-c-alert__content">
-  <h3 class="rb-c-alert__heading">
+<div class="rb-c-diff-file-notice__body">
+ <div class="rb-c-diff-file-notice__message">
+  <h3 class="rb-c-diff-file-notice__heading">
 {% blocktrans %}
    This file contains special Unicode characters that may maliciously hide
    code and alter behavior.
@@ -20,7 +20,7 @@
 
 {# Bi-directional Unicode Characters #}
 {% if warning_ids|contains:'bidi' %}
-  <h4 class="rb-c-alert__heading">
+  <h4 class="rb-c-diff-file-notice__subheading">
 {%  blocktrans with cve_url=CVE_2021_42574_URL %}
    Bi-directional Unicode Characters
    (<a href="{{cve_url}}" target="_blank">CVE 2021-42574</a>)
@@ -47,7 +47,7 @@ if (access_level != "user // Check if admin") {
 
 {# Confusable/homoglyph Unicode Characters #}
 {% if warning_ids|contains:'confusable' %}
-  <h4 class="rb-c-alert__heading">
+  <h4 class="rb-c-diff-file-notice__subheading">
 {%  blocktrans with cve_url=CVE_2021_42694_URL %}
    Confusable/homoglyph Unicode Characters
    (<a href="{{cve_url}}" target="_blank">CVE 2021-42694</a>)
@@ -71,7 +71,7 @@ if (isΑdmin()) { ... }
 
 {# Zero-width Spaces #}
 {% if warning_ids|contains:'zws' %}
-  <h4 class="rb-c-alert__heading">
+  <h4 class="rb-c-diff-file-notice__subheading">
 {%  blocktrans with cve_url=CVE_2021_42574_URL %}
    Zero-width Spaces
    (<a href="{{cve_url}}" target="_blank">CVE 2021-42574</a>)
@@ -100,7 +100,7 @@ bot_user.add_permissions('...')
 {% endif %}
 
 {# Review notice/toggle button #}
-  <h4 class="rb-c-alert__heading">
+  <h4 class="rb-c-diff-file-notice__subheading">
 {%  blocktrans %}
    Please review carefully!
 {%  endblocktrans %}
@@ -114,8 +114,8 @@ bot_user.add_permissions('...')
    <span class="fa fa-warning"></span> icon.
 {% endblocktrans %}
  </p>
- <div>
-  <button class="rb-o-toggle-ducs"
+ <div class="rb-c-diff-file-notice__actions">
+  <button class="ink-c-button rb-o-toggle-ducs"
           data-hide-chars-label="{% trans "Hide suspicious characters" %}"
           data-show-chars-label="{% trans "Show suspicious characters" %}">{% trans "Hide suspicious characters" %}</button>
  </div>

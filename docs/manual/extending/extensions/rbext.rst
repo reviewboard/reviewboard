@@ -175,8 +175,16 @@ There's a few special arguments you may want to use:
 
    .. versionadded:: 4.0
 
+.. option:: --pytest
+
+   Run the tests via Pytest_ instead of nose_.
+
+   .. versionadded:: 7.0
+
 
 A list of modules/classes/functions to test can be included after any options.
 See :ref:`extensions-running-unit-tests` on how to do this.
 
 .. _coverage: https://pypi.python.org/pypi/coverage
+.. _Pytest: https://pytest.org
+.. _nose: https://pypi.org/project/nose/

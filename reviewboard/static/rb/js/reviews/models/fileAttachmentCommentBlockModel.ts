@@ -2,7 +2,10 @@
  * Represents the comments on a file attachment.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import { FileAttachmentStates } from 'reviewboard/common';
 import {
@@ -46,11 +49,11 @@ export class FileAttachmentCommentBlock<
     TAttributes extends FileAttachmentCommentBlockAttrs
 > extends AbstractCommentBlock<TAttributes> {
     /** Default values for the model attributes. */
-    static defaults: FileAttachmentCommentBlockAttrs = _.defaults({
+    static defaults: Result<Partial<FileAttachmentCommentBlockAttrs>> = {
         diffAgainstFileAttachmentID: null,
         fileAttachmentID: null,
         state: null,
-    }, super.defaults);
+    };
 
     /**
      * Create a FileAttachmentComment for the given comment ID.

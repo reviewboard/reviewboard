@@ -96,7 +96,7 @@ export interface ReviewAttrs extends BaseResourceAttrs {
  * Version Added:
  *     6.0
  */
-interface ReviewResourceData extends BaseResourceResourceData {
+export interface ReviewResourceData extends BaseResourceResourceData {
     body_bottom: string;
     body_bottom_text_type: string;
     body_top: string;

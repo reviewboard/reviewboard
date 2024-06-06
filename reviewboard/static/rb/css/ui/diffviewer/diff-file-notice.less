@@ -1,0 +1,173 @@
+@import (reference) "@beanbag/ink/lib/ink.less";
+
+
+/**
+ * A notice at the top of a file diff.
+ *
+ * This should be used any time there's informative content to display above
+ * (or in place of) a diff. By default, it shows an informative notice telling
+ * the user something they should know about the file, with an info icon and
+ * explanatory text on an eye-catching background. Modifiers can be used to
+ * adjust the icon or color scheme as appropriate for the type of notice.
+ *
+ * Version Added:
+ *     7.0
+ *
+ * Modifiers:
+ *     -is-deleted-file-notice:
+ *         This notice pertains to a deleted file.
+ *
+ *         This will affect the color scheme of the notice to match that of a
+ *         deleted file.
+ *
+ *     -is-new-file-notice:
+ *         This notice pertains to a new file.
+ *
+ *         This will affect the color scheme of the notice to match that of a
+ *         new file.
+ *
+ *     -is-warning:
+ *         The notice is a warning.
+ *
+ *         This will make use of a warning icon.
+ *
+ * Structure:
+ *     <tbody class="rb-c-diff-file-notice
+ *                   [  -is-deleted-file-notice
+ *                    | -is-new-file-notice
+ *                    | -is-warning]">
+ *      <tr>
+ *       <td colspan="...">
+ *        <div class="rb-c-diff-file-notice__body">...</div>
+ *       </td>
+ *      </tr>
+ *     </tbody>
+ */
+.sidebyside tbody.rb-c-diff-file-notice {
+  --_rb-c-diff-file-notice-icon: var(--ink-c-alert-info-icon);
+
+  background:
+    var(--if-dark, var(--ink-p-header-bg))
+    var(--if-light, var(--ink-c-alert-warning-bg));
+  color:
+    var(--if-dark, var(--ink-p-header-fg))
+    var(--if-light, var(--ink-c-alert-warning-fg));
+
+  /*
+   * Override the default colors for some notice types to reflect the
+   * added/deleted status of the file.
+   */
+  &.-is-deleted-file-notice {
+    background: var(--rb-theme-diff-delete-bg);
+    color: var(--rb-theme-diff-delete-fg);
+  }
+
+  &.-is-new-file-notice {
+    background: var(--rb-theme-diff-insert-bg);
+    color: var(--rb-theme-diff-insert-fg);
+  }
+
+  &.-is-warning {
+    --_rb-c-diff-file-notice-icon: var(--ink-c-alert-warning-icon);
+  }
+
+  > tr > td {
+    padding: 0;
+  }
+
+  a {
+    color: var(--ink-p-link-fg);
+  }
+
+  /**
+   * The main body of the notice.
+   *
+   * This inserts an icon and wraps an inner message, ensuring they align.
+   *
+   * Structure:
+   *     <div class="rb-c-diff-file-notice__body">
+   *      <div class="rb-c-diff-file-notice__message">...</div>
+   *     </div>
+   */
+  .rb-c-diff-file-notice__body {
+    display: grid;
+    grid-template: "icon message" / min-content auto;
+    gap: var(--ink-u-spacing-sm);
+    padding: var(--ink-u-spacing-m);
+
+    &::before {
+      grid-area: icon;
+      content: "";
+      display: block;
+      grid-area: icon;
+      text-align: center;
+      #ink-ns-ui.icons.svg-icon(@icon: var(--_rb-c-diff-file-notice-icon);
+                                @size: var(--ink-u-icon-ml));
+    }
+  }
+
+  /**
+   * Any actions to perform on the notice.
+   *
+   * DOM Structure:
+   *     <div class="rb-c-diff-file-notice__actions">
+   *      ...
+   *     </div>
+   */
+  .rb-c-diff-file-notice__actions {
+    margin-top: var(--ink-u-spacing-l);
+  }
+
+  /**
+   * The first heading in a message.
+   *
+   * Not all notices need a heading, as their appearance is bold. They should be
+   * used primarily when there's further content to display below it.
+   *
+   * Structure:
+   *     <h3 class="rb-c-diff-file-notice__heading">text...</h3>
+   */
+  .rb-c-diff-file-notice__heading {
+    font-size: inherit;
+    font-weight: bold;
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  /**
+   * A sub-heading in a message.
+   *
+   * This can be used to separate out content within a message.
+   *
+   * Structure:
+   *     <h4 class="rb-c-diff-file-notice__subheading">text...</h4>
+   */
+  .rb-c-diff-file-notice__subheading {
+    font-size: inherit;
+    font-weight: bold;
+    margin-top: var(--ink-u-spacing-l);
+    padding-top: 0;
+  }
+
+  /**
+   * The message within a notice.
+   *
+   * This contains the headings, text content, and actions shown within the message.
+   *
+   * Structure:
+   *     <div class="rb-c-diff-file-notice__message">
+   *      [<div class="rb-c-diff-file-notice__heading">...</div>]
+   *      (
+   *         <h4 class="rb-c-diff-file-notice__subheading">...</h4>
+   *         <div>...</div>
+   *       | <p>...</p>
+   *       | ...
+   *      ) [0+]
+   *      [<div class="rb-c-diff-file-notice__actions">...</div>]
+   *     </div>
+   */
+  .rb-c-diff-file-notice__message {
+    grid-area: message;
+    padding-top: var(--ink-u-spacing-xs);
+  }
+}

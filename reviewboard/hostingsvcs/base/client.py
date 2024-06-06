@@ -22,7 +22,7 @@ from cryptography.x509.oid import NameOID
 from cryptography.hazmat.backends import default_backend
 from django.utils.encoding import force_bytes, force_str
 
-from reviewboard.deprecation import RemovedInReviewBoard70Warning
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.hostingsvcs.base.http import (HostingServiceHTTPRequest,
                                                HostingServiceHTTPResponse)
 from reviewboard.scmtools.certs import Certificate
@@ -59,7 +59,7 @@ class HostingServiceClient:
         * Moved from :py:mod:`reviewboard.hostingsvcs.service` to
           :py:mod:`reviewboard.hostingsvcs.base.client`.
         * Deprecated JSON utility functions now emit deprecation warnings and
-          will be removed in Review Board 7.
+          will be removed in Review Board 8.
     """
 
     #: The HTTP request class to construct for HTTP requests.
@@ -799,10 +799,10 @@ class HostingServiceClient:
             urllib.error.URLError:
                 When there is an error communicating with the URL.
         """
-        RemovedInReviewBoard70Warning.warn(
+        RemovedInReviewBoard80Warning.warn(
             '%(class_name)s.json_delete is deprecated. Please use '
             '%(class_name)s.http_delete instead. This will be removed in '
-            'Review Board 7.'
+            'Review Board 8.'
             % {
                 'class_name': type(self).__name__,
             })
@@ -851,10 +851,10 @@ class HostingServiceClient:
             urllib.error.URLError:
                 When there is an error communicating with the URL.
         """
-        RemovedInReviewBoard70Warning.warn(
+        RemovedInReviewBoard80Warning.warn(
             '%(class_name)s.json_get is deprecated. Please use '
             '%(class_name)s.http_get instead. This will be removed in '
-            'Review Board 7.'
+            'Review Board 8.'
             % {
                 'class_name': type(self).__name__,
             })
@@ -903,10 +903,10 @@ class HostingServiceClient:
             urllib.error.URLError:
                 When there is an error communicating with the URL.
         """
-        RemovedInReviewBoard70Warning.warn(
+        RemovedInReviewBoard80Warning.warn(
             '%(class_name)s.json_post is deprecated. Please use '
             '%(class_name)s.http_post instead. This will be removed in '
-            'Review Board 7.'
+            'Review Board 8.'
             % {
                 'class_name': type(self).__name__,
             })

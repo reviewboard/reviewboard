@@ -2,7 +2,10 @@
  * Provides review capabilities for image file attachments.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import {
     FileAttachmentReviewable,
@@ -37,11 +40,11 @@ export class ImageReviewable extends FileAttachmentReviewable<
     ImageReviewableAttrs,
     RegionCommentBlock
 > {
-    static defaults: ImageReviewableAttrs = _.defaults({
+    static defaults: Result<Partial<ImageReviewableAttrs>> = {
         diffAgainstImageURL: '',
         imageURL: '',
         scale: 1,
-    }, super.defaults);
+    };
 
     static commentBlockModel = RegionCommentBlock;
 }

@@ -27,7 +27,7 @@ from django.utils.encoding import force_str
 from djblets.util.decorators import cached_property
 from typing_extensions import TypeAlias, TypedDict
 
-from reviewboard.deprecation import RemovedInReviewBoard70Warning
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 
 if TYPE_CHECKING:
     from djblets.util.typing import JSONValue
@@ -274,9 +274,9 @@ class HostingServiceHTTPRequest:
             4.0:
             This is deprecated in favor of the :py:attr:`body` attribute.
         """
-        RemovedInReviewBoard70Warning.warn(
+        RemovedInReviewBoard80Warning.warn(
             '%(class_name)s.data is deprecated in favor of '
-            '%(class_name)s.body. This will be removed in Review Board 7.'
+            '%(class_name)s.body. This will be removed in Review Board 8.'
             % {
                 'class_name': type(self).__name__,
             })
@@ -456,7 +456,7 @@ class HostingServiceHTTPResponse:
         * Moved from :py:mod:`reviewboard.hostingsvcs.service` to
           :py:mod:`reviewboard.hostingsvcs.base.http`.
         * Deprecated legacy tuple representations of this class now emit
-          deprecation warnings and will be removed in Review Board 7.
+          deprecation warnings and will be removed in Review Board 8.
 
     Version Added:
         4.0
@@ -634,10 +634,10 @@ class HostingServiceHTTPResponse:
             IndexError:
                 An index other than 0 or 1 was requested.
         """
-        RemovedInReviewBoard70Warning.warn(
+        RemovedInReviewBoard80Warning.warn(
             'Accessing %(class_name)s by index is deprecated. Please use '
             '%(class_name)s.data or %(class_name)s.headers instead. This '
-            'will be removed in Review Board 7.'
+            'will be removed in Review Board 8.'
             % {
                 'class_name': type(self).__name__,
             })

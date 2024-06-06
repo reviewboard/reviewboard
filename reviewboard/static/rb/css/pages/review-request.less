@@ -318,7 +318,8 @@
 
 .banner pre.field,
 .rb-c-unified-banner pre.field,
-.rb-c-review-request-field pre.field {
+.rb-c-review-request-field pre.field,
+.rb-c-review-request-changed-fields__value .changedesc-text {
   @_form-field-vars: #rb-ns-ui.form-field();
 
   background-color: var(--ink-p-input-bg);
@@ -628,14 +629,6 @@
       }
     }
 
-    .review-ui-box &.-is-active {
-      /*
-       * The active tab in review UIs has a slightly different color to match
-       * the review UI header color.
-       */
-       background-color: @review-ui-header-bg;
-    }
-
     a {
       color: inherit;
       cursor: pointer;
@@ -702,35 +695,4 @@
 
 #draft-banner .interdiff-link {
   margin-top: 1em;
-}
-
-
-/****************************************************************************
- * Updates Bubble
- ****************************************************************************/
-
-#updates-bubble {
-  background: var(--ink-p-accent-warning-bg);
-  color: var(--ink-p-fg-on-light);
-  border: 1px #888866 solid;
-  border-bottom: 0;
-  bottom: 0;
-  border-radius: 10px 10px 0 0;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.15);
-  font-size: 110%;
-  padding: 1em;
-  position: fixed;
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
-  z-index: @z-index-page-overlay;
-
-  a, a:visited {
-    color: var(--ink-p-link-fg-on-light);
-    text-decoration: none;
-  }
-
-  #updates-bubble-buttons {
-    margin-left: 2em;
-  }
 }

@@ -60,7 +60,7 @@ ARG POWERPACK_VERSION=5.2
 # Review Bot extension version to install.
 #
 # This can be in X.Y or X.Y.Z form.
-ARG REVIEWBOT_VERSION=3.2
+ARG REVIEWBOT_VERSION=4.0
 
 # Extra extension packages needed by the server.
 #
@@ -68,6 +68,9 @@ ARG REVIEWBOT_VERSION=3.2
 # create a new Dockerfile that inherits from this one and installs packages
 # themselves.
 ARG EXTRA_PACKAGES=
+
+# Build-specific environment variables.
+ARG TARGETARCH
 
 # Install all the base system-level packages needed by Review Board.
 #
@@ -152,7 +155,7 @@ RUN    set -ex \
            'ReviewBoard[s3]' \
            'ReviewBoard[saml]' \
            'ReviewBoard[swift]' \
-    && if [[ $BUILDARCH == "amd64" ]]; then \
+    && if test "$TARGETARCH" = "amd64"; then \
            pip3 install --no-cache-dir 'ReviewBoard[p4]'; \
        fi \
     && { curl https://pysvn.reviewboard.org | python3.11 -; } \
@@ -234,6 +237,9 @@ ENV REQUEST_TIMEOUT=120
 
 ENV GUNICORN_FLAGS=
 
+# Build-specific environment variables.
+ARG TARGETARCH
+
 # Public port that gunicorn will listen to.
 EXPOSE 8080
 
@@ -265,6 +271,11 @@ COPY --from=builder /etc/apt /etc/apt
 RUN    set -ex \
     && export TERM=dumb \
     && export DEBIAN_FRONTEND=noninteractive \
+    && if test "$TARGETARCH" = "amd64"; then \
+           export P4_PACKAGES="helix-cli"; \
+       else \
+           export P4_PACKAGES=""; \
+       fi \
     && apt-get update -y \
     && apt-get install -y --no-install-recommends \
            ca-certificates \
@@ -284,9 +295,7 @@ RUN    set -ex \
            python3.11-distutils \
            stunnel \
            subversion \
-    && if [[ $BUILDARCH == "amd64" ]]; then \
-           pip3 install helix-cli; \
-       fi \
+           $P4_PACKAGES \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3.11 /usr/bin/python3
 

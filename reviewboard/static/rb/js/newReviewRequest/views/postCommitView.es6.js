@@ -22,11 +22,6 @@ RB.PostCommitView = Backbone.View.extend({
         </div>
     `),
 
-    events: {
-        'click #reload_branches': '_onReloadBranchesClicked',
-        'click #reload_commits': '_onReloadCommitsClicked',
-    },
-
     /**
      * Initialize the view.
      *
@@ -44,7 +39,7 @@ RB.PostCommitView = Backbone.View.extend({
         const branches = repository.branches;
 
         this._$scrollContainer = options.$scrollContainer;
-        this._$error = null;
+        this._errorView = null;
 
         // Set up the branch selector and bind it to the "branch" attribute
         this._branchesView = new RB.BranchesView({
@@ -128,7 +123,8 @@ RB.PostCommitView = Backbone.View.extend({
         } catch (err) {
             this._branchesView.$el.hide();
             this._commitsView?.$el?.hide();
-            this._showLoadError('branches', err.message);
+            this._showLoadError(() => this._onReloadBranchesClicked(),
+                                err.message);
             return;
         }
 
@@ -159,7 +155,8 @@ RB.PostCommitView = Backbone.View.extend({
             await this._commitsCollection.fetch();
         } catch(err) {
             this._commitsView.$el.hide();
-            this._showLoadError('commits', err.message);
+            this._showLoadError(() => this._onReloadCommitsClicked(),
+                                err.message);
             return;
         }
 
@@ -171,9 +168,9 @@ RB.PostCommitView = Backbone.View.extend({
      * Clear any displayed error message.
      */
     _clearLoadError() {
-        if (this._$error) {
-            this._$error.remove();
-            this._$error = null;
+        if (this._errorView) {
+            this._errorView.remove();
+            this._errorView = null;
         }
     },
 
@@ -184,23 +181,58 @@ RB.PostCommitView = Backbone.View.extend({
      * helpful text and a link for trying the request again.
      *
      * Args:
-     *     reloadID (string):
-     *         An ID to use for the reload link element.
+     *     reloadFunc (function):
+     *         The function to call to perform a reload of the data.
      *
      *     err (string):
      *         The error text.
      */
-    _showLoadError(reloadID, err) {
+    _showLoadError(reloadFunc, err) {
         this._clearLoadError();
 
-        this._$error = $(this.loadErrorTemplate({
-                errorLoadingText: gettext('There was an error loading information from this repository:'),
-                temporaryFailureText: gettext('This may be a temporary failure.'),
-                tryAgainText: gettext('Try again'),
-                errorLines: err.split('\n'),
-                reloadID: reloadID,
-            }))
-            .appendTo(this.$el);
+        this._errorView = Ink.craftComponent(
+            'Ink.Alert',
+            {
+                type: 'error',
+            },
+            Ink.craftComponent(
+                'Ink.Alert.Heading',
+                null,
+                _`
+                    There was an error loading information from this
+                    repository:
+                `,
+            ),
+            Ink.craftComponent(
+                'Ink.Alert.Content',
+                null,
+                Ink.craftComponent(
+                    'p',
+                    {
+                        className: 'error-text',
+                    },
+                    err,
+                ),
+                Ink.craftComponent(
+                    'p',
+                    null,
+                    _`This may be a temporary failure.`,
+                ),
+            ),
+            Ink.craftComponent(
+                'Ink.Alert.Actions',
+                null,
+                Ink.craftComponent(
+                    'Ink.Button',
+                    {
+                        onClick: reloadFunc,
+                        type: 'primary',
+                    },
+                    _`Try again`,
+                ),
+            ),
+        );
+        Ink.renderInto(this.el, this._errorView);
     },
 
     /**
@@ -235,7 +267,8 @@ RB.PostCommitView = Backbone.View.extend({
             $scrollContainer: this._$scrollContainer,
         });
         this.listenTo(this._commitsView, 'loadError', xhr => {
-            this._showLoadError('commits', xhr);
+            this._showLoadError(() => this._onReloadCommitsClicked(),
+                                xhr);
         });
 
         if (this._rendered) {

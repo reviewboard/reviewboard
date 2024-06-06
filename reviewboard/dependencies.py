@@ -38,10 +38,10 @@ django_doc_major_version = '4.2'
 djblets_doc_major_version = '5.x'
 
 #: The version of Django required for the current version of Python.
-django_version = '~=4.2.7'
+django_version = '~=4.2.13'
 
 #: The version range required for Djblets.
-djblets_version = '~=5.0a0.dev0'
+djblets_version = '~=5.0'
 
 
 ###########################################################################
@@ -97,7 +97,7 @@ package_dependencies = {
 #: The dependencies here are generally intended to be those that themselves
 #: require Review Board.
 package_only_dependencies = {
-    'rbintegrations': '~=4.0.dev',
+    'rbintegrations': '~=4.0',
 }
 
 

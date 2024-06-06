@@ -2,7 +2,10 @@
  * Provides generic review capabilities for file attachments.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import { type AbstractCommentBlock } from './abstractCommentBlockModel';
 import {
@@ -65,7 +68,7 @@ export class FileAttachmentReviewable<
         FileAttachmentReviewableAttrs,
     TCommentBlockType extends AbstractCommentBlock = null
 > extends AbstractReviewable<TAttributes, TCommentBlockType> {
-    static defaults: FileAttachmentReviewableAttrs = _.defaults({
+    static defaults: Result<Partial<FileAttachmentReviewableAttrs>> = {
         attachmentRevisionIDs: null,
         diffAgainstFileAttachmentID: null,
         diffCaption: '',
@@ -76,7 +79,7 @@ export class FileAttachmentReviewable<
         filename: '',
         numRevisions: null,
         state: null,
-    }, super.defaults);
+    };
 
     static defaultCommentBlockFields = [
         'fileAttachmentID',

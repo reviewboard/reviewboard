@@ -15,6 +15,7 @@ import {
 import { DraftResourceModelMixin } from './draftResourceModelMixin';
 import {
     type ReviewAttrs,
+    type ReviewResourceData,
     Review,
 } from './reviewModel';
 
@@ -25,12 +26,24 @@ import {
  * Version Added:
  *     6.0
  */
-interface DraftReviewAttrs extends ReviewAttrs {
+export interface DraftReviewAttrs extends ReviewAttrs {
     /** Whether to archive the review request after publishing the review. */
     publishAndArchive: boolean;
 
     /** Whether to limit e-mails to only the owner of the review request. */
     publishToOwnerOnly: boolean;
+}
+
+
+/**
+ * Resource data for the DraftReview model.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface DraftReviewResourceData extends ReviewResourceData {
+    publish_and_archive: boolean;
+    publish_to_owner_only: boolean;
 }
 
 
@@ -45,7 +58,10 @@ interface DraftReviewAttrs extends ReviewAttrs {
 @spina({
     mixins: [DraftResourceModelMixin],
 })
-export class DraftReview extends Review<DraftReviewAttrs> {
+export class DraftReview extends Review<
+    DraftReviewAttrs,
+    DraftReviewResourceData
+> {
     static defaults: Result<Partial<DraftReviewAttrs>> = {
         publishAndArchive: false,
         publishToOwnerOnly: false,

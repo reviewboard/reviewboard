@@ -649,37 +649,56 @@ export class DiffViewerPageView extends ReviewablePageView<
                 $(this._$anchors[this._selectedAnchorIndex]));
         });
 
-        if (this.#startAtAnchorName) {
-            /* See if we've loaded the anchor the user wants to start at. */
-            let $anchor =
-                $(document.getElementsByName(this.#startAtAnchorName));
+        /*
+         * Defer selection of the starting anchor until after we've unwound the
+         * stack.
+         *
+         * This is necessary because the text comment flags will defer their
+         * own show() call in order to let layout settle, and selectAnchor()
+         * checks that the comment flag is visible.
+         */
+        _.defer(() => {
+            if (this.#startAtAnchorName) {
+                /*
+                 * See if we've loaded the anchor the user wants to start at.
+                 */
+                let $anchor =
+                    $(document.getElementsByName(this.#startAtAnchorName));
 
-            /*
-             * Some anchors are added by the template (such as those at
-             * comment locations), but not all are. If the anchor isn't found,
-             * but the URL hash is indicating that we want to start at a
-             * location within this file, add the anchor.
-             * */
-            const urlSplit = this.#startAtAnchorName.split(',');
+                /*
+                 * Some anchors are added by the template (such as those at
+                 * comment locations), but not all are. If the anchor isn't
+                 * found, but the URL hash is indicating that we want to start
+                 * at a location within this file, add the anchor.
+                 */
+                const urlSplit = this.#startAtAnchorName.split(',');
 
-            if ($anchor.length === 0 &&
-                urlSplit.length === 2 &&
-                elementName === urlSplit[0]) {
-                $anchor = $(DiffViewerPageView.anchorTemplate({
-                    anchorName: this.#startAtAnchorName,
-                }));
+                if ($anchor.length === 0 &&
+                    urlSplit.length === 2 &&
+                    elementName === urlSplit[0]) {
+                    $anchor = $(DiffViewerPageView.anchorTemplate({
+                        anchorName: this.#startAtAnchorName,
+                    }));
 
-                diffReviewableView.$el
-                    .find(`tr[line='${urlSplit[1]}']`)
-                        .addClass('highlight-anchor')
-                        .append($anchor);
+                    diffReviewableView.$el
+                        .find(`tr[line='${urlSplit[1]}']`)
+                            .addClass('highlight-anchor')
+                            .append($anchor);
+                }
+
+                if ($anchor.length !== 0) {
+                    /*
+                     * selectAnchor will return false if we didn't actually
+                     * select it (for example, the comment flag is not yet
+                     * visible). In that case, we just wait for the next time
+                     * and hope we'll catch it.
+                     */
+                    if (this.selectAnchor($anchor)) {
+                        this.#startAtAnchorName = null;
+                    }
+                }
             }
-
-            if ($anchor.length !== 0) {
-                this.selectAnchor($anchor);
-                this.#startAtAnchorName = null;
-            }
-        }
+        });
 
         this.listenTo(diffReviewableView, 'showDeletedClicked', () => {
             this.queueLoadDiff(diffReviewable, {showDeleted: true});
@@ -710,7 +729,7 @@ export class DiffViewerPageView extends ReviewablePageView<
      */
     selectAnchor(
         $anchor: JQuery,
-        scroll?: boolean,
+        scroll = true,
     ): boolean {
         if (!$anchor || $anchor.length === 0 ||
             $anchor.parent().is(':hidden')) {

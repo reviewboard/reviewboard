@@ -107,7 +107,13 @@ export interface ReviewRequestAttrs extends BaseResourceAttrs {
 }
 
 
-interface ReviewRequestResourceData extends BaseResourceResourceData {
+/**
+ * Resource data for the ReviewRequest model.
+ *
+ * Version Added:
+ *     7.0
+ */
+export interface ReviewRequestResourceData extends BaseResourceResourceData {
     absolute_url: string;
     approvalFailure: string;
     approved: boolean;

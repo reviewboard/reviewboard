@@ -5,7 +5,10 @@ from html import unescape
 
 from django.template.loader import render_to_string
 from django.utils.functional import cached_property
-from django.utils.html import escape, format_html_join, strip_tags
+from django.utils.html import (escape,
+                               format_html,
+                               format_html_join,
+                               strip_tags)
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from djblets.markdown import iter_markdown_lines
@@ -597,7 +600,7 @@ class BaseReviewRequestField(object):
         if 'new' in info:
             new_value = info['new'][0]
 
-        s = ['<table class="changed">']
+        s = ['<div class="rb-c-review-request-changed-value">']
 
         if old_value:
             s.append(self.render_change_entry_removed_value_html(
@@ -607,7 +610,7 @@ class BaseReviewRequestField(object):
             s.append(self.render_change_entry_added_value_html(
                 info, new_value))
 
-        s.append('</table>')
+        s.append('</div>')
 
         return ''.join(s)
 
@@ -628,8 +631,17 @@ class BaseReviewRequestField(object):
         value_html = self.render_change_entry_value_html(info, value)
 
         if value_html:
-            return ('<tr class="new-value"><th class="marker">+</th>'
-                    '<td class="value">%s</td></tr>' % value_html)
+            # TODO: Deprecate non-safe value_html strings, and later treat
+            #       them as unsafe.
+            return format_html(
+                '<div class="rb-c-review-request-changed-value__new">'
+                '<div class="rb-c-review-request-changed-value__marker"'
+                ' aria-label="{label}"></div>'
+                '<div class="rb-c-review-request-changed-value__value">'
+                '{value_html}</div>'
+                '</div>',
+                label=_('New value'),
+                value_html=mark_safe(value_html))
         else:
             return ''
 
@@ -650,8 +662,17 @@ class BaseReviewRequestField(object):
         value_html = self.render_change_entry_value_html(info, value)
 
         if value_html:
-            return ('<tr class="old-value"><th class="marker">-</th>'
-                    '<td class="value">%s</td></tr>' % value_html)
+            # TODO: Deprecate non-safe value_html strings, and later treat
+            #       them as unsafe.
+            return format_html(
+                '<div class="rb-c-review-request-changed-value__old">'
+                '<div class="rb-c-review-request-changed-value__marker"'
+                ' aria-label="{label}"></div>'
+                '<div class="rb-c-review-request-changed-value__value">'
+                '{value_html}</div>'
+                '</div>',
+                label=_('Old value'),
+                value_html=mark_safe(value_html))
         else:
             return ''
 
@@ -959,7 +980,7 @@ class BaseCommaEditableField(BaseEditableField):
             unicode:
             The HTML representation of the change entry.
         """
-        s = ['<table class="changed">']
+        s = ['<div class="rb-c-review-request-changed-value">']
 
         if 'removed' in info:
             values = info['removed']

@@ -5,7 +5,7 @@ from typing import Any, Dict, Type
 from django.template import Context, Template
 
 from reviewboard.actions import BaseAction, BaseMenuAction, actions_registry
-from reviewboard.deprecation import RemovedInReviewBoard70Warning
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.extensions.hooks import (ActionHook,
                                           DiffViewerActionHook,
                                           HeaderActionHook,
@@ -104,23 +104,23 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
         """
         deprecation_message = (
             'ReviewRequestActionHook is deprecated and will be removed in '
-            'Review Board 7.0. Your extension '
+            'Review Board 8.0. Your extension '
             '"reviewboard.extensions.tests.testcases.DummyExtension" '
             'will need to be updated to derive actions from '
             'reviewboard.actions.BaseAction and use ActionHook.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecation_message):
             self._test_base_review_request_action_hook(
                 'review-request-detail', ReviewRequestActionHook, True)
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecation_message):
             self._test_base_review_request_action_hook(
                 'file-attachment', ReviewRequestActionHook, False)
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecation_message):
             self._test_base_review_request_action_hook(
                 'view-diff', ReviewRequestActionHook, False)
@@ -131,23 +131,23 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
         """
         deprecation_message = (
             'DiffViewerActionHook is deprecated and will be removed in '
-            'Review Board 7.0. Your extension '
+            'Review Board 8.0. Your extension '
             '"reviewboard.extensions.tests.testcases.DummyExtension" '
             'will need to be updated to derive actions from '
             'reviewboard.actions.BaseAction and use ActionHook.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecation_message):
             self._test_base_review_request_action_hook(
                 'review-request-detail', DiffViewerActionHook, False)
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecation_message):
             self._test_base_review_request_action_hook(
                 'file-attachment', DiffViewerActionHook, False)
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecation_message):
             self._test_base_review_request_action_hook(
                 'view-diff', DiffViewerActionHook, True)
@@ -158,23 +158,23 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
         """
         deprecation_message = (
             'ReviewRequestDropdownActionHook is deprecated and will be '
-            'removed in Review Board 7.0. Your extension '
+            'removed in Review Board 8.0. Your extension '
             '"reviewboard.extensions.tests.testcases.DummyExtension" '
             'will need to be updated to derive actions from '
             'reviewboard.actions.BaseAction and use ActionHook.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecation_message):
             self._test_review_request_dropdown_action_hook(
                 'review-request-detail', ReviewRequestDropdownActionHook)
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecation_message):
             self._test_review_request_dropdown_action_hook(
                 'file-attachment', ReviewRequestDropdownActionHook)
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecation_message):
             self._test_review_request_dropdown_action_hook(
                 'view-diff', ReviewRequestDropdownActionHook)
@@ -254,7 +254,7 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
             'reviewboard.actions.BaseAction and use ActionHook.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecation_message):
             hook = HeaderActionHook(extension=self.extension, actions=[action])
 
@@ -290,13 +290,13 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
 
         deprecation_message = (
             'HeaderDropdownActionHook is deprecated and will be removed in '
-            'Review Board 7.0. Your extension '
+            'Review Board 8.0. Your extension '
             '"reviewboard.extensions.tests.testcases.DummyExtension" '
             'will need to be updated to derive actions from '
             'reviewboard.actions.BaseAction and use ActionHook.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard70Warning,
+        with self.assertWarns(RemovedInReviewBoard80Warning,
                               deprecation_message):
             hook = HeaderDropdownActionHook(extension=self.extension,
                                             actions=[action])

@@ -2,7 +2,10 @@
  * Represents the comments on a region of a diff.
  */
 
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import {
     type AbstractCommentBlockAttrs,
@@ -65,7 +68,7 @@ export interface DiffCommentBlockAttrs extends AbstractCommentBlockAttrs {
 export class DiffCommentBlock
     extends AbstractCommentBlock<DiffCommentBlockAttrs> {
     /** Default values for the model attributes. */
-    static defaults: DiffCommentBlockAttrs = _.defaults({
+    static defaults: Result<Partial<DiffCommentBlockAttrs>> = {
         $beginRow: null,
         $endRow: null,
         baseFileDiffID: null,
@@ -74,7 +77,7 @@ export class DiffCommentBlock
         fileDiffID: null,
         interFileDiffID: null,
         public: false,
-    }, super.defaults);
+    };
 
     static serializedFields = ['line', 'num_lines'];
 

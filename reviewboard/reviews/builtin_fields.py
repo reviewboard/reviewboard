@@ -1204,7 +1204,12 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
                 'uuid': uuid.uuid4(),
             }))
 
-        return mark_safe(''.join(items))
+        if not items:
+            return ''
+
+        return format_html(
+            '<div class="rb-c-file-attachments">{}</div>',
+            mark_safe(''.join(items)))
 
     def get_attachment_js_model_attrs(
         self,

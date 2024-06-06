@@ -313,18 +313,20 @@ textarea {
  * The "Loading..." indicator shown during AJAX operations.
  */
 #activity-indicator {
-  display: none;
+  display: flex;
+  gap: var(--ink-u-spacing-sm);
   position: fixed;
+  top: var(--ink-u-spacing-m);
   left: 50%;
-  top: 0;
+  transform: translateX(-50%);
   text-align: center;
   font-weight: bold;
-  background-color: #fce94f;
-  border: 1px #c4a000 solid;
-  border-top: 0;
-  width: 8em;
-  margin-left: -4em;
-  padding: 0.5em 0.5em;
+  background: var(--ink-p-light__yellow-400);
+  color: var(--ink-p-fg-on-light);
+  border: 1px rgba(0, 0, 0, 0.4) solid;
+  border-radius: var(--ink-u-border-radius-xl);
+  box-shadow: var(--ink-g-shadow-std);
+  padding: var(--ink-u-spacing-s) var(--ink-u-spacing-m);
   z-index: @z-index-spinner;
 
   span {
@@ -333,15 +335,11 @@ textarea {
   }
 
   &.error {
-    background-color: #ffcd9c;
-    width: 28em;
-    margin-left: -14em;
-    background-image: none;
-    padding-left: 0.6em;
+    background-color: var(--ink-p-light__red-100);
 
     a {
       margin-left: 1em;
-      color: #0000CC;
+      color: var(--ink-p-link-fg-on-light);
       text-decoration: none;
     }
   }
@@ -462,4 +460,16 @@ textarea {
 
   .page-colors(@topbar-bg: @review-request-action-bg;
                @topbar-border-color: @review-request-action-border-color);
+
+  &.-has-next-attachment {
+    #page-container {
+      padding-right: (@page-container-padding * 2);
+    }
+  }
+
+  &.-has-prev-attachment {
+    #page-container {
+      padding-left: (@page-container-padding * 2);
+    }
+  }
 }

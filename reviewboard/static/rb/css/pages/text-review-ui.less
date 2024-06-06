@@ -9,12 +9,6 @@
 
   border-radius: @box-border-radius;
 
-  &.text-review-ui-has-tabs {
-    .sidebyside thead th {
-      background: @diff-file-color;
-    }
-  }
-
   .review-ui-header {
     /*
      * We set this instead of turning off the border to keep the gradient from
@@ -24,40 +18,8 @@
     min-height: 0;
 
     .text-review-ui-views {
-      border-bottom: 1px @diff-file-border-color solid;
-
-      ul {
-        list-style: none;
-        margin: 0;
+      .rb-c-tabs {
         padding: 1em 0 0 5em;
-
-        li {
-          background: lighten(@diff-file-color, 2%);
-          cursor: pointer;
-          display: inline-block;
-          margin: 0;
-          border: 1px @diff-file-border-color solid;
-          border-bottom: 0;
-          font-size: 110%;
-          font-weight: normal;
-          vertical-align: bottom;
-          border-radius: @box-border-radius @box-border-radius 0 0;
-
-          &.active {
-            background: lighten(@diff-file-color, 5%);
-
-            a {
-              padding: 6px 12px;
-            }
-          }
-
-          a {
-            color: black;
-            display: block;
-            padding: 4px 12px;
-            text-decoration: none;
-          }
-        }
       }
     }
   }
@@ -86,10 +48,6 @@
         margin-bottom: 0;
       }
     }
-
-    .filename-row {
-      border-bottom: 1px @diff-file-border-color solid;
-    }
   }
 
   .review-ui-error {
@@ -98,12 +56,8 @@
   }
 
   .sidebyside {
-    border-radius: 0 0 @box-border-radius @box-border-radius;
-    margin-bottom: 0;
-
-    thead th {
-      background: @review-ui-header-bg;
-    }
+    border-top: var(--rb-g-diff-box-header-border);
+    margin: 0;
   }
 }
 

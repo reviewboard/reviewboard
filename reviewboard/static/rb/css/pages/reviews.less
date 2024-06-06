@@ -232,10 +232,6 @@
       }
     }
   }
-
-  .cm-variable-2 {
-    color: black;
-  }
 }
 
 .markdown-info {
@@ -263,12 +259,12 @@
     }
   }
 
-  &.has-prev-attachment .review-request {
-    margin-left: 1em;
+  &.has-prev-attachment .rb-c-review-request {
+    margin-left: @page-container-padding;
   }
 
-  &.has-next-attachment .review-request {
-    margin-right: 1em;
+  &.has-next-attachment .rb-c-review-request {
+    margin-right: @page-container-padding;
   }
 
   .actions-container {
@@ -278,27 +274,26 @@
   }
 
   .review-ui-box-content {
-    border: 1px @review-request-border-color solid;
+    border: var(--rb-c-review-request-border);
     border-top: 0;
     clear: both;
     padding: 0;
     min-height: 5em;
   }
+}
 
-  .review-ui-header {
-    border-bottom: 1px @diff-file-border-color solid;
-    background: @review-ui-header-bg;
-    min-height: 2em;
+.review-ui-header {
+  border-bottom: var(--rb-c-review-request-border);
+  background: var(--rb-c-review-request-bg);
+  min-height: 2em;
 
-    h1 {
-      margin: 0;
-      padding: 8px;
-      font-size: 10pt;
-      line-height: 16px;
+  h1 {
+    margin: 0;
+    padding: var(--ink-u-spacing-s);
+    font-size: 10pt;
 
-      &.file-attachment-single-revision {
-        text-align: center;
-      }
+    &.file-attachment-single-revision {
+      text-align: center;
     }
   }
 }
@@ -320,32 +315,46 @@
 
 .review-ui-next-attachment,
 .review-ui-prev-attachment {
-  background: @box-bg;
-  border: 1px solid @box-border-color;
+  background: var(--rb-c-review-request-bg);
+  border: var(--rb-c-review-request-border);
+  color: var(--ink-p-fg);
+  cursor: pointer;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
   padding: 2px;
   position: fixed;
   top: 50%;
   transition: transform 0.3s, background 0.3s, margin 0.3s;
-  z-index: @z-index-base;
+  z-index: @z-index-nav-menu;
 
   &:hover {
-    background: darken(@box-bg, 10%);
     transform: translateY(-50%);
   }
 
   a {
-    color: black;
+    color: inherit;
     text-decoration: none;
   }
 
   .file-container {
     display: inline-block;
     float: none;
+    padding: var(--ink-u-spacing-s) 0;
     vertical-align: middle;
+
+    .file {
+      margin: 0;
+    }
   }
 }
 
+.review-ui-file-attachment-nav-button-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: @z-index-event-overlay;
+}
 
 .review-ui-next-attachment {
   border-right-width: 0;
@@ -356,6 +365,10 @@
 
   &:hover {
     margin-right: 0;
+  }
+
+  .file-container {
+    padding-right: var(--ink-u-spacing-m);
   }
 }
 
@@ -368,6 +381,10 @@
 
   &:hover {
     margin-left: 0;
+  }
+
+  .file-container {
+    padding-left: var(--ink-u-spacing-m);
   }
 }
 
@@ -972,425 +989,6 @@
 
   --rb-c-review-request-page-entry-content-collapsed-bg:
     var(--rb-c-review-request-page-entry-content-collapsed-bg-color);
-
-  .changed-fields {
-    clear: both;
-    padding: @review-request-entry-padding;
-
-    &>ul {
-      list-style: none;
-      margin: 1em 0 1em 0;
-      padding: 0;
-
-      &>li {
-        margin: 3em 0 0 0;
-
-        &:first-child {
-          margin-top: 0;
-        }
-      }
-    }
-
-    a {
-      color: default;
-      text-decoration: none;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-
-    /* Field labels */
-    h3 {
-      color: var(--rb-p-review-request-field-label-color);
-      font-size: 110%;
-      margin: 0;
-      padding: 0;
-
-      &.status {
-        /* Add some separation between this and the other fields. */
-        margin-bottom: 2em;
-
-        &:last-child {
-          /*
-           * If it's the last child, we don't want that separation, or it'll
-           * have an odd amount of extra space.
-           */
-          margin-bottom: 0.5em;
-        }
-
-        .value {
-          color: inherit;
-          font-weight: normal;
-        }
-      }
-    }
-
-    /* Used in the textarea field diffs and the Change Summary section. */
-    > pre {
-      background-color: var(--ink-p-input-bg);
-      border: var(--ink-g-border-input);
-      color: var(--ink-p-input-fg);
-      padding: @textarea-editor-padding;
-      font-size: inherit;
-      white-space: pre-wrap;
-    }
-
-    /*
-     * File attachment/screenshot change lists.
-     *
-     * These differ from the other field change lists in that they have
-     * mini-section labels underneath for each file.
-     */
-    .caption-changed {
-      margin: 2em 0 0 2em;
-      padding: 0;
-
-      a {
-        /* Treat the link like a field. */
-        font-weight: bold;
-      }
-
-      td, th {
-        vertical-align: top;
-      }
-
-      td {
-        padding-left: 1em;
-      }
-
-      th {
-        text-align: right;
-      }
-    }
-
-    /* Displays changes for field values, with "-" and "+" markers. */
-    .changed {
-      background: var(--ink-p-input-bg);
-      border: var(--ink-g-border-input);
-      border-collapse: collapse;
-      display: inline-block;
-      margin: 0;
-      padding: 0;
-      vertical-align: top;
-
-      a {
-        color: var(--ink-p-link-fg);
-        text-decoration: none;
-
-        &:first-child {
-          margin-left: 0;
-        }
-
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-
-      td, th {
-        font-family: @textarea-font-family;
-        padding: 0.3em 0.6em;
-      }
-
-      td {
-        background: var(--ink-g-border-input);
-      }
-
-      .new-value .marker {
-        background: var(--rb-theme-diff-insert-linenum-bg);
-        color: var(--rb-theme-diff-insert-linenum-fg);
-      }
-
-      .old-value .marker {
-        background: var(--rb-theme-diff-delete-linenum-bg);
-        color: var(--rb-theme-diff-delete-linenum-fg);
-      }
-    }
-
-    /* The "Change Summary" section. */
-    .changedesc-text {
-      margin: @textarea-editor-margin-top 0 1.5rem;
-      padding: @textarea-editor-padding;
-      overflow: hidden;
-
-      .codehilite {
-        .flush-codehilite();
-      }
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-    }
-
-    /* The diff for text areas. */
-    .diffed-text-area {
-      background: var(--ink-p-input-bg);
-      border: var(--ink-g-border-input);
-      border-collapse: collapse;
-      color: var(--ink-p-input-fg);
-      padding: 0;
-      width: 100%;
-
-      a {
-        text-decoration: underline;
-      }
-
-      p {
-        padding-top: 2px;
-        padding-bottom: 2px;
-      }
-
-      pre {
-        background: none;
-        border: 0;
-        margin: 0;
-        padding: 0;
-        white-space: pre-wrap;
-      }
-
-      td {
-        font-family: @textarea-font-family;
-        padding: 0 4px;
-        vertical-align: top;
-        white-space: pre-wrap;
-
-        .codehilite {
-          //background: rgba(255, 255, 255, 0.4);
-          border-radius: 0;
-          border-left: 0;
-          border-right: 0;
-
-          // Make this flush with the sides of the row.
-          margin: 0 -4px;
-
-          /* Don't obscure the text or shift it to any side. Make it flush. */
-          .flush-codehilite();
-
-          &::before {
-            background: none;
-            border: 0;
-          }
-
-          &.codehilite-multiline-start {
-            border-top: var(--rb-p-code-block-border);
-          }
-
-          &.codehilite-multiline-end {
-            border-bottom: var(--rb-p-code-block-border);
-          }
-
-          pre:empty {
-            /* Give this a reasonable height so it's not just blank. */
-            height: 1rem;
-          }
-        }
-      }
-
-      .delete {
-        .line {
-          background: var(--rb-theme-diff-delete-bg);
-          color: var(--rb-theme-diff-delete-fg);
-        }
-
-        /* The '-' or '+' marker. */
-        .marker {
-          background: var(--rb-theme-diff-delete-linenum-bg);
-          color: var(--rb-theme-diff-delete-linenum-fg);
-        }
-      }
-
-      .insert {
-        .line {
-          background: var(--rb-theme-diff-insert-bg);
-          color: var(--rb-theme-diff-insert-fg);
-        }
-
-        /* The '-' or '+' marker. */
-        .marker {
-          background: var(--rb-theme-diff-insert-linenum-bg);
-          color: var(--rb-theme-diff-insert-linenum-fg);
-        }
-      }
-
-      /* Add borders between different change types. */
-      :not(.insert) + .insert,
-      :not(.equal) + .equal,
-      :not(.delete) + .delete {
-        border-top: var(--rb-g-diff-chunk-border);
-      }
-
-      .line {
-        width: 100%;
-        word-break: break-all;
-
-        /*
-         * Make sure any images in the Markdown-rendered text are kept
-         * small, but with the correct aspect ratio.
-         */
-        img {
-          width: auto;
-          max-height: 100px;
-        }
-      }
-
-      /* The '-' or '+' marker. */
-      .marker {
-        background: var(--rb-theme-diff-equals-linenum-bg);
-        color: var(--rb-theme-diff-equals-linenum-fg);
-        font-family: @textarea-font-family;
-        font-size: @textarea-font-size;
-        font-weight: bold;
-        text-align: center;
-      }
-
-      .replace-new {
-        .line {
-          background: var(--rb-theme-diff-insert-bg);
-          color: var(--rb-theme-diff-insert-fg);
-
-          .hl {
-            background: var(--rb-g-diff-highlight-text-bg);
-            color: var(--rb-g-diff-highlight-text-fg);
-          }
-        }
-
-        /* The '-' or '+' marker. */
-        .marker {
-          background: var(--rb-theme-diff-insert-linenum-bg);
-          color: var(--rb-theme-diff-insert-linenum-fg);
-        }
-      }
-
-      .replace-old {
-        .line {
-          background: var(--rb-theme-diff-delete-bg);
-          color: var(--rb-theme-diff-delete-fg);
-
-          .hl {
-            background: var(--rb-g-diff-highlight-text-bg);
-            color: var(--rb-g-diff-highlight-text-fg);
-          }
-        }
-
-        /* The '-' or '+' marker. */
-        .marker {
-          background: var(--rb-theme-diff-delete-linenum-bg);
-          color: var(--rb-theme-diff-delete-linenum-fg);
-        }
-      }
-    }
-
-    /* Styling for the "Diff" field updates. */
-    .diff-changes {
-      .line-counts {
-        margin-left: 0.5em;
-
-        .delete-count {
-          color: var(--rb-p-diff-delete-text-fg);
-        }
-
-        .insert-count {
-          color: var(--rb-p-diff-insert-text-fg);
-        }
-      }
-    }
-
-    /* Styles for the file listing for the "Diff" field. */
-    .diff-index {
-      margin-bottom: 0;
-
-      .diff-file-icon {
-        min-width: 20px;
-        min-height: 20px;
-      }
-
-      .diff-file-info {
-        /* Compensate for the lack of diff-chunks-cell column. */
-        width: 100%;
-      }
-    }
-
-    .primary-fields {
-      h3:first-child {
-        margin-top: 2em;
-      }
-    }
-
-    /*
-     * Secondary fields are in more of a Field: Value display, with the
-     * fields lining up.
-     */
-    .secondary-fields {
-      width: 100%;
-
-      .on-mobile-medium-screen-720({
-        display: block;
-      });
-
-      h3 {
-        margin: 0 1em 0 0;
-        padding: 0;
-        text-align: right;
-
-        .on-mobile-medium-screen-720({
-          margin: 0;
-          text-align: left;
-        });
-      }
-
-      &>tbody>tr {
-        &>td,
-        &>th {
-          padding: 0.5em 0;
-          vertical-align: top;
-          white-space: nowrap;
-
-          .on-mobile-medium-screen-720({
-            display: block;
-            white-space: normal;
-          });
-        }
-
-        &>td {
-          /*
-           * Between this and the white-space: nowrap above, the field labels
-           * will end up taking the minimum size without wrapping, and the
-           * rest of the width will be given to the value.
-           */
-          width: 100%;
-
-          &>p {
-            /*
-             * If the field value is rendered inside a <p>, make sure it
-             * aligns with the field label.
-             *
-             * Note that the label has a larger font than this, so we can't
-             * reuse the same pixel value. We have to bump it.
-             */
-            &:first-child {
-              margin-top: 3px;
-            }
-
-            /* Don't take up more room than we need in the last <p>. */
-            &:last-child {
-              margin-bottom: 0;
-            }
-          }
-        }
-
-        &>th {
-          .on-mobile-medium-screen-720({
-            margin-top: 2em;
-          });
-        }
-      }
-
-      /* Align the text label and any tabular field. */
-      .rb-c-review-request-field-tabular {
-        margin-top: 0;
-      }
-    }
-  }
 }
 
 
@@ -1701,12 +1299,13 @@
     }
 
     .file-thumbnail-container {
-      background: @file-attachment-bg;
+      background: var(--rb-theme-diff-equals-bg);
+      color: var(--rb-theme-diff-equals-fg);
       height: @file-attachment-height;
       text-align: center;
 
       a {
-        color: black;
+        color: inherit;
         text-decoration: none;
       }
 
@@ -1714,7 +1313,7 @@
         font-size: x-small;
       }
 
-      .thumbnail-properties () {
+      .thumbnail-properties() {
         box-sizing: border-box;
         max-height: @file-attachment-height;
         max-width: 100%;
@@ -2223,8 +1822,10 @@
 .tooltip {
   background-color: #fef6b3;
   border: 1px #a58600 solid;
+  border-radius: var(--ink-u-border-radius-m);
   color: var(--ink-p-fg-on-light);
-  padding: 4px;
+  overflow: hidden;
+  padding: var(--ink-u-spacing-m);
   position: absolute;
   max-width: 60em;
 
@@ -2232,6 +1833,7 @@
     border: 1px black solid;
     border-bottom: 0;
     padding: 0;
+    min-width: 25em;
 
     > ul {
       list-style: none;
@@ -2245,7 +1847,7 @@
         flex-direction: column;
         gap: inherit;
         margin: 0;
-        padding: @comments-tooltip-padding;
+        padding: var(--ink-u-spacing-m);
 
         &.draft {
           background-color: @comments-tooltip-draft-background;
@@ -2267,6 +1869,8 @@
         }
 
         .rich-text {
+          line-height: 1.2;
+
           code {
             border-color: @comments-tooltip-border-color;
           }
@@ -2274,8 +1878,8 @@
           .codehilite {
             .flush-codehilite();
             border-color: @comments-tooltip-border-color;
-            margin-left: -@comments-tooltip-padding;
-            margin-right: -@comments-tooltip-padding;
+            margin: 0 calc(-1 * var(--ink-u-spacing-m));
+            padding: var(--ink-u-spacing-xs) var(--ink-u-spacing-m);
           }
         }
       }

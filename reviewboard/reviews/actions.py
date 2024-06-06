@@ -13,7 +13,7 @@ from reviewboard.actions import (AttachmentPoint,
                                  BaseMenuAction,
                                  actions_registry)
 from reviewboard.admin.read_only import is_site_read_only_for
-from reviewboard.deprecation import RemovedInReviewBoard70Warning
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.reviews.features import (general_comments_feature,
                                           unified_banner_feature)
 from reviewboard.reviews.models import ReviewRequest
@@ -843,9 +843,9 @@ class BaseReviewRequestAction(BaseAction):
 
         By default, actions are top-level and have no children.
         """
-        RemovedInReviewBoard70Warning.warn(
+        RemovedInReviewBoard80Warning.warn(
             'BaseReviewRequestAction is deprecated and will be removed in '
-            'Review Board 7.0. Please update your code to use '
+            'Review Board 8.0. Please update your code to use '
             'reviewboard.actions.base.BaseAction')
 
         super().__init__()
@@ -1117,7 +1117,7 @@ def register_actions(
         6.0:
         Users should switch to
         :py:const:`reviewboard.actions.actions_registry`. This method will be
-        removed in Review Board 7.
+        removed in Review Board 8.
 
     Args:
         actions (iterable of BaseReviewRequestAction):
@@ -1136,9 +1136,9 @@ def register_actions(
         DepthLimitExceededError:
             The maximum depth limit is exceeded.
     """
-    RemovedInReviewBoard70Warning.warn(
+    RemovedInReviewBoard80Warning.warn(
         'register_actions has been deprecated and will be removed in '
-        'Review Board 7.0. Please update your code to use '
+        'Review Board 8.0. Please update your code to use '
         'reviewboard.actions.actions_registry.')
 
     if parent_id:
@@ -1159,7 +1159,7 @@ def unregister_actions(
         6.0:
         Users should switch to
         :py:const:`reviewboard.actions.actions_registry`. This method will be
-        removed in Review Board 7.
+        removed in Review Board 8.
 
     Args:
         action_ids (iterable of unicode):
@@ -1170,9 +1170,9 @@ def unregister_actions(
         KeyError:
             An unregistration is attempted before it's registered.
     """
-    RemovedInReviewBoard70Warning.warn(
+    RemovedInReviewBoard80Warning.warn(
         'unregister_actions has been deprecated and will be removed in '
-        'Review Board 7.0. Please update your code to use '
+        'Review Board 8.0. Please update your code to use '
         'reviewboard.actions.actions_registry.')
 
     for action_id in action_ids:
@@ -1190,14 +1190,14 @@ def clear_all_actions() -> None:
         6.0:
         Users should switch to
         :py:const:`reviewboard.actions.actions_registry`. This method will be
-        removed in Review Board 7.
+        removed in Review Board 8.
 
     Warning:
         This will clear **all** actions, even if they were registered in
         separate extensions.
     """
-    RemovedInReviewBoard70Warning.warn(
+    RemovedInReviewBoard80Warning.warn(
         'clear_all_actions has been deprecated and will be removed in '
-        'Review Board 7.0. Please update your code to use '
+        'Review Board 8.0. Please update your code to use '
         'reviewboard.actions.actions_registry.')
     actions_registry.reset()

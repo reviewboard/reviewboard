@@ -1,7 +1,11 @@
 /**
  * The unified banner model.
  */
-import { BaseModel, spina } from '@beanbag/spina';
+import {
+    type Result,
+    BaseModel,
+    spina,
+} from '@beanbag/spina';
 
 import {
     type Review,
@@ -79,15 +83,17 @@ interface UnifiedBannerAttrs {
  */
 @spina
 export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
-    static defaults: UnifiedBannerAttrs = {
-        draftModes: [],
-        numDrafts: 0,
-        pendingReview: null,
-        reviewReplyDrafts: [],
-        reviewRequest: null,
-        reviewRequestEditor: null,
-        selectedDraftMode: 0,
-    };
+    static defaults(): Result<Partial<UnifiedBannerAttrs>> {
+        return {
+            draftModes: [],
+            numDrafts: 0,
+            pendingReview: null,
+            reviewReplyDrafts: [],
+            reviewRequest: null,
+            reviewRequestEditor: null,
+            selectedDraftMode: 0,
+        };
+    }
 
     /**
      * Initialize the Unified Review Banner State.

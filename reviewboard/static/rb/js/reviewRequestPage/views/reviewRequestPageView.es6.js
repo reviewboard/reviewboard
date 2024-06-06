@@ -300,7 +300,9 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
          */
         for (let i = 0; i < this._entryViews.length; i++) {
             const entryView = this._entryViews[i];
-            const $anchor = entryView.$(selector);
+            const $anchor = entryView.$el.is(selector)
+                            ? entryView.$el
+                            : entryView.$(selector);
 
             if ($anchor.length > 0) {
                 /*
@@ -313,7 +315,9 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
                  * Scroll down to the particular anchor, now that the entry
                  * is expanded.
                  */
-                RB.scrollManager.scrollToElement($anchor);
+                requestAnimationFrame(
+                    () => RB.scrollManager.scrollToElement($anchor));
+
                 break;
             }
         }

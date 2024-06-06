@@ -197,3 +197,4 @@ more.
    extensions/index
    integrations/index
    sites/index
+   monitoring/index

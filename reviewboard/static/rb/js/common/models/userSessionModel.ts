@@ -55,14 +55,12 @@ class Item extends BaseResource<StoredItemsAttrs> {
      *     object:
      *     Default values for the attributes.
      */
-    static defaults(): StoredItemsAttrs {
-        return _.defaults({
-            baseURL: null,
-            loaded: true,
-            objectID: null,
-            stored: false,
-        }, super.defaults());
-    }
+    static defaults: Result<Partial<StoredItemsAttrs>> = {
+        baseURL: null,
+        loaded: true,
+        objectID: null,
+        stored: false,
+    };
 
     /**
      * Return the URL for the item resource.

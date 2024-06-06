@@ -1,4 +1,7 @@
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import {
     type ActionAttrs,
@@ -28,7 +31,9 @@ interface MenuActionAttrs extends ActionAttrs {
  */
 @spina
 export class MenuAction extends Action<MenuActionAttrs> {
-    static defaults: Partial<MenuActionAttrs> = {
-        children: [],
-    };
+    static defaults(): Result<Partial<MenuActionAttrs>> {
+        return {
+            children: [],
+        };
+    }
 }

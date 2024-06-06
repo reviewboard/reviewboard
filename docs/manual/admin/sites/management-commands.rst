@@ -221,6 +221,7 @@ This will automatically import the keys into storage and then exit.
 
 .. rb-management-command:: clean-orphaned-data
 .. program:: clean-orphaned-data
+.. _clean-orphaned-data:
 
 ``clean-orphaned-data`` - Clean Up Orphaned Objects in the Database
 -------------------------------------------------------------------

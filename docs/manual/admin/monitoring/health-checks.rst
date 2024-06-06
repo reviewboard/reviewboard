@@ -66,8 +66,8 @@ If any services are down, the main ``status`` field will be ``DOWN``.
 Docker
 ------
 
-Our :ref:`official Docker images <docker>` are pre-configured to perform
-health checks.
+Our :ref:`official Docker images <installation-docker>` are pre-configured to
+perform health checks.
 
 To enable this in your own image, run:
 

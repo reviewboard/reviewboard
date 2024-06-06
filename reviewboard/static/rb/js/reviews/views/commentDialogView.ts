@@ -987,6 +987,32 @@ export class CommentDialogView extends BaseView<
      *         The scroll or wheel event.
      */
     _onScroll(evt: Event) {
-        evt.preventDefault();
+        const target = evt.target as HTMLElement;
+        let textEl: HTMLElement = null;
+
+        if (target.tagName === 'TEXTAREA' ||
+            target.classList.contains('CodeMirror-scroll')) {
+            textEl = target;
+        } else {
+            textEl = target.closest('.CodeMirror-scroll');
+        }
+
+        if (textEl === null) {
+            /*
+             * If the event is happening in the comment dialog but not in the
+             * text editor, we can just swallow it right away.
+             */
+            evt.preventDefault();
+        } else {
+            /*
+             * If the event is in the text editor, we need to figure out if the
+             * editor is scrollable. If it is, we let the default handler run.
+             * If not, swallow it so it doesn't bubble up to the main
+             * document.
+             */
+            if (textEl.scrollHeight === textEl.clientHeight) {
+                evt.preventDefault();
+            }
+        }
     }
 }

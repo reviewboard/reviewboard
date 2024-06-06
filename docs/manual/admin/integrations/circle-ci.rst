@@ -19,44 +19,87 @@ Review Board requires the use of CircleCI 2.0. If you're still using CircleCI
 Integration Configuration
 =========================
 
-To configure integration with CircleCI, click :guilabel:`Add a new
-configuration` on the :guilabel:`Integrations` page in the :ref:`Administration
-UI <administration-ui>`. You can have multiple different CircleCI
-configurations, in the case where you may need to have review requests on
-different repositories use different CircleCI API keys.
+To configure an integration with CircleCI:
 
-In the configuration, there are several required fields.
+1. Navigate to the :ref:`Administration UI <administration-ui>` ->
+   :guilabel:`Integrations`.
 
-The :guilabel:`Name` field can be used to set a name for this particular
-configuration. This allows you to keep track of which is which in the case
-where you have multiple CircleCI configurations.
+2. Click :guilabel:`Add Integration` and select :guilabel:`CircleCI`.
 
-:guilabel:`Conditions` allows you to set conditions for when Review Board will
-trigger a build. If you want to trigger builds for all code changes, this can
-be set to :guilabel:`Always match`. However, you can also create complex rules
-for which review requests will match. Because CircleCI only works with GitHub
-and Bitbucket repositories, only changes on repositories configured with those
-hosting services will trigger builds.
+3. Fill out the general fields:
 
-.. image:: images/ci-conditions.png
+   :guilabel:`Name`:
+       A name for this particular configuration.
 
-:guilabel:`API Token` should be set to a valid CircleCI API Token. These can be
-created by going to CircleCI and selecting :guilabel:`User Settings` from the
-menu at the top right. From there, select :guilabel:`Personal API Tokens`.
+       Each integration must have its own name. You can provide any name
+       you choose. This will be shown whenever a build is in progress.
 
-There's one additional optional field, :guilabel:`Build Branch`. By default,
-the CircleCI user interface will show all builds as occurring on ``master``.
-This field allows you to override the branch name to be something else, as to
-separate review request builds from regular builds.
+   :guilabel:`Enable this integration`
+       This will be on by default. You can turn this off to temporarily or
+       permanently disable this CircleCI configuration without having to
+       delete it.
 
-.. note:: We recommend creating and pushing a dummy branch named
-          "review-requests" to your repository, and then filling in that name
-          here. The actual contents of that branch are unimportant, and it
-          never needs to be updated, since the source will be completely
-          replaced during the build process.
+   :guilabel:`Local Site`
+       If you're using the advanced :term:`Local Site` (multi-server
+       partition) support, you can specify which site contains this
+       configuration.
 
-If at any point you want to stop triggering builds but do not want to delete
-the configuration, you can uncheck :guilabel:`Enable this integration`.
+       Most users can leave this blank.
+
+4. Set the :guilabel:`Conditions` for when Review Board will trigger a build.
+
+   At a minimum, you should set a condition to match a specific repository.
+   Even if you only have one repository configured now, you'll want to set
+   this up so things don't break if you connect a second one. If needed, you
+   can create complex rules for which review requests get matched with this
+   config (for example, if you only want to run a test suite for certain
+   branches).
+
+   .. image:: images/ci-conditions.png
+
+   Because CircleCI only works with GitHub and Bitbucket repositories, only
+   changes on repositories configured with those hosting services will
+   trigger builds.
+
+5. Fill out the information for the build processes in CircleCI.
+
+   :guilabel:`API Token`:
+       The API token used for authentication. You can use a personal or
+       project API token. To create an API token, follow the instructions
+       in their documentation_.
+
+   :guilabel:`Build Branch`:
+       An optional branch name to use for review request builds within the
+       CircleCI user interface.
+
+       By default, the CircleCI user interface will show all builds as
+       occurring on ``master``. This field allows you to override the
+       branch name to be something else, as to separate review request builds
+       from regular builds.
+
+   .. note:: We recommend creating and pushing a dummy branch named
+             "review-requests" to your repository, and then filling in that
+             name here. The actual contents of that branch are unimportant,
+             and it never needs to be updated, since the source will be
+             completely replaced during the build process.
+
+6. Set the information for when to run builds.
+
+   :guilabel:`Run builds manually`:
+       Enable this if you want CircleCI builds to only run when manually
+       started.
+
+       When enabled, this will add a :guilabel:`Run` button to the build
+       entry.
+
+   :guilabel:`Build timeout`
+       The amount of time until the build is considered to have timed out.
+
+       If the build takes longer than this, it will be marked as timed out
+       and can be re-run.
+
+You can create multiple configurations of the integration to do builds for
+each repository which supports CircleCI builds.
 
 
 CircleCI config.yml Configuration
@@ -126,3 +169,4 @@ using :ref:`rbt patch <rbtools:rbt-patch>`.
 
 
 .. _CircleCI: https://circleci.com/
+.. _documentation: https://circleci.com/docs/managing-api-tokens/

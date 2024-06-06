@@ -4,6 +4,7 @@
 
 import {
     type ModelAttributes,
+    type Result,
     BaseModel,
     Collection,
     spina,
@@ -66,13 +67,15 @@ export class AbstractReviewable<
     TAttributes extends AbstractReviewableAttrs = AbstractReviewableAttrs,
     TCommentBlockType extends AbstractCommentBlock = null
 > extends BaseModel<TAttributes> {
-    static defaults: AbstractReviewableAttrs = {
-        caption: null,
-        renderedInline: false,
-        review: null,
-        reviewRequest: null,
-        serializedCommentBlocks: {},
-    };
+    static defaults(): Result<Partial<AbstractReviewableAttrs>> {
+        return {
+            caption: null,
+            renderedInline: false,
+            review: null,
+            reviewRequest: null,
+            serializedCommentBlocks: {},
+        };
+    }
 
     /**
      * The list of fields from this model to populate in each new instance

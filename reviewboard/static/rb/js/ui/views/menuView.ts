@@ -170,7 +170,7 @@ export class MenuView extends BaseView<
     MenuViewOptions
 > {
     /*
-     * These are here for legacy use and will be removed in Review Board 7.0.
+     * These are here for legacy use and will be removed in Review Board 8.0.
      * Callers should use the MenuType enum.
      */
     static TYPE_STANDARD_MENU = MenuType.Standard;

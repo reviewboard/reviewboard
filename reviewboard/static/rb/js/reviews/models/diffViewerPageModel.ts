@@ -1,7 +1,10 @@
 /**
  * The model for the diff viewer page.
  */
-import { spina } from '@beanbag/spina';
+import {
+    type Result,
+    spina,
+} from '@beanbag/spina';
 
 import { DiffFileCollection } from '../collections/diffFileCollection';
 import { type DiffFileResourceData } from './diffFileModel';
@@ -108,7 +111,7 @@ interface LoadDiffRevisionOptions {
  */
 @spina
 export class DiffViewerPage extends ReviewablePage<DiffViewerPageAttrs> {
-    static defaults: DiffViewerPageAttrs = {
+    static defaults: Result<Partial<DiffViewerPageAttrs>> = {
         allChunksCollapsed: false,
         canDownloadDiff: false,
         canToggleExtraWhitespace: false,

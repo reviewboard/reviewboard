@@ -51,16 +51,16 @@ class OnReviewRequestDraftDeletedTests(kgb.SpyAgency, TestCase):
             attachment_revision=published.attachment_revision + 1,
             draft=True)
 
-        # 38 queries:
+        # 39 queries:
         #
         #   1-7. Fetch review request draft info and relations
         #  8-13. Fetch file attachments info
         # 14-17. Build file attachments data for getting states
         # 18-32. Delete the file attachments from the review request draft
-        # 33-36. Delete the change description
-        #    37. Delete the file attachment association
-        #    38. Delete the review request draft
-        with self.assertNumQueries(38):
+        # 33-37. Delete the change description
+        #    38. Delete the file attachments
+        #    39. Delete the review request draft
+        with self.assertNumQueries(39):
             self.draft.delete()
 
         all_attachments = FileAttachment.objects.all()
@@ -79,16 +79,16 @@ class OnReviewRequestDraftDeletedTests(kgb.SpyAgency, TestCase):
         published = self.create_file_attachment(self.review_request)
         new = self.create_file_attachment(self.review_request, draft=True)
 
-        # 27 queries:
+        # 28 queries:
         #
         #   1-7. Fetch review request draft info and relations
         #  8-13. Fetch file attachments info
         # 14-17. Build file attachments data for getting states
         # 18-21. Delete the file attachment from the review request draft
-        # 22-25. Delete the change description
-        #    26. Remove the file attachment association
-        #    27. Delete the review request draft
-        with self.assertNumQueries(27):
+        # 22-26. Delete the change description
+        #    27. Delete the file attachment
+        #    28. Delete the review request draft
+        with self.assertNumQueries(28):
             self.draft.delete()
 
         all_attachments = FileAttachment.objects.all()
@@ -103,15 +103,37 @@ class OnReviewRequestDraftDeletedTests(kgb.SpyAgency, TestCase):
         """
         self.spy_on(_on_review_request_draft_deleted)
 
-        # 12 queries:
+        # 13 queries:
         #
-        #  1-7. Fetch review request draft info and relations
-        # 8-11. Delete the change description
-        #   12. Delete the review request draft
-        with self.assertNumQueries(12):
+        #   1-7. Fetch review request draft info and relations
+        #  8-12. Delete the change description
+        #    13. Delete the review request draft
+        with self.assertNumQueries(13):
             self.draft.delete()
 
         self.assertSpyCalled(_on_review_request_draft_deleted)
+
+    def test_with_change_description(self) -> None:
+        """Testing _on_review_request_draft_deleted with a change description
+        """
+        self.spy_on(_on_review_request_draft_deleted)
+        changedesc = ChangeDescription.objects.create(
+            user=User.objects.get(username='doc'),
+            public=False,
+            text='x')
+
+        self.draft.changedesc = changedesc
+        self.draft.save()
+
+        # 13 queries:
+        #
+        #  1-7. Fetch review request draft info and relations
+        # 8-12. Delete the change description
+        #   13. Delete the review request draft
+        with self.assertNumQueries(13):
+            self.draft.delete()
+
+        self.assertNotIn(changedesc, ChangeDescription.objects.all())
 
     def test_with_diff_and_diff_file_attachment(self) -> None:
         """Testing _on_review_request_draft_deleted with a diff and diff file
@@ -127,20 +149,49 @@ class OnReviewRequestDraftDeletedTests(kgb.SpyAgency, TestCase):
         filediff = self.create_filediff(diffset)
         attachment = self.create_diff_file_attachment(filediff)
 
-        # 34 queries:
+        # 35 queries:
         #
         #   1-7. Fetch review request draft info and relations
         #  8-10. Fetch file attachments info
         # 11-14. Delete the change description
-        # 15-32. Delete the diffset, filediffs, and linked file attachment
-        #    33. Remove the file attachment association
-        #    34. Delete the review request draft
-        with self.assertNumQueries(34):
+        # 15-34. Delete the diffset, filediffs, and linked file attachment
+        #    35. Delete the review request draft
+        with self.assertNumQueries(35):
             self.draft.delete()
 
         self.assertNotIn(attachment, FileAttachment.objects.all())
         self.assertNotIn(filediff, FileDiff.objects.all())
         self.assertNotIn(diffset, DiffSet.objects.all())
+
+    def test_handler_does_not_delete_published_data(self) -> None:
+        """Testing that _on_review_request_draft_deleted running after a draft
+        publish does not delete data that is now part of the review request
+        """
+        self.spy_on(_on_review_request_draft_deleted)
+
+        user = User.objects.get(username='doc')
+
+        diffset = self.create_diffset(
+            repository=self.review_request.repository)
+        self.draft.diffset = diffset
+
+        changedesc = ChangeDescription.objects.create(
+            user=user,
+            public=False,
+            text='x')
+        self.draft.changedesc = changedesc
+
+        attachment = self.create_file_attachment(self.review_request,
+                                                 draft=True)
+
+        self.draft.save()
+
+        self.draft.target_people.add(user)
+        self.review_request.publish(user)
+
+        self.assertIn(diffset, DiffSet.objects.all())
+        self.assertIn(changedesc, ChangeDescription.objects.all())
+        self.assertTrue(attachment, FileAttachment.objects.all())
 
 
 class OnReviewRequestDeletedTests(kgb.SpyAgency, TestCase):

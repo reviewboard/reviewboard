@@ -57,4 +57,4 @@ To configure an integration with Microsoft Teams:
    .. image:: images/microsoftteams-config-where.png
 
 .. _here: https://www.reviewboard.org/integrations/microsoft-teams/#microsoft-teams-setup
-.. _Review Board logo: https://static.reviewboard.org/integration-assets/chat-common/reviewboard-centered.png
+.. _Review Board logo: https://static.reviewboard.org/integration-assets/msteams/reviewboard.png?20240501-1234

@@ -240,6 +240,7 @@ intersphinx_mapping = {
     'django': (django_doc_base_url, None),
     'django1.6': (django_doc_base_url_fmt % '1.6', None),
     'django1.11': (django_doc_base_url_fmt % '1.11', None),
+    'django4.2': (django_doc_base_url_fmt % '4.2', None),
     'djblets0.9': ('%s/docs/djblets/0.9/' % rbwebsite_url, None),
     'djblets0.10': ('%s/docs/djblets/1.0/' % rbwebsite_url, None),
     'djblets1.0': ('%s/docs/djblets/1.0/' % rbwebsite_url, None),
