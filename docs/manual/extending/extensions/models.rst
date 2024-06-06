@@ -113,8 +113,7 @@ database should contain the modified fields.
 
 
 .. _Django Evolution: https://github.com/beanbaginc/django-evolution
-.. _Django Evolution documentation:
-   https://github.com/beanbaginc/django-evolution/blob/master/docs/evolution.txt
+.. _Django Evolution documentation: https://django-evolution.readthedocs.io/en/latest/
 
 
 Adding Data to Review Board Models

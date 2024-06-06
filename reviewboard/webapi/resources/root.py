@@ -77,7 +77,7 @@ class RootResource(WebAPIResource, DjbletsRootResource):
          -
 
        * - ``commit_validation``
-         - :ref:`webapi2.0-commit-validation-resource`
+         - :ref:`webapi2.0-validate-diff-commit-resource`
          -
 
        * - ``default_reviewer``

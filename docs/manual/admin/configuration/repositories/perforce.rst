@@ -163,7 +163,7 @@ all requests through it.
 
 
 .. _Perforce's guide on using Stunnel:
-   https://portal.perforce.com/s/article/2431
+   https://portal.perforce.com/s/article/2484
 .. _Stunnel: https://www.stunnel.org/
 
 

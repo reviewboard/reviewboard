@@ -152,9 +152,8 @@ Adding Django Middleware
 
 Middleware is another Django_ feature that's used to inject logic into the
 HTTP request/response process. They can be used to
-:ref:`process HTTP requests <django:request-middleware>`,
+process HTTP requests and responses,
 :ref:`invoke views <django:view-middleware>`,
-:ref:`process responses <django:response-middleware>`,
 :ref:`process template responses <django:template-response-middleware>`, or
 :ref:`handle exceptions <django:exception-middleware>` raised by views. These
 can be added through the
