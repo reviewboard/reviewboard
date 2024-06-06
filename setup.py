@@ -47,7 +47,16 @@ if pyver < PYTHON_MIN_VERSION:
 
 
 # NOTE: When updating, make sure you update the classifiers below.
-SUPPORTED_PYVERS = ['3.8', '3.9', '3.10', '3.11', '3.12']
+#
+# Python end-of-life dates (as of June 6, 2024):
+#
+# 3.9: October 31, 2025
+# 3.10: October 31, 2026
+# 3.11: October 31, 2027
+# 3.12: October 31, 2028
+#
+# See https://endoflife.date/python
+SUPPORTED_PYVERS = ['3.9', '3.10', '3.11', '3.12']
 
 
 if '--all-pyvers' in sys.argv:
@@ -463,7 +472,6 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
