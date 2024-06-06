@@ -136,7 +136,7 @@ services:
   # This should not be accessed directly. Instead, please access the frontend
   # nginx server.
   reviewboard:
-    image: beanbag/reviewboard:6.0
+    image: beanbag/reviewboard:7.0
     depends_on:
       - db
       - memcached

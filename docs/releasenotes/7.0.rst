@@ -5,7 +5,7 @@
 Review Board 7.0 Release Notes
 ==============================
 
-**Release date**: TBD
+**Release date**: June 6, 2024
 
 This release contains all bug fixes and features from Review Board version
 :doc:`6.0.2 <6.0.2>`.
@@ -77,6 +77,26 @@ Compatibility
 New Features
 ============
 
+Dark Mode (experimental)
+------------------------
+
+Review Board 7 comes with an experimental Dark Mode. Users can choose in their
+profile settings whether to use Light Mode (the default), Dark Mode, or to
+follow the system theme (which can often be configured to change based on the
+time of day).
+
+.. note::
+
+   Dark Mode is still a work in progress, and there may be isolated parts of
+   the user interface which look odd or incorrect. If you notice anything that
+   does not look good in Dark Mode, please let us know.
+
+.. image:: _static/images/7.x/7.0-dark-mode-review-request@2x.png
+   :width: 1283
+   :alt: A sample review request shown in Dark Mode, with a cool-grey color
+         scheme.
+
+
 Binary Files in Diffs
 ---------------------
 
@@ -98,26 +118,12 @@ Support for a wider variety of file types and version control systems is
 coming in future versions. If there's something in particular that you would
 like to see, please let us know.
 
-.. todo:: screenshots
+.. image:: _static/images/7.x/7.0-image-diff-review@2x.png
+   :width: 813
+   :alt: An image of a diff of two colorations for a ghostly blob character
+         with a wooden belt, built for a game
 
 .. _RBTools: https://reviewboard.org/downloads/rbtools/
-
-
-Dark Mode (experimental)
-------------------------
-
-Review Board 7 comes with an experimental Dark Mode. Users can choose in their
-profile settings whether to use Light Mode (the default), Dark Mode, or to
-follow the system theme (which can often be configured to change based on the
-time of day).
-
-.. note::
-
-   Dark Mode is still a work in progress, and there may be isolated parts of
-   the user interface which look odd or incorrect. If you notice anything that
-   does not look good in Dark Mode, please let us know.
-
-.. todo:: screenshots
 
 
 Diff Viewer
@@ -130,7 +136,10 @@ Diff Viewer
   single column for content. This makes it much easier to read and interact
   with diffs on phones and other mobile devices.
 
-.. todo:: screenshots
+.. image:: _static/images/7.x/7.0-mobile-diff-viewer@2x.png
+   :width: 577
+   :alt: The diff viewer in mobile mode, showing a single column with deleted
+         and inserted code, moved lines, and comments
 
 * Added touchscreen support for the revision selector.
 
@@ -155,13 +164,17 @@ Integrations
   different Microsoft Teams configurations to deliver notifications to
   different channels (or even different teams).
 
+  .. image:: _static/images/7.x/7.0-msteams@2x.png
+     :width: 813
+     :alt: A review request posted to a Microsoft Teams channel.
+
 * Updated compatibility for slash normalization in newer versions of
   :rbintegration:`Jenkins <jenkins>`.
 
   For a while, Jenkins disallowed using slashes in job names, and required
   normalizing them to underscores. In newer versions, slashes are required.
 
-  The jenkins integration now provides separate template variables for
+  The Jenkins integration now provides separate template variables for
   ``{branch_name}`` and ``{noslash_branch_name}``, and for
   ``{repository_name}`` and ``{noslash_repository_name}``.
 
@@ -313,7 +326,6 @@ Usability Improvements
 Bug Fixes
 =========
 
-
 General
 -------
 
@@ -339,7 +351,8 @@ Dashboard
   fill the available space) would display incorrectly in locales such as German
   which use commas for decimals instead of periods. This has been fixed.
 
-* Added some additional default columns to the :guilabel:`All Review Requests` datagrid.
+* Added some additional default columns to the :guilabel:`All Review Requests`
+  datagrid.
 
   The :guilabel:`All Review Requests` page was missing a couple important
   columns. The :guilabel:`Ship It/Issue Counts` and :guilabel:`New Updates`
