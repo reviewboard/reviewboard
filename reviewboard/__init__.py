@@ -4,53 +4,62 @@ These variables and functions can be used to identify the version of
 Review Board. They're largely used for packaging purposes.
 """
 
+from __future__ import annotations
+
+
 #: The version of Review Board.
 #:
 #: This is in the format of:
 #:
 #: (Major, Minor, Micro, Patch, alpha/beta/rc/final, Release Number, Released)
 #:
-VERSION = (7, 0, 1, 0, 'alpha', 0, False)
+VERSION: tuple[int, int, int, int, str, int, bool] = \
+    (8, 0, 0, 0, 'alpha', 0, False)
 
 
-def get_version_string():
-    """Return the Review Board version as a human-readable string."""
-    version = '%s.%s' % (VERSION[0], VERSION[1])
+def get_version_string() -> str:
+    """Return the Review Board version as a human-readable string.
 
-    if VERSION[2] or VERSION[3]:
-        version += ".%s" % VERSION[2]
+    Returns:
+        str:
+        The Review Board version string.
+    """
+    major, minor, micro, patch, tag, release_num, released = VERSION
+    version = f'{major}.{minor}'
 
-    if VERSION[3]:
-        version += ".%s" % VERSION[3]
+    if micro or patch:
+        version += f'.{micro}'
 
-    if VERSION[4] != 'final':
-        if VERSION[4] == 'rc':
-            version += ' RC%s' % VERSION[5]
+    if patch:
+        version += f'.{patch}'
+
+    if tag != 'final':
+        if tag == 'rc':
+            version += f' RC{release_num}'
         else:
-            version += ' %s %s' % (VERSION[4], VERSION[5])
+            version += f' {tag} {release_num}'
 
-    if not is_release():
-        version += " (dev)"
+    if not released:
+        version += ' (dev)'
 
     return version
 
 
-def get_package_version():
+def get_package_version() -> str:
     """Return the Review Board version as a Python package version string.
 
     Returns:
-        unicode:
+        str:
         The Review Board package version.
     """
-    version = '%s.%s' % (VERSION[0], VERSION[1])
+    major, minor, micro, patch, tag, release_num = VERSION[:-1]
+    version = f'{major}.{minor}'
 
-    if VERSION[2] or VERSION[3]:
-        version = '%s.%s' % (version, VERSION[2])
+    if micro or patch:
+        version += f'.{micro}'
 
-    if VERSION[3]:
-        version = '%s.%s' % (version, VERSION[3])
-
-    tag = VERSION[4]
+    if patch:
+        version += f'.{patch}'
 
     if tag != 'final':
         if tag == 'alpha':
@@ -58,29 +67,41 @@ def get_package_version():
         elif tag == 'beta':
             tag = 'b'
 
-        version = '%s%s%s' % (version, tag, VERSION[5])
+        version += f'{tag}{release_num}'
 
     return version
 
 
-def is_release():
-    """Return whether this is a released version of Review Board."""
-    return VERSION[6]
+def is_release() -> bool:
+    """Return whether this is a released version of Review Board.
+
+    Returns:
+        bool:
+        True if the current version of Review Board is a release.
+    """
+    return VERSION[-1]
 
 
-def get_manual_url():
-    """Return the URL to the Review Board manual for this version."""
+def get_manual_url() -> str:
+    """Return the URL to the Review Board manual for this version.
+
+    Returns:
+        str:
+        The URL to the user manual.
+    """
     if VERSION[2] == 0 and VERSION[4] != 'final':
         manual_ver = 'dev'
     else:
-        manual_ver = '%s.%s' % (VERSION[0], VERSION[1])
+        manual_ver = f'{VERSION[0]}.{VERSION[1]}'
 
-    return 'https://www.reviewboard.org/docs/manual/%s/' % manual_ver
+    return f'https://www.reviewboard.org/docs/manual/{manual_ver}/'
 
 
-def initialize(load_extensions=True,
-               setup_logging=True,
-               setup_templates=True):
+def initialize(
+    load_extensions: bool = True,
+    setup_logging: bool = True,
+    setup_templates: bool = True,
+) -> None:
     """Begin initialization of Review Board.
 
     This sets up the logging, generates cache serial numbers, loads extensions,
@@ -114,15 +135,14 @@ def initialize(load_extensions=True,
     import logging
     import os
 
-    os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
-                          str('reviewboard.settings'))
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE',
+                          'reviewboard.settings')
 
     import settings_local
 
     # Set RBSITE_PYTHON_PATH to the path we need for any RB-bundled
     # scripts we may call.
-    os.environ[str('RBSITE_PYTHONPATH')] = \
-        os.path.dirname(settings_local.__file__)
+    os.environ['RBSITE_PYTHONPATH'] = os.path.dirname(settings_local.__file__)
 
     from django import setup
     from django.apps import apps
@@ -189,7 +209,9 @@ def initialize(load_extensions=True,
     signals.initializing.send(sender=None)
 
 
-def finalize_setup(is_upgrade=False):
+def finalize_setup(
+    is_upgrade: bool = False,
+) -> None:
     """Internal function to upgrade internal state after installs/upgrades.
 
     This should only be called by Review Board install or upgrade code.
