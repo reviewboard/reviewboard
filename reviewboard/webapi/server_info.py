@@ -9,6 +9,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.admin.server import get_server_url
 from reviewboard.diffviewer.features import dvcs_feature
+from reviewboard.scmtools import scmtools_registry
 
 
 logger = logging.getLogger(__name__)
@@ -120,6 +121,11 @@ def get_capabilities(request=None):
     siteconfig = SiteConfiguration.objects.get_current()
     capabilities['authentication']['client_web_login'] = \
         siteconfig.get('client_web_login')
+
+    capabilities['scmtools']['supported_tools'] = sorted(
+        scmtool.scmtool_id
+        for scmtool in scmtools_registry
+    )
 
     return capabilities
 
