@@ -164,8 +164,17 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
 
                 for tool_name in request.GET['tool'].split(','):
                     try:
+                        # Try first as ID, then name.
+                        tool = scmtools_registry.get_by_id(tool_name)
+
+                        if tool is not None:
+                            tool_ids.append(tool.scmtool_id)
+                            continue
+
                         tool = scmtools_registry.get_by_name(tool_name)
-                        tool_ids.append(tool.scmtool_id)
+
+                        if tool is not None:
+                            tool_ids.append(tool.scmtool_id)
                     except ItemLookupError:
                         pass
 
