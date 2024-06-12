@@ -254,19 +254,22 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
         self.assertEqual(rsp['repositories'][1]['name'], 'test2')
 
-    def test_get_repositories_with_tool(self):
-        """Testing the GET repositories/?tool= API"""
+    def test_get_repositories_with_tool_name(self) -> None:
+        """Testing the GET repositories/?tool= API with tool names"""
         self.create_repository(name='test1', path='dummy1', tool_name='Git')
         self.create_repository(name='test2', path='dummy2', tool_name='Test')
 
         rsp = self.api_get(get_repository_list_url() + '?tool=Git',
                            expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
 
-    def test_get_repositories_with_tool_many(self):
-        """Testing the GET repositories/?tool= API and comma-separated list"""
+    def test_get_repositories_with_tool_many_names(self) -> None:
+        """Testing the GET repositories/?tool= API with tool names in a
+        comma-separated list
+        """
         self.create_repository(name='test1', path='dummy1', tool_name='Git')
         self.create_repository(name='test2', path='dummy2', tool_name='Test')
         self.create_repository(name='test3', path='dummy3',
@@ -274,6 +277,46 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
 
         rsp = self.api_get(get_repository_list_url() + '?tool=Git,Subversion',
                            expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 2)
+        self.assertEqual(rsp['repositories'][0]['name'], 'test1')
+        self.assertEqual(rsp['repositories'][1]['name'], 'test3')
+
+    def test_get_repositories_with_tool_missing_name(self) -> None:
+        """Testing the GET repositories/?tool= API with unknown tool name/ID"""
+        # This was previously crashing due to the tool registry lookup
+        # returning None.
+        rsp = self.api_get(get_repository_list_url() + '?tool=unknown',
+                           expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 0)
+
+    def test_get_repositories_with_tool_id(self) -> None:
+        """Testing the GET repositories/?tool= API with tool IDs."""
+        self.create_repository(name='test1', path='dummy1', tool_name='Git')
+        self.create_repository(name='test2', path='dummy2', tool_name='Test')
+
+        rsp = self.api_get(get_repository_list_url() + '?tool=git',
+                           expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['repositories']), 1)
+        self.assertEqual(rsp['repositories'][0]['name'], 'test1')
+
+    def test_get_repositories_with_tool_many_ids(self) -> None:
+        """Testing the GET repositories/?tool= API with tool IDs in a
+        comma-separated list
+        """
+        self.create_repository(name='test1', path='dummy1', tool_name='Git')
+        self.create_repository(name='test2', path='dummy2', tool_name='Test')
+        self.create_repository(name='test3', path='dummy3',
+                               tool_name='Subversion')
+
+        rsp = self.api_get(get_repository_list_url() + '?tool=git,subversion',
+                           expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
