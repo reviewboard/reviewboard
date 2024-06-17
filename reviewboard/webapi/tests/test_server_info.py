@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any, Optional, Tuple
+
 from django.conf import settings
 from djblets.webapi.testing.decorators import webapi_test_template
 
@@ -14,6 +16,9 @@ from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import server_info_mimetype
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_server_info_url
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
 
 
 class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
@@ -57,7 +62,40 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     # HTTP GET tests
     #
 
-    def setup_basic_get_test(self, user, with_local_site, local_site_name):
+    def setup_basic_get_test(
+        self,
+        user: User,
+        with_local_site: bool,
+        local_site_name: Optional[str],
+    ) -> Tuple[str, str, Any]:
+        """Set up a basic HTTP GET unit test.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user performing the API requests.
+
+            with_local_site (bool):
+                Whether the test is being performed on a Local Site.
+
+            local_site_name (str or None):
+                The name of the Local Site to test against.
+
+                This will be ``None`` if testing against the global site.
+
+        Returns:
+            tuple:
+            A 3-tuple of:
+
+            Tuple:
+                0 (str):
+                    The URL to the API resource to access.
+
+                1 (str):
+                    The expected mimetype of the response.
+
+                2 (object):
+                    The item to compare to in :py:meth:`compare_item`.
+        """
         return (get_server_info_url(local_site_name),
                 server_info_mimetype,
                 None)
@@ -84,3 +122,16 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                           capabilities['review_uis']['supported_mimetypes'])
         finally:
             unregister_ui(TestReviewUI)
+
+    @webapi_test_template
+    def test_get_registered_scmtools(self) -> None:
+        """Testing the GET <URL> API registered SCMTools"""
+        url, mimetype, obj = self.setup_basic_get_test(self.user, False, None)
+
+        rsp = self.api_get(url, expected_mimetype=mimetype)
+        assert rsp is not None
+
+        capabilities = rsp['info']['capabilities']
+
+        self.assertIn('git',
+                      capabilities['scmtools']['supported_tools'])

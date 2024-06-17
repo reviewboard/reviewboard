@@ -61,11 +61,23 @@ Upgrade Notes
 Compatibility
 =============
 
-* Review Board 7.0 supports Python 3.8 - 3.12.
+Review Board 7.0 supports Python 3.8 - 3.12.
+
+.. important::
+
+   Django 4.2 has removed support for some old database versions. Database
+   support now requires:
+
+   * MariaDB 10.4 or newer.
+   * MySQL 8 or newer.
+   * PostgreSQL 12 or newer.
+
+   `Learn more`_
+
+.. _Learn more: https://docs.djangoproject.com/en/5.0/releases/4.2/#dropped-support-for-mariadb-10-3
 
 * :pypi:`Djblets` 5.0 is required.
 * :pypi:`Django` 4.2 is required.
-
 * Switched DMARC checking library from :pypi:`publicsuffix` to
   :pypi:`publicsuffixlist`
 
