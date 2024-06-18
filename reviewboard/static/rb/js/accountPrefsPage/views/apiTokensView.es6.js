@@ -548,8 +548,9 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
 
         this._$note = this.$('.rb-c-config-api-tokens__note');
         const noteEditor = new RB.InlineEditorView({
-            el: this._$note,
             editIconClass: 'rb-icon rb-icon-edit',
+            el: this._$note,
+            hasShortButtons: true,
         });
         noteEditor.render();
 
@@ -564,8 +565,8 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
             .format('YYYY-MM-DDTHH:mm');
 
         const expiresView = new RB.DateTimeInlineEditorView({
-            el: this._$expires[0],
             descriptorText: 'Expires ',
+            el: this._$expires[0],
             formatResult: value => {
                 if (value) {
                     value = moment(value).local().format();
@@ -587,6 +588,7 @@ const APITokenItemView = Djblets.Config.ListItemView.extend({
                     return 'Never expires.';
                 }
             },
+            hasShortButtons: true,
             rawValue: expires,
         })
         .on({
