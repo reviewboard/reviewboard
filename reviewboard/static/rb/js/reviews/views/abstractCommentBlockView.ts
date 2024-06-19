@@ -61,12 +61,8 @@ export class AbstractCommentBlockView<
      *
      * Along with the block, a floating tooltip will be created that
      * displays summaries of the comments.
-     *
-     * Returns:
-     *     RB.AbstractCommentBlockView:
-     *     This object, for chaining.
      */
-    render() {
+    protected onInitialRender() {
         this.#$tooltip =
             $.tooltip(
                 this.$el,
@@ -79,8 +75,6 @@ export class AbstractCommentBlockView<
         this._onDraftCommentChanged();
 
         this.#updateTooltip();
-
-        return this;
     }
 
     /**
