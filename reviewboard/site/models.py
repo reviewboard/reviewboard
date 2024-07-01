@@ -54,7 +54,7 @@ class LocalSite(models.Model):
     #:
     #: Version Added:
     #:     5.0
-    ALL: Final[_LocalSiteConstants] = _LocalSiteConstants.ALL
+    ALL: Final[Literal[_LocalSiteConstants.ALL]] = _LocalSiteConstants.ALL
 
     name = models.SlugField(_('name'), max_length=32, blank=False, unique=True)
     public = models.BooleanField(
