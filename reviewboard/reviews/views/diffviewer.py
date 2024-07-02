@@ -402,6 +402,11 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         # Get the list of diffsets. We only want to calculate this once.
         diffsets = review_request.get_diffsets()
 
+        # Get this before we add the draft diffset to the list. Otherwise the
+        # timestamp won't be correct.
+        last_activity_time = review_request.get_last_activity_info(
+            diffsets)['timestamp']
+
         if draft_diffset:
             diffsets.append(draft_diffset)
 
@@ -419,9 +424,6 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         for ds in diffsets:
             for filediff in ds.files.all():
                 filediffs_by_id[filediff.pk] = filediff
-
-        last_activity_time = review_request.get_last_activity_info(
-            diffsets)['timestamp']
 
         review_request_details = draft or review_request
 
