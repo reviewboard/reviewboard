@@ -18,6 +18,7 @@ import {
     type FileAttachmentAttrs,
     FileAttachment,
 } from './fileAttachmentModel';
+import { type Repository } from './repositoryModel';
 import {
     type ReviewAttrs,
     Review,
@@ -77,7 +78,7 @@ export interface ReviewRequestAttrs extends BaseResourceAttrs {
     public: boolean;
 
     /** The repository for this review request. */
-    repository: RB.Repository;
+    repository: Repository;
 
     /** The URL to the review request. */
     reviewURL: string;

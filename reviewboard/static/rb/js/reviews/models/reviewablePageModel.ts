@@ -11,6 +11,7 @@ import {
     type Review,
     FileAttachment,
     Page,
+    Repository,
     ResourceCollection,
     ReviewRequest,
 } from 'reviewboard/common';
@@ -220,7 +221,7 @@ export class ReviewablePage<
             }, rsp.reviewRequestData);
 
             if (reviewRequestData.repository) {
-                reviewRequestData.repository = new RB.Repository(
+                reviewRequestData.repository = new Repository(
                     _.defaults({
                         localSitePrefix: rsp.reviewRequestData.localSitePrefix,
                     }, rsp.reviewRequestData.repository));

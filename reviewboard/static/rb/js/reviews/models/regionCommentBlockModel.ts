@@ -128,10 +128,10 @@ export class RegionCommentBlock<
 
         const extraData = draftComment.get('extraData');
 
-        extraData.x = this.get('x');
-        extraData.y = this.get('y');
-        extraData.width = this.get('width');
-        extraData.height = this.get('height');
+        extraData.x = Math.round(this.get('x'));
+        extraData.y = Math.round(this.get('y'));
+        extraData.width = Math.round(this.get('width'));
+        extraData.height = Math.round(this.get('height'));
 
         await draftComment.save({
             attrs: [

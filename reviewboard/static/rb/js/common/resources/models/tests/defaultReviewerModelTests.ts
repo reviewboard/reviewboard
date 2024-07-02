@@ -1,19 +1,30 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { DefaultReviewer } from 'reviewboard/common';
+
+
 suite('rb/resources/models/DefaultReviewer', function() {
-    let model;
+    let model: DefaultReviewer;
 
     beforeEach(function() {
-        model = new RB.DefaultReviewer();
+        model = new DefaultReviewer();
     });
 
     describe('parse', function() {
         it('API payloads', function() {
             const data = model.parse({
-                stat: 'ok',
                 default_reviewer: {
+                    file_regex: '/foo/.*',
                     id: 42,
                     name: 'my-default-reviewer',
-                    file_regex: '/foo/.*',
                 },
+                stat: 'ok',
             });
 
             expect(data).not.toBe(undefined);

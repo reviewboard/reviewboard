@@ -4,6 +4,7 @@ export {
     CommentIssueStatusType,
 } from './models/baseCommentModel';
 export { BaseResource } from './models/baseResourceModel';
+export { DefaultReviewer } from './models/defaultReviewerModel';
 export { DraftFileAttachment } from './models/draftFileAttachmentModel';
 export {
     DraftResourceChildModelMixin,
@@ -14,7 +15,9 @@ export {
     FileAttachment,
     FileAttachmentStates,
 } from './models/fileAttachmentModel';
+export { Repository } from './models/repositoryModel';
 export { Review } from './models/reviewModel';
+export { ReviewGroup } from './models/reviewGroupModel';
 export { ReviewReply } from './models/reviewReplyModel';
 export { ReviewRequest } from './models/reviewRequestModel';
 export * as JSONSerializers from './utils/serializers';

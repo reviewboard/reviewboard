@@ -166,7 +166,7 @@ def diff_chunk_header(context, header):
 
     line = chunk['lines'][0]
 
-    if header['line'] >= line[1]:
+    if line[1] != '' and header['line'] >= line[1]:
         expand_offset = line[1] + chunk['numlines'] - header['line']
         expandable = True
     else:

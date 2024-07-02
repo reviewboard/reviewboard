@@ -52,6 +52,10 @@ interface MoveState {
  * number of comments, along with a tooltip showing comment summaries.
  *
  * This is meant to be used with a RegionCommentBlock model.
+ *
+ * Version Changed:
+ *     7.0.1:
+ *     Made the :js:attr:`scale` and :js:attr:`moveState` attributes public.
  */
 @spina
 export class RegionCommentBlockView<
@@ -61,19 +65,30 @@ export class RegionCommentBlockView<
 > extends AbstractCommentBlockView<TModel, TElement, TExtraViewOptions> {
     static className = 'selection';
 
-    static events: EventsHash = _.defaults({
+    static events: EventsHash = {
         'click': '_onClicked',
         'mousedown': '_onMouseDown',
-    }, super.events);
+    };
 
-    static modelEvents: EventsHash = _.defaults({
+    static modelEvents: EventsHash = {
         'change:count': '_updateCount',
         'change:x change:y change:width change:height': '_updateBounds',
-    }, super.modelEvents);
+    };
 
     /**********************
      * Instance variables *
      **********************/
+
+    /** The stored state when moving a region comment. */
+    moveState: MoveState = {
+        dragCallback: _.noop,
+        hasMoved: false,
+        initialBounds: {},
+        initialCursor: {},
+    };
+
+    /** The scale to adjust the stored region. */
+    scale = 1.0;
 
     /** The selection flag. */
     #$flag: JQuery = null;
@@ -83,17 +98,6 @@ export class RegionCommentBlockView<
 
     /** The icon for resizing the comment region. */
     #$resizeIcon: JQuery = null;
-
-    /** The scale to adjust the stored region. */
-    #scale = 1.0;
-
-    /** The stored state when moving a region comment. */
-    #moveState: MoveState = {
-        dragCallback: _.noop,
-        hasMoved: false,
-        initialBounds: {},
-        initialCursor: {},
-    };
 
     /** The function to get the selection region. */
     private _selectionRegionSizeFunc: SelectionRegionSizeFunc;
@@ -169,7 +173,7 @@ export class RegionCommentBlockView<
          * ``initialCursor`` and ``initialBounds`` are used to calculate the
          * new position and size while dragging.
          */
-        const moveState = this.#moveState;
+        const moveState = this.moveState;
         moveState.hasMoved = false;
         moveState.initialCursor.left = left;
         moveState.initialCursor.top = top;
@@ -190,7 +194,7 @@ export class RegionCommentBlockView<
          * Unset the dragging flag after the stack unwinds, so that the
          * click event can handle it properly.
          */
-        _.defer(() => { this.#moveState.hasMoved = false; });
+        _.defer(() => { this.moveState.hasMoved = false; });
 
         this.#$window.off(`mousemove.${this.cid}`);
     }
@@ -211,18 +215,21 @@ export class RegionCommentBlockView<
         left: number,
         top: number,
     ) {
+        const scale = this.scale;
+        const moveState = this.moveState;
+
         const region = this.getSelectionRegionSize();
-        const maxLeft = region.width - (this.model.get('width') * this.#scale);
+        const maxLeft = region.width - (this.model.get('width') * scale);
         const maxTop = (region.height -
-                        (this.model.get('height') * this.#scale));
-        const newLeft = (this.#moveState.initialBounds.left +
-                         left - this.#moveState.initialCursor.left);
-        const newTop = (this.#moveState.initialBounds.top +
-                        top - this.#moveState.initialCursor.top);
+                        (this.model.get('height') * scale));
+        const newLeft = (moveState.initialBounds.left +
+                         left - moveState.initialCursor.left);
+        const newTop = (moveState.initialBounds.top +
+                        top - moveState.initialCursor.top);
 
         this.model.set({
-            x: RB.MathUtils.clip(newLeft, 0, maxLeft) / this.#scale,
-            y: RB.MathUtils.clip(newTop, 0, maxTop) / this.#scale,
+            x: RB.MathUtils.clip(newLeft, 0, maxLeft) / scale,
+            y: RB.MathUtils.clip(newTop, 0, maxTop) / scale,
         });
     }
 
@@ -242,17 +249,20 @@ export class RegionCommentBlockView<
         left: number,
         top: number,
     ) {
+        const scale = this.scale;
+        const moveState = this.moveState;
+
         const region = this.getSelectionRegionSize();
-        const maxWidth = region.width - (this.model.get('x') * this.#scale);
-        const maxHeight = region.height - (this.model.get('y') * this.#scale);
-        const newWidth = (this.#moveState.initialBounds.width +
-                          left - this.#moveState.initialCursor.left);
-        const newHeight = (this.#moveState.initialBounds.height +
-                           top - this.#moveState.initialCursor.top);
+        const maxWidth = region.width - (this.model.get('x') * scale);
+        const maxHeight = region.height - (this.model.get('y') * scale);
+        const newWidth = (moveState.initialBounds.width +
+                          left - moveState.initialCursor.left);
+        const newHeight = (moveState.initialBounds.height +
+                           top - moveState.initialCursor.top);
 
         this.model.set({
-            height: RB.MathUtils.clip(newHeight, 0, maxHeight) / this.#scale,
-            width: RB.MathUtils.clip(newWidth, 0, maxWidth) / this.#scale,
+            height: RB.MathUtils.clip(newHeight, 0, maxHeight) / scale,
+            width: RB.MathUtils.clip(newWidth, 0, maxWidth) / scale,
         });
     }
 
@@ -301,7 +311,7 @@ export class RegionCommentBlockView<
      * superclass' click handler.
      */
     _onWindowMouseUp() {
-        if (this.#moveState.hasMoved) {
+        if (this.moveState.hasMoved) {
             this.model.saveDraftCommentBounds();
         }
 
@@ -324,8 +334,8 @@ export class RegionCommentBlockView<
 
         this.hideTooltip();
 
-        this.#moveState.hasMoved = true;
-        this.#moveState.dragCallback.call(this, e.pageX, e.pageY);
+        this.moveState.hasMoved = true;
+        this.moveState.dragCallback.call(this, e.pageX, e.pageY);
     }
 
     /**
@@ -371,12 +381,14 @@ export class RegionCommentBlockView<
      * properties in the model.
      */
     private _updateBounds() {
+        const scale = this.scale;
+
         this.$el
-            .move(this.model.get('x') * this.#scale,
-                  this.model.get('y') * this.#scale,
+            .move(this.model.get('x') * scale,
+                  this.model.get('y') * scale,
                   'absolute')
-            .width(this.model.get('width') * this.#scale)
-            .height(this.model.get('height') * this.#scale);
+            .width(this.model.get('width') * scale)
+            .height(this.model.get('height') * scale);
     }
 
     /**
@@ -395,7 +407,7 @@ export class RegionCommentBlockView<
      * will emit the "clicked" event on the view.
      */
     protected _onClicked() {
-        if (!this.#moveState.hasMoved) {
+        if (!this.moveState.hasMoved) {
             this.trigger('clicked');
         }
     }
@@ -409,7 +421,7 @@ export class RegionCommentBlockView<
      *         at half size, etc.
      */
     setScale(scale: number) {
-        this.#scale = scale;
+        this.scale = scale;
         this._updateBounds();
     }
 }
