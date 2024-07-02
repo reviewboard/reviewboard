@@ -53,7 +53,7 @@ Bug Fixes
 =========
 
 Compatibility Fixes
-===================
+-------------------
 
 * This release contains an important compatibility fix for RBTools 5.
 
