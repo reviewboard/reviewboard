@@ -1,0 +1,198 @@
+.. default-intersphinx:: djblets5.x rb7.x
+
+
+================================
+Review Board 7.0.1 Release Notes
+================================
+
+**Release date**: TBD
+
+
+Installation/Upgrade
+====================
+
+Review Board 7.0.1 is compatible with Python 3.8 - 3.12.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install ReviewBoard==7.0.1
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Usablity Improvements
+=====================
+
+* Revamped the integration condition rules UI.
+
+  The UI for configuring integrations has been completely redone to provide
+  a better overall experience. It looks cleaner and better handles different
+  screen sizes. It's also more accessible, allowing for keyboard navigation
+  and communicating certain actions to screen readers (though further work is
+  still required on accessibility).
+
+
+Bug Fixes
+=========
+
+Compatibility Fixes
+===================
+
+* This release contains an important compatibility fix for RBTools 5.
+
+  When using RBTools 5 to post changes to Git-based repositories using
+  Review Board 7, it was possible to trigger a crash, due to a bad
+  assumption made when scanning for compatible repositories.
+
+  If you're using Review Board 7, we strongly recommend upgrading to
+  Review Board 7.0.1.
+
+
+General
+-------
+
+* Improved stability and recovery when the memcached server is down or
+  misconfigured.
+
+* Fixed the font size in the navigation links at the top of the page.
+
+  Review Board 7.0 reduced the size of this font. It's now been restored to
+  the size it was before.
+
+
+Administration UI
+-----------------
+
+* Fixed being able to confirm deletions of data in the database.
+
+  The :guilabel:`Yes, I'm sure` button, shown when confirming the deletion
+  of data, did nothing when clicked. It once again confirms the deletions as
+  expected.
+
+* Fixed being able to enable or disable extensions.
+
+
+Diff Viewer
+-----------
+
+* Fixed a crash that could occur when computing the nearest class/function
+  information for interdiffs.
+
+
+Integrations
+------------
+
+* Fixed compatibility with changes made to :rbintegration:`Asana <asana>`.
+
+  This has recently regressed, preventing people from linking review
+  requests to related Asana tickets.
+
+
+My Account
+----------
+
+* Fixed a small visual regression with the last My Account navigation item
+  when selected.
+
+  The border radius of the selection indicator was too small. This had no
+  effect on the usage of the page.
+
+* Fixed the size of the Save and Cancel buttons when editing API token
+  information.
+
+
+Reviews
+-------
+
+* Fixed a regression with resizing and moving comments when reviewing
+  documents (using `Power Pack`_).
+
+  This had regressed in Review Board 7.0.
+
+* Fixed a regression with creating comments on top of existing ones
+  when reviewing images and documents.
+
+  This had regressed in Review Board 7.0.
+
+* Fixed small inconsistencies when rendering a thumbnail for an image or
+  document comment.
+
+  The positions and sizes of the comments could previously differ from when
+  the comment was first made. They should now always be consistent in
+  appearance.
+
+
+.. _Power Pack: https://www.reviewboard.org/powerpack/
+
+
+Review Board Platform
+=====================
+
+This section covers important changes that may benefit or impact developers
+building extensions, clients, or integrations for Review Board.
+
+See also:
+
+* `Djblets 5.1 Release Notes
+  <https://www.reviewboard.org/docs/releasenotes/djblets/5.1/>`_
+
+
+Extensions
+----------
+
+* Static media building for extensions no longer complains about a missing
+  :file:`node_modules` directory.
+
+  This was a regression in 7.0 due to a new extension static media builder.
+
+* :js:class:`RegionCommentBlockView` now exposes ``moveState`` and ``scale``
+  attributes for managing sizes and locations of comments.
+
+  This class is responsible for displaying a rectangular comment on an
+  image, document, or similar. These new attributes allow a review UI to
+  intercept and manage how comments are positioned, moved, resized, and
+  scaled.
+
+
+Web API
+-------
+
+* :ref:`webapi2.0-root-resource` and :ref:`webapi2.0-server-info-resource`
+  now contain a list of all supported SCMs.
+
+  ``capabilities.scmtools.supported_tools`` has been added to both payloads,
+  containing a list of IDs of the SCMs that the Review Board server supports.
+  This will include all built-in SCMs, along with those provided by
+  extensions.
+
+* :ref:`webapi2.0-repository-resource` now accepts SCM IDs in the
+  ``tool=`` argument, along with the legacy SCMTool names.
+
+* Fixed a bug in :ref:`webapi2.0-repository-resource` where passing an
+  unsupported SCMTool name could result in a crash.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Daniel Casares-Iglesias
+* David Trowbridge
+* Michelle Aubin
