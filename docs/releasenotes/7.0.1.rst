@@ -5,7 +5,7 @@
 Review Board 7.0.1 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: July 2, 2024
 
 
 Installation/Upgrade

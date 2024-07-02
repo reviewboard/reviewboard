@@ -41,7 +41,7 @@ djblets_doc_major_version = '5.x'
 django_version = '~=4.2.13'
 
 #: The version range required for Djblets.
-djblets_version = '~=5.0'
+djblets_version = '~=5.1'
 
 
 ###########################################################################
@@ -97,7 +97,7 @@ package_dependencies = {
 #: The dependencies here are generally intended to be those that themselves
 #: require Review Board.
 package_only_dependencies = {
-    'rbintegrations': '~=4.0',
+    'rbintegrations': '~=4.0.1',
 }
 
 
