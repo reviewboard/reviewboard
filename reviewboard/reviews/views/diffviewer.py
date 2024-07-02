@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import itertools
 import logging
-from datetime import datetime
-from typing import Optional, TYPE_CHECKING, cast
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, cast
 
 from django.db.models import Q
-from django.http import HttpRequest, HttpResponse
 from django.utils.translation import gettext
 from typing_extensions import NotRequired, TypeAlias, TypedDict
 
@@ -28,12 +26,16 @@ from reviewboard.reviews.models import (Review,
                                         ReviewRequestDraft)
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
+    from django.http import HttpRequest, HttpResponse
+
     from reviewboard.attachments.models import FileAttachment
     from reviewboard.reviews.models import Comment, Screenshot
     from reviewboard.reviews.ui.base import SerializedCommentBlocks
 
-    CommentsDict: TypeAlias = dict[tuple[int, Optional[int], Optional[int]],
-                                   list[Comment]]
+    CommentsDict: TypeAlias = Dict[Tuple[int, Optional[int], Optional[int]],
+                                   List[Comment]]
 
 
 logger = logging.getLogger(__name__)
