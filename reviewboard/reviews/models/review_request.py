@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from enum import Enum
 from typing import Any, ClassVar, Optional, Set, TYPE_CHECKING, Union
 
@@ -46,6 +45,10 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
+    from django.http import HttpRequest
+
     from reviewboard.attachments.models import FileAttachmentSequence
     from reviewboard.reviews.models import (Review,
                                             ReviewRequestDraft)
@@ -648,9 +651,14 @@ class ReviewRequest(BaseReviewRequestDetails):
         """Returns all public top-level reviews for this review request."""
         return self.reviews.filter(public=True, base_reply_to__isnull=True)
 
-    def is_accessible_by(self, user, local_site=None, request=None,
-                         silent=False):
-        """Returns whether or not the user can read this review request.
+    def is_accessible_by(
+        self,
+        user: User,
+        local_site: Optional[LocalSite] = None,
+        request: Optional[HttpRequest] = None,
+        silent: bool = False,
+    ) -> bool:
+        """Return whether or not the user can read this review request.
 
         This performs several checks to ensure that the user has access.
         This user has access if:
@@ -665,6 +673,23 @@ class ReviewRequest(BaseReviewRequestDetails):
         * The user is listed as a requested reviewer or the user has access
           to one or more groups listed as requested reviewers (either by
           being a member of an invite-only group, or the group being public).
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The local site to check against, if present.
+
+            request (django.http.HttpRequest, optional):
+                The current HTTP request.
+
+            silent (bool, optional):
+                Whether to suppress audit log messages.
+
+        Returns:
+            bool:
+            Whether the review request is accessible by the user.
         """
         # Users always have access to their own review requests.
         if self.submitter == user:
@@ -740,7 +765,10 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return False
 
-    def is_mutable_by(self, user):
+    def is_mutable_by(
+        self,
+        user: User,
+    ) -> bool:
         """Return whether the user can modify this review request.
 
         Args:
@@ -788,12 +816,17 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     def get_draft(
         self,
-        user: Optional[User] = None
+        user: Optional[User] = None,
     ) -> Optional[ReviewRequestDraft]:
-        """Returns the draft of the review request.
+        """Return the draft of the review request.
 
-        If a user is specified, then the draft will be returned only if owned
-        by the user. Otherwise, ``None`` will be returned.
+        If a user is specified, then the draft will be returned only if it is
+        accessible by the user. Otherwise, ``None`` will be returned.
+
+        Version Changed:
+            7.0.2:
+            Changed the behavior of the ``user`` argument to check if the draft
+            is accessible rather than checking ownership.
 
         Args:
             user (django.contrib.auth.models.User):
@@ -803,11 +836,13 @@ class ReviewRequest(BaseReviewRequestDetails):
             reviewboard.reviews.models.review_request_draft.ReviewRequestDraft:
             The draft of the review request or None.
         """
-        if not user:
-            return get_object_or_none(self.draft)
-        elif user.is_authenticated:
-            return get_object_or_none(self.draft,
-                                      review_request__submitter=user)
+        draft = get_object_or_none(self.draft)
+
+        if (user is None or
+            (user.is_authenticated and
+             draft is not None and
+             draft.is_accessible_by(user))):
+            return draft
 
         return None
 

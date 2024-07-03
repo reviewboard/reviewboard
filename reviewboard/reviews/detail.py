@@ -288,12 +288,14 @@ class ReviewRequestPageData(object):
         possible before reporting to the client that they can just use their
         cached copy.
         """
+        user = self.request.user
+
         # Query for all the reviews that should be shown on the page (either
         # ones which are public or draft reviews owned by the current user).
         reviews_query = Q(public=True)
 
         if self.request.user.is_authenticated:
-            reviews_query |= Q(user_id=self.request.user.pk)
+            reviews_query |= Q(user_id=user.pk)
 
         if self._needs_reviews or self._needs_status_updates:
             self.reviews = list(
@@ -318,9 +320,11 @@ class ReviewRequestPageData(object):
             self.latest_changedesc_timestamp = self.changedescs[0].timestamp
 
         # Get the active draft (if any).
-        if (self._needs_draft and
-            self.review_request.is_mutable_by(self.request.user)):
-            self.draft = self.review_request.get_draft()
+        if self._needs_draft:
+            draft = self.review_request.get_draft(user=user)
+
+            if draft and draft.is_mutable_by(user):
+                self.draft = draft
 
         # Get diffsets.
         if self._needs_reviews:

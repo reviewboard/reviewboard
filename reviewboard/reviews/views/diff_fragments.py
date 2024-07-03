@@ -455,8 +455,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             dict:
             Information on the diff for use in the template and in queries.
         """
-        user = self.request.user
-        draft = self.review_request.get_draft(user)
+        draft = self.review_request.get_draft(user=self.request.user)
 
         if interdiff_revision is not None:
             interdiffset = self.get_diff(interdiff_revision, draft)

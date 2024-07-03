@@ -339,10 +339,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         """
         review_request = self.review_request
 
-        self.draft = review_request.get_draft(review_request.submitter)
-
-        if self.draft and not self.draft.is_accessible_by(request.user):
-            self.draft = None
+        self.draft = review_request.get_draft(user=self.request.user)
 
         self.diffset = self.get_diff(revision, self.draft)
 

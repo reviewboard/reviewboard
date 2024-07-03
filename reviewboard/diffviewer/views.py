@@ -38,7 +38,6 @@ from reviewboard.diffviewer.commit_utils import (
 from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.errors import PatchError, UserVisibleError
 from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
-from reviewboard.diffviewer.models.diffcommit import SerializedDiffCommit
 from reviewboard.diffviewer.renderers import (get_diff_renderer,
                                               get_diff_renderer_class)
 from reviewboard.diffviewer.settings import DiffSettings
@@ -49,6 +48,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
 
     from reviewboard.diffviewer.diffutils import SerializedDiffFile
+    from reviewboard.diffviewer.models.diffcommit import SerializedDiffCommit
 
 
 logger = logging.getLogger(__name__)
