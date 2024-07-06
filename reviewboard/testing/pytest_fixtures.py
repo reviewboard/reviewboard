@@ -56,7 +56,7 @@ def setup_siteconfig():
     # addresses for e-mails. Just assume we can, since we're not
     # sending anything out. Some unit tests will override
     # this.
-    settings.EMAIL_ENABLE_SMART_SPOOFING = False
+    settings.DJBLETS_EMAIL_FROM_SPOOFING = 'never'
 
     # Create a temp directory that tests can rely upon.
     tests_tempdir = tempfile.mkdtemp(prefix='rb-tests-')

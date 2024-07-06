@@ -1,5 +1,11 @@
+"""Unit tests for reviewboard.avatars."""
+
+from __future__ import annotations
+
+import kgb
+from django.conf import DEFAULT_STORAGE_ALIAS
 from django.contrib.auth.models import AnonymousUser, User
-from django.core.files.storage import get_storage_class
+from django.core.files.storage import storages
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template import RequestContext, Template
 from django.test.client import RequestFactory
@@ -7,7 +13,6 @@ from djblets.avatars.services import (GravatarService,
                                       URLAvatarService)
 from djblets.avatars.tests import DummyAvatarService, DummyHighDPIAvatarService
 from djblets.siteconfig.models import SiteConfiguration
-from kgb import SpyAgency
 
 from reviewboard.accounts.forms.pages import AvatarSettingsForm
 from reviewboard.accounts.models import Profile
@@ -541,16 +546,19 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
             % '&lt;b&gt;Bad User&lt;/b&gt;')
 
 
-class FileUploadServiceTests(SpyAgency, AvatarServicesTestMixin, TestCase):
+class FileUploadServiceTests(kgb.SpyAgency, AvatarServicesTestMixin, TestCase):
+    """Unit tests for the file upload avatar service."""
+
     fixtures = ['test_users']
 
     @classmethod
-    def setUpClass(cls):
-        super(FileUploadServiceTests, cls).setUpClass()
+    def setUpClass(cls) -> None:
+        """Set up the unit test class."""
+        super().setUpClass()
 
         cls.request_factory = RequestFactory()
 
-    def test_absolute_urls(self):
+    def test_absolute_urls(self) -> None:
         """Testing FileUploadService.get_avatar_urls_uncached returns absolute
         URLs
         """
@@ -560,10 +568,9 @@ class FileUploadServiceTests(SpyAgency, AvatarServicesTestMixin, TestCase):
 
         service = avatar_services.get_avatar_service(
             FileUploadService.avatar_service_id)
-        storage_cls = get_storage_class()
 
-        self.spy_on(storage_cls.save,
-                    owner=storage_cls,
+        storage = storages[DEFAULT_STORAGE_ALIAS]
+        self.spy_on(storage.save,
                     call_fake=lambda self, name, *args, **kwargs: name)
 
         form = AvatarSettingsForm(
@@ -584,7 +591,7 @@ class FileUploadServiceTests(SpyAgency, AvatarServicesTestMixin, TestCase):
         self.assertTrue(form.is_valid())
         form.save()
 
-        file_path = storage_cls.save.spy.last_call.args[0]
+        file_path = storage.save.spy.last_call.args[0]
 
         self.assertEqual(service.get_avatar_urls_uncached(user, None),
                          {'1x': 'http://example.com/media/%s' % file_path})
