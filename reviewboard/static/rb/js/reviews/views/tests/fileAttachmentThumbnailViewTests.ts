@@ -12,13 +12,17 @@ import {
     FileAttachmentStates,
     ReviewRequest,
 } from 'reviewboard/common';
-import { FileAttachmentThumbnailView } from 'reviewboard/reviews';
+import {
+    FileAttachmentThumbnailView,
+    ReviewRequestEditor,
+} from 'reviewboard/reviews';
 
 
 suite('rb/views/FileAttachmentThumbnailView', function() {
     let reviewRequest: ReviewRequest;
     let model: FileAttachment;
     let view: FileAttachmentThumbnailView;
+    let reviewRequestEditor: ReviewRequestEditor;
 
     beforeEach(function() {
         reviewRequest = new ReviewRequest();
@@ -26,6 +30,9 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
             downloadURL: 'http://example.com/file.png',
             filename: 'file.png',
         });
+        reviewRequestEditor = new ReviewRequestEditor({
+            reviewRequest,
+        })
 
         spyOn(model, 'trigger').and.callThrough();
     });
@@ -72,6 +79,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                 model: model,
                 renderThumbnail: true,
                 reviewRequest: reviewRequest,
+                reviewRequestEditor: reviewRequestEditor,
             });
             $testsScratch.append(view.$el);
             view.render();
@@ -88,6 +96,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                 model: model,
                 renderThumbnail: true,
                 reviewRequest: reviewRequest,
+                reviewRequestEditor: reviewRequestEditor,
             });
             $testsScratch.append(view.$el);
             view.render();
@@ -116,6 +125,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                     model: model,
                     renderThumbnail: true,
                     reviewRequest: reviewRequest,
+                    reviewRequestEditor: reviewRequestEditor,
                 });
                 $testsScratch.append(view.$el);
                 view.render();
@@ -135,6 +145,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                     model: model,
                     renderThumbnail: true,
                     reviewRequest: reviewRequest,
+                    reviewRequestEditor: reviewRequestEditor,
                 });
                 $testsScratch.append(view.$el);
                 view.render();
@@ -159,6 +170,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                         model: model,
                         renderThumbnail: true,
                         reviewRequest: reviewRequest,
+                        reviewRequestEditor: reviewRequestEditor,
                     });
                     $testsScratch.append(view.$el);
                     view.render();
@@ -184,6 +196,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                         model: model,
                         renderThumbnail: true,
                         reviewRequest: reviewRequest,
+                        reviewRequestEditor: reviewRequestEditor,
                     });
                     $testsScratch.append(view.$el);
                     view.render();
@@ -210,6 +223,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                         model: model,
                         renderThumbnail: true,
                         reviewRequest: reviewRequest,
+                        reviewRequestEditor: reviewRequestEditor,
                     });
                     $testsScratch.append(view.$el);
                     view.render();
@@ -243,6 +257,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                 model: model,
                 renderThumbnail: true,
                 reviewRequest: reviewRequest,
+                reviewRequestEditor: reviewRequestEditor,
             });
             $testsScratch.append(view.$el);
             view.render();
@@ -333,6 +348,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                 model: model,
                 renderThumbnail: true,
                 reviewRequest: reviewRequest,
+                reviewRequestEditor: reviewRequestEditor,
             });
             $testsScratch.append(view.$el);
             view.render();
@@ -358,6 +374,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                 model: model,
                 renderThumbnail: true,
                 reviewRequest: reviewRequest,
+                reviewRequestEditor: reviewRequestEditor,
             });
             $testsScratch.append(view.$el);
             view.render();
@@ -388,6 +405,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                 model: model,
                 renderThumbnail: true,
                 reviewRequest: reviewRequest,
+                reviewRequestEditor: reviewRequestEditor,
             });
             $testsScratch.append(view.$el);
             view.render();
@@ -492,6 +510,7 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
                 model: model,
                 renderThumbnail: true,
                 reviewRequest: reviewRequest,
+                reviewRequestEditor: reviewRequestEditor,
             });
             $testsScratch.append(view2.$el);
             view2.render();

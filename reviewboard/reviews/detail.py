@@ -24,12 +24,12 @@ from reviewboard.diffviewer.models import DiffCommit
 from reviewboard.registries.registry import OrderedRegistry
 from reviewboard.reviews.builtin_fields import (CommitListField,
                                                 ReviewRequestPageDataMixin)
+from reviewboard.reviews.context import should_view_draft
 from reviewboard.reviews.features import status_updates_feature
 from reviewboard.reviews.fields import get_review_request_fieldsets
 from reviewboard.reviews.models import (BaseComment,
                                         Comment,
                                         FileAttachmentComment,
-                                        GeneralComment,
                                         Review,
                                         ReviewRequest,
                                         ScreenshotComment,
@@ -309,17 +309,18 @@ class ReviewRequestPageData:
         cached copy.
         """
         user = self.request.user
+        review_request = self.review_request
 
         # Query for all the reviews that should be shown on the page (either
         # ones which are public or draft reviews owned by the current user).
         reviews_query = Q(public=True)
 
-        if self.request.user.is_authenticated:
+        if user.is_authenticated:
             reviews_query |= Q(user_id=user.pk)
 
         if self._needs_reviews or self._needs_status_updates:
             self.reviews = list(
-                self.review_request.reviews
+                review_request.reviews
                 .filter(reviews_query)
                 .order_by('-timestamp')
                 .select_related('user', 'user__profile')
@@ -334,16 +335,21 @@ class ReviewRequestPageData:
         # Get all the public ChangeDescriptions.
         if self._needs_changedescs:
             self.changedescs = list(
-                self.review_request.changedescs.filter(public=True))
+                review_request.changedescs.filter(public=True))
 
         if self.changedescs:
             self.latest_changedesc_timestamp = self.changedescs[0].timestamp
 
         # Get the active draft (if any).
         if self._needs_draft:
-            draft = self.review_request.get_draft(user=user)
+            draft = review_request.get_draft(user=user)
 
-            if draft and draft.is_mutable_by(user):
+            if not should_view_draft(request=self.request,
+                                     review_request=review_request,
+                                     draft=draft):
+                draft = None
+
+            if draft:
                 self.draft = draft
 
         # Get diffsets.
@@ -429,7 +435,14 @@ class ReviewRequestPageData:
             self.reviews_by_id[reply_id]._body_bottom_replies = \
                 reversed(replies)
 
-        self.review_request_details = self.draft or self.review_request
+        if should_view_draft(request=self.request,
+                             review_request=self.review_request,
+                             draft=self.draft):
+            review_request_details = self.draft or self.review_request
+        else:
+            review_request_details = self.review_request
+
+        self.review_request_details = review_request_details
 
         # Get all the file attachments and screenshots.
         #
@@ -438,10 +451,10 @@ class ReviewRequestPageData:
         # they still will be rendered in change descriptions.
         if self._needs_file_attachments or self._needs_reviews:
             self.active_file_attachments = \
-                list(self.review_request_details.get_file_attachments())
+                list(review_request_details.get_file_attachments())
             self.all_file_attachments = (
                 self.active_file_attachments + list(
-                    self.review_request_details
+                    review_request_details
                     .get_inactive_file_attachments()))
             self.file_attachments_by_id = \
                 self._build_id_map(self.all_file_attachments)
@@ -451,10 +464,10 @@ class ReviewRequestPageData:
 
         if self._needs_screenshots or self._needs_reviews:
             self.active_screenshots = \
-                list(self.review_request_details.get_screenshots())
+                list(review_request_details.get_screenshots())
             self.all_screenshots = (
                 self.active_screenshots +
-                list(self.review_request_details.get_inactive_screenshots()))
+                list(review_request_details.get_inactive_screenshots()))
             self.screenshots_by_id = self._build_id_map(self.all_screenshots)
 
             for screenshot in self.all_screenshots:
@@ -463,21 +476,17 @@ class ReviewRequestPageData:
         if self.reviews:
             review_ids = list(self.reviews_by_id.keys())
 
-            for model, review_field_name, key, ordering in (
-                (GeneralComment,
-                 'general_comments',
+            for review_field_name, key, ordering in (
+                ('general_comments',
                  'general_comments',
                  ('generalcomment__timestamp',)),
-                (ScreenshotComment,
-                 'screenshot_comments',
+                ('screenshot_comments',
                  'screenshot_comments',
                  ('screenshotcomment__timestamp',)),
-                (FileAttachmentComment,
-                 'file_attachment_comments',
+                ('file_attachment_comments',
                  'file_attachment_comments',
                  ('fileattachmentcomment__timestamp',)),
-                (Comment,
-                 'comments',
+                ('comments',
                  'diff_comments',
                  ('comment__filediff',
                   'comment__first_line',

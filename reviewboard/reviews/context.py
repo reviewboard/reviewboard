@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING, Union
 
 from django.utils.translation import gettext as _
 from django.template.defaultfilters import truncatechars
@@ -12,14 +12,22 @@ from typing_extensions import NotRequired, TypedDict
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import build_server_url
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import (RemovedInReviewBoard80Warning,
+                                     RemovedInReviewBoard90Warning)
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from django.http import HttpRequest
 
-    from reviewboard.reviews.models import ReviewRequest
+    from reviewboard.reviews.models import (
+        ReviewRequest,
+        ReviewRequestDraft,
+    )
+    from reviewboard.reviews.models.review_request import \
+        ReviewRequestCloseInfo
     from reviewboard.scmtools.models import Tool
 
 
@@ -43,15 +51,64 @@ class SerializedReviewRequestTab(TypedDict):
 class ReviewRequestContext(TypedDict):
     """Template context for rendering the review request.
 
+    Version Changed:
+        7.0.2:
+        Added the following fields:
+
+        * ``close_description``
+        * ``close_description_rich_text``
+        * ``close_timestamp``
+        * ``draft``
+        * ``force_view_user_draft``
+        * ``review_request_details``
+        * ``user_draft_exists``
+        * ``viewing_user_draft``
+
     Version Added:
         7.0
     """
+
+    #: The description attached to the most recent closing.
+    #:
+    #: Version Added:
+    #:     7.0.2
+    close_description: str
+
+    #: Whether the close description is rich text.
+    #:
+    #: Version Added:
+    #:     7.0.2
+    close_description_rich_text: bool
+
+    #: The timestamp of the most recent closing.
+    #:
+    #: Version Added:
+    #:     7.0.2
+    close_timestamp: Optional[datetime]
+
+    #: The current draft, if present.
+    #:
+    #: Version Added:
+    #:     7.0.2
+    draft: Optional[ReviewRequestDraft]
+
+    #: Whether to force viewing a draft owned by another user.
+    #:
+    #: Version Added:
+    #:     7.0.2
+    force_view_user_draft: bool
 
     #: Whether the review request is mutable by the current user.
     mutable_by_user: bool
 
     #: The review request object.
     review_request: ReviewRequest
+
+    #: The current object to use for displaying the review request data.
+    #:
+    #: Version Added:
+    #:     7.0.2
+    review_request_details: Union[ReviewRequest, ReviewRequestDraft]
 
     #: The most recent review request visit info, if available.
     review_request_visit: NotRequired[ReviewRequestVisit]
@@ -80,6 +137,18 @@ class ReviewRequestContext(TypedDict):
     #: The tabs to show for the review request.
     tabs: list[SerializedReviewRequestTab]
 
+    #: Whether a draft exists that is owned by another user.
+    #:
+    #: Version Added:
+    #:     7.0.2
+    user_draft_exists: bool
+
+    #: Whether the user is viewing a draft owned by another user.
+    #:
+    #: Version Added:
+    #:     7.0.2
+    viewing_user_draft: bool
+
 
 @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
 def make_review_request_context(
@@ -90,6 +159,11 @@ def make_review_request_context(
     is_diff_view: bool = False,
     social_page_image_url: Optional[str] = None,
     social_page_title: str = '',
+    review_request_details: Optional[
+        Union[ReviewRequest, ReviewRequestDraft]] = None,
+    close_info: Optional[ReviewRequestCloseInfo] = None,
+    draft: Optional[ReviewRequestDraft] = None,
+    force_view_user_draft: bool = False,
 ) -> ReviewRequestContext:
     """Return a dictionary for template contexts used for review requests.
 
@@ -98,6 +172,12 @@ def make_review_request_context(
     viewer, and the screenshot pages).
 
     For convenience, extra data can be passed to this dictionary.
+
+    Version Changed:
+        7.0.2:
+        * Deprecated the ``extra_context`` argument.
+        * Added the ``review_request_details``, ``close_info``, ``draft`` and
+          ``force_view_user_draft`` arguments.
 
     Version Changed:
         7.0:
@@ -128,20 +208,46 @@ def make_review_request_context(
             Version Added:
                 7.0
 
+        review_request_details (reviewboard.reviews.models.ReviewRequest or
+                                reviewboard.reviews.models.
+                                ReviewRequestDraft):
+            The object to show review request content from.
+
+            Version Added:
+                7.0
+
+        close_info (reviewboard.reviews.models.review_request.
+                    ReviewRequestCloseInfo, optional):
+            Close information about the review request.
+
+            Version Added:
+                7.0.2
+
+        draft (reviewboard.reviews.models.ReviewRequestDraft, optional):
+            The review request draft.
+
+            Version Added:
+                7.0.2
+
+        force_view_user_draft (bool, optional):
+            Whether to force viewing another user's draft.
+
+            This is used when a user with privilege to view other users' draft
+            data is viewing something which only exists in the draft (such as
+            an unpublished review request or a file attachment added in a new
+            draft).
+
+            Version Added:
+                7.0.2
+
     Returns:
         ReviewRequestContext:
         The context for rendering review request templates.
     """
-    if extra_context is None:
-        extra_context = {}
-
     if review_request.repository:
         scmtool = review_request.repository.get_scmtool()
     else:
         scmtool = None
-
-    if 'blocks' not in extra_context:
-        extra_context['blocks'] = list(review_request.blocks.all())
 
     tabs: list[SerializedReviewRequestTab] = [
         {
@@ -150,7 +256,34 @@ def make_review_request_context(
         },
     ]
 
-    draft = review_request.get_draft(request.user)
+    if draft is None:
+        draft = review_request.get_draft(request.user)
+
+    # If we have an accessible draft, and the viewing user is not the owner of
+    # the review request, we normally do not want to show the draft data. If
+    # the page is accessed via ?view-draft=1, we'll let the admin-like user see
+    # and manipulate the draft data.
+    user_draft_exists: bool = False
+    viewing_user_draft: bool = False
+
+    # If the user viewing this review request is not the submitter, but has
+    # access to the draft, we want to let them choose to either view it as if
+    # they were a regular user, or view the draft data. In the case of review
+    # requests which are not yet public, we unconditionally show the draft
+    # data.
+    if draft and request.user != review_request.submitter:
+        user_draft_exists = True
+
+        if (force_view_user_draft or
+            should_view_draft(request=request,
+                              review_request=review_request,
+                              draft=draft)):
+            viewing_user_draft = True
+        else:
+            draft = None
+
+        if not review_request.public:
+            force_view_user_draft = True
 
     if ((draft and draft.diffset_id) or
         (hasattr(review_request, '_diffsets') and
@@ -175,17 +308,28 @@ def make_review_request_context(
 
     siteconfig = SiteConfiguration.objects.get_current()
 
-    review_request_details = extra_context.get('review_request_details',
-                                               review_request)
+    if review_request_details is None:
+        review_request_details = draft or review_request
+
+    description = review_request_details.description
+    assert description is not None
     social_page_description = truncatechars(
-        review_request_details.description.replace('\n', ' '),
-        300)
+        description.replace('\n', ' '), 300)
+
+    if close_info is None:
+        close_info = review_request.get_close_info()
 
     context: ReviewRequestContext = {
+        'close_description': close_info['close_description'],
+        'close_description_rich_text': close_info['is_rich_text'],
+        'close_timestamp': close_info['timestamp'],
+        'draft': draft,
+        'force_view_user_draft': force_view_user_draft,
         'mutable_by_user': review_request.is_mutable_by(request.user),
         'status_mutable_by_user':
             review_request.is_status_mutable_by(request.user),
         'review_request': review_request,
+        'review_request_details': review_request_details,
         'scmtool': scmtool,
         'send_email': siteconfig.get('mail_send_review_mail'),
         'tabs': tabs,
@@ -193,9 +337,16 @@ def make_review_request_context(
         'social_page_image_url': social_page_image_url,
         'social_page_title': social_page_title,
         'social_page_url': build_server_url(request.path, request=request),
+        'user_draft_exists': user_draft_exists,
+        'viewing_user_draft': viewing_user_draft,
     }
 
-    context.update(extra_context)
+    if extra_context:
+        RemovedInReviewBoard90Warning.warn(
+            'The extra_context argument to make_review_request_context is '
+            'deprecated and will be removed in Review Board 9.0.')
+
+        context.update(extra_context)
 
     if ('review_request_visit' not in context and
         request.user.is_authenticated):
@@ -207,3 +358,42 @@ def make_review_request_context(
                 review_request=review_request)[0]
 
     return context
+
+
+def should_view_draft(
+    *,
+    request: HttpRequest,
+    review_request: ReviewRequest,
+    draft: Optional[ReviewRequestDraft],
+) -> bool:
+    """Return whether the requesting user should view the draft.
+
+    Args:
+        request (django.http.HttpRequest):
+            The HTTP request.
+
+        review_request (reviewboard.reviews.models.ReviewRequest):
+            The current review request.
+
+        draft (reviewboard.reviews.models.ReviewRequestDraft):
+            The current review request draft.
+
+    Returns:
+        bool:
+        ``True`` if the user should view the draft data.
+    """
+    if draft:
+        # The owner of the review request should always see the draft data.
+        if review_request.submitter == request.user:
+            return True
+
+        # Review requests that have not yet been published only have draft
+        # data.
+        if not review_request.public:
+            return True
+
+        # If the user wants to view the draft, show it.
+        if request.GET.get('view-draft', False) == '1':
+            return True
+
+    return False

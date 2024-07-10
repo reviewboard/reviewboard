@@ -48,6 +48,14 @@ export interface ReviewRequestEditorAttrs extends ModelAttributes {
     /** The number of outstanding edits. */
     editCount: number;
 
+    /**
+     * Whether to force viewing another user's draft.
+     *
+     * Version Added:
+     *     7.0.2
+     */
+    forceViewUserDraft: boolean;
+
     /** Whether or not a draft currently exists. */
     hasDraft: boolean;
 
@@ -60,9 +68,7 @@ export interface ReviewRequestEditorAttrs extends ModelAttributes {
     fileAttachments: ResourceCollection<FileAttachment>;
 
     /** A mapping of file attachment IDs to their comments. */
-    fileAttachmentComments: {
-        [key: string]: RB.FileAttachmentComment;
-    };
+    fileAttachmentComments: Record<string, RB.FileAttachmentComment>;
 
     /** Whether or not the user can mutate the review request. */
     mutableByUser: boolean;
@@ -84,6 +90,25 @@ export interface ReviewRequestEditorAttrs extends ModelAttributes {
 
     /** Whether or not the status is mutable by the current user. */
     statusMutableByUser: boolean;
+
+    /**
+     * Whether a draft exists that is owned by another user.
+     *
+     * This is used for users who have edit permission for the review request
+     * but are not the owner.
+     *
+     * Version Added:
+     *     7.0.2
+     */
+    userDraftExists: boolean;
+
+    /**
+     * Whether a draft owned by another user is currently being viewed.
+     *
+     * Version Added:
+     *     7.0.2
+     */
+    viewingUserDraft: boolean;
 }
 
 
@@ -178,6 +203,8 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
             showSendEmail: false,
             statusEditable: false,
             statusMutableByUser: false,
+            userDraftExists: false,
+            viewingUserDraft: false,
         };
     }
 

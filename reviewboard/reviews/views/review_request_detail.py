@@ -216,7 +216,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
     def get_context_data(
         self,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Return data for the template.
 
         This will return information on the review request, the entries to
@@ -274,28 +274,25 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
         context.update(make_review_request_context(
             request=request,
             review_request=review_request,
+            draft=data.draft,
+            review_request_details=data.review_request_details,
+            close_info=close_info,
             social_page_title=(
                f'Review Request #{review_request.display_id}: '
                f'{review_request.summary}'),
             social_page_image_url=social_page_image_url))
         context.update({
             'all_file_attachments': all_file_attachments,
-            'blocks': self.blocks,
-            'draft': data.draft,
-            'review_request_details': review_request_details,
-            'review_request_visit': self.visited,
-            'review_request_status_html': review_request_status_html,
             'entries': entries,
-            'last_activity_time': self.last_activity_time,
-            'last_visited': self.last_visited,
-            'review': review,
-            'request': request,
-            'close_description': close_info['close_description'],
-            'close_description_rich_text': close_info['is_rich_text'],
-            'close_timestamp': close_info['timestamp'],
+            'file_attachments': file_attachments,
             'issue_counts': data.issue_counts,
             'issues': data.issues,
-            'file_attachments': file_attachments,
+            'last_activity_time': self.last_activity_time,
+            'last_visited': self.last_visited,
+            'request': request,
+            'review': review,
+            'review_request_status_html': review_request_status_html,
+            'review_request_visit': self.visited,
             'screenshots': data.active_screenshots,
         })
 

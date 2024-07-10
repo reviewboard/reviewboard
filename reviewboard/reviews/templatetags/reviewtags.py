@@ -947,10 +947,13 @@ def reviewable_page_model_data(
             close_description,
             close_description_rich_text),
         'commits': None,
+        'forceViewUserDraft': context['force_view_user_draft'],
         'hasDraft': draft is not None,
         'mutableByUser': context['mutable_by_user'],
         'showSendEmail': context['send_email'],
         'statusMutableByUser': context['status_mutable_by_user'],
+        'userDraftExists': context['user_draft_exists'],
+        'viewingUserDraft': context['viewing_user_draft'],
     }
 
     if review_request.created_with_history:
@@ -1130,3 +1133,36 @@ def code_block(context, nodelist, lexer_name):
     lexer.add_filter('codetagify')
 
     return highlight(nodelist.render(context), lexer, HtmlFormatter())
+
+
+@register.filter
+def add_view_draft_query(
+    url: str,
+    viewing_user_draft: bool,
+) -> str:
+    """Add the ?view-draft=1 querystring to a URL.
+
+    When a user is viewing a draft owned by someone else, we want links within
+    the review request to include the query parameter so that they stay within
+    the draft view.
+
+    Args:
+        url (str):
+            The URL to manipulate.
+
+        viewing_user_draft (bool):
+            Whether the user is viewing a draft owned by another user.
+
+    Returns:
+        str:
+        The new URL to use, including the ?view-draft=1 query parameter.
+    """
+    if viewing_user_draft:
+        if '#' in url:
+            parts = url.split('#', 1)
+
+            return f'{parts[0]}?view-draft=1#{parts[1]}'
+        else:
+            return f'{url}?view-draft=1'
+    else:
+        return url

@@ -1,5 +1,5 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load djblets_utils i18n %}
+{% load djblets_utils i18n reviewtags %}
 
 
 {% block title %}
@@ -19,8 +19,9 @@
 {%  if prev_file_attachment %}
 {%   with prev_file_attachment_name=prev_file_attachment.display_name %}
 <div class="review-ui-prev-attachment">
+{%    definevar "attachment_url" %}{% url 'file-attachment' review_request_id=review_request.display_id file_attachment_id=prev_file_attachment.pk %}{% enddefinevar %}
  <a class="review-ui-file-attachment-nav-button-overlay"
-    href="{% url 'file-attachment' review_request_id=review_request.display_id file_attachment_id=prev_file_attachment.pk %}"
+    href="{{attachment_url|add_view_draft_query:viewing_user_draft}}"
     role="button"
     aria-label="{% blocktrans %}View previous file attachment ({{prev_file_attachment_name}}){% endblocktrans %}"></a>
  <div class="file-container" aria-hidden="true">
@@ -41,8 +42,9 @@
 {%  if next_file_attachment %}
 {%   with next_file_attachment_name=next_file_attachment.display_name %}
 <div class="review-ui-next-attachment">
+{%    definevar "attachment_url" %}{% url 'file-attachment' review_request_id=review_request.display_id file_attachment_id=next_file_attachment.pk %}{% enddefinevar %}
  <a class="review-ui-file-attachment-nav-button-overlay"
-    href="{% url 'file-attachment' review_request_id=review_request.display_id file_attachment_id=next_file_attachment.pk %}"
+    href="{{attachment_url|add_view_draft_query:viewing_user_draft}}"
     role="button"
     aria-label="{% blocktrans %}View next file attachment ({{next_file_attachment_name}}){% endblocktrans %}"></a>
  <span class="fa fa-chevron-right" aria-hidden="true"></span>

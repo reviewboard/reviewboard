@@ -143,8 +143,13 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     commit = property(lambda self: self.commit_id,
                       lambda self, value: setattr(self, 'commit_id', value))
 
-    def get_latest_diffset(self):
-        """Returns the diffset for this draft."""
+    def get_latest_diffset(self) -> Optional[DiffSet]:
+        """Return the diffset for this draft.
+
+        Returns:
+            reviewboard.diffviewer.models.DiffSet:
+            The diffset for the draft.
+        """
         return self.diffset
 
     def is_accessible_by(
@@ -219,6 +224,9 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             draft_inactive_attachments (list, optional):
                 The list of inactive file attachments on the review request
                 draft.
+
+            **kwargs (dict, unused):
+                Keyword arguments for future expansion.
 
         Returns:
             ReviewRequestFileAttachmentsData:

@@ -23,12 +23,14 @@ from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.models import FileDiff
-from reviewboard.reviews.context import make_review_request_context
+from reviewboard.reviews.context import (make_review_request_context,
+                                         should_view_draft)
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
 from reviewboard.reviews.models import (BaseComment,
                                         FileAttachmentComment,
                                         Review)
+from reviewboard.reviews.models.review_request import FileAttachmentState
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -283,8 +285,7 @@ class ReviewUI(Generic[
         """Initialize the Review UI.
 
         Args:
-            review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest):
+            review_request (reviewboard.reviews.models.ReviewRequest):
                 The review request containing the object to review.
 
             obj (object):
@@ -333,8 +334,8 @@ class ReviewUI(Generic[
             user (django.contrib.auth.models.User, optional):
                 The user to check.
 
-            review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest, optional):
+            review_request (reviewboard.reviews.models.ReviewRequest,
+                            optional):
                 The review request to check.
 
             obj (object, optional):
@@ -434,41 +435,36 @@ class ReviewUI(Generic[
                 Whether to render this such that it can be embedded into an
                 existing page, instead of as a standalone page.
 
+            **kwargs (dict, unused):
+                Keyword arguments, for future expansion.
+
         Returns:
             dict:
             The context to use in the template.
         """
+        review_request = self.review_request
         last_activity_time = \
-            self.review_request.get_last_activity_info()['timestamp']
+            review_request.get_last_activity_info()['timestamp']
 
-        draft = self.review_request.get_draft(request.user)
-        review_request_details = draft or self.review_request
+        draft = review_request.get_draft(request.user)
 
-        close_info = self.review_request.get_close_info()
-        caption = self.get_caption(draft)
+        if should_view_draft(request=request, review_request=review_request,
+                             draft=draft):
+            review_request_details = draft or review_request
+            caption = self.get_caption(draft)
+        else:
+            review_request_details = review_request
+            caption = self.get_caption(None)
 
-        context = make_review_request_context(
-            request=request,
-            review_request=self.review_request,
-            extra_context={
-                'caption': caption,
-                'close_description': close_info['close_description'],
-                'close_description_rich_text': close_info['is_rich_text'],
-                'close_timestamp': close_info['timestamp'],
-                'comments': self.get_comments(),
-                'draft': draft,
-                'last_activity_time': last_activity_time,
-                'review_request_details': review_request_details,
-                'review_request': self.review_request,
-                'review_ui': self,
-                'review_ui_uuid': str(uuid4()),
-                self.object_key: self.obj,
-                self.diff_object_key: self.diff_against_obj,
-            },
-            social_page_image_url=self.get_page_cover_image_url(),
-            social_page_title=(
-                f'Reviewable for Review Request '
-                f'#{self.review_request.display_id}: {caption}'))
+        context: dict[str, Any] = {
+            'caption': caption,
+            'comments': self.get_comments(),
+            'last_activity_time': last_activity_time,
+            'review_ui': self,
+            'review_ui_uuid': str(uuid4()),
+            self.object_key: self.obj,
+            self.diff_object_key: self.diff_against_obj,
+        }
 
         if inline:
             context.update({
@@ -478,7 +474,7 @@ class ReviewUI(Generic[
         else:
             context.update({
                 'base_template': 'reviews/ui/base.html',
-                'review': self.review_request.get_pending_review(request.user),
+                'review': review_request.get_pending_review(request.user),
                 'review_ui_inline': False,
             })
 
@@ -491,25 +487,48 @@ class ReviewUI(Generic[
                              extra={'request': request})
             raise
 
-        if isinstance(self.obj, FileAttachment):
-            context['social_page_title'] = (
-                'Attachment for Review Request #%s: %s'
-                % (self.review_request.display_id, context['caption'])
+        is_file_attachment = isinstance(self.obj, FileAttachment)
+
+        if is_file_attachment:
+            social_page_title = (
+                f'Attachment for Review Request '
+                f'#{review_request.display_id}: {caption}'
             )
 
-            if not inline:
-                context['tabs'].append({
-                    'url': request.path,
-                    'text': _('File'),
-                })
+            state = review_request.get_file_attachment_state(self.obj)
 
-                prev_file_attachment, next_file_attachment = \
-                    self._get_adjacent_file_attachments(review_request_details)
+            force_view_user_draft = (
+                request.user != review_request.submitter and
+                state in (FileAttachmentState.NEW_REVISION,
+                          FileAttachmentState.NEW))
+        else:
+            social_page_title = (
+                f'Reviewable for Review Request '
+                f'#{review_request.display_id}: {caption}')
+            force_view_user_draft = False
 
-                context.update({
-                    'next_file_attachment': next_file_attachment,
-                    'prev_file_attachment': prev_file_attachment,
-                })
+        context.update(make_review_request_context(
+            request=request,
+            review_request=review_request,
+            draft=draft,
+            force_view_user_draft=force_view_user_draft,
+            review_request_details=review_request_details,
+            social_page_image_url=self.get_page_cover_image_url(),
+            social_page_title=social_page_title))
+
+        if is_file_attachment and not inline:
+            context['tabs'].append({
+                'url': request.path,
+                'text': _('File'),
+            })
+
+            prev_file_attachment, next_file_attachment = \
+                self._get_adjacent_file_attachments(review_request_details)
+
+            context.update({
+                'next_file_attachment': next_file_attachment,
+                'prev_file_attachment': prev_file_attachment,
+            })
 
         return context
 
@@ -564,8 +583,7 @@ class ReviewUI(Generic[
         else.
 
         Args:
-            draft (reviewboard.reviews.models.review_request_draft.
-                   ReviewRequestDraft, optional):
+            draft (reviewboard.reviews.models.ReviewRequestDraft, optional):
                 The active review request draft for the user, if any.
 
         Returns:

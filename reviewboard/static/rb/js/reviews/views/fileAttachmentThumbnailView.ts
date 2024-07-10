@@ -2,7 +2,11 @@
  * The file attachment thumbnail view.
  */
 
-import { BaseView, spina } from '@beanbag/spina';
+import {
+    type EventsHash,
+    BaseView,
+    spina,
+} from '@beanbag/spina';
 
 import {
     type FileAttachment,
@@ -96,7 +100,7 @@ export class FileAttachmentThumbnailView extends BaseView<
 > {
     static className = 'file-container';
 
-    static events = {
+    static events: EventsHash = {
         'click .file-add-comment a': '_onAddCommentClicked',
         'click .file-delete': '_onDeleteClicked',
         'click .file-undo-delete': '_onUndoDeleteClicked',
@@ -119,6 +123,7 @@ export class FileAttachmentThumbnailView extends BaseView<
          </div>
         </div>
     `);
+    template: _.CompiledTemplate;
 
     static actionsTemplate = _.template(dedent`
         <% if (loaded) { %>
@@ -171,6 +176,7 @@ export class FileAttachmentThumbnailView extends BaseView<
         <%  } %>
         <% } %>
     `);
+    actionsTemplate: _.CompiledTemplate;
 
     static thumbnailContainerTemplate = _.template(dedent`
         <% if (!loaded) { %>
@@ -182,6 +188,7 @@ export class FileAttachmentThumbnailView extends BaseView<
         <%=  thumbnailHTML %>
         <% } %>
     `);
+    thumbnailContainerTemplate: _.CompiledTemplate;
 
     /** The possible states for the file attachment. */
     static states = FileAttachmentStates;
@@ -593,8 +600,18 @@ export class FileAttachmentThumbnailView extends BaseView<
      * Render the thumbnail for the file attachment.
      */
     _renderThumbnail() {
+        const model = this.model;
+        let reviewURL = model.get('reviewURL');
+
+        if (reviewURL &&
+            this.options.reviewRequestEditor.get('viewingUserDraft')) {
+            reviewURL += '?view-draft=1';
+        }
+
         this.#$thumbnailContainer.html(
-            this.thumbnailContainerTemplate(this.model.attributes));
+            this.thumbnailContainerTemplate(_.defaults({
+                reviewURL,
+            }, model.attributes)));
 
         // Disable tabbing to any <a> elements inside the thumbnail.
         this.#$thumbnailContainer.find('a').each((i, el) => {

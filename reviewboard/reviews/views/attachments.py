@@ -17,6 +17,7 @@ from django.views.generic.base import View
 from reviewboard.accounts.mixins import UserProfileRequiredViewMixin
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.reviews.context import should_view_draft
 from reviewboard.reviews.models import Screenshot
 from reviewboard.reviews.ui.base import DiffMismatchReviewUI, ReviewUI
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
@@ -44,7 +45,7 @@ class _FileAttachmentViewMixin:
         review_request: ReviewRequest,
         draft: Optional[ReviewRequestDraft],
         file_attachment_id: int,
-        extra_q: Q = Q(),
+        extra_q: Optional[Q] = None,
     ) -> FileAttachment:
         """Return a file attachment accessible on the review request.
 
@@ -80,6 +81,9 @@ class _FileAttachmentViewMixin:
         # request or an accessible draft.
         review_request_q = (Q(review_request=review_request) |
                             Q(inactive_review_request=review_request))
+
+        if extra_q is None:
+            extra_q = Q()
 
         if draft is not None:
             review_request_q |= Q(drafts=draft) | Q(inactive_drafts=draft)
@@ -208,10 +212,17 @@ class ReviewFileAttachmentView(_FileAttachmentViewMixin,
         review_request = self.review_request
         draft = review_request.get_draft(request.user)
 
-        file_attachment = self.get_file_attachment(
-            review_request=review_request,
-            draft=draft,
-            file_attachment_id=file_attachment_id)
+        if should_view_draft(request=request, review_request=review_request,
+                             draft=draft):
+            file_attachment = self.get_file_attachment(
+                review_request=review_request,
+                draft=draft,
+                file_attachment_id=file_attachment_id)
+        else:
+            file_attachment = self.get_file_attachment(
+                review_request=review_request,
+                draft=None,
+                file_attachment_id=file_attachment_id)
 
         diff_against_attachment: Optional[FileAttachment] = None
 

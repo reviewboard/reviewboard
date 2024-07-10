@@ -1,4 +1,4 @@
-{% load actions %}
+{% load actions reviewtags %}
 
 <header class="rb-c-review-request__header">
  <div class="rb-c-actions" role="presentation">
@@ -24,7 +24,8 @@
 {% for tab in tabs %}
   <li class="rb-c-review-request-tabs__tab{% if tab.active or tab.url == request.path %} -is-active{% endif %}"
       role="presentation">
-   <a role="menuitem" href="{{tab.url}}"
+   <a role="menuitem"
+      href="{{tab.url|add_view_draft_query:viewing_user_draft}}"
       {% if tab.active or tab.url == request.path %}aria-current="page"{% endif %}
       >{{tab.text}}</a>
   </li>

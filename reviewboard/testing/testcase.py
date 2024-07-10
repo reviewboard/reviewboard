@@ -1098,7 +1098,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         self,
         review_request: ReviewRequest,
         attachment_history: Optional[FileAttachmentHistory] = None,
-        draft: bool = False,
+        draft: Union[ReviewRequestDraft, bool] = False,
         active: bool = True,
         with_history: bool = True,
         **kwargs,
