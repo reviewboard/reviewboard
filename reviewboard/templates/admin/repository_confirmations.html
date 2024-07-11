@@ -1,37 +1,8 @@
 {% load djblets_utils i18n rbadmintags %}
 
-{% url 'settings-ssh' as ssh_settings_url %}
-
-{# SSH Public Key information #}
-<div class="rb-c-alert -is-info">
- <div class="rb-c-alert__content">
-  <p>
-   Some repositories (usually self-hosted repositories) require an SSH
-   public key for secure access.
-  </p>
-{% if adminform.form.public_key %}
-  {% comment %}
-   Use a <div> here to avoid extra trailing padding when the <textarea> is
-   hidden. Only the final child in the alert content has bottom margin/padding
-   removed.
-  {% endcomment %}
-  <div>
-   <a href="#" id="show-ssh-key-link">{% trans "Show your SSH public key" %}</a>
-  </div>
-  <p id="ssh-public-key-popup" style="display: none">
-   <textarea cols="65" rows="10" readonly class="rb-o-admin-ssh-public-key">{{form.public_key_str}}</textarea>
-  </p>
-{% else %}
-  <p>
-   <a href="{{ssh_settings_url}}">{% trans "Set up your SSH key" %}</a>
-  </p>
-{% endif %}
- </div>
-</div>
-
 
 {# Account link succeeded, with form errors #}
-{% if adminform.form.errors and adminform.form.hosting_account_linked %}
+{% if form.errors and form.hosting_account_linked %}
 <div class="rb-c-alert -is-success">
  <div class="rb-c-alert__content">
   <h3 class="rb-c-alert__heading">{% trans "Account successfully linked." %}</h3>

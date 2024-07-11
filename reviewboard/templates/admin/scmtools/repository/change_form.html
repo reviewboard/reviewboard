@@ -12,6 +12,7 @@
 
 
 {% block form-alerts %}
+{%  include "admin/repository_ssh_key.html" with form=adminform.form %}
 {%  include "admin/repository_confirmations.html" with form=adminform.form %}
 {{block.super}}
 {% endblock form-alerts %}
