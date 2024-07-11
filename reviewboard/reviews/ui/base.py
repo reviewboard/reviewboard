@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from inspect import signature
 from typing import (Any, ClassVar, Dict, Generic, Iterator, List, Optional,
                     Sequence, TYPE_CHECKING, TypeVar)
 from urllib.parse import urlencode
@@ -442,6 +443,8 @@ class ReviewUI(Generic[
             dict:
             The context to use in the template.
         """
+        self.request = request
+
         review_request = self.review_request
         last_activity_time = \
             review_request.get_last_activity_info()['timestamp']
@@ -928,6 +931,7 @@ class ReviewUI(Generic[
             instances.
         """
         assert isinstance(self.obj, FileAttachment)
+        assert self.request is not None
 
         file_attachments = iter(get_latest_file_attachments(
             review_request_details.get_file_attachments()))
@@ -939,10 +943,25 @@ class ReviewUI(Generic[
             if obj.pk == self.obj.pk:
                 break
 
-            prev_obj = obj
+            review_ui = obj.review_ui
+
+            if review_ui and is_review_ui_enabled_for(
+                review_ui=review_ui,
+                request=self.request,
+                review_request=self.review_request,
+                file_attachment=obj):
+                prev_obj = obj
 
         try:
-            next_obj = next(file_attachments)
+            obj = next(file_attachments)
+            review_ui = obj.review_ui
+
+            if review_ui and is_review_ui_enabled_for(
+                review_ui=review_ui,
+                request=self.request,
+                review_request=self.review_request,
+                file_attachment=obj):
+                next_obj = obj
         except StopIteration:
             pass
 
@@ -1273,3 +1292,61 @@ def unregister_ui(review_ui: type[ReviewUI]) -> None:
     from reviewboard.reviews.ui import review_ui_registry
 
     review_ui_registry.unregister(review_ui)
+
+
+def is_review_ui_enabled_for(
+    *,
+    review_ui: ReviewUI[FileAttachment, FileAttachmentComment,
+                        SerializedComment],
+    request: HttpRequest,
+    review_request: ReviewRequest,
+    file_attachment: FileAttachment,
+) -> bool:
+    """Return whether a Review UI is enabled for the given object.
+
+    Version Added:
+        7.0.2
+
+    Args:
+        review_ui (reviewboard.reviews.ui.base.ReviewUI):
+            The Review UI to check.
+
+        request (django.http.HttpRequest):
+            The user making the request.
+
+        review_request (reviewboard.reviews.models.ReviewRequest):
+            The review request.
+
+        file_attachment (reviewboard.attachments.models.FileAttachment):
+            The file attachment.
+
+    Returns:
+        bool:
+        ``True`` if the review UI is enabled for the given attachment.
+    """
+    user = request.user
+
+    params = signature(review_ui.is_enabled_for).parameters
+
+    try:
+        if 'file_attachment' in params:
+            RemovedInReviewBoard80Warning.warn(
+                'The file_attachment parameter to ReviewUI.is_enabled_for '
+                'has been removed. Please use obj= instead in Review UI %r'
+                % review_ui)
+
+            return review_ui.is_enabled_for(
+                user=user,
+                review_request=review_request,
+                file_attachment=file_attachment)
+        else:
+            return review_ui.is_enabled_for(
+                user=user,
+                review_request=review_request,
+                obj=file_attachment)
+    except Exception as e:
+        logger.exception(
+            'Error when calling is_enabled_for for ReviewUI %r: %s',
+            review_ui, e, extra={'request': request})
+
+        return False
