@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
@@ -28,17 +29,20 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        """Set up the test case class."""
         super().setUpClass()
 
         register_ui(MyReviewUI)
 
     @classmethod
     def tearDownClass(cls) -> None:
+        """Tear down the test case class."""
         super().tearDownClass()
 
         unregister_ui(MyReviewUI)
 
     def setUp(self) -> None:
+        """Set up the test case."""
         super().setUp()
 
         self.review_request = self.create_review_request()
@@ -407,6 +411,8 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
             orig_filename='filename.txt',
             draft=True)
         review_ui = attachment2.review_ui
+        review_ui.request = self.create_http_request(
+            path='/r/1/file/2', user=self.review_request.submitter)
 
         assert review_ui is not None
         self.assertIsInstance(review_ui, MyReviewUI)
@@ -419,6 +425,38 @@ class FileAttachmentReviewUITests(SpyAgency, TestCase):
                 'filename': 'filename.txt',
                 'numRevisions': 2,
                 'state': FileAttachmentState.NEW_REVISION.value,
+            })
+
+    def test_get_js_model_data_with_history_and_draft_non_owner(self) -> None:
+        """Testing ReviewUI.get_js_model_data with
+        FileAttachmentHistory and draft attachment accessed by a non-owner
+        """
+        attachment1 = self.create_file_attachment(
+            self.review_request,
+            mimetype='application/rbtest',
+            orig_filename='filename.txt')
+        self.create_file_attachment(
+            self.review_request,
+            attachment_history=attachment1.attachment_history,
+            attachment_revision=attachment1.attachment_revision + 1,
+            mimetype='application/rbtest',
+            orig_filename='filename.txt',
+            draft=True)
+        review_ui = attachment1.review_ui
+        review_ui.request = self.create_http_request(
+            path='/r/1/file/1', user=User.objects.get(username='grumpy'))
+
+        assert review_ui is not None
+        self.assertIsInstance(review_ui, MyReviewUI)
+        self.assertEqual(
+            review_ui.get_js_model_data(),
+            {
+                'attachmentRevisionIDs': [attachment1.pk],
+                'fileAttachmentID': attachment1.pk,
+                'fileRevision': 1,
+                'filename': 'filename.txt',
+                'numRevisions': 1,
+                'state': FileAttachmentState.PUBLISHED.value,
             })
 
     def test_get_js_model_data_with_diff(self) -> None:

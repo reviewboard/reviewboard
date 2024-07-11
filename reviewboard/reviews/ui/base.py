@@ -684,7 +684,8 @@ class ReviewUI(Generic[
         obj = self.obj
 
         if isinstance(obj, FileAttachment):
-            state = self.review_request.get_file_attachment_state(obj)
+            review_request = self.review_request
+            state = review_request.get_file_attachment_state(obj)
             data.update({
                 'fileAttachmentID': obj.pk,
                 'fileRevision': obj.attachment_revision,
@@ -693,12 +694,39 @@ class ReviewUI(Generic[
             })
 
             if obj.attachment_history is not None:
-                attachments = FileAttachment.objects.filter(
-                    attachment_history=obj.attachment_history)
-                data['attachmentRevisionIDs'] = list(
-                    attachments.order_by('attachment_revision')
-                    .values_list('pk', flat=True))
-                data['numRevisions'] = attachments.count()
+                request = self.request
+                include_draft = (
+                    request is not None and should_view_draft(
+                        request=request,
+                        review_request=review_request,
+                        draft=review_request.get_draft(request.user)))
+
+                attachments = list(
+                    FileAttachment.objects
+                    .filter(attachment_history=obj.attachment_history)
+                    .order_by('attachment_revision'))
+
+                if attachments:
+                    revisions = [
+                        attachment.pk
+                        for attachment in attachments[:-1]
+                    ]
+                    last_attachment = attachments[-1]
+
+                    # If the last attachment is newly added in a draft, we only
+                    # want to include it in the revision list if the draft is
+                    # visible to the user.
+                    if (include_draft or
+                        review_request.get_file_attachment_state(
+                            last_attachment,
+                        ) not in [
+                            FileAttachmentState.NEW,
+                            FileAttachmentState.NEW_REVISION,
+                        ]):
+                        revisions.append(last_attachment.pk)
+
+                    data['attachmentRevisionIDs'] = revisions
+                    data['numRevisions'] = len(revisions)
 
             if self.diff_against_obj:
                 diff_against_obj = self.diff_against_obj
