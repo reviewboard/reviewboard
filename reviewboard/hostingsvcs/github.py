@@ -57,7 +57,11 @@ _REQUIRED_SCOPES = ['admin:repo_hook', 'repo', 'user']
 
 
 class GitHubAuthForm(HostingServiceAuthForm):
-    class Meta(object):
+    """Form for authenticating to GitHub."""
+
+    class Meta:
+        """Metadata for the GitHubAuthForm."""
+
         labels = {
             'hosting_account_username': _('GitHub Username'),
             'hosting_account_password': _('Personal Access Token'),
@@ -70,49 +74,58 @@ class GitHubAuthForm(HostingServiceAuthForm):
             ),
             'hosting_account_password': _(
                 'A new <a href="%(token_url)s">Personal Access Token</a> for '
-                'your GitHub account. <strong>Make sure this has at least '
-                'the following scopes:</strong> %(scopes)s'
+                'your GitHub account. This token must include the following '
+                'scopes: %(scopes)s'
             ) % {
                 'token_url': 'https://github.com/settings/tokens',
                 'scopes': ', '.join(
-                    '<code>%s</code>' % scope
+                    f'<code>{scope}</code>'
                     for scope in _REQUIRED_SCOPES
                 ),
-            }
+            },
         }
 
 
 class GitHubPublicForm(HostingServiceForm):
+    """Sub-form for public repositories owned by a user."""
+
     github_public_repo_name = forms.CharField(
         label=_('Repository name'),
         max_length=64,
         required=True,
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_('The name of the repository. This is the '
-                    '&lt;repo_name&gt; in '
-                    'http://github.com/&lt;username&gt;/&lt;repo_name&gt;/'))
+                    '<code>&lt;repo_name&gt;</code> in '
+                    '<code>http://github.com/&lt;username&gt;/'
+                    '&lt;repo_name&gt;/</code>'))
 
 
 class GitHubPrivateForm(HostingServiceForm):
+    """Sub-form for private repositories owned by a user."""
+
     github_private_repo_name = forms.CharField(
         label=_('Repository name'),
         max_length=64,
         required=True,
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_('The name of the repository. This is the '
-                    '&lt;repo_name&gt; in '
-                    'http://github.com/&lt;username&gt;/&lt;repo_name&gt;/'))
+                    '<code>&lt;repo_name&gt;</code> in '
+                    '<code>http://github.com/&lt;username&gt;/'
+                    '&lt;repo_name&gt;/</code>'))
 
 
 class GitHubPublicOrgForm(HostingServiceForm):
+    """Sub-form for public repositories owned by an organization."""
+
     github_public_org_name = forms.CharField(
         label=_('Organization name'),
         max_length=64,
         required=True,
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_('The name of the organization. This is the '
-                    '&lt;org_name&gt; in '
-                    'http://github.com/&lt;org_name&gt;/&lt;repo_name&gt;/'))
+                    '<code>&lt;org_name&gt;</code> in '
+                    '<code>http://github.com/&lt;org_name&gt;/'
+                    '&lt;repo_name&gt;/</code>'))
 
     github_public_org_repo_name = forms.CharField(
         label=_('Repository name'),
@@ -120,19 +133,23 @@ class GitHubPublicOrgForm(HostingServiceForm):
         required=True,
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_('The name of the repository. This is the '
-                    '&lt;repo_name&gt; in '
-                    'http://github.com/&lt;org_name&gt;/&lt;repo_name&gt;/'))
+                    '<code>&lt;repo_name&gt;</code> in '
+                    '<code>http://github.com/&lt;org_name&gt;/'
+                    '&lt;repo_name&gt;/</code>'))
 
 
 class GitHubPrivateOrgForm(HostingServiceForm):
+    """Sub-form for private repositories owned by an organization."""
+
     github_private_org_name = forms.CharField(
         label=_('Organization name'),
         max_length=64,
         required=True,
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_('The name of the organization. This is the '
-                    '&lt;org_name&gt; in '
-                    'http://github.com/&lt;org_name&gt;/&lt;repo_name&gt;/'))
+                    '<code>&lt;org_name&gt;</code> in '
+                    '<code>http://github.com/&lt;org_name&gt;/'
+                    '&lt;repo_name&gt;/</code>'))
 
     github_private_org_repo_name = forms.CharField(
         label=_('Repository name'),
@@ -140,8 +157,9 @@ class GitHubPrivateOrgForm(HostingServiceForm):
         required=True,
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_('The name of the repository. This is the '
-                    '&lt;repo_name&gt; in '
-                    'http://github.com/&lt;org_name&gt;/&lt;repo_name&gt;/'))
+                    '<code>&lt;repo_name&gt;</code> in '
+                    '<code>http://github.com/&lt;org_name&gt;/'
+                    '&lt;repo_name&gt;/</code>'))
 
 
 class GitHubAPIPaginator(APIPaginator):
