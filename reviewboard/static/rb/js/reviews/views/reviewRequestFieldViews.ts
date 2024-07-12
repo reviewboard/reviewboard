@@ -348,6 +348,16 @@ export class TextFieldView extends BaseFieldView {
         this.inlineEditorView = new EditorClass(inlineEditorOptions);
         this.inlineEditorView.render();
 
+        this.inlineEditorView.el.addEventListener('startEdit', (e: Event) => {
+            const reviewRequestEditorView = this.reviewRequestEditorView;
+            const reviewRequestEditor = reviewRequestEditorView.model;
+
+            if (reviewRequestEditor.hasUnviewedUserDraft) {
+                e.preventDefault();
+                reviewRequestEditorView.promptToLoadUserDraft();
+            }
+        });
+
         this.listenTo(this.inlineEditorView, 'beginEdit',
                       () => this.model.incr('editCount'));
 

@@ -564,6 +564,19 @@ export class InlineEditorView<
             return;
         }
 
+        /*
+         * We trigger a "startEdit" native JS event on the view's element
+         * before actually doing anything. This allows users to listen for
+         * that event and call preventDefault() in order to stop the edit
+         * from happening.
+         */
+        const doEdit = this.el.dispatchEvent(
+            new Event('startEdit', { cancelable: true }));
+
+        if (!doEdit) {
+            return;
+        }
+
         let value;
 
         if (this.options.hasRawValue) {

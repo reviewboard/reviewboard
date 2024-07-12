@@ -1,6 +1,8 @@
 /**
  * View that handles editing review requests.
  */
+
+import { paint } from '@beanbag/ink';
 import { BaseView, spina } from '@beanbag/spina';
 
 import {
@@ -619,6 +621,37 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
     }
 
     /**
+     * Prompt the user to load an unpublished draft.
+     */
+    promptToLoadUserDraft() {
+        const loadDraft = () => {
+            this.model.set('viewingUserDraft', true);
+        };
+
+        const buttons = paint<HTMLButtonElement[]>`
+            <Ink.Button type="primary"
+                        onClick="${() => loadDraft()}">
+                ${_`Load Draft Data`}
+            </Ink.Button>
+            <Ink.Button>
+                ${_`Cancel`}
+            </Ink.Button>
+        `;
+
+        $('<div>')
+            .append(_`
+                <p>This review request is owned by another user and has an
+                unpublished draft.</p>
+                <p>Before making any changes to the review request, you will
+                need to view the draft.</p>
+            `)
+            .modalBox({
+                buttons: buttons,
+                title: _`View draft data`,
+            });
+    }
+
+    /**
      * Warn the user if they try to navigate away with unsaved comments.
      *
      * Args:
@@ -763,11 +796,17 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      *         The file to upload.
      */
     _uploadFile(file: File) {
-        // Create a temporary file listing.
-        const fileAttachment = this.model.createFileAttachment();
+        const reviewRequestEditor = this.model;
 
-        fileAttachment.set('file', file);
-        fileAttachment.save();
+        if (reviewRequestEditor.hasUnviewedUserDraft) {
+            this.promptToLoadUserDraft();
+        } else {
+            // Create a temporary file listing.
+            const fileAttachment = this.model.createFileAttachment();
+
+            fileAttachment.set('file', file);
+            fileAttachment.save();
+        }
     }
 
     /**
@@ -827,6 +866,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
             renderThumbnail: ($thumbnail === undefined),
             reviewRequest: this.model.get('reviewRequest'),
             reviewRequestEditor: this.model,
+            reviewRequestEditorView: this,
         });
 
         view.render();

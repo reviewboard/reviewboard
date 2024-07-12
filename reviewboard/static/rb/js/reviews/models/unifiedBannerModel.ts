@@ -179,7 +179,7 @@ export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
 
         const reviewRequestDraft = (
             !reviewRequest.draft.isNew() &&
-            (!userDraftExists || viewingUserDraft));
+            !editor.hasUnviewedUserDraft);
 
         const reviewDraft = !pendingReview.isNew();
         const numReplies = reviewReplyDrafts.length;

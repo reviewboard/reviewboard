@@ -209,6 +209,22 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
     }
 
     /**
+     * Return whether there's another user's draft that's not being viewed.
+     *
+     * Version Added:
+     *     7.0.2
+     *
+     * Returns:
+     *     boolean:
+     *     true if there's an existing draft that's owned by another user,
+     *     which is not currently being viewed.
+     */
+    get hasUnviewedUserDraft(): boolean {
+        return (this.get('userDraftExists') &&
+                !this.get('viewingUserDraft'));
+    }
+
+    /**
      * Initialize the editor.
      */
     initialize() {

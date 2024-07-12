@@ -20,11 +20,18 @@ import {
 } from 'reviewboard/ui';
 
 import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import {
+    type ReviewRequestEditorView,
+} from '../views/reviewRequestEditorView';
 import { CommentDialogView } from './commentDialogView';
 
 
 /**
  * Options for the FileAttachmentThumbnailView.
+ *
+ * Version Changed:
+ *     7.0.2:
+ *     Added ``reviewRequestEditorView``.
  *
  * Version Added:
  *     6.0
@@ -35,6 +42,14 @@ interface FileAttachmentThumbnailViewOptions {
 
     /** The review request editor. */
     reviewRequestEditor: ReviewRequestEditor;
+
+    /**
+     * The review request editor view.
+     *
+     * Version Added:
+     *     7.0.2
+     */
+    reviewRequestEditorView: ReviewRequestEditorView;
 
     /** Whether the user has permission to edit the file attachment. */
     canEdit?: boolean;
@@ -192,6 +207,7 @@ export class FileAttachmentThumbnailView extends BaseView<
 
     /** The possible states for the file attachment. */
     static states = FileAttachmentStates;
+    states: typeof FileAttachmentStates;
 
     /**********************
      * Instance variables *
@@ -553,6 +569,18 @@ export class FileAttachmentThumbnailView extends BaseView<
 
         this._captionEditorView.render();
 
+        this._captionEditorView.el.addEventListener(
+            'startEdit',
+            (e: Event) => {
+                const reviewRequestEditor = this.options.reviewRequestEditor;
+
+                if (reviewRequestEditor.hasUnviewedUserDraft) {
+                    e.preventDefault();
+                    this.options.reviewRequestEditorView
+                        .promptToLoadUserDraft();
+                }
+            });
+
         this.listenTo(this._captionEditorView, 'beginEditPreShow', () => {
             this.$el.addClass('editing');
             this._stopAnimating();
@@ -794,13 +822,19 @@ export class FileAttachmentThumbnailView extends BaseView<
         e.preventDefault();
         e.stopPropagation();
 
-        const model = this.model;
-        const updateDlg = new RB.UploadAttachmentView({
-            attachmentHistoryID: model.get('attachmentHistoryID'),
-            presetCaption: model.get('caption'),
-            reviewRequestEditor: this.options.reviewRequestEditor,
-        });
-        updateDlg.show();
+        const reviewRequestEditor = this.options.reviewRequestEditor;
+
+        if (reviewRequestEditor.hasUnviewedUserDraft) {
+            this.options.reviewRequestEditorView.promptToLoadUserDraft();
+        } else {
+            const model = this.model;
+            const updateDlg = new RB.UploadAttachmentView({
+                attachmentHistoryID: model.get('attachmentHistoryID'),
+                presetCaption: model.get('caption'),
+                reviewRequestEditor: this.options.reviewRequestEditor,
+            });
+            updateDlg.show();
+        }
     }
 
     /**
@@ -816,17 +850,23 @@ export class FileAttachmentThumbnailView extends BaseView<
         e.preventDefault();
         e.stopPropagation();
 
-        const model = this.model;
-        const state = model.get('state');
+        const reviewRequestEditor = this.options.reviewRequestEditor;
 
-        if (state === this.states.DRAFT) {
-            /*
-             * "Delete" the draft version of the file attachment by reverting
-             * to its published caption.
-             */
-            await this._saveCaption(model.get('publishedCaption'));
+        if (reviewRequestEditor.hasUnviewedUserDraft) {
+            this.options.reviewRequestEditorView.promptToLoadUserDraft();
         } else {
-            model.destroy();
+            const model = this.model;
+            const state = model.get('state');
+
+            if (state === this.states.DRAFT) {
+                /*
+                 * "Delete" the draft version of the file attachment by
+                 * reverting to its published caption.
+                 */
+                await this._saveCaption(model.get('publishedCaption'));
+            } else {
+                model.destroy();
+            }
         }
     }
 

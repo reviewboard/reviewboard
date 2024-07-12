@@ -18,6 +18,7 @@ import {
 import { OverlayView } from 'reviewboard/ui';
 
 import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { type ReviewRequestEditorView } from './reviewRequestEditorView';
 import { ReviewDialogView } from './reviewDialogView';
 
 
@@ -549,10 +550,18 @@ export class AddFileActionView extends Actions.MenuItemActionView {
      */
     activate() {
         const page = RB.PageManager.getPage();
-        const uploadDialog = new RB.UploadAttachmentView({
-            reviewRequestEditor: page.reviewRequestEditorView.model,
-        });
-        uploadDialog.show();
+        const reviewRequestEditorView = page.reviewRequestEditorView as
+            ReviewRequestEditorView;
+        const reviewRequestEditor = reviewRequestEditorView.model;
+
+        if (reviewRequestEditor.hasUnviewedUserDraft) {
+            reviewRequestEditorView.promptToLoadUserDraft();
+        } else {
+            const uploadDialog = new RB.UploadAttachmentView({
+                reviewRequestEditor: reviewRequestEditor,
+            });
+            uploadDialog.show();
+        }
     }
 }
 
@@ -570,10 +579,14 @@ export class UpdateDiffActionView extends Actions.MenuItemActionView {
      */
     activate() {
         const page = RB.PageManager.getPage();
-        const reviewRequestEditor = page.reviewRequestEditorView.model;
+        const reviewRequestEditorView = page.reviewRequestEditorView as
+            ReviewRequestEditorView;
+        const reviewRequestEditor = reviewRequestEditorView.model;
         const reviewRequest = reviewRequestEditor.get('reviewRequest');
 
-        if (reviewRequestEditor.get('commits').length > 0) {
+        if (reviewRequestEditor.hasUnviewedUserDraft) {
+            reviewRequestEditorView.promptToLoadUserDraft();
+        } else if (reviewRequestEditor.get('commits').length > 0) {
             const rbtoolsURL = 'https://www.reviewboard.org/docs/rbtools/latest/';
 
             const $dialog = $('<div>')
@@ -627,7 +640,9 @@ export class CloseDiscardedActionView extends Actions.MenuItemActionView {
      */
     activate() {
         const page = RB.PageManager.getPage();
-        const reviewRequestEditor = page.reviewRequestEditorView.model;
+        const reviewRequestEditorView = page.reviewRequestEditorView as
+            ReviewRequestEditorView;
+        const reviewRequestEditor = reviewRequestEditorView.model;
         const reviewRequest = reviewRequestEditor.get('reviewRequest');
 
         const confirmText =
@@ -657,7 +672,9 @@ export class CloseCompletedActionView extends Actions.MenuItemActionView {
      */
     activate() {
         const page = RB.PageManager.getPage();
-        const reviewRequestEditor = page.reviewRequestEditorView.model;
+        const reviewRequestEditorView = page.reviewRequestEditorView as
+            ReviewRequestEditorView;
+        const reviewRequestEditor = reviewRequestEditorView.model;
         const reviewRequest = reviewRequestEditor.get('reviewRequest');
 
         /*
@@ -698,7 +715,9 @@ export class DeleteActionView extends Actions.MenuItemActionView {
      */
     activate() {
         const page = RB.PageManager.getPage();
-        const reviewRequestEditor = page.reviewRequestEditorView.model;
+        const reviewRequestEditorView = page.reviewRequestEditorView as
+            ReviewRequestEditorView;
+        const reviewRequestEditor = reviewRequestEditorView.model;
         const reviewRequest = reviewRequestEditor.get('reviewRequest');
 
         const onDeleteConfirmed = () => {
