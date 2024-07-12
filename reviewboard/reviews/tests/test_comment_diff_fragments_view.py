@@ -449,7 +449,7 @@ class CommentDiffFragmentsViewTests(BaseFileDiffAncestorTests):
         # proxy to ensure that we're rendering with the correct commit
         # information.
         self.assertIn(
-            '<a href="/r/1/diff/1/?tip-commit-id=3#file6line1">bar</a>',
+            '<a href="/r/1/diff/1/?tip-commit-id=3#file7line1">bar</a>',
             html)
 
     def test_comment_fragment_on_commit_range2(self) -> None:
@@ -469,7 +469,7 @@ class CommentDiffFragmentsViewTests(BaseFileDiffAncestorTests):
         # information.
         self.assertIn(
             '<a href="/r/1/diff/1/?base-commit-id=2&amp;'
-            'tip-commit-id=3#file6line1">bar</a>',
+            'tip-commit-id=3#file7line1">bar</a>',
             html)
 
     def test_diff_comment_links_with_commits(self) -> None:
@@ -482,11 +482,11 @@ class CommentDiffFragmentsViewTests(BaseFileDiffAncestorTests):
 
         self.assertEqual(
             self.commit_comment1.get_absolute_url(),
-            '/r/1/diff/1/?tip-commit-id=3#file6line1')
+            '/r/1/diff/1/?tip-commit-id=3#file7line1')
 
         self.assertEqual(
             self.commit_comment2.get_absolute_url(),
-            '/r/1/diff/1/?base-commit-id=2&tip-commit-id=3#file6line1')
+            '/r/1/diff/1/?base-commit-id=2&tip-commit-id=3#file7line1')
 
     def _create_commit_comment_data(self) -> None:
         """Create the test data for commit comments."""

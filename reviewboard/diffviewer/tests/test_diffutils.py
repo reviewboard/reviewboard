@@ -29,6 +29,8 @@ from reviewboard.diffviewer.diffutils import (
     split_line_endings,
     _PATCH_GARBAGE_INPUT,
     _get_last_header_in_chunks_before_line)
+from reviewboard.diffviewer.filetypes import (HEADER_EXTENSIONS,
+                                              IMPL_EXTENSIONS)
 from reviewboard.diffviewer.errors import PatchError
 from reviewboard.diffviewer.models import DiffCommit, FileDiff
 from reviewboard.diffviewer.settings import DiffSettings
@@ -2436,6 +2438,118 @@ class GetMatchedInterdiffFilesTests(TestCase):
                 (filediff2, interfilediff2),
                 (filediff3, None),
                 (None, interfilediff3),
+            ])
+
+
+class GetSortedFileDiffsTests(TestCase):
+    """Unit tests for get_sorted_filediffs.
+
+    Version Added:
+        7.0
+    """
+
+    fixtures = [
+        'test_users',
+    ] + BaseFileDiffAncestorTests.fixtures
+
+    def test_get_sorted_filediffs(self) -> None:
+        """Testing get_sorted_filediffs"""
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        filediffs = [
+            self.create_filediff(
+                diffset=diffset,
+                source_file='zzz',
+                dest_file='zzz',
+                source_revision='1',
+                diff=b''),
+        ]
+
+        for impl_filename in sorted(IMPL_EXTENSIONS, reverse=True):
+            filediffs += [
+                self.create_filediff(
+                    diffset=diffset,
+                    source_file=f'/src/inner/file.{impl_filename}',
+                    dest_file=f'/src/inner/file.{impl_filename}',
+                    source_revision='1',
+                    diff=b''),
+                self.create_filediff(
+                    diffset=diffset,
+                    source_file=f'file.{impl_filename}',
+                    dest_file=f'file.{impl_filename}',
+                    source_revision='1',
+                    diff=b''),
+                self.create_filediff(
+                    diffset=diffset,
+                    source_file=f'/src/file.{impl_filename}',
+                    dest_file=f'/src/file.{impl_filename}',
+                    source_revision='1',
+                    diff=b''),
+            ]
+
+        for header_filename in sorted(HEADER_EXTENSIONS, reverse=True):
+            filediffs += [
+                self.create_filediff(
+                    diffset=diffset,
+                    source_file=f'/src/inner/file.{header_filename}',
+                    dest_file=f'/src/inner/file.{header_filename}',
+                    source_revision='1',
+                    diff=b''),
+                self.create_filediff(
+                    diffset=diffset,
+                    source_file=f'file.{header_filename}',
+                    dest_file=f'file.{header_filename}',
+                    source_revision='1',
+                    diff=b''),
+                self.create_filediff(
+                    diffset=diffset,
+                    source_file=f'/src/file.{header_filename}',
+                    dest_file=f'/src/file.{header_filename}',
+                    source_revision='1',
+                    diff=b''),
+            ]
+
+        filediffs.append(self.create_filediff(
+            diffset=diffset,
+            source_file='aaa',
+            dest_file='aaa',
+            source_revision='1',
+            diff=b''))
+
+        self.assertEqual(
+            [
+                filediff.source_file
+                for filediff in get_sorted_filediffs(filediffs)
+            ],
+            [
+                'aaa',
+                *[
+                    f'file.{filename}'
+                    for filename in sorted(HEADER_EXTENSIONS)
+                ],
+                *[
+                    f'file.{filename}'
+                    for filename in sorted(IMPL_EXTENSIONS)
+                ],
+                'zzz',
+                *[
+                    f'/src/file.{filename}'
+                    for filename in sorted(HEADER_EXTENSIONS)
+                ],
+                *[
+                    f'/src/file.{filename}'
+                    for filename in sorted(IMPL_EXTENSIONS)
+                ],
+                *[
+                    f'/src/inner/file.{filename}'
+                    for filename in sorted(HEADER_EXTENSIONS)
+                ],
+                *[
+                    f'/src/inner/file.{filename}'
+                    for filename in sorted(IMPL_EXTENSIONS)
+                ],
             ])
 
 

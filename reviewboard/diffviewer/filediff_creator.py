@@ -2,11 +2,9 @@
 
 import os
 from copy import deepcopy
-from functools import cmp_to_key
 
 from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import gettext as _
-from djblets.util.compat.python.past import cmp
 
 from reviewboard.diffviewer.errors import EmptyDiffError
 from reviewboard.scmtools.core import (FileLookupContext,
@@ -14,17 +12,6 @@ from reviewboard.scmtools.core import (FileLookupContext,
                                        Revision,
                                        UNKNOWN)
 from reviewboard.scmtools.errors import FileNotFoundError
-
-
-# Extensions used for intelligent sorting of header files
-# before implementation files.
-_HEADER_EXTENSIONS = [
-    b'h', b'H', b'hh', b'hpp', b'hxx', b'h++'
-]
-
-_IMPL_EXTENSIONS = [
-    b'c', b'C', b'cc', b'cpp', b'cxx', b'c++', b'm', b'mm', b'M'
-]
 
 
 def create_filediffs(diff_file_contents, parent_diff_file_contents,
@@ -369,10 +356,6 @@ def _prepare_diff_info(diff_file_contents, parent_diff_file_contents,
     if len(files) == 0:
         raise EmptyDiffError(_('The diff is empty.'))
 
-    # Sort the files so that header files come before implementation
-    # files.
-    files.sort(key=cmp_to_key(_compare_files))
-
     parsed_parent_diff = None
     parent_files = {}
 
@@ -541,44 +524,6 @@ def _process_files(parsed_diff, basedir, repository, base_commit_id,
         f.modified_filename = dest_filename
 
         yield f
-
-
-def _compare_files(file1, file2):
-    """Compare two files to determine a relative sort order.
-
-    This will compare two files, giving precedence to header files over
-    source files. This allows the resulting list of files to be more
-    intelligently sorted.
-
-    Args:
-        file1 (reviewboard.diffviewer.parser.ParsedDiffFile):
-            The first file to compare.
-
-        file2 (reviewboard.diffviewer.parser.ParsedDiffFile):
-            The second file to compare.
-
-    Returns:
-        int:
-        -1 if ``file1`` should appear before ``file2``.
-
-        0 if ``file1`` and ``file2`` are considered equal.
-
-        1 if ``file1`` should appear after ``file2``.
-    """
-    filename1 = file1.orig_filename
-    filename2 = file2.orig_filename
-
-    if filename1.find(b'.') != -1 and filename2.find(b'.') != -1:
-        basename1, ext1 = filename1.rsplit(b'.', 1)
-        basename2, ext2 = filename2.rsplit(b'.', 1)
-
-        if basename1 == basename2:
-            if (ext1 in _HEADER_EXTENSIONS and ext2 in _IMPL_EXTENSIONS):
-                return -1
-            elif (ext1 in _IMPL_EXTENSIONS and ext2 in _HEADER_EXTENSIONS):
-                return 1
-
-    return cmp(filename1, filename2)
 
 
 def _normalize_filename(filename, basedir):

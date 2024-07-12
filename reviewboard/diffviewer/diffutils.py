@@ -10,15 +10,14 @@ import shutil
 import subprocess
 import tempfile
 from difflib import SequenceMatcher
-from functools import cmp_to_key
-from typing import Any, AnyStr, Iterator, Optional, TYPE_CHECKING
+from typing import (Any, AnyStr, Callable, Iterator, Optional, Sequence,
+                    TYPE_CHECKING, TypeVar)
 
 from django.core.files.base import ContentFile
 from django.utils.encoding import force_str
 from django.utils.translation import gettext as _
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.compat.python.past import cmp
 from djblets.util.contextmanagers import controlled_subprocess
 from housekeeping.functions import deprecate_non_keyword_only_args
 from typing_extensions import NotRequired, TypedDict
@@ -27,6 +26,8 @@ from reviewboard.attachments.mimetypes import guess_mimetype
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
 from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
+from reviewboard.diffviewer.filetypes import (HEADER_EXTENSIONS,
+                                              IMPL_EXTENSIONS)
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.scmtools.core import FileLookupContext, PRE_CREATION, HEAD
 
@@ -57,6 +58,9 @@ NEWLINE_BYTES_RE = re.compile(br'(?:\n|\r(?:\r?\n)?)')
 NEWLINE_UNICODE_RE = re.compile(r'(?:\n|\r(?:\r?\n)?)')
 
 _PATCH_GARBAGE_INPUT = 'patch: **** Only garbage was found in the patch input.'
+
+
+_T = TypeVar('_T')
 
 
 class SerializedDiffFile(TypedDict):
@@ -2084,8 +2088,11 @@ def get_line_changed_regions(oldline, newline):
     return oldchanges, newchanges
 
 
-def get_sorted_filediffs(filediffs, key=None):
-    """Sorts a list of filediffs.
+def get_sorted_filediffs(
+    filediffs: Sequence[_T],
+    key: Optional[Callable[[_T], FileDiff]] = None,
+) -> Sequence[_T]:
+    """Sorts a list of filediffs or filediff-wrapping objects.
 
     The list of filediffs will be sorted first by their base paths in
     ascending order.
@@ -2101,44 +2108,56 @@ def get_sorted_filediffs(filediffs, key=None):
     must provide a callable ``key`` parameter that will return a FileDiff
     for the given entry in the list. This will only be called once per
     item.
+
+    Args:
+        filediffs (list of object):
+            The list of FileDiffs (or objects to convert to FileDiffs) to
+            sort.
+
+        key (callable, optional):
+            The optional function used to transform sequences of items to
+            FileDiffs.
+
+    Returns:
+        list of reviewboard.diffviewer.models.FileDiff:
+        The sorted list of filediffs.
     """
-    def cmp_filediffs(filediff1, filediff2):
-        x = make_key(filediff1)
-        y = make_key(filediff2)
+    from reviewboard.diffviewer.models import FileDiff
 
-        # Sort based on basepath in ascending order.
-        if x[0] != y[0]:
-            a = x[0]
-            b = y[0]
-        else:
-            # Sort based on filename in ascending order, then based on
-            # the extension in descending order, to make *.h sort ahead of
-            # *.c/cpp.
-            x_file, x_ext = os.path.splitext(x[1])
-            y_file, y_ext = os.path.splitext(y[1])
+    def make_key(
+        item: _T,
+    ) -> tuple[str, str, int, str]:
+        filediff: FileDiff
 
-            if x_file == y_file:
-                a = y_ext
-                b = x_ext
-            else:
-                a = x_file
-                b = y_file
-
-        return cmp(a, b)
-
-    def make_key(filediff):
         if key:
-            filediff = key(filediff)
+            filediff = key(item)
+        else:
+            assert isinstance(item, FileDiff)
+
+            filediff = item
 
         filename = filediff.dest_file
         i = filename.rfind('/')
 
         if i == -1:
-            return '', filename
+            base_path = ''
         else:
-            return filename[:i], filename[i + 1:]
+            base_path = filename[:i]
+            filename = filename[i + 1:]
 
-    return sorted(filediffs, key=cmp_to_key(cmp_filediffs))
+        base_name, ext = os.path.splitext(filename)
+        ext = ext[1:]
+
+        if ext in HEADER_EXTENSIONS:
+            order_flag = 1
+        elif ext in IMPL_EXTENSIONS:
+            order_flag = 2
+        else:
+            order_flag = 0
+
+        return base_path, base_name, order_flag, ext
+
+    return sorted(filediffs, key=make_key)
 
 
 def get_displayed_diff_line_ranges(chunks, first_vlinenum, last_vlinenum):
