@@ -2,7 +2,7 @@ kgb~=7.0
 nose
 
 # Required for Django type hints.
-django-stubs
+django-stubs~=5.0.2
 
 # As of p4python 2021.1.2128019, there are only compiled wheel packages for
 # Python 2.7 and 3.6 through 3.9. p4python's setup.py doesn't support
