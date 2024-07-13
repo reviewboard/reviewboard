@@ -112,11 +112,14 @@ export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
      * of initialization, checks if at least one draft exists already.
      */
     initialize() {
+        const editor = this.get('reviewRequestEditor');
         const reviewRequest = this.get('reviewRequest');
         const pendingReview = this.get('pendingReview');
         console.assert(!!reviewRequest, 'reviewRequest must be provided');
         console.assert(!!pendingReview, 'pendingReview must be provided');
 
+        this.listenTo(editor, 'change:hasDraft',
+                      this.#updateDraftModes);
         this.listenTo(reviewRequest.draft, 'saved destroyed',
                       this.#updateDraftModes);
         this.listenTo(pendingReview, 'saved destroyed',
