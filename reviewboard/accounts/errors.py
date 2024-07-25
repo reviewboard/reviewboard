@@ -1,3 +1,8 @@
+"""Errors for the accounts app."""
+
+from __future__ import annotations
+
+
 class UserQueryError(Exception):
     """An error for when a user query fails during user population.
 
@@ -7,13 +12,15 @@ class UserQueryError(Exception):
     reported back to the caller.
     """
 
-    def __init__(self, msg):
+    def __init__(
+        self,
+        msg: str,
+    ) -> None:
         """Initialize the error.
 
         Args:
-            msg (unicode):
+            msg (str):
                 The error message to display.
         """
-        super(Exception, self).__init__(
-            'Error while populating users from the auth backend: %s'
-            % msg)
+        super().__init__(
+            f'Error while populating users from the auth backend: {msg}')
