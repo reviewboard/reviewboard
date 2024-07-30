@@ -1,5 +1,6 @@
 export * from './views/inlineEditorView';
 export { CenteredElementManager } from './views/centeredElementManager';
+export { DialogView } from './views/dialogView';
 export { DnDUploader } from './views/dndUploaderView';
 export {
     FieldStateLabelThemes,

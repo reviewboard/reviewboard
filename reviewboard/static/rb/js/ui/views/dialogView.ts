@@ -1,5 +1,75 @@
 /**
  * Displays a modal dialog box with content and buttons.
+ */
+
+import {
+    type EventsHash,
+    type Result,
+    BaseView,
+    spina,
+} from '@beanbag/spina';
+
+
+/**
+ * Information on a button in the dialog.
+ *
+ * Version Added:
+ *     8.0
+ */
+export interface DialogButtonInfo {
+    /** The class to apply to the button element. */
+    class?: string;
+
+    /** Whether the button should have the "danger" class. */
+    danger?: boolean;
+
+    /** Whether the button is disabled. */
+    disabled?: boolean;
+
+    /** The ID to use for the button element. */
+    id: string;
+
+    /** The label for the button. */
+    label: string;
+
+    /**
+     * The handler to invoke when the button is clicked.
+     *
+     * If set to a function, that function will be called. If set to a string,
+     * it will resolve to a function with that name on the DialogView instance.
+     * If unset, the dialog will simply close without invoking any actions.
+     *
+     * The callback function can return ``false`` to prevent the dialog from
+     * being closed.
+     */
+    onClick?: string | JQuery.TypeEventHandler<HTMLElement, null, HTMLElement,
+                                               HTMLElement, 'click'>;
+
+    /** Whether the button is the primary action for the dialog. */
+    primary?: boolean;
+}
+
+
+/**
+ * Options for the DialogView.
+ *
+ * Version Added:
+ *     8.0
+ */
+export interface DialogViewOptions {
+    /** The body to show in the dialog. */
+    body?: Result<string>;
+
+    /** A list of buttons. */
+    buttons?: DialogButtonInfo[];
+
+    /** The title for the dialog. */
+    title?: Result<string>;
+}
+
+
+/**
+ * Displays a modal dialog box with content and buttons.
  *
  * The dialog box can have a title and a list of buttons. It can be shown
  * or hidden on demand.
@@ -13,24 +83,59 @@
  * Subclasses of DialogView can specify a default title, list of buttons,
  * and default options for modalBox. The title and buttons can be overridden
  * when constructing the view by passing them as options.
+ *
+ * Deprecated:
+ *     8.0:
+ *     This view has been deprecated in favor of the Dialog component from
+ *     @beanbag/ink.
  */
-RB.DialogView = Backbone.View.extend({
+@spina({
+    prototypeAttrs: ['title', 'body', 'buttons', 'defaultOptions'],
+})
+export class DialogView<
+    TModel extends (Backbone.Model | undefined) = undefined,
+    TElement extends Element = HTMLElement,
+    TExtraViewOptions extends DialogViewOptions = DialogViewOptions,
+> extends BaseView<TModel, TElement, TExtraViewOptions> {
     /** The default title to show for the dialog. */
-    title: null,
+    static title: Result<string> | null = null;
+    title: Result<string> | null;
 
     /** The default body to show in the dialog. */
-    body: null,
+    static body: Result<string> | null = null;
+    body: Result<string> | null;
 
     /** The default list of buttons to show for the dialog. */
-    buttons: [],
+    static buttons: DialogButtonInfo[] = [];
+    buttons: DialogButtonInfo[];
 
     /** Default options to pass to $.modalBox(). */
-    defaultOptions: {},
+    static defaultOptions: unknown = {};
+    defaultOptions: unknown;
 
     /** Events handled by the view. */
-    events: {
+    static events: EventsHash = {
         'submit form': '_onFormSubmit',
-    },
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The saved options for the view. */
+    options: DialogViewOptions;
+
+    /** Whether the dialog is currently visible. */
+    visible = false;
+
+    /** A mapping from button ID to the button element. */
+    $buttonsMap: Record<string, JQuery> = {};
+
+    /** A list of the button elements. */
+    $buttonsList: JQuery[];
+
+    /** The primary button, if one is specified. */
+    protected _$primaryButton: JQuery;
 
     /**
      * Initialize the view.
@@ -41,46 +146,15 @@ RB.DialogView = Backbone.View.extend({
      * the title on the class.
      *
      * Args:
-     *     options (object):
+     *     options (DialogViewOptions):
      *         Options for view construction.
-     *
-     * Option Args:
-     *     body (string or function, optional):
-     *         The body to show in the dialog.
-     *
-     *     buttons (Array of object):
-     *         A list of buttons. Each button may have the following keys:
-     *
-     *         danger (boolean, optional):
-     *             Whether the button performs a dangerous operation (such as
-     *             deleting user data).
-     *
-     *         disabled (boolean, optional):
-     *             Whether the button is disabled.
-     *
-     *         id (string, required):
-     *             The ID for the button.
-     *
-     *         label (string, required):
-     *             The label for the button.
-     *
-     *         onClick (function or string, optional):
-     *             The handler to invoke when the button is clicked. If set to
-     *             a function, that function will be called. If set to a
-     *             string, it will resolve to a function with that name on the
-     *             DialogView instance. If unset, the dialog will simply close
-     *             without invoking any actions.
-     *
-     *             The callback function can return ``false`` to prevent the
-     *             dialog from being closed.
-     *
-     *         primary (boolean, optional):
-     *             Whether the button is the primary action for the dialog.
-     *
-     *     title (string):
-     *         The title for the dialog.
      */
-    initialize(options={}) {
+    initialize(options: DialogViewOptions = {}) {
+        console.warn(dedent`
+            RB.DialogView is deprecated and will be removed in Review Board
+            9.0. Any code that uses it should be ported to use Ink.Dialog from
+            @beanbag/ink.`);
+
         this.options = options;
 
         if (options.title) {
@@ -94,31 +168,16 @@ RB.DialogView = Backbone.View.extend({
         if (options.buttons) {
             this.buttons = options.buttons;
         }
-
-        this.visible = false;
-    },
-
-    /**
-     * Render the content of the dialog.
-     *
-     * By default, this does nothing. Subclasses can override to render
-     * custom content.
-     *
-     * Note that this will be called every time the dialog is shown, not just
-     * when it's first constructed.
-     *
-     * Returns:
-     *     RB.DialogView:
-     *     This object, for chaining.
-     */
-    render() {
-        return this;
-    },
+    }
 
     /**
      * Show the dialog.
+     *
+     * Returns:
+     *     DialogView:
+     *     This object, for chaining.
      */
-    show() {
+    show(): this {
         if (!this.visible) {
             const body = _.result(this, 'body');
 
@@ -130,9 +189,9 @@ RB.DialogView = Backbone.View.extend({
             this.render();
 
             this.$el.modalBox(_.defaults({
-                title: _.result(this, 'title'),
                 buttons: this.$buttonsList,
                 destroy: () => this.visible = false,
+                title: _.result(this, 'title'),
             }, this.options, this.defaultOptions));
 
             this.$el.closest('.modalbox-inner')
@@ -140,12 +199,18 @@ RB.DialogView = Backbone.View.extend({
 
             this.visible = true;
         }
-    },
+
+        return this;
+    }
 
     /**
      * Hide the dialog.
+     *
+     * Returns:
+     *     DialogView:
+     *     This object, for chaining.
      */
-    hide() {
+    hide(): this {
         if (this.visible) {
             /*
              * The jQuery-UI widget can self-destruct in some cases depending
@@ -158,16 +223,23 @@ RB.DialogView = Backbone.View.extend({
 
             this.visible = false;
         }
-    },
+
+        return this;
+    }
 
     /**
      * Remove the dialog from the DOM.
+     *
+     * Returns:
+     *     DialogView:
+     *     This object, for chaining.
      */
-    remove() {
+    remove(): this {
         this.hide();
+        super.remove();
 
-        Backbone.View.prototype.remove.call(this);
-    },
+        return this;
+    }
 
     /**
      * Return a list of button elements for rendering.
@@ -175,13 +247,8 @@ RB.DialogView = Backbone.View.extend({
      * This will take the button list that was provided when constructing
      * the dialog and turn each into an element. The elements are also saved to
      * a map to allow child components to access the buttons.
-     *
-     * Returns:
-     *     Array of jQuery:
-     *     An array of button elements.
      */
     _makeButtons() {
-        this.$buttonsMap = {};
         this.$buttonsList = this.buttons.map(buttonInfo => {
             const buttonAttrs = {
                 id: buttonInfo.id,
@@ -202,10 +269,11 @@ RB.DialogView = Backbone.View.extend({
             }
 
             if (buttonInfo.onClick) {
-                buttonAttrs.onClick =
-                    _.isFunction(buttonInfo.onClick)
-                    ? buttonInfo.onClick
-                    : this[buttonInfo.onClick].bind(this);
+                if (typeof buttonInfo.onClick === 'function') {
+                    buttonAttrs.onClick = buttonInfo.onClick;
+                } else {
+                    buttonAttrs.onClick = this[buttonInfo.onClick].bind(this);
+                }
             }
 
             const $button = $(Ink.paintComponent(
@@ -221,7 +289,7 @@ RB.DialogView = Backbone.View.extend({
 
             return $button;
         });
-    },
+    }
 
     /**
      * Handle form submission events for the dialog.
@@ -233,7 +301,7 @@ RB.DialogView = Backbone.View.extend({
      *     e (Event):
      *         The event which triggered the callback.
      */
-    _onFormSubmit(e) {
+    _onFormSubmit(e: Event) {
         if (!$(e.target).attr('action')) {
             e.preventDefault();
             e.stopPropagation();
@@ -242,7 +310,7 @@ RB.DialogView = Backbone.View.extend({
                 this._$primaryButton[0].click();
             }
         }
-    },
+    }
 
     /**
      * Handle keydown events for the dialog.
@@ -251,12 +319,12 @@ RB.DialogView = Backbone.View.extend({
      *     e (Event):
      *         The event which triggered the callback.
      */
-    _onDialogKeyDown(e) {
-        if (e.which === $.ui.keyCode.ESCAPE) {
+    _onDialogKeyDown(e: KeyboardEvent) {
+        if (e.key === 'Escape') {
             e.stopPropagation();
             e.preventDefault();
 
             this.hide();
         }
-    },
-});
+    }
+}

@@ -1,13 +1,23 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    describe,
+    expect,
+    it,
+} from 'jasmine-core';
+
+import { DialogView } from 'reviewboard/ui';
+
+
 suite('rb/ui/views/DialogView', function() {
     describe('Buttons', function() {
         describe('Settings', function() {
             it('Default', function() {
-                const dialogView = new RB.DialogView({
+                const dialogView = new DialogView({
                     buttons: [
                         {
-                            label: 'Test',
                             id: 'testid',
-                        }
+                            label: 'Test',
+                        },
                     ],
                 });
                 dialogView._makeButtons();
@@ -24,11 +34,11 @@ suite('rb/ui/views/DialogView', function() {
             });
 
             it('Primary', function() {
-                const dialogView = new RB.DialogView({
+                const dialogView = new DialogView({
                     buttons: [
                         {
-                            label: 'Test',
                             id: 'testid',
+                            label: 'Test',
                             primary: true,
                         },
                     ],
@@ -47,12 +57,12 @@ suite('rb/ui/views/DialogView', function() {
             });
 
             it('Disabled', function() {
-                const dialogView = new RB.DialogView({
+                const dialogView = new DialogView({
                     buttons: [
                         {
-                            label: 'Test',
-                            id: 'testid',
                             disabled: true,
+                            id: 'testid',
+                            label: 'Test',
                         },
                     ],
                 });
@@ -70,12 +80,12 @@ suite('rb/ui/views/DialogView', function() {
             });
 
             it('Danger', function() {
-                const dialogView = new RB.DialogView({
+                const dialogView = new DialogView({
                     buttons: [
                         {
-                            label: 'Test',
-                            id: 'testid',
                             danger: true,
+                            id: 'testid',
+                            label: 'Test',
                         },
                     ],
                 });
@@ -97,11 +107,11 @@ suite('rb/ui/views/DialogView', function() {
             describe('Click', function() {
                 it('When function', function() {
                     const myFunc = jasmine.createSpy('cb');
-                    const dialogView = new RB.DialogView({
+                    const dialogView = new DialogView({
                         buttons: [
                             {
-                                label: 'Test',
                                 id: 'testid',
+                                label: 'Test',
                                 onClick: myFunc,
                             },
                         ],
@@ -118,11 +128,11 @@ suite('rb/ui/views/DialogView', function() {
                 });
 
                 it('When string on subclass', function() {
-                    const MyDialogView = RB.DialogView.extend({
+                    const MyDialogView = DialogView.extend({
                         buttons: [
                             {
-                                label: 'Test',
                                 id: 'testid',
+                                label: 'Test',
                                 onClick: '_onClicked',
                             },
                         ],
@@ -133,7 +143,7 @@ suite('rb/ui/views/DialogView', function() {
                     dialogView._makeButtons();
 
                     const buttons = dialogView.$buttonsMap;
-                    const button = buttons.testid;
+                    const button = buttons['testid'];
 
                     expect(Object.keys(buttons).length).toBe(1);
                     expect(button.text()).toBe('Test');
@@ -143,7 +153,7 @@ suite('rb/ui/views/DialogView', function() {
 
                 describe('Keydown', function() {
                     it('Esc key', function() {
-                        const dialogView = new RB.DialogView({
+                        const dialogView = new DialogView({
                             buttons: [{
                                 id: 'testid',
                                 label: 'Test',
@@ -159,8 +169,11 @@ suite('rb/ui/views/DialogView', function() {
                         expect(Object.keys(buttons).length).toBe(1);
                         expect(buttons.testid.text()).toBe('Test');
 
-                        dialogView.$el.trigger(
-                            $.Event('keydown', { which: $.ui.keyCode.ESCAPE }));
+                        const event = new KeyboardEvent('keydown', {
+                            bubbles: true,
+                            key: 'Escape',
+                        });
+                        dialogView.el.dispatchEvent(event);
 
                         expect(myFunc).toHaveBeenCalled();
 
@@ -171,19 +184,19 @@ suite('rb/ui/views/DialogView', function() {
                 describe('Submit', function() {
                     it('with primary button enabled', function() {
                         const myFunc = jasmine.createSpy('cb');
-                        const dialogView = new RB.DialogView({
-                            buttons: [{
-                                id: 'testid',
-                                label: 'Test',
-                                onClick: myFunc,
-                                disabled: false,
-                                primary: true,
-                            }],
+                        const dialogView = new DialogView({
                             body: _.template(dedent`
                                 <form>
                                  <input value="test">
                                 </form>
                             `),
+                            buttons: [{
+                                disabled: false,
+                                id: 'testid',
+                                label: 'Test',
+                                onClick: myFunc,
+                                primary: true,
+                            }],
                         });
 
                         dialogView.show();
@@ -205,19 +218,19 @@ suite('rb/ui/views/DialogView', function() {
 
                     it('with primary button disabled', function() {
                         const myFunc = jasmine.createSpy('cb');
-                        const dialogView = new RB.DialogView({
-                            buttons: [{
-                                id: 'testid',
-                                label: 'Test',
-                                onClick: myFunc,
-                                disabled: true,
-                                primary: true,
-                            }],
+                        const dialogView = new DialogView({
                             body: _.template(dedent`
                                 <form>
                                  <input value="test">
                                 </form>
                             `),
+                            buttons: [{
+                                disabled: true,
+                                id: 'testid',
+                                label: 'Test',
+                                onClick: myFunc,
+                                primary: true,
+                            }],
                         });
 
                         dialogView.show();
@@ -241,12 +254,12 @@ suite('rb/ui/views/DialogView', function() {
                         const myFunc1 = jasmine.createSpy('cb1');
                         const myFunc2 = jasmine.createSpy('cb2')
                             .and.returnValue(false);
-                        const dialogView = new RB.DialogView({
+                        const dialogView = new DialogView({
                             buttons: [{
+                                disabled: false,
                                 id: 'testid',
                                 label: 'Test',
                                 onClick: myFunc1,
-                                disabled: false,
                                 primary: true,
                             }],
                             body: _.template(dedent`
@@ -261,7 +274,7 @@ suite('rb/ui/views/DialogView', function() {
                         const buttons = dialogView.$buttonsMap;
                         const button = buttons.testid;
                         const form = dialogView.$el.find('form');
-                        form.submit(myFunc2);
+                        form.on('submit', myFunc2);
 
                         expect(Object.keys(buttons).length).toBe(1);
                         expect(button.text()).toBe('Test');
