@@ -207,7 +207,7 @@ class DevelopCommand(develop):
         # The approach taken is to generate a temporary requirements.txt file
         # and to use it to reference the Djblets editable path (if there is
         # one) and the *-requirements.txt files we care about.
-        project_dir = os.path.dirname(__file__)
+        project_dir = os.path.abspath(os.path.dirname(__file__))
         fd, deps_file = tempfile.mkstemp()
 
         with open(fd, 'w') as fp:
