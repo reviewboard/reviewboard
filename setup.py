@@ -5,12 +5,13 @@
 # A big thanks to Django project for some of the fixes used in here for
 # MacOS X and data files installation.
 
-import json
 import os
 import subprocess
 import sys
+import tempfile
 from distutils.command.install import INSTALL_SCHEMES
 from distutils.core import Command
+from importlib import import_module
 
 from setuptools import setup, find_packages
 from setuptools.command.develop import develop
@@ -174,13 +175,64 @@ class DevelopCommand(develop):
 
         # Install the dependencies using pip instead of easy_install. This
         # will use wheels instead of legacy eggs.
-        self._run_pip(['install', '--no-build-isolation', '-e', '.'])
-        self._run_pip(['install', '--no-build-isolation',
-                       '-r', 'dev-requirements.txt'])
+        #
+        # A couple important things to consider here:
+        #
+        # 1. pip will build in build-isolation mode by default, and we want
+        #    this in order to work around issues that can occur with projects
+        #    that install via source *and* use setuptools-scm to compute the
+        #    version (django-haystack being the notable one here).
+        #
+        # 2. We also want to be able to build against a local Djblets, which
+        #    provides build-time functionality we need. However,
+        #    build-isolation environments won't know about this. So we need
+        #    to re-install Djblets in that environment in editable mode.
+        #
+        #    This may be necessary with other modules later, so we keep this
+        #    somewhat generic.
+        #
+        # 3. For safety, we want to consider all this alongside any
+        #    development libraries, to minimize issues and speed up
+        #    installation.
+        #
+        # The approach taken is to generate a temporary requirements.txt file
+        # and to use it to reference the Djblets editable path (if there is
+        # one) and the *-requirements.txt files we care about.
+        project_dir = os.path.dirname(__file__)
+        fd, deps_file = tempfile.mkstemp()
 
-        if self.with_doc_deps:
-            self._run_pip(['install', '--no-build-isolation',
-                           '-r', 'doc-requirements.txt'])
+        with open(fd, 'w') as fp:
+            for mod_name in ('djblets',):
+                try:
+                    mod = import_module(mod_name)
+
+                    if not mod.__file__:
+                        continue
+
+                    mod_parent_dir = os.path.abspath(os.path.join(
+                        mod.__file__, '..', '..'))
+
+                    if (os.path.exists(os.path.join(mod_parent_dir,
+                                                    'pyproject.toml')) or
+                        os.path.exists(os.path.join(mod_parent_dir,
+                                                    'setup.py'))):
+                        fp.write('-e %s\n' % mod_parent_dir)
+                except ImportError:
+                    # Skip this. Let pip find it via PyPI.
+                    continue
+
+            fp.write('-e %s\n' % project_dir)
+            fp.write('-r %s\n' % os.path.join(project_dir,
+                                              'dev-requirements.txt'))
+
+            if self.with_doc_deps:
+                fp.write('-r %s\n' % os.path.join(project_dir,
+                                                  'doc-requirements.txt'))
+
+        try:
+            self._run_pip(['install', '-r', deps_file])
+        finally:
+            os.unlink(deps_file)
 
         if not self.no_npm:
             # Install node.js dependencies, needed for packaging.
