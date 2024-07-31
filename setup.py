@@ -5,6 +5,7 @@
 # A big thanks to Django project for some of the fixes used in here for
 # MacOS X and data files installation.
 
+import json
 import os
 import subprocess
 import sys
