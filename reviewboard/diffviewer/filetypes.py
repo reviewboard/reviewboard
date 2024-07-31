@@ -1,6 +1,41 @@
 import re
 
 
+#: Common extensions for source code header files.
+#:
+#: This is largely geared toward C-like languages.
+#:
+#: Version Added:
+#:     7.0.2
+HEADER_EXTENSIONS = {
+    'h',
+    'H',
+    'hh',
+    'hpp',
+    'hxx',
+    'h++',
+}
+
+
+#: Common extensions for source code implementation files.
+#:
+#: This is largely geared toward C-like languages.
+#:
+#: Version Added:
+#:     7.0.2
+IMPL_EXTENSIONS = {
+    'c',
+    'C',
+    'cc',
+    'cpp',
+    'cxx',
+    'c++',
+    'm',
+    'mm',
+    'M',
+}
+
+
 # A list of regular expressions for headers in the source code that we can
 # display in collapsed regions of diffs and diff fragments in reviews.
 HEADER_REGEXES = {

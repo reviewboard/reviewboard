@@ -5,6 +5,13 @@
 import { BaseView, spina } from '@beanbag/spina';
 
 import {
+    InlineEditorView,
+    RichTextInlineEditorView,
+} from 'reviewboard/ui';
+import {
+    type InlineEditorViewOptions,
+} from 'reviewboard/ui/views/inlineEditorView';
+import {
     type GetDraftFieldOptions,
     type ReviewRequestEditor,
     type SetDraftFieldOptions,
@@ -33,6 +40,17 @@ interface BaseFieldViewOptions {
 
 
 /**
+ * A type for the constructor of an inline editor.
+ *
+ * Version Added:
+ *     7.0.2
+ */
+export interface InlineEditorConstructor {
+    new(options: InlineEditorViewOptions): InlineEditorView;
+}
+
+
+/**
  * Base class for all field views.
  */
 @spina({
@@ -50,9 +68,11 @@ export class BaseFieldView extends BaseView<
      * The name of the property in the model for if this field is editable.
      */
     static editableProp = 'editable';
+    editableProp: string;
 
     /** Whether the contents of the field should be stored in extraData. */
     static useExtraData = true;
+    useExtraData: boolean;
 
     /**********************
      * Instance variables *
@@ -213,9 +233,11 @@ export class TextFieldView extends BaseFieldView {
      * This should be overridden by subclasses.
      */
     static autocomplete = null;
+    autocomplete: unknown;
 
     /** Whether the view is multi-line or single line. */
     static multiline = false;
+    multiline: boolean;
 
     /**
      * Whether edits should be triggered only by clicking on the icon.
@@ -224,6 +246,7 @@ export class TextFieldView extends BaseFieldView {
      * If this is false, clicks on the field itself will also trigger an edit.
      */
     static useEditIconOnly = false;
+    useEditIconOnly: boolean;
 
     /**********************
      * Instance variables *
@@ -233,7 +256,7 @@ export class TextFieldView extends BaseFieldView {
     allowRichText = false;
 
     /** The inline editor view. */
-    inlineEditorView: RB.InlineEditorView;
+    inlineEditorView: InlineEditorView;
 
     /** The field name for storing the text type. */
     jsonTextTypeFieldName: string;
@@ -277,10 +300,10 @@ export class TextFieldView extends BaseFieldView {
      *     function:
      *     The constructor for the inline editor class to instantiate.
      */
-    _getInlineEditorClass(): string {
+    _getInlineEditorClass(): InlineEditorConstructor {
         return (this.allowRichText
-                ? RB.RichTextInlineEditorView
-                : RB.InlineEditorView);
+                ? RichTextInlineEditorView
+                : InlineEditorView);
     }
 
     /**
@@ -294,7 +317,7 @@ export class TextFieldView extends BaseFieldView {
         const fieldName = _.result(this, 'fieldName');
         const EditorClass = this._getInlineEditorClass();
 
-        const inlineEditorOptions = {
+        const inlineEditorOptions: InlineEditorViewOptions = {
             deferEventSetup: this.autocomplete !== null,
             editIconClass: 'rb-icon rb-icon-edit',
             el: this.$el,

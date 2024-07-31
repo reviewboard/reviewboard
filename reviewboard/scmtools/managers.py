@@ -1,4 +1,9 @@
+"""Model managers for Repository and Tool."""
+
+from __future__ import annotations
+
 import logging
+from typing import Any, Optional, Sequence, TYPE_CHECKING, Union
 
 import importlib_metadata
 from django.db.models import Manager, Q
@@ -8,11 +13,17 @@ from housekeeping.functions import deprecate_non_keyword_only_args
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.site.models import LocalSite
 
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AnonymousUser, User
+
+    from reviewboard.scmtools.models import Repository, Tool
+    from reviewboard.site.models import AnyOrAllLocalSites
+
 
 logger = logging.getLogger(__name__)
 
 
-_TOOL_CACHE = {}
+_TOOL_CACHE: dict[Any, Tool] = {}
 
 
 class ToolQuerySet(QuerySet):
@@ -22,7 +33,7 @@ class ToolQuerySet(QuerySet):
     lookups of tools don't hit the database any more than necessary.
     """
 
-    def get(self, *args, **kwargs):
+    def get(self, *args, **kwargs) -> Tool:
         """Return a Tool registration from the database.
 
         If querying directly by ID, this will return a cached entry, if
@@ -51,7 +62,7 @@ class ToolQuerySet(QuerySet):
             reviewboard.scmtools.models.Tool.MultipleObjectsReturned:
                 Multiple Tools matching the query were found.
         """
-        pk = None
+        pk: Any = None
 
         # This is all pretty awful. We're not meant to reach into these
         # objects. However, we also don't really have another way of finding
@@ -93,7 +104,7 @@ class ToolQuerySet(QuerySet):
         return _TOOL_CACHE[pk]
 
 
-class ToolManager(Manager):
+class ToolManager(Manager['Tool']):
     """Manages Tool models.
 
     Any get() operations performed (directly or indirectly through a
@@ -108,7 +119,7 @@ class ToolManager(Manager):
 
     use_for_related_fields = True
 
-    def register_from_entrypoints(self):
+    def register_from_entrypoints(self) -> Sequence[Tool]:
         """Register tools from any package-provided Python Entrypoints.
 
         This will add any new tools that aren't already in the database.
@@ -118,7 +129,7 @@ class ToolManager(Manager):
             The list of new tools added to the database.
         """
         registered_tools = set(self.values_list('class_name', flat=True))
-        new_tools = []
+        new_tools: list[Tool] = []
 
         eps = importlib_metadata.entry_points(group='reviewboard.scmtools')
 
@@ -146,7 +157,7 @@ class ToolManager(Manager):
 
         return new_tools
 
-    def get_queryset(self):
+    def get_queryset(self) -> ToolQuerySet:
         """Return a QuerySet for Tool models.
 
         Returns:
@@ -155,7 +166,7 @@ class ToolManager(Manager):
         """
         return ToolQuerySet(self.model, using=self.db)
 
-    def clear_tool_cache(self):
+    def clear_tool_cache(self) -> None:
         """Clear the internal cache of Tools.
 
         This is intended for unit tests, and won't be called during production.
@@ -163,17 +174,18 @@ class ToolManager(Manager):
         _TOOL_CACHE.clear()
 
 
-class RepositoryManager(Manager):
+class RepositoryManager(Manager['Repository']):
     """A manager for Repository models."""
 
     @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
     def accessible(
         self,
-        user,
+        user: Union[AnonymousUser, User],
         *,
-        visible_only=True,
-        local_site=None,
-        distinct=True):
+        visible_only: bool = True,
+        local_site: AnyOrAllLocalSites = None,
+        distinct: bool = True,
+    ) -> QuerySet[Repository]:
         """Return a queryset for repositories accessible by the given user.
 
         For superusers, all public and private repositories will be returned.
@@ -259,7 +271,7 @@ class RepositoryManager(Manager):
 
         return queryset
 
-    def accessible_ids(self, *args, **kwargs):
+    def accessible_ids(self, *args, **kwargs) -> Sequence[int]:
         """Return IDs of repositories that are accessible by the given user.
 
         This wraps :py:meth:`accessible` and takes the same arguments
@@ -291,7 +303,11 @@ class RepositoryManager(Manager):
             .values_list('pk', flat=True)
         )))
 
-    def get_best_match(self, repo_identifier, local_site=None):
+    def get_best_match(
+        self,
+        repo_identifier: str,
+        local_site: Optional[LocalSite] = None,
+    ) -> Repository:
         """Return a repository best matching the provided identifier.
 
         This is used when a consumer provides a repository identifier of
@@ -324,7 +340,7 @@ class RepositoryManager(Manager):
            on the resulting repository.
 
         Args:
-            repo_identifier (unicode):
+            repo_identifier (str):
                 An identifier used to look up a repository.
 
             local_site (reviewboard.site.models.LocalSite, optional):
@@ -408,10 +424,23 @@ class RepositoryManager(Manager):
         # We couldn't find a match. It's up to the caller to be more specific.
         raise self.model.MultipleObjectsReturned
 
-    def can_create(self, user, local_site=None):
+    def can_create(
+        self,
+        user: Union[AnonymousUser, User],
+        local_site: Optional[LocalSite] = None,
+    ) -> bool:
+        """Return whether a user can add a repository.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check for repository creation permissions.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The optional Local Site that the repository would be added to.
+        """
         return user.has_perm('scmtools.add_repository', local_site)
 
-    def encrypt_plain_text_passwords(self):
+    def encrypt_plain_text_passwords(self) -> None:
         """Encrypts any stored plain-text passwords."""
         qs = self.exclude(
             Q(encrypted_password=None) |

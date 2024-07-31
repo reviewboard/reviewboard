@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import itertools
 import logging
-from datetime import datetime
-from typing import Optional, TYPE_CHECKING, cast
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, cast
 
 from django.db.models import Q
-from django.http import HttpRequest, HttpResponse
 from django.utils.translation import gettext
 from typing_extensions import NotRequired, TypeAlias, TypedDict
 
@@ -28,12 +26,16 @@ from reviewboard.reviews.models import (Review,
                                         ReviewRequestDraft)
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
+    from django.http import HttpRequest, HttpResponse
+
     from reviewboard.attachments.models import FileAttachment
     from reviewboard.reviews.models import Comment, Screenshot
     from reviewboard.reviews.ui.base import SerializedCommentBlocks
 
-    CommentsDict: TypeAlias = dict[tuple[int, Optional[int], Optional[int]],
-                                   list[Comment]]
+    CommentsDict: TypeAlias = Dict[Tuple[int, Optional[int], Optional[int]],
+                                   List[Comment]]
 
 
 logger = logging.getLogger(__name__)
@@ -400,6 +402,11 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         # Get the list of diffsets. We only want to calculate this once.
         diffsets = review_request.get_diffsets()
 
+        # Get this before we add the draft diffset to the list. Otherwise the
+        # timestamp won't be correct.
+        last_activity_time = review_request.get_last_activity_info(
+            diffsets)['timestamp']
+
         if draft_diffset:
             diffsets.append(draft_diffset)
 
@@ -417,9 +424,6 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         for ds in diffsets:
             for filediff in ds.files.all():
                 filediffs_by_id[filediff.pk] = filediff
-
-        last_activity_time = review_request.get_last_activity_info(
-            diffsets)['timestamp']
 
         review_request_details = draft or review_request
 

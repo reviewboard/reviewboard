@@ -6,7 +6,8 @@ import logging
 import uuid
 from importlib import import_module
 from time import time
-from typing import ClassVar
+from typing import (Any, ClassVar, Final, Mapping, Optional, Sequence,
+                    TYPE_CHECKING, Union, cast)
 from urllib.parse import quote
 
 from django.contrib.auth.models import User
@@ -33,6 +34,14 @@ from reviewboard.scmtools.signals import (checked_file_exists,
                                           checking_file_exists,
                                           fetched_file, fetching_file)
 from reviewboard.site.models import LocalSite
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AnonymousUser
+    from django.http import HttpRequest
+    from djblets.util.typing import KwargsDict, StrPromise
+
+    from reviewboard.scmtools.core import Branch, Commit, SCMTool
+    from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
 logger = logging.getLogger(__name__)
@@ -69,15 +78,15 @@ class Tool(models.Model):
         lambda x: x.scmtool_class.field_help_text)
 
     @property
-    def scmtool_id(self):
+    def scmtool_id(self) -> str:
         """The unique ID for the SCMTool.
 
         Type:
-            unicode
+            str
         """
         return self.scmtool_class.scmtool_id
 
-    def get_scmtool_class(self):
+    def get_scmtool_class(self) -> type[SCMTool]:
         """Return the configured SCMTool class.
 
         Returns:
@@ -110,11 +119,11 @@ class Tool(models.Model):
         return self._scmtool_class
     scmtool_class = property(get_scmtool_class)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return the name of the tool.
 
         Returns:
-            unicode:
+            str:
             The name of the tool.
         """
         return self.name
@@ -149,38 +158,40 @@ class Repository(models.Model):
     #: The amount of time branches are cached, in seconds.
     #:
     #: Branches are cached for 5 minutes.
-    BRANCHES_CACHE_PERIOD = 60 * 5
+    BRANCHES_CACHE_PERIOD: Final[int] = 60 * 5
 
     #: The short period of time to cache commit information, in seconds.
     #:
     #: Some commit information (such as retrieving the latest commits in a
     #: repository) should result in information cached only for a short
     #: period of time. This is set to cache for 5 minutes.
-    COMMITS_CACHE_PERIOD_SHORT = 60 * 5
+    COMMITS_CACHE_PERIOD_SHORT: Final[int] = 60 * 5
 
     #: The long period of time to cache commit information, in seconds.
     #:
     #: Commit information that is unlikely to change should be kept around
     #: for a longer period of time. This is set to cache for 1 day.
-    COMMITS_CACHE_PERIOD_LONG = 60 * 60 * 24  # 1 day
+    COMMITS_CACHE_PERIOD_LONG: Final[int] = 60 * 60 * 24  # 1 day
 
     #: The fallback encoding for text-based files in repositories.
     #:
     #: This is used if the file isn't valid UTF-8, and if the repository
     #: doesn't specify a list of encodings.
-    FALLBACK_ENCODING = 'iso-8859-15'
+    FALLBACK_ENCODING: Final[str] = 'iso-8859-15'
 
     #: The error message used to indicate that a repository name conflicts.
-    NAME_CONFLICT_ERROR = _('A repository with this name already exists')
+    NAME_CONFLICT_ERROR: Final[StrPromise] = \
+        _('A repository with this name already exists')
 
     #: The error message used to indicate that a repository path conflicts.
-    PATH_CONFLICT_ERROR = _('A repository with this path already exists')
+    PATH_CONFLICT_ERROR: Final[StrPromise] = \
+        _('A repository with this path already exists')
 
     #: The prefix used to indicate an encrypted password.
     #:
     #: This is used to indicate whether a stored password is in encrypted
     #: form or plain text form.
-    ENCRYPTED_PASSWORD_PREFIX = '\t'
+    ENCRYPTED_PASSWORD_PREFIX: Final[str] = '\t'
 
     name = models.CharField(_('Name'), max_length=255)
     path = models.CharField(_('Path'), max_length=255)
@@ -273,8 +284,18 @@ class Repository(models.Model):
 
     objects: ClassVar[RepositoryManager] = RepositoryManager()
 
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The cached SCMTool class backing this repository.
+    #:
+    #: This is only present once :py:attr:`scmtool_class` has been invoked
+    #: successfully.
+    _scmtool_class: type[SCMTool]
+
     @property
-    def password(self):
+    def password(self) -> Optional[str]:
         """The password for the repository.
 
         If a password is stored and encrypted, it will be decrypted and
@@ -283,7 +304,7 @@ class Repository(models.Model):
         If the stored password is in plain-text, then it will be encrypted,
         stored in the database, and returned.
         """
-        password = self.encrypted_password
+        password: Optional[str] = self.encrypted_password
 
         # NOTE: Due to a bug in 2.0.9, it was possible to get a string of
         #       "\tNone", indicating no password. We have to check for this.
@@ -304,12 +325,19 @@ class Repository(models.Model):
         return password
 
     @password.setter
-    def password(self, value):
+    def password(
+        self,
+        value: Optional[str],
+    ) -> None:
         """Set the password for the repository.
 
         The password will be stored as an encrypted value, prefixed with a
         tab character in order to differentiate between legacy plain-text
         passwords.
+
+        Args:
+            password (str):
+                The new password to set.
         """
         if value:
             value = '%s%s' % (self.ENCRYPTED_PASSWORD_PREFIX,
@@ -320,7 +348,7 @@ class Repository(models.Model):
         self.encrypted_password = value
 
     @property
-    def scmtool_class(self):
+    def scmtool_class(self) -> Optional[type[SCMTool]]:
         """The SCMTool subclass used for this repository.
 
         Type:
@@ -368,7 +396,7 @@ class Repository(models.Model):
             % (scmtool_id or self.tool.name))
 
     @cached_property
-    def hosting_service(self):
+    def hosting_service(self) -> Optional[BaseHostingService]:
         """The hosting service providing this repository.
 
         This will be ``None`` if this is a standalone repository.
@@ -390,7 +418,7 @@ class Repository(models.Model):
         return None
 
     @cached_property
-    def bug_tracker_service(self):
+    def bug_tracker_service(self) -> Optional[BaseHostingService]:
         """The selected bug tracker service for the repository.
 
         This will be ``None`` if this repository is not associated with a bug
@@ -411,6 +439,7 @@ class Repository(models.Model):
         if bug_tracker_type:
             bug_tracker_cls = \
                 hosting_service_registry.get_hosting_service(bug_tracker_type)
+            assert bug_tracker_cls is not None
 
             # TODO: we need to figure out some way of storing a second
             # hosting service account for bug trackers.
@@ -419,7 +448,7 @@ class Repository(models.Model):
         return None
 
     @property
-    def supports_post_commit(self):
+    def supports_post_commit(self) -> bool:
         """Whether or not this repository supports post-commit creation.
 
         If this is ``True``, the :py:meth:`get_branches` and
@@ -441,19 +470,25 @@ class Repository(models.Model):
         if hosting_service:
             return hosting_service.supports_post_commit
         else:
-            return self.scmtool_class.supports_post_commit
+            scmtool_class = self.scmtool_class
+            assert scmtool_class is not None
+
+            return scmtool_class.supports_post_commit
 
     @property
-    def supports_pending_changesets(self):
+    def supports_pending_changesets(self) -> bool:
         """Whether this repository supports server-aware pending changesets.
 
         Type:
             bool
         """
-        return self.scmtool_class.supports_pending_changesets
+        scmtool_class = self.scmtool_class
+        assert scmtool_class is not None
+
+        return scmtool_class.supports_pending_changesets
 
     @cached_property
-    def diffs_use_absolute_paths(self):
+    def diffs_use_absolute_paths(self) -> bool:
         """Whether or not diffs for this repository contain absolute paths.
 
         Some types of source code management systems generate diffs that
@@ -470,6 +505,7 @@ class Repository(models.Model):
         # all the information we need on the class. If not, we might have to
         # instantiate it, but do this as a last resort.
         scmtool_cls = self.scmtool_class
+        assert scmtool_cls is not None
 
         if isinstance(scmtool_cls.diffs_use_absolute_paths, bool):
             return scmtool_cls.diffs_use_absolute_paths
@@ -479,7 +515,7 @@ class Repository(models.Model):
         else:
             return False
 
-    def get_scmtool(self):
+    def get_scmtool(self) -> SCMTool:
         """Return an instance of the SCMTool for this repository.
 
         Each call will construct a brand new instance. The returned value
@@ -489,9 +525,12 @@ class Repository(models.Model):
             reviewboard.scmtools.core.SCMTool:
             A new instance of the SCMTool for this repository.
         """
-        return self.scmtool_class(self)
+        scmtool_class = self.scmtool_class
+        assert scmtool_class is not None
 
-    def get_credentials(self):
+        return scmtool_class(self)
+
+    def get_credentials(self) -> Mapping[str, Any]:
         """Return the credentials for this repository.
 
         This returns a dictionary with ``username`` and ``password`` keys.
@@ -506,17 +545,21 @@ class Repository(models.Model):
         """
         username = self.username
         password = self.password
+        hosting_account = self.hosting_account
 
-        if self.hosting_account and self.hosting_account.service:
-            username = username or self.hosting_account.username
-            password = password or self.hosting_account.service.get_password()
+        if hosting_account and hosting_account.service:
+            username = username or hosting_account.username
+            password = password or hosting_account.service.get_password()
 
         return {
             'username': username,
             'password': password,
         }
 
-    def get_or_create_hooks_uuid(self, max_attempts=20):
+    def get_or_create_hooks_uuid(
+        self,
+        max_attempts: int = 20,
+    ) -> str:
         """Return a hooks UUID, creating one if necessary.
 
         A hooks UUID is used for creating unique incoming webhook URLs,
@@ -533,7 +576,7 @@ class Repository(models.Model):
                 giving up.
 
         Returns:
-            unicode:
+            str:
             The resulting UUID.
 
         Raises:
@@ -560,7 +603,7 @@ class Repository(models.Model):
 
         return self.hooks_uuid
 
-    def get_encoding_list(self):
+    def get_encoding_list(self) -> Sequence[str]:
         """Return a list of candidate text encodings for files.
 
         This will return a list based on a comma-separated list of encodings
@@ -568,10 +611,10 @@ class Repository(models.Model):
         of ``iso-8859-15`` will be used.
 
         Returns:
-            list of unicode:
+            list of str:
             The list of text encodings to try for files in the repository.
         """
-        encodings = []
+        encodings: list[str] = []
 
         for e in self.encoding.split(','):
             e = e.strip()
@@ -581,8 +624,14 @@ class Repository(models.Model):
 
         return encodings or [self.FALLBACK_ENCODING]
 
-    def get_file(self, path, revision, base_commit_id=None, request=None,
-                 context=None):
+    def get_file(
+        self,
+        path: str,
+        revision: str,
+        base_commit_id: Optional[str] = None,
+        request: Optional[HttpRequest] = None,
+        context: Optional[FileLookupContext] = None,
+    ) -> bytes:
         """Return a file from the repository.
 
         This will attempt to retrieve the file from the repository. If the
@@ -595,13 +644,13 @@ class Repository(models.Model):
         :py:data:`~reviewboard.scmtools.signals.fetched_file` signal after.
 
         Args:
-            path (unicode):
+            path (str):
                 The path to the file in the repository.
 
-            revision (unicode):
+            revision (str):
                 The revision of the file to retrieve.
 
-            base_commit_id (unicode, optional):
+            base_commit_id (str, optional):
                 The ID of the commit containing the revision of the file
                 to retrieve. This is required for some types of repositories
                 where the revision of a file and the ID of a commit differ.
@@ -670,8 +719,14 @@ class Repository(models.Model):
             ],
             large_data=True)[0]
 
-    def get_file_exists(self, path, revision, base_commit_id=None,
-                        request=None, context=None):
+    def get_file_exists(
+        self,
+        path: str,
+        revision: str,
+        base_commit_id: Optional[str] = None,
+        request: Optional[HttpRequest] = None,
+        context: Optional[FileLookupContext] = None,
+    ) -> bool:
         """Return whether or not a file exists in the repository.
 
         If the repository is backed by a hosting service, this will go
@@ -688,13 +743,13 @@ class Repository(models.Model):
         after.
 
         Args:
-            path (unicode):
+            path (str):
                 The path to the file in the repository.
 
-            revision (unicode);
+            revision (str);
                 The revision of the file to check.
 
-            base_commit_id (unicode, optional):
+            base_commit_id (str, optional):
                 The ID of the commit containing the revision of the file
                 to check. This is required for some types of repositories
                 where the revision of a file and the ID of a commit differ.
@@ -762,7 +817,7 @@ class Repository(models.Model):
 
         return exists
 
-    def get_branches(self):
+    def get_branches(self) -> Sequence[Branch]:
         """Return a list of all branches on the repository.
 
         This will fetch a list of all known branches for use in the API and
@@ -784,19 +839,23 @@ class Repository(models.Model):
             NotImplementedError:
                 Branch retrieval is not available for this type of repository.
         """
-        hosting_service = self.hosting_service
+        def _get_branches() -> Sequence[Branch]:
+            hosting_service = self.hosting_service
 
-        cache_key = make_cache_key('repository-branches:%s' % self.pk)
+            if hosting_service:
+                return hosting_service.get_branches(self)
+            else:
+                return self.get_scmtool().get_branches()
 
-        if hosting_service:
-            branches_callable = lambda: hosting_service.get_branches(self)
-        else:
-            branches_callable = self.get_scmtool().get_branches
+        cache_key = make_cache_key(f'repository-branches:{self.pk}')
 
-        return cache_memoize(cache_key, branches_callable,
-                             self.BRANCHES_CACHE_PERIOD)
+        return cache_memoize(cache_key, _get_branches,
+                             expiration=self.BRANCHES_CACHE_PERIOD)
 
-    def get_commit_cache_key(self, commit_id):
+    def get_commit_cache_key(
+        self,
+        commit_id: str,
+    ) -> str:
         """Return the cache key used for a commit ID.
 
         The resulting cache key is used to cache information about a commit
@@ -804,16 +863,20 @@ class Repository(models.Model):
         be used to delete information already in cache.
 
         Args:
-            commit_id (unicode):
+            commit_id (str):
                 The ID of the commit to generate a cache key for.
 
         Returns:
-            unicode:
+            str:
             The resulting cache key.
         """
-        return 'repository-commit:%s:%s' % (self.pk, commit_id)
+        return f'repository-commit:{self.pk}:{commit_id}'
 
-    def get_commits(self, branch=None, start=None):
+    def get_commits(
+        self,
+        branch: Optional[str] = None,
+        start: Optional[str] = None,
+    ) -> Sequence[Commit]:
         """Return a list of commits.
 
         This will fetch a batch of commits from the repository for use in the
@@ -830,11 +893,11 @@ class Repository(models.Model):
         in order to paginate through the history of commits in the repository.
 
         Args:
-            branch (unicode, optional):
+            branch (str, optional):
                 The branch to limit commits to. This may not be supported by
                 all repositories.
 
-            start (unicode, optional):
+            start (str, optional):
                 The commit to start at. If not provided, this will fetch the
                 first commit in the repository.
 
@@ -853,19 +916,18 @@ class Repository(models.Model):
             NotImplementedError:
                 Commits retrieval is not available for this type of repository.
         """
-        hosting_service = self.hosting_service
+        def _get_commits() -> Sequence[Commit]:
+            hosting_service = self.hosting_service
 
-        commits_kwargs = {
-            'branch': branch,
-            'start': start,
-        }
+            commits_kwargs: KwargsDict = {
+                'branch': branch,
+                'start': start,
+            }
 
-        if hosting_service:
-            commits_callable = \
-                lambda: hosting_service.get_commits(self, **commits_kwargs)
-        else:
-            commits_callable = \
-                lambda: self.get_scmtool().get_commits(**commits_kwargs)
+            if hosting_service:
+                return hosting_service.get_commits(self, **commits_kwargs)
+            else:
+                return self.get_scmtool().get_commits(**commits_kwargs)
 
         # We cache both the entire list for 'start', as well as each individual
         # commit. This allows us to reduce API load when people are looking at
@@ -877,22 +939,27 @@ class Repository(models.Model):
         else:
             cache_period = self.COMMITS_CACHE_PERIOD_SHORT
 
-        cache_key = make_cache_key('repository-commits:%s:%s:%s'
-                                   % (self.pk, branch, start))
-        commits = cache_memoize(cache_key, commits_callable,
-                                cache_period)
+        cache_key = make_cache_key(
+            f'repository-commits:{self.pk}:{branch}:{start}')
+        commits = cache_memoize(cache_key, _get_commits,
+                                expiration=cache_period)
 
         for commit in commits:
+            assert commit.id is not None
+
             cache.set(self.get_commit_cache_key(commit.id),
                       commit, self.COMMITS_CACHE_PERIOD_LONG)
 
         return commits
 
-    def get_change(self, revision):
+    def get_change(
+        self,
+        revision: str,
+    ) -> Commit:
         """Return an individual change/commit in the repository.
 
         Args:
-            revision (unicode):
+            revision (str):
                 The commit ID or revision to retrieve.
 
         Returns:
@@ -917,7 +984,12 @@ class Repository(models.Model):
         else:
             return self.get_scmtool().get_change(revision)
 
-    def normalize_patch(self, patch, filename, revision):
+    def normalize_patch(
+        self,
+        patch: bytes,
+        filename: str,
+        revision: str,
+    ) -> bytes:
         """Normalize a diff/patch file before it's applied.
 
         This can be used to take an uploaded diff file and modify it so that
@@ -931,10 +1003,10 @@ class Repository(models.Model):
             patch (bytes):
                 The diff/patch file to normalize.
 
-            filename (unicode):
+            filename (str):
                 The name of the file being changed in the diff.
 
-            revision (unicode):
+            revision (str):
                 The revision of the file being changed in the diff.
 
         Returns:
@@ -957,7 +1029,10 @@ class Repository(models.Model):
                                                       filename=filename,
                                                       revision=revision)
 
-    def is_accessible_by(self, user):
+    def is_accessible_by(
+        self,
+        user: Union[AnonymousUser, User],
+    ) -> bool:
         """Return whether or not the user has access to the repository.
 
         The repository is accessibly by the user if it is public or
@@ -976,13 +1051,17 @@ class Repository(models.Model):
         if self.local_site and not self.local_site.is_accessible_by(user):
             return False
 
-        return (self.public or
-                user.is_superuser or
-                (user.is_authenticated and
-                 (self.review_groups.filter(users__pk=user.pk).exists() or
-                  self.users.filter(pk=user.pk).exists())))
+        if self.public or user.is_superuser:
+            return True
 
-    def is_mutable_by(self, user):
+        return (user.is_authenticated and
+                (self.review_groups.filter(users__pk=user.pk).exists() or
+                 self.users.filter(pk=user.pk).exists()))
+
+    def is_mutable_by(
+        self,
+        user: Union[AnonymousUser, User],
+    ) -> bool:
         """Return whether or not the user can modify or delete the repository.
 
         The repository is mutable by the user if the user is an administrator
@@ -1000,7 +1079,10 @@ class Repository(models.Model):
         """
         return user.has_perm('scmtools.change_repository', self.local_site)
 
-    def archive(self, save=True):
+    def archive(
+        self,
+        save: bool = True,
+    ) -> None:
         """Archive a repository.
 
         The repository won't appear in any public lists of repositories,
@@ -1017,7 +1099,10 @@ class Repository(models.Model):
         # This should be sufficiently unlikely to create duplicates. time()
         # will use up a max of 8 characters, so we slice the name down to
         # make the result fit in 64 characters
-        max_name_len = self._meta.get_field('name').max_length
+        name_field = cast(models.CharField, self._meta.get_field('name'))
+        max_name_len = name_field.max_length
+        assert max_name_len is not None
+
         encoded_time = '%x' % int(time())
         reserved_len = len('ar::') + len(encoded_time)
 
@@ -1031,7 +1116,7 @@ class Repository(models.Model):
             self.save(update_fields=('name', 'archived', 'public',
                                      'archived_timestamp'))
 
-    def save(self, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         """Save the repository.
 
         This will perform any data normalization needed, and then save the
@@ -1046,9 +1131,9 @@ class Repository(models.Model):
         if self.hooks_uuid == '':
             self.hooks_uuid = None
 
-        return super(Repository, self).save(**kwargs)
+        return super().save(*args, **kwargs)
 
-    def clean(self):
+    def clean(self) -> None:
         """Clean method for checking null unique_together constraints.
 
         Django has a bug where unique_together constraints for foreign keys
@@ -1061,7 +1146,7 @@ class Repository(models.Model):
                 Validation of the model's data failed. Details are in the
                 exception.
         """
-        super(Repository, self).clean()
+        super().clean()
 
         if self.local_site is None:
             existing_repos = (
@@ -1073,7 +1158,7 @@ class Repository(models.Model):
                 .values('name', 'path')
             )
 
-            errors = {}
+            errors: dict[str, list[ValidationError]] = {}
 
             for repo_info in existing_repos:
                 if repo_info['name'] == self.name:
@@ -1091,23 +1176,29 @@ class Repository(models.Model):
             if errors:
                 raise ValidationError(errors)
 
-    def _make_file_cache_key(self, path, revision, base_commit_id):
+    def _make_file_cache_key(
+        self,
+        *,
+        path: str,
+        revision: str,
+        base_commit_id: Optional[str],
+    ) -> str:
         """Return a cache key for fetched files.
 
         Args:
-            path (unicode):
+            path (str):
                 The path to the file in the repository.
 
-            revision (unicode):
+            revision (str):
                 The revision of the file.
 
-            base_commit_id (unicode):
+            base_commit_id (str):
                 The ID of the commit containing the revision of the file.
                 This is required for some types of repositories where the
                 revision of a file and the ID of a commit differ.
 
         Returns:
-            unicode:
+            str:
             A cache key representing this file.
         """
         return 'file:%s:%s:%s:%s:%s' % (
@@ -1117,23 +1208,29 @@ class Repository(models.Model):
             quote(base_commit_id or ''),
             quote(self.raw_file_url or ''))
 
-    def _make_file_exists_cache_key(self, path, revision, base_commit_id):
+    def _make_file_exists_cache_key(
+        self,
+        *,
+        path: str,
+        revision: str,
+        base_commit_id: Optional[str],
+    ) -> str:
         """Makes a cache key for file existence checks.
 
         Args:
-            path (unicode):
+            path (str):
                 The path to the file in the repository.
 
-            revision (unicode);
+            revision (str);
                 The revision of the file to check.
 
-            base_commit_id (unicode, optional):
+            base_commit_id (str, optional):
                 The ID of the commit containing the revision of the file
                 to check. This is required for some types of repositories
                 where the revision of a file and the ID of a commit differ.
 
         Returns:
-            unicode:
+            str:
             A cache key representing this file check.
         """
         return 'file-exists:%s:%s:%s:%s:%s' % (
@@ -1143,7 +1240,13 @@ class Repository(models.Model):
             quote(base_commit_id or ''),
             quote(self.raw_file_url or ''))
 
-    def _get_file_uncached(self, path, revision, context):
+    def _get_file_uncached(
+        self,
+        *,
+        path: str,
+        revision: str,
+        context: FileLookupContext
+    ) -> bytes:
         """Return a file from the repository, bypassing cache.
 
         This is called internally by :py:meth:`get_file` if the file isn't
@@ -1155,10 +1258,10 @@ class Repository(models.Model):
         :py:data:`~reviewboard.scmtools.signals.fetched_file` signal after.
 
         Args:
-            path (unicode):
+            path (str):
                 The path to the file in the repository.
 
-            revision (unicode):
+            revision (str):
                 The revision of the file to retrieve.
 
             context (reviewboard.scmtools.core.FileLookupContext):
@@ -1229,7 +1332,13 @@ class Repository(models.Model):
 
         return data
 
-    def _get_file_exists_uncached(self, path, revision, context):
+    def _get_file_exists_uncached(
+        self,
+        *,
+        path: str,
+        revision: str,
+        context: FileLookupContext,
+    ) -> bool:
         """Check for file existence, bypassing cache.
 
         This is called internally by :py:meth:`get_file_exists` if the file
@@ -1245,10 +1354,10 @@ class Repository(models.Model):
         after.
 
         Args:
-            path (unicode):
+            path (str):
                 The path to the file in the repository.
 
-            revision (unicode):
+            revision (str):
                 The revision of the file to check.
 
             context (reviewboard.scmtools.core.FileLookupContext):
@@ -1311,7 +1420,7 @@ class Repository(models.Model):
 
         return exists
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return a string representation of the repository.
 
         This uses the repository's name as the string representation. However,
@@ -1319,7 +1428,7 @@ class Repository(models.Model):
         name, as future versions may return a different value.
 
         Returns:
-            unicode:
+            str:
             The repository name.
         """
         return self.name

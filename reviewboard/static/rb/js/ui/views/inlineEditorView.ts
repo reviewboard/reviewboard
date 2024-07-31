@@ -9,7 +9,7 @@ import {
 } from './textEditorView';
 
 
-interface InlineEditorViewOptions {
+export interface InlineEditorViewOptions {
     /** The duration of animated transitions, in milliseconds. */
     animationSpeedMS: number;
 
@@ -70,13 +70,13 @@ interface InlineEditorViewOptions {
      * After the value is saved, this function can transform it for display
      * into the HTML element.
      */
-    formatResult: (unknown) => string;
+    formatResult: (value: unknown) => string;
 
     /** The class to add to the form's DOM element. */
     formClass: string;
 
     /** A function to retrieve the field value. */
-    getFieldValue: (InlineEditorView) => unknown;
+    getFieldValue: (view: InlineEditorView) => unknown;
 
     /**
      * Whether the field has a "raw value".
@@ -98,7 +98,7 @@ interface InlineEditorViewOptions {
     hasShortButtons: boolean;
 
     /** A function to calculate whether the editor value is dirty. */
-    isFieldDirty: (InlineEditorView, unknown) => boolean;
+    isFieldDirty: (view: InlineEditorView, value: unknown) => boolean;
 
     /**
      * Whether to attempt to match the editor height to the replaced element.
@@ -127,7 +127,7 @@ interface InlineEditorViewOptions {
     rawValue: unknown;
 
     /** A function to set the field value. */
-    setFieldValue: (InlineEditorView, unknown) => void;
+    setFieldValue: (view: InlineEditorView, value: unknown) => void;
 
     /** Whether to show OK/Cancel buttons. */
     showButtons: boolean;
@@ -236,19 +236,22 @@ export class InlineEditorView<
         showRequiredFlag: false,
         startOpen: false,
     };
+    defaultOptions: Partial<InlineEditorViewOptions>;
 
     /**********************
      * Instance variables *
      **********************/
 
+    /** The save/cancel buttons. */
     $buttons: JQuery;
 
-    /**
-     * The field used to edit the caption.
-     */
+    /** The field used to edit the value. */
     $field: JQuery;
 
+    /** The saved options for the editor. */
     options: TExtraViewOptions;
+
+    /** The edit icon. */
     _$editIcon: JQuery;
 
     /**
@@ -259,11 +262,22 @@ export class InlineEditorView<
      */
     _$fieldWrapper: JQuery;
 
+    /** The form element */
     _$form: JQuery;
+
+    /** Whether the editor is dirty */
     _dirty = false;
+
+    /** The dirty calculation timeout ID. */
     _dirtyCalcTimeout: number = null;
+
+    /** Whether the editor is currently open. */
     _editing = false;
+
+    /** The initial value of the editor. */
     _initialValue: unknown = null;
+
+    /** Whether the editor uses a textarea. */
     _isTextArea: boolean;
 
     /**
@@ -371,7 +385,7 @@ export class InlineEditorView<
                     'tabindex': 0,
                     'title': editText,
                 })
-                .click(e => {
+                .on('click', e => {
                     e.preventDefault();
                     e.stopPropagation();
 
@@ -382,8 +396,9 @@ export class InlineEditorView<
                 this._$editIcon.append(
                     `<img src="${options.editIconPath}">`);
             } else if (options.editIconClass) {
-                this._$editIcon.append(
-                    `<div class="${options.editIconClass}" aria-hidden="true"></div>`);
+                this._$editIcon.append(dedent`
+                    <div class="${options.editIconClass}" aria-hidden="true">
+                `);
             }
 
             if (options.showRequiredFlag) {
@@ -502,7 +517,7 @@ export class InlineEditorView<
 
             this.$el
                 .on('click', 'a', e => e.stopPropagation())
-                .click(e => {
+                .on('click', e => {
                     e.stopPropagation();
                     e.preventDefault();
 
@@ -515,7 +530,7 @@ export class InlineEditorView<
 
                     isDragging = true;
                 })
-                .mousedown(e => {
+                .on('mousedown', e => {
                     isDragging = false;
                     lastX = e.clientX;
                     lastY = e.clientY;
@@ -528,7 +543,7 @@ export class InlineEditorView<
                             Math.abs(e2.clientY - lastY) > threshold);
                     });
                 })
-                .mouseup(() => {
+                .on('mouseup', () => {
                     this.$el.off('mousemove');
 
                     lastX = null;

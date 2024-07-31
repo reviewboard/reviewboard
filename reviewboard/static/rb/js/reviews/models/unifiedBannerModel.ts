@@ -113,8 +113,13 @@ export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
         this.listenTo(pendingReview, 'saved destroyed',
                       this.#updateDraftModes);
 
+        /*
+         * We swallow errors when calling ready() on the draft, because we
+         * often will not have permissions to access the draft resource.
+         */
         Promise.all([
-            reviewRequest.draft.ready(),
+            reviewRequest.draft.ready()
+                .catch(() => undefined),
             pendingReview.ready(),
         ]).then(() => this.#updateDraftModes());
     }

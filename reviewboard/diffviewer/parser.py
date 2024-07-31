@@ -7,16 +7,25 @@ import logging
 import re
 import weakref
 from copy import deepcopy
-from typing import Optional, Union
+from typing import Optional, Sequence, TYPE_CHECKING, Union
 
 from django.utils.translation import gettext as _
 from djblets.util.properties import TypedProperty
+from housekeeping import deprecate_non_keyword_only_args
 from pydiffx import DiffType, DiffX
 from pydiffx.errors import DiffXParseError
 from typing_extensions import TypeAlias
 
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.diffviewer.errors import DiffParserError
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, Revision, UNKNOWN
+
+if TYPE_CHECKING:
+    from djblets.util.typing import JSONDict
+    from pydiffx import BaseDiffXSection
+
+    from reviewboard.diffviewer.models import DiffCommit
+    from reviewboard.diffviewer.models import DiffSet
 
 
 logger = logging.getLogger(__name__)
@@ -44,7 +53,7 @@ _RevisionProperty: TypeAlias = TypedProperty[
 _StrProperty: TypeAlias = TypedProperty[Optional[str], Optional[str]]
 
 
-class ParsedDiff(object):
+class ParsedDiff:
     """Parsed information from a diff.
 
     This stores information on the diff as a whole, along with a list of
@@ -62,31 +71,46 @@ class ParsedDiff(object):
 
     Version Added:
         4.0.5
-
-    Attributes:
-        changes (list of ParsedDiffChange):
-            The list of changes parsed in this diff. There should always be
-            at least one.
-
-        extra_data (dict):
-            Extra data to store along with the information on the diff. The
-            contents will be stored directly in :py:attr:`DiffSet.extra_data
-            <reviewboard.diffviewer.models.diffset.DiffSet.extra_data>`.
-
-        parser (BaseDiffParser):
-            The diff parser that parsed this file.
-
-        uses_commit_ids_as_revisions (bool):
-            Whether commit IDs are used as file revisions.
-
-            A commit ID will be used if an explicit revision isn't available
-            for a file. For instance, if a parent diff is available, and a file
-            isn't present in the parent diff, the file will use the parent
-            diff's parent commit ID as the parent revision.
     """
 
-    def __init__(self, parser, uses_commit_ids_as_revisions=False):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The list of changes parsed in this diff.
+    #:
+    #: There should always be at least one.
+    changes: list[ParsedDiffChange]
+
+    #: Extra data to store along with the information on the diff.
+    #:
+    #: The contents will be stored directly in :py:attr:`DiffSet.extra_data
+    #: <reviewboard.diffviewer.models.diffset.DiffSet.extra_data>`.
+    extra_data: JSONDict
+
+    #: The diff parser that parsed this file.
+    parser: BaseDiffParser
+
+    #: Whether commit IDs are used as file revisions.
+    #:
+    #: A commit ID will be used if an explicit revision isn't available for
+    #: a file. For instance, if a parent diff is available, and a file isn't
+    #: present in the parent diff, the file will use the parent diff's
+    #: parent commit ID as the parent revision.
+    uses_commit_ids_as_revisions: bool
+
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def __init__(
+        self,
+        *,
+        parser: BaseDiffParser,
+        uses_commit_ids_as_revisions: bool = False,
+    ) -> None:
         """Initialize the parsed diff information.
+
+        Version Changed:
+            7.0.2:
+            All arguments must now be passed as keyword arguments.
 
         Args:
             parser (BaseDiffParser):
@@ -103,7 +127,7 @@ class ParsedDiff(object):
         self.uses_commit_ids_as_revisions = uses_commit_ids_as_revisions
 
 
-class ParsedDiffChange(object):
+class ParsedDiffChange:
     """Parsed change information from a diff.
 
     This stores information on a change to a tree, consisting of a set of
@@ -117,16 +141,6 @@ class ParsedDiffChange(object):
 
     Version Added:
         4.0.5
-
-    Attributes:
-        extra_data (dict):
-            Extra data to store along with the information on the change. The
-            contents will be stored directly in :py:attr:`DiffCommit.extra_data
-            <reviewboard.diffviewer.models.diffcommit.DiffCommit.extra_data>`.
-
-        files (list of ParsedDiffFile):
-            The list of files parsed for this change. There should always be
-            at least one.
     """
 
     #: The ID of the commit, parsed from the diff.
@@ -145,8 +159,35 @@ class ParsedDiffChange(object):
     #:     bytes
     parent_commit_id: _BytesProperty = TypedProperty(bytes)
 
-    def __init__(self, parsed_diff):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: Extra data to store along with the information on the change.
+    #:
+    #: The contents will be stored directly in :py:attr:`DiffCommit.extra_data
+    #: <reviewboard.diffviewer.models.diffcommit.DiffCommit.extra_data>`.
+    extra_data: JSONDict
+
+    #: The list of files parsed for this change.
+    #:
+    #: There should always be at least one.
+    files: list[ParsedDiffFile]
+
+    #: A weak reference to the parent ParsedDiff.
+    _parent: weakref.ref[ParsedDiff]
+
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def __init__(
+        self,
+        *,
+        parsed_diff: ParsedDiff,
+    ) -> None:
         """Initialize the parsed diff information.
+
+        Version Changed:
+            7.0.2:
+            All arguments must now be passed as keyword arguments.
 
         Args:
             parsed_diff (ParsedDiff):
@@ -161,7 +202,7 @@ class ParsedDiffChange(object):
         parsed_diff.changes.append(self)
 
     @property
-    def parent_parsed_diff(self):
+    def parent_parsed_diff(self) -> Optional[ParsedDiff]:
         """The parent diff object.
 
         Type:
@@ -173,7 +214,7 @@ class ParsedDiffChange(object):
         return None
 
 
-class ParsedDiffFile(object):
+class ParsedDiffFile:
     """A parsed file from a diff.
 
     This stores information on a single file represented in a diff, including
@@ -196,39 +237,6 @@ class ParsedDiffFile(object):
         ``parsed_diff_change`` instead of ``parser`` when constructing the
         object, and must call :py:meth:`discard` after construction if the
         file isn't wanted in the results.
-
-    Attributes:
-        binary (bool);
-            Whether this represents a binary file.
-
-        copied (bool):
-            Whether this represents a file that has been copied. The file
-            may or may not be modified in the process.
-
-        deleted (bool):
-            Whether this represents a file that has been deleted.
-
-        delete_count (int):
-            The number of delete (``-``) lines found in the file.
-
-        insert_count (int):
-            The number of insert (``+``) lines found in the file.
-
-        is_symlink (bool):
-            Whether this represents a file that is a symbolic link to another
-            file.
-
-        moved (bool):
-            Whether this represents a file that has been moved/renamed. The
-            file may or may not be modified in the process.
-
-        parser (BaseDiffParser):
-            The diff parser that parsed this file.
-
-        skip (bool):
-            Whether this file should be skipped by the parser. If any of the
-            parser methods set this, the file will stop parsing and will be
-            excluded from results.
     """
 
     #: The parsed original name of the file.
@@ -308,8 +316,74 @@ class ParsedDiffFile(object):
     #:     str
     new_unix_mode: _StrProperty = TypedProperty(str)
 
-    def __init__(self, parser=None, parsed_diff_change=None, **kwargs):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: Whether this represents a binary file.
+    binary: bool
+
+    #: Whether this represents a file that has been copied.
+    #:
+    #: The file may or may not be modified in the process.
+    copied: bool
+
+    #: Whether this represents a file that has been deleted.
+    deleted: bool
+
+    #: The number of delete (``-``) lines found in the file.
+    delete_count: int
+
+    #: Extra data to store along with the information on the file.
+    #:
+    #: The contents will be stored directly in :py:attr:`FileDiff.extra_data
+    #: <reviewboard.diffviewer.models.filediff.FileDiff.extra_data>`.
+    extra_data: JSONDict
+
+    #: The number of insert (``+``) lines found in the file.
+    insert_count: int
+
+    #: Whether this represents a file that is a symbolic link to another file.
+    is_symlink: bool
+
+    #: Whether this represents a file that has been moved/renamed.
+    #:
+    #: The file may or may not be modified in the process.
+    moved: bool
+
+    #: The diff parser that parsed this file.
+    parser: BaseDiffParser
+
+    #: Whether this file should be skipped by the parser.
+    #:
+    #: If any of the parser methods set this, the file will stop parsing
+    #: and will be excluded from results.
+    skip: bool
+
+    #: The finalized diff data.
+    _data: Optional[bytes]
+
+    #: The buffer of data to write before finalizing.
+    _data_io: io.BytesIO
+
+    #: A weak reference to the parent ParsedDiffChange.
+    _parent: Optional[weakref.ref[ParsedDiffChange]]
+
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def __init__(
+        self,
+        *,
+        parser: Optional[BaseDiffParser] = None,
+        parsed_diff_change: Optional[ParsedDiffChange] = None,
+        **kwargs,
+    ) -> None:
         """Initialize the parsed file information.
+
+        Version Changed:
+            7.0.2:
+            * The ``parser`` deprecation and ``parsed_diff_change`` requirement
+              have been re-scheduled for Review Board 8.
+            * All arguments must now be passed as keyword arguments.
 
         Version Changed:
             4.0.5:
@@ -330,13 +404,27 @@ class ParsedDiffFile(object):
 
                 This will be required in Review Board 6.0.
         """
+        if parser is not None or parsed_diff_change is None:
+            RemovedInReviewBoard90Warning.warn(
+                'ParsedDiffFile.__init__(parser=[...]) is deprecated in favor '
+                'of parsed_diff_change=[...], which will be required in '
+                'Review Board 8.')
+
         if parsed_diff_change is not None:
             parsed_diff_change.files.append(self)
-            parser = parsed_diff_change.parent_parsed_diff.parser
 
-            parsed_diff_change = weakref.ref(parsed_diff_change)
+            parent_parsed_diff = parsed_diff_change.parent_parsed_diff
+            assert parent_parsed_diff is not None
 
-        self._parent = parsed_diff_change
+            parser = parent_parsed_diff.parser
+
+            parsed_diff_change_ref = weakref.ref(parsed_diff_change)
+        else:
+            parsed_diff_change_ref = None
+
+        assert parser is not None
+
+        self._parent = parsed_diff_change_ref
         self.parser = parser
         self.binary = False
         self.deleted = False
@@ -352,7 +440,7 @@ class ParsedDiffFile(object):
         self._data = None
 
     @property
-    def parent_parsed_diff_change(self):
+    def parent_parsed_diff_change(self) -> Optional[ParsedDiffChange]:
         """The parent change object.
 
         Version Added:
@@ -367,7 +455,7 @@ class ParsedDiffFile(object):
         return None
 
     @property
-    def data(self):
+    def data(self) -> bytes:
         """The data for this diff.
 
         This must be accessed after :py:meth:`finalize` has been called.
@@ -378,7 +466,7 @@ class ParsedDiffFile(object):
 
         return self._data
 
-    def discard(self):
+    def discard(self) -> None:
         """Discard this from the parent change.
 
         This will remove it from the list of files. It's intended for use
@@ -392,7 +480,7 @@ class ParsedDiffFile(object):
 
         self.parent_parsed_diff_change.files.remove(self)
 
-    def finalize(self):
+    def finalize(self) -> None:
         """Finalize the parsed diff.
 
         This makes the diff data available to consumers and closes the buffer
@@ -401,7 +489,10 @@ class ParsedDiffFile(object):
         self._data = self._data_io.getvalue()
         self._data_io.close()
 
-    def prepend_data(self, data):
+    def prepend_data(
+        self,
+        data: bytes,
+    ) -> None:
         """Prepend data to the buffer.
 
         Args:
@@ -416,7 +507,10 @@ class ParsedDiffFile(object):
             self._data_io.close()
             self._data_io = new_data_io
 
-    def append_data(self, data):
+    def append_data(
+        self,
+        data: bytes,
+    ) -> None:
         """Append data to the buffer.
 
         Args:
@@ -427,7 +521,7 @@ class ParsedDiffFile(object):
             self._data_io.write(data)
 
 
-class BaseDiffParser(object):
+class BaseDiffParser:
     """Base class for a diff parser.
 
     This is a low-level, basic foundational interface for a diff parser. It
@@ -439,19 +533,33 @@ class BaseDiffParser(object):
 
     Version Added:
         4.0.5
-
-    Attributes:
-        data (bytes):
-            The diff data being parsed.
-
-        uses_commit_ids_as_revisions (bool):
-            Whether commit IDs are used as file revisions.
-
-            See :py:attr:`ParsedDiff.uses_commit_ids_as_revisions`.
     """
 
-    def __init__(self, data, uses_commit_ids_as_revisions=False):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The diff data being parsed.
+    data: bytes
+
+    #: Whether commit IDs are used as file revisions.
+    #:
+    #: See :py:attr:`ParsedDiff.uses_commit_ids_as_revisions`.
+    uses_commit_ids_as_revisions: bool
+
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def __init__(
+        self,
+        *,
+        data: bytes,
+        uses_commit_ids_as_revisions: bool = False,
+        **kwargs,
+    ) -> None:
         """Initialize the parser.
+
+        Version Changed:
+            7.0.2:
+            All arguments must now be passed as keyword arguments.
 
         Args:
             data (bytes):
@@ -461,6 +569,9 @@ class BaseDiffParser(object):
                 Whether commit IDs are used as file revisions.
 
                 See :py:attr:`ParsedDiff.uses_commit_ids_as_revisions`.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
 
         Raises:
             TypeError:
@@ -474,7 +585,7 @@ class BaseDiffParser(object):
         self.data = data
         self.uses_commit_ids_as_revisions = uses_commit_ids_as_revisions
 
-    def parse_diff(self):
+    def parse_diff(self) -> ParsedDiff:
         """Parse the diff.
 
         This will parse the content of the file, returning a representation
@@ -497,7 +608,10 @@ class BaseDiffParser(object):
         """
         raise NotImplementedError
 
-    def raw_diff(self, diffset_or_commit):
+    def raw_diff(
+        self,
+        diffset_or_commit: Union[DiffCommit, DiffSet],
+    ) -> bytes:
         """Return a raw diff as a string.
 
         This takes a DiffSet or DiffCommit and generates a new, single diff
@@ -531,7 +645,10 @@ class BaseDiffParser(object):
         """
         raise NotImplementedError
 
-    def normalize_diff_filename(self, filename):
+    def normalize_diff_filename(
+        self,
+        filename: str,
+    ) -> str:
         """Normalize filenames in diffs.
 
         This returns a normalized filename suitable for populating in
@@ -548,11 +665,11 @@ class BaseDiffParser(object):
         normalization.
 
         Args:
-            filename (unicode):
+            filename (str):
                 The filename to normalize.
 
         Returns:
-            unicode:
+            str:
             The normalized filename.
         """
         if filename.startswith('/'):
@@ -595,6 +712,9 @@ class DiffParser(BaseDiffParser):
     #: The ID of the commit this change is based on.
     base_commit_id: Optional[str]
 
+    #: The list of resuting parsed diff files from this parser.
+    files: list[ParsedDiffFile]
+
     #: The diff content, split into lines.
     lines: list[bytes]
 
@@ -634,7 +754,8 @@ class DiffParser(BaseDiffParser):
         """
         from reviewboard.diffviewer.diffutils import split_line_endings
 
-        super().__init__(data, **kwargs)
+        super().__init__(data=data,
+                         **kwargs)
 
         self.base_commit_id = None
         self.new_commit_id = None
@@ -646,7 +767,7 @@ class DiffParser(BaseDiffParser):
         self.parsed_diff_change = ParsedDiffChange(
             parsed_diff=self.parsed_diff)
 
-    def parse_diff(self):
+    def parse_diff(self) -> ParsedDiff:
         """Parse the diff.
 
         Subclasses should override this if working with a diff format that
@@ -685,7 +806,7 @@ class DiffParser(BaseDiffParser):
 
         return self.parsed_diff
 
-    def parse(self):
+    def parse(self) -> Sequence[ParsedDiffFile]:
         """Parse the diff and return a list of files.
 
         This will parse the content of the file, returning any files that
@@ -710,10 +831,10 @@ class DiffParser(BaseDiffParser):
                 corrupted diff, or an error in the parsing implementation.
                 Details are in the error message.
         """
-        preamble = io.BytesIO()
+        preamble: io.BytesIO = io.BytesIO()
         self.files = []
-        parsed_file = None
-        i = 0
+        parsed_file: Optional[ParsedDiffFile] = None
+        i: int = 0
 
         # Go through each line in the diff, looking for diff headers.
         while i < len(self.lines):
@@ -727,6 +848,7 @@ class DiffParser(BaseDiffParser):
                     self.files[-1].finalize()
 
                 parsed_file = new_file
+                assert parsed_file is not None
 
                 # We need to prepend the preamble, if we have one.
                 parsed_file.prepend_data(preamble.getvalue())
@@ -751,7 +873,11 @@ class DiffParser(BaseDiffParser):
 
         return self.files
 
-    def parse_diff_line(self, linenum, parsed_file):
+    def parse_diff_line(
+        self,
+        linenum: int,
+        parsed_file: ParsedDiffFile,
+    ) -> int:
         """Parse a line of data in a diff.
 
         This will append the line to the parsed file's data, and if the
@@ -783,7 +909,10 @@ class DiffParser(BaseDiffParser):
 
         return linenum + 1
 
-    def parse_change_header(self, linenum):
+    def parse_change_header(
+        self,
+        linenum: int,
+    ) -> tuple[int, Optional[ParsedDiffFile]]:
         """Parse a header before a change to a file.
 
         This will attempt to parse the following information, starting at the
@@ -813,8 +942,13 @@ class DiffParser(BaseDiffParser):
             tuple:
             A tuple containing the following:
 
-            1. The next line number to parse
-            2. The populated :py:class:`ParsedDiffFile` instance for this file
+            Tuple:
+                0 (int):
+                    The next line number to parse.
+
+                1 (ParsedDiffFile):
+                    The populated :py:class:`ParsedDiffFile` instance for
+                    this file
 
         Raises:
             reviewboard.diffviewer.errors.DiffParserError:
@@ -822,8 +956,10 @@ class DiffParser(BaseDiffParser):
                 a corrupted diff, or an error in the parsing implementation.
                 Details are in the error message.
         """
-        parsed_file = \
+        parsed_file: Optional[ParsedDiffFile] = \
             ParsedDiffFile(parsed_diff_change=self.parsed_diff_change)
+        assert parsed_file is not None
+
         start = linenum
 
         linenum = self.parse_special_header(linenum, parsed_file)
@@ -857,7 +993,11 @@ class DiffParser(BaseDiffParser):
 
         return linenum, parsed_file
 
-    def parse_special_header(self, linenum, parsed_file):
+    def parse_special_header(
+        self,
+        linenum: int,
+        parsed_file: ParsedDiffFile,
+    ) -> int:
         """Parse a special diff header marking the start of a new file's info.
 
         This attempts to locate an ``Index:`` line at the specified line
@@ -899,9 +1039,12 @@ class DiffParser(BaseDiffParser):
             index_line = self.lines[linenum]
             is_index = index_line.startswith(b'Index: ')
         except IndexError:
+            index_line = None
             is_index = False
 
         if is_index:
+            assert index_line is not None
+
             # Try to find the "====" line.
             temp_linenum = linenum + 1
 
@@ -1011,7 +1154,11 @@ class DiffParser(BaseDiffParser):
 
         return linenum
 
-    def parse_after_headers(self, linenum, parsed_file):
+    def parse_after_headers(
+        self,
+        linenum: int,
+        parsed_file: ParsedDiffFile,
+    ) -> int:
         """Parse information after a diff header but before diff data.
 
         This attempts to parse the information found after
@@ -1045,7 +1192,11 @@ class DiffParser(BaseDiffParser):
         """
         return linenum
 
-    def parse_filename_header(self, s, linenum):
+    def parse_filename_header(
+        self,
+        s: bytes,
+        linenum: int,
+    ) -> tuple[bytes, bytes]:
         """Parse the filename found in a diff filename line.
 
         This parses the value after a ``---`` or ``+++`` indicator (or a
@@ -1079,8 +1230,12 @@ class DiffParser(BaseDiffParser):
             tuple:
             A tuple containing:
 
-            1. The filename (as bytes)
-            2. The additional file information (as bytes)
+            Tuple:
+                0 (bytes):
+                    The filename.
+
+                1 (bytes):
+                    The additional file information (as bytes).
 
         Raises:
             reviewboard.diffviewer.errors.DiffParserError:
@@ -1092,20 +1247,27 @@ class DiffParser(BaseDiffParser):
             # There's a \t separating the filename and info. This is the
             # best case scenario, since it allows for filenames with spaces
             # without much work.
-            return s.split(b'\t', 1)
+            filename, info = s.split(b'\t', 1)
+
+            return filename, info
 
         # There's spaces being used to separate the filename and info.
         # This is technically wrong, so all we can do is assume that
         # 1) the filename won't have multiple consecutive spaces, and
         # 2) there's at least 2 spaces separating the filename and info.
         if b'  ' in s:
-            return re.split(br'  +', s, 1)
+            filename, info = re.split(br'  +', s, 1)
+
+            return filename, info
 
         raise DiffParserError('No valid separator after the filename was '
                               'found in the diff header',
                               linenum)
 
-    def raw_diff(self, diffset_or_commit):
+    def raw_diff(
+        self,
+        diffset_or_commit: Union[DiffCommit, DiffSet],
+    ) -> bytes:
         """Return a raw diff as a string.
 
         This takes a DiffSet or DiffCommit and generates a new, single diff
@@ -1137,9 +1299,15 @@ class DiffParser(BaseDiffParser):
         """
         if hasattr(diffset_or_commit, 'cumulative_files'):
             # This will be a DiffSet.
+            if TYPE_CHECKING:
+                assert isinstance(diffset_or_commit, DiffSet)
+
             filediffs = diffset_or_commit.cumulative_files
         elif hasattr(diffset_or_commit, 'files'):
             # This will be a DiffCommit.
+            if TYPE_CHECKING:
+                assert isinstance(diffset_or_commit, DiffCommit)
+
             filediffs = diffset_or_commit.files.all()
         else:
             raise TypeError('%r is not a valid value. Please pass a DiffSet '
@@ -1172,7 +1340,7 @@ class DiffXParser(BaseDiffParser):
         The API may change during this time.
     """
 
-    def parse_diff(self):
+    def parse_diff(self) -> ParsedDiff:
         """Parse the diff.
 
         This will parse the content of the DiffX file, returning a
@@ -1212,7 +1380,7 @@ class DiffXParser(BaseDiffParser):
         parsed_diff.uses_commit_ids_as_revisions = \
             self.uses_commit_ids_as_revisions
 
-        extra_data_diffx = {}
+        extra_data_diffx: JSONDict = {}
         self._store_options(extra_data_diffx, diffx)
         self._store_preamble(extra_data_diffx, diffx)
         self._store_meta(extra_data_diffx, diffx)
@@ -1236,7 +1404,7 @@ class DiffXParser(BaseDiffParser):
                 parsed_diff_change.parent_commit_id = \
                     parent_ids[0].encode('utf-8')
 
-            extra_data_change = {}
+            extra_data_change: JSONDict = {}
             self._store_options(extra_data_change, diffx_change)
             self._store_preamble(extra_data_change, diffx_change)
             self._store_meta(extra_data_change, diffx_change)
@@ -1249,7 +1417,7 @@ class DiffXParser(BaseDiffParser):
                 parsed_diff_file = ParsedDiffFile(
                     parsed_diff_change=parsed_diff_change)
 
-                extra_data_file = {}
+                extra_data_file: JSONDict = {}
                 self._store_options(extra_data_file, diffx_file)
                 self._store_meta(extra_data_file, diffx_file)
                 self._store_options(extra_data_file, diffx_file.diff_section,
@@ -1362,6 +1530,9 @@ class DiffXParser(BaseDiffParser):
                 if parsed_diff_file.is_symlink:
                     symlink_target = file_meta.get('symlink target')
 
+                    old_symlink_target: Optional[str]
+                    new_symlink_target: Optional[str]
+
                     if isinstance(symlink_target, dict):
                         old_symlink_target = symlink_target.get('old')
                         new_symlink_target = symlink_target.get('new')
@@ -1376,25 +1547,32 @@ class DiffXParser(BaseDiffParser):
                         new_symlink_target = None
 
                     if old_symlink_target or new_symlink_target:
+                        old_symlink_target_bytes: Optional[bytes]
+                        new_symlink_target_bytes: Optional[bytes]
+
                         if old_symlink_target:
-                            old_symlink_target = \
+                            old_symlink_target_bytes = \
                                 old_symlink_target.encode('utf-8')
+                        else:
+                            old_symlink_target_bytes = None
 
                         if new_symlink_target:
-                            new_symlink_target = \
+                            new_symlink_target_bytes = \
                                 new_symlink_target.encode('utf-8')
+                        else:
+                            new_symlink_target_bytes = None
 
                         if op == 'create':
                             parsed_diff_file.new_symlink_target = \
-                                new_symlink_target
+                                new_symlink_target_bytes
                         elif op == 'delete':
                             parsed_diff_file.old_symlink_target = \
-                                old_symlink_target
+                                old_symlink_target_bytes
                         else:
                             parsed_diff_file.old_symlink_target = \
-                                old_symlink_target
+                                old_symlink_target_bytes
                             parsed_diff_file.new_symlink_target = \
-                                new_symlink_target
+                                new_symlink_target_bytes
 
                 # If there are UNIX file modes, set them.
                 unix_mode = file_meta.get('unix file mode')
@@ -1429,7 +1607,10 @@ class DiffXParser(BaseDiffParser):
 
         return parsed_diff
 
-    def raw_diff(self, diffset_or_commit):
+    def raw_diff(
+        self,
+        diffset_or_commit: Union[DiffCommit, DiffSet],
+    ) -> bytes:
         """Return a raw diff as a string.
 
         This takes a :py:class:`~reviewboard.diffviewer.models.diffset.DiffSet`
@@ -1473,6 +1654,9 @@ class DiffXParser(BaseDiffParser):
             # default anything falsy to an empty dictionary, here and below.
             diffset = diffset_or_commit
 
+            if TYPE_CHECKING:
+                assert isinstance(diffset, DiffSet)
+
             diffx_main_info = diffset.extra_data.get('diffx') or {}
             diffcommits = diffset.commits.prefetch_related('files')
 
@@ -1500,6 +1684,9 @@ class DiffXParser(BaseDiffParser):
             # change section.
             diffcommit = diffset_or_commit
 
+            if TYPE_CHECKING:
+                assert isinstance(diffcommit, DiffCommit)
+
             changes = [
                 {
                     'extra_data': diffcommit.extra_data,
@@ -1512,7 +1699,7 @@ class DiffXParser(BaseDiffParser):
             diffset_diffx_options = diffset_diffx_info.get('options') or {}
             main_encoding = diffset_diffx_options.get('encoding')
 
-            diffx_main_info = {}
+            diffx_main_info: JSONDict = {}
 
             if main_encoding:
                 diffx_main_info['options'] = {
@@ -1551,7 +1738,13 @@ class DiffXParser(BaseDiffParser):
 
         return diffx.to_bytes()
 
-    def _store_options(self, extra_data, diffx_section, key='options'):
+    def _store_options(
+        self,
+        extra_data: JSONDict,
+        diffx_section: BaseDiffXSection,
+        *,
+        key: str = 'options',
+    ) -> None:
         """Store options for a section in extra_data.
 
         Options will be stored only if not empty.
@@ -1563,13 +1756,17 @@ class DiffXParser(BaseDiffParser):
             diffx_section (pydiffx.dom.objects.BaseDiffXSection):
                 The section containing the options to store.
 
-            key (unicode, optional):
+            key (str, optional):
                 The name of the key to use in ``extra_data``.
         """
         if diffx_section.options:
             extra_data[key] = deepcopy(diffx_section.options)
 
-    def _store_preamble(self, extra_data, diffx_section):
+    def _store_preamble(
+        self,
+        extra_data: JSONDict,
+        diffx_section: BaseDiffXSection,
+    ) -> None:
         """Store preamble options and text for a section in extra_data.
 
         Preamble text will only be stored if not empty. Options will only
@@ -1588,7 +1785,11 @@ class DiffXParser(BaseDiffParser):
             self._store_options(extra_data, diffx_section.preamble_section,
                                 key='preamble_options')
 
-    def _store_meta(self, extra_data, diffx_section):
+    def _store_meta(
+        self,
+        extra_data: JSONDict,
+        diffx_section: BaseDiffXSection,
+    ) -> None:
         """Store metadata options and content for a section in extra_data.
 
         Metadata will only be stored if not empty. Options will only be
@@ -1608,7 +1809,13 @@ class DiffXParser(BaseDiffParser):
             self._store_options(extra_data, diffx_section.meta_section,
                                 key='metadata_options')
 
-    def _load_options(self, diffx_section, extra_data, key='options'):
+    def _load_options(
+        self,
+        diffx_section: BaseDiffXSection,
+        extra_data: JSONDict,
+        *,
+        key: str = 'options',
+    ) -> None:
         """Load options from extra_data into a section.
 
         Args:
@@ -1618,7 +1825,7 @@ class DiffXParser(BaseDiffParser):
             diffx_section (pydiffx.dom.objects.BaseDiffXSection):
                 The section to store the options in.
 
-            key (unicode, optional):
+            key (str, optional):
                 The name of the key to use in ``extra_data``.
         """
         options = extra_data.get(key)
@@ -1627,7 +1834,11 @@ class DiffXParser(BaseDiffParser):
             diffx_section.options.clear()
             diffx_section.options.update(options)
 
-    def _load_preamble(self, diffx_section, extra_data):
+    def _load_preamble(
+        self,
+        diffx_section: BaseDiffXSection,
+        extra_data: JSONDict,
+    ) -> None:
         """Load a preamble and options from extra_data into a section.
 
         Args:
@@ -1648,7 +1859,11 @@ class DiffXParser(BaseDiffParser):
                                extra_data,
                                key='preamble_options')
 
-    def _load_meta(self, diffx_section, extra_data):
+    def _load_meta(
+        self,
+        diffx_section: BaseDiffXSection,
+        extra_data: JSONDict,
+    ) -> None:
         """Load metadata and options from extra_data into a section.
 
         Args:
