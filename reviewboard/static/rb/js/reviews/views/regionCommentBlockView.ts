@@ -54,6 +54,9 @@ interface MoveState {
  * This is meant to be used with a RegionCommentBlock model.
  *
  * Version Changed:
+ *     7.0.2:
+ *     Made the :js:attr:`$flag` and :js:attr:`$resizeIcon` attributes public.
+ *
  *     7.0.1:
  *     Made the :js:attr:`scale` and :js:attr:`moveState` attributes public.
  */
@@ -91,13 +94,13 @@ export class RegionCommentBlockView<
     scale = 1.0;
 
     /** The selection flag. */
-    #$flag: JQuery = null;
+    $flag: JQuery = null;
+
+    /** The icon for resizing the comment region. */
+    $resizeIcon: JQuery = null;
 
     /** The JQuery-wrapped window object. */
     #$window: JQuery<Window> = $(window);
-
-    /** The icon for resizing the comment region. */
-    #$resizeIcon: JQuery = null;
 
     /** The function to get the selection region. */
     private _selectionRegionSizeFunc: SelectionRegionSizeFunc;
@@ -287,9 +290,9 @@ export class RegionCommentBlockView<
 
             let draggingCallback = null;
 
-            if (e.target === this.#$flag.get(0)) {
+            if (e.target === this.$flag.get(0)) {
                 draggingCallback = this._moveTo;
-            } else if (e.target === this.#$resizeIcon.get(0)) {
+            } else if (e.target === this.$resizeIcon.get(0)) {
                 draggingCallback = this._resizeTo;
             }
 
@@ -350,11 +353,11 @@ export class RegionCommentBlockView<
         if (this.model.canUpdateBounds()) {
             this.$el.addClass('can-update-bound');
 
-            this.#$resizeIcon = $('<div class="resize-icon">')
+            this.$resizeIcon = $('<div class="resize-icon">')
                 .appendTo(this.$el);
         }
 
-        this.#$flag = $('<div class="selection-flag">')
+        this.$flag = $('<div class="selection-flag">')
             .appendTo(this.$el);
 
         this._updateCount();
@@ -368,7 +371,7 @@ export class RegionCommentBlockView<
      *         The comment dialog.
      */
     positionCommentDlg(commentDlg: CommentDialogView) {
-        commentDlg.positionBeside(this.#$flag, {
+        commentDlg.positionBeside(this.$flag, {
             fitOnScreen: true,
             side: 'b',
         });
@@ -395,8 +398,8 @@ export class RegionCommentBlockView<
      * Update the displayed count of comments.
      */
     protected _updateCount() {
-        if (this.#$flag) {
-            this.#$flag.text(this.model.get('count'));
+        if (this.$flag) {
+            this.$flag.text(this.model.get('count'));
         }
     }
 
