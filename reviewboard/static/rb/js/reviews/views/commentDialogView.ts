@@ -510,7 +510,7 @@ export class CommentDialogView extends BaseView<
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const model = this.model;
         const userSession = UserSession.instance;
         const reviewRequest = model.get('reviewRequest');

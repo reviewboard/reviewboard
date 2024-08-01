@@ -134,7 +134,7 @@ export class DiffReviewableView extends AbstractReviewableView<
     /**
      * Render the reviewable.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         super.onInitialRender();
 
         this._centered = new CenteredElementManager();

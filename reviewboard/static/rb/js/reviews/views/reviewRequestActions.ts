@@ -61,7 +61,7 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
     /**
      * Render the view.
      */
-    onRender() {
+    protected onRender() {
         super.onRender();
 
         const visibility = this.#reviewRequest.get('visibility');
@@ -367,7 +367,7 @@ export class CreateReviewActionView extends Actions.MenuItemActionView {
      *     CreateReviewActionView:
      *     This object, for chaining.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.listenTo(this.#pendingReview, 'saved destroy sync', this.#update);
         this.#update();
     }
@@ -429,7 +429,7 @@ export class EditReviewActionView extends Actions.MenuItemActionView {
     /**
      * Render the action.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.listenTo(this.#pendingReview, 'saved destroy sync', this.#update);
         this.#update();
     }

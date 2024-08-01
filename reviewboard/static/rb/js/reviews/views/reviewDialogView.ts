@@ -176,7 +176,7 @@ class BaseCommentView<
     /**
      * Render the comment view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el
             .addClass('draft')
             .append(this.renderThumbnail())
@@ -1076,11 +1076,14 @@ export class ReviewDialogView extends BaseView<
         <div class="edit-field body-top"></div>
         <ol id="review-dialog-body-top-comments" class="review-comments"></ol>
         <ol id="review-dialog-general-comments" class="review-comments"></ol>
-        <ol id="review-dialog-screenshot-comments" class="review-comments"></ol>
-        <ol id="review-dialog-file-attachment-comments" class="review-comments"></ol>
+        <ol id="review-dialog-screenshot-comments"
+            class="review-comments"></ol>
+        <ol id="review-dialog-file-attachment-comments"
+            class="review-comments"></ol>
         <ol id="review-dialog-diff-comments" class="review-comments"></ol>
-        <ol id="review-dialog-body-bottom-comments" class="review-comments"></ol>
-        <div class="spinner"><span class="djblets-o-spinner"></span></div>
+        <ol id="review-dialog-body-bottom-comments"
+            class="review-comments"></ol>
+        <div class="spinner"><span class="ink-c-spinner"></span></div>
         <div class="edit-field body-bottom"></div>
     `);
 
@@ -1339,7 +1342,7 @@ export class ReviewDialogView extends BaseView<
      * The dialog will be shown on the screen, and the comments from
      * the server will begin loading and rendering.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el.html(this.template({
             addFooterText: _`Add footer`,
             addHeaderText: _`Add header`,

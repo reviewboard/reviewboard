@@ -158,7 +158,7 @@ export class PageView<
      * Subclasses should not override this. Instead, they should override
      * :js:func:`RB.PageView.renderPage``.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const options = this.options;
         const $body = options.$body || $(document.body);
 

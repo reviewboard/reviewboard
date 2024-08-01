@@ -162,7 +162,7 @@ export class TextCommentRowSelector extends BaseView<
     /**
      * Render the selector.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this._$ghostCommentFlag =
             $(TextCommentRowSelector.ghostCommentFlagTemplate)
             .on({

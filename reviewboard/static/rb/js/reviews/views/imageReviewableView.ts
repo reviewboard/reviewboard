@@ -291,7 +291,7 @@ class ImageAttachmentView extends BaseImageView {
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el.attr({
             src: this.model.get('imageURL'),
             title: this.model.get('caption'),
@@ -369,7 +369,7 @@ class ImageDifferenceDiffView extends BaseImageView {
      * created and loaded. After loading, _onImagesLoaded will handle
      * populating the canvas with the difference view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el.html(ImageDifferenceDiffView.template(this.model.attributes));
 
         this.$commentRegion = this.$('canvas');
@@ -522,7 +522,7 @@ class ImageOnionDiffView extends BaseImageView {
      *     ImageOnionDiffView:
      *     This object, for chaining.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el.html(ImageOnionDiffView.template(this.model.attributes));
 
         this.$commentRegion = this.$('.image-containers');
@@ -676,7 +676,7 @@ class ImageSplitDiffView extends BaseImageView {
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el.html(ImageSplitDiffView.template(this.model.attributes));
 
         this.$commentRegion = this.$('.image-containers');
@@ -832,7 +832,7 @@ class ImageTwoUpDiffView extends BaseImageView {
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el.html(ImageTwoUpDiffView.template(this.model.attributes));
         this.$commentRegion = this.$('.modified-image img');
 

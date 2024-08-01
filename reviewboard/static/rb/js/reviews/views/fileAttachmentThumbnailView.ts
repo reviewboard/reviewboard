@@ -276,7 +276,7 @@ export class FileAttachmentThumbnailView extends BaseView<
      * In either case, this will set up the caption editor and other signals
      * to control the lifetime of the thumbnail.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         /*
          * Until FileAttachmentThumbnailView is the only thing rendering
          * thumbnails, we'll be in a situation where we may either be working

@@ -71,7 +71,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const labelID = 'unified-banner-mode-label';
 
         const menuView = craft<MenuView>`
@@ -433,7 +433,7 @@ export class UnifiedBannerView extends FloatingBannerView<
     /**
      * Render the banner.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         if (!UserSession.instance.get('authenticated')) {
             return;
         }
@@ -500,7 +500,7 @@ export class UnifiedBannerView extends FloatingBannerView<
     /**
      * Handle re-renders.
      */
-    onRender() {
+    protected onRender() {
         this._update(true);
     }
 

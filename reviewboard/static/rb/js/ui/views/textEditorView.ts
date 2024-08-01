@@ -807,7 +807,7 @@ class FormattingToolbarView extends BaseView<
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el.attr({
             'aria-controls': this.#editorID,
             'aria-label': _`Text formatting toolbar`,
@@ -1524,7 +1524,7 @@ export class TextEditorView extends BaseView<
      * standard set of styles, even if this editor is bound to an existing
      * element.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el.addClass(this.className);
     }
 

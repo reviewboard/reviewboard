@@ -86,7 +86,7 @@ export class AbstractReviewableView<
      * This will call the subclass's renderContent(), and then handle
      * rendering each comment block on the reviewable.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.renderContent();
 
         this.model.commentBlocks.each(this._addCommentBlockView, this);

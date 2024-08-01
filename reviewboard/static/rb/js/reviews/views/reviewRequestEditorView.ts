@@ -139,7 +139,7 @@ class BannerView extends BaseView<
      * template, then this will make use of that template. Otherwise,
      * it will construct a new one.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const readOnly = UserSession.instance.get('readOnly');
 
         if (this.$el.children().length === 0) {
@@ -206,7 +206,7 @@ class ClosedBannerView extends BannerView {
     /**
      * Render the banner.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const descriptionFieldClasses = [];
 
         if (this.reviewRequestEditor.get('statusMutableByUser')) {
@@ -399,7 +399,7 @@ class DraftBannerView extends BannerView {
     /**
      * Render the banner.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const descriptionFieldClasses = [];
 
         if (this.reviewRequestEditor.get('mutableByUser')) {
@@ -539,7 +539,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      * This will import all pre-rendered file attachment and screenshot
      * thumbnails, turning them into FileAttachment and Screenshot objects.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const reviewRequest = this.model.get('reviewRequest');
         const fileAttachments = this.model.get('fileAttachments');
         const draft = reviewRequest.draft;

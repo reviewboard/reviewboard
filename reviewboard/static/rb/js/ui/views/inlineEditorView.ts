@@ -294,7 +294,7 @@ export class InlineEditorView<
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const options = this.options;
         const multiline = options.multiline;
         const fieldLabel = options.fieldLabel;
