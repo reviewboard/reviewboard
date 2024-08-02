@@ -1332,6 +1332,11 @@ def get_diff_files(
                     base_filediff = filediff.get_base_filediff(
                         base_commit=base_commit,
                         ancestors=ancestors)
+                else:
+                    # If the file was newly-added in the ancestors, we need to
+                    # propagate that state forward.
+                    newfile = ancestors[0].is_new
+                    orig_revision = get_revision_str(PRE_CREATION)
 
         f: SerializedDiffFile = {
             'base_filediff': base_filediff,
