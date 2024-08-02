@@ -223,8 +223,8 @@ class LoginView(DjangoLoginView):
 
                 return HttpResponseRedirect(login_url)
             except ItemLookupError:
-                logging.error('Unable to find sso_auto_login_backend "%s".',
-                              sso_auto_login_backend)
+                logger.error('Unable to find sso_auto_login_backend "%s".',
+                             sso_auto_login_backend)
 
         if request.method == 'GET' and request.user.is_authenticated:
             # If this is a normal GET request and not part of any flow, and
@@ -320,8 +320,8 @@ def logout(request, *args, **kwargs):
             sso_backends.get('backend_id', sso_auto_login_backend)
             return LogoutView.as_view()(request, *args, **kwargs)
         except ItemLookupError:
-            logging.error('Unable to find sso_auto_login_backend "%s".',
-                          sso_auto_login_backend)
+            logger.error('Unable to find sso_auto_login_backend "%s".',
+                         sso_auto_login_backend)
 
     return auth_logout_then_login(request, *args, **kwargs)
 
