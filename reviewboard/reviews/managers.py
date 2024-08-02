@@ -11,7 +11,6 @@ from django.db import connections, router, transaction, IntegrityError
 from django.db.models import Exists, Manager, OuterRef, Q
 from django.db.models.query import QuerySet
 from django.utils.text import slugify
-from djblets.db.managers import ConcurrencyManager
 from housekeeping.functions import deprecate_non_keyword_only_args
 
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
@@ -25,14 +24,19 @@ if TYPE_CHECKING:
     from reviewboard.changedescs.models import ChangeDescription
     from reviewboard.integrations.base import Integration
     from reviewboard.integrations.models import IntegrationConfig
-    from reviewboard.reviews.models import Review, ReviewRequest, StatusUpdate
+    from reviewboard.reviews.models import (
+        BaseComment,
+        Review,
+        ReviewRequest,
+        StatusUpdate,
+    )
     from reviewboard.site.models import AnyOrAllLocalSites
 
 
 logger = logging.getLogger(__name__)
 
 
-class CommentManager(ConcurrencyManager):
+class CommentManager(Manager['BaseComment']):
     """A manager for Comment models.
 
     This handles concurrency issues with Comment models.
@@ -430,7 +434,7 @@ class ReviewRequestQuerySet(QuerySet):
         return queryset
 
 
-class ReviewRequestManager(ConcurrencyManager):
+class ReviewRequestManager(Manager['ReviewRequest']):
     """
     A manager for review requests. Provides specialized queries to retrieve
     review requests with specific targets or origins, and to create review
@@ -1386,7 +1390,7 @@ class _ReviewANY:
         return '<ReviewManager.ANY>'
 
 
-class ReviewManager(ConcurrencyManager):
+class ReviewManager(Manager['Review']):
     """A manager for Review models.
 
     This handles concurrency issues with Review models. In particular, it

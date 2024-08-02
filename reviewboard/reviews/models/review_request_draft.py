@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import ClassVar, List, Optional, TYPE_CHECKING, Union
+from typing import List, Optional, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -10,7 +10,6 @@ from django.db.models import F
 from django.utils import timezone
 from django.utils.translation import gettext, gettext_lazy as _
 from djblets.db.fields import ModificationTimestampField, RelationCounterField
-from djblets.db.managers import ConcurrencyManager
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
@@ -136,9 +135,6 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     inactive_file_attachments_count = RelationCounterField(
         'inactive_file_attachments',
         verbose_name=_('inactive file attachments count'))
-
-    # Set this up with a ConcurrencyManager to help prevent race conditions.
-    objects: ClassVar[ConcurrencyManager] = ConcurrencyManager()
 
     commit = property(lambda self: self.commit_id,
                       lambda self, value: setattr(self, 'commit_id', value))

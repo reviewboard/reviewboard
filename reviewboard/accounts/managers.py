@@ -1,16 +1,30 @@
+"""Managers for accounts models."""
+
+from __future__ import annotations
+
 import logging
+from typing import Optional, TYPE_CHECKING
 
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.models import Manager
-from djblets.db.managers import ConcurrencyManager
 
 from reviewboard.accounts.trophies import trophies_registry
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
+
+    from reviewboard.accounts.models import (
+        LocalSiteProfile,
+        Profile,
+        ReviewRequestVisit,
+    )
+    from reviewboard.site.models import LocalSite
 
 
 logger = logging.getLogger(__name__)
 
 
-class LocalSiteProfileManager(ConcurrencyManager):
+class LocalSiteProfileManager(Manager['LocalSiteProfile']):
     """Manager for Local Site profiles."""
 
     def for_user(self, user, profile, local_site, create_if_missing=False):
@@ -64,11 +78,15 @@ class LocalSiteProfileManager(ConcurrencyManager):
 
         return site_profile, is_new
 
-    def _fix_duplicate_profiles(self, user, profile, local_site):
+    def _fix_duplicate_profiles(
+        self,
+        user: User,
+        profile: Profile,
+        local_site: Optional[LocalSite],
+    ) -> LocalSiteProfile:
         """Fix the case where we end up with duplicate Local Site profiles.
 
-        Until Review Board 5.0, we were not using ConcurrencyManager for
-        LocalSiteProfile. In addition, MySQL had an issue where the
+        In old versions of Review Board and MySQL, there was an issue where the
         unique_together constraint only worked properly when the local_site
         relation was non-NULL, potentially resulting in multiple profiles.
 
@@ -120,7 +138,7 @@ class LocalSiteProfileManager(ConcurrencyManager):
         return master_profile
 
 
-class ProfileManager(Manager):
+class ProfileManager(Manager['Profile']):
     """Manager for user profiles."""
 
     def get_or_create(self, user, *args, **kwargs):
@@ -139,7 +157,7 @@ class ProfileManager(Manager):
         return profile, is_new
 
 
-class ReviewRequestVisitManager(ConcurrencyManager):
+class ReviewRequestVisitManager(Manager['ReviewRequestVisit']):
     """Manager for review request visits."""
 
     def unarchive_all(self, review_request):

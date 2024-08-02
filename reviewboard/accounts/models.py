@@ -65,8 +65,6 @@ class ReviewRequestVisit(models.Model):
     visibility = models.CharField(max_length=1, choices=VISIBILITY,
                                   default=VISIBLE)
 
-    # Set this up with a ReviewRequestVisitManager, which inherits from
-    # ConcurrencyManager to help prevent race conditions.
     objects: ClassVar[ReviewRequestVisitManager] = ReviewRequestVisitManager()
 
     def __str__(self):
