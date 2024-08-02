@@ -629,7 +629,9 @@ class HgGitDiffParser(GitDiffParser):
         # overwrite those with the revision IDs.
         for f in diff_files:
             if f.binary:
-                f.orig_file_details = self.base_commit_id
+                if f.orig_file_details != PRE_CREATION:
+                    f.orig_file_details = self.base_commit_id
+
                 f.modified_file_details = self.new_commit_id
 
         return diff_files
