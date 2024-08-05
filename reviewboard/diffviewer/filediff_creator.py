@@ -519,6 +519,23 @@ def _process_files(parsed_diff, basedir, repository, base_commit_id,
                                         base_commit_id=base_commit_id,
                                         context=context)
 
+            # If validation found a more suitable source revision, then set
+            # that instead of what was parsed out of the diff. This is
+            # important for SCMs like Mercurial, which support multiple
+            # commits but don't have per-file revision information in diffs,
+            # so we don't even know the commit that introduced the last change
+            # to a file. We can only resolve this during the validation
+            # phase.
+            #
+            # This was added in Review Board 7.0.2.
+            validated_parent_id = \
+                f.extra_data.pop('__validated_parent_id', None)
+
+            if validated_parent_id is not None:
+                assert isinstance(validated_parent_id, str)
+
+                source_revision = validated_parent_id.encode('utf-8')
+
         f.orig_filename = source_filename
         f.orig_file_details = source_revision
         f.modified_filename = dest_filename

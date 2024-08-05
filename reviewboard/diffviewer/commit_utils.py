@@ -5,16 +5,55 @@ from __future__ import annotations
 import base64
 import json
 from itertools import chain
+from typing import Any, Optional, TYPE_CHECKING
 
 from django.utils.encoding import force_bytes
 from typing_extensions import NotRequired, TypedDict
 
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN
 
+if TYPE_CHECKING:
+    from reviewboard.scmtools.core import FileLookupContext
+    from reviewboard.scmtools.models import Repository
 
-def get_file_exists_in_history(validation_info, repository, parent_id, path,
-                               revision, **kwargs):
+
+def get_file_exists_in_history(
+    validation_info: dict[str, Any],
+    repository: Repository,
+    parent_id: str,
+    path: str,
+    revision: str,
+    base_commit_id: Optional[str] = None,
+    *,
+    context: Optional[FileLookupContext] = None,
+    **kwargs,
+) -> bool:
     """Return whether or not the file exists, given the validation information.
+
+    This will walk through the commit chain in ``validation_info``, starting
+    with ``parent_id``, looking for a file entry that matches the given
+    ``path`` and (by default) ``revision``. If found, the file is considered
+    to exist. If not found, it will fall back to checking the repository.
+
+    This can also operate in a loose validation mode. In this mode, only
+    file paths are compared, not revisions. This is required for diffs that
+    don't provide per-file revision information (such as Mercurial's plain
+    and Git-style diffs). If a match is found, the associated commit ID is
+    stored as ``context.file_extra_data['__validated_parent_id']``, allowing
+    for post-processing of the source revision to occur.
+
+    Strict validation mode is the default. Loose validation must be opted into
+    by setting ``context.diff_extra_data['has_per_file_revisions'] = False``.
+    This is done automatically when a
+    :py:class:`~reviewboard.diffviewer.parser.BaseDiffParser` subclass sets
+    :py:attr:`has_per_file_revisions
+    <reviewboard.diffviewer.parser.BaseDiffParser.has_per_file_revisions>`
+    to ``False``.
+
+    Version Changed:
+        7.0.2:
+        * Added the ``context`` argument.
+        * Added the loose validation mode.
 
     Version Changed:
         4.0.5:
@@ -30,14 +69,20 @@ def get_file_exists_in_history(validation_info, repository, parent_id, path,
         repository (reviewboard.scmtools.models.Repository):
             The repository.
 
-        parent_id (unicode):
+        parent_id (str):
             The parent commit ID of the commit currently being processed.
 
-        path (unicode):
+        path (str):
             The file path.
 
-        revision (unicode):
+        revision (str):
             The revision of the file to retrieve.
+
+        context (reviewboard.scmtools.core.FileLookupContext, optional):
+            The file lookup context used to validate this repository.
+
+            Version Added:
+                7.0.2
 
         **kwargs (dict):
             Additional keyword arguments normally expected by
@@ -51,6 +96,10 @@ def get_file_exists_in_history(validation_info, repository, parent_id, path,
         bool:
         Whether or not the file exists.
     """
+    match_parent_revisions = (
+        context is None or
+        context.diff_extra_data.get('has_per_file_revisions', True))
+
     while parent_id in validation_info:
         entry = validation_info[parent_id]
         tree = entry['tree']
@@ -60,11 +109,32 @@ def get_file_exists_in_history(validation_info, repository, parent_id, path,
                 if removed_info['filename'] == path:
                     return False
 
-        for added_info in chain(tree['added'], tree['modified']):
-            if (added_info['filename'] == path and
-                (revision == UNKNOWN or
-                 added_info['revision'] == revision)):
-                return True
+        for change_info in chain(tree['added'], tree['modified']):
+            if change_info['filename'] == path:
+                if revision == UNKNOWN:
+                    return True
+
+                if match_parent_revisions:
+                    # In the standard case, we have per-file revisions, and
+                    # can use that to get a specific match within the
+                    # validation history.
+                    if change_info['revision'] == revision:
+                        return True
+                else:
+                    # In a more limited case, we may not know the per-file
+                    # revision, and instead have to limit our scan to
+                    # the nearest filename. This is the case with Mercurial
+                    # diffs.
+                    #
+                    # We'll be recording what we found, temporarily. This
+                    # will be used to update the source filename of a
+                    # generated FileDiff.
+                    assert context is not None
+
+                    context.file_extra_data['__validated_parent_id'] = \
+                        parent_id
+
+                    return True
 
         parent_id = entry['parent_id']
 
@@ -72,6 +142,8 @@ def get_file_exists_in_history(validation_info, repository, parent_id, path,
     # to checking the repository.
     return repository.get_file_exists(path=path,
                                       revision=revision,
+                                      base_commit_id=base_commit_id,
+                                      context=context,
                                       **kwargs)
 
 
