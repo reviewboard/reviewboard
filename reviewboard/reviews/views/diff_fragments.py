@@ -802,9 +802,10 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
 
         try:
             repository = filediff.get_repository()
-            file_contents = repository.get_file(filediff.source_file,
-                                                filediff.source_revision,
-                                                context=context)
+            file_contents = repository.get_file(
+                path=filediff.source_file,
+                revision=filediff.source_revision,
+                context=context)
 
             with ContentFile(file_contents) as file_obj:
                 attachment = FileAttachment.objects.create_from_filediff(

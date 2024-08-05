@@ -173,8 +173,10 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             path=target_path,
             revision=target_revision))
 
-        self.assertTrue(repository.get_file_exists.spy.called_with(
-            target_path, target_revision))
+        self.assertSpyCalledWith(
+            repository.get_file_exists,
+            path=target_path,
+            revision=target_revision)
 
     def test_removed_in_parent_unknown_revision(self):
         """Testing get_file_exists_in_history for a file removed in a parent
@@ -288,7 +290,7 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             parent_id='r2',
             path='foo',
             revision='c' * 40))
-        self.assertFalse(repository.get_file_exists.spy.called)
+        self.assertSpyNotCalled(repository.get_file_exists)
 
         self.assertTrue(get_file_exists_in_history(
             validation_info=validation_info,
@@ -296,7 +298,7 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             parent_id='r1',
             path='foo',
             revision='b' * 40))
-        self.assertFalse(repository.get_file_exists.spy.called)
+        self.assertSpyNotCalled(repository.get_file_exists)
 
         self.assertTrue(get_file_exists_in_history(
             validation_info=validation_info,
@@ -304,9 +306,10 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             parent_id='r0',
             path='foo',
             revision='a' * 40))
-        self.assertTrue(repository.get_file_exists.spy.called_with(
-            'foo', 'a' * 40,
-        ))
+        self.assertSpyCalledWith(
+            repository.get_file_exists,
+            path='foo',
+            revision='a' * 40)
 
     def test_modified_in_parent_unknown_revision(self):
         """Testing get_file_exists_in_history for a file modified in a
@@ -348,7 +351,7 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             parent_id='r2',
             path='foo',
             revision=UNKNOWN))
-        self.assertFalse(repository.get_file_exists.spy.called)
+        self.assertSpyNotCalled(repository.get_file_exists)
 
         self.assertTrue(get_file_exists_in_history(
             validation_info=validation_info,
@@ -356,7 +359,7 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             parent_id='r1',
             path='foo',
             revision=UNKNOWN))
-        self.assertFalse(repository.get_file_exists.spy.called)
+        self.assertSpyNotCalled(repository.get_file_exists)
 
         self.assertTrue(get_file_exists_in_history(
             validation_info=validation_info,
@@ -364,8 +367,10 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             parent_id='r0',
             path='foo',
             revision=UNKNOWN))
-        self.assertTrue(repository.get_file_exists.spy.called_with(
-            'foo', UNKNOWN))
+        self.assertSpyCalledWith(
+            repository.get_file_exists,
+            path='foo',
+            revision=UNKNOWN)
 
     def _make_get_file_exists_in_history(self, target_path, target_revision):
         """Return a fake get_file_exists_in_history method for a repository.
