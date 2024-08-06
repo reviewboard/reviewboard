@@ -309,7 +309,7 @@ export class TextFieldView extends BaseFieldView {
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         if (!this.$el.hasClass('editable')) {
             return;
         }
@@ -347,6 +347,16 @@ export class TextFieldView extends BaseFieldView {
 
         this.inlineEditorView = new EditorClass(inlineEditorOptions);
         this.inlineEditorView.render();
+
+        this.inlineEditorView.el.addEventListener('startEdit', (e: Event) => {
+            const reviewRequestEditorView = this.reviewRequestEditorView;
+            const reviewRequestEditor = reviewRequestEditorView.model;
+
+            if (reviewRequestEditor.hasUnviewedUserDraft) {
+                e.preventDefault();
+                reviewRequestEditorView.promptToLoadUserDraft();
+            }
+        });
 
         this.listenTo(this.inlineEditorView, 'beginEdit',
                       () => this.model.incr('editCount'));
@@ -717,7 +727,7 @@ export class MultilineTextFieldView extends TextFieldView {
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         super.onInitialRender();
         this.formatText();
     }
@@ -815,7 +825,7 @@ export class CheckboxFieldView extends BaseFieldView {
     /**
      * Render the field.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el.change(() => {
             this._saveValue(this.$el.is(':checked'))
                 .then(() => this.trigger('fieldSaved'))
@@ -833,7 +843,7 @@ export class DropdownFieldView extends BaseFieldView {
     /**
      * Render the field.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         super.onInitialRender();
 
         this.$el.change(() => {
@@ -853,7 +863,7 @@ export class DateFieldView extends TextFieldView {
     /**
      * Render the field.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         super.onInitialRender();
 
         this.inlineEditorView.$field
@@ -978,7 +988,7 @@ export class CommitListFieldView extends BaseFieldView {
     /**
      * Render the field.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         super.onInitialRender();
 
         /*

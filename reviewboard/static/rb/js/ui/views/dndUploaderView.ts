@@ -70,7 +70,7 @@ class DnDDropOverlayView extends BaseView<DnDDropTarget> {
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el.text(this.model.get('dropText'));
     }
 

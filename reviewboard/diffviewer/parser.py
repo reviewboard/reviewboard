@@ -105,12 +105,14 @@ class ParsedDiff:
         *,
         parser: BaseDiffParser,
         uses_commit_ids_as_revisions: bool = False,
+        has_per_file_revisions: bool = True,
     ) -> None:
         """Initialize the parsed diff information.
 
         Version Changed:
             7.0.2:
-            All arguments must now be passed as keyword arguments.
+            * All arguments must now be passed as keyword arguments.
+            * Added the ``has_per_file_revisions`` argument.
 
         Args:
             parser (BaseDiffParser):
@@ -120,11 +122,29 @@ class ParsedDiff:
                 Whether commit IDs are used as file revisions.
 
                 See :py:attr:`ParsedDiff.uses_commit_ids_as_revisions`.
+
+            has_per_file_revisions (bool, optional):
+                Whether the diff has revisions listed per-file.
+
+                Most SCM diffs list a source revision for each file that can
+                be directly tied to the change that introduced the file, but
+                some do not.
+
+                If set to ``False``, :py:attr:`extra_data` will be updated
+                with a ``has_per_file_revisions=False`` flag set, helping
+                consumers of the diff handle file lookup in an alternate
+                way.
+
+                Version Added:
+                    7.0.2
         """
         self.parser = parser
         self.extra_data = {}
         self.changes = []
         self.uses_commit_ids_as_revisions = uses_commit_ids_as_revisions
+
+        if not has_per_file_revisions:
+            self.extra_data['has_per_file_revisions'] = False
 
 
 class ParsedDiffChange:
@@ -547,6 +567,19 @@ class BaseDiffParser:
     #: See :py:attr:`ParsedDiff.uses_commit_ids_as_revisions`.
     uses_commit_ids_as_revisions: bool
 
+    #: Whether the diff has revisions listed per-file.
+    #:
+    #: Most SCM diffs list a source revision for each file that can be
+    #: directly tied to the change that introduced the file, but some
+    #: (Mercurial) do not.
+    #:
+    #: Diff parsers that don't support per-file revisions must set this to
+    #: ``False`` so that consumers can alter their file lookup logic.
+    #:
+    #: Version Added:
+    #:     7.0.2
+    has_per_file_revisions: bool = True
+
     @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def __init__(
         self,
@@ -763,7 +796,8 @@ class DiffParser(BaseDiffParser):
 
         self.parsed_diff = ParsedDiff(
             parser=self,
-            uses_commit_ids_as_revisions=self.uses_commit_ids_as_revisions)
+            uses_commit_ids_as_revisions=self.uses_commit_ids_as_revisions,
+            has_per_file_revisions=self.has_per_file_revisions)
         self.parsed_diff_change = ParsedDiffChange(
             parsed_diff=self.parsed_diff)
 

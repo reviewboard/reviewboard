@@ -71,7 +71,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const labelID = 'unified-banner-mode-label';
 
         const menuView = craft<MenuView>`
@@ -337,6 +337,8 @@ export class UnifiedBannerView extends FloatingBannerView<
 
     static events: EventsHash = {
         'click #btn-review-request-discard': '_discardDraft',
+        'click .rb-c-unified-banner__unpublished-draft a':
+            '_toggleViewUserDraft',
     };
 
     static modelEvents = {
@@ -348,15 +350,39 @@ export class UnifiedBannerView extends FloatingBannerView<
      * Instance variables *
      **********************/
 
+    /** The change description editor. */
     #$changedesc: JQuery;
+
+    /** The discard draft button. */
     #$discardButton: JQuery;
+
+    /** The container for all draft action buttons/menus. */
     #$draftActions: JQuery;
+
+    /** The link for accessing the interdiff for a new draft diff. */
     #$interdiffLink: JQuery;
+
+    /** The mode selector menu. */
     #$modeSelector: JQuery;
+
+    /** The container for all review-related controls in the banner. */
     #$review: JQuery;
-    #$reviewActions: JQuery;
+
+    /**
+     * The message for showing other users' drafts to admins.
+     *
+     * Version Added:
+     *     7.0.2
+     */
+    #$userDraftMessage: JQuery = null;
+
+    /** The draft mode menu. */
     #modeMenu: DraftModeMenu;
+
+    /** The publish button. */
     #publishButton: PublishButtonView;
+
+    /** The review request editor view. */
     #reviewRequestEditorView: ReviewRequestEditorView;
 
     /**
@@ -433,7 +459,7 @@ export class UnifiedBannerView extends FloatingBannerView<
     /**
      * Render the banner.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         if (!UserSession.instance.get('authenticated')) {
             return;
         }
@@ -445,7 +471,6 @@ export class UnifiedBannerView extends FloatingBannerView<
         this.#$modeSelector = this.$('.rb-c-unified-banner__mode-selector');
         this.#$draftActions = this.$('.rb-c-unified-banner__draft-actions');
         this.#$review = this.$('.rb-c-unified-banner__review');
-        this.#$reviewActions = this.$('.rb-c-unified-banner__review-actions');
         this.#$changedesc = this.$('.rb-c-unified-banner__changedesc');
         this.#$interdiffLink = $(dedent`
                 <div class="rb-c-unified-banner__interdiff-link">
@@ -500,7 +525,7 @@ export class UnifiedBannerView extends FloatingBannerView<
     /**
      * Handle re-renders.
      */
-    onRender() {
+    protected onRender() {
         this._update(true);
     }
 
@@ -535,6 +560,8 @@ export class UnifiedBannerView extends FloatingBannerView<
         const reviewRequest = model.get('reviewRequest');
         const reviewRequestPublic = reviewRequest.get('public');
 
+        const userDraftMessage = model.get('userDraftMessage');
+
         this.#$discardButton.toggle(
             draftModes.length > 0 &&
             !draftModes[selectedDraftMode].multiple);
@@ -553,6 +580,21 @@ export class UnifiedBannerView extends FloatingBannerView<
                 .children('a').attr('href', interdiffLink);
         } else {
             this.#$interdiffLink.hide();
+        }
+
+        if (userDraftMessage) {
+            if (this.#$userDraftMessage === null) {
+                this.#$userDraftMessage =
+                    $('<div class="rb-c-unified-banner__unpublished-draft">')
+                    .appendTo(this.getDock());
+            }
+
+            this.#$userDraftMessage.html(userDraftMessage);
+        } else {
+            if (this.#$userDraftMessage) {
+                this.#$userDraftMessage.remove();
+                this.#$userDraftMessage = null;
+            }
         }
 
         this.$el
@@ -783,7 +825,7 @@ export class UnifiedBannerView extends FloatingBannerView<
     private _confirmDiscard(
         draftMode: DraftMode,
     ): Promise<boolean> {
-        return new Promise((resolve, reject) => {
+        return new Promise(resolve => {
             const text = draftMode.hasReview
                 ? _`
                     If you discard this review, all unpublished comments
@@ -848,5 +890,17 @@ export class UnifiedBannerView extends FloatingBannerView<
 
             $(document).scrollTop(reviewTop - bannerHeight - 20);
         }
+    }
+
+    /**
+     * Toggle whether to view unpublished draft data owned by another user.
+     *
+     * It is up to the page view to reload based on this value changing.
+     */
+    private _toggleViewUserDraft() {
+        const reviewRequestEditor = this.model.get('reviewRequestEditor');
+        const viewingUserDraft = reviewRequestEditor.get('viewingUserDraft');
+
+        reviewRequestEditor.set('viewingUserDraft', !viewingUserDraft);
     }
 }

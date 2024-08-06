@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Mapping, Set, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from django.template import Library, TemplateSyntaxError
-from django.template.defaultfilters import escapejs, stringfilter
+from django.template.defaultfilters import stringfilter
 from django.template.loader import render_to_string
-from django.utils.html import format_html
-from django.utils.safestring import mark_safe
+from django.utils.html import escapejs, format_html
+from django.utils.safestring import SafeString, mark_safe
 from django.utils.translation import gettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import blocktag
@@ -38,8 +38,8 @@ from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
-    from django.utils.safestring import SafeString
     from reviewboard.attachments.models import FileAttachment
+    from reviewboard.reviews.context import ReviewRequestContext
 
 
 logger = logging.getLogger(__name__)
@@ -813,7 +813,7 @@ def diff_comment_line_numbers(context, chunks, comment):
 
 @register.simple_tag(takes_context=True)
 def reviewable_page_model_data(
-    context: Mapping[str, Any],
+    context: ReviewRequestContext,
 ) -> SafeString:
     """Output JSON-serialized data for a RB.ReviewablePage model.
 
@@ -825,7 +825,7 @@ def reviewable_page_model_data(
             The current template context.
 
     Returns:
-        unicode:
+        django.utils.safestring.SafeString:
         The resulting JSON-serialized data. This consists of keys that are
         meant to be injected into an existing dictionary.
     """
@@ -888,7 +888,7 @@ def reviewable_page_model_data(
                 'username': target_user.username,
                 'url': local_site_reverse('user',
                                           args=[target_user],
-                                          request=request)
+                                          request=request),
             }
             for target_user in review_request_details.target_people.all()
         ],
@@ -947,10 +947,13 @@ def reviewable_page_model_data(
             close_description,
             close_description_rich_text),
         'commits': None,
+        'forceViewUserDraft': context['force_view_user_draft'],
         'hasDraft': draft is not None,
         'mutableByUser': context['mutable_by_user'],
         'showSendEmail': context['send_email'],
         'statusMutableByUser': context['status_mutable_by_user'],
+        'userDraftExists': context['user_draft_exists'],
+        'viewingUserDraft': context['viewing_user_draft'],
     }
 
     if review_request.created_with_history:
@@ -988,7 +991,7 @@ def reviewable_page_model_data(
                     args=[
                         review_request.display_id,
                         draft.diffset.revision - 1,
-                        draft.diffset.revision
+                        draft.diffset.revision,
                     ],
                     request=request)
 
@@ -1001,17 +1004,17 @@ def reviewable_page_model_data(
         review_request_details=review_request_details,
         request=request)
 
-    all_file_attachments: List[FileAttachment] = context.get(
+    all_file_attachments: list[FileAttachment] = context.get(
         'all_file_attachments', [])
-    file_attachments: List[FileAttachment] = context.get(
+    file_attachments: list[FileAttachment] = context.get(
         'file_attachments', [])
-    file_attachment_ids: Set[Any] = {
+    file_attachment_ids: set[Any] = {
         file_attachment.pk for file_attachment in file_attachments
     }
 
     # This will contain data for the file attachments that will be displayed
     # on the review request.
-    file_attachments_data: List[Dict[str, Any]] = [
+    file_attachments_data: list[dict[str, Any]] = [
         file_attachments_field.get_attachment_js_model_attrs(
             attachment=file_attachment,
             draft=draft)
@@ -1020,7 +1023,7 @@ def reviewable_page_model_data(
 
     # This will contain data for all file attachments related to the review
     # request, including ones that won't be displayed.
-    all_file_attachments_data: List[Dict[str, Any]] = [
+    all_file_attachments_data: list[dict[str, Any]] = [
         file_attachments_field.get_attachment_js_model_attrs(
             attachment=file_attachment,
             draft=draft)
@@ -1060,13 +1063,16 @@ def reviewable_page_model_data(
 
     # And we're done! Assemble it together and chop off the outer dictionary
     # so it can be injected correctly.
-    return json_dumps_items({
+    json_items = json_dumps_items({
         'checkForUpdates': True,
         'reviewRequestData': review_request_data,
         'extraReviewRequestDraftData': extra_review_request_draft_data,
         'editorData': editor_data,
         'lastActivityTimestamp': context['last_activity_time'],
     })
+    assert isinstance(json_items, SafeString)
+
+    return json_items
 
 
 @register.simple_tag(takes_context=True)
@@ -1127,3 +1133,36 @@ def code_block(context, nodelist, lexer_name):
     lexer.add_filter('codetagify')
 
     return highlight(nodelist.render(context), lexer, HtmlFormatter())
+
+
+@register.filter
+def add_view_draft_query(
+    url: str,
+    viewing_user_draft: bool,
+) -> str:
+    """Add the ?view-draft=1 querystring to a URL.
+
+    When a user is viewing a draft owned by someone else, we want links within
+    the review request to include the query parameter so that they stay within
+    the draft view.
+
+    Args:
+        url (str):
+            The URL to manipulate.
+
+        viewing_user_draft (bool):
+            Whether the user is viewing a draft owned by another user.
+
+    Returns:
+        str:
+        The new URL to use, including the ?view-draft=1 query parameter.
+    """
+    if viewing_user_draft:
+        if '#' in url:
+            parts = url.split('#', 1)
+
+            return f'{parts[0]}?view-draft=1#{parts[1]}'
+        else:
+            return f'{url}?view-draft=1'
+    else:
+        return url

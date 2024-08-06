@@ -1,6 +1,8 @@
 /**
  * View that handles editing review requests.
  */
+
+import { paint } from '@beanbag/ink';
 import { BaseView, spina } from '@beanbag/spina';
 
 import {
@@ -139,7 +141,7 @@ class BannerView extends BaseView<
      * template, then this will make use of that template. Otherwise,
      * it will construct a new one.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const readOnly = UserSession.instance.get('readOnly');
 
         if (this.$el.children().length === 0) {
@@ -206,7 +208,7 @@ class ClosedBannerView extends BannerView {
     /**
      * Render the banner.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const descriptionFieldClasses = [];
 
         if (this.reviewRequestEditor.get('statusMutableByUser')) {
@@ -399,7 +401,7 @@ class DraftBannerView extends BannerView {
     /**
      * Render the banner.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const descriptionFieldClasses = [];
 
         if (this.reviewRequestEditor.get('mutableByUser')) {
@@ -539,7 +541,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      * This will import all pre-rendered file attachment and screenshot
      * thumbnails, turning them into FileAttachment and Screenshot objects.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const reviewRequest = this.model.get('reviewRequest');
         const fileAttachments = this.model.get('fileAttachments');
         const draft = reviewRequest.draft;
@@ -616,6 +618,37 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
         draft.on('destroyed', this._refreshPage, this);
 
         window.onbeforeunload = this._onBeforeUnload.bind(this);
+    }
+
+    /**
+     * Prompt the user to load an unpublished draft.
+     */
+    promptToLoadUserDraft() {
+        const loadDraft = () => {
+            this.model.set('viewingUserDraft', true);
+        };
+
+        const buttons = paint<HTMLButtonElement[]>`
+            <Ink.Button type="primary"
+                        onClick="${() => loadDraft()}">
+                ${_`Load Draft Data`}
+            </Ink.Button>
+            <Ink.Button>
+                ${_`Cancel`}
+            </Ink.Button>
+        `;
+
+        $('<div>')
+            .append(_`
+                <p>This review request is owned by another user and has an
+                unpublished draft.</p>
+                <p>Before making any changes to the review request, you will
+                need to view the draft.</p>
+            `)
+            .modalBox({
+                buttons: buttons,
+                title: _`View draft data`,
+            });
     }
 
     /**
@@ -763,11 +796,17 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
      *         The file to upload.
      */
     _uploadFile(file: File) {
-        // Create a temporary file listing.
-        const fileAttachment = this.model.createFileAttachment();
+        const reviewRequestEditor = this.model;
 
-        fileAttachment.set('file', file);
-        fileAttachment.save();
+        if (reviewRequestEditor.hasUnviewedUserDraft) {
+            this.promptToLoadUserDraft();
+        } else {
+            // Create a temporary file listing.
+            const fileAttachment = this.model.createFileAttachment();
+
+            fileAttachment.set('file', file);
+            fileAttachment.save();
+        }
     }
 
     /**
@@ -827,6 +866,7 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
             renderThumbnail: ($thumbnail === undefined),
             reviewRequest: this.model.get('reviewRequest'),
             reviewRequestEditor: this.model,
+            reviewRequestEditorView: this,
         });
 
         view.render();

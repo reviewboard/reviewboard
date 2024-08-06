@@ -1,6 +1,10 @@
 """Unit tests for reviewboard.diffviewer.commit_utils."""
 
-from kgb import SpyAgency
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import kgb
 
 from reviewboard.diffviewer.commit_utils import (CommitHistoryDiffEntry,
                                                  diff_histories,
@@ -10,11 +14,15 @@ from reviewboard.diffviewer.commit_utils import (CommitHistoryDiffEntry,
 from reviewboard.diffviewer.models import DiffCommit
 from reviewboard.diffviewer.tests.test_diffutils import \
     BaseFileDiffAncestorTests
-from reviewboard.scmtools.core import UNKNOWN
+from reviewboard.scmtools.core import FileLookupContext, UNKNOWN
+from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.testing.testcase import TestCase
 
+if TYPE_CHECKING:
+    from djblets.util.typing import JSONDict
 
-class GetFileExistsInHistoryTests(SpyAgency, TestCase):
+
+class GetFileExistsInHistoryTests(kgb.SpyAgency, TestCase):
     """Unit tests for get_file_exists_in_history."""
 
     fixtures = ['test_scmtools']
@@ -173,8 +181,10 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             path=target_path,
             revision=target_revision))
 
-        self.assertTrue(repository.get_file_exists.spy.called_with(
-            target_path, target_revision))
+        self.assertSpyCalledWith(
+            repository.get_file_exists,
+            path=target_path,
+            revision=target_revision)
 
     def test_removed_in_parent_unknown_revision(self):
         """Testing get_file_exists_in_history for a file removed in a parent
@@ -288,7 +298,7 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             parent_id='r2',
             path='foo',
             revision='c' * 40))
-        self.assertFalse(repository.get_file_exists.spy.called)
+        self.assertSpyNotCalled(repository.get_file_exists)
 
         self.assertTrue(get_file_exists_in_history(
             validation_info=validation_info,
@@ -296,7 +306,7 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             parent_id='r1',
             path='foo',
             revision='b' * 40))
-        self.assertFalse(repository.get_file_exists.spy.called)
+        self.assertSpyNotCalled(repository.get_file_exists)
 
         self.assertTrue(get_file_exists_in_history(
             validation_info=validation_info,
@@ -304,9 +314,10 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             parent_id='r0',
             path='foo',
             revision='a' * 40))
-        self.assertTrue(repository.get_file_exists.spy.called_with(
-            'foo', 'a' * 40,
-        ))
+        self.assertSpyCalledWith(
+            repository.get_file_exists,
+            path='foo',
+            revision='a' * 40)
 
     def test_modified_in_parent_unknown_revision(self):
         """Testing get_file_exists_in_history for a file modified in a
@@ -348,7 +359,7 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             parent_id='r2',
             path='foo',
             revision=UNKNOWN))
-        self.assertFalse(repository.get_file_exists.spy.called)
+        self.assertSpyNotCalled(repository.get_file_exists)
 
         self.assertTrue(get_file_exists_in_history(
             validation_info=validation_info,
@@ -356,7 +367,7 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             parent_id='r1',
             path='foo',
             revision=UNKNOWN))
-        self.assertFalse(repository.get_file_exists.spy.called)
+        self.assertSpyNotCalled(repository.get_file_exists)
 
         self.assertTrue(get_file_exists_in_history(
             validation_info=validation_info,
@@ -364,8 +375,169 @@ class GetFileExistsInHistoryTests(SpyAgency, TestCase):
             parent_id='r0',
             path='foo',
             revision=UNKNOWN))
-        self.assertTrue(repository.get_file_exists.spy.called_with(
-            'foo', UNKNOWN))
+        self.assertSpyCalledWith(
+            repository.get_file_exists,
+            path='foo',
+            revision=UNKNOWN)
+
+    def test_without_per_file_revisions_and_modified(self) -> None:
+        """Testing get_file_exists_in_history without per-file revision
+        information and file is in modified file entry
+        """
+        repository = self.create_repository()
+        self.spy_on(
+            repository.get_file_exists,
+            call_fake=self._make_get_file_exists_in_history('foo', UNKNOWN))
+
+        validation_info = {
+            'r3': {
+                'parent_id': 'r2',
+                'tree': {
+                    'added': [],
+                    'modified': [{
+                        'filename': 'bar',
+                        'revision': 'd' * 40,
+                    }],
+                    'removed': [],
+                },
+            },
+            'r2': {
+                'parent_id': 'r1',
+                'tree': {
+                    'added': [],
+                    'modified': [{
+                        'filename': 'bar',
+                        'revision': 'c' * 40,
+                    }],
+                    'removed': [],
+                },
+            },
+            'r1': {
+                'parent_id': 'r0',
+                'tree': {
+                    'added': [],
+                    'modified': [{
+                        'filename': 'foo',
+                        'revision': 'b' * 40,
+                    }],
+                    'removed': [],
+                },
+            },
+        }
+
+        diff_extra_data: JSONDict = {
+            'has_per_file_revisions': False,
+        }
+
+        # Check foo.
+        context = FileLookupContext(diff_extra_data=diff_extra_data)
+
+        self.assertTrue(get_file_exists_in_history(
+            validation_info=validation_info,
+            repository=repository,
+            parent_id='r3',
+            path='foo',
+            revision='x' * 40,
+            context=context))
+        self.assertEqual(context.file_extra_data, {
+            '__validated_parent_id': 'r1',
+        })
+        self.assertSpyNotCalled(repository.get_file_exists)
+
+        # Check bar.
+        context = FileLookupContext(diff_extra_data=diff_extra_data)
+
+        self.assertTrue(get_file_exists_in_history(
+            validation_info=validation_info,
+            repository=repository,
+            parent_id='r3',
+            path='bar',
+            revision='x' * 40,
+            context=context))
+        self.assertEqual(context.file_extra_data, {
+            '__validated_parent_id': 'r3',
+        })
+        self.assertSpyNotCalled(repository.get_file_exists)
+
+    def test_without_per_file_revisions_and_added(self) -> None:
+        """Testing get_file_exists_in_history without per-file revision
+        information and file is in added file entry
+        """
+        repository = self.create_repository()
+        self.spy_on(
+            repository.get_file_exists,
+            op=kgb.SpyOpRaise(FileNotFoundError(path='xxx',
+                                                revision='xxx')))
+
+        validation_info = {
+            'r3': {
+                'parent_id': 'r2',
+                'tree': {
+                    'added': [{
+                        'filename': 'bar',
+                        'revision': 'd' * 40,
+                    }],
+                    'modified': [],
+                    'removed': [],
+                },
+            },
+            'r2': {
+                'parent_id': 'r1',
+                'tree': {
+                    'added': [{
+                        'filename': 'xxx',
+                        'revision': 'c' * 40,
+                    }],
+                    'modified': [],
+                    'removed': [],
+                },
+            },
+            'r1': {
+                'parent_id': 'r0',
+                'tree': {
+                    'added': [{
+                        'filename': 'foo',
+                        'revision': 'b' * 40,
+                    }],
+                    'modified': [],
+                    'removed': [],
+                },
+            },
+        }
+
+        diff_extra_data: JSONDict = {
+            'has_per_file_revisions': False,
+        }
+
+        # Check foo.
+        context = FileLookupContext(diff_extra_data=diff_extra_data)
+
+        self.assertTrue(get_file_exists_in_history(
+            validation_info=validation_info,
+            repository=repository,
+            parent_id='r3',
+            path='foo',
+            revision='x' * 40,
+            context=context))
+        self.assertEqual(context.file_extra_data, {
+            '__validated_parent_id': 'r1',
+        })
+        self.assertSpyNotCalled(repository.get_file_exists)
+
+        # Check bar.
+        context = FileLookupContext(diff_extra_data=diff_extra_data)
+
+        self.assertTrue(get_file_exists_in_history(
+            validation_info=validation_info,
+            repository=repository,
+            parent_id='r3',
+            path='bar',
+            revision='x' * 40,
+            context=context))
+        self.assertEqual(context.file_extra_data, {
+            '__validated_parent_id': 'r3',
+        })
+        self.assertSpyNotCalled(repository.get_file_exists)
 
     def _make_get_file_exists_in_history(self, target_path, target_revision):
         """Return a fake get_file_exists_in_history method for a repository.

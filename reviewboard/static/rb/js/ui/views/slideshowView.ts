@@ -131,7 +131,7 @@ export class SlideshowView extends BaseView<
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const $nav = this.$('.rb-c-slideshow__nav');
         this.#$navItems = $nav.children('.rb-c-slideshow__nav-item') as
             JQuery<HTMLAnchorElement>;

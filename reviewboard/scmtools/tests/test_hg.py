@@ -251,6 +251,33 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
             moved=True,
             data=diff)
 
+    def test_git_diff_parser_with_new_binary_file(self) -> None:
+        """Testing HgDiffParser diff with new binary file"""
+        diff = (
+            b'# Node ID 4960455a8e88\n'
+            b'# Parent bf544ea505f8\n'
+            b'diff --git a/test.png b/test.png\n'
+            b'new file mode 100644\n'
+            b'index 0000000000000000000000000000000000000000..'
+            b'696eefb5e69b23fc2575f2eaf2863515f6937438\n'
+            b'GIT binary patch\n'
+            b'literal 12\n'
+            b'zc$}1Zbx>SS@\n'
+        )
+
+        parsed_files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(parsed_files), 1)
+
+        self.assert_parsed_diff_file(
+            parsed_files[0],
+            orig_filename=b'test.png',
+            orig_file_details=PRE_CREATION,
+            modified_filename=b'test.png',
+            modified_file_details=b'4960455a8e88',
+            binary=True,
+            new_unix_mode='100644',
+            data=diff)
+
     def test_diff_parser_unicode(self) -> None:
         """Testing HgDiffParser with unicode characters"""
         diff = (

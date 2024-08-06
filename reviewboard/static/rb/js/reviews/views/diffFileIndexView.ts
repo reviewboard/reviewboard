@@ -219,7 +219,7 @@ export class DiffFileIndexView extends BaseView<
     /**
      * Render the view to the page.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         // Remove the spinner.
         this.$el.empty();
 

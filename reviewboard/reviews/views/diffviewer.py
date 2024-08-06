@@ -18,7 +18,8 @@ from reviewboard.diffviewer.views import (DiffViewerContext,
                                           DiffViewerView,
                                           SerializedDiffContext)
 from reviewboard.reviews.context import (ReviewRequestContext,
-                                         make_review_request_context)
+                                         make_review_request_context,
+                                         should_view_draft)
 from reviewboard.reviews.ui.diff import DiffReviewUI
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.reviews.models import (Review,
@@ -33,6 +34,7 @@ if TYPE_CHECKING:
     from reviewboard.attachments.models import FileAttachment
     from reviewboard.reviews.models import Comment, Screenshot
     from reviewboard.reviews.ui.base import SerializedCommentBlocks
+    from reviewboard.reviews.ui.diff import SerializedDiffComment
 
     CommentsDict: TypeAlias = Dict[Tuple[int, Optional[int], Optional[int]],
                                    List[Comment]]
@@ -48,23 +50,11 @@ class ReviewsDiffViewerContext(DiffViewerContext, ReviewRequestContext):
         7.0
     """
 
-    #: The current description if the review request has been closed.
-    close_description: str
-
-    #: Whether the ``close_description`` is in rich text.
-    close_description_rich_text: bool
-
-    #: The timestamp of when the review request was closed.
-    close_timestamp: Optional[datetime]
-
     #: All of the DiffSets connected to the review request.
     diffsets: list[DiffSet]
 
     #: The current review, if present.
     review: Optional[Review]
-
-    #: The current review request details.
-    review_request_details: ReviewRequest | ReviewRequestDraft
 
     #: The rendered HTML for the review request status.
     review_request_status_html: str
@@ -256,7 +246,7 @@ class SerializedReviewsDiffFile(TypedDict):
     public: bool
 
     #: The serialized comments already attached to the file's diff.
-    serialized_comment_blocks: SerializedCommentBlocks
+    serialized_comment_blocks: SerializedCommentBlocks[SerializedDiffComment]
 
 
 class ReviewsDiffViewerView(ReviewRequestViewMixin,
@@ -339,10 +329,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         """
         review_request = self.review_request
 
-        self.draft = review_request.get_draft(review_request.submitter)
-
-        if self.draft and not self.draft.is_accessible_by(request.user):
-            self.draft = None
+        self.draft = review_request.get_draft(user=self.request.user)
 
         self.diffset = self.get_diff(revision, self.draft)
 
@@ -387,13 +374,25 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
             dict:
             Context data used to render the template.
         """
+        request = self.request
         review_request = self.review_request
         draft = self.draft
-        draft_diffset = draft and draft.diffset
+        draft_diffset: Optional[DiffSet] = None
+
+        # Only include the draft diffset if the user is the owner of the
+        # review request, or if the user wants to view the unpublished draft.
+        if should_view_draft(request=request, review_request=review_request,
+                             draft=draft):
+            if draft.diffset:
+                draft_diffset = draft and draft.diffset
+
+            review_request_details = draft or review_request
+        else:
+            review_request_details = review_request
 
         # Try to find an existing pending review of this diff from the
         # current user.
-        pending_review = review_request.get_pending_review(self.request.user)
+        pending_review = review_request.get_pending_review(request.user)
 
         is_draft_diff = draft_diffset == self.diffset
         is_draft_interdiff = bool(self.interdiffset and
@@ -424,8 +423,6 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         for ds in diffsets:
             for filediff in ds.files.all():
                 filediffs_by_id[filediff.pk] = filediff
-
-        review_request_details = draft or review_request
 
         file_attachments = list(review_request_details.get_file_attachments())
         screenshots = list(review_request_details.get_screenshots())
@@ -474,8 +471,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
 
         if diffset.commit_count and not interdiffset:
             # Base and tip commit selection is not supported in interdiffs.
-            raw_base_commit_id = self.request.GET.get('base-commit-id')
-            raw_tip_commit_id = self.request.GET.get('tip-commit-id')
+            raw_base_commit_id = request.GET.get('base-commit-id')
+            raw_tip_commit_id = request.GET.get('tip-commit-id')
 
             if raw_base_commit_id is not None:
                 try:
@@ -511,24 +508,22 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                 **kwargs))
 
         context.update({
-            'close_description': close_info['close_description'],
-            'close_description_rich_text': close_info['is_rich_text'],
-            'close_timestamp': close_info['timestamp'],
-            'diffsets': diffsets,
-            'review': pending_review,
-            'review_request_details': review_request_details,
-            'review_request_status_html': review_request_status_html,
-            'draft': draft,
-            'last_activity_time': last_activity_time,
-            'file_attachments': latest_file_attachments,
             'all_file_attachments': file_attachments,
-            'screenshots': screenshots,
             'comments': comments,
+            'diffsets': diffsets,
+            'file_attachments': latest_file_attachments,
+            'last_activity_time': last_activity_time,
+            'review': pending_review,
+            'review_request_status_html': review_request_status_html,
+            'screenshots': screenshots,
         })
 
         context.update(make_review_request_context(
-            request=self.request,
+            request=request,
             review_request=review_request,
+            close_info=close_info,
+            draft=draft,
+            review_request_details=review_request_details,
             is_diff_view=True,
             social_page_title=(
                 f'Diff for Review Request #{review_request.display_id}: '

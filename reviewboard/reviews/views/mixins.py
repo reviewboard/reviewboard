@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
-from typing import List, Optional, TYPE_CHECKING
+from typing import Any, List, Optional, TYPE_CHECKING
 
 from django.db.models import Q
 from django.http import Http404, HttpRequest, HttpResponse
@@ -22,14 +21,17 @@ from typing_extensions import TypedDict
 from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
-from reviewboard.reviews.models.base_review_request_details import \
-    BaseReviewRequestDetails
-from reviewboard.reviews.models.review_request import ReviewRequestCloseInfo
 from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
-from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from reviewboard.attachments.models import FileAttachmentSequence
+    from reviewboard.reviews.models.base_review_request_details import \
+        BaseReviewRequestDetails
+    from reviewboard.reviews.models.review_request import \
+        ReviewRequestCloseInfo
+    from reviewboard.site.models import LocalSite
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +74,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
         #:
         #: Type:
         #:     dict
-        extra_vars: dict
+        extra_vars: dict[str, Any]
 
     def pre_dispatch(
         self,

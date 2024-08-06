@@ -277,8 +277,8 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         """Testing UploadDiffForm.create filters parent diff files"""
         saw_file_exists = {}
 
-        def get_file_exists(repository, filename, revision, *args, **kwargs):
-            saw_file_exists[(filename, revision)] = True
+        def get_file_exists(repository, path, revision, *args, **kwargs):
+            saw_file_exists[(path, revision)] = True
             return True
 
         parent_diff_1 = (

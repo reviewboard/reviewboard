@@ -60,7 +60,7 @@ interface UnifiedBannerAttrs {
     pendingReview: Review;
 
     /** The draft review replies. */
-    reviewReplyDrafts: Review[];
+    reviewReplyDrafts: ReviewReply[];
 
     /** The current review request. */
     reviewRequest: ReviewRequest;
@@ -70,6 +70,14 @@ interface UnifiedBannerAttrs {
 
     /** The currently selected draft mode (indexing into draftModes). */
     selectedDraftMode: number;
+
+    /**
+     * The message to show about viewing another user's draft.
+     *
+     * Version Added:
+     *     7.0.2
+     */
+    userDraftMessage: string | null;
 }
 
 
@@ -92,6 +100,7 @@ export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
             reviewRequest: null,
             reviewRequestEditor: null,
             selectedDraftMode: 0,
+            userDraftMessage: null,
         };
     }
 
@@ -103,11 +112,14 @@ export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
      * of initialization, checks if at least one draft exists already.
      */
     initialize() {
+        const editor = this.get('reviewRequestEditor');
         const reviewRequest = this.get('reviewRequest');
         const pendingReview = this.get('pendingReview');
         console.assert(!!reviewRequest, 'reviewRequest must be provided');
         console.assert(!!pendingReview, 'pendingReview must be provided');
 
+        this.listenTo(editor, 'change:hasDraft',
+                      this.#updateDraftModes);
         this.listenTo(reviewRequest.draft, 'saved destroyed',
                       this.#updateDraftModes);
         this.listenTo(pendingReview, 'saved destroyed',
@@ -157,12 +169,21 @@ export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
      * Update the list of available draft modes.
      */
     #updateDraftModes() {
+        const editor = this.get('reviewRequestEditor');
+        const forceViewUserDraft = editor.get('forceViewUserDraft');
+        const userDraftExists = editor.get('userDraftExists');
+        const viewingUserDraft = editor.get('viewingUserDraft');
+
         const reviewRequest = this.get('reviewRequest');
         const pendingReview = this.get('pendingReview');
         const reviewReplyDrafts = this.get('reviewReplyDrafts');
 
         const reviewRequestPublic = reviewRequest.get('public');
-        const reviewRequestDraft = !reviewRequest.draft.isNew();
+
+        const reviewRequestDraft = (
+            !reviewRequest.draft.isNew() &&
+            !editor.hasUnviewedUserDraft);
+
         const reviewDraft = !pendingReview.isNew();
         const numReplies = reviewReplyDrafts.length;
         const numDrafts = (numReplies +
@@ -342,10 +363,39 @@ export class UnifiedBanner extends BaseModel<UnifiedBannerAttrs> {
             selectedDraftMode = 0;
         }
 
+        let userDraftMessage: string | null = null;
+
+        /*
+         * These handle the case where the user is viewing another user's
+         * review request, and they have permission to access/manage
+         * the draft. In the case of review requests which are public,
+         * they can then switch between the published/draft states.
+         */
+        if (viewingUserDraft) {
+            userDraftMessage = _`
+                You are viewing an unpublished draft on a review request owned
+                by another user.
+            `;
+
+            if (!forceViewUserDraft) {
+                userDraftMessage +=
+                    ` <a href="#">${_`View only published data.`}</a>`;
+            }
+        } else if (userDraftExists) {
+            userDraftMessage = _`
+                This review request has an unpublished draft.
+            `;
+
+            if (!forceViewUserDraft) {
+                userDraftMessage += ` <a href="#">${_`View draft data.`}</a>`;
+            }
+        }
+
         this.set({
             draftModes,
             numDrafts,
             selectedDraftMode,
+            userDraftMessage,
         });
     }
 }

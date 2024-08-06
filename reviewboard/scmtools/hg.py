@@ -403,6 +403,16 @@ class HgTool(SCMTool):
 class HgDiffParser(DiffParser):
     """Diff parser for native Mercurial diffs."""
 
+    # Plain Mercurial diffs don't include per-file revision information,
+    # so we need to opt out of strong validation for diffs, and opt in to
+    # heuristics that try to loosely validate a diff in a series of commits.
+    # This also means that source revisions for files will be rewritten
+    # after validation based on the most-likely commit.
+    #
+    # It's possible for merge commits or ill-formed commit chains to validate
+    # but later fail to patch.
+    has_per_file_revisions = False
+
     def __init__(
         self,
         data: bytes,
@@ -549,6 +559,12 @@ class HgGitDiffParser(GitDiffParser):
     be parsed in order to properly locate changes to files in a repository.
     """
 
+    # Git-style Mercurial diffs don't include per-file revision information,
+    # so we need to opt out of strong validation for diffs.
+    #
+    # See HgDiffParser for more details on the implications here.
+    has_per_file_revisions = False
+
     def __init__(
         self,
         data: bytes,
@@ -613,7 +629,9 @@ class HgGitDiffParser(GitDiffParser):
         # overwrite those with the revision IDs.
         for f in diff_files:
             if f.binary:
-                f.orig_file_details = self.base_commit_id
+                if f.orig_file_details != PRE_CREATION:
+                    f.orig_file_details = self.base_commit_id
+
                 f.modified_file_details = self.new_commit_id
 
         return diff_files

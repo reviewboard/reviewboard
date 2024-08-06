@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import ClassVar, List, Optional, TYPE_CHECKING
+from typing import ClassVar, List, Optional, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -27,7 +26,11 @@ from reviewboard.reviews.signals import review_request_published
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 
 if TYPE_CHECKING:
-    from django.db.models.manager import RelatedManager
+    from datetime import datetime
+
+    from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
+    from django.db.models.fields.related_descriptors import RelatedManager
+
     from reviewboard.attachments.models import FileAttachmentSequence
     from reviewboard.reviews.models.review_request import (
         FileAttachmentState,
@@ -43,6 +46,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     be modified and eventually saved or discarded. When saved, the new
     details are copied back over to the originating ReviewRequest.
     """
+
     summary = models.CharField(
         _('summary'),
         max_length=BaseReviewRequestDetails.MAX_SUMMARY_LENGTH)
@@ -139,16 +143,45 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     commit = property(lambda self: self.commit_id,
                       lambda self, value: setattr(self, 'commit_id', value))
 
-    def get_latest_diffset(self):
-        """Returns the diffset for this draft."""
+    def get_latest_diffset(self) -> Optional[DiffSet]:
+        """Return the diffset for this draft.
+
+        Returns:
+            reviewboard.diffviewer.models.DiffSet:
+            The diffset for the draft.
+        """
         return self.diffset
 
-    def is_accessible_by(self, user):
-        """Returns whether or not the user can access this draft."""
+    def is_accessible_by(
+        self,
+        user: Union[AbstractBaseUser, AnonymousUser],
+    ) -> bool:
+        """Return whether or not the user can access this draft.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check.
+
+        Returns:
+            bool:
+            Whether the user can access the draft.
+        """
         return self.is_mutable_by(user)
 
-    def is_mutable_by(self, user):
-        """Returns whether or not the user can modify this draft."""
+    def is_mutable_by(
+        self,
+        user: Union[AbstractBaseUser, AnonymousUser],
+    ) -> bool:
+        """Return whether or not the user can modify this draft.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check.
+
+        Returns:
+            bool:
+            Whether the user can modify the draft.
+        """
         return self.review_request.is_mutable_by(user)
 
     def get_file_attachments_data(
@@ -191,6 +224,9 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             draft_inactive_attachments (list, optional):
                 The list of inactive file attachments on the review request
                 draft.
+
+            **kwargs (dict, unused):
+                Keyword arguments for future expansion.
 
         Returns:
             ReviewRequestFileAttachmentsData:

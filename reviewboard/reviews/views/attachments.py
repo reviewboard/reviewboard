@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from inspect import signature
 from typing import Optional, TYPE_CHECKING
 
 from django.db.models import Q
@@ -16,9 +15,11 @@ from django.views.generic.base import View
 
 from reviewboard.accounts.mixins import UserProfileRequiredViewMixin
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.reviews.context import should_view_draft
 from reviewboard.reviews.models import Screenshot
-from reviewboard.reviews.ui.base import DiffMismatchReviewUI, ReviewUI
+from reviewboard.reviews.ui.base import (DiffMismatchReviewUI,
+                                         ReviewUI,
+                                         is_review_ui_enabled_for)
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 
@@ -44,7 +45,7 @@ class _FileAttachmentViewMixin:
         review_request: ReviewRequest,
         draft: Optional[ReviewRequestDraft],
         file_attachment_id: int,
-        extra_q: Q = Q(),
+        extra_q: Optional[Q] = None,
     ) -> FileAttachment:
         """Return a file attachment accessible on the review request.
 
@@ -80,6 +81,9 @@ class _FileAttachmentViewMixin:
         # request or an accessible draft.
         review_request_q = (Q(review_request=review_request) |
                             Q(inactive_review_request=review_request))
+
+        if extra_q is None:
+            extra_q = Q()
 
         if draft is not None:
             review_request_q |= Q(drafts=draft) | Q(inactive_drafts=draft)
@@ -208,10 +212,17 @@ class ReviewFileAttachmentView(_FileAttachmentViewMixin,
         review_request = self.review_request
         draft = review_request.get_draft(request.user)
 
-        file_attachment = self.get_file_attachment(
-            review_request=review_request,
-            draft=draft,
-            file_attachment_id=file_attachment_id)
+        if should_view_draft(request=request, review_request=review_request,
+                             draft=draft):
+            file_attachment = self.get_file_attachment(
+                review_request=review_request,
+                draft=draft,
+                file_attachment_id=file_attachment_id)
+        else:
+            file_attachment = self.get_file_attachment(
+                review_request=review_request,
+                draft=None,
+                file_attachment_id=file_attachment_id)
 
         diff_against_attachment: Optional[FileAttachment] = None
 
@@ -251,63 +262,21 @@ class ReviewFileAttachmentView(_FileAttachmentViewMixin,
         if diff_against_attachment:
             review_ui.set_diff_against(diff_against_attachment)
 
-        if not self._is_review_ui_enabled_for(
-            review_ui, request, review_request, file_attachment):
+        if not is_review_ui_enabled_for(
+            review_ui=review_ui,
+            request=request,
+            review_request=review_request,
+            file_attachment=file_attachment):
             raise Http404
 
-        if diff_against_attachment and not self._is_review_ui_enabled_for(
-            review_ui, request, review_request, diff_against_attachment):
+        if diff_against_attachment and not is_review_ui_enabled_for(
+            review_ui=review_ui,
+            request=request,
+            review_request=review_request,
+            file_attachment=diff_against_attachment):
             raise Http404
 
         return review_ui.render_to_response(request)
-
-    def _is_review_ui_enabled_for(
-        self,
-        review_ui: ReviewUI,
-        request: HttpRequest,
-        review_request: ReviewRequest,
-        file_attachment: FileAttachment,
-    ) -> bool:
-        """Return whether a Review UI is enabled for the given object.
-
-        Args:
-            review_ui (reviewboard.reviews.ui.base.ReviewUI):
-                The Review UI to check.
-
-            request (django.http.HttpRequest):
-                The user making the request.
-
-            review_request (reviewboard.reviews.models.ReviewRequest):
-                The review request.
-
-            file_attachment (reviewboard.attachments.models.FileAttachment):
-                The file attachment.
-        """
-        params = signature(review_ui.is_enabled_for).parameters
-
-        try:
-            if 'file_attachment' in params:
-                RemovedInReviewBoard80Warning.warn(
-                    'The file_attachment parameter to ReviewUI.is_enabled_for '
-                    'has been removed. Please use obj= instead in Review UI %r'
-                    % review_ui)
-
-                return review_ui.is_enabled_for(
-                    user=request.user,
-                    review_request=review_request,
-                    file_attachment=file_attachment)
-            else:
-                return review_ui.is_enabled_for(
-                    user=request.user,
-                    review_request=review_request,
-                    obj=file_attachment)
-        except Exception as e:
-            logger.error('Error when calling is_enabled_for for '
-                         'ReviewUI %r: %s',
-                         review_ui, e, exc_info=True,
-                         extra={'request': request})
-
-            return False
 
 
 class ReviewScreenshotView(ReviewRequestViewMixin,

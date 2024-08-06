@@ -209,7 +209,7 @@ export class Review<
         'public',
     ];
 
-    static deserializedAttrs: DeserializerMap = [
+    static deserializedAttrs = [
         'shipIt',
         'bodyTop',
         'bodyBottom',
@@ -239,8 +239,8 @@ export class Review<
      *     Attribute values to set on the model.
      */
     parseResourceData(
-        rsp: ReviewResourceData,
-    ): Partial<ReviewAttrs> {
+        rsp: Partial<TResourceData>,
+    ): Partial<TDefaults> {
         const rawTextFields = rsp.raw_text_fields || rsp;
         const data = super.parseResourceData(rsp);
 

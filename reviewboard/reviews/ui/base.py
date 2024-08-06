@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from inspect import signature
 from typing import (Any, ClassVar, Dict, Generic, Iterator, List, Optional,
                     Sequence, TYPE_CHECKING, TypeVar)
 from urllib.parse import urlencode
@@ -23,12 +24,14 @@ from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.models import FileDiff
-from reviewboard.reviews.context import make_review_request_context
+from reviewboard.reviews.context import (make_review_request_context,
+                                         should_view_draft)
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
 from reviewboard.reviews.models import (BaseComment,
                                         FileAttachmentComment,
                                         Review)
+from reviewboard.reviews.models.review_request import FileAttachmentState
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -283,8 +286,7 @@ class ReviewUI(Generic[
         """Initialize the Review UI.
 
         Args:
-            review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest):
+            review_request (reviewboard.reviews.models.ReviewRequest):
                 The review request containing the object to review.
 
             obj (object):
@@ -333,8 +335,8 @@ class ReviewUI(Generic[
             user (django.contrib.auth.models.User, optional):
                 The user to check.
 
-            review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest, optional):
+            review_request (reviewboard.reviews.models.ReviewRequest,
+                            optional):
                 The review request to check.
 
             obj (object, optional):
@@ -434,41 +436,38 @@ class ReviewUI(Generic[
                 Whether to render this such that it can be embedded into an
                 existing page, instead of as a standalone page.
 
+            **kwargs (dict, unused):
+                Keyword arguments, for future expansion.
+
         Returns:
             dict:
             The context to use in the template.
         """
+        self.request = request
+
+        review_request = self.review_request
         last_activity_time = \
-            self.review_request.get_last_activity_info()['timestamp']
+            review_request.get_last_activity_info()['timestamp']
 
-        draft = self.review_request.get_draft(request.user)
-        review_request_details = draft or self.review_request
+        draft = review_request.get_draft(request.user)
 
-        close_info = self.review_request.get_close_info()
-        caption = self.get_caption(draft)
+        if should_view_draft(request=request, review_request=review_request,
+                             draft=draft):
+            review_request_details = draft or review_request
+            caption = self.get_caption(draft)
+        else:
+            review_request_details = review_request
+            caption = self.get_caption(None)
 
-        context = make_review_request_context(
-            request=request,
-            review_request=self.review_request,
-            extra_context={
-                'caption': caption,
-                'close_description': close_info['close_description'],
-                'close_description_rich_text': close_info['is_rich_text'],
-                'close_timestamp': close_info['timestamp'],
-                'comments': self.get_comments(),
-                'draft': draft,
-                'last_activity_time': last_activity_time,
-                'review_request_details': review_request_details,
-                'review_request': self.review_request,
-                'review_ui': self,
-                'review_ui_uuid': str(uuid4()),
-                self.object_key: self.obj,
-                self.diff_object_key: self.diff_against_obj,
-            },
-            social_page_image_url=self.get_page_cover_image_url(),
-            social_page_title=(
-                f'Reviewable for Review Request '
-                f'#{self.review_request.display_id}: {caption}'))
+        context: dict[str, Any] = {
+            'caption': caption,
+            'comments': self.get_comments(),
+            'last_activity_time': last_activity_time,
+            'review_ui': self,
+            'review_ui_uuid': str(uuid4()),
+            self.object_key: self.obj,
+            self.diff_object_key: self.diff_against_obj,
+        }
 
         if inline:
             context.update({
@@ -478,7 +477,7 @@ class ReviewUI(Generic[
         else:
             context.update({
                 'base_template': 'reviews/ui/base.html',
-                'review': self.review_request.get_pending_review(request.user),
+                'review': review_request.get_pending_review(request.user),
                 'review_ui_inline': False,
             })
 
@@ -491,25 +490,48 @@ class ReviewUI(Generic[
                              extra={'request': request})
             raise
 
-        if isinstance(self.obj, FileAttachment):
-            context['social_page_title'] = (
-                'Attachment for Review Request #%s: %s'
-                % (self.review_request.display_id, context['caption'])
+        is_file_attachment = isinstance(self.obj, FileAttachment)
+
+        if is_file_attachment:
+            social_page_title = (
+                f'Attachment for Review Request '
+                f'#{review_request.display_id}: {caption}'
             )
 
-            if not inline:
-                context['tabs'].append({
-                    'url': request.path,
-                    'text': _('File'),
-                })
+            state = review_request.get_file_attachment_state(self.obj)
 
-                prev_file_attachment, next_file_attachment = \
-                    self._get_adjacent_file_attachments(review_request_details)
+            force_view_user_draft = (
+                request.user != review_request.submitter and
+                state in (FileAttachmentState.NEW_REVISION,
+                          FileAttachmentState.NEW))
+        else:
+            social_page_title = (
+                f'Reviewable for Review Request '
+                f'#{review_request.display_id}: {caption}')
+            force_view_user_draft = False
 
-                context.update({
-                    'next_file_attachment': next_file_attachment,
-                    'prev_file_attachment': prev_file_attachment,
-                })
+        context.update(make_review_request_context(
+            request=request,
+            review_request=review_request,
+            draft=draft,
+            force_view_user_draft=force_view_user_draft,
+            review_request_details=review_request_details,
+            social_page_image_url=self.get_page_cover_image_url(),
+            social_page_title=social_page_title))
+
+        if is_file_attachment and not inline:
+            context['tabs'].append({
+                'url': request.path,
+                'text': _('File'),
+            })
+
+            prev_file_attachment, next_file_attachment = \
+                self._get_adjacent_file_attachments(review_request_details)
+
+            context.update({
+                'next_file_attachment': next_file_attachment,
+                'prev_file_attachment': prev_file_attachment,
+            })
 
         return context
 
@@ -564,8 +586,7 @@ class ReviewUI(Generic[
         else.
 
         Args:
-            draft (reviewboard.reviews.models.review_request_draft.
-                   ReviewRequestDraft, optional):
+            draft (reviewboard.reviews.models.ReviewRequestDraft, optional):
                 The active review request draft for the user, if any.
 
         Returns:
@@ -684,7 +705,8 @@ class ReviewUI(Generic[
         obj = self.obj
 
         if isinstance(obj, FileAttachment):
-            state = self.review_request.get_file_attachment_state(obj)
+            review_request = self.review_request
+            state = review_request.get_file_attachment_state(obj)
             data.update({
                 'fileAttachmentID': obj.pk,
                 'fileRevision': obj.attachment_revision,
@@ -693,12 +715,39 @@ class ReviewUI(Generic[
             })
 
             if obj.attachment_history is not None:
-                attachments = FileAttachment.objects.filter(
-                    attachment_history=obj.attachment_history)
-                data['attachmentRevisionIDs'] = list(
-                    attachments.order_by('attachment_revision')
-                    .values_list('pk', flat=True))
-                data['numRevisions'] = attachments.count()
+                request = self.request
+                include_draft = (
+                    request is not None and should_view_draft(
+                        request=request,
+                        review_request=review_request,
+                        draft=review_request.get_draft(request.user)))
+
+                attachments = list(
+                    FileAttachment.objects
+                    .filter(attachment_history=obj.attachment_history)
+                    .order_by('attachment_revision'))
+
+                if attachments:
+                    revisions = [
+                        attachment.pk
+                        for attachment in attachments[:-1]
+                    ]
+                    last_attachment = attachments[-1]
+
+                    # If the last attachment is newly added in a draft, we only
+                    # want to include it in the revision list if the draft is
+                    # visible to the user.
+                    if (include_draft or
+                        review_request.get_file_attachment_state(
+                            last_attachment,
+                        ) not in [
+                            FileAttachmentState.NEW,
+                            FileAttachmentState.NEW_REVISION,
+                        ]):
+                        revisions.append(last_attachment.pk)
+
+                    data['attachmentRevisionIDs'] = revisions
+                    data['numRevisions'] = len(revisions)
 
             if self.diff_against_obj:
                 diff_against_obj = self.diff_against_obj
@@ -882,6 +931,7 @@ class ReviewUI(Generic[
             instances.
         """
         assert isinstance(self.obj, FileAttachment)
+        assert self.request is not None
 
         file_attachments = iter(get_latest_file_attachments(
             review_request_details.get_file_attachments()))
@@ -893,10 +943,25 @@ class ReviewUI(Generic[
             if obj.pk == self.obj.pk:
                 break
 
-            prev_obj = obj
+            review_ui = obj.review_ui
+
+            if review_ui and is_review_ui_enabled_for(
+                review_ui=review_ui,
+                request=self.request,
+                review_request=self.review_request,
+                file_attachment=obj):
+                prev_obj = obj
 
         try:
-            next_obj = next(file_attachments)
+            obj = next(file_attachments)
+            review_ui = obj.review_ui
+
+            if review_ui and is_review_ui_enabled_for(
+                review_ui=review_ui,
+                request=self.request,
+                review_request=self.review_request,
+                file_attachment=obj):
+                next_obj = obj
         except StopIteration:
             pass
 
@@ -1227,3 +1292,61 @@ def unregister_ui(review_ui: type[ReviewUI]) -> None:
     from reviewboard.reviews.ui import review_ui_registry
 
     review_ui_registry.unregister(review_ui)
+
+
+def is_review_ui_enabled_for(
+    *,
+    review_ui: ReviewUI[FileAttachment, FileAttachmentComment,
+                        SerializedComment],
+    request: HttpRequest,
+    review_request: ReviewRequest,
+    file_attachment: FileAttachment,
+) -> bool:
+    """Return whether a Review UI is enabled for the given object.
+
+    Version Added:
+        7.0.2
+
+    Args:
+        review_ui (reviewboard.reviews.ui.base.ReviewUI):
+            The Review UI to check.
+
+        request (django.http.HttpRequest):
+            The user making the request.
+
+        review_request (reviewboard.reviews.models.ReviewRequest):
+            The review request.
+
+        file_attachment (reviewboard.attachments.models.FileAttachment):
+            The file attachment.
+
+    Returns:
+        bool:
+        ``True`` if the review UI is enabled for the given attachment.
+    """
+    user = request.user
+
+    params = signature(review_ui.is_enabled_for).parameters
+
+    try:
+        if 'file_attachment' in params:
+            RemovedInReviewBoard80Warning.warn(
+                'The file_attachment parameter to ReviewUI.is_enabled_for '
+                'has been removed. Please use obj= instead in Review UI %r'
+                % review_ui)
+
+            return review_ui.is_enabled_for(
+                user=user,
+                review_request=review_request,
+                file_attachment=file_attachment)
+        else:
+            return review_ui.is_enabled_for(
+                user=user,
+                review_request=review_request,
+                obj=file_attachment)
+    except Exception as e:
+        logger.exception(
+            'Error when calling is_enabled_for for ReviewUI %r: %s',
+            review_ui, e, extra={'request': request})
+
+        return False

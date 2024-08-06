@@ -306,8 +306,8 @@ class ResourceTests(SpyAgency, SSLTestsMixin, BaseWebAPITestCase,
     @webapi_test_template
     def test_post_parent_diff(self):
         """Testing the POST <URL> API with a parent diff"""
-        def _exists(repository, filename, revision, *args, **kwargs):
-            return filename == 'README' and revision == '94bdd3e'
+        def _exists(repository, path, revision, *args, **kwargs):
+            return path == 'README' and revision == '94bdd3e'
 
         repo = self.create_repository(name='repo')
         self.spy_on(Repository.get_file_exists,
@@ -376,8 +376,8 @@ class ResourceTests(SpyAgency, SSLTestsMixin, BaseWebAPITestCase,
         """Testing the POST <URL> API with a subsequent commit that contains a
         file added in the parent diff
         """
-        def _exists(repository, filename, revision, *args, **kwargs):
-            return filename == 'README' and revision == '94bdd3e'
+        def _exists(repository, path, revision, *args, **kwargs):
+            return path == 'README' and revision == '94bdd3e'
 
         initial_validation_info = {
             'r1': {

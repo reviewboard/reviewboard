@@ -241,7 +241,7 @@ export class ReviewablePageView<
     reviewRequestEditorView: ReviewRequestEditorView;
 
     /** The draft review banner, if present. */
-    draftReviewBanner: RB.DraftReviewBannerview;
+    draftReviewBanner: RB.DraftReviewBannerView;
 
     /** The unified banner, if present. */
     unifiedBanner: UnifiedBannerView = null;
@@ -351,6 +351,10 @@ export class ReviewablePageView<
             this.listenTo(pendingReview, 'destroy published',
                           () => this.draftReviewBanner.hideAndReload());
         }
+
+        this.listenTo(this.model.reviewRequestEditor,
+                      'change:viewingUserDraft',
+                      this._onViewingUserDraftChanged);
 
         this.reviewRequestEditorView.render();
     }
@@ -615,5 +619,40 @@ export class ReviewablePageView<
             $menuButton.attr('aria-expanded', 'false');
             $target.removeClass('-is-visible');
         }
+    }
+
+    /**
+     * Callback for when the viewingUserDraft attribute of the editor changes.
+     *
+     * This will reload the page with the new value of the ``view-draft`` query
+     * parameter.
+     *
+     * Args:
+     *     model (ReviewRequestEditor):
+     *         The review request editor model.
+     *
+     *     newValue (boolean):
+     *         The new value of the viewingUserDraft attribute.
+     */
+    protected _onViewingUserDraftChanged(
+        model: ReviewRequestEditor,
+        newValue: boolean,
+    ) {
+        const location = window.location;
+        const params = new URLSearchParams(location.search);
+
+        if (newValue) {
+            params.set('view-draft', '1');
+        } else {
+            params.delete('view-draft');
+        }
+
+        let url = location.pathname;
+
+        if (params.size) {
+            url += `?${params}`;
+        }
+
+        RB.navigateTo(url);
     }
 }

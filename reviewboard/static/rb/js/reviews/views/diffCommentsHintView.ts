@@ -24,7 +24,7 @@ export class DiffCommentsHintView extends BaseView<DiffCommentsHint> {
     /**
      * Render the view.
      */
-    onRender() {
+    protected onRender() {
         const model = this.model;
 
         if (!model.get('hasOtherComments')) {

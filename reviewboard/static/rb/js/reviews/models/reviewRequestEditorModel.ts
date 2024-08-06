@@ -14,6 +14,7 @@ import {
     FileAttachment,
     FileAttachmentStates,
     ReviewRequest,
+    UserSession,
 } from 'reviewboard/common';
 import {
     type FileAttachmentAttrs,
@@ -48,6 +49,14 @@ export interface ReviewRequestEditorAttrs extends ModelAttributes {
     /** The number of outstanding edits. */
     editCount: number;
 
+    /**
+     * Whether to force viewing another user's draft.
+     *
+     * Version Added:
+     *     7.0.2
+     */
+    forceViewUserDraft: boolean;
+
     /** Whether or not a draft currently exists. */
     hasDraft: boolean;
 
@@ -60,9 +69,7 @@ export interface ReviewRequestEditorAttrs extends ModelAttributes {
     fileAttachments: ResourceCollection<FileAttachment>;
 
     /** A mapping of file attachment IDs to their comments. */
-    fileAttachmentComments: {
-        [key: string]: RB.FileAttachmentComment;
-    };
+    fileAttachmentComments: Record<string, RB.FileAttachmentComment>;
 
     /** Whether or not the user can mutate the review request. */
     mutableByUser: boolean;
@@ -84,6 +91,25 @@ export interface ReviewRequestEditorAttrs extends ModelAttributes {
 
     /** Whether or not the status is mutable by the current user. */
     statusMutableByUser: boolean;
+
+    /**
+     * Whether a draft exists that is owned by another user.
+     *
+     * This is used for users who have edit permission for the review request
+     * but are not the owner.
+     *
+     * Version Added:
+     *     7.0.2
+     */
+    userDraftExists: boolean;
+
+    /**
+     * Whether a draft owned by another user is currently being viewed.
+     *
+     * Version Added:
+     *     7.0.2
+     */
+    viewingUserDraft: boolean;
 }
 
 
@@ -178,7 +204,25 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
             showSendEmail: false,
             statusEditable: false,
             statusMutableByUser: false,
+            userDraftExists: false,
+            viewingUserDraft: false,
         };
+    }
+
+    /**
+     * Return whether there's another user's draft that's not being viewed.
+     *
+     * Version Added:
+     *     7.0.2
+     *
+     * Returns:
+     *     boolean:
+     *     true if there's an existing draft that's owned by another user,
+     *     which is not currently being viewed.
+     */
+    get hasUnviewedUserDraft(): boolean {
+        return (this.get('userDraftExists') &&
+                !this.get('viewingUserDraft'));
     }
 
     /**
@@ -402,13 +446,13 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
-    setDraftField(
+    async setDraftField(
         fieldName: string,
         value: unknown,
         options: SetDraftFieldOptions = {},
     ): Promise<void> {
         const reviewRequest = this.get('reviewRequest');
-        const data = {}; // TODO: add typing once RB.ReviewRequest is TS
+        const data = {}; // TODO: add typing once RB.DraftReviewRequest is TS
 
         let jsonFieldName = options.jsonFieldName;
 
@@ -440,76 +484,76 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
 
         data[jsonFieldName] = value;
 
-        return reviewRequest.draft.save({ data })
-            .then(() => {
-                this.set('hasDraft', true);
+        try {
+            await reviewRequest.draft.save({ data });
 
-                this.trigger('fieldChanged:' + fieldName, value);
-                this.trigger('fieldChanged', fieldName, value);
-            })
-            .catch(err => {
-                let message = '';
+            this.#setHasDraft();
 
-                this.set('publishing', false);
+            this.trigger('fieldChanged:' + fieldName, value);
+            this.trigger('fieldChanged', fieldName, value);
+        } catch (err) {
+            let message = '';
 
-                const rsp = err.xhr.errorPayload;
+            this.set('publishing', false);
 
-                /*
-                 * An error can be caused by a 503 when the site is in
-                 * read-only mode, in which case the fields will be
-                 * empty.
-                 */
-                if (rsp.fields !== undefined) {
-                    const fieldValue = rsp.fields[jsonFieldName];
-                    const fieldValueLen = fieldValue.length;
+            const rsp = err.xhr.errorPayload;
 
-                    /* Wrap each term in quotes or a leading 'and'. */
-                    _.each(fieldValue, (value, i) => {
-                        // XXX: This method isn't localizable.
-                        if (i === fieldValueLen - 1 && fieldValueLen > 1) {
-                            if (i > 2) {
-                                message += ', ';
-                            }
+            /*
+             * An error can be caused by a 503 when the site is in
+             * read-only mode, in which case the fields will be
+             * empty.
+             */
+            if (rsp.fields !== undefined) {
+                const fieldValue = rsp.fields[jsonFieldName];
+                const fieldValueLen = fieldValue.length;
 
-                            message += ` and "${value}"`;
-                        } else {
-                            if (i > 0) {
-                                message += ', ';
-                            }
-
-                            message += `"${value}"`;
+                /* Wrap each term in quotes or a leading 'and'. */
+                _.each(fieldValue, (value, i) => {
+                    // XXX: This method isn't localizable.
+                    if (i === fieldValueLen - 1 && fieldValueLen > 1) {
+                        if (i > 2) {
+                            message += ', ';
                         }
-                    });
 
-                    if (fieldName === 'targetGroups') {
-                        message = interpolate(
-                            ngettext('Group %s does not exist.',
-                                     'Groups %s do not exist.',
-                                     fieldValue.length),
-                            [message]);
-                    } else if (fieldName === 'targetPeople') {
-                        message = interpolate(
-                            ngettext('User %s does not exist.',
-                                     'Users %s do not exist.',
-                                     fieldValue.length),
-                            [message]);
-                    } else if (fieldName === 'submitter') {
-                        message = interpolate(
-                            gettext('User %s does not exist.'),
-                            [message]);
-                    } else if (fieldName === 'dependsOn') {
-                        message = interpolate(
-                            ngettext('Review Request %s does not exist.',
-                                     'Review Requests %s do not exist.',
-                                     fieldValue.length),
-                            [message]);
+                        message += ` and "${value}"`;
+                    } else {
+                        if (i > 0) {
+                            message += ', ';
+                        }
+
+                        message += `"${value}"`;
                     }
+                });
+
+                if (fieldName === 'targetGroups') {
+                    message = interpolate(
+                        ngettext('Group %s does not exist.',
+                                 'Groups %s do not exist.',
+                                 fieldValue.length),
+                        [message]);
+                } else if (fieldName === 'targetPeople') {
+                    message = interpolate(
+                        ngettext('User %s does not exist.',
+                                 'Users %s do not exist.',
+                                 fieldValue.length),
+                        [message]);
+                } else if (fieldName === 'submitter') {
+                    message = interpolate(
+                        gettext('User %s does not exist.'),
+                        [message]);
+                } else if (fieldName === 'dependsOn') {
+                    message = interpolate(
+                        ngettext('Review Request %s does not exist.',
+                                 'Review Requests %s do not exist.',
+                                 fieldValue.length),
+                        [message]);
                 }
+            }
 
-                err.message = message;
+            err.message = message;
 
-                return Promise.reject(err);
-            });
+            throw err;
+        }
     }
 
     /**
@@ -626,7 +670,7 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
      */
     _computeEditable() {
         const state = this.get('reviewRequest').get('state');
-        const pending = (state === RB.ReviewRequest.PENDING);
+        const pending = (state === ReviewRequest.PENDING);
 
         this.set({
             editable: this.get('mutableByUser') && pending,
@@ -651,7 +695,7 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
                       () => this.trigger('saving'));
 
         this.listenTo(attachment, 'saved destroy', () => {
-            this.set('hasDraft', true);
+            this.#setHasDraft();
             this.trigger('saved');
         });
     }
@@ -710,5 +754,51 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
             });
             fileAttachments.add(fileAttachment.clone(), { at: options.index });
         }
+    }
+
+    /**
+     * Mark that a draft has been created.
+     *
+     * In this case of an admin or other privileged user creating a draft on a
+     * review request that they do not own, this will set additional state and
+     * modify the browser's URL to indicate that they're viewing a draft on
+     * someone else's review request.
+     */
+    #setHasDraft() {
+        const reviewRequest = this.get('reviewRequest');
+
+        /*
+         * The conditional access here is because unit tests often don't add
+         * the links to the object.
+         */
+        const owner = reviewRequest.get('links')?.submitter.title;
+        const username = UserSession.instance.get('username');
+
+        if (owner !== username) {
+            /*
+             * Set this first without notifications, because we don't want page
+             * views to reload the page.
+             */
+            this.set({
+                'userDraftExists': true,
+                'viewingUserDraft': true,
+            }, {
+                silent: true,
+            });
+
+            const location = window.location;
+            const params = new URLSearchParams(location.search);
+            params.append('view-draft', '1');
+
+            let url = `${location.pathname}?${params.toString()}`;
+
+            if (location.hash) {
+                url += location.hash;
+            }
+
+            window.history.pushState(null, '', url);
+        }
+
+        this.set('hasDraft', true);
     }
 }

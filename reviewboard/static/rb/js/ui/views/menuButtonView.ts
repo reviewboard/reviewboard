@@ -190,7 +190,7 @@ export class MenuButtonView<
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         const labelID = _.uniqueId('__rb-menubuttonview__label');
 
         this.$el

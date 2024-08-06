@@ -1098,7 +1098,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         self,
         review_request: ReviewRequest,
         attachment_history: Optional[FileAttachmentHistory] = None,
-        draft: bool = False,
+        draft: Union[ReviewRequestDraft, bool] = False,
         active: bool = True,
         with_history: bool = True,
         **kwargs,
@@ -3343,9 +3343,11 @@ class BaseFileDiffAncestorTests(kgb.SpyAgency, TestCase):
             repo: Repository,
             path: str,
             revision: str,
+            *args,
             base_commit_id: Optional[str] = None,
             context: Optional[FileLookupContext] = None,
-            **kwargs) -> bytes:
+            **kwargs,
+        ) -> bytes:
             if repo == self.repository:
                 try:
                     return self._FILES[(path, revision)]

@@ -21,7 +21,9 @@ from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import JSONField
 from djblets.log import log_timed
 from djblets.util.decorators import cached_property
+from housekeeping import deprecate_non_keyword_only_args
 
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -556,8 +558,10 @@ class Repository(models.Model):
             'password': password,
         }
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def get_or_create_hooks_uuid(
         self,
+        *,
         max_attempts: int = 20,
     ) -> str:
         """Return a hooks UUID, creating one if necessary.
@@ -624,8 +628,10 @@ class Repository(models.Model):
 
         return encodings or [self.FALLBACK_ENCODING]
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def get_file(
         self,
+        *,
         path: str,
         revision: str,
         base_commit_id: Optional[str] = None,
@@ -719,8 +725,10 @@ class Repository(models.Model):
             ],
             large_data=True)[0]
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def get_file_exists(
         self,
+        *,
         path: str,
         revision: str,
         base_commit_id: Optional[str] = None,
@@ -872,8 +880,10 @@ class Repository(models.Model):
         """
         return f'repository-commit:{self.pk}:{commit_id}'
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def get_commits(
         self,
+        *,
         branch: Optional[str] = None,
         start: Optional[str] = None,
     ) -> Sequence[Commit]:
@@ -984,9 +994,11 @@ class Repository(models.Model):
         else:
             return self.get_scmtool().get_change(revision)
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def normalize_patch(
         self,
         patch: bytes,
+        *,
         filename: str,
         revision: str,
     ) -> bytes:
@@ -1079,8 +1091,10 @@ class Repository(models.Model):
         """
         return user.has_perm('scmtools.change_repository', self.local_site)
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def archive(
         self,
+        *,
         save: bool = True,
     ) -> None:
         """Archive a repository.

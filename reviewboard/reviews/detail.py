@@ -1,18 +1,22 @@
 """Definitions for the review request detail view."""
 
+from __future__ import annotations
+
 import hashlib
 import logging
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from itertools import chain
-from typing import Optional
+from typing import (Any, ClassVar, Final, Iterable, Mapping, Optional,
+                    Sequence, TYPE_CHECKING, Type, TypeVar, Union)
 
-from django.db.models import Q
+from django.db.models import Model, Q
+from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
                                          ATTRIBUTE_REGISTERED,
                                          NOT_REGISTERED)
-from django.template.loader import render_to_string
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import cached_property
 
@@ -20,22 +24,35 @@ from reviewboard.diffviewer.models import DiffCommit
 from reviewboard.registries.registry import OrderedRegistry
 from reviewboard.reviews.builtin_fields import (CommitListField,
                                                 ReviewRequestPageDataMixin)
+from reviewboard.reviews.context import should_view_draft
 from reviewboard.reviews.features import status_updates_feature
 from reviewboard.reviews.fields import get_review_request_fieldsets
 from reviewboard.reviews.models import (BaseComment,
                                         Comment,
                                         FileAttachmentComment,
-                                        GeneralComment,
                                         Review,
                                         ReviewRequest,
                                         ScreenshotComment,
                                         StatusUpdate)
 
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
+    from django.http import HttpRequest
+    from django.template.context import Context
+    from django.utils.safestring import SafeString
+    from djblets.util.typing import JSONDict
+
+    from reviewboard.changedescs.models import ChangeDescription
+    from reviewboard.reviews.models import ReviewRequestDraft
+
 
 logger = logging.getLogger(__name__)
 
 
-class ReviewRequestPageData(object):
+_TModel = TypeVar('_TModel', bound=Model)
+
+
+class ReviewRequestPageData:
     """Data for the review request page.
 
     The review request detail page needs a lot of data from the database, and
@@ -127,26 +144,6 @@ class ReviewRequestPageData(object):
             A mapping from top-level review ID to the latest timestamp of the
             thread.
 
-        review_request (reviewboard.reviews.models.ReviewRequest):
-            The review request.
-
-        review_request_details (reviewboard.reviews.models.
-                                base_review_request_details.
-                                BaseReviewRequestDetails):
-            The review request (or the active draft thereof). In practice this
-            will either be a
-            :py:class:`~reviewboard.reviews.models.ReviewRequest` or a
-            :py:class:`~reviewboard.reviews.models.ReviewRequestDraft`.
-
-        reviews (list of reviewboard.reviews.models.reviews.Review):
-            All the reviews to be shown on the page. This includes any draft
-            reviews owned by the requesting user but not drafts owned by
-            others.
-
-        reviews_by_id (dict):
-            A mapping from ID to
-            :py:class:`~reviewboard.reviews.models.Review`.
-
         active_screenshots (list of reviewboard.reviews.models.screenshots.
                             Screenshot):
             All the active screenshots associated with the review request.
@@ -185,14 +182,37 @@ class ReviewRequestPageData(object):
     # Instance variables #
     ######################
 
+    #: The current HTTP request.
+    request: HttpRequest
+
+    #: The review request.
+    review_request: ReviewRequest
+
+    #: The object to use for showing the review request data.
+    review_request_details: Optional[Union[ReviewRequest, ReviewRequestDraft]]
+
+    #: All reviews to be shown on the page.
+    #:
+    #: This includes any draft reviews owned by the requesting user, but not
+    #: drafts owned by others.
+    reviews: list[Review]
+
+    #: A mapping from the review ID to the review object.
+    reviews_by_id: dict[int, Review]
+
     #: The timestamp of the most recent comment, for the issue summary table.
     #:
     #: Version Added:
     #:     6.0
     latest_issue_timestamp: Optional[datetime]
 
-    def __init__(self, review_request, request, last_visited=None,
-                 entry_classes=None):
+    def __init__(
+        self,
+        review_request: ReviewRequest,
+        request: HttpRequest,
+        last_visited: Optional[datetime] = None,
+        entry_classes: Optional[Sequence[BaseReviewRequestPageEntry]] = None,
+    ) -> None:
         """Initialize the data object.
 
         Args:
@@ -280,7 +300,7 @@ class ReviewRequestPageData(object):
             self._needs_screenshots = (self._needs_screenshots or
                                        entry_cls.needs_screenshots)
 
-    def query_data_pre_etag(self):
+    def query_data_pre_etag(self) -> None:
         """Perform initial queries for the page.
 
         This method will populate only the data needed to compute the ETag. We
@@ -288,16 +308,19 @@ class ReviewRequestPageData(object):
         possible before reporting to the client that they can just use their
         cached copy.
         """
+        user = self.request.user
+        review_request = self.review_request
+
         # Query for all the reviews that should be shown on the page (either
         # ones which are public or draft reviews owned by the current user).
         reviews_query = Q(public=True)
 
-        if self.request.user.is_authenticated:
-            reviews_query |= Q(user_id=self.request.user.pk)
+        if user.is_authenticated:
+            reviews_query |= Q(user_id=user.pk)
 
         if self._needs_reviews or self._needs_status_updates:
             self.reviews = list(
-                self.review_request.reviews
+                review_request.reviews
                 .filter(reviews_query)
                 .order_by('-timestamp')
                 .select_related('user', 'user__profile')
@@ -312,15 +335,22 @@ class ReviewRequestPageData(object):
         # Get all the public ChangeDescriptions.
         if self._needs_changedescs:
             self.changedescs = list(
-                self.review_request.changedescs.filter(public=True))
+                review_request.changedescs.filter(public=True))
 
         if self.changedescs:
             self.latest_changedesc_timestamp = self.changedescs[0].timestamp
 
         # Get the active draft (if any).
-        if (self._needs_draft and
-            self.review_request.is_mutable_by(self.request.user)):
-            self.draft = self.review_request.get_draft()
+        if self._needs_draft:
+            draft = review_request.get_draft(user=user)
+
+            if not should_view_draft(request=self.request,
+                                     review_request=review_request,
+                                     draft=draft):
+                draft = None
+
+            if draft:
+                self.draft = draft
 
         # Get diffsets.
         if self._needs_reviews:
@@ -332,7 +362,7 @@ class ReviewRequestPageData(object):
             self.all_status_updates = list(
                 self.review_request.status_updates.order_by('summary'))
 
-    def query_data_post_etag(self):
+    def query_data_post_etag(self) -> None:
         """Perform remaining queries for the page.
 
         This method will populate everything else needed for the display of the
@@ -405,7 +435,14 @@ class ReviewRequestPageData(object):
             self.reviews_by_id[reply_id]._body_bottom_replies = \
                 reversed(replies)
 
-        self.review_request_details = self.draft or self.review_request
+        if should_view_draft(request=self.request,
+                             review_request=self.review_request,
+                             draft=self.draft):
+            review_request_details = self.draft or self.review_request
+        else:
+            review_request_details = self.review_request
+
+        self.review_request_details = review_request_details
 
         # Get all the file attachments and screenshots.
         #
@@ -414,10 +451,10 @@ class ReviewRequestPageData(object):
         # they still will be rendered in change descriptions.
         if self._needs_file_attachments or self._needs_reviews:
             self.active_file_attachments = \
-                list(self.review_request_details.get_file_attachments())
+                list(review_request_details.get_file_attachments())
             self.all_file_attachments = (
                 self.active_file_attachments + list(
-                    self.review_request_details
+                    review_request_details
                     .get_inactive_file_attachments()))
             self.file_attachments_by_id = \
                 self._build_id_map(self.all_file_attachments)
@@ -427,10 +464,10 @@ class ReviewRequestPageData(object):
 
         if self._needs_screenshots or self._needs_reviews:
             self.active_screenshots = \
-                list(self.review_request_details.get_screenshots())
+                list(review_request_details.get_screenshots())
             self.all_screenshots = (
                 self.active_screenshots +
-                list(self.review_request_details.get_inactive_screenshots()))
+                list(review_request_details.get_inactive_screenshots()))
             self.screenshots_by_id = self._build_id_map(self.all_screenshots)
 
             for screenshot in self.all_screenshots:
@@ -439,21 +476,17 @@ class ReviewRequestPageData(object):
         if self.reviews:
             review_ids = list(self.reviews_by_id.keys())
 
-            for model, review_field_name, key, ordering in (
-                (GeneralComment,
-                 'general_comments',
+            for review_field_name, key, ordering in (
+                ('general_comments',
                  'general_comments',
                  ('generalcomment__timestamp',)),
-                (ScreenshotComment,
-                 'screenshot_comments',
+                ('screenshot_comments',
                  'screenshot_comments',
                  ('screenshotcomment__timestamp',)),
-                (FileAttachmentComment,
-                 'file_attachment_comments',
+                ('file_attachment_comments',
                  'file_attachment_comments',
                  ('fileattachmentcomment__timestamp',)),
-                (Comment,
-                 'comments',
+                ('comments',
                  'diff_comments',
                  ('comment__filediff',
                   'comment__first_line',
@@ -571,7 +604,9 @@ class ReviewRequestPageData(object):
 
             self.commits_by_diffset_id = DiffCommit.objects.by_diffset_ids(pks)
 
-    def get_entries(self):
+    def get_entries(
+        self,
+    ) -> Mapping[str, Sequence[BaseReviewRequestPageEntry]]:
         """Return all entries for the review request page.
 
         This will create and populate entries for the page (based on the
@@ -589,8 +624,8 @@ class ReviewRequestPageData(object):
             The ``initial`` entries are sorted in registered entry order,
             while the ``main`` entries are sorted in timestamp order.
         """
-        initial_entries = []
-        main_entries = []
+        initial_entries: list[BaseReviewRequestPageEntry] = []
+        main_entries: list[BaseReviewRequestPageEntry] = []
 
         for entry_cls in self.entry_classes:
             new_entries = entry_cls.build_entries(self)
@@ -617,7 +652,10 @@ class ReviewRequestPageData(object):
             'main': main_entries,
         }
 
-    def _build_id_map(self, objects):
+    def _build_id_map(
+        self,
+        objects: Sequence[_TModel],
+    ) -> Mapping[int, _TModel]:
         """Return an ID map from a list of objects.
 
         Args:
@@ -634,56 +672,34 @@ class ReviewRequestPageData(object):
         }
 
 
-class BaseReviewRequestPageEntry(object):
+class BaseReviewRequestPageEntry:
     """An entry on the review detail page.
 
     This contains backend logic and frontend templates for one of the boxes
     that appears below the main review request box on the review request detail
     page.
-
-    Attributes:
-        added_timestamp (datetime.datetime):
-            The timestamp of the entry. This represents the added time for the
-            entry, and is used for sorting the entry in the page. This
-            timestamp should never change.
-
-        avatar_user (django.contrib.auth.models.User):
-            The user to display an avatar for. This can be ``None``, in which
-            case no avatar will be displayed. Templates can also override the
-            avatar HTML instead of using this.
-
-        collapsed (bool):
-            Whether the entry should be initially collapsed.
-
-        entry_id (unicode):
-            The ID of the entry. This will be unique across this type of entry,
-            and may refer to a database object ID.
-
-        updated_timestamp (datetime.datetime):
-            The timestamp when the entry was last updated. This reflects new
-            updates or activity on the entry.
     """
 
     #: An initial entry appearing above the review-like boxes.
-    ENTRY_POS_INITIAL = 1
+    ENTRY_POS_INITIAL: Final[int] = 1
 
     #: An entry appearing in the main area along with review-like boxes.
-    ENTRY_POS_MAIN = 2
+    ENTRY_POS_MAIN: Final[int] = 2
 
     #: The ID used for entries of this type.
-    entry_type_id = None
+    entry_type_id: ClassVar[Optional[str]] = None
 
     #: The type of entry on the page.
     #:
     #: By default, this is a box type, which will appear along with other
     #: reviews and change descriptions.
-    entry_pos = ENTRY_POS_MAIN
+    entry_pos: ClassVar[int] = ENTRY_POS_MAIN
 
     #: Whether the entry needs a review request draft to be queried.
     #:
     #: If set, :py:attr:`ReviewRequestPageData.draft` will be set (if a draft
     #: exists).
-    needs_draft = False
+    needs_draft: ClassVar[bool] = False
 
     #: Whether the entry needs reviews, replies, and comments to be queried.
     #:
@@ -696,12 +712,12 @@ class BaseReviewRequestPageEntry(object):
     #: :py:attr:`ReviewRequestPageData.active_file_screenshots`,
     #: :py:attr:`ReviewRequestPageData.all_file_screenshots`, and
     #: :py:attr:`ReviewRequestPageData.file_screenshots_by_id` will be set.
-    needs_reviews = False
+    needs_reviews: ClassVar[bool] = False
 
     #: Whether the entry needs change descriptions to be queried.
     #:
     #: If set, :py:attr:`ReviewRequestPageData.changedescs` will be queried.
-    needs_changedescs = False
+    needs_changedescs: ClassVar[bool] = False
 
     #: Whether the entry needs status updates-related data to be queried.
     #:
@@ -713,14 +729,14 @@ class BaseReviewRequestPageEntry(object):
     #: If set, :py:attr:`ReviewRequestPageData.initial_status_updates`, and
     #: If set, :py:attr:`ReviewRequestPageData.change_status_updates` will be
     #: set.
-    needs_status_updates = False
+    needs_status_updates: ClassVar[bool] = False
 
     #: Whether the entry needs file attachment data to be queried.
     #:
     #: If set, :py:attr:`ReviewRequestPageData.active_file_attachments`,
     #: :py:attr:`ReviewRequestPageData.all_file_attachments`, and
     #: :py:attr:`ReviewRequestPageData.file_attachments_by_id` will be set.
-    needs_file_attachments = False
+    needs_file_attachments: ClassVar[bool] = False
 
     #: Whether the entry needs screenshot data to be queried.
     #:
@@ -729,28 +745,58 @@ class BaseReviewRequestPageEntry(object):
     #: If set, :py:attr:`ReviewRequestPageData.active_screenshots`,
     #: :py:attr:`ReviewRequestPageData.all_screenshots`, and
     #: :py:attr:`ReviewRequestPageData.screenshots_by_id` will be set.
-    needs_screenshots = False
+    needs_screenshots: ClassVar[bool] = False
 
     #: The template to render for the HTML.
-    template_name = None
+    template_name: ClassVar[Optional[str]] = None
 
     #: The template to render for any JavaScript.
-    js_template_name = 'reviews/entries/entry.js'
+    js_template_name: ClassVar[Optional[str]] = 'reviews/entries/entry.js'
 
     #: The name of the JavaScript Backbone.Model class for this entry.
-    js_model_class = 'RB.ReviewRequestPage.Entry'
+    js_model_class: ClassVar[Optional[str]] = 'RB.ReviewRequestPage.Entry'
 
     #: The name of the JavaScript Backbone.View class for this entry.
-    js_view_class = 'RB.ReviewRequestPage.EntryView'
+    js_view_class: ClassVar[Optional[str]] = 'RB.ReviewRequestPage.EntryView'
 
     #: Whether this entry has displayable content.
     #:
     #: This can be overridden as a property to calculate whether to render
     #: the entry, or disabled altogether.
-    has_content = True
+    has_content: ClassVar[bool] = True
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The timestamp of the entry.
+    #:
+    #: This represents the added time for the entry, and is used for sorting
+    #: the entry in the page. This timestamp should never change.
+    added_timestamp: Optional[datetime]
+
+    #: The user to display an avatar for.
+    #:
+    #: This can be ``None``, in which case no avatar will be displayed.
+    #: Templates can also override the avatar HTML instead of using this.
+    avatar_user: Optional[User]
+
+    #: The ID of the entry.
+    #:
+    #: This will be unique across this type of entry, and may refer to a
+    #: database object ID.
+    entry_id: str
+
+    #: The timestamp when the entry was last updated.
+    #:
+    #: This reflects new updates or activity on the entry.
+    updated_timestamp: Optional[datetime]
 
     @classmethod
-    def build_entries(cls, data):
+    def build_entries(
+        cls,
+        data: ReviewRequestPageData,
+    ) -> Iterable[BaseReviewRequestPageEntry]:
         """Generate entry instances from review request page data.
 
         Subclasses should override this to yield any entries needed, based on
@@ -764,10 +810,14 @@ class BaseReviewRequestPageEntry(object):
             BaseReviewRequestPageEntry:
             An entry to include on the page.
         """
-        pass
 
     @classmethod
-    def build_etag_data(cls, data, entry=None, **kwargs):
+    def build_etag_data(
+        cls,
+        data: ReviewRequestPageData,
+        entry: Optional[BaseReviewRequestPageEntry] = None,
+        **kwargs,
+    ) -> str:
         """Build ETag data for the entry.
 
         This will be incorporated into the ETag for the page.
@@ -780,27 +830,43 @@ class BaseReviewRequestPageEntry(object):
             data (ReviewRequestPageData):
                 The computed data (pre-ETag) for the page.
 
-            entry (BaseReviewRequestPageEntry):
+            entry (BaseReviewRequestPageEntry, optional):
                 A specific entry to build ETags for.
 
             **kwargs (dict, unused):
                 Additional keyword arguments for future expansion.
 
         Returns:
-            unicode:
+            str:
             The ETag data for the entry.
         """
         return ''
 
-    def __init__(self, data, entry_id, added_timestamp,
-                 updated_timestamp=None, avatar_user=None):
+    @cached_property
+    def collapsed(self) -> bool:
+        """Whether the entry is collapsed.
+
+        This will consist of a cached value computed from
+        :py:meth:`calculate_collapsed`. Subclasses should override that
+        method.
+        """
+        return self.calculate_collapsed()
+
+    def __init__(
+        self,
+        data: ReviewRequestPageData,
+        entry_id: str,
+        added_timestamp: Optional[datetime],
+        updated_timestamp: Optional[datetime] = None,
+        avatar_user: Optional[User] = None,
+    ) -> None:
         """Initialize the entry.
 
         Args:
             data (ReviewRequestPageData):
                 The computed data for the page.
 
-            entry_id (unicode):
+            entry_id (str):
                 The ID of the entry. This must be unique across this type
                 of entry, and may refer to a database object ID.
 
@@ -824,31 +890,28 @@ class BaseReviewRequestPageEntry(object):
         self.updated_timestamp = updated_timestamp or added_timestamp
         self.avatar_user = avatar_user
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation for this entry.
 
         Returns:
-            unicode:
+            str:
             A string representation for the entry.
         """
         return (
-            '%s(entry_type_id=%s, entry_id=%s, added_timestamp=%s, '
-            'updated_timestamp=%s, collapsed=%s)'
-            % (self.__class__.__name__, self.entry_type_id, self.entry_id,
-               self.added_timestamp, self.updated_timestamp, self.collapsed)
+            f'{self.__class__.__name__}('
+            f'entry_type_id={self.entry_type_id}, '
+            f'entry_id={self.entry_id}, '
+            f'added_timestamp={self.added_timestamp}, '
+            f'updated_timestamp={self.updated_timestamp}, '
+            f'collapsed={self.collapsed})'
         )
 
-    @cached_property
-    def collapsed(self):
-        """Whether the entry is collapsed.
-
-        This will consist of a cached value computed from
-        :py:meth:`calculate_collapsed`. Subclasses should override that
-        method.
-        """
-        return self.calculate_collapsed()
-
-    def is_entry_new(self, last_visited, user, **kwargs):
+    def is_entry_new(
+        self,
+        last_visited: datetime,
+        user: User,
+        **kwargs,
+    ) -> bool:
         """Return whether the entry is new, from the user's perspective.
 
         By default, this compares the last visited time to the timestamp
@@ -873,7 +936,7 @@ class BaseReviewRequestPageEntry(object):
         return (self.added_timestamp is not None and
                 last_visited < self.added_timestamp)
 
-    def calculate_collapsed(self):
+    def calculate_collapsed(self) -> bool:
         """Calculate whether the entry should currently be collapsed.
 
         By default, this will collapse the entry if the last update is older
@@ -890,6 +953,8 @@ class BaseReviewRequestPageEntry(object):
         data = self.data
 
         return bool(
+            self.updated_timestamp is not None and
+
             # Collapse if older than the most recent review request
             # change and there's no recent activity.
             data.latest_changedesc_timestamp and
@@ -900,7 +965,7 @@ class BaseReviewRequestPageEntry(object):
             data.last_visited and self.updated_timestamp < data.last_visited
         )
 
-    def get_dom_element_id(self):
+    def get_dom_element_id(self) -> str:
         """Return the ID used for the DOM element for this entry.
 
         By default, this returns :py:attr:`entry_type_id` and
@@ -908,12 +973,12 @@ class BaseReviewRequestPageEntry(object):
         they need something custom.
 
         Returns:
-            unicode:
+            str:
             The ID used for the element.
         """
-        return '%s%s' % (self.entry_type_id, self.entry_id)
+        return f'{self.entry_type_id}{self.entry_id}'
 
-    def get_js_model_data(self):
+    def get_js_model_data(self) -> JSONDict:
         """Return data to pass to the JavaScript Model during instantiation.
 
         The data returned from this function will be provided to the model
@@ -926,7 +991,7 @@ class BaseReviewRequestPageEntry(object):
         """
         return {}
 
-    def get_js_view_data(self):
+    def get_js_view_data(self) -> JSONDict:
         """Return data to pass to the JavaScript View during instantiation.
 
         The data returned from this function will be provided to the view when
@@ -939,7 +1004,11 @@ class BaseReviewRequestPageEntry(object):
         """
         return {}
 
-    def get_extra_context(self, request, context):
+    def get_extra_context(
+        self,
+        request: HttpRequest,
+        context: Context,
+    ) -> dict[str, Any]:
         """Return extra template context for the entry.
 
         Subclasses can override this to provide additional context needed by
@@ -950,7 +1019,7 @@ class BaseReviewRequestPageEntry(object):
             request (django.http.HttpRequest):
                 The HTTP request from the client.
 
-            context (django.template.RequestContext):
+            context (django.template.context.Context):
                 The existing template context on the page.
 
         Returns:
@@ -959,7 +1028,11 @@ class BaseReviewRequestPageEntry(object):
         """
         return {}
 
-    def render_to_string(self, request, context):
+    def render_to_string(
+        self,
+        request: HttpRequest,
+        context: Context,
+    ) -> SafeString:
         """Render the entry to a string.
 
         If the entry doesn't have a template associated, or doesn't have
@@ -970,15 +1043,15 @@ class BaseReviewRequestPageEntry(object):
             request (django.http.HttpRequest):
                 The HTTP request from the client.
 
-            context (django.template.RequestContext):
+            context (django.template.context.Context):
                 The existing template context on the page.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The resulting HTML for the entry.
         """
         if not self.template_name or not self.has_content:
-            return ''
+            return mark_safe('')
 
         user = request.user
         last_visited = context.get('last_visited')
@@ -1003,7 +1076,7 @@ class BaseReviewRequestPageEntry(object):
                              '(ID=%s): %s',
                              self.__class__.__name__, self.entry_id, e,
                              extra={'request': request})
-            return ''
+            return mark_safe('')
 
         try:
             return render_to_string(template_name=self.template_name,
@@ -1013,17 +1086,25 @@ class BaseReviewRequestPageEntry(object):
             logger.exception('Error rendering template for %s (ID=%s): %s',
                              self.__class__.__name__, self.entry_id, e,
                              extra={'request': request})
-            return ''
+            return mark_safe('')
 
-    def finalize(self):
+    def finalize(self) -> None:
         """Perform final computations after all comments have been added."""
-        pass
 
 
-class ReviewEntryMixin(object):
+if TYPE_CHECKING:
+    ReviewEntryMixinParent = BaseReviewRequestPageEntry
+else:
+    ReviewEntryMixinParent = object
+
+
+class ReviewEntryMixin(ReviewEntryMixinParent):
     """Mixin to provide functionality for entries containing reviews."""
 
-    def is_review_collapsed(self, review):
+    def is_review_collapsed(
+        self,
+        review: Review,
+    ) -> bool:
         """Return whether a review should be collapsed.
 
         A review is collapsed if all the following conditions are true:
@@ -1072,7 +1153,10 @@ class ReviewEntryMixin(object):
             )
         )
 
-    def serialize_review_js_model_data(self, review):
+    def serialize_review_js_model_data(
+        self,
+        review: Review,
+    ) -> JSONDict:
         """Serialize information on a review for JavaScript models.
 
         Args:
@@ -1094,28 +1178,30 @@ class ReviewEntryMixin(object):
         }
 
 
-class DiffCommentsSerializerMixin(object):
+class DiffCommentsSerializerMixin:
     """Mixin to provide diff comment data serialization."""
 
-    def serialize_diff_comments_js_model_data(self, diff_comments):
+    def serialize_diff_comments_js_model_data(
+        self,
+        diff_comments: Iterable[Comment],
+    ) -> list[tuple[str, str]]:
         """Serialize information on diff comments for JavaScript models.
 
         Args:
-            diff_comments (list of reviewboard.reviews.models.diff_comment.
-                           Comment):
+            diff_comments (list of reviewboard.reviews.models.Comment):
                 The list of comments to serialize.
 
         Returns:
-            dict:
+            list of tuple:
             The serialized data for the JavaScript model.
         """
-        diff_comments_data = []
+        diff_comments_data: list[tuple[str, str]] = []
 
         for comment in diff_comments:
-            key = '%s' % comment.filediff_id
+            key = f'{comment.filediff_id}'
 
             if comment.interfilediff_id:
-                key = '%s-%s' % (key, comment.interfilediff_id)
+                key = f'{key}-{comment.interfilediff_id}'
 
             diff_comments_data.append((str(comment.pk), key))
 
@@ -1140,7 +1226,12 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
     needs_status_updates = True
 
     @classmethod
-    def build_etag_data(cls, data, entry=None, **kwargs):
+    def build_etag_data(
+        cls,
+        data: ReviewRequestPageData,
+        entry: Optional[StatusUpdatesEntryMixin] = None,
+        **kwargs,
+    ) -> str:
         """Build ETag data for the entry.
 
         This will be incorporated into the ETag for the page and for
@@ -1155,14 +1246,14 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
             data (ReviewRequestPageData):
                 The computed data (pre-ETag) for the page.
 
-            entry (StatusUpdatesEntryMixin):
+            entry (StatusUpdatesEntryMixin, optional):
                 A specific entry to build ETags for.
 
             **kwargs (dict, unused):
                 Additional keyword arguments for future expansion.
 
         Returns:
-            unicode:
+            str:
             The ETag data for the entry.
         """
         if entry is not None:
@@ -1174,31 +1265,29 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
 
         if status_updates:
             etag = ':'.join(
-                '%s:%s:%s:%s' % (
-                    status_update.service_id,
-                    status_update.state,
-                    status_update.timestamp,
-                    status_update.description,
+                (
+                    f'{status_update.service_id}:{status_update.state}:'
+                    f'{status_update.timestamp}:{status_update.description}'
                 )
                 for status_update in status_updates
             )
         else:
             etag = ''
 
-        etag = '%s:%s' % (
-            super(StatusUpdatesEntryMixin, cls).build_etag_data(data),
-            etag,
-        )
+        etag = f'{super().build_etag_data(data)}:{etag}'
 
         return hashlib.sha1(etag.encode('utf-8')).hexdigest()
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the entry."""
         self.status_updates = []
         self.status_updates_by_review = {}
         self.state_counts = Counter()
 
-    def are_status_updates_collapsed(self, status_updates):
+    def are_status_updates_collapsed(
+        self,
+        status_updates: Sequence[StatusUpdate],
+    ) -> bool:
         """Return whether all status updates should be collapsed.
 
         This considers all provided status updates when computing the
@@ -1214,8 +1303,7 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
         :py:meth:`ReviewEntryMixin.is_review_collapsed` for a result.
 
         Args:
-            status_updates (list of reviewboard.reviews.models.status_update.
-                            StatusUpdate):
+            status_updates (list of reviewboard.reviews.models.StatusUpdate):
                 The list of status updates to compute the collapsed state for.
 
         Returns:
@@ -1242,7 +1330,10 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
 
         return True
 
-    def add_update(self, update):
+    def add_update(
+        self,
+        update: StatusUpdate,
+    ) -> None:
         """Add a status update to the entry.
 
         Args:
@@ -1294,7 +1385,10 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
                 'url_text': update.url_text,
             })
 
-    def populate_status_updates(self, status_updates):
+    def populate_status_updates(
+        self,
+        status_updates: Sequence[StatusUpdate],
+    ) -> None:
         """Populate the list of status updates for the entry.
 
         This will add all the provided status updates and all comments from
@@ -1302,8 +1396,7 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
         draft replies owned by the user.
 
         Args:
-            status_updates (list of reviewboard.reviews.models.status_update.
-                            StatusUpdate):
+            status_updates (list of reviewboard.reviews.models.StatusUpdate):
                 The list of status updates to add.
         """
         data = self.data
@@ -1316,13 +1409,17 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
             for comment in data.review_comments.get(update.review_id, []):
                 self.add_comment(comment._type, comment)
 
-    def add_comment(self, comment_type, comment):
+    def add_comment(
+        self,
+        comment_type: str,
+        comment: BaseComment,
+    ) -> None:
         """Add a comment to the entry.
 
         This will associate the comment with the correct status update.
 
         Args:
-            comment_type (unicode):
+            comment_type (str):
                 The type of comment (an index into the :py:attr:`comments`
                 dictionary).
 
@@ -1332,7 +1429,7 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
         update = self.status_updates_by_review[comment.review_obj.pk]
         update.comments[comment_type].append(comment)
 
-    def finalize(self):
+    def finalize(self) -> None:
         """Perform final computations after all comments have been added."""
         for update in self.status_updates:
             self.state_counts[update.effective_state] += 1
@@ -1379,7 +1476,7 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
 
         self.state_summary = ', '.join(summary_parts)
 
-    def get_js_model_data(self):
+    def get_js_model_data(self) -> JSONDict:
         """Return data to pass to the JavaScript Model during instantiation.
 
         The data returned from this function will be provided to the model
@@ -1403,7 +1500,7 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
             if update.review_id is not None
         ]
 
-        model_data = {
+        model_data: JSONDict = {
             'pendingStatusUpdates': (
                 self.state_counts[StatusUpdate.PENDING] > 0),
         }
@@ -1427,11 +1524,9 @@ class ReviewRequestEntry(BaseReviewRequestPageEntry):
 
     entry_type_id = 'review-request'
     entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_INITIAL
-
     js_template_name = None
     js_model_class = None
     js_view_class = None
-
     needs_draft = True
 
     # These are needed for the file attachments/screenshots area.
@@ -1459,13 +1554,15 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
 
     entry_type_id = 'initial_status_updates'
     entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_INITIAL
-
     template_name = 'reviews/entries/initial_status_updates.html'
     js_model_class = 'RB.ReviewRequestPage.StatusUpdatesEntry'
     js_view_class = 'RB.ReviewRequestPage.InitialStatusUpdatesEntryView'
 
     @classmethod
-    def build_entries(cls, data):
+    def build_entries(
+        cls,
+        data: ReviewRequestPageData,
+    ) -> Iterable[BaseReviewRequestPageEntry]:
         """Generate the entry instance from review request page data.
 
         This will only generate a single instance.
@@ -1483,7 +1580,10 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
 
         yield entry
 
-    def __init__(self, data):
+    def __init__(
+        self,
+        data: ReviewRequestPageData,
+    ) -> None:
         """Initialize the entry.
 
         Args:
@@ -1504,7 +1604,7 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
             updated_timestamp=get_latest_timestamp(timestamps))
 
     @property
-    def has_content(self):
+    def has_content(self) -> bool:
         """Whether there are any items to display in the entry.
 
         Returns:
@@ -1513,16 +1613,21 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
         """
         return len(self.status_updates) > 0
 
-    def get_dom_element_id(self):
+    def get_dom_element_id(self) -> str:
         """Return the ID used for the DOM element for this entry.
 
         Returns:
-            unicode:
+            str:
             The ID used for the element.
         """
         return self.entry_type_id
 
-    def is_entry_new(self, last_visited, user, **kwargs):
+    def is_entry_new(
+        self,
+        last_visited: datetime,
+        user: User,
+        **kwargs,
+    ) -> bool:
         """Return whether the entry is new, from the user's perspective.
 
         The initial status updates entry is basically part of the review
@@ -1544,7 +1649,7 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
         """
         return False
 
-    def calculate_collapsed(self):
+    def calculate_collapsed(self) -> bool:
         """Calculate whether the entry should currently be collapsed.
 
         The entry will be collapsed if there aren't yet any Change Descriptions
@@ -1572,30 +1677,32 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
 
 class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
                   BaseReviewRequestPageEntry):
-    """A review box.
-
-    Attributes:
-        review (reviewboard.reviews.models.Review):
-            The review for this entry.
-
-        issue_open_count (int):
-            The count of open issues within this review.
-
-        has_issues (bool):
-            Whether there are any issues (open or not).
-
-        comments (dict):
-            A dictionary of comments. Each key in this represents a comment
-            type, and the values are lists of comment objects.
-    """
+    """A review box."""
 
     entry_type_id = 'review'
-
     needs_reviews = True
-
     template_name = 'reviews/entries/review.html'
     js_model_class = 'RB.ReviewRequestPage.ReviewEntry'
     js_view_class = 'RB.ReviewRequestPage.ReviewEntryView'
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: A dictionary of comments.
+    #:
+    #: Each key in this represents a comment type, and the values are lists of
+    #: comment objects.
+    comments: dict[str, list[BaseComment]]
+
+    #: Whether there are any issues (open or not).
+    has_issues: bool
+
+    #: The count of open issues within this review.
+    issue_open_count: int
+
+    #: The review for this entry.
+    review: Review
 
     @classmethod
     def build_entries(cls, data):
@@ -1624,7 +1731,11 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
 
             yield entry
 
-    def __init__(self, data, review):
+    def __init__(
+        self,
+        data: ReviewRequestPageData,
+        review: Review,
+    ) -> None:
         """Initialize the entry.
 
         Args:
@@ -1648,27 +1759,33 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
             data.latest_timestamps_by_review_id.get(review.pk,
                                                     review.timestamp)
 
-        super(ReviewEntry, self).__init__(data=data,
-                                          entry_id=str(review.pk),
-                                          added_timestamp=review.timestamp,
-                                          updated_timestamp=updated_timestamp,
-                                          avatar_user=review.user)
+        super().__init__(
+            data=data,
+            entry_id=str(review.pk),
+            added_timestamp=review.timestamp,
+            updated_timestamp=updated_timestamp,
+            avatar_user=review.user)
 
     @property
-    def can_revoke_ship_it(self):
+    def can_revoke_ship_it(self) -> bool:
         """Whether the Ship It can be revoked by the current user."""
         return self.review.can_user_revoke_ship_it(self.data.request.user)
 
-    def get_dom_element_id(self):
+    def get_dom_element_id(self) -> str:
         """Return the ID used for the DOM element for this entry.
 
         Returns:
-            unicode:
+            str:
             The ID used for the element.
         """
-        return '%s%s' % (self.entry_type_id, self.review.pk)
+        return f'{self.entry_type_id}{self.review.pk}'
 
-    def is_entry_new(self, last_visited, user, **kwargs):
+    def is_entry_new(
+        self,
+        last_visited: datetime,
+        user: User,
+        **kwargs,
+    ) -> bool:
         """Return whether the entry is new, from the user's perspective.
 
         Args:
@@ -1689,11 +1806,15 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
         return self.review.is_new_for_user(user=user,
                                            last_visited=last_visited)
 
-    def add_comment(self, comment_type, comment):
+    def add_comment(
+        self,
+        comment_type: str,
+        comment: BaseComment,
+    ) -> None:
         """Add a comment to this entry.
 
         Args:
-            comment_type (unicode):
+            comment_type (str):
                 The type of comment (an index into the :py:attr:`comments`
                 dictionary).
 
@@ -1710,7 +1831,7 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
                                         BaseComment.VERIFYING_DROPPED):
                 self.issue_open_count += 1
 
-    def get_js_model_data(self):
+    def get_js_model_data(self) -> JSONDict:
         """Return data to pass to the JavaScript Model during instantiation.
 
         The data returned from this function will be provided to the model
@@ -1721,7 +1842,7 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
             dict:
             A dictionary of attributes to pass to the Model instance.
         """
-        model_data = {
+        model_data: JSONDict = {
             'reviewData': self.serialize_review_js_model_data(self.review),
         }
 
@@ -1733,7 +1854,7 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
 
         return model_data
 
-    def calculate_collapsed(self):
+    def calculate_collapsed(self) -> bool:
         """Calculate whether the entry should currently be collapsed.
 
         The entry will be collapsed if the review is marked as collapsed. See
@@ -1749,25 +1870,28 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
 
 
 class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
-    """A change description box.
-
-    Attributes:
-        changedesc (reviewboard.changedescs.models.ChangeDescription):
-            The change description for this entry.
-    """
+    """A change description box."""
 
     entry_type_id = 'changedesc'
-
+    js_model_class = 'RB.ReviewRequestPage.ChangeEntry'
+    js_view_class = 'RB.ReviewRequestPage.ChangeEntryView'
     needs_changedescs = True
     needs_file_attachments = True
     needs_screenshots = True
-
     template_name = 'reviews/entries/change.html'
-    js_model_class = 'RB.ReviewRequestPage.ChangeEntry'
-    js_view_class = 'RB.ReviewRequestPage.ChangeEntryView'
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The change description.
+    changedesc: ChangeDescription
 
     @classmethod
-    def build_entries(cls, data):
+    def build_entries(
+        cls,
+        data: ReviewRequestPageData,
+    ) -> Iterable[ChangeEntry]:
         """Generate change entry instances from review request page data.
 
         Args:
@@ -1786,7 +1910,11 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
 
             yield entry
 
-    def __init__(self, data, changedesc):
+    def __init__(
+        self,
+        data: ReviewRequestPageData,
+        changedesc: ChangeDescription,
+    ) -> None:
         """Initialize the entry.
 
         Args:
@@ -1865,16 +1993,21 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
                     field.get_change_entry_sections_html(
                         changedesc.fields_changed[field_id])
 
-    def get_dom_element_id(self):
+    def get_dom_element_id(self) -> str:
         """Return the ID used for the DOM element for this entry.
 
         Returns:
-            unicode:
+            str:
             The ID used for the element.
         """
         return '%s%s' % (self.entry_type_id, self.changedesc.pk)
 
-    def is_entry_new(self, last_visited, user, **kwargs):
+    def is_entry_new(
+        self,
+        last_visited: datetime,
+        user: User,
+        **kwargs,
+    ) -> bool:
         """Return whether the entry is new, from the user's perspective.
 
         Args:
@@ -1896,7 +2029,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
                                                last_visited=last_visited,
                                                model=self.data.review_request)
 
-    def calculate_collapsed(self):
+    def calculate_collapsed(self) -> bool:
         """Calculate whether the entry should currently be collapsed.
 
         The entry will be collapsed if the timestamp of the Change Description
@@ -1925,7 +2058,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
              self.are_status_updates_collapsed(status_updates))
         )
 
-    def get_js_model_data(self):
+    def get_js_model_data(self) -> JSONDict:
         """Return data to pass to the JavaScript Model during instantiation.
 
         This will serialize commit information if present for the
@@ -1935,7 +2068,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             dict:
             A dictionary of model data.
         """
-        model_data = super(ChangeEntry, self).get_js_model_data()
+        model_data = super().get_js_model_data()
 
         commit_info = self.changedesc.fields_changed.get(
             CommitListField.field_id)
@@ -1958,7 +2091,8 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
         return model_data
 
 
-class ReviewRequestPageEntryRegistry(OrderedRegistry):
+class ReviewRequestPageEntryRegistry(
+    OrderedRegistry[Type[BaseReviewRequestPageEntry]]):
     """A registry for types of entries on the review request page."""
 
     lookup_attrs = ['entry_type_id']
@@ -1977,11 +2111,14 @@ class ReviewRequestPageEntryRegistry(OrderedRegistry):
         ),
     }
 
-    def get_entry(self, entry_type_id):
+    def get_entry(
+        self,
+        entry_type_id: str,
+    ) -> Optional[type[BaseReviewRequestPageEntry]]:
         """Return an entry with the given type ID.
 
         Args:
-            entry_type_id (unicode):
+            entry_type_id (str):
                 The ID of the entry type to return.
 
         Returns:
@@ -1991,7 +2128,7 @@ class ReviewRequestPageEntryRegistry(OrderedRegistry):
         """
         return self.get('entry_type_id', entry_type_id)
 
-    def get_defaults(self):
+    def get_defaults(self) -> Iterable[type[BaseReviewRequestPageEntry]]:
         """Return the default review request page entry types for the registry.
 
         This is used internally by the registry to populate the list of

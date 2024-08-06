@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from enum import Enum
-from typing import Any, ClassVar, Optional, Set, TYPE_CHECKING, Union
+from typing import Any, ClassVar, Optional, Sequence, Set, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -46,6 +45,12 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
+    from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
+    from django.db.models import QuerySet
+    from django.http import HttpRequest
+
     from reviewboard.attachments.models import FileAttachmentSequence
     from reviewboard.reviews.models import (Review,
                                             ReviewRequestDraft)
@@ -113,25 +118,25 @@ class ReviewRequestFileAttachmentsData(TypedDict):
     #:
     #: Type:
     #:     set
-    active_ids: Set[int]
+    active_ids: set[int]
 
     #: The inactive file attachment IDs attached to the review request.
     #:
     #: Type:
     #:     set
-    inactive_ids: Set[int]
+    inactive_ids: set[int]
 
     #: The active file attachment IDs attached to the review request draft.
     #:
     #: Type:
     #:     set
-    draft_active_ids: Set[int]
+    draft_active_ids: set[int]
 
     #: The inactive file attachment IDs attached to the review request draft.
     #:
     #: Type:
     #:     set
-    draft_inactive_ids: Set[int]
+    draft_inactive_ids: set[int]
 
 
 # TODO: Switch to StrEnum once we're on Python 3.11+.
@@ -167,11 +172,21 @@ class FileAttachmentState(Enum):
     PUBLISHED = 'published'
 
 
-def fetch_issue_counts(review_request, extra_query=None):
-    """Fetches all issue counts for a review request.
+def fetch_issue_counts(
+    review_request: ReviewRequest,
+    extra_query: Optional[Q] = None,
+) -> dict[str, int]:
+    """Fetch all issue counts for a review request.
 
     This queries all opened issues across all public comments on a
     review request and returns them.
+
+    Args:
+        review_request (ReviewRequest):
+            The review request to fetch issue counts for.
+
+        extra_query (django.db.models.Q, optional):
+            Any additional data to add to the queryset.
     """
     issue_counts = {
         BaseComment.OPEN: 0,
@@ -229,8 +244,10 @@ def fetch_issue_counts(review_request, extra_query=None):
     return issue_counts
 
 
-def _initialize_issue_counts(review_request):
-    """Initializes the issue counter fields for a review request.
+def _initialize_issue_counts(
+    review_request: ReviewRequest,
+) -> Optional[int]:
+    """Initialize the issue counter fields for a review request.
 
     This will fetch all the issue counts and populate the counter fields.
 
@@ -239,6 +256,15 @@ def _initialize_issue_counts(review_request):
     being set at once. This will also take care of the actual saving of
     fields, rather than leaving that up to CounterField, in order to save
     all at once,
+
+    Args:
+        review_request (ReviewRequest):
+            The review request.
+
+    Returns:
+        int:
+        The default value to use for counter fields, used for new review
+        requests.
     """
     if review_request.pk is None:
         return 0
@@ -431,17 +457,23 @@ class ReviewRequest(BaseReviewRequestDetails):
     objects: ClassVar[ReviewRequestManager] = ReviewRequestManager()
 
     @staticmethod
-    def status_to_string(status):
+    def status_to_string(
+        status: Optional[str],
+    ) -> str:
         """Return a string representation of a review request status.
 
         Args:
-            status (unicode):
+            status (str):
                 A single-character string representing the status.
 
         Returns:
-            unicode:
+            str:
             A longer string representation of the status suitable for use in
             the API.
+
+        Raises:
+            ValueError:
+                The status was not a known value.
         """
         if status == ReviewRequest.PENDING_REVIEW:
             return 'pending'
@@ -455,17 +487,23 @@ class ReviewRequest(BaseReviewRequestDetails):
             raise ValueError('Invalid status "%s"' % status)
 
     @staticmethod
-    def string_to_status(status):
+    def string_to_status(
+        status: str,
+    ) -> Optional[str]:
         """Return a review request status from an API string.
 
         Args:
-            status (unicode):
+            status (str):
                 A string from the API representing the status.
 
         Returns:
-            unicode:
+            str:
             A single-character string representing the status, suitable for
             storage in the ``status`` field.
+
+        Raises:
+            ValueError:
+                The status was not a known value.
         """
         if status == 'pending':
             return ReviewRequest.PENDING_REVIEW
@@ -478,7 +516,13 @@ class ReviewRequest(BaseReviewRequestDetails):
         else:
             raise ValueError('Invalid status string "%s"' % status)
 
-    def get_commit(self):
+    def get_commit(self) -> Optional[str]:
+        """Return the commit ID for the review request.
+
+        Returns:
+            str:
+            The commit ID for the review request, if present.
+        """
         if self.commit_id is not None:
             return self.commit_id
         elif self.changenum is not None:
@@ -495,7 +539,16 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return None
 
-    def set_commit(self, commit_id):
+    def set_commit(
+        self,
+        commit_id: str,
+    ) -> None:
+        """Set the commit ID for the review request.
+
+        Args:
+            commit_id (str):
+                The commit ID to set.
+        """
         try:
             self.changenum = int(commit_id)
         except (TypeError, ValueError):
@@ -506,14 +559,18 @@ class ReviewRequest(BaseReviewRequestDetails):
     commit = property(get_commit, set_commit)
 
     @property
-    def approved(self):
-        """Returns whether or not a review request is approved by reviewers.
+    def approved(self) -> bool:
+        """Return whether or not a review request is approved by reviewers.
 
         On a default installation, a review request is approved if it has
         at least one Ship It!, and doesn't have any open issues.
 
         Extensions may customize approval by providing their own
         ReviewRequestApprovalHook.
+
+        Returns:
+            bool:
+            Whether the review request is approved.
         """
         if not hasattr(self, '_approved'):
             self._calculate_approval()
@@ -521,14 +578,17 @@ class ReviewRequest(BaseReviewRequestDetails):
         return self._approved
 
     @property
-    def approval_failure(self):
-        """Returns the error indicating why a review request isn't approved.
+    def approval_failure(self) -> str:
+        """An error indicating why a review request isn't approved.
 
         If ``approved`` is ``False``, this will provide the text describing
         why it wasn't approved.
 
         Extensions may customize approval by providing their own
         ReviewRequestApprovalHook.
+
+        Type:
+            str
         """
         if not hasattr(self, '_approval_failure'):
             self._calculate_approval()
@@ -536,7 +596,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         return self._approval_failure
 
     @property
-    def owner(self):
+    def owner(self) -> User:
         """The owner of a review request.
 
         This is an alias for :py:attr:`submitter`. It provides compatibility
@@ -544,31 +604,53 @@ class ReviewRequest(BaseReviewRequestDetails):
         <reviewboard.reviews.models.review_request_draft.ReviewRequestDraft.owner>`,
         for functions working with either method, and for review request
         fields, but it cannot be used for queries.
+
+        Type:
+            django.contrib.auth.models.User
         """
         return self.submitter
 
     @owner.setter
-    def owner(self, new_owner):
+    def owner(
+        self,
+        new_owner: User,
+    ) -> None:
+        """Set the owner of the review request.
+
+        Args:
+            new_owner (django.contrib.auth.models.User):
+                The new owner of the review request.
+        """
         self.submitter = new_owner
 
     @property
-    def created_with_history(self):
+    def created_with_history(self) -> bool:
         """Whether or not this review request was created with commit support.
 
         This property can only be changed before the review request is created
         (i.e., before :py:meth:`save` is called and it has a primary key
         assigned).
+
+        Type:
+            bool
         """
         return (self.extra_data is not None and
                 self.extra_data.get(self._CREATED_WITH_HISTORY_EXTRA_DATA_KEY,
                                     False))
 
     @created_with_history.setter
-    def created_with_history(self, value):
+    def created_with_history(
+        self,
+        value: bool,
+    ) -> None:
         """Set whether this review request was created with commit support.
 
         This can only be used during review request creation (i.e., before
         :py:meth:`save` is called).
+
+        Args:
+            value (bool):
+                Whether the review request is tracking commit history.
 
         Raises:
             ValueError:
@@ -584,8 +666,8 @@ class ReviewRequest(BaseReviewRequestDetails):
         self.extra_data[self._CREATED_WITH_HISTORY_EXTRA_DATA_KEY] = value
 
     @property
-    def review_participants(self):
-        """Return the participants in reviews on the review request.
+    def review_participants(self) -> set[User]:
+        """The participants in reviews on the review request.
 
         This will contain the users who published any reviews or replies on the
         review request. The list will be in username sort order and will not
@@ -594,9 +676,8 @@ class ReviewRequest(BaseReviewRequestDetails):
         This will only contain the owner of the review request if they've filed
         a review or reply.
 
-        Returns:
-            set of django.contrib.auth.models.User:
-            The users who filed reviews or replies.
+        Type:
+            set of django.contrib.auth.models.User
         """
         user_ids = list(
             self.reviews
@@ -610,11 +691,32 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return users
 
-    def get_new_reviews(self, user):
-        """Returns all new reviews since last viewing this review request.
+    def get_display_id(self) -> int:
+        """Return the ID that should be exposed to the user.
+
+        Returns:
+            int:
+            The ID that should be shown to the user.
+        """
+        if self.local_site_id:
+            return self.local_id
+        else:
+            return self.id
+
+    display_id = property(get_display_id)
+
+    def get_new_reviews(
+        self,
+        user: User,
+    ) -> QuerySet[Review]:
+        """Return all new reviews since last viewing this review request.
 
         This will factor in the time the user last visited the review request,
         and find any reviews that have been added or updated since.
+
+        Returns:
+            django.db.models.QuerySet:
+            The queryset for new reviews since the user last visited the page.
         """
         if user.is_authenticated:
             # If this ReviewRequest was queried using with_counts=True,
@@ -635,22 +737,23 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return self.reviews.get_empty_query_set()
 
-    def get_display_id(self):
-        """Returns the ID that should be exposed to the user."""
-        if self.local_site_id:
-            return self.local_id
-        else:
-            return self.id
+    def get_public_reviews(self) -> QuerySet[Review]:
+        """Return all public top-level reviews for this review request.
 
-    display_id = property(get_display_id)
-
-    def get_public_reviews(self):
-        """Returns all public top-level reviews for this review request."""
+        Returns:
+            django.db.models.QuerySet:
+            A queryset for the public top-level reviews.
+        """
         return self.reviews.filter(public=True, base_reply_to__isnull=True)
 
-    def is_accessible_by(self, user, local_site=None, request=None,
-                         silent=False):
-        """Returns whether or not the user can read this review request.
+    def is_accessible_by(
+        self,
+        user: User,
+        local_site: Optional[LocalSite] = None,
+        request: Optional[HttpRequest] = None,
+        silent: bool = False,
+    ) -> bool:
+        """Return whether or not the user can read this review request.
 
         This performs several checks to ensure that the user has access.
         This user has access if:
@@ -665,6 +768,23 @@ class ReviewRequest(BaseReviewRequestDetails):
         * The user is listed as a requested reviewer or the user has access
           to one or more groups listed as requested reviewers (either by
           being a member of an invite-only group, or the group being public).
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The local site to check against, if present.
+
+            request (django.http.HttpRequest, optional):
+                The current HTTP request.
+
+            silent (bool, optional):
+                Whether to suppress audit log messages.
+
+        Returns:
+            bool:
+            Whether the review request is accessible by the user.
         """
         # Users always have access to their own review requests.
         if self.submitter == user:
@@ -740,7 +860,10 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return False
 
-    def is_mutable_by(self, user):
+    def is_mutable_by(
+        self,
+        user: User,
+    ) -> bool:
         """Return whether the user can modify this review request.
 
         Args:
@@ -756,7 +879,10 @@ class ReviewRequest(BaseReviewRequestDetails):
                                self.local_site)) and
                 not is_site_read_only_for(user))
 
-    def is_status_mutable_by(self, user):
+    def is_status_mutable_by(
+        self,
+        user: User,
+    ) -> bool:
         """Return whether the user can modify this review request's status.
 
         Args:
@@ -772,7 +898,10 @@ class ReviewRequest(BaseReviewRequestDetails):
                                self.local_site)) and
                 not is_site_read_only_for(user))
 
-    def is_deletable_by(self, user):
+    def is_deletable_by(
+        self,
+        user: User,
+    ) -> bool:
         """Return whether the user can delete this review request.
 
         Args:
@@ -788,12 +917,17 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     def get_draft(
         self,
-        user: Optional[User] = None
+        user: Optional[Union[AbstractBaseUser, AnonymousUser]] = None,
     ) -> Optional[ReviewRequestDraft]:
-        """Returns the draft of the review request.
+        """Return the draft of the review request.
 
-        If a user is specified, then the draft will be returned only if owned
-        by the user. Otherwise, ``None`` will be returned.
+        If a user is specified, then the draft will be returned only if it is
+        accessible by the user. Otherwise, ``None`` will be returned.
+
+        Version Changed:
+            7.0.2:
+            Changed the behavior of the ``user`` argument to check if the draft
+            is accessible rather than checking ownership.
 
         Args:
             user (django.contrib.auth.models.User):
@@ -803,18 +937,31 @@ class ReviewRequest(BaseReviewRequestDetails):
             reviewboard.reviews.models.review_request_draft.ReviewRequestDraft:
             The draft of the review request or None.
         """
-        if not user:
-            return get_object_or_none(self.draft)
-        elif user.is_authenticated:
-            return get_object_or_none(self.draft,
-                                      review_request__submitter=user)
+        draft = get_object_or_none(self.draft)
+
+        if (user is None or
+            (user.is_authenticated and
+             draft is not None and
+             draft.is_accessible_by(user))):
+            return draft
 
         return None
 
-    def get_pending_review(self, user):
-        """Returns the pending review owned by the specified user, if any.
+    def get_pending_review(
+        self,
+        user: User,
+    ) -> Optional[Review]:
+        """Return the pending review owned by the specified user, if any.
 
         This will return an actual review, not a reply to a review.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to query for reviews.
+
+        Returns:
+            reviewboard.reviews.models.Review:
+            The user's review, if present.
         """
         from reviewboard.reviews.models.review import Review
 
@@ -901,12 +1048,30 @@ class ReviewRequest(BaseReviewRequestDetails):
             'updated_object': updated_object,
         }
 
-    def changeset_is_pending(self, commit_id):
-        """Returns whether the associated changeset is pending commit.
+    def changeset_is_pending(
+        self,
+        commit_id: Optional[str],
+    ) -> tuple[bool, Optional[str]]:
+        """Return whether the associated changeset is pending commit.
 
         For repositories that support it, this will return whether the
         associated changeset is pending commit. This requires server-side
         knowledge of the change.
+
+        Args:
+            commit_id (str):
+                The ID of the commit or changeset.
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            Tuple:
+                0 (bool):
+                    ``True`` if the commit is still pending.
+
+                1 (str):
+                    The commit ID.
         """
         cache_key = make_cache_key(
             'commit-id-is-pending-%d-%s' % (self.pk, commit_id))
@@ -924,7 +1089,6 @@ class ReviewRequest(BaseReviewRequestDetails):
 
             if changeset:
                 is_pending = changeset.pending
-
                 new_commit_id = str(changeset.changenum)
 
                 if commit_id != new_commit_id:
@@ -948,7 +1112,13 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return is_pending, commit_id
 
-    def get_absolute_url(self):
+    def get_absolute_url(self) -> str:
+        """Return the absolute URL to the review request.
+
+        Returns:
+            str:
+            The absolute URL to the review request.
+        """
         if self.local_site:
             local_site_name = self.local_site.name
         else:
@@ -984,8 +1154,13 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return self._diffsets
 
-    def get_latest_diffset(self):
-        """Returns the latest diffset for this review request."""
+    def get_latest_diffset(self) -> Optional[DiffSet]:
+        """Return the latest diffset for this review request.
+
+        Returns:
+            reviewboard.diffviewer.models.DiffSet:
+            The latest published DiffSet, if present.
+        """
         try:
             return DiffSet.objects.filter(
                 history=self.diffset_history_id).latest()
@@ -1056,10 +1231,14 @@ class ReviewRequest(BaseReviewRequestDetails):
             is_rich_text=is_rich_text,
             timestamp=timestamp)
 
-    def get_blocks(self):
-        """Returns the list of review request this one blocks.
+    def get_blocks(self) -> Sequence[ReviewRequest]:
+        """Return the list of review request this one blocks.
 
         The returned value will be cached for future lookups.
+
+        Returns:
+            list of ReviewRequest:
+            A list of the review requests which are blocked by this one.
         """
         if not hasattr(self, '_blocks'):
             self._blocks = list(self.blocks.all())
@@ -1204,7 +1383,26 @@ class ReviewRequest(BaseReviewRequestDetails):
         else:
             return FileAttachmentState.PUBLISHED
 
-    def save(self, update_counts=False, old_submitter=None, **kwargs):
+    def save(
+        self,
+        update_counts: bool = False,
+        old_submitter: Optional[User] = None,
+        **kwargs,
+    ) -> None:
+        """Save the review request.
+
+        Args:
+            update_counts (bool, optional):
+                Whether to update the review request counters for the given
+                user.
+
+            old_submitter (django.contrib.auth.models.User, optional):
+                The previous owner of the review request, if it is being
+                reassigned.
+
+            **kwargs (dict):
+                Keyword arguments to pass through to the parent class.
+        """
         if update_counts or self.id is None:
             self._update_counts(old_submitter)
 
@@ -1213,9 +1411,15 @@ class ReviewRequest(BaseReviewRequestDetails):
             # and all ReviewRequestVisit objects.
             self.visits.all().delete()
 
-        super(ReviewRequest, self).save(**kwargs)
+        super().save(**kwargs)
 
-    def delete(self, **kwargs):
+    def delete(self, **kwargs) -> None:
+        """Delete the review request.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments to pass through to the parent class.
+        """
         site_profile = self.submitter.get_site_profile(self.local_site)
         site_profile.decrement_total_outgoing_request_count()
 
@@ -1225,12 +1429,19 @@ class ReviewRequest(BaseReviewRequestDetails):
             if self.public:
                 self._decrement_reviewer_counts()
 
-        super(ReviewRequest, self).delete(**kwargs)
+        super().delete(**kwargs)
 
-    def can_publish(self):
+    def can_publish(self) -> bool:
+        """Return whether this review request can be published.
+
+        Returns:
+            bool:
+            ``True`` if the review request is not yet public, or if there is a
+            draft present.
+        """
         return not self.public or get_object_or_none(self.draft) is not None
 
-    def can_add_default_reviewers(self):
+    def can_add_default_reviewers(self) -> bool:
         """Return whether default reviewers can be added to the review request.
 
         Default reviewers can only be added if the review request supports
@@ -1372,8 +1583,16 @@ class ReviewRequest(BaseReviewRequestDetails):
         if draft is not None:
             draft.delete()
 
-    def reopen(self, user=None):
-        """Reopens the review request for review."""
+    def reopen(
+        self,
+        user: Optional[User] = None,
+    ) -> None:
+        """Reopen the review request for review.
+
+        Args:
+            user (django.contrib.auth.models.User, optional):
+                The user making the change.
+        """
         from reviewboard.reviews.models.review_request_draft import \
             ReviewRequestDraft
 
@@ -1549,7 +1768,10 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return changes
 
-    def determine_user_for_changedesc(self, changedesc):
+    def determine_user_for_changedesc(
+        self,
+        changedesc: ChangeDescription,
+    ) -> User:
         """Determine the user associated with the change description.
 
         Args:
@@ -1582,7 +1804,10 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return self.submitter
 
-    def _update_counts(self, old_submitter):
+    def _update_counts(
+        self,
+        old_submitter: Optional[User],
+    ) -> None:
         """Update the review request counters for affected users and groups.
 
         This will increment/decrement the outgoing counters on the
@@ -1682,7 +1907,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                 # reviewers, so it's not showing up in their dashboards.
                 self._decrement_reviewer_counts()
 
-    def _increment_reviewer_counts(self):
+    def _increment_reviewer_counts(self) -> None:
         """Increment the counters for all reviewers.
 
         This will increment counters for all review groups and users that
@@ -1707,7 +1932,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                 profile__starred_review_requests=self,
                 local_site=self.local_site))
 
-    def _decrement_reviewer_counts(self):
+    def _decrement_reviewer_counts(self) -> None:
         """Decrement the counters for all reviewers.
 
         This will decrement counters for all review groups and users that
@@ -1733,8 +1958,8 @@ class ReviewRequest(BaseReviewRequestDetails):
                 profile__starred_review_requests=self,
                 local_site=self.local_site))
 
-    def _calculate_approval(self):
-        """Calculates the approval information for the review request."""
+    def _calculate_approval(self) -> None:
+        """Calculate the approval information for the review request."""
         from reviewboard.extensions.hooks import ReviewRequestApprovalHook
 
         approved = True
@@ -1767,23 +1992,32 @@ class ReviewRequest(BaseReviewRequestDetails):
                     failure = None
             except Exception as e:
                 extension = hook.extension
-                logger.error('Error when running ReviewRequestApprovalHook.'
-                             'is_approved function in extension "%s": %s',
-                             extension.id, e, exc_info=True)
+                logger.exception(
+                    'Error when running ReviewRequestApprovalHook.'
+                    'is_approved function in extension "%s": %s',
+                    extension.id, e)
 
         self._approval_failure = failure
         self._approved = approved
 
-    def get_review_request(self):
-        """Returns this review request.
+    def get_review_request(self) -> ReviewRequest:
+        """Return this review request.
 
         This is provided so that consumers can be passed either a
         ReviewRequest or a ReviewRequestDraft and retrieve the actual
         ReviewRequest regardless of the object.
+
+        Returns:
+            ReviewRequest:
+            This object.
         """
         return self
 
-    def _is_diffset_accessible_by(self, user, diffset):
+    def _is_diffset_accessible_by(
+        self,
+        user: User,
+        diffset: DiffSet,
+    ) -> bool:
         """Return whether the given diffset is accessible by the given user.
 
         If the :py:class:`~reviewboard.reviews.features.DiffACLsFeature` is
@@ -1822,14 +2056,17 @@ class ReviewRequest(BaseReviewRequestDetails):
                     continue
             except Exception as e:
                 extension = hook.extension
-                logger.error('Error when running FileDiffACLHook.'
-                             'is_accessible function in extension '
-                             '"%s": %s',
-                             extension.id, e, exc_info=True)
+                logger.exception(
+                    'Error when running FileDiffACLHook.is_accessible '
+                    'function in extension "%s": %s',
+                    extension.id, e)
 
         return True
 
-    def _are_diffs_accessible_by(self, user):
+    def _are_diffs_accessible_by(
+        self,
+        user: User,
+    ) -> bool:
         """Return whether the diffs are accessible by the given user.
 
         This will check whether all attached diffs can be accessed by the user.
@@ -1856,7 +2093,9 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return True
 
-    class Meta:
+    class Meta(BaseReviewRequestDetails.Meta):
+        """Metadata for the ReviewRequest class."""
+
         app_label = 'reviews'
         db_table = 'reviews_reviewrequest'
         ordering = ['-last_updated']

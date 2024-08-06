@@ -1240,7 +1240,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
         self.spy_on(repository._get_file_uncached,
                     op=kgb.SpyOpReturn(b'first'))
 
-        self.assertEqual(repository.get_file('PATH', 'd7e96b3'),
+        self.assertEqual(repository.get_file(path='PATH',
+                                             revision='d7e96b3'),
                          b'first')
 
         # Ensure output of fake result matches.
@@ -1250,7 +1251,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
 
         # Grab from cache when no changes and change fake result to confirm
         # it is not called.
-        self.assertEqual(repository.get_file('PATH', 'd7e96b3'),
+        self.assertEqual(repository.get_file(path='PATH',
+                                             revision='d7e96b3'),
                          b'first')
 
         # When raw_file_url changed, do not grab from cache and ensure output
@@ -1258,7 +1260,8 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
         repository.raw_file_url = \
             'http://github.com/api/v2/yaml/blob/show/reviewboard/<revision>'
 
-        self.assertEqual(repository.get_file('PATH', 'd7e96b3'),
+        self.assertEqual(repository.get_file(path='PATH',
+                                             revision='d7e96b3'),
                          b'second')
 
     def test_get_file_exists_caching_with_raw_url(self):
@@ -1271,17 +1274,20 @@ class GitTests(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
                     op=kgb.SpyOpReturn(True))
 
         # Use spy to put key into cache
-        self.assertTrue(repository.get_file_exists('PATH', 'd7e96b3'))
+        self.assertTrue(repository.get_file_exists(path='PATH',
+                                                   revision='d7e96b3'))
 
         # Remove spy to ensure key is still in cache without needing spy
         repository._get_file_exists_uncached.unspy()
-        self.assertTrue(repository.get_file_exists('PATH', 'd7e96b3'))
+        self.assertTrue(repository.get_file_exists(path='PATH',
+                                                   revision='d7e96b3'))
 
         # Does not exist when raw_file_url changed because it is not cached.
         repository.raw_file_url = \
             'http://github.com/api/v2/yaml/blob/show/reviewboard/<revision>'
 
-        self.assertFalse(repository.get_file_exists('PATH', 'd7e96b3'))
+        self.assertFalse(repository.get_file_exists(path='PATH',
+                                                    revision='d7e96b3'))
 
     def test_normalize_patch_with_git_diff_new_symlink(self):
         """Testing GitTool.normalize_patch with new symlink"""

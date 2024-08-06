@@ -244,7 +244,7 @@ export class MenuView extends BaseView<
      * This will set up the elements for the menu and associate it with the
      * controller.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el
             .attr({
                 id: this.id,

@@ -64,7 +64,7 @@ export class FloatingBannerView<
     /**
      * Render the banner and listens for scroll and resize updates.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         $(window)
             .scroll(() => this.#updateFloatPosition())
             .resize(() => this.#updateSize());

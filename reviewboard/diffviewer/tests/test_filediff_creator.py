@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 import kgb
 from django.utils.timezone import now
@@ -12,6 +12,9 @@ from reviewboard.diffviewer.models import DiffCommit, DiffSet
 from reviewboard.scmtools.core import Revision
 from reviewboard.scmtools.git import GitTool
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from reviewboard.scmtools.core import FileLookupContext
 
 
 class FileDiffCreatorTests(kgb.SpyAgency, TestCase):
@@ -284,3 +287,53 @@ class FileDiffCreatorTests(kgb.SpyAgency, TestCase):
                          '/readme')
         self.assertEqual(filediff.extra_data.get('parent_source_revision'),
                          '1234567')
+
+    def test_create_filediffs_without_per_file_revisions(self) -> None:
+        """Testing create_filediffs() without per-file revisions and
+        validated parent ID
+        """
+        repository = self.create_repository(tool_name='Mercurial')
+        diffset = self.create_diffset(repository=repository)
+
+        self.assertEqual(diffset.files.count(), 0)
+
+        def get_file_exists(
+            *args,
+            context: FileLookupContext,
+            **kwargs,
+        ) -> bool:
+            context.file_extra_data['__validated_parent_id'] = 'zzzzzzzzzzzz'
+
+            return True
+
+        create_filediffs(
+            diff_file_contents=(
+                b'# HG changeset patch\n'
+                b'# Node ID aaaaaaaaaaaa\n'
+                b'# Parent  bbbbbbbbbbbb\n'
+                b'diff --git a/readme b/readme\n'
+                b'--- a/readme\n'
+                b'+++ b/readme\n'
+                b'@@ -1 +1 @@\n'
+                b'Test 1\n'
+                b'Test 2\n'
+            ),
+            parent_diff_file_contents=None,
+            repository=repository,
+            basedir='/',
+            base_commit_id='0' * 40,
+            diffset=diffset,
+            get_file_exists=get_file_exists)
+
+        diffset = DiffSet.objects.get(pk=diffset.pk)
+
+        self.assertEqual(diffset.files.count(), 1)
+        filediff = diffset.files.get()
+
+        self.assertEqual(filediff.source_revision, 'zzzzzzzzzzzz')
+        self.assertEqual(filediff.dest_detail, 'aaaaaaaaaaaa')
+        self.assertEqual(filediff.extra_data, {
+            'is_symlink': False,
+            'raw_delete_count': 0,
+            'raw_insert_count': 0,
+        })

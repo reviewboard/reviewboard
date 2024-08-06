@@ -7,6 +7,7 @@ import { UserSession } from 'reviewboard/common';
 
 import { type DiffReviewable } from '../models/diffReviewableModel';
 import { type DiffViewerPage } from '../models/diffViewerPageModel';
+import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 import { DiffCommentsHintView } from './diffCommentsHintView';
 import { DiffFileIndexView } from './diffFileIndexView';
 import { DiffReviewableView } from './diffReviewableView';
@@ -1128,18 +1129,10 @@ export class DiffViewerPageView extends ReviewablePageView<
          * If an explicit query string is provided, we'll just use that.
          * Otherwise, we'll generate one.
          */
-        type QueryData = string | {
-            name: string,
-            value: any,
-        }[];
-        let queryData: QueryData = options.queryString;
+        let queryString = options.queryString;
 
-        if (queryData === undefined) {
-            /*
-            * We'll build as an array to maintain a specific order, which
-            * helps with caching and testing.
-            */
-            queryData = [];
+        if (queryString === undefined) {
+            const queryParams = new URLSearchParams();
 
             /*
              * We want to be smart about when we include ?page=. We always
@@ -1161,40 +1154,36 @@ export class DiffViewerPageView extends ReviewablePageView<
             }
 
             if (page && page !== 1) {
-                queryData.push({
-                    name: 'page',
-                    value: page,
-                });
+                queryParams.set('page', page);
             }
 
             if (options.baseCommitID) {
-                queryData.push({
-                    name: 'base-commit-id',
-                    value: options.baseCommitID,
-                });
+                queryParams.set('base-commit-id', options.baseCommitID);
             }
 
             if (options.tipCommitID) {
-                queryData.push({
-                    name: 'tip-commit-id',
-                    value: options.tipCommitID,
-                });
+                queryParams.set('tip-commit-id', options.tipCommitID);
             }
 
             const filenamePatterns = this.model.get('filenamePatterns');
 
             if (filenamePatterns && filenamePatterns.length > 0) {
-                queryData.push({
-                    name: 'filenames',
-                    value: filenamePatterns,
-                });
+                queryParams.set('filenames', filenamePatterns);
             }
+
+            const reviewRequestEditor = this.model.reviewRequestEditor;
+
+            if (reviewRequestEditor.get('viewingUserDraft')) {
+                queryParams.set('view-draft', '1');
+            }
+
+            queryString = queryParams.toString();
         }
 
         const url = Djblets.buildURL({
             anchor: options.anchor,
             baseURL: baseURL,
-            queryData: queryData,
+            queryData: queryString,
         });
 
         /*
@@ -1364,5 +1353,41 @@ export class DiffViewerPageView extends ReviewablePageView<
             baseCommitID: model.get('baseCommitID'),
             tipCommitID: model.get('tipCommitID'),
         });
+    }
+
+    /**
+     * Callback for when the viewingUserDraft attribute of the editor changes.
+     *
+     * This will reload the page with the new value of the ``view-draft`` query
+     * parameter.
+     *
+     * Args:
+     *     model (ReviewRequestEditor):
+     *         The review request editor model.
+     *
+     *     newValue (boolean):
+     *         The new value of the viewingUserDraft attribute.
+     */
+    protected _onViewingUserDraftChanged(
+        model: ReviewRequestEditor,
+        newValue: boolean,
+    ) {
+        if (newValue === false && this.model.revision.get('isDraftDiff')) {
+            /*
+             * If the privileged user is viewing a draft revision of the diff,
+             * and they ask to go back to the non-draft view, we need to
+             * go to the latest public revision.
+             *
+             * We jettison all interdiff/commit ID/page info and just load
+             * the diff revision directly.
+             */
+            const baseURL = this.model.get('reviewRequest').get('reviewURL');
+            const revision = this.model.revision.get('latestRevision') - 1;
+            console.assert(revision >= 1);
+
+            RB.navigateTo(`${baseURL}diff/${revision}/`);
+        } else {
+            super._onViewingUserDraftChanged(model, newValue);
+        }
     }
 }

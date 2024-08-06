@@ -1420,6 +1420,33 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         diff_files = get_diff_files(diffset=diffset, interdiffset=interdiffset)
         self.assertTrue(diff_files[0]['public'])
 
+    def test_get_diff_files_added_in_ancestor(self) -> None:
+        """Testing get_diff_files with a file that was added in an ancestor
+        commit
+        """
+        self.set_up_filediffs()
+
+        review_request = self.create_review_request(repository=self.repository,
+                                                    create_with_history=True)
+        review_request.diffset_history.diffsets.add(self.diffset)
+
+        tip_commit = DiffCommit.objects.get(pk=3)
+
+        # file 'foo' added in commit pk=3, and then renamed/edited to 'qux' in
+        # pk=4.
+        files = get_diff_files(diffset=self.diffset, tip_commit=tip_commit,
+                               filename_patterns=['qux'])
+
+        self.assertEqual(len(files), 1)
+
+        f = files[0]
+
+        self.assertEqual(f['orig_filename'], 'foo')
+        self.assertEqual(f['orig_revision'], '')
+        self.assertEqual(f['modified_filename'], 'qux')
+        self.assertEqual(f['modified_revision'], 'New Change')
+        self.assertTrue(f['is_new_file'])
+
 
 class GetFileDiffsMatchTests(TestCase):
     """Unit tests for get_filediffs_match."""

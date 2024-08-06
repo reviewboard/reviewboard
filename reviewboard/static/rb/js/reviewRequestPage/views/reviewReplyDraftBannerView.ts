@@ -90,7 +90,7 @@ export class ReviewReplyDraftBannerView extends FloatingBannerView<
      *     RB.ReviewRequestPage.ReviewReplyDraftBannerView:
      *     This object, for chaining.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         super.onInitialRender();
 
         this.$el.html(ReviewReplyDraftBannerView.template({
@@ -174,7 +174,7 @@ export class ReviewReplyDraftStaticBannerView extends BaseView {
     /**
      * Render the banner.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el.html(ReviewReplyDraftStaticBannerView.template({
             draftText: _`This reply is a draft.`,
             reminderText: _`Be sure to publish when finished.`,

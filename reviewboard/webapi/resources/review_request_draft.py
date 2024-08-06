@@ -1,5 +1,10 @@
+"""API resource for review request drafts."""
+
+from __future__ import annotations
+
 import logging
 import re
+from typing import TYPE_CHECKING
 
 from django.contrib import auth
 from django.contrib.auth.models import User
@@ -43,6 +48,10 @@ from reviewboard.webapi.errors import (COMMIT_ID_ALREADY_EXISTS,
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 
+if TYPE_CHECKING:
+    from django.db.models import QuerySet
+    from django.http import HttpRequest
+
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +72,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     request, or it must have the ``reviews.can_edit_reviewrequest`` permission
     set.
     """
+
     model = ReviewRequestDraft
     name = 'draft'
     policy_id = 'review_request_draft'
@@ -331,15 +341,39 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
     @classmethod
     def prepare_draft(cls, request, review_request):
-        """Creates a draft, if the user has permission to."""
+        """Create a draft, if the user has permission to."""
         if not review_request.is_mutable_by(request.user):
             raise PermissionDenied
 
         return ReviewRequestDraft.create(review_request)
 
-    def get_queryset(self, request, *args, **kwargs):
+    def get_queryset(
+        self,
+        request: HttpRequest,
+        *args,
+        **kwargs,
+    ) -> QuerySet:
+        """Return a queryset for the draft.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            *args (tuple):
+                Positional arguments to pass through to the review request
+                resource.
+
+            **kwargs (dict):
+                Keyword arguments to pass through to the review request
+                resource.
+
+        Returns:
+            django.db.models.QuerySet:
+            The queryset for the review request draft.
+        """
         review_request = resources.review_request.get_object(
             request, *args, **kwargs)
+
         return self.model.objects.filter(review_request=review_request)
 
     def get_is_changedescription_rich_text(self, obj):
@@ -488,10 +522,15 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
 
-        if not review_request.is_mutable_by(request.user):
-            return self.get_no_access_error(request)
-
+        # This explicitly does not pass the user in because we do access
+        # checking in has_modify_permissions.
         draft = review_request.get_draft()
+
+        if draft:
+            if not self.has_modify_permissions(request, draft):
+                return self.get_no_access_error(request)
+        elif not review_request.is_mutable_by(request.user):
+            return self.get_no_access_error(request)
 
         # Before we update anything, sanitize the commit ID, see if it
         # changed, and make sure that the the new value isn't owned by

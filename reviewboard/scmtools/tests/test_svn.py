@@ -888,7 +888,8 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
 
     def test_utf8_keywords(self):
         """Testing SVN (<backend>) with UTF-8 files with keywords"""
-        self.repository.get_file('trunk/utf8-file.txt', '9')
+        self.repository.get_file(path='trunk/utf8-file.txt',
+                                 revision='9')
 
     def test_normalize_patch_with_svn_and_expanded_keywords(self):
         """Testing SVN (<backend>) normalize_patch with expanded keywords"""

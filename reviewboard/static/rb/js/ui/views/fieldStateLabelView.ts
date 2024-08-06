@@ -97,7 +97,7 @@ export class FieldStateLabelView extends BaseView<
     /**
      * Render the view.
      */
-    onInitialRender() {
+    protected onInitialRender() {
         this.$el
             .addClass(this.className)
             .addClass(`-is-${this.#theme}`)

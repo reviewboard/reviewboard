@@ -906,8 +906,9 @@ class PerforceTool(SCMTool):
         # Newer versions use #0, so it's quicker to check.
         if (revision == b'0' or
             (revision == b'1' and
-             not self.repository.get_file_exists(filename.decode('utf-8'),
-                                                 revision.decode('utf-8')))):
+             not self.repository.get_file_exists(
+                 path=filename.decode('utf-8'),
+                 revision=revision.decode('utf-8')))):
             revision = PRE_CREATION
 
         return filename, revision

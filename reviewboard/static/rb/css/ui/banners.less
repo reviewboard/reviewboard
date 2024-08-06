@@ -94,7 +94,8 @@
     }
   }
 
-  a {
+  .rb-c-actions a,
+  a[role="button"] {
     color: inherit;
     cursor: pointer;
     text-decoration: none;
@@ -276,6 +277,24 @@
     }
   }
 
+  /**
+   * The notice about the existence of an unpublished draft.
+   *
+   * When viewing a review request as a privileged user (admin or the "can
+   * edit review request" privilege), the user can see drafts which have
+   * not yet been published. We add a notice to the dock area of the banner
+   * that indicates this, and allows them to switch between viewing the
+   * draft data and viewing as if they were a regular user.
+   */
+  &__unpublished-draft {
+    background: var(--ink-p-accent-info-bg);
+    padding: var(--ink-u-spacing-m);
+
+    &:not(:last-child) {
+      border-bottom: var(--rb-c-review-request-border);
+    }
+  }
+
   /*
    * This makes sure that items in the review menu are clickable across
    * their entire breadth.
@@ -385,7 +404,6 @@
   &__dock:not(:empty) {
     background: var(--rb-c-review-request-bg-color);
     border-bottom: var(--rb-c-review-request-border);
-    padding: @banner-padding;
   }
 }
 

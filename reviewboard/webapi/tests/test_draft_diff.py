@@ -468,7 +468,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
         """Testing the PUT <URL> API with finalize_commit_series=1"""
         @self.spy_for(Repository.get_file_exists,
                       owner=Repository)
-        def _get_file_exists(repository, path, revision, **kwargs):
+        def _get_file_exists(repository, path, revision, *args, **kwargs):
             self.assertEqual(path, 'README')
             self.assertEqual(revision, '94bdd3e')
 
@@ -514,7 +514,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
         """
         @self.spy_for(Repository.get_file_exists,
                       owner=Repository)
-        def _get_file_exists(repository, path, revision, **kwargs):
+        def _get_file_exists(repository, path, revision, *args, **kwargs):
             self.assertEqual(path, 'README')
             self.assertEqual(revision, 'f00f00')
 
@@ -573,7 +573,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
         """
         @self.spy_for(Repository.get_file_exists,
                       owner=Repository)
-        def _get_file_exists(repository, path, revision, **kwargs):
+        def _get_file_exists(repository, path, revision, *args, **kwargs):
             self.assertEqual(path, 'README')
             self.assertEqual(revision, '94bdd3e')
 
@@ -634,7 +634,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
         """
         @self.spy_for(Repository.get_file_exists,
                       owner=Repository)
-        def _get_file_exists(repository, path, revision, **kwargs):
+        def _get_file_exists(repository, path, revision, *args, **kwargs):
             self.assertEqual(path, 'README')
             self.assertEqual(revision, '94bdd3e')
 
@@ -1116,7 +1116,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, BaseWebAPITestCase,
         """
         @self.spy_for(Repository.get_file_exists,
                       owner=Repository)
-        def _get_file_exists(repository, path, revision, **kwargs):
+        def _get_file_exists(repository, path, revision, *args, **kwargs):
             self.assertEqual(path, 'README')
             self.assertEqual(revision, '94bdd3e')
 
