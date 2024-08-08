@@ -1,8 +1,10 @@
 """Main review request page view."""
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple
+from typing import Any, List, Optional, TYPE_CHECKING, Tuple
 
 from django.conf import settings
 from django.http import HttpRequest
