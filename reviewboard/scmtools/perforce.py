@@ -481,7 +481,15 @@ class PerforceClient(object):
             with self.connect():
                 yield
         except P4Exception as e:
-            error = six.text_type(e)
+            try:
+                error = six.text_type(e)
+            except AttributeError:
+                # p4python 2024.1.2625398 introduced a regression in
+                # P4Exception.__str__ where the 'errors' and 'warnings'
+                # attributes were being checked but weren't necessarily
+                # defined during construction. We handle this by falling
+                # back to the raw value.
+                error = e.value
 
             if 'Perforce password' in error or 'Password must be set' in error:
                 raise AuthenticationError(msg=error)
