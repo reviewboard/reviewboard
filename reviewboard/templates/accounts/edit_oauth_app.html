@@ -46,8 +46,13 @@ OAuth2 Applications -- Edit {{app_name}}
 {%    include "djblets_forms/admin/form_fieldset.html" %}
 {%   endfor %}
   <div class="rb-c-form__actions">
-   <input class="primary" type="submit" value="{% trans 'Save' %}">
-   <a class="btn danger" href="{{oauth2_page_url}}">{% trans 'Cancel' %}</a>
+   <button class="ink-c-button -is-primary" type="submit">
+    {% trans 'Save' %}
+   </button>
+   <a class="ink-c-button -is-danger" href="{{oauth2_page_url}}"
+      role="button">
+    {% trans 'Cancel' %}
+   </a>
   </div>
  </form>
 </div>
