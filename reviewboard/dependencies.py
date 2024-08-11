@@ -44,7 +44,7 @@ package_dependencies = {
     'django-cors-headers': '~=3.11.0',
     'django_evolution': '~=2.2b1',
     'django-haystack': '~=3.2.1',
-    'django-multiselectfield': '~=0.1.12',
+    'django-multiselectfield': '==0.1.12',
     'django_oauth_toolkit': '~=1.6.3',
     'Djblets': djblets_version,
     'docutils': '',
