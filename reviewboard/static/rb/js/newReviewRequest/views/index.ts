@@ -1,0 +1,1 @@
+export { CommitView } from './commitView';

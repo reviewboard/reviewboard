@@ -212,7 +212,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/views/uploadDiffView.es6.js',
             'rb/js/newReviewRequest/views/branchView.es6.js',
             'rb/js/newReviewRequest/views/branchesView.es6.js',
-            'rb/js/newReviewRequest/views/commitView.es6.js',
             'rb/js/newReviewRequest/views/commitsView.es6.js',
             'rb/js/newReviewRequest/views/repositoryView.es6.js',
             'rb/js/newReviewRequest/views/repositorySelectionView.es6.js',
