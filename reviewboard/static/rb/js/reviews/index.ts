@@ -63,5 +63,6 @@ export { TextBasedCommentBlockView } from './views/textBasedCommentBlockView';
 export { TextBasedReviewableView } from './views/textBasedReviewableView';
 export { TextCommentRowSelector } from './views/textCommentRowSelectorView';
 export { UnifiedBannerView } from './views/unifiedBannerView';
+export { UploadAttachmentView } from './views/uploadAttachmentView';
 
 export * from './utils';

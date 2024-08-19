@@ -97,6 +97,9 @@ export interface SaveOptions extends Backbone.ModelSaveOptions {
     attrs?: {
         [key: string]: unknown;
     };
+
+    /** A form to use for populating the payload. */
+    form?: JQuery;
 }
 
 

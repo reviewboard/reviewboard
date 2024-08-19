@@ -1,127 +1,139 @@
+import { suite } from '@beanbag/jasmine-suites';
+import {
+    beforeEach,
+    describe,
+    expect,
+    it,
+    spyOn,
+} from 'jasmine-core';
+
+import {
+    ReviewRequest,
+} from 'reviewboard/common';
+import {
+    ReviewRequestEditor,
+    UploadAttachmentView,
+} from 'reviewboard/reviews';
+
+
 suite('rb/views/UploadAttachmentView', function() {
-    let reviewRequest;
+    let reviewRequest: ReviewRequest;
+    let editor: ReviewRequestEditor;
 
     beforeEach(function() {
-        reviewRequest = new RB.ReviewRequest({
-            summary: 'My Review Request',
+        reviewRequest = new ReviewRequest({
             reviewURL: '/r/1/',
+            summary: 'My Review Request',
+        });
+        editor = new ReviewRequestEditor({
+            reviewRequest: reviewRequest,
         });
     });
 
     describe('Instances', function() {
-        let dialog;
+        let dialog: UploadAttachmentView;
 
         afterEach(function() {
             if (dialog) {
-                dialog.hide();
+                dialog.remove();
                 dialog = null;
             }
         });
 
         describe('Buttons', function() {
             beforeEach(function() {
-                dialog = new RB.UploadAttachmentView({
-                    reviewRequest: reviewRequest,
+                dialog = new UploadAttachmentView({
+                    reviewRequestEditor: editor,
                 });
+                dialog.render();
             });
 
             describe('Cancel', function() {
-                let $button;
-
                 beforeEach(function() {
                     dialog.show();
-                    $button = dialog.$buttonsMap.cancel;
-
-                    expect($button.length).toBe(1);
                 });
 
                 it('Enabled by default', function() {
-                    expect($button.is(':disabled')).toBe(false);
+                    expect(dialog._cancelButton.disabled).toBe(false);
                 });
 
                 it('Closes dialog when clicked', function() {
-                    spyOn($.fn, 'modalBox').and.callThrough();
-                    dialog.delegateEvents();
+                    spyOn(dialog, 'close').and.callThrough();
+                    dialog._cancelButton.el.click();
 
-                    $button.click();
-                    expect($.fn.modalBox).toHaveBeenCalledWith('destroy');
+                    expect(dialog.close).toHaveBeenCalled();
                 });
             });
 
             describe('Upload', function() {
-                let $button;
-                let $path;
-
                 beforeEach(function() {
                     spyOn(dialog, 'send');
 
                     dialog.show();
-                    $button = dialog.$buttonsMap.upload;
-                    $path = dialog._$path;
 
                     /*
                      * Allows the value of the input to be changed
                      * programmatically without security issues.
                      */
-                    $path.attr('type', 'text');
+                    dialog._$path.attr('type', 'text');
 
-                    spyOn(dialog, 'updateUploadButtonEnabledState')
+                    spyOn(dialog, '_updateUploadButtonEnabledState')
                         .and.callThrough();
                     dialog.delegateEvents();
-
-                    expect($button.length).toBe(1);
                 });
 
                 it('Disabled by default until a file is uploaded', function() {
-                    expect($button.is(':disabled')).toBe(true);
+                    expect(dialog._uploadButton.disabled).toBe(true);
                 });
 
                 it('Enabled when a file is uploaded', function() {
-                    expect($button.is(':disabled')).toBe(true);
+                    expect(dialog._uploadButton.disabled).toBe(true);
 
-                    $path
+                    dialog._$path
                         .val('fakefile')
                         .trigger('change');
 
-                    expect(dialog.updateUploadButtonEnabledState)
+                    expect(dialog._updateUploadButtonEnabledState)
                         .toHaveBeenCalledTimes(1);
-                    expect($button.is(':disabled')).toBe(false);
+                    expect(dialog._uploadButton.disabled).toBe(false);
                 });
 
                 it('Disabled when an uploaded file is removed', function() {
-                    $path
+                    dialog._$path
                         .val('fakefile')
                         .trigger('change')
                         .val('')
                         .trigger('change');
 
-                    expect(dialog.updateUploadButtonEnabledState)
+                    expect(dialog._updateUploadButtonEnabledState)
                         .toHaveBeenCalledTimes(2);
-                    expect($button.is(':disabled')).toBe(true);
+                    expect(dialog._uploadButton.disabled).toBe(true);
                 });
 
                 it('Uploads the file attachment', function() {
-                    expect($button.is(':disabled')).toBe(true);
+                    expect(dialog._uploadButton.disabled).toBe(true);
 
-                    $path
+                    dialog._$path
                         .val('fakefile')
                         .trigger('change');
 
-                    expect(dialog.updateUploadButtonEnabledState).toHaveBeenCalled();
-                    expect($button.is(':disabled')).toBe(false);
+                    expect(dialog._updateUploadButtonEnabledState)
+                        .toHaveBeenCalled();
+                    expect(dialog._uploadButton.disabled).toBe(false);
 
-                    $button.click();
+                    dialog._uploadButton.el.click();
                     expect(dialog.send).toHaveBeenCalled();
                 });
             });
         });
 
         it('Dialog for updating an existing file attachment', function() {
-            dialog = new RB.UploadAttachmentView({
+            dialog = new UploadAttachmentView({
                 attachmentHistoryID: 14,
                 presetCaption: 'fakecaption',
-                reviewRequest: reviewRequest,
+                reviewRequestEditor: editor,
             });
+            dialog.render();
 
             dialog.show();
             const $caption = dialog.$('[name="caption"]');

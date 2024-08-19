@@ -22,10 +22,9 @@ import {
 } from 'reviewboard/ui';
 
 import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
-import {
-    type ReviewRequestEditorView,
-} from '../views/reviewRequestEditorView';
+import { type ReviewRequestEditorView } from './reviewRequestEditorView';
 import { CommentDialogView } from './commentDialogView';
+import { UploadAttachmentView } from './uploadAttachmentView';
 
 
 /**
@@ -831,12 +830,14 @@ export class FileAttachmentThumbnailView extends BaseView<
             this.options.reviewRequestEditorView.promptToLoadUserDraft();
         } else {
             const model = this.model;
-            const updateDlg = new RB.UploadAttachmentView({
+            const updateDlg = new UploadAttachmentView({
                 attachmentHistoryID: model.get('attachmentHistoryID'),
+                onClose: () => updateDlg.remove(),
                 presetCaption: model.get('caption'),
                 reviewRequestEditor: this.options.reviewRequestEditor,
             });
-            updateDlg.show();
+            updateDlg.render();
+            updateDlg.open();
         }
     }
 

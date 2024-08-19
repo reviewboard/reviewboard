@@ -20,6 +20,7 @@ import { OverlayView } from 'reviewboard/ui';
 import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
 import { type ReviewRequestEditorView } from './reviewRequestEditorView';
 import { ReviewDialogView } from './reviewDialogView';
+import { UploadAttachmentView } from './uploadAttachmentView';
 
 
 /**
@@ -613,10 +614,12 @@ export class AddFileActionView extends Actions.MenuItemActionView {
         if (reviewRequestEditor.hasUnviewedUserDraft) {
             reviewRequestEditorView.promptToLoadUserDraft();
         } else {
-            const uploadDialog = new RB.UploadAttachmentView({
+            const uploadDialog = new UploadAttachmentView({
+                onClose: () => uploadDialog.remove(),
                 reviewRequestEditor: reviewRequestEditor,
             });
-            uploadDialog.show();
+            uploadDialog.render();
+            uploadDialog.open();
         }
     }
 }

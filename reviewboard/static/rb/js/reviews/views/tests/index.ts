@@ -9,3 +9,4 @@ import './reviewRequestEditorViewTests';
 import './reviewRequestFieldViewsTests';
 import './reviewablePageViewTests';
 import './textBasedReviewableViewTests';
+import './uploadAttachmentViewTests';
