@@ -68,7 +68,12 @@ New Features
   review request without switching to this special view. Review Board will
   detect when this is the case and help you switch.
 
-  .. todo:: Screenshot
+  .. image:: _static/images/7.x/7.0.2-admin-draft-view.png
+     :width: 588
+     :height: 152
+     :alt: Screenshot of a new banner for administrators under the Review
+           menu saying "This review request has an unpublished draft" with a
+           "View draft data" link.
 
 
 Bug Fixes
