@@ -38,7 +38,7 @@ django_doc_major_version = '4.2'
 djblets_doc_major_version = '6.x'
 
 #: The version of Django required for the current version of Python.
-django_version = '~=4.2.13'
+django_version = '~=4.2.15'
 
 #: The version range required for Djblets.
 djblets_version = '~=6.0a0.dev0'

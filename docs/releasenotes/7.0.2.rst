@@ -1,0 +1,236 @@
+.. default-intersphinx:: djblets5.x rb7.x
+
+
+================================
+Review Board 7.0.2 Release Notes
+================================
+
+**Release date**: TBD
+
+
+Installation/Upgrade
+====================
+
+Review Board 7.0.2 is compatible with Python 3.8 - 3.12.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install ReviewBoard==7.0.2
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Packaging
+=========
+
+* :pypi:`Django` 4.2.15 (or a higher 4.2.x) is now required.
+
+  This is the latest security release for Django 4.2 LTS.
+
+
+New Features
+============
+
+* Added a whole new way for administrators to view and work with another
+  user's review requests.
+
+  Administrators (and users with the special ``can_edit_reviewrequest``
+  permission enabled) have the capability to access draft information for
+  other users, in order to diagnose problems or reassign review requests.
+  While the backend enabled this, the UI was never fully designed, and this
+  led to bad experiences for administrators trying to review another user's
+  code.
+
+  We've fully reworked this experience. Administrators will now see review
+  requests the same way everybody else does, but will have the option of
+  viewing the other user's draft data if they have an unpublished review
+  request, and can freely switch between the views.
+
+  If an administrator is viewing the review request as a normal user, and
+  that review request has an active draft, they'll be unable to edit the
+  review request without switching to this special view. Review Board will
+  detect when this is the case and help you switch.
+
+  .. image:: _static/images/7.x/7.0.2-admin-draft-view.png
+     :width: 588
+     :height: 152
+     :alt: Screenshot of a new banner for administrators under the Review
+           menu saying "This review request has an unpublished draft" with a
+           "View draft data" link.
+
+
+Bug Fixes
+=========
+
+Administration UI
+-----------------
+
+* GitHub configuration help text has been made more readable.
+
+
+Diff Viewer
+-----------
+
+* Fixed an issue where downloading a diff could result in files being in a
+  different order from when it was uploaded. (:bug:`2812`)
+
+  We applied some sorting of the files, for the purpose of helping with a
+  better order in the diff viewer. This was done during diff upload, rather
+  than when viewing a diff.
+
+  The result could be a diff that had files in the wrong order, which was
+  particularly a problem with Mercurial.
+
+  We now preserve the order, and instead apply sorting only when viewing a
+  diff.
+
+* Files that were added in an uploaded commit range and modified in a later
+  commit will now show up as a new file and not a modified file.
+
+
+E-Mail
+------
+
+* Fixed automatically determining whether to send e-mails on people's
+  behalf when DMARC records are formatted with a multi-string TXT record
+  format.
+
+  Usually, DMARC DNS records are in the form of::
+
+      "v=DMARC1; p=reject; pct=100; ..."
+
+  We now support parsing a multi-string variant in the form of::
+
+      "v=DMARC1;" "p=reject;" "pct=100;" ...
+
+* Fixed some HTML sneaking in to plain-text reply e-mails.
+
+
+Repository Support
+------------------
+
+Mercurial
+~~~~~~~~~
+
+* Added looser validation of Mercurial commits during upload.
+
+  We normally perform strict validation of the revisions used for commits
+  during a diff upload, but Mercurial diffs don't have enough useful
+  information to do this correctly.
+
+  We've eased the requirements specifically for Mercurial, avoiding issues
+  that could occur with multi-commit diff uploads.
+
+  The trade-off is that certain invalid commits could pass validation, which
+  may cause problems when trying to upload merge commits, malformed commit
+  chains, or bad uploads from custom tools that talk to Review Board.
+
+* Fixed parsing of Mercurial Git-style diffs that introduce new binary files.
+
+
+Perforce
+~~~~~~~~
+
+* Worked around a regression in error handling introduced in
+  :pypi:`p4python` 2024.1.2625398.
+
+  This regression in Perforce's Python bindings could lead to a crash when
+  trying to handle routine error responses.
+
+
+Review Requests
+---------------
+
+* Fixed word-wrapping of text in Status Updates for build and code checker
+  results.
+
+* The Previous/Next File Attachment thumbnail buttons on the side of a file
+  attachment review page will no longer link to a broken page if that file
+  attachment can't be reviewed.
+
+* Fixed a bug where the Review Request Updated notification bubble could
+  appear when there's an unviewable draft diff.
+
+  This only impacted administrators or special users who are able to access
+  another user's drafts.
+
+* Removed a harmless but visible JavaScript console error when the Review
+  Banner fetches information on available drafts.
+
+
+Review Board Platform
+=====================
+
+This section covers important changes that may benefit or impact developers
+building extensions, clients, or integrations for Review Board.
+
+See also:
+
+* `Djblets 5.1.1 Release Notes
+  <https://www.reviewboard.org/docs/releasenotes/djblets/5.1.1/>`_
+
+
+Extensions
+----------
+
+* Custom review UIs can now access a region comment flag and resize handle
+  elements (as JQuery-wrapped elements).
+
+  These are available as:
+
+  * :js:attr:`RB.RegionCommentBlockView.$flag`
+  * :js:attr:`RB.RegionCommentBlockView.$resizeIcon`
+
+* Most methods on :py:class:`reviewboard.scmtools.models.Repository` now
+  require keyword arguments.
+
+  Extensions using positional arguments will see deprecation warnings for
+  now, and will be required to move over to keyword arguments by
+  Review Board 9.
+
+* :py:meth:`ReviewRequest.get_draft()
+  <reviewboard.reviews.models.ReviewRequest.get_draft>` now checks that the
+  provided user has access, rather than being the owner.
+
+  This is an important change that may affect some extension authors. In
+  order to enable the new administrator view behavior we discussed in
+  `New Features`_ above, we needed to loosen requirements for this argument.
+  If you are calling this method and expecting no draft to be returned for
+  anyone but the owner, you may want to check your code and make sure it
+  behaves as expected for administrator users.
+
+* Added Python type hints throughout the following modules:
+
+  * :py:mod:`reviewboard.diffviewer.parser`
+  * :py:mod:`reviewboard.scmtools.managers`
+  * :py:mod:`reviewboard.scmtools.models`
+  * :py:mod:`reviewboard.reviews.models.review_request`
+  * :py:mod:`reviewboard.reviews.templatetags.reviewtags`
+  * :py:mod:`reviewboard.reviews.views.detail`
+  * :py:mod:`reviewboard.reviews.views.mixins`
+
+
+Contributors
+============
+
+* Christian Hammond
+* Daniel Casares-Iglesias
+* David Trowbridge
+* Michelle Aubin

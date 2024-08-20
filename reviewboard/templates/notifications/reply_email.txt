@@ -1,6 +1,6 @@
 {% autoescape off %}{% load djblets_email djblets_utils markdown_email reviewtags %}
 {% condense %}
-{% include "notifications/reply_email_content.html" %}
+{% include "notifications/reply_email_content.txt" %}
 
 - {% if reply.user.first_name != "" %}{{reply.user.first_name}}{% else %}{{reply.user.username}}{% endif %}
 {% endcondense %}
