@@ -786,17 +786,19 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
                 silent: true,
             });
 
-            const location = window.location;
-            const params = new URLSearchParams(location.search);
-            params.append('view-draft', '1');
+            if (!window.rbRunningTests) {
+                const location = window.location;
+                const params = new URLSearchParams(location.search);
+                params.set('view-draft', '1');
 
-            let url = `${location.pathname}?${params.toString()}`;
+                let url = `${location.pathname}?${params.toString()}`;
 
-            if (location.hash) {
-                url += location.hash;
+                if (location.hash) {
+                    url += location.hash;
+                }
+
+                window.history.pushState(null, '', url);
             }
-
-            window.history.pushState(null, '', url);
         }
 
         this.set('hasDraft', true);

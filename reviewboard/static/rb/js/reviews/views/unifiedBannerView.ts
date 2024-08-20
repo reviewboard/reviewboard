@@ -356,6 +356,14 @@ export class UnifiedBannerView extends FloatingBannerView<
     /** The discard draft button. */
     #$discardButton: JQuery;
 
+    /**
+     * The dock container.
+     *
+     * Version Added:
+     *     7.0.3
+     */
+    #$dock: JQuery;
+
     /** The container for all draft action buttons/menus. */
     #$draftActions: JQuery;
 
@@ -468,6 +476,7 @@ export class UnifiedBannerView extends FloatingBannerView<
 
         const model = this.model;
 
+        this.#$dock = this.$('.rb-c-unified-banner__dock');
         this.#$modeSelector = this.$('.rb-c-unified-banner__mode-selector');
         this.#$draftActions = this.$('.rb-c-unified-banner__draft-actions');
         this.#$review = this.$('.rb-c-unified-banner__review');
@@ -632,10 +641,7 @@ export class UnifiedBannerView extends FloatingBannerView<
      *     The dock element.
      */
     getDock(): JQuery {
-        const $dock = this.$('.rb-c-unified-banner__dock');
-        console.assert($dock.length === 1);
-
-        return $dock;
+        return this.#$dock;
     }
 
     /**
