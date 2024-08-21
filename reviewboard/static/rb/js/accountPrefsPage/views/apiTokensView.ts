@@ -3,15 +3,22 @@
  */
 
 import {
+    type ButtonView,
+    type ComponentChild,
+    type DialogViewOpenOptions,
+    type DialogViewOptions,
+    DialogSize,
+    DialogView,
+    craft,
+    paint,
+} from '@beanbag/ink';
+import {
     type EventsHash,
     type Result,
     BaseCollection,
     BaseView,
     spina,
 } from '@beanbag/spina';
-import {
-    paint,
-} from '@beanbag/ink';
 import CodeMirror from 'codemirror';
 import {
     ConfigFormsList,
@@ -382,7 +389,7 @@ class APITokenItemCollection extends BaseCollection<
  * Version Added:
  *     8.0
  */
-interface PolicyEditorViewOptions {
+interface PolicyEditorViewOptions extends DialogViewOptions {
     /**
      * The previous policy type.
      *
@@ -395,23 +402,17 @@ interface PolicyEditorViewOptions {
 /**
  * Provides an editor for constructing or modifying a custom policy definition.
  *
- * This renders as a modalBox with a CodeMirror editor inside of it. The
+ * This renders as a modal dialog with a CodeMirror editor inside of it. The
  * editor is set to allow easy editing of a JSON payload, complete with
  * lintian checking. Only valid policy payloads can be saved to the server.
  */
 @spina
-class PolicyEditorView extends BaseView<
+class PolicyEditorView extends DialogView<
     APITokenItem,
-    HTMLDivElement,
     PolicyEditorViewOptions
 > {
     static id = 'custom_policy_editor';
-
-    static template = _.template(dedent`
-        <p><%= instructions %></p>
-        <textarea></textarea>
-    `);
-    template: _.CompiledTemplate;
+    static title = _`Custom Token Access Policy`;
 
     /**********************
      * Instance variables *
@@ -424,10 +425,10 @@ class PolicyEditorView extends BaseView<
     #prevPolicyType: string;
 
     /** The policy editor <textarea> element. */
-    #$policy: JQuery<HTMLTextAreaElement> = null;
+    #textarea: HTMLTextAreaElement = null;
 
     /** The save buttons. */
-    #$saveButtons: JQuery = null;
+    #saveButtons: ButtonView[];
 
     /**
      * Initialize the editor.
@@ -436,58 +437,25 @@ class PolicyEditorView extends BaseView<
      *     options (PolicyEditorViewOptions):
      *         Additional options for view construction.
      */
-    initialize(options: PolicyEditorViewOptions) {
+    initialize(options: Partial<PolicyEditorViewOptions>) {
+        super.initialize(_.defaults(options, {
+            size: DialogSize.LARGE,
+        }));
+
         this.#prevPolicyType = options.prevPolicyType;
     }
 
     /**
-     * Render the editor.
+     * Open the dialog.
      *
-     * The CodeMirror editor will be set up and configured, and then the
-     * view will be placed inside a modalBox.
+     * Args:
+     *     options (DialogViewOpenOptions, optional):
+     *         Whether to show the dialog as a modal.
      */
-    protected onRender() {
-        let policy = this.model.get('policy');
+    open(options: DialogViewOpenOptions = {}) {
+        super.open(options);
 
-        if (_.isEmpty(policy)) {
-            policy = APIToken.defaultPolicies.custom;
-        }
-
-        const manualURL = MANUAL_URL + 'webapi/2.0/api-token-policy/';
-
-        this.$el.html(PolicyEditorView.template({
-            instructions: _`
-                You can limit access to the API through a custom policy. See
-                the <a href="${manualURL}" target="_blank">documentation</a>
-                on how to write policies.
-            `,
-        }));
-
-
-        this.#$policy = (this.$('textarea') as JQuery<HTMLTextAreaElement>)
-            .val(JSON.stringify(policy, null, '  '));
-
-        const buttons = paint<HTMLButtonElement[]>`
-            <Ink.Button onClick=${() => this.cancel()}>
-             ${_`Cancel`}
-            </Ink.Button>
-            <Ink.Button class="save-button"
-                        onClick=${() => this.save(false)}>
-             ${_`Save and continue editing`}
-            </Ink.Button>
-            <Ink.Button type="primary" class="save-button"
-                        onClick=${() => this.save(true)}>
-             ${_`Save`}
-            </Ink.Button>
-        `;
-        this.$el.modalBox({
-            buttons: buttons,
-            title: _`Custom Token Access Policy`,
-        });
-
-        this.#$saveButtons = this.$el.modalBox('buttons').find('.save-button');
-
-        this.#codeMirror = CodeMirror.fromTextArea(this.#$policy[0], {
+        this.#codeMirror = CodeMirror.fromTextArea(this.#textarea, {
             gutters: ['CodeMirror-lint-markers'],
             lineNumbers: true,
             lineWrapping: true,
@@ -506,10 +474,80 @@ class PolicyEditorView extends BaseView<
     }
 
     /**
-     * Remove the policy editor from the page.
+     * Render the body of the dialog.
+     *
+     * Returns:
+     *     ComponentChild or Array of ComponentChild:
+     *     The content for the dialog body.
      */
-    protected onRemove() {
-        this.$el.modalBox('destroy');
+    protected renderBody(): ComponentChild | ComponentChild[] {
+        const manualURL = `${MANUAL_URL}webapi/2.0/api-token-policy/`;
+
+        let policy = this.model.get('policy');
+
+        if (_.isEmpty(policy)) {
+            policy = APIToken.defaultPolicies.custom;
+        }
+
+        this.#textarea = paint<HTMLTextAreaElement>`
+            <textarea>${JSON.stringify(policy, null, '  ')}</textarea>
+        `;
+
+        const $instructions = $('<p>')
+            .html(_`
+                You can limit access to the API through a custom policy. See
+                the <a href="${manualURL}" target="_blank">documentation</a>
+                on how to write policies.
+            `);
+
+        return paint`
+            <div>
+             <p>${$instructions[0]}</p>
+             ${this.#textarea}
+            </div>
+        `;
+    }
+
+    /**
+     * Render the primary actions for the dialog.
+     *
+     * Returns:
+     *     ComponentChild or Array of ComponentChild:
+     *     The content for the primary actions.
+     */
+    protected renderPrimaryActions(): ComponentChild | ComponentChild[] {
+        this.#saveButtons = [
+            craft<ButtonView>`
+                <Ink.DialogAction class="save-button"
+                                  callback=${() => this.save(false)}>
+                 ${_`Save and continue editing`}
+                </Ink.DialogAction>
+            `,
+            craft<ButtonView>`
+                <Ink.DialogAction type="primary"
+                                  class="save-button"
+                                  callback=${() => this.save(true)}>
+                 ${_`Save`}
+                </Ink.DialogAction>
+            `,
+        ];
+
+        return this.#saveButtons;
+    }
+
+    /**
+     * Render the secondary actions for the dialog.
+     *
+     * Returns:
+     *     ComponentChild or Array of ComponentChild:
+     *     The content for the primary actions.
+     */
+    protected renderSecondaryActions(): ComponentChild | ComponentChild[] {
+        return paint`
+            <Ink.DialogAction callback=${() => this.cancel()}>
+             ${_`Cancel`}
+            </Ink.DialogAction>
+        `;
     }
 
     /**
@@ -539,9 +577,7 @@ class PolicyEditorView extends BaseView<
             policy = JSON.parse(policyStr);
         } catch (e) {
             if (e instanceof SyntaxError) {
-                alert(interpolate(
-                    gettext('There is a syntax error in your policy: %s'),
-                    [e]));
+                alert(_`There is a syntax error in your policy: ${e}`);
 
                 return;
             } else {
@@ -577,7 +613,11 @@ class PolicyEditorView extends BaseView<
      *         An array of the linter annotations.
      */
     _onUpdateLinting(annotationsNotSorted: unknown[]) {
-        this.#$saveButtons.prop('disabled', annotationsNotSorted.length > 0);
+        const disabled = (annotationsNotSorted.length > 0);
+
+        this.#saveButtons.forEach(button => {
+            button.disabled = disabled;
+        });
     }
 }
 
@@ -839,11 +879,28 @@ class APITokenItemView extends ConfigFormsListItemView<APITokenItem> {
         e.preventDefault();
         e.stopPropagation();
 
+        /*
+         * The drop-down menu doesn't automatically close in this case, even if
+         * we don't swallow the event. This is kind of an ugly experience
+         * because after the user closes the policy editor dialog, the menu
+         * will still be open.
+         *
+         * Ideally we'd fix this inside the ConfigFormsListItemView, but the
+         * way that action menus are done is very ugly, and it's all in need of
+         * a rewrite to use Ink anyway.
+         *
+         * For now, just artificially trigger a click on the document, which
+         * will be caught by the handler in
+         * ConfigFormsListItemView._showActionDropdown, and remove the menu.
+         */
+        $(document).trigger('click');
+
         const view = new PolicyEditorView({
             model: this.model,
             prevPolicyType: this.model.get('policyType'),
         });
         view.render();
+        view.open();
     }
 
     /**
@@ -853,22 +910,47 @@ class APITokenItemView extends ConfigFormsListItemView<APITokenItem> {
      * the server.
      */
     _onRemoveClicked() {
-        $('<p>')
-            .html(_`
-                This will prevent clients using this token when authenticating.
-            `)
-            .modalBox({
-                buttons: paint<HTMLButtonElement[]>`
-                    <Ink.Button type="danger"
-                                onClick=${() => this.model.resource.destroy()}>
-                     ${_`Remove`}
-                    </Ink.Button>
-                    <Ink.Button>
-                     ${_`Cancel`}
-                    </Ink.Button>
-                `,
-                title: _`Are you sure you want to remove this token?`,
-            });
+        const onRemoveClicked = async () => {
+            confirmButton.busy = true;
+            cancelButton.disabled = true;
+
+            await this.model.resource.destroy();
+
+            dialog.close();
+        }
+
+        const cancelButton = craft<ButtonView>`
+            <Ink.Button onClick=${() => dialog.close()}>
+             ${_`Cancel`}
+            </Ink.Button>
+        `;
+        const confirmButton = craft<ButtonView>`
+            <Ink.Button type="danger" onClick=${() => onRemoveClicked()}>
+             ${_`Remove`}
+            </Ink.Button>
+        `;
+
+        const dialog = craft<DialogView>`
+            <Ink.Dialog
+                onClose=${() => dialog.remove()}
+                title=${_`Are you sure you want to remove this token?`}>
+             <Ink.Dialog.Body>
+              <p>
+               ${_`
+                After removing this token, any clients which are configured
+                to use it will no longer be able to authenticate.
+               `}
+              </p>
+             </>
+             <Ink.Dialog.PrimaryActions>
+              ${cancelButton}
+              ${confirmButton}
+             </>
+            </>
+        `;
+
+        dialog.render();
+        dialog.open();
     }
 }
 

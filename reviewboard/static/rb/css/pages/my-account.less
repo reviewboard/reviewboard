@@ -4,17 +4,17 @@
 
 
 #custom_policy_editor {
-  margin: 0;
-  width: 65em;
+  overflow-x: hidden;
 
   p {
-    font-size: 110%;
-    margin: 1em;
+    margin: 0 0 var(--ink-u-spacing-m) 0;
   }
 
   .CodeMirror {
+    border-radius: 0;
     border-left: 0;
     border-right: 0;
+    margin: 0 calc(var(--ink-u-spacing-m) * -1);
   }
 }
 
