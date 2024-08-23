@@ -116,7 +116,17 @@ package_dependencies = {
             'version': '>=6.3,<6.3.999',
         },
     ],
-    'python-memcached': '',
+
+    'python-memcached': [
+        {
+            'python': PYTHON_2_RANGE,
+            'version': '<=1.59',
+        },
+        {
+            'python': PYTHON_3_RANGE,
+            'version': '',
+        },
+    ],
     'pytz': '>=2015.2',
     'Whoosh': '>=2.6',
 
