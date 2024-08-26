@@ -288,10 +288,19 @@
    */
   &__unpublished-draft {
     background: var(--ink-p-accent-info-bg);
+    color: var(--ink-p-accent-info-fg);
     padding: var(--ink-u-spacing-m);
 
     &:not(:last-child) {
       border-bottom: var(--rb-c-review-request-border);
+    }
+
+    a {
+      color: var(--ink-p-link-fg-on-light);
+    }
+
+    a:hover {
+      color: var(--ink-p-link-hover-fg-on-light);
     }
   }
 
