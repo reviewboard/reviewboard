@@ -2,16 +2,15 @@
 
 
 #search_results {
-  margin: 3em;
+  margin: var(--ink-u-spacing-l);
 
   .paginator {
-    border-top: 1px #E0E0E0 solid;
-    font-size: 120%;
-    margin-top: 2em;
-    padding-top: 2em;
+    border-top: var(--ink-g-border-container);
+    margin-top: var(--ink-u-spacing-l);
+    padding-top: var(--ink-u-spacing-l);
+    font-size: var(--ink-u-font-ml);
 
     a {
-      color: blue;
       text-decoration: none;
     }
 
@@ -21,81 +20,57 @@
   }
 
   .search-results-filters {
-    @filter-border-color: #CCC;
-
-    border-bottom: 1px @filter-border-color solid;
-    margin-bottom: 2em;
+    border-bottom: var(--ink-g-border-container);
+    margin-bottom: var(--ink-u-spacing-l);
 
     a {
-      color: #666;
       display: inline-block;
-      font-size: 130%;
+      font-size: var(--ink-u-font-l);
       text-decoration: none;
       padding: 0.5em 1em;
-      border: 1px transparent solid;
-      border-top-width: 2px;
+      border-bottom: var(--ink-u-border-thick) transparent solid;
 
       &.active {
-        color: black;
-        border: 1px @filter-border-color solid;
-        border-bottom: 1px white solid;
-        border-top-width: 2px;
+	      border-bottom: var(--ink-u-border-thick)
+	                     var(--ink-p-container-border-color)
+		                   solid;
       }
     }
   }
 
   .search-results-stats {
-    color: #444444;
-    font-size: 110%;
-    padding-bottom: 2em;
-    margin-left: 1em;
+    font-size: var(--ink-u-font-ml);
   }
 
   .search-result {
-    .clearfix();
+    display: flex;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-xs);
     line-height: 1.5;
-    margin-bottom: 2em;
+    margin-bottom: var(--ink-u-spacing-l);
+
+    &.-has-icon {
+      flex-direction: row;
+      gap: var(--ink-u-spacing-m);
+    }
 
     a {
       text-decoration: none;
     }
 
     h2 {
-      font-size: 140%;
+      font-size: var(--ink-u-font-l);
       font-weight: normal;
       margin: 0;
     }
 
     .search-result-by {
-      color: #555555;
-      font-size: 85%;
-      margin-top: 0.3em;
+      color: var(--ink-p-fg-weak);
     }
+  }
 
-    .search-result-body {
-      float: left;
-    }
-
-    .search-result-excerpt {
-      margin-top: 0.3em;
-      width: 60em;
-    }
-
-    .search-result-icon {
-      float: left;
-      margin-right: 1em;
-    }
-
-    .search-result-links {
-      margin-top: 1em;
-    }
-
-    .search-result-username {
-      font-size: 120%;
-    }
-
-    .search-result-user-groups {
-      margin-top: 1em;
-    }
+  form {
+    margin-top: var(--ink-u-spacing-l);
+    max-width: 60em;
   }
 }
