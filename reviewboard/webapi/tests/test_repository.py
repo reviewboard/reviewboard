@@ -1,11 +1,15 @@
+"""Unit tests for the RepositoryResource."""
+
+from __future__ import annotations
+
 import os
+from typing import Any, Optional, Sequence, TYPE_CHECKING
 
 import kgb
 import paramiko
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
-from kgb import SpyAgency
 
 from reviewboard import scmtools
 from reviewboard.hostingsvcs.bitbucket import Bitbucket
@@ -34,13 +38,17 @@ from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
 from reviewboard.webapi.tests.urls import (get_repository_item_url,
                                            get_repository_list_url)
 
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
+    from djblets.util.typing import JSONDict
+
 
 # Only generate these keys once.
 key1 = paramiko.RSAKey.generate(1024)
 key2 = paramiko.RSAKey.generate(1024)
 
 
-class BaseRepositoryTests(SpyAgency, BaseWebAPITestCase):
+class BaseRepositoryTests(kgb.SpyAgency, BaseWebAPITestCase):
     """Base class for the RepositoryResource test suites."""
 
     fixtures = ['test_users', 'test_scmtools']
@@ -50,7 +58,20 @@ class BaseRepositoryTests(SpyAgency, BaseWebAPITestCase):
             os.path.join(os.path.dirname(scmtools.__file__), 'testdata',
                          'git_repo')))
 
-    def compare_item(self, item_rsp, repository):
+    def compare_item(
+        self,
+        item_rsp: JSONDict,
+        repository: Repository,
+    ) -> None:
+        """Compare an API result to an object.
+
+        Args:
+            item_rsp (dict):
+                The encoded data from the API response.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object to compare to.
+        """
         self.assertEqual(item_rsp['bug_tracker'], repository.bug_tracker)
         self.assertEqual(item_rsp['extra_data'], repository.extra_data)
         self.assertEqual(item_rsp['id'], repository.pk)
@@ -65,14 +86,17 @@ class BaseRepositoryTests(SpyAgency, BaseWebAPITestCase):
         else:
             local_site_name = None
 
+        item_url = get_repository_item_url(item_rsp['id'], local_site_name)
         self.assertEqual(
             item_rsp['links']['self']['href'],
-            '%s%s' % (self.base_url,
-                      get_repository_item_url(item_rsp['id'],
-                                              local_site_name)))
+            f'{self.base_url}{item_url}')
 
-    def _verify_repository_info(self, rsp, expected_tool_id=None,
-                                expected_attrs={}):
+    def _verify_repository_info(
+        self,
+        rsp: JSONDict,
+        expected_tool_id: Optional[str] = None,
+        expected_attrs: Optional[dict[str, Any]] = None,
+    ) -> Repository:
         """Verify information in a payload and repository.
 
         This will check that the payload represents a valid, in-database
@@ -125,19 +149,66 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
 
     compare_item = BaseRepositoryTests.compare_item
 
-    def setup_http_not_allowed_item_test(self, user):
+    def setup_http_not_allowed_item_test(
+        self,
+        user: User,
+    ) -> str:
+        """Set up a basic HTTP DELETE test.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user performing the API requests.
+
+        Returns:
+            str:
+            The URL to the API resource to access.
+        """
         return get_repository_list_url()
 
     #
     # HTTP GET tests
     #
 
-    def setup_basic_get_test(self, user, with_local_site, local_site_name,
-                             populate_items):
+    def setup_basic_get_test(
+        self,
+        user: User,
+        with_local_site: bool,
+        local_site_name: Optional[str],
+        populate_items: bool,
+    ) -> tuple[str, str, list[Repository]]:
+        """Set up a basic HTTP GET test.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user performing the API requests.
+
+            with_local_site (bool):
+                Whether the test is being performed on a Local Site.
+
+            local_site_name (str):
+                The name of the Local Site to test against.
+
+            populate_items (bool):
+                Whether to pre-create items in the database.
+
+        Returns:
+            tuple:
+            A 3-tuple of:
+
+            Tuple:
+                0 (str):
+                    The URL of the API resource to access.
+
+                1 (str):
+                    The expected mimetype of the response.
+
+                2 (list):
+                    The items to compare to in :py:meth:`compare_item`.
+        """
         if populate_items:
             items = [
                 self.create_repository(
-                    tool_name='Test', with_local_site=with_local_site)
+                    tool_name='Test', with_local_site=with_local_site),
             ]
         else:
             items = []
@@ -147,99 +218,114 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
                 items)
 
     @add_fixtures(['test_site'])
-    def test_get_with_show_visible(self):
-        """Testing the GET repositories/ API with show_invisible=True"""
+    @webapi_test_template
+    def test_get_with_show_visible(self) -> None:
+        """Testing the GET <URL> API with show_invisible=True"""
         self.create_repository(name='test1', tool_name='Test', visible=False)
         self.create_repository(name='test2', tool_name='Test', visible=True)
 
         rsp = self.api_get(get_repository_list_url(),
                            data={'show-invisible': True},
                            expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
         self.assertEqual(rsp['repositories'][1]['name'], 'test2')
 
-    def test_get_repositories_with_name(self):
-        """Testing the GET repositories/?name= API"""
+    @webapi_test_template
+    def test_get_repositories_with_name(self) -> None:
+        """Testing the GET <URL>?name= API"""
         self.create_repository(name='test1', tool_name='Test')
         self.create_repository(name='test2', tool_name='Test')
 
         rsp = self.api_get(get_repository_list_url() + '?name=test1',
                            expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
 
     @webapi_test_template
-    def test_get_repositories_with_name_search(self):
+    def test_get_repositories_with_name_search(self) -> None:
         """Testing the GET <URL>?q= API"""
         self.create_repository(name='test1', tool_name='Test')
         self.create_repository(name='tset2', tool_name='Test')
 
         rsp = self.api_get(get_repository_list_url() + '?q=te',
                            expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
 
-    def test_get_repositories_with_name_many(self):
-        """Testing the GET repositories/?name= API and comma-separated list"""
+    @webapi_test_template
+    def test_get_repositories_with_name_many(self) -> None:
+        """Testing the GET <URL>?name= API and comma-separated list"""
         self.create_repository(name='test1', tool_name='Test')
         self.create_repository(name='test2', tool_name='Test')
         self.create_repository(name='test3', tool_name='Test')
 
         rsp = self.api_get(get_repository_list_url() + '?name=test1,test2',
                            expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
         self.assertEqual(rsp['repositories'][1]['name'], 'test2')
 
-    def test_get_repositories_with_path(self):
-        """Testing the GET repositories/?path= API"""
+    @webapi_test_template
+    def test_get_repositories_with_path(self) -> None:
+        """Testing the GET <URL>?path= API"""
         self.create_repository(name='test1', path='dummy1', tool_name='Test')
         self.create_repository(name='test2', path='dummy2', tool_name='Test')
 
         rsp = self.api_get(get_repository_list_url() + '?path=dummy1',
                            expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
 
-    def test_get_repositories_with_path_many(self):
-        """Testing the GET repositories/?path= API and comma-separated lists"""
+    @webapi_test_template
+    def test_get_repositories_with_path_many(self) -> None:
+        """Testing the GET <URL>?path= API and comma-separated lists"""
         self.create_repository(name='test1', path='dummy1', tool_name='Test')
         self.create_repository(name='test2', path='dummy2', tool_name='Test')
         self.create_repository(name='test3', path='dummy3', tool_name='Test')
 
         rsp = self.api_get(get_repository_list_url() + '?path=dummy1,dummy2',
                            expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
         self.assertEqual(rsp['repositories'][1]['name'], 'test2')
 
-    def test_get_repositories_with_name_or_path(self):
-        """Testing the GET repositories/?name-or-path= API"""
+    @webapi_test_template
+    def test_get_repositories_with_name_or_path(self) -> None:
+        """Testing the GET <URL>?name-or-path= API"""
         self.create_repository(name='test1', path='dummy1', tool_name='Test')
         self.create_repository(name='test2', path='dummy2', tool_name='Test')
         self.create_repository(name='test3', path='dummy3', tool_name='Test')
 
         rsp = self.api_get(get_repository_list_url() + '?name-or-path=test1',
                            expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
 
         rsp = self.api_get(get_repository_list_url() + '?name-or-path=dummy2',
                            expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'], 'test2')
 
-    def test_get_repositories_with_name_or_path_many(self):
-        """Testing the GET repositories/?name-or-path= API
+    @webapi_test_template
+    def test_get_repositories_with_name_or_path_many(self) -> None:
+        """Testing the GET <URL>?name-or-path= API
         and comma-separated list
         """
         self.create_repository(name='test1', path='dummy1', tool_name='Test')
@@ -249,13 +335,15 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         rsp = self.api_get(
             get_repository_list_url() + '?name-or-path=test1,dummy2',
             expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
         self.assertEqual(rsp['repositories'][1]['name'], 'test2')
 
+    @webapi_test_template
     def test_get_repositories_with_tool_name(self) -> None:
-        """Testing the GET repositories/?tool= API with tool names"""
+        """Testing the GET <URL>?tool= API with tool names"""
         self.create_repository(name='test1', path='dummy1', tool_name='Git')
         self.create_repository(name='test2', path='dummy2', tool_name='Test')
 
@@ -266,8 +354,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
 
+    @webapi_test_template
     def test_get_repositories_with_tool_many_names(self) -> None:
-        """Testing the GET repositories/?tool= API with tool names in a
+        """Testing the GET <URL>?tool= API with tool names in a
         comma-separated list
         """
         self.create_repository(name='test1', path='dummy1', tool_name='Git')
@@ -283,8 +372,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
         self.assertEqual(rsp['repositories'][1]['name'], 'test3')
 
+    @webapi_test_template
     def test_get_repositories_with_tool_missing_name(self) -> None:
-        """Testing the GET repositories/?tool= API with unknown tool name/ID"""
+        """Testing the GET <URL>?tool= API with unknown tool name/ID"""
         # This was previously crashing due to the tool registry lookup
         # returning None.
         rsp = self.api_get(get_repository_list_url() + '?tool=unknown',
@@ -293,8 +383,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 0)
 
+    @webapi_test_template
     def test_get_repositories_with_tool_id(self) -> None:
-        """Testing the GET repositories/?tool= API with tool IDs."""
+        """Testing the GET <URL>?tool= API with tool IDs."""
         self.create_repository(name='test1', path='dummy1', tool_name='Git')
         self.create_repository(name='test2', path='dummy2', tool_name='Test')
 
@@ -305,8 +396,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
 
+    @webapi_test_template
     def test_get_repositories_with_tool_many_ids(self) -> None:
-        """Testing the GET repositories/?tool= API with tool IDs in a
+        """Testing the GET <URL>?tool= API with tool IDs in a
         comma-separated list
         """
         self.create_repository(name='test1', path='dummy1', tool_name='Git')
@@ -322,8 +414,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertEqual(rsp['repositories'][0]['name'], 'test1')
         self.assertEqual(rsp['repositories'][1]['name'], 'test3')
 
-    def test_get_repositories_with_hosting_service(self):
-        """Testing the GET repositories/?hosting-service= API"""
+    @webapi_test_template
+    def test_get_repositories_with_hosting_service(self) -> None:
+        """Testing the GET <URL>?hosting-service= API"""
         hosting_account = HostingServiceAccount.objects.create(
             service_name='github',
             username='my-username')
@@ -337,14 +430,15 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         rsp = self.api_get(
             get_repository_list_url() + '?hosting-service=github',
             expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 1)
         self.assertEqual(rsp['repositories'][0]['name'],
                          'My New Repository')
 
-    def test_get_repositories_with_hosting_service_many(self):
-        """Testing the GET repositories/?hosting-service= API and
-        comma-separated list
+    @webapi_test_template
+    def test_get_repositories_with_hosting_service_many(self) -> None:
+        """Testing the GET <URL>?hosting-service= API and comma-separated list
         """
         hosting_account = HostingServiceAccount.objects.create(
             service_name='github',
@@ -369,6 +463,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         rsp = self.api_get(
             get_repository_list_url() + '?hosting-service=github,beanstalk',
             expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)
         self.assertEqual(rsp['repositories'][0]['name'],
@@ -376,8 +471,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertEqual(rsp['repositories'][1]['name'],
                          'My New Repository 2')
 
-    def test_get_repositories_with_username(self):
-        """Testing the GET repositories/?username= API"""
+    @webapi_test_template
+    def test_get_repositories_with_username(self) -> None:
+        """Testing the GET <URL>?username= API"""
         hosting_account = HostingServiceAccount.objects.create(
             service_name='github',
             username='my-username')
@@ -396,6 +492,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
 
         rsp = self.api_get(get_repository_list_url() + '?username=my-username',
                            expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)
         self.assertEqual(rsp['repositories'][0]['name'],
@@ -403,9 +500,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertEqual(rsp['repositories'][1]['name'],
                          'My New Repository 2')
 
-    def test_get_repositories_with_username_many(self):
-        """Testing the GET repositories/?username= API and comma-separated list
-        """
+    @webapi_test_template
+    def test_get_repositories_with_username_many(self) -> None:
+        """Testing the GET <URL>?username= API and comma-separated list"""
         hosting_account = HostingServiceAccount.objects.create(
             service_name='github',
             username='my-username')
@@ -425,6 +522,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         rsp = self.api_get(
             get_repository_list_url() + '?username=my-username,my-username-2',
             expected_mimetype=repository_list_mimetype)
+        assert rsp is not None
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), 2)
         self.assertEqual(rsp['repositories'][0]['name'],
@@ -436,9 +534,46 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
     # HTTP POST tests
     #
 
-    def setup_basic_post_test(self, user, with_local_site, local_site_name,
-                              post_valid_data):
+    def setup_basic_post_test(
+        self,
+        user: User,
+        with_local_site: bool,
+        local_site_name: Optional[str],
+        post_valid_data: bool,
+    ) -> tuple[str, str, dict[str, Any], Sequence[Any]]:
+        """Set up a basic HTTP POST test.
 
+        Args:
+            user (django.contrib.auth.models.User):
+                The user performing the API requests.
+
+            with_local_site (bool):
+                Whether the test is being performed on a Local Site.
+
+            local_site_name (str):
+                The name of the Local Site to test against.
+
+            post_valid_data (bool):
+                Whether to post valid data or not.
+
+        Returns:
+            tuple:
+            A 4-tuple of:
+
+            Tuple:
+                0 (str):
+                    The URL of the API resource to access.
+
+                1 (str):
+                    The expected mimetype of the response.
+
+                2 (dict):
+                    The data to send in the POST request.
+
+                3 (list):
+                    Additional positional arguments to pass to
+                    :py:meth:`check_post_result`.
+        """
         return (
             get_repository_list_url(local_site_name),
             repository_item_mimetype,
@@ -450,7 +585,20 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
             },
             [])
 
-    def check_post_result(self, user, rsp):
+    def check_post_result(
+        self,
+        user: User,
+        rsp: JSONDict,
+    ) -> None:
+        """Check the result of a POST operation.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user performing the API requests.
+
+            rsp (dict):
+                The response from the API resource.
+        """
         self._verify_repository_info(
             rsp=rsp,
             expected_tool_id='test',
@@ -460,7 +608,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
             })
 
     @webapi_test_template
-    def test_post_with_hosting_service(self):
+    def test_post_with_hosting_service(self) -> None:
         """Testing the POST <URL> API with hosting service"""
         account = HostingServiceAccount.objects.create(
             username='test-user',
@@ -482,6 +630,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
             'repository_plan': 'public-org',
             'tool': 'Git',
         })
+        assert rsp is not None
 
         self._verify_repository_info(
             rsp=rsp,
@@ -502,7 +651,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertSpyCalled(GitHub.check_repository)
 
     @webapi_test_template
-    def test_post_with_hosting_service_and_hosting_url(self):
+    def test_post_with_hosting_service_and_hosting_url(self) -> None:
         """Testing the POST <URL> API with hosting service and hosting_url"""
         account = HostingServiceAccount.objects.create(
             hosting_url='https://example.com',
@@ -524,6 +673,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
             'repository_plan': 'personal',
             'tool': 'Git',
         })
+        assert rsp is not None
 
         self._verify_repository_info(
             rsp=rsp,
@@ -544,8 +694,10 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertSpyCalled(GitLab.check_repository)
 
     @webapi_test_template
-    def test_post_with_hosting_service_and_bug_tracker_use_hosting(self):
-        """Testing the POST repositories/ API with hosting service and
+    def test_post_with_hosting_service_and_bug_tracker_use_hosting(
+        self,
+    ) -> None:
+        """Testing the POST <URL> API with hosting service and
         bug_tracker_use_hosting
         """
         account = HostingServiceAccount.objects.create(
@@ -568,6 +720,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
             'repository_plan': 'public-org',
             'tool': 'Git',
         })
+        assert rsp is not None
 
         self._verify_repository_info(
             rsp=rsp,
@@ -590,7 +743,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertSpyCalled(GitHub.check_repository)
 
     @webapi_test_template
-    def test_post_with_hosting_service_and_invalid_username(self):
+    def test_post_with_hosting_service_and_invalid_username(self) -> None:
         """Testing the POST <URL> API with hosting service and invalid
         hosting_account_username
         """
@@ -612,6 +765,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
                 'tool': 'Git',
             },
             expected_status=400)
+        assert rsp is not None
 
         self.assertEqual(rsp, {
             'err': {
@@ -633,8 +787,8 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertSpyNotCalled(GitHub.check_repository)
 
     @webapi_test_template
-    def test_post_with_hosting_service_and_bug_tracker_type(self):
-        """Testing the POST <URL< API with hosting service and bug_tracker_type
+    def test_post_with_hosting_service_and_bug_tracker_type(self) -> None:
+        """Testing the POST <URL> API with hosting service and bug_tracker_type
         """
         rsp = self._post_repository({
             'bug_tracker_type': 'github',
@@ -644,6 +798,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
             'bug_tracker_plan': 'public-org',
             'tool': 'Git',
         })
+        assert rsp is not None
 
         self._verify_repository_info(
             rsp=rsp,
@@ -659,11 +814,13 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
                 },
             })
 
-    def test_post_with_visible_False(self):
-        """Testing the POST repositories/ API with visible=False"""
+    @webapi_test_template
+    def test_post_with_visible_False(self) -> None:
+        """Testing the POST <URL> API with visible=False"""
         rsp = self._post_repository({
             'visible': False,
         })
+        assert rsp is not None
 
         self._verify_repository_info(
             rsp=rsp,
@@ -671,14 +828,16 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
                 'visible': False,
             })
 
-    def test_post_with_bad_host_key(self):
-        """Testing the POST repositories/ API with Bad Host Key error"""
+    @webapi_test_template
+    def test_post_with_bad_host_key(self) -> None:
+        """Testing the POST <URL> API with Bad Host Key error"""
         self.spy_on(TestTool.check_repository,
                     owner=TestTool,
                     op=kgb.SpyOpRaise(BadHostKeyError('example.com', key1,
                                                       key2)))
 
         rsp = self._post_repository(expected_status=403)
+        assert rsp is not None
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], BAD_HOST_KEY.code)
@@ -689,16 +848,16 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertEqual(rsp['expected_key'], key2.get_base64())
         self.assertEqual(rsp['key'], key1.get_base64())
 
-    def test_post_with_bad_host_key_and_trust_host(self):
-        """Testing the POST repositories/ API with Bad Host Key error and
-        trust_host=1
+    @webapi_test_template
+    def test_post_with_bad_host_key_and_trust_host(self) -> None:
+        """Testing the POST <URL> API with Bad Host Key error and trust_host=1
         """
         self.spy_on(SSHClient.replace_host_key,
                     owner=SSHClient,
                     call_original=False)
 
         @self.spy_for(TestTool.check_repository, owner=TestTool)
-        def _check_repository(cls, *args, **kwargs):
+        def _check_repository(cls, *args, **kwargs) -> None:
             if not SSHClient.replace_host_key.called:
                 raise BadHostKeyError('example.com', key1, key2)
 
@@ -709,14 +868,16 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertSpyCalledWith(SSHClient.replace_host_key,
                                  'example.com', key2, key1)
 
-    def test_post_with_unknown_host_key(self):
-        """Testing the POST repositories/ API with Unknown Host Key error"""
+    @webapi_test_template
+    def test_post_with_unknown_host_key(self) -> None:
+        """Testing the POST <URL> API with Unknown Host Key error"""
         self.spy_on(TestTool.check_repository,
                     owner=TestTool,
                     op=kgb.SpyOpRaise(UnknownHostKeyError('example.com',
                                                           key1)))
 
         rsp = self._post_repository(expected_status=403)
+        assert rsp is not None
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], UNVERIFIED_HOST_KEY.code)
@@ -725,8 +886,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertEqual(rsp['hostname'], 'example.com')
         self.assertEqual(rsp['key'], key1.get_base64())
 
-    def test_post_with_unknown_host_key_and_trust_host(self):
-        """Testing the POST repositories/ API with Unknown Host Key error
+    @webapi_test_template
+    def test_post_with_unknown_host_key_and_trust_host(self) -> None:
+        """Testing the POST <URL> API with Unknown Host Key error
         and trust_host=1
         """
         self.spy_on(SSHClient.add_host_key,
@@ -746,8 +908,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
                                  'example.com', key1)
         self.assertSpyCalled(TestTool.check_repository)
 
-    def test_post_with_unknown_cert(self):
-        """Testing the POST repositories/ API with Unknown Certificate error"""
+    @webapi_test_template
+    def test_post_with_unknown_cert(self) -> None:
+        """Testing the POST <URL> API with Unknown Certificate error"""
         class Certificate(object):
             failures = ['failures']
             fingerprint = 'fingerprint'
@@ -763,6 +926,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
                     op=kgb.SpyOpRaise(UnverifiedCertificateError(cert)))
 
         rsp = self._post_repository(expected_status=403)
+        assert rsp is not None
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], UNVERIFIED_HOST_CERT.code)
@@ -775,8 +939,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self.assertEqual(rsp['certificate']['valid']['until'],
                          cert.valid_until)
 
-    def test_post_with_unknown_cert_and_trust_host(self):
-        """Testing the POST repositories/ API with Unknown Certificate error
+    @webapi_test_template
+    def test_post_with_unknown_cert_and_trust_host(self) -> None:
+        """Testing the POST <URL> API with Unknown Certificate error
         and trust_host=1
         """
         class Certificate(object):
@@ -790,7 +955,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         cert = Certificate()
 
         @self.spy_for(TestTool.check_repository, owner=TestTool)
-        def _check_repository(cls, *args, **kwargs):
+        def _check_repository(cls, *args, **kwargs) -> None:
             if not TestTool.accept_certificate.called:
                 raise UnverifiedCertificateError(cert)
 
@@ -804,6 +969,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         rsp = self._post_repository({
             'trust_host': 1,
         })
+        assert rsp is not None
 
         self._verify_repository_info(
             rsp=rsp,
@@ -817,8 +983,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
 
         self.assertSpyCalled(TestTool.accept_certificate)
 
-    def test_post_with_missing_user_key(self):
-        """Testing the POST repositories/ API with Missing User Key error"""
+    @webapi_test_template
+    def test_post_with_missing_user_key(self) -> None:
+        """Testing the POST <URL> API with Missing User Key error"""
         self.spy_on(
             TestTool.check_repository,
             owner=TestTool,
@@ -826,25 +993,29 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
                                                   user_key=None)))
 
         rsp = self._post_repository(expected_status=403)
+        assert rsp is not None
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], MISSING_USER_KEY.code)
 
-    def test_post_with_authentication_error(self):
-        """Testing the POST repositories/ API with Authentication Error"""
+    @webapi_test_template
+    def test_post_with_authentication_error(self) -> None:
+        """Testing the POST <URL> API with Authentication Error"""
         self.spy_on(
             TestTool.check_repository,
             owner=TestTool,
             op=kgb.SpyOpRaise(AuthenticationError()))
 
         rsp = self._post_repository(expected_status=403)
+        assert rsp is not None
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], REPO_AUTHENTICATION_ERROR.code)
         self.assertIn('reason', rsp)
 
-    def test_post_full_info(self):
-        """Testing the POST repositories/ API with all available info"""
+    @webapi_test_template
+    def test_post_full_info(self) -> None:
+        """Testing the POST <URL> API with all available info"""
         rsp = self._post_repository({
             'bug_tracker': 'http://bugtracker/%s/',
             'encoding': 'UTF-8',
@@ -855,6 +1026,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
             'tool': 'Subversion',
             'username': 'user',
         })
+        assert rsp is not None
 
         self._verify_repository_info(
             rsp=rsp,
@@ -872,19 +1044,26 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
                 'raw_file_url': '',
             })
 
-    def test_post_with_no_access(self):
-        """Testing the POST repositories/ API with no access"""
+    @webapi_test_template
+    def test_post_with_no_access(self) -> None:
+        """Testing the POST <URL> API with no access"""
         self._post_repository(use_admin=False,
                               expected_status=403)
 
-    def test_post_duplicate(self):
-        """Testing the POST repositories/ API with a duplicate repository"""
+    @webapi_test_template
+    def test_post_duplicate(self) -> None:
+        """Testing the POST <URL> API with a duplicate repository"""
         self._post_repository()
         self._post_repository(expected_status=409)
 
-    def _post_repository(self, data={}, use_local_site=None, use_admin=True,
-                         expected_status=201, expected_tool_id='test',
-                         expected_attrs={}):
+    @webapi_test_template
+    def _post_repository(
+        self,
+        data: Optional[dict[str, Any]] = None,
+        use_local_site: bool = False,
+        use_admin: bool = True,
+        expected_status: int = 201,
+    ) -> JSONDict:
         """Create a repository via the API.
 
         This will build and send an API request to create a repository,
@@ -931,6 +1110,9 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
             'tool': 'Test',
         }
 
+        if data is None:
+            data = {}
+
         if 'hosting_type' not in data:
             post_data['path'] = self.sample_repo_path
             post_data['raw_file_url'] = 'http://example.com/<version>'
@@ -965,22 +1147,25 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
     # HTTP DELETE tests
     #
 
-    def test_delete(self):
-        """Testing the DELETE repositories/<id>/ API"""
+    @webapi_test_template
+    def test_delete(self) -> None:
+        """Testing the DELETE <URL> API"""
         repo_id = self._delete_repository(with_review_request=True)
 
         repo = Repository.objects.get(pk=repo_id)
         self.assertTrue(repo.archived)
 
-    def test_delete_empty_repository(self):
-        """Testing the DELETE repositories/<id>/ API with no review requests"""
+    @webapi_test_template
+    def test_delete_empty_repository(self) -> None:
+        """Testing the DELETE <URL> API with no review requests"""
         repo_id = self._delete_repository()
 
         self.assertFalse(Repository.objects.filter(pk=repo_id).exists())
 
     @add_fixtures(['test_site'])
-    def test_delete_with_site(self):
-        """Testing the DELETE repositories/<id>/ API with a local site"""
+    @webapi_test_template
+    def test_delete_with_site(self) -> None:
+        """Testing the DELETE <URL> API with a local site"""
         repo_id = self._delete_repository(use_local_site=True,
                                           with_review_request=True)
 
@@ -988,24 +1173,25 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
         self.assertTrue(repo.archived)
 
     @add_fixtures(['test_site'])
-    def test_delete_empty_repository_with_site(self):
-        """Testing the DELETE repositories/<id>/ API with a local site and
+    @webapi_test_template
+    def test_delete_empty_repository_with_site(self) -> None:
+        """Testing the DELETE <URL> API with a local site and
         no review requests
         """
         repo_id = self._delete_repository(use_local_site=True)
 
         self.assertFalse(Repository.objects.filter(pk=repo_id).exists())
 
-    def test_delete_with_no_access(self):
-        """Testing the DELETE repositories/<id>/ API with no access"""
+    @webapi_test_template
+    def test_delete_with_no_access(self) -> None:
+        """Testing the DELETE <URL> API with no access"""
         self._delete_repository(use_admin=False,
                                 expected_status=403)
 
+    @webapi_test_template
     @add_fixtures(['test_site'])
-    def test_delete_with_site_no_access(self):
-        """Testing the DELETE repositories/<id>/ API with a local site and
-        no access
-        """
+    def test_delete_with_site_no_access(self) -> None:
+        """Testing the DELETE <URL> API with a local site and no access"""
         self._delete_repository(use_local_site=True,
                                 use_admin=False,
                                 expected_status=403)
@@ -1014,7 +1200,38 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
     # HTTP GET tests
     #
 
-    def setup_basic_get_test(self, user, with_local_site, local_site_name):
+    def setup_basic_get_test(
+        self,
+        user: User,
+        with_local_site: bool,
+        local_site_name: Optional[str],
+    ) -> tuple[str, str, Repository]:
+        """Set up a basic HTTP GET test.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user performing the API requests.
+
+            with_local_site (bool):
+                Whether the test is being performed on a Local Site.
+
+            local_site_name (str):
+                The name of the local site to test against.
+
+        Returns:
+            tuple:
+            A 3-tuple of:
+
+            Tuple:
+                0 (str):
+                    The URL of the API resource to access.
+
+                1 (str):
+                    The expected mimetype of the response.
+
+                2 (reviewboard.scmtools.models.Repository):
+                    The repository to pass in to :py:meth:`compare_item`.
+        """
         repository = self.create_repository(with_local_site=with_local_site)
 
         return (get_repository_item_url(repository, local_site_name),
@@ -1025,8 +1242,49 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
     # HTTP PUT tests
     #
 
-    def setup_basic_put_test(self, user, with_local_site, local_site_name,
-                             put_valid_data):
+    def setup_basic_put_test(
+        self,
+        user: User,
+        with_local_site: bool,
+        local_site_name: Optional[str],
+        put_valid_data: bool,
+    ) -> tuple[str, str, dict[str, Any], Repository, Sequence[Any]]:
+        """Set up a basic HTTP PUT test.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user performing the API requests.
+
+            with_local_site (bool):
+                Whether the test is being performed on a Local Site.
+
+            local_site_name (str):
+                The name of the Local Site to test against.
+
+            put_valid_data (bool):
+                Whether to return valid data for the test.
+
+        Returns:
+            tuple:
+            A 4-tuple of:
+
+            Tuple:
+                0 (str):
+                    The URL to the API resource to access.
+
+                1 (str):
+                    The expected mimetype of the response.
+
+                2 (dict):
+                    The data to send in the PUT request.
+
+                3 (reviewboard.scmtools.models.Repository):
+                    The repository object to pass to :py:meth:`compare_item`.
+
+                4 (list):
+                    Additional positional arguments to pass to
+                    :py:meth:`check_put_result`.
+        """
         repository = self.create_repository(
             with_local_site=with_local_site,
             tool_name='Git',
@@ -1049,8 +1307,30 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
             repository,
             [])
 
-    def check_put_result(self, user, item_rsp, repository, *args):
-        repository = Repository.objects.get(pk=repository.pk)
+    def check_put_result(
+        self,
+        user: User,
+        item_rsp: JSONDict,
+        repository: Repository,
+        *args,
+    ) -> None:
+        """Check the result of an HTTP PUT test.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user performing the API requests.
+
+            item_rsp (dict):
+                The data returned from the API endpoint.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository item to check against.
+
+            *args (tuple, unused):
+                Additional positional arguments.
+        """
+        repository.refresh_from_db()
+
         self.assertEqual(repository.raw_file_url,
                          'http://example.com/<filename>/<version>')
         self.assertEqual(repository.get_credentials(), {
@@ -1060,11 +1340,13 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
 
         self.compare_item(item_rsp, repository)
 
-    def test_put_with_archive(self):
-        """Testing the PUT repositories/<id>/ API with archive_name=True"""
+    @webapi_test_template
+    def test_put_with_archive(self) -> None:
+        """Testing the PUT <URL> API with archive_name=True"""
         rsp = self._put_repository(data={
             'archive_name': True,
         })
+        assert rsp is not None
 
         repository = self._verify_repository_info(
             rsp=rsp,
@@ -1076,7 +1358,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
         self.assertIsNotNone(repository.archived_timestamp)
 
     @webapi_test_template
-    def test_put_with_hosting_service(self):
+    def test_put_with_hosting_service(self) -> None:
         """Testing the PUT <URL> API with hosting service"""
         old_account = HostingServiceAccount.objects.create(
             username='test-user',
@@ -1113,6 +1395,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
                 'repository_plan': 'team',
                 'tool': 'Git',
             })
+        assert rsp is not None
 
         self._verify_repository_info(
             rsp=rsp,
@@ -1137,7 +1420,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
         self.assertSpyCalled(Bitbucket.check_repository)
 
     @webapi_test_template
-    def test_put_with_hosting_service_and_hosting_url(self):
+    def test_put_with_hosting_service_and_hosting_url(self) -> None:
         """Testing the PUT <URL> API with hosting service"""
         old_account = HostingServiceAccount.objects.create(
             username='test-user',
@@ -1175,6 +1458,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
                 'repository_plan': 'personal',
                 'tool': 'Git',
             })
+        assert rsp is not None
 
         self._verify_repository_info(
             rsp=rsp,
@@ -1197,7 +1481,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
         self.assertSpyCalled(GitLab.check_repository)
 
     @webapi_test_template
-    def test_put_with_unsetting_hosting_service(self):
+    def test_put_with_unsetting_hosting_service(self) -> None:
         """Testing the PUT <URL> API with unsetting a hosting service"""
         old_account = HostingServiceAccount.objects.create(
             username='test-user',
@@ -1221,6 +1505,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
                 'path': self.sample_repo_path,
                 'raw_file_url': 'http://example.com/<filename>/<version>',
             })
+        assert rsp is not None
 
         self._verify_repository_info(
             rsp=rsp,
@@ -1235,7 +1520,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
             })
 
     @webapi_test_template
-    def test_put_with_bug_tracker_type(self):
+    def test_put_with_bug_tracker_type(self) -> None:
         """Testing the PUT <URL> API with bug_tracker_type"""
         repository = self.create_repository(
             bug_tracker='https://bugs.example.com/%s')
@@ -1249,6 +1534,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
                 'bug_tracker_plan': 'public-org',
                 'tool': 'Git',
             })
+        assert rsp is not None
 
         self._verify_repository_info(
             rsp=rsp,
@@ -1264,8 +1550,14 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
                 },
             })
 
-    def _put_repository(self, data={}, use_local_site=False, use_admin=True,
-                        repository=None, expected_status=200):
+    def _put_repository(
+        self,
+        data: Optional[dict[str, Any]] = None,
+        use_local_site: bool = False,
+        use_admin: bool = True,
+        repository: Optional[Repository] = None,
+        expected_status: int = 200,
+    ) -> Optional[dict[str, Any]]:
         """Modify a repository via the API.
 
         This will build and send an API request to modify a repository,
@@ -1317,6 +1609,9 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
             self._login_user(local_site=use_local_site,
                              admin=True)
 
+        if data is None:
+            data = {}
+
         return self.api_put(
             get_repository_item_url(repository, local_site_name),
             dict({
@@ -1325,8 +1620,13 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
             expected_status=expected_status,
             expected_mimetype=expected_mimetype)
 
-    def _delete_repository(self, use_local_site=False, use_admin=True,
-                           expected_status=204, with_review_request=False):
+    def _delete_repository(
+        self,
+        use_local_site: bool = False,
+        use_admin: bool = True,
+        expected_status: int = 204,
+        with_review_request: bool = False,
+    ) -> int:
         """Delete a repository via the API.
 
         This will build and send an API request to delete (or archive) a
@@ -1360,6 +1660,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
             local_site_name = None
 
         if with_review_request:
+            assert self.user is not None
             self.create_review_request(submitter=self.user,
                                        repository=repo)
 
