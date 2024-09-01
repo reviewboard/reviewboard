@@ -7,7 +7,6 @@
 
 /* We need all the third-party modules. */
 import '../reviewboard/static/lib/js/3rdparty-base';
-import '../reviewboard/static/lib/js/3rdparty/jquery-ui-1.12.1.min.js';
 import '../reviewboard/static/lib/js/3rdparty';
 
 /*
