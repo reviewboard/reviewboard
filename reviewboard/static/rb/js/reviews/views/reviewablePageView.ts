@@ -281,6 +281,7 @@ export class ReviewablePageView<
 
         this.reviewRequestEditorView = new ReviewRequestEditorView({
             el: $('#review-request'),
+            inMobileMode: this.inMobileMode,
             model: this.model.reviewRequestEditor,
         });
 
@@ -413,6 +414,24 @@ export class ReviewablePageView<
      */
     getReviewRequestEditorModel(): ReviewRequestEditor {
         return this.model.reviewRequestEditor;
+    }
+
+    /**
+     * Handle mobile mode changes.
+     *
+     * This will set the mobile mode on the review request editor view.
+     *
+     * Version Added:
+     *     7.0.3
+     *
+     * Args:
+     *     inMobileMode (boolean):
+     *         Whether the UI is now in mobile mode. This will be the same
+     *         value as :js:attr:`inMobileMode`, and is just provided for
+     *         convenience.
+     */
+    onMobileModeChanged(inMobileMode: boolean) {
+        this.reviewRequestEditorView.inMobileMode = inMobileMode;
     }
 
     /**
