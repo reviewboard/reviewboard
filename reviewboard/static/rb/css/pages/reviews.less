@@ -1179,7 +1179,7 @@ pre.reviewtext {
     }
   }
 
-  .on-mobile-medium-screen-720({
+  #rb-ns-pages.base.on-shell-mobile-mode({
     float: none;
   });
 
@@ -1263,6 +1263,12 @@ pre.reviewtext {
           border-left-color: @file-attachment-overlay-border-color;
         }
       }
+
+      #rb-ns-pages.base.on-shell-mobile-mode({
+        left: -(@shadow-padding + 1);
+        top: @file-attachment-height - @shadow-padding;
+        width: @file-attachment-width;
+      });
     }
 
     .file-actions {
