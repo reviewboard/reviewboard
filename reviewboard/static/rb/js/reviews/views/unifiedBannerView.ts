@@ -54,6 +54,7 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
         'keydown': '_onKeyDown',
         'mouseenter': '_openMenu',
         'mouseleave': '_closeMenu',
+        'touchstart': '_onTouchStart',
     };
 
     static modelEvents = {
@@ -174,6 +175,30 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
             this.#menuView.close({
                 animate: false,
             });
+        }
+    }
+
+    /**
+     * Handle a touchstart event.
+     *
+     * Version Added:
+     *    7.0.3
+     *
+     * Args:
+     *     e (TouchEvent):
+     *         The touch event.
+     */
+    private _onTouchStart(e: TouchEvent) {
+        if (!$(e.target).hasClass('ink-c-menu__item-label')) {
+            /* Open or close the menu if its not a touch on an item. */
+            e.stopPropagation();
+            e.preventDefault();
+
+            if (this.#menuView.isOpen) {
+                this._closeMenu();
+            } else {
+                this._openMenu();
+            }
         }
     }
 
