@@ -53,6 +53,8 @@ class ResourceListTests(ReviewRequestChildListMixin,
 
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
+        self.assertEqual(item_rsp['is_review_ui_accessible_by'],
+                         attachment.is_review_ui_accessible_by(self.user))
         self.assertEqual(item_rsp['extra_data'], attachment.extra_data)
         self.assertEqual(item_rsp['filename'], attachment.filename)
         self.assertEqual(item_rsp['revision'], attachment.attachment_revision)
@@ -244,6 +246,8 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
 
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
+        self.assertEqual(item_rsp['is_review_ui_accessible_by'],
+                         attachment.is_review_ui_accessible_by(self.user))
         self.assertEqual(item_rsp['extra_data'], attachment.extra_data)
         self.assertEqual(item_rsp['filename'], attachment.filename)
         self.assertEqual(item_rsp['revision'], attachment.attachment_revision)

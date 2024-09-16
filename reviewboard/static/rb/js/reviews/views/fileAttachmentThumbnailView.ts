@@ -145,7 +145,7 @@ export class FileAttachmentThumbnailView extends BaseView<
     static actionsTemplate = _.template(dedent`
         <% if (loaded) { %>
         <%  if (canReview) { %>
-        <%   if (reviewURL) { %>
+        <%   if (canAccessReviewUI) { %>
         <li>
          <a class="file-review" role="button" href="<%- reviewURL %>">
           <span class="fa fa-comment-o" aria-hidden="true"></span>
@@ -199,7 +199,7 @@ export class FileAttachmentThumbnailView extends BaseView<
         <% if (!loaded) { %>
         <span class="djblets-o-spinner"></span>
         <% } else { %>
-        <%     if (reviewURL) { %>
+        <%     if (canAccessReviewUI) { %>
         <a href="<%- reviewURL %>" class="file-thumbnail-overlay"></a>
         <%     } %>
         <%=  thumbnailHTML %>
@@ -436,7 +436,7 @@ export class FileAttachmentThumbnailView extends BaseView<
      * comments on the file as a whole.
      */
     showCommentDlg() {
-        console.assert(!this.model.get('reviewURL'),
+        console.assert(!this.model.get('canAccessReviewUI'),
                        'showCommentDlg can only be called if the file ' +
                        'attachment does not have a review UI');
         this._processComments();

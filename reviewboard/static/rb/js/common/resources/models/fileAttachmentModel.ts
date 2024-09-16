@@ -57,6 +57,11 @@ export enum FileAttachmentStates {
 /**
  * Attributes for the FileAttachment model.
  *
+ *
+ * Version Changed:
+ *     7.0.3:
+ *     Added the ``canAccessReviewUI`` attribute.
+ *
  * Version Added:
  *     6.0
  */
@@ -79,6 +84,14 @@ export interface FileAttachmentAttrs extends BaseResourceAttrs {
 
     /** The name of the file, for existing file attachments. */
     filename: string;
+
+    /**
+     * Whether the current user can access the file attachment's review UI.
+     *
+     * Version Added:
+     *     7.0.3
+     */
+    canAccessReviewUI: string;
 
     /** The file attachment's latest published caption. */
     publishedCaption: string;
@@ -105,6 +118,7 @@ export interface FileAttachmentAttrs extends BaseResourceAttrs {
  */
 export interface FileAttachmentResourceData extends BaseResourceResourceData {
     attachment_history_id: number;
+    is_review_ui_accessible_by: string;
     caption: string;
     filename: string;
     review_url: string;
@@ -132,6 +146,7 @@ export class FileAttachment extends BaseResource<
      */
     static defaults: Result<Partial<FileAttachmentAttrs>> = {
         'attachmentHistoryID': null,
+        'canAccessReviewUI': null,
         'caption': null,
         'downloadURL': null,
         'file': null,
@@ -149,6 +164,7 @@ export class FileAttachment extends BaseResource<
 
     static attrToJsonMap: { [key: string]: string } = {
         attachmentHistoryID: 'attachment_history_id',
+        canAccessReviewUI: 'is_review_ui_accessible_by',
         downloadURL: 'url',
         file: 'path',
         reviewURL: 'review_url',
@@ -163,6 +179,7 @@ export class FileAttachment extends BaseResource<
 
     static deserializedAttrs = [
         'attachmentHistoryID',
+        'canAccessReviewUI',
         'caption',
         'downloadURL',
         'filename',
