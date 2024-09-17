@@ -11,7 +11,7 @@ import {
 
 
 export default {
-    title: 'Review Board/Components/Diff Complexity Icon',
+    title: 'Review Board/Components/Diffs/Diff Complexity Icon',
     tags: ['autodocs'],
     render: options => {
         const view = new DiffComplexityIconView({
