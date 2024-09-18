@@ -189,7 +189,10 @@ class DraftModeMenu extends BaseView<UnifiedBanner> {
      *         The touch event.
      */
     private _onTouchStart(e: TouchEvent) {
-        if (!$(e.target).hasClass('ink-c-menu__item-label')) {
+        const $target = $(e.target);
+
+        if (!($target.hasClass('.ink-c-menu__item') ||
+              $target.parents('.ink-c-menu__item').length)) {
             /* Open or close the menu if its not a touch on an item. */
             e.stopPropagation();
             e.preventDefault();

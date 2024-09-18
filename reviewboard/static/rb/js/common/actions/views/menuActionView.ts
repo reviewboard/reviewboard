@@ -206,8 +206,8 @@ export class MenuActionView<
             evt.preventDefault();
 
             this.menu.open({
-                currentItemIndex: 0,
                 animate: false,
+                currentItemIndex: 0,
             });
         } else if (evt.key === 'Escape') {
             /* Close the menu. */
@@ -228,13 +228,19 @@ export class MenuActionView<
      *         The touch event.
      */
     protected onTouchStart(e: TouchEvent) {
-        e.stopPropagation();
-        e.preventDefault();
+        const $target = $(e.target);
 
-        if (this.menu.isOpen) {
-            this.closeMenu();
-        } else {
-            this.openMenu();
+        if (!($target.hasClass('.ink-c-menu__item') ||
+              $target.parents('.ink-c-menu__item').length)) {
+            /* Open or close the menu if its not a touch on an item. */
+            e.stopPropagation();
+            e.preventDefault();
+
+            if (this.menu.isOpen) {
+                this.closeMenu();
+            } else {
+                this.openMenu();
+            }
         }
     }
 }
