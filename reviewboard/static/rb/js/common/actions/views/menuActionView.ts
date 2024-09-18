@@ -139,6 +139,8 @@ export class MenuActionView<
                       menuItems=${menuItems}/>
         `;
         renderInto(this.el, this.menu);
+
+        this.listenTo(this.menu, 'opening', this.positionMenu.bind(this));
     }
 
     /**
@@ -158,6 +160,41 @@ export class MenuActionView<
             this.menu.close({ animate: true });
         }
     }
+
+    /**
+     * Position the menu.
+     *
+     * This will make sure the full menu appears within the screen without
+     * being clipped.
+     *
+     * Version Added:
+     *     7.0.3
+     */
+    protected positionMenu() {
+        const $menuEl = this.menu.$el;
+        const menuWidth = $menuEl.width();
+        const windowWidth = $(window).width();
+        const elOffsetLeft = this.$el.offset().left;
+
+        let newMenuLeft: string | number = 'auto';
+
+        if (elOffsetLeft + menuWidth > windowWidth) {
+            /*
+             * The right side of the menu is being clipped. Move to the left
+             * so that the full menu fits on screen.
+             */
+            newMenuLeft = (
+                windowWidth -
+                (elOffsetLeft + Math.min(menuWidth, windowWidth))
+            );
+        }
+
+        $menuEl.css({
+            left: newMenuLeft,
+            'max-width': windowWidth,
+        });
+    }
+
 
     /**
      * Handle a focus-out event.
