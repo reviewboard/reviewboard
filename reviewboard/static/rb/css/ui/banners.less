@@ -266,6 +266,19 @@
   &__mode {}
 
   /**
+   * The publish/discard buttons.
+   */
+  &__draft-actions {
+    #rb-ns-pages.base.on-shell-mobile-mode({
+      /**
+       * On mobile the buttons might be squished up against the left side
+       * of the screen. Add a margin to make it look better
+       */
+      margin-left: @banner-padding;
+    });
+  }
+
+  /**
    * The "Review" menu and other actions.
    */
   &__review-actions {
