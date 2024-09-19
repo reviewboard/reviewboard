@@ -163,12 +163,19 @@ RB.Admin.ServerActivityWidgetView = RB.Admin.WidgetView.extend({
                 tickLength: 1,
                 min: moment(this.model.get('rangeStart')).valueOf(),
                 max: moment(this.model.get('rangeEnd')).valueOf(),
+                font: {
+                    color: 'var(--ink-p-fg-weak)',
+                },
             },
             yaxis: {
                 min: 0,
                 tickDecimals: 0,
+                font: {
+                    color: 'var(--ink-p-fg-weak)',
+                },
             },
             grid: {
+                borderWidth: 1,
                 markings: axes => {
                     // This will shade weekends.
                     const markings = [];
@@ -189,6 +196,7 @@ RB.Admin.ServerActivityWidgetView = RB.Admin.WidgetView.extend({
                          */
                         markings.push({
                             xaxis: {from: i, to: i + 2 * 24 * 60 * 60 * 1000},
+                            color: 'rgba(0, 0, 0, 0.05)',
                         });
                         i += 7 * 24 * 60 * 60 * 1000;
                     } while (i < axes.xaxis.max);
@@ -207,6 +215,7 @@ RB.Admin.ServerActivityWidgetView = RB.Admin.WidgetView.extend({
                 },
             },
             legend: {
+                backgroundColor: 'var(--ink-p-container-bg)',
                 position: 'nw',
                 show: this.model.get('show').legend,
             },
