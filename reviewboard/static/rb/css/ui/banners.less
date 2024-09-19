@@ -226,6 +226,11 @@
       --ink-c-menu-border: 1px var(--rb-p-draft-border-color) solid;
       --ink-c-menu-item-selected-bg: var(--rb-p-draft-hover-bg);
       --ink-c-menu-item-selected-fg: var(--rb-p-draft-hover-fg);
+
+      #rb-ns-pages.base.on-shell-mobile-mode({
+        /* Make sure the menu items appear over the Review menu on mobile. */
+        z-index: @z-index-menu + 2;
+      });
     }
 
     margin-left: calc(-1 * @banner-padding);
@@ -259,6 +264,19 @@
    * The mode label.
    */
   &__mode {}
+
+  /**
+   * The publish/discard buttons.
+   */
+  &__draft-actions {
+    #rb-ns-pages.base.on-shell-mobile-mode({
+      /**
+       * On mobile the buttons might be squished up against the left side
+       * of the screen. Add a margin to make it look better
+       */
+      margin-left: @banner-padding;
+    });
+  }
 
   /**
    * The "Review" menu and other actions.

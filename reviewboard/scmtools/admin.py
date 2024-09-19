@@ -158,11 +158,16 @@ class RepositoryAdmin(ModelAdmin):
         """
         s = ['<div class="rb-c-admin-change-list__item-actions">']
 
-        def _build_item(url, css_class, name):
-            return format_html(
-                '<a class="rb-c-admin-change-list__item-action {0}"'
-                ' href="{1}">{2}</a>',
-                css_class, url, name)
+        def _build_item(
+            url: str,
+            css_class: str,
+            name: str,
+        ) -> SafeString:
+            css_class = \
+                f'rb-c-admin-change-list__item-action ink-c-button {css_class}'
+
+            return format_html('<a class="{0}" href="{1}">{2}</a>',
+                               css_class, url, name)
 
         if repository.hosting_account:
             service: Optional[HostingService]

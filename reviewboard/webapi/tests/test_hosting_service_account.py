@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
+from email.message import Message
+from http import HTTPStatus
 from typing import Any, Optional, Sequence, TYPE_CHECKING
+from urllib.error import HTTPError
 
+import kgb
+from djblets.webapi.errors import INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
 
+from reviewboard.hostingsvcs.base.client import HostingServiceClient
+from reviewboard.hostingsvcs.base.http import (HostingServiceHTTPRequest,
+                                               HostingServiceHTTPResponse)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.webapi.errors import HOSTINGSVC_AUTH_ERROR
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
@@ -22,7 +31,9 @@ if TYPE_CHECKING:
     from djblets.util.typing import JSONDict
 
 
-class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
+class ResourceListTests(kgb.SpyAgency,
+                        BaseWebAPITestCase,
+                        metaclass=BasicTestsMetaclass):
     """Unit tests for the HostingServiceAccountResource list APIs."""
 
     sample_api_url = 'hosting-services-accounts/'
@@ -259,6 +270,100 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         account = HostingServiceAccount.objects.get(pk=item_rsp['id'])
 
         self.compare_item(item_rsp, account)
+
+    @webapi_test_template
+    def test_post_with_gitlab_authorization(self) -> None:
+        """Testing the POST <URL> API with a GitLab account"""
+        url = 'http://example.com'
+        data = b''
+
+        request = HostingServiceHTTPRequest(url)
+        response = HostingServiceHTTPResponse(
+            request, url, data, {}, HTTPStatus.OK)
+
+        self.spy_on(HostingServiceClient.http_get,
+                    owner=HostingServiceClient,
+                    op=kgb.SpyOpReturn(response))
+
+        self._login_user(local_site=False, admin=True)
+
+        rsp = self.api_post(
+            get_hosting_service_account_list_url(),
+            {
+                'hosting_url': 'https://gitlab.com/',
+                'private_token': 'mytoken',
+                'service_id': 'gitlab',
+                'username': 'test',
+            },
+            expected_status=201,
+            expected_mimetype=hosting_service_account_item_mimetype)
+        assert rsp is not None
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertSpyCalledWith(
+            HostingServiceClient.http_get,
+            'https://gitlab.com/api/v4/projects?per_page=1',
+            headers={'PRIVATE-TOKEN': 'mytoken'})
+
+        item_rsp = rsp['hosting_service_account']
+        account = HostingServiceAccount.objects.get(pk=item_rsp['id'])
+        self.compare_item(item_rsp, account)
+
+    @webapi_test_template
+    def test_post_with_gitlab_authorization_unauthorized(self) -> None:
+        """Testing the POST <URL> API with a GitLab account and authorization
+        failure
+        """
+        error = HTTPError(
+            'http://example.com',
+            HTTPStatus.UNAUTHORIZED,
+            '',
+            Message(),
+            None)
+
+        self.spy_on(HostingServiceClient.http_get,
+                    owner=HostingServiceClient,
+                    op=kgb.SpyOpRaise(error))
+
+        self._login_user(local_site=False, admin=True)
+
+        rsp = self.api_post(
+            get_hosting_service_account_list_url(),
+            {
+                'hosting_url': 'https://gitlab.com/',
+                'private_token': 'mytoken',
+                'service_id': 'gitlab',
+                'username': 'test',
+            },
+            expected_status=403)
+        assert rsp is not None
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], HOSTINGSVC_AUTH_ERROR.code)
+        self.assertEqual(rsp['reason'], 'The API token is invalid.')
+
+    @webapi_test_template
+    def test_post_with_gitlab_missing_fields(self) -> None:
+        """Testing the POST <URL> API with a GitLab account and missing fields
+        in custom HostingServiceAuthForm
+        """
+        self._login_user(local_site=False, admin=True)
+
+        rsp = self.api_post(
+            get_hosting_service_account_list_url(),
+            {
+                'hosting_url': 'https://gitlab.com/',
+                'service_id': 'gitlab',
+                'username': 'test',
+            },
+            expected_status=400)
+        assert rsp is not None
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertEqual(rsp['fields'], {
+            'private_token': ['This field is required.'],
+        })
 
 
 class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):

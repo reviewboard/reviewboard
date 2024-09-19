@@ -434,16 +434,48 @@ class DraftBannerView extends BannerView {
 
 
 /**
+ * Options for the ReviewRequestEditorView.
+ *
+ * Version Added:
+ *     7.0.3
+ */
+interface ReviewRequestEditorViewOptions {
+    /** Whether the page that the editor is on is in mobile mode. */
+    inMobileMode: boolean;
+}
+
+
+/**
  * Manages the user-visible state of an editable review request.
  *
  * This owns the fields, thumbnails, banners, and general interaction
  * around editing a review request.
  */
 @spina
-export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
+export class ReviewRequestEditorView extends BaseView<
+    ReviewRequestEditor,
+    HTMLDivElement,
+    ReviewRequestEditorViewOptions
+> {
     /**********************
      * Instance variables *
      **********************/
+
+    /**
+     * Whether the page that the editor is on is in mobile mode.
+     *
+     * Version Added:
+     *     7.0.3
+     */
+    inMobileMode: boolean = null;
+
+    /**
+     * The view options.
+     *
+     * Version Added:
+     *     7.0.3
+     */
+    options: ReviewRequestEditorViewOptions;
 
     /** The element containing the file attachment thumbnails. */
     #$attachments: JQuery = null;
@@ -488,7 +520,9 @@ export class ReviewRequestEditorView extends BaseView<ReviewRequestEditor> {
     /**
      * Initialize the view.
      */
-    initialize() {
+    initialize(options: ReviewRequestEditorViewOptions) {
+        this.options = options;
+        this.inMobileMode = options.inMobileMode;
         this.draft = this.model.get('reviewRequest').draft;
     }
 

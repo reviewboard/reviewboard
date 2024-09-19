@@ -504,15 +504,12 @@ export class ReviewMenuActionView extends Actions.MenuActionView {
     #overlay: OverlayView = null;
 
     /**
-     * Close the menu.
+     * Render the view.
      */
-    protected closeMenu() {
-        super.closeMenu();
+    protected onInitialRender() {
+        super.onInitialRender();
 
-        if (this.#overlay) {
-            this.#overlay.remove();
-            this.#overlay = null;
-        }
+        this.listenTo(this.menu, 'closing', this._removeOverlay);
     }
 
     /**
@@ -526,12 +523,59 @@ export class ReviewMenuActionView extends Actions.MenuActionView {
         super.onTouchStart(e);
 
         if (this.menu.isOpen) {
-            this.#overlay = new OverlayView();
-            this.#overlay.$el.appendTo('body');
+            if (!this.#overlay) {
+                this.#overlay = new OverlayView();
+                this.#overlay.$el.appendTo('body');
 
-            this.listenTo(this.#overlay, 'click', () => {
-                this.closeMenu();
+                this.listenTo(this.#overlay, 'click', () => {
+                    this.closeMenu();
+                });
+            }
+        }
+    }
+
+    /**
+     * Position the menu.
+     *
+     * Version Added:
+     *     7.0.3
+     */
+    protected positionMenu() {
+        const $menuEl = this.menu.$el;
+
+        if (RB.PageManager.getPage().inMobileMode) {
+            /*
+             * Make the review menu take up the full width of the screen
+             * when on mobile.
+             *
+             * This needs to happen before the call to the parent class so
+             * that the parent uses the updated width for the menu.
+             */
+            $menuEl.css({
+                'text-wrap': 'wrap',
+                width: $(window).width(),
             });
+        } else {
+            /* Use default styling on desktop. */
+            $menuEl.css({
+                'text-wrap': '',
+                width: '',
+            });
+        }
+
+        super.positionMenu();
+    }
+
+    /**
+     * Remove the event overlay that's shown in mobile mode.
+     *
+     * Version Added:
+     *     7.0.3
+     */
+    private _removeOverlay() {
+        if (this.#overlay) {
+            this.#overlay.remove();
+            this.#overlay = null;
         }
     }
 }

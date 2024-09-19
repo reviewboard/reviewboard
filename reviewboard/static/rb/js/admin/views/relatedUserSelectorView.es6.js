@@ -1,25 +1,52 @@
-(function() {
-
-const optionTemplate = _.template(dedent`
-    <div>
-    <% if (useAvatars && avatarHTML) { %>
-     <%= avatarHTML %>
-    <% } %>
-    <% if (fullname) { %>
-     <span class="title"><%- fullname %></span>
-     <span class="description">(<%- username %>)</span>
-    <% } else { %>
-     <span class="title"><%- username %></span>
-    <% } %>
-    </div>
-`);
-
-
 /**
  * A widget to select related users using search and autocomplete.
  */
 RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
     searchPlaceholderText: gettext('Search for users...'),
+
+    optionTagName: 'tr',
+
+    optionTemplate: _.template(dedent`
+        <div>
+         <% if (useAvatars && avatarHTML) { %><%= avatarHTML %><% } %>
+         <% if (fullname) { %>
+          <span class="title"><%- fullname %></span>
+          <span class="description">(<%- username %>)</span>
+         <% } else { %>
+          <span class="title"><%- username %></span>
+         <% } %>
+        </div>
+    `),
+
+    selectedOptionTemplate: _.template(dedent`
+        <% if (useAvatars) { %>
+         <td><%= avatarHTML %></td>
+        <% } %>
+        <% if (fullname) { %>
+         <td><%- fullname %></td>
+         <td>(<%- username %>)</td>
+        <% } else { %>
+         <td><%- username %></td>
+         <td></td>
+        <% } %>
+        <td>
+         <a href="#" role="button"
+            class="remove-item ink-i-delete-item"
+            aria-label="<%- removeText %>"
+            title="<%- removeText %>"
+            ></a>
+        </td>
+    `),
+
+    template: _.template(dedent`
+        <select placeholder=""
+                class="related-object-options"></select>
+        <% if (multivalued) { %>
+        <table class="related-object-selected"></table>
+        <% } %>
+    `),
+
+    autoAddClose: false,
 
     /**
      * Initialize the view.
@@ -50,7 +77,7 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
                         {field: 'username'},
                     ],
                     valueField: 'username',
-                }
+                },
             }, options));
 
         this._localSitePrefix = options.localSitePrefix || '';
@@ -69,10 +96,35 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
      *     HTML to insert into the drop-down menu.
      */
     renderOption(item) {
-        return optionTemplate(_.extend(
+        return $(this.optionTemplate(_.extend(
             { useAvatars: this._useAvatars },
+            item)));
+    },
+
+    /**
+     * Render an option in the selected list.
+     *
+     * Args:
+     *     item (object):
+     *         The item to render.
+     *
+     * Returns:
+     *     string:
+     *     HTML to insert into the selected items list.
+     */
+    renderSelectedOption(item) {
+        const $item = $(this.selectedOptionTemplate(_.extend(
+            {
+                removeText: _`Remove user`,
+                useAvatars: this._useAvatars,
+            },
             item
-        ));
+        )));
+
+        $item.find('.remove-item')
+            .on('click', () => this._onItemRemoved($item, item));
+
+        return $item;
     },
 
     /**
@@ -118,6 +170,3 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
         });
     },
 });
-
-
-})();

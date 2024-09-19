@@ -7,13 +7,13 @@ import mimeparse
 import os
 from datetime import datetime
 
+import kgb
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.safestring import SafeText
 from djblets.testing.decorators import add_fixtures
-from kgb import SpyAgency
 
 from reviewboard.attachments.forms import UploadFileForm, UploadUserFileForm
 from reviewboard.attachments.mimetypes import (MimetypeHandler,
@@ -24,6 +24,7 @@ from reviewboard.attachments.mimetypes import (MimetypeHandler,
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
 from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.reviews.ui.image import ImageReviewUI
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
@@ -79,7 +80,7 @@ class BaseFileAttachmentTestCase(TestCase):
         return filediff
 
 
-class FileAttachmentTests(BaseFileAttachmentTestCase):
+class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
     """Tests for the FileAttachment model."""
 
     @add_fixtures(['test_users', 'test_scmtools'])
@@ -418,6 +419,36 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
                 '\u23ab</pre><pre>                                           '
                 ' \u23aa\u23a2\u239c\u2502a\xb2+b\xb3 \u239f\u23a5\u23aa'
                 '</pre><pre>  \u2200x\u2208</pre></div></div>')
+
+    @add_fixtures(['test_users'])
+    def test_is_review_ui_accessible_by_true(self) -> None:
+        """Testing FileAttachment.is_review_ui_accessible_by with a user who
+        can access the review UI
+        """
+        user = User.objects.get(username='doc')
+        review_request = self.create_review_request(submitter=user)
+        file_attachment = self.create_file_attachment(
+            review_request=review_request,
+            mimetype='image/png')
+
+        self.spy_on(ImageReviewUI.is_enabled_for, op=kgb.SpyOpReturn(True))
+
+        self.assertTrue(file_attachment.is_review_ui_accessible_by(user=user))
+
+    @add_fixtures(['test_users'])
+    def test_is_review_ui_accessible_by_false(self) -> None:
+        """Testing FileAttachment.is_review_ui_accessible_by with a user who
+        cannot access the review UI
+        """
+        user = User.objects.get(username='doc')
+        review_request = self.create_review_request(submitter=user)
+        file_attachment = self.create_file_attachment(
+            review_request=review_request,
+            mimetype='image/png')
+
+        self.spy_on(ImageReviewUI.is_enabled_for, op=kgb.SpyOpReturn(False))
+
+        self.assertFalse(file_attachment.is_review_ui_accessible_by(user=user))
 
 
 class UserFileAttachmentTests(BaseFileAttachmentTestCase):
@@ -1134,7 +1165,7 @@ class SandboxMimetypeHandler(MimetypeHandler):
         raise Exception
 
 
-class SandboxTests(SpyAgency, BaseFileAttachmentTestCase):
+class SandboxTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
     """Testing MimetypeHandler sandboxing."""
 
     def setUp(self):
@@ -1182,7 +1213,7 @@ class SandboxTests(SpyAgency, BaseFileAttachmentTestCase):
         self.assertTrue(SandboxMimetypeHandler.get_icon_url.called)
 
 
-class TextMimetypeTests(SpyAgency, TestCase):
+class TextMimetypeTests(kgb.SpyAgency, TestCase):
     """Unit tests for reviewboard.attachments.mimetypes.TextMimetype."""
 
     fixtures = ['test_users']
@@ -1238,7 +1269,7 @@ class TextMimetypeTests(SpyAgency, TestCase):
             mimetype_handler.get_raw_thumbnail_image_url(width=300)
 
 
-class ImageMimetypeTests(SpyAgency, BaseFileAttachmentTestCase):
+class ImageMimetypeTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
     """Unit tests for reviewboard.attachments.mimetypes.ImageMimetype.
 
     Version Added:

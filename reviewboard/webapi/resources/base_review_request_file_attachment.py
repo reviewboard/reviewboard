@@ -46,6 +46,12 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
             'description': 'ID of the corresponding FileAttachmentHistory.',
             'added_in': '2.5',
         },
+        'is_review_ui_accessible_by': {
+            'type': BooleanFieldType,
+            'description': 'Whether the requesting user can access the review '
+                           'UI for the file attachment.',
+            'added_in': '7.0.3',
+        },
         'review_url': {
             'type': StringFieldType,
             'description': 'The URL to a review UI for this file.',
@@ -113,6 +119,30 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
             .filter(q)
             .prefetch_related(*prefetch_related)
         )
+
+    def serialize_is_review_ui_accessible_by_field(
+        self,
+        obj: FileAttachment,
+        **kwargs
+    ) -> bool:
+        """Serialize the ``is_review_ui_accessible_by`` field.
+
+        Version Added:
+            7.0.3
+
+        Args:
+            obj (reviewboard.attachments.models.FileAttachment):
+                The file attachment that is being serialized.
+
+            **kwargs (dict):
+                Keyword arguments.
+
+        Returns:
+            bool:
+            Whether the requesting user can access the review UI for the file
+            attachment.
+        """
+        return obj.is_review_ui_accessible_by(user=kwargs.get('request').user)
 
     def serialize_url_field(self, obj, **kwargs):
         return obj.get_absolute_url()

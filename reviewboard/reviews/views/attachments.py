@@ -18,8 +18,7 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.context import should_view_draft
 from reviewboard.reviews.models import Screenshot
 from reviewboard.reviews.ui.base import (DiffMismatchReviewUI,
-                                         ReviewUI,
-                                         is_review_ui_enabled_for)
+                                         ReviewUI)
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 
@@ -210,7 +209,8 @@ class ReviewFileAttachmentView(_FileAttachmentViewMixin,
             The resulting HTTP response from the handler.
         """
         review_request = self.review_request
-        draft = review_request.get_draft(request.user)
+        user = request.user
+        draft = review_request.get_draft(user)
 
         if should_view_draft(request=request, review_request=review_request,
                              draft=draft):
@@ -262,18 +262,11 @@ class ReviewFileAttachmentView(_FileAttachmentViewMixin,
         if diff_against_attachment:
             review_ui.set_diff_against(diff_against_attachment)
 
-        if not is_review_ui_enabled_for(
-            review_ui=review_ui,
-            request=request,
-            review_request=review_request,
-            file_attachment=file_attachment):
+        if not file_attachment.is_review_ui_accessible_by(user):
             raise Http404
 
-        if diff_against_attachment and not is_review_ui_enabled_for(
-            review_ui=review_ui,
-            request=request,
-            review_request=review_request,
-            file_attachment=diff_against_attachment):
+        if (diff_against_attachment and
+            not diff_against_attachment.is_review_ui_accessible_by(user)):
             raise Http404
 
         return review_ui.render_to_response(request)

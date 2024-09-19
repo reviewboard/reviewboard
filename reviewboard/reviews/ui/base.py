@@ -17,6 +17,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
+from housekeeping import func_deprecated
 from typing_extensions import TypeAlias, TypedDict
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
@@ -938,29 +939,19 @@ class ReviewUI(Generic[
 
         prev_obj = None
         next_obj = None
+        user = self.request.user
 
         for obj in file_attachments:
             if obj.pk == self.obj.pk:
                 break
 
-            review_ui = obj.review_ui
-
-            if review_ui and is_review_ui_enabled_for(
-                review_ui=review_ui,
-                request=self.request,
-                review_request=self.review_request,
-                file_attachment=obj):
+            if obj.is_review_ui_accessible_by(user):
                 prev_obj = obj
 
         try:
             obj = next(file_attachments)
-            review_ui = obj.review_ui
 
-            if review_ui and is_review_ui_enabled_for(
-                review_ui=review_ui,
-                request=self.request,
-                review_request=self.review_request,
-                file_attachment=obj):
+            if obj.is_review_ui_accessible_by(user):
                 next_obj = obj
         except StopIteration:
             pass
@@ -1294,6 +1285,7 @@ def unregister_ui(review_ui: type[ReviewUI]) -> None:
     review_ui_registry.unregister(review_ui)
 
 
+@func_deprecated(RemovedInReviewBoard80Warning)
 def is_review_ui_enabled_for(
     *,
     review_ui: ReviewUI[FileAttachment, FileAttachmentComment,
@@ -1304,6 +1296,12 @@ def is_review_ui_enabled_for(
 ) -> bool:
     """Return whether a Review UI is enabled for the given object.
 
+    Deprecated:
+        7.0.3:
+        Use :py:meth:`~reviewboard.attachments.models.FileAttachment.
+        is_review_ui_accessible_by` instead. This function will be removed
+        in 8.0.
+
     Version Added:
         7.0.2
 
@@ -1312,7 +1310,7 @@ def is_review_ui_enabled_for(
             The Review UI to check.
 
         request (django.http.HttpRequest):
-            The user making the request.
+            The HTTP request from the client.
 
         review_request (reviewboard.reviews.models.ReviewRequest):
             The review request.

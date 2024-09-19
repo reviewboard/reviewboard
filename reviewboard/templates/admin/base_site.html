@@ -4,7 +4,6 @@
 {% block js-page-view-type %}RB.Admin.PageView{% endblock %}
 
 {# Disable theme support for the administration UI, until implemented. #}
-{% block ui-theme-attrs %}{% endblock %}
 
 {% block title %}{% block page_title %}{{title}}{% endblock %} | {% trans "Administration" %}{% endblock %}
 
@@ -35,8 +34,12 @@
 {{block.super}}
 {% endblock css %}
 
+
+{% block page_class %}admin admin-page{% endblock %}
+
+
 {% block bodytag %}
-<body class="admin {% if is_popup %}popup {% elif user.is_authenticated %}-has-sidebar {% endif %}{% block bodyclass %}{% endblock %} {% block page_class %}{% endblock %}" data-admin-utc-offset="{% now "Z" %}">
+<body class="{% if is_popup %}popup {% elif user.is_authenticated %}-has-sidebar {% endif %}{% block bodyclass %}{% endblock %} {{page_class}}" data-admin-utc-offset="{% now "Z" %}">
 {% endblock %}
 
 

@@ -51,6 +51,22 @@
     solid;
 
   &.-has-diff {
+    .sidebyside {
+      /*
+       * This ensures that diff comments don't spill outside of the review
+       * box on mobile.
+       */
+      #rb-ns-pages.base.on-shell-mobile-mode({
+        display: grid;
+      });
+
+      .filename-row {
+        #rb-ns-pages.base.on-shell-mobile-mode({
+          display: grid;
+        });
+      }
+    }
+
     &.-expands-on-hover {
       /*
        * Set up some animations for the hover effects.

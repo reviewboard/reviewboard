@@ -1235,13 +1235,23 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
             The resulting model attributes.
         """
         review_request = self.review_request_details.get_review_request()
+        request = self.request
 
         model_attrs = {
+            'canAccessReviewUI': attachment.is_review_ui_accessible_by(
+                request.user),
             'downloadURL': attachment.get_absolute_url(),
             'filename': attachment.filename,
             'id': attachment.pk,
             'loaded': True,
             'publishedCaption': attachment.caption,
+            'reviewURL': local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'file_attachment_id': attachment.pk,
+                    'review_request_id': review_request.display_id,
+                },
+                request=request),
             'revision': attachment.attachment_revision,
             'state': self.review_request_details.get_file_attachment_state(
                 attachment).value,
@@ -1259,66 +1269,7 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
             model_attrs['attachmentHistoryID'] = \
                 attachment.attachment_history_id
 
-        if self._has_usable_review_ui(review_request, attachment):
-            model_attrs['reviewURL'] = local_site_reverse(
-                'file-attachment',
-                kwargs={
-                    'file_attachment_id': attachment.pk,
-                    'review_request_id': review_request.display_id,
-                },
-                request=self.request)
-
         return model_attrs
-
-    def _has_usable_review_ui(self, review_request, file_attachment):
-        """Return whether there's a usable review UI for a file attachment.
-
-        This will check that a review UI exists for the file attachment and
-        that it's enabled for the provided user and review request.
-
-        Args:
-            review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest):
-                The review request that the file attachment is on.
-
-            file_attachment (reviewboard.attachments.models.FileAttachment):
-                The file attachment that review UI would review.
-
-        Returns:
-            bool:
-            ``True`` if a review UI exists and is usable. ``False`` if the
-            review UI does not exist, cannot be used, or there's an error when
-            checking.
-        """
-        review_ui = file_attachment.review_ui
-
-        if not review_ui:
-            return False
-
-        try:
-            from inspect import signature
-            params = signature(review_ui.is_enabled_for).parameters
-
-            if 'file_attachment' in params:
-                RemovedInReviewBoard80Warning.warn(
-                    'The file_attachment parameter to ReviewUI.is_enabled_for '
-                    'has been removed. Please use obj= instead in Review UI %r'
-                    % review_ui)
-
-                return review_ui.is_enabled_for(
-                    user=self.request.user,
-                    review_request=review_request,
-                    file_attachment=file_attachment)
-            else:
-                return review_ui.is_enabled_for(
-                    user=self.request.user,
-                    review_request=review_request,
-                    obj=file_attachment)
-        except Exception as e:
-            logger.exception('Error when calling is_enabled_for with '
-                             'ReviewUI %r: %s',
-                             review_ui, e)
-            return False
 
 
 class ScreenshotCaptionsField(BaseCaptionsField):

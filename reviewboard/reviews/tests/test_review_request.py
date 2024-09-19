@@ -7,7 +7,7 @@ from djblets.testing.decorators import add_fixtures
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
+from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.models import (Comment, ReviewRequest,
                                         ReviewRequestDraft)
@@ -606,7 +606,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_has_diffsets_cached(self) -> None:
-        """Testing ReviewRequest.has_diffsets with cached diffsets."""
+        """Testing ReviewRequest.has_diffsets with cached diffsets"""
         review_request = self.create_review_request(create_repository=True)
         review_request.get_diffsets()
 
@@ -620,6 +620,108 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
 
         with self.assertNumQueries(0):
             self.assertTrue(review_request.has_diffsets)
+
+    @add_fixtures(['test_scmtools'])
+    def test_has_diffsets_prefetched(self) -> None:
+        """Testing ReviewRequest.has_diffsets with prefetched diffsets"""
+        review_request = self.create_review_request(create_repository=True)
+        diffset = self.create_diffset(review_request)
+        self.create_filediff(diffset)
+
+        review_request = list(
+            ReviewRequest.objects
+            .select_related('diffset_history')
+            .prefetch_related('diffset_history__diffsets',
+                              'diffset_history__diffsets__files')
+        )[0]
+
+        with self.assertNumQueries(0):
+            diffsets = review_request.get_diffsets()
+            self.assertTrue(diffsets)
+            self.assertNotEqual(list(diffsets[0].files.all()), [])
+
+    @add_fixtures(['test_scmtools'])
+    def test_has_diffsets_prefetched_empty(self) -> None:
+        """Testing ReviewRequest.has_diffsets with prefetched diffsets that
+        are empty
+        """
+        review_request = self.create_review_request(create_repository=True)
+
+        review_request = list(
+            ReviewRequest.objects
+            .select_related('diffset_history')
+            .prefetch_related('diffset_history__diffsets',
+                              'diffset_history__diffsets__files')
+        )[0]
+
+        with self.assertNumQueries(0):
+            diffsets = review_request.get_diffsets()
+            self.assertEqual(diffsets, [])
+
+    @add_fixtures(['test_scmtools'])
+    def test_has_diffsets_prefetched_history_only(self) -> None:
+        """Testing ReviewRequest.has_diffsets with prefetched diffset_history
+        only
+        """
+        review_request = self.create_review_request(create_repository=True)
+        diffset = self.create_diffset(review_request)
+        self.create_filediff(diffset)
+
+        review_request = list(
+            ReviewRequest.objects
+            .select_related('diffset_history')
+        )[0]
+
+        # 2 queries made by review_request.get_diffsets():
+        #
+        # 1. Fetch all DiffSets on the review request.
+        # 2. Fetch all FileDiffs across the DiffSets.
+        queries = [
+            {
+                'model': DiffSet,
+                'where': Q(history__pk=1),
+            },
+            {
+                'model': FileDiff,
+                'where': Q(diffset__in=[diffset]),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            diffsets = review_request.get_diffsets()
+            self.assertTrue(diffsets)
+            self.assertNotEqual(list(diffsets[0].files.all()), [])
+
+    @add_fixtures(['test_scmtools'])
+    def test_has_diffsets_prefetched_diffsets_no_files(self) -> None:
+        """Testing ReviewRequest.has_diffsets with prefetched diffsets and
+        no files
+        """
+        review_request = self.create_review_request(create_repository=True)
+        diffset = self.create_diffset(review_request)
+        self.create_filediff(diffset)
+
+        review_request = list(
+            ReviewRequest.objects
+            .select_related('diffset_history')
+            .prefetch_related('diffset_history__diffsets')
+        )[0]
+
+        queries = [
+            {
+                'model': DiffSet,
+                'where': Q(history__pk=1),
+            },
+            {
+                'model': FileDiff,
+                'where': Q(diffset__in=[diffset]),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            diffsets = review_request.get_diffsets()
+            self.assertTrue(diffsets)
+            self.assertNotEqual(list(diffsets[0].files.all()), [])
 
     @add_fixtures(['test_scmtools'])
     def test_has_diffsets_from_history(self) -> None:

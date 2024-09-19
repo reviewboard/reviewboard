@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+from inspect import signature
 from typing import ClassVar, List, Optional, Sequence
 
 from django.contrib.auth.models import User
@@ -17,6 +18,7 @@ from typing_extensions import TypeAlias
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.managers import FileAttachmentManager
 from reviewboard.attachments.mimetypes import MimetypeHandler
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
@@ -380,6 +382,59 @@ class FileAttachment(models.Model):
                 return None
 
         return build_server_url(path)
+
+    def is_review_ui_accessible_by(
+        self,
+        user: User,
+    ) -> bool:
+        """Return whether a user can access the file attachment's review UI.
+
+        This will check that a review UI exists for the file attachment and
+        that it's enabled for the provided user and review request.
+
+        Version Added:
+            7.0.3
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user who is accessing the review UI.
+
+        Returns:
+            bool:
+            ``True`` if a review UI exists and can be accessed by the user.
+            ``False`` if the review UI does not exist, cannot be used, or
+            there's an error when checking.
+        """
+        review_ui = self.review_ui
+
+        if not review_ui:
+            return False
+
+        review_request = self.get_review_request()
+
+        try:
+            params = signature(review_ui.is_enabled_for).parameters
+
+            if 'file_attachment' in params:
+                RemovedInReviewBoard80Warning.warn(
+                    'The file_attachment parameter to ReviewUI.is_enabled_for '
+                    'has been removed. Please use obj= instead in Review UI %r'
+                    % review_ui)
+
+                return review_ui.is_enabled_for(
+                    user=user,
+                    review_request=review_request,
+                    file_attachment=self)
+            else:
+                return review_ui.is_enabled_for(
+                    user=user,
+                    review_request=review_request,
+                    obj=self)
+        except Exception as e:
+            logger.exception('Error when calling is_enabled_for with '
+                             'ReviewUI %r: %s',
+                             review_ui, e)
+            return False
 
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to this FileAttachment.

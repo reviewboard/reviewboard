@@ -121,6 +121,8 @@ export class FileAttachmentThumbnailView extends BaseView<
         'click .file-delete': '_onDeleteClicked',
         'click .file-undo-delete': '_onUndoDeleteClicked',
         'click .file-update a': '_onUpdateClicked',
+        'mouseenter': '_onHoverIn',
+        'mouseleave': '_onHoverOut',
     };
 
     static template = _.template(dedent`
@@ -144,7 +146,7 @@ export class FileAttachmentThumbnailView extends BaseView<
     static actionsTemplate = _.template(dedent`
         <% if (loaded) { %>
         <%  if (canReview) { %>
-        <%   if (reviewURL) { %>
+        <%   if (canAccessReviewUI) { %>
         <li>
          <a class="file-review" role="button" href="<%- reviewURL %>">
           <span class="fa fa-comment-o" aria-hidden="true"></span>
@@ -198,7 +200,7 @@ export class FileAttachmentThumbnailView extends BaseView<
         <% if (!loaded) { %>
         <span class="djblets-o-spinner"></span>
         <% } else { %>
-        <%     if (reviewURL) { %>
+        <%     if (canAccessReviewUI) { %>
         <a href="<%- reviewURL %>" class="file-thumbnail-overlay"></a>
         <%     } %>
         <%=  thumbnailHTML %>
@@ -322,9 +324,6 @@ export class FileAttachmentThumbnailView extends BaseView<
         this.listenTo(this.model, 'change:caption', this._onCaptionChanged);
         this._onCaptionChanged();
 
-        this.$el.hover(this._onHoverIn.bind(this),
-                       this._onHoverOut.bind(this));
-
         if (this.options.renderThumbnail) {
             this.#$actionsContainer = this.$('.file-actions-container');
             this._$actions = this.#$actionsContainer.children('.file-actions');
@@ -438,7 +437,7 @@ export class FileAttachmentThumbnailView extends BaseView<
      * comments on the file as a whole.
      */
     showCommentDlg() {
-        console.assert(!this.model.get('reviewURL'),
+        console.assert(!this.model.get('canAccessReviewUI'),
                        'showCommentDlg can only be called if the file ' +
                        'attachment does not have a review UI');
         this._processComments();
@@ -580,6 +579,8 @@ export class FileAttachmentThumbnailView extends BaseView<
                     this.options.reviewRequestEditorView
                         .promptToLoadUserDraft();
                 }
+
+                this.#$actionsContainer.hide();
             });
 
         this.listenTo(this._captionEditorView, 'beginEditPreShow', () => {
@@ -925,20 +926,23 @@ export class FileAttachmentThumbnailView extends BaseView<
                               this.#$file.outerWidth() +
                               actionsWidth);
 
+        this.#$actionsContainer.show();
         this.trigger('hoverIn', this.$el);
 
         /*
          * Position the actions menu to the left or right of the attachment
          * thumbnail.
          */
-        if (actionsRight > $(window).width()) {
-            this.#$actionsContainer
-                .css('left', -actionsWidth)
-                .addClass('left');
-        } else {
-            this.#$actionsContainer
-                .css('left', '100%')
-                .addClass('right');
+        if (!this.options.reviewRequestEditorView.inMobileMode) {
+            if (actionsRight > $(window).width()) {
+                this.#$actionsContainer
+                    .css('left', -actionsWidth)
+                    .addClass('left');
+            } else {
+                this.#$actionsContainer
+                    .css('left', '100%')
+                    .addClass('right');
+            }
         }
 
         if (!this.$el.hasClass('editing') && $thumbnail.length === 1) {
@@ -1008,7 +1012,9 @@ export class FileAttachmentThumbnailView extends BaseView<
 
         this.#$actionsContainer
             .removeClass('left')
-            .removeClass('right');
+            .removeClass('right')
+            .hide();
+
 
         this._stopAnimating();
     }

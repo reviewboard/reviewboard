@@ -133,7 +133,7 @@ body.admin #navbar {
    *      <span class="rb-c-admin-news-widget__item-title">...</span>
    */
   &__item-title {
-    color: black;
+    color: var(--ink-p-fg);
   }
 }
 
@@ -238,7 +238,7 @@ body.admin #navbar {
    *     <span class="rb-c-admin-repositories-widget__repo-service">...</span>
    */
   &__repo-service {
-    color: #rb-ns-ui.colors[@grey-20];
+    color: var(--ink-p-fg-weak);
   }
 }
 
@@ -269,6 +269,21 @@ body.admin #navbar {
   &__chart {
     width: 100%;
     height: 160px;
+
+    .legendLabel {
+      color: var(--ink-p-fg-weak);
+    }
+  }
+
+  /**
+   * A label for a slice in the pie.
+   *
+   *     <div class="rb-c-admin-user-activity-widget__slice">
+   *      ...
+   *     </div>
+   */
+  &__slice-label {
+    padding: 2px 4px;
   }
 
   /**
@@ -281,7 +296,7 @@ body.admin #navbar {
    */
   &__user-total {
     bottom: 10px;
-    color: #545454;
+    color: var(--ink-p-fg-weak);
     position: absolute;
     text-align: left;
     right: 1em;
@@ -314,6 +329,10 @@ body.admin #navbar {
   &__chart {
     width: 100%;
     height: 250px;
+
+    .legendLabel {
+      color: var(--ink-p-fg-weak);
+    }
   }
 }
 
@@ -342,12 +361,20 @@ body.admin #navbar {
   padding: @padding;
 
   &.loading {
+    color: var(--ink-p-fg);
     text-align: center;
   }
 
   &.error,
   &.community-support {
-    background-color: #FFE4E1;
+    background: var(--ink-c-alert-warning-bg);
+    border: 1px var(--ink-c-alert-warning-border-color) solid;
+    color: var(--ink-c-alert-warning-fg);
+
+    a:link,
+    a:visited {
+      color: var(--ink-p-link-fg-on-light);
+    }
   }
 
   &.basic-support,

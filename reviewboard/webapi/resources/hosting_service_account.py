@@ -13,7 +13,7 @@ from djblets.webapi.errors import (INVALID_FORM_DATA, NOT_LOGGED_IN,
 from djblets.webapi.fields import IntFieldType, StringFieldType
 
 from reviewboard.hostingsvcs.base import hosting_service_registry
-from reviewboard.hostingsvcs.errors import AuthorizationError
+from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
@@ -335,6 +335,12 @@ class HostingServiceAccountResource(WebAPIResource):
         The ``service_id`` is a registered HostingService ID. This must be
         known beforehand, and can be looked up in the Review Board
         administration UI.
+
+        Depending on the hosting service, other parameters may be required.
+        These can include API keys or two-factor auth tokens, and is dependent
+        on each type of service. If a service requires additional fields,
+        making requests to this API method will return an error indicating what
+        fields are missing.
         """
         local_site = self._get_local_site(local_site_name)
 
@@ -359,22 +365,44 @@ class HostingServiceAccountResource(WebAPIResource):
                 },
             }
 
-        account = HostingServiceAccount(service_name=service_id,
-                                        username=username,
-                                        hosting_url=hosting_url,
-                                        local_site=local_site)
-        service = account.service
-
         if service.needs_authorization:
+            form_cls = service.auth_form or HostingServiceAuthForm
+            form = form_cls(
+                {
+                    'hosting_account_password': password,
+                    'hosting_account_username': username,
+                    'hosting_url': hosting_url,
+                    **extra_fields,
+                },
+                hosting_service_cls=service,
+                local_site=local_site)
+
+            if not form.is_valid():
+                invalid_fields: dict[str, list[str]] = {}
+
+                for field_name, errors in form.errors.items():
+                    invalid_fields[field_name] = [
+                        ', '.join(error.messages)
+                        for error in errors.as_data()
+                    ]
+
+                return INVALID_FORM_DATA, {
+                    'fields': invalid_fields,
+                }
+
             try:
-                service.authorize(request, username, password, hosting_url,
-                                  local_site_name)
-            except AuthorizationError as e:
+                account = form.save()
+            except Exception as e:
                 return HOSTINGSVC_AUTH_ERROR, {
                     'reason': str(e),
                 }
+        else:
+            account = HostingServiceAccount(service_name=service_id,
+                                            username=username,
+                                            hosting_url=hosting_url,
+                                            local_site=local_site)
 
-        account.save()
+            account.save()
 
         return 201, {
             self.item_result_key: account,

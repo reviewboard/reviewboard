@@ -187,8 +187,12 @@
     display: flex;
     gap: var(--ink-u-spacing-xxl);
 
-    .on-mobile-medium-screen-720({
+    #rb-ns-pages.base.on-shell-mobile-mode({
       text-align: center;
+    });
+
+    #rb-ns-ui.screen.on-width-lte(350px, {
+      gap: var(--ink-u-spacing-s);
     });
   }
 

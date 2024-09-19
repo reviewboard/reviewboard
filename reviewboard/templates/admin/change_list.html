@@ -15,7 +15,10 @@
 {% endblock scripts-post %}
 
 
-{% block page_class %}datagrid-page -is-content-full-page{% endblock %}
+{% block page_class %}
+{{block.super}} datagrid-page -is-content-full-page
+{% endblock page_class %}
+
 {% block page-sidebar-css-classes %}-is-connected{% endblock %}
 {% block js-page-model-type %}RB.Admin.ChangeListPage{% endblock %}
 {% block js-page-model-attrs-items %}

@@ -1129,11 +1129,18 @@ class ReviewRequest(BaseReviewRequestDetails):
             local_site_name=local_site_name,
             kwargs={'review_request_id': self.display_id})
 
-    def get_diffsets(self) -> list[DiffSet]:
+    def get_diffsets(self) -> Sequence[DiffSet]:
         """Return a list of all diffsets on this review request.
 
-        This will also fetch all associated FileDiffs, as well as a count
-        of the number of files (stored in DiffSet.file_count).
+        This will also fetch all associated FileDiffs.
+
+        Version Changed:
+            7.0.3:
+            * This will now return pre-fetched diffsets, if they contain cached
+              file information.
+
+            * The result of this method is now an immutable sequence instead
+              of a mutable list.
 
         Version Changed:
             7.0:
@@ -1147,10 +1154,47 @@ class ReviewRequest(BaseReviewRequestDetails):
             return []
 
         if not hasattr(self, '_diffsets'):
-            self._diffsets = list(
-                DiffSet.objects
-                .filter(history__pk=self.diffset_history_id)
-                .prefetch_related('files'))
+            # If we've prefetched anything, we can hopefully skip a new
+            # query.
+            diffsets_result: Optional[list[DiffSet]] = None
+            diffset_history: Optional[DiffSetHistory] = \
+                self._state.fields_cache.get('diffset_history')
+
+            if diffset_history is not None:
+                diffsets: Optional[Sequence[DiffSet]] = (
+                    getattr(diffset_history, '_prefetched_objects_cache', {})
+                    .get('diffsets')
+                )
+
+                if diffsets is not None:
+                    # We know we've fetched diffsets. We can now see if
+                    # there's anything we want to reuse.
+                    diffsets = list(diffsets)
+
+                    if not diffsets:
+                        # We know there are no diffsets. The result will be
+                        # an empty list.
+                        diffsets_result = []
+                    else:
+                        diffset_cache = \
+                            getattr(diffsets[0], '_prefetched_objects_cache',
+                                    {})
+
+                        if 'files' in diffset_cache:
+                            # We have the full prefetched chain with everything
+                            # we need (well, assuming no .only() or anything).
+                            # Trust it and return it.
+                            diffsets_result = list(diffsets)
+
+            if diffsets_result is None:
+                # We don't have a result we can work with. We'll want to
+                # query from scratch.
+                diffsets_result = list(
+                    DiffSet.objects
+                    .filter(history__pk=self.diffset_history_id)
+                    .prefetch_related('files'))
+
+            self._diffsets = diffsets_result
 
         return self._diffsets
 
@@ -2083,13 +2127,21 @@ class ReviewRequest(BaseReviewRequestDetails):
             True if the user has access to all the attached diffsets. False,
             otherwise.
         """
-        for diffset in self.get_diffsets():
-            accessible = cache_memoize(
-                'diffset-acl-result-%s-%d' % (user.username, diffset.pk),
-                lambda: self._is_diffset_accessible_by(user, diffset))
+        if not diff_acls_feature.is_enabled(user=user,
+                                            local_site=self.local_site):
+            # This feature isn't currently enabled.
+            return True
 
-            if accessible is False:
-                return accessible
+        from reviewboard.extensions.hooks import FileDiffACLHook
+
+        if FileDiffACLHook.hooks:
+            for diffset in self.get_diffsets():
+                accessible = cache_memoize(
+                    'diffset-acl-result-%s-%d' % (user.username, diffset.pk),
+                    lambda: self._is_diffset_accessible_by(user, diffset))
+
+                if accessible is False:
+                    return accessible
 
         return True
 
