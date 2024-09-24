@@ -120,6 +120,18 @@
     }
   }
 
+  /*
+   * Alerts always have light-ish colors, so the default link color in dark
+   * mode is too low contrast. Fix it up to always us the fg-on-light color.
+   */
+  &.-is-error,
+  &.-is-info,
+  &.-is-success,
+  &.-is-warning {
+    --ink-p-link-fg: var(--ink-p-link-fg-on-light);
+    --ink-p-link-hover-fg: var(--ink-p-link-hover-fg-on-light);
+  }
+
   /**
    * Content to display within the alert.
    *
