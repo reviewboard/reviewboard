@@ -78,14 +78,13 @@
    * opens without any jumps.
    */
   &.draft {
-    @textarea-offset-vert: (@textarea-editor-margin-top +
-                            @textarea-editor-padding +
-                            @textarea-border-size);
-    @textarea-offset-horiz: (@textarea-editor-padding +
-                             @textarea-border-size);
+    --textarea-offset-horiz: calc(var(--rb-c-textarea-spacing) +
+                                  var(--ink-u-border-thin));
+    --textarea-offset-vert: calc(2 * var(--rb-c-textarea-spacing) +
+                                 var(--ink-u-border-thin));
 
     .comment-author {
-      margin-bottom: @textarea-offset-vert + 1em;
+      margin-bottom: calc(var(--textarea-offset-vert) + 1em);
 
       label a {
         color: var(--rb-p-draft-label-fg);
@@ -93,7 +92,11 @@
     }
 
     .rb-c-text-editor {
-      margin-top: -(@textarea-offset-vert - 10px);
+       margin: calc(var(--rb-c-textarea-spacing) -
+                   var(--textarea-offset-vert))
+               calc(-1 * var(--textarea-offset-horiz))
+               0
+               calc(-1 * var(--textarea-offset-horiz));
     }
   }
 }
@@ -103,13 +106,13 @@
  * Code Mirror
  ****************************************************************************/
 .CodeMirror {
-  border: @textarea-border;
+  border: var(--ink-g-border-input);
   height: auto;
-  margin: @textarea-editor-margin;
+  margin: var(--rb-c-textarea-margin);
   cursor: text;
 
   .CodeMirror-lines {
-    padding: @textarea-editor-padding;
+    padding: var(--rb-c-textarea-spacing);
   }
 
   .CodeMirror-scroll {

@@ -314,8 +314,8 @@
 
 
 .required-flag {
-  color: @required-flag-color;
-  font-size: 10px;
+  color: var(--rb-p-required-flag-color);
+  font-size: var(--ink-u-font-xs);
   font-weight: bold;
   padding: 0 2px;
 }
@@ -327,22 +327,23 @@
   @_form-field-vars: #rb-ns-ui.form-field();
 
   background-color: var(--ink-p-input-bg);
-  border: var(--ink-u-border-thin) var(--ink-p-input-border-color) solid;
+  border: var(--ink-g-border-input);
   color: var(--ink-p-input-fg);
-  margin: @_form-field-vars[@textarea-editor-margin];
-  padding: @_form-field-vars[@textarea-editor-padding];
+  margin: var(--rb-c-textarea-margin);
+  padding: var(--rb-c-textarea-spacing);
   white-space: pre-wrap;
   word-wrap: break-word;
 
   .codehilite {
     .flush-codehilite();
 
-    @codehilite-margin-horiz: (@code-block-border-size +
-                               @code-block-padding-horiz -
-                               @textarea-border-size);
-    @codehilite-margin-vert: @code-block-padding-vert;
-    margin: -@codehilite-margin-vert -@codehilite-margin-horiz;
-    padding: @codehilite-margin-vert @codehilite-margin-horiz;
+    --codehilite-margin-horiz: calc(var(--rb-u-code-block-border-size) +
+                                    @code-block-padding-horiz -
+                                    var(--ink-u-border-thin));
+    --codehilite-margin-vert: @code-block-padding-vert;
+    margin: calc(-1 * var(--codehilite-margin-vert))
+            calc(-1 * var(--codehilite-margin-horiz));
+    padding: var(--codehilite-margin-vert) var(--codehilite-margin-horiz);
   }
 }
 
