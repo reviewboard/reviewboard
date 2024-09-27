@@ -537,6 +537,27 @@ textarea {
   }
 
   /**
+   * A label indicating why a field is disabled.
+   *
+   * Structure:
+   *     <div class="rb-c-form-field__disabled-reason">...</div>
+   */
+  &__disabled-reason {
+    color: var(--ink-p-fg-weak);
+    display: flex;
+    font-size: var(--ink-u-font-xs);
+    gap: var(--ink-u-spacing-s);
+    line-height: var(--ink-u-icon-std);
+
+    &:before {
+      #ink-ns-ui.icons.svg-icon(@icon: var(--ink-i-error));
+      color: var(--ink-p-red-700);
+      flex-grow: 0;
+      flex-shrink: 0;
+    }
+  }
+
+  /**
    * Errors shown for the field.
    *
    * This is shown before the row containing the label and input. It's meant
