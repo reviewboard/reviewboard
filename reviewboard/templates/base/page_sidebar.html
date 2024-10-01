@@ -41,7 +41,7 @@
         <li class="rb-c-sidebar__nav-item"><a class="rb-c-sidebar__item-label" href="{% url 'all-review-requests' %}">{% trans "All Review Requests" %}</a></li>
         <li class="rb-c-sidebar__nav-item"><a class="rb-c-sidebar__item-label" href="{% url 'all-users' %}">{% trans "Users" %}</a></li>
         <li class="rb-c-sidebar__nav-item"><a class="rb-c-sidebar__item-label" href="{% url 'all-groups' %}">{% trans "Groups" %}</a></li>
-{%  navigation_bar_hooks %}
+{%  navigation_bar_hooks sidebar=True %}
        </ul>
       </li>
 {% endif %}
