@@ -1068,10 +1068,12 @@ export class ReviewDialogView extends BaseView<
     static className = 'review';
 
     static template = _.template(dedent`
-        <div class="edit-field">
-         <input id="id_shipit" type="checkbox">
-         <label for="id_shipit"><%- shipItText %></label>
-        </div>
+        <% if (allowShipIt) { %>
+         <div class="edit-field">
+          <input id="id_shipit" type="checkbox">
+          <label for="id_shipit"><%- shipItText %></label>
+         </div>
+        <% } %>
         <div class="review-dialog-hooks-container"></div>
         <div class="edit-field body-top"></div>
         <ol id="review-dialog-body-top-comments" class="review-comments"></ol>
@@ -1343,9 +1345,18 @@ export class ReviewDialogView extends BaseView<
      * the server will begin loading and rendering.
      */
     protected onInitialRender() {
+        const userSession = UserSession.instance;
+
+        const reviewRequest = this.model.get('parentObject');
+        const allowShipIt = (
+            userSession.get('allowSelfShipIt') ||
+            (userSession.get('username') !==
+             reviewRequest.get('links')['submitter']['title']));
+
         this.$el.html(this.template({
             addFooterText: _`Add footer`,
             addHeaderText: _`Add header`,
+            allowShipIt: allowShipIt,
             markdownDocsURL: MANUAL_URL + 'users/markdown/',
             markdownText: _`Markdown Reference`,
             shipItText: _`Ship It`,
@@ -1371,7 +1382,7 @@ export class ReviewDialogView extends BaseView<
             .prependTo(this.$el);
 
         this.listenTo(this.#tipsView, 'hide', () => {
-            UserSession.instance.set('showReviewDialogTips', false);
+            userSession.set('showReviewDialogTips', false);
             this.#updateTipsVisibility(false);
         });
 
@@ -1384,11 +1395,11 @@ export class ReviewDialogView extends BaseView<
                 e.preventDefault();
 
                 this.#updateTipsVisibility(true);
-                UserSession.instance.set('showReviewDialogTips', true);
+                userSession.set('showReviewDialogTips', true);
             });
 
         this.#updateTipsVisibility(
-            UserSession.instance.get('showReviewDialogTips'));
+            userSession.get('showReviewDialogTips'));
 
         RB.ReviewDialogHook.each(hook => {
             const HookView = hook.get('viewType');

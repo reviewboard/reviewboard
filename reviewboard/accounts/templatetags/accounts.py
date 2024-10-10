@@ -87,6 +87,7 @@ def js_user_session_info(context):
         avatar_html = {}
 
         info.update({
+            'allowSelfShipIt': siteconfig.get('reviews_allow_self_shipit'),
             'fullName': user.get_full_name() or username,
             'readOnly': is_site_read_only_for(user),
             'username': username,

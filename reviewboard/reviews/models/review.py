@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 import logging
-from typing import ClassVar, Optional, Tuple
+from typing import ClassVar, Optional, TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
-from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext, gettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.errors import PublishError, RevokeShipItError
@@ -29,6 +29,9 @@ from reviewboard.reviews.signals import (reply_publishing, reply_published,
                                          review_publishing, review_published,
                                          review_ship_it_revoking,
                                          review_ship_it_revoked)
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
 
 
 logger = logging.getLogger(__name__)
@@ -363,7 +366,7 @@ class Review(models.Model):
     def can_publish(
         self,
         review_request_will_publish: bool = False,
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, Optional[str]]:
         """Check if this review can be published.
 
         Args:
@@ -416,6 +419,14 @@ class Review(models.Model):
                         'This review cannot be published, because it includes '
                         'a comment on a file attachment which has not yet '
                         'been published.')
+
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        if (self.ship_it and
+            self.user_id == self.review_request.submitter_id and
+            not siteconfig.get('reviews_allow_self_shipit')):
+            return False, gettext(
+                'You cannot mark "Ship It!" on your own review request.')
 
         return True, None
 

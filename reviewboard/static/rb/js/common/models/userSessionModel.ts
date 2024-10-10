@@ -243,16 +243,39 @@ class StoredItems extends BaseResource<StoredItemsAttrs> {
 
 /** Attributes for the UserSession model. */
 interface UserSessionAttrs extends ModelAttributes {
+    /**
+     * Whether to allow users to mark "Ship It" on their own review requests.
+     *
+     * Version Added:
+     *     7.1
+     */
+    allowSelfShipIt: boolean;
+
     /** The URL for the archived review requests API resource. */
     archivedReviewRequestsURL: string;
 
     /** Whether the user is currently authenticated. */
     authenticated: boolean;
 
+    /** HTML to use for avatars at different sizes. */
+    avatarHTML: Record<number, string>;
+
+    /** URLs for avatars at various sizes and pixel densities. */
+    avatarURLs: Record<number, Record<string, string>>;
+
+    /** Whether to open an issue by default */
+    commentsOpenAnIssue: boolean;
+
+    /** Whether to use rich text by default. */
+    defaultUseRichText: boolean;
+
     /**
      * Whether the user wants to see diffs with excess whitespace highlighted.
      */
     diffsShowExtraWhitespace: boolean;
+
+    /** Whether to enable desktop notifications. */
+    enableDesktopNotifications: boolean;
 
     /** The user's full name. */
     fullName: string;
@@ -338,9 +361,15 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
     }
 
     defaults: UserSessionAttrs = {
+        allowSelfShipIt: false,
         archivedReviewRequestsURL: null,
         authenticated: false,
+        avatarHTML: {},
+        avatarURLs: {},
+        commentsOpenAnIssue: true,
+        defaultUseRichText: false,
         diffsShowExtraWhitespace: false,
+        enableDesktopNotifications: false,
         fullName: null,
         loginURL: null,
         mutedReviewRequestsURL: null,

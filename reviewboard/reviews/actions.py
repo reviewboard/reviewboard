@@ -7,6 +7,7 @@ from typing import Iterable, List, Optional, TYPE_CHECKING, Union
 from django.http import HttpRequest
 from django.template import Context
 from django.utils.translation import gettext_lazy as _
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.actions import (AttachmentPoint,
                                  BaseAction,
@@ -332,6 +333,31 @@ class CreateReviewAction(BaseAction):
     js_view_class = 'RB.CreateReviewActionView'
     template_name = 'actions/detailed_menuitem_action.html'
 
+    def should_render(
+        self,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This menu only renders when the user is logged in and the unified
+        banner feature is enabled.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        user = request.user
+
+        return (super().should_render(context=context) and
+                user.is_authenticated and
+                not is_site_read_only_for(user) and
+                unified_banner_feature.is_enabled(request=request))
+
 
 class EditReviewAction(BaseAction):
     """Action to edit an existing review.
@@ -351,6 +377,31 @@ class EditReviewAction(BaseAction):
     icon_class = 'rb-icon rb-icon-compose-review'
     js_view_class = 'RB.EditReviewActionView'
     template_name = 'actions/detailed_menuitem_action.html'
+
+    def should_render(
+        self,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        This menu only renders when the user is logged in and the unified
+        banner feature is enabled.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        user = request.user
+
+        return (super().should_render(context=context) and
+                user.is_authenticated and
+                not is_site_read_only_for(user) and
+                unified_banner_feature.is_enabled(request=request))
 
 
 class AddGeneralCommentAction(BaseAction):
@@ -372,6 +423,31 @@ class AddGeneralCommentAction(BaseAction):
     icon_class = 'rb-icon rb-icon-edit'
     js_view_class = 'RB.AddGeneralCommentActionView'
     template_name = 'actions/detailed_menuitem_action.html'
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        Version Added:
+            7.1
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        user = request.user
+
+        return (super().should_render(context=context) and
+                user.is_authenticated and
+                not is_site_read_only_for(user))
 
 
 class ShipItAction(BaseAction):
@@ -395,6 +471,38 @@ class ShipItAction(BaseAction):
     icon_class = 'rb-icon rb-icon-shipit'
     js_view_class = 'RB.ShipItActionView'
     template_name = 'actions/detailed_menuitem_action.html'
+
+    def should_render(
+        self,
+        *,
+        context: Context,
+    ) -> bool:
+        """Return whether this action should render.
+
+        Version Added:
+            7.1
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            bool:
+            ``True`` if the action should render.
+        """
+        request = context['request']
+        user = request.user
+        review_request = context.get('review_request')
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        return (
+            super().should_render(context=context) and
+            user.is_authenticated and
+            not is_site_read_only_for(user) and
+            review_request is not None and
+            (user.pk != review_request.submitter_id or
+             siteconfig.get('reviews_allow_self_shipit'))
+        )
 
 
 class LegacyAddGeneralCommentAction(BaseAction):

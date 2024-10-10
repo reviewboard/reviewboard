@@ -1,26 +1,34 @@
+"""Unit tests for review-related actions."""
+
+from __future__ import annotations
+
 from typing import Optional, TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.template import Context
 from django.test.client import RequestFactory
-from django.urls.resolvers import ResolverMatch
 from djblets.features.testing import override_feature_check
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.actions import actions_registry
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
-from reviewboard.reviews.actions import (BaseReviewRequestAction,
-                                         BaseReviewRequestMenuAction)
-from reviewboard.reviews.default_actions import (AddGeneralCommentAction,
-                                                 CloseMenuAction,
-                                                 DeleteAction,
-                                                 DownloadDiffAction,
-                                                 EditReviewAction,
-                                                 ShipItAction,
-                                                 SubmitAction,
-                                                 UpdateMenuAction,
-                                                 UploadDiffAction)
+from reviewboard.reviews.actions import (
+    AddGeneralCommentAction,
+    BaseReviewRequestAction,
+    BaseReviewRequestMenuAction,
+    CloseCompletedAction,
+    CloseMenuAction,
+    DeleteAction,
+    DownloadDiffAction,
+    EditReviewAction,
+    LegacyAddGeneralCommentAction,
+    LegacyEditReviewAction,
+    LegacyShipItAction,
+    ShipItAction,
+    UpdateMenuAction,
+    UploadDiffAction,
+)
 from reviewboard.reviews.errors import DepthLimitExceededError
 from reviewboard.reviews.features import unified_banner_feature
 from reviewboard.reviews.models import ReviewRequest
@@ -72,9 +80,11 @@ class ReadOnlyActionTestsMixin(MixinParent):
     visible can also be tested by setting ``read_only_always_show``.
     """
 
+    uses_unified_banner = True
+
     def setUp(self) -> None:
         """Set up the test case."""
-        super(ReadOnlyActionTestsMixin, self).setUp()
+        super().setUp()
 
         self.request = RequestFactory().request()
         self.siteconfig = SiteConfiguration.objects.get_current()
@@ -91,7 +101,7 @@ class ReadOnlyActionTestsMixin(MixinParent):
             str:
             The description of the test.
         """
-        desc = super(ReadOnlyActionTestsMixin, self).shortDescription()
+        desc = super().shortDescription()
 
         if self.action and getattr(self, self._testMethodName, False):
             desc = desc.replace('<ACTION>', type(self.action).__name__)
@@ -128,7 +138,8 @@ class ReadOnlyActionTestsMixin(MixinParent):
             'site_read_only': True,
         }
 
-        with override_feature_check(unified_banner_feature.feature_id, False):
+        with override_feature_check(unified_banner_feature.feature_id,
+                                    self.uses_unified_banner):
             with self.siteconfig_settings(settings):
                 if getattr(self, 'read_only_always_show', False):
                     self.assertTrue(
@@ -149,7 +160,8 @@ class ReadOnlyActionTestsMixin(MixinParent):
             'site_read_only': True,
         }
 
-        with override_feature_check(unified_banner_feature.feature_id, False):
+        with override_feature_check(unified_banner_feature.feature_id,
+                                    self.uses_unified_banner):
             with self.siteconfig_settings(settings):
                 self.assertTrue(
                     self.action.should_render(context=request_context))
@@ -305,9 +317,6 @@ class AddGeneralCommentActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
             django.template.Context:
             Additional context to use when testing read-only actions.
         """
-        self.request.resolver_match = ResolverMatch(
-            lambda: None, tuple(), {}, url_name=url_name)
-
         return Context({
             'request': self.create_http_request(user=user, url_name=url_name),
         })
@@ -316,16 +325,72 @@ class AddGeneralCommentActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
         """Testing AddGeneralCommentAction.should_render with authenticated
         user
         """
-        with override_feature_check(unified_banner_feature.feature_id, False):
-            self.request.user = User.objects.get(username='doc')
-            self.assertTrue(
-                self.action.should_render(
-                    context=self._create_request_context(
-                        User.objects.get(username='doc'))))
+        user = User.objects.get(username='doc')
+        self.request.user = user
+
+        self.assertTrue(self.action.should_render(
+            context=self._create_request_context(user)))
 
     def test_should_render_with_anonymous(self) -> None:
         """Testing AddGeneralCommentAction.should_render with authenticated
         user
+        """
+        self.assertFalse(
+            self.action.should_render(context=self._create_request_context()))
+
+
+class LegacyAddGeneralCommentActionTests(ReadOnlyActionTestsMixin,
+                                         ActionsTestCase):
+    """Unit tests for LegacyAddGeneralCommentAction."""
+
+    action = LegacyAddGeneralCommentAction()
+    fixtures = ['test_users']
+    uses_unified_banner = False
+
+    def _create_request_context(
+        self,
+        user: Optional[User] = None,
+        url_name: str = 'review-request-detail',
+        *args,
+        **kwargs,
+    ) -> Context:
+        """Create and return objects for use in the request context.
+
+        Args:
+            user (django.contrib.auth.models.User, optional):
+                The user to run the request.
+
+            url_name (str, optional):
+                The URL name to fake on the resolver.
+
+            *args (tuple):
+                Positional arguments (unused).
+
+            **kwargs (dict):
+                Keyword arguments (unused).
+
+        Returns:
+            django.template.Context:
+            Additional context to use when testing read-only actions.
+        """
+        return Context({
+            'request': self.create_http_request(user=user, url_name=url_name),
+        })
+
+    def test_should_render_with_authenticated(self) -> None:
+        """Testing LegacyAddGeneralCommentAction.should_render with
+        authenticated user
+        """
+        user = User.objects.get(username='doc')
+
+        with override_feature_check(unified_banner_feature.feature_id, False):
+            self.request.user = user
+            self.assertTrue(self.action.should_render(
+                context=self._create_request_context(user)))
+
+    def test_should_render_with_anonymous(self) -> None:
+        """Testing LegacyAddGeneralCommentAction.should_render with
+        authenticated user
         """
         with override_feature_check(unified_banner_feature.feature_id, False):
             self.assertFalse(
@@ -500,7 +565,7 @@ class DeleteActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
                 delete_reviewrequest=False)))
 
     def test_should_render_with_permission(self) -> None:
-        """Testing SubmitAction.should_render with delete_reviewrequest
+        """Testing DeleteAction.should_render with delete_reviewrequest
         permission
         """
         self.assertTrue(self.action.should_render(
@@ -727,28 +792,84 @@ class EditReviewActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
         })
 
     def test_should_render_with_authenticated(self) -> None:
-        """Testing EditReviewAction.should_render with authenticated user"""
+        """Testing EditReviewAction.should_render with authenticated user
+        """
+        self.assertTrue(self.action.should_render(
+            context=self._create_request_context(
+                user=User.objects.get(username='doc'))))
+
+    def test_should_render_with_anonymous(self) -> None:
+        """Testing EditReviewAction.should_render with authenticated user
+        """
+        self.assertFalse(self.action.should_render(
+            context=self._create_request_context()))
+
+
+class LegacyEditReviewActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
+    """Unit tests for LegacyEditReviewAction."""
+
+    action = LegacyEditReviewAction()
+    fixtures = ['test_users']
+    uses_unified_banner = False
+
+    def _create_request_context(
+        self,
+        url_name: str = 'review-request-detail',
+        user: Optional[User] = None,
+        *args,
+        **kwargs,
+    ) -> Context:
+        """Create and return objects for use in the request context.
+
+        Args:
+            url_name (str, optional):
+                The URL name to fake on the resolver.
+
+            user (django.contrib.auth.models.User, optional):
+                The user to set on the request.
+
+            *args (tuple):
+                Positional arguments (unused).
+
+            **kwargs (dict):
+                Keyword arguments (unused).
+
+        Returns:
+            django.template.Context:
+            Additional context to use when testing read-only actions.
+        """
+        return Context({
+            'request': self.create_http_request(url_name=url_name,
+                                                user=user),
+        })
+
+    def test_should_render_with_authenticated(self) -> None:
+        """Testing LegacyEditReviewAction.should_render with authenticated
+        user
+        """
         with override_feature_check(unified_banner_feature.feature_id, False):
             self.assertTrue(self.action.should_render(
                 context=self._create_request_context(
                     user=User.objects.get(username='doc'))))
 
     def test_should_render_with_anonymous(self) -> None:
-        """Testing EditReviewAction.should_render with authenticated user"""
+        """Testing LegacyEditReviewAction.should_render with authenticated
+        user
+        """
         with override_feature_check(unified_banner_feature.feature_id, False):
             self.assertFalse(self.action.should_render(
                 context=self._create_request_context()))
 
     def test_should_render_with_user_in_read_only(self) -> None:
-        """Testing EditReviewAction.should_render with authenticated user in
-        read-only mode
+        """Testing LegacyEditReviewAction.should_render with authenticated
+        user in read-only mode
         """
         with override_feature_check(unified_banner_feature.feature_id, False):
             super().test_should_render_with_user_in_read_only()
 
     def test_should_render_with_superuser_in_read_only(self) -> None:
-        """Testing EditReviewAction.should_render with superuser in read-only
-        mode
+        """Testing LegacyEditReviewAction.should_render with superuser in
+        read-only mode
         """
         with override_feature_check(unified_banner_feature.feature_id, False):
             super().test_should_render_with_superuser_in_read_only()
@@ -789,6 +910,75 @@ class ShipItActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
         return Context({
             'request': self.create_http_request(url_name=url_name,
                                                 user=user),
+            'review_request': self.create_review_request(submitter='grumpy'),
+        })
+
+    def test_should_render_with_authenticated(self) -> None:
+        """Testing ShipItAction.should_render with authenticated user"""
+        self.assertTrue(self.action.should_render(
+            context=self._create_request_context(
+                user=User.objects.get(username='doc'))))
+
+    def test_should_render_with_anonymous(self) -> None:
+        """Testing ShipItAction.should_render with anonymous user"""
+        self.assertFalse(self.action.should_render(
+            context=self._create_request_context()))
+
+    def test_should_render_with_no_self_ship_it(self) -> None:
+        """Testing ShipItAction.should_render with a user reviewing their own
+        review request and reviews_allow_self_shipit=False
+        """
+        self.assertFalse(self.action.should_render(
+            context=self._create_request_context(
+                user=User.objects.get(username='grumpy'))))
+
+    def test_should_render_with_self_ship_it(self) -> None:
+        """Testing ShipItAction.should_render with a user reviewing their own
+        review request and reviews_allow_self_shipit=True
+        """
+        with self.siteconfig_settings({'reviews_allow_self_shipit': True}):
+            self.assertTrue(self.action.should_render(
+                context=self._create_request_context(
+                    user=User.objects.get(username='grumpy'))))
+
+
+class LegacyShipItActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
+    """Unit tests for LegacyShipItAction."""
+
+    action = LegacyShipItAction()
+    fixtures = ['test_users']
+    uses_unified_banner = False
+
+    def _create_request_context(
+        self,
+        url_name: str = 'review-request-detail',
+        user: Optional[User] = None,
+        *args,
+        **kwargs,
+    ) -> Context:
+        """Create and return objects for use in the request context.
+
+        Args:
+            url_name (str, optional):
+                The URL name to fake on the resolver.
+
+            user (django.contrib.auth.models.User, optional):
+                The user to set on the request.
+
+            *args (tuple):
+                Positional arguments (unused).
+
+            **kwargs (dict):
+                Keyword arguments (unused).
+
+        Returns:
+            django.template.Context:
+            Additional context to use when testing read-only actions.
+        """
+        return Context({
+            'request': self.create_http_request(url_name=url_name,
+                                                user=user),
+            'review_request': self.create_review_request(submitter='grumpy'),
         })
 
     def test_should_render_with_authenticated(self) -> None:
@@ -799,30 +989,16 @@ class ShipItActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
                     user=User.objects.get(username='doc'))))
 
     def test_should_render_with_anonymous(self) -> None:
-        """Testing ShipItAction.should_render with authenticated user"""
+        """Testing ShipItAction.should_render with anonymous user"""
         with override_feature_check(unified_banner_feature.feature_id, False):
             self.assertFalse(self.action.should_render(
                 context=self._create_request_context()))
 
-    def test_should_render_with_user_in_read_only(self) -> None:
-        """Testing ShipItAction.should_render with authenticated user in
-        read-only mode
-        """
-        with override_feature_check(unified_banner_feature.feature_id, False):
-            super().test_should_render_with_user_in_read_only()
 
-    def test_should_render_with_superuser_in_read_only(self) -> None:
-        """Testing ShipItAction.should_render with superuser in read-only
-        mode
-        """
-        with override_feature_check(unified_banner_feature.feature_id, False):
-            super().test_should_render_with_superuser_in_read_only()
+class CloseCompletedActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
+    """Unit tests for CloseCompletedAction."""
 
-
-class SubmitActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
-    """Unit tests for SubmitAction."""
-
-    action = SubmitAction()
+    action = CloseCompletedAction()
     fixtures = ['test_users']
 
     def _create_request_context(
@@ -865,12 +1041,15 @@ class SubmitActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
         })
 
     def test_should_render_with_published(self) -> None:
-        """Testing SubmitAction.should_render with published review request"""
+        """Testing CloseCompletedAction.should_render with published
+        review request
+        """
         self.assertTrue(self.action.should_render(
             context=self._create_request_context(public=True)))
 
     def test_should_render_with_unpublished(self) -> None:
-        """Testing SubmitAction.should_render with unpublished review request
+        """Testing CloseCompletedAction.should_render with unpublished review
+        request
         """
         self.assertFalse(self.action.should_render(
             context=self._create_request_context(public=False)))

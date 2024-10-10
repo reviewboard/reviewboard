@@ -56,6 +56,7 @@ class JSUserSessionInfoTests(TestCase):
         self.assertJSONEqual(
             self._render_tag(self.user),
             {
+                'allowSelfShipIt': False,
                 'archivedReviewRequestsURL':
                     '/api/users/test/archived-review-requests/',
                 'authenticated': True,
@@ -121,6 +122,7 @@ class JSUserSessionInfoTests(TestCase):
         self.assertJSONEqual(
             self._render_tag(self.user, local_site=local_site),
             {
+                'allowSelfShipIt': False,
                 'archivedReviewRequestsURL':
                     '/s/local-site-1/api/users/test/archived-review-requests/',
                 'authenticated': True,
@@ -179,6 +181,7 @@ class JSUserSessionInfoTests(TestCase):
             self.assertJSONEqual(
                 self._render_tag(self.user),
                 {
+                    'allowSelfShipIt': False,
                     'archivedReviewRequestsURL':
                         '/api/users/test/archived-review-requests/',
                     'authenticated': True,
@@ -232,6 +235,7 @@ class JSUserSessionInfoTests(TestCase):
             self.assertJSONEqual(
                 self._render_tag(self.user),
                 {
+                    'allowSelfShipIt': False,
                     'archivedReviewRequestsURL':
                         '/api/users/test/archived-review-requests/',
                     'authenticated': True,
