@@ -494,8 +494,20 @@ def pre_upgrade_store_condition_tool_info(
         if conditions:
             for condition in conditions['conditions']:
                 if condition['choice'] == 'repository_type':
-                    tool_pks.update(condition['value'])
-                    affected_configs.add(config.pk)
+                    changed: bool = False
+
+                    for tool_pk in condition['value']:
+                        try:
+                            tool_pks.add(int(tool_pk))
+                            changed = True
+                        except ValueError:
+                            # This was data from an already-converted
+                            # condition. We don't want to try querying with
+                            # it.
+                            pass
+
+                    if changed:
+                        affected_configs.add(config.pk)
 
     tools = Tool.objects.filter(pk__in=tool_pks).only('pk', 'class_name')
 
@@ -564,7 +576,7 @@ def post_upgrade_apply_condition_tool_info(
             for condition in conditions['conditions']:
                 if condition['choice'] == 'repository_type':
                     condition['value'] = [
-                        tool_pk_to_scmtool_id[pk]
+                        tool_pk_to_scmtool_id.get(pk, pk)
                         for pk in condition['value']
                     ]
 

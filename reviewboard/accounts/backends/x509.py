@@ -71,6 +71,11 @@ class X509Backend(BaseAuthBackend):
             The authenticated user, or ``None`` if the user could not be
             authenticated for any reason.
         """
+        if not x509_field:
+            # This may be an authentication request for a backend expecting
+            # different arguments.
+            return None
+
         username = self.clean_username(x509_field)
         return self.get_or_create_user(username=username,
                                        request=request)

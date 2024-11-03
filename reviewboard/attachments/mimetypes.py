@@ -27,7 +27,7 @@ from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
 from reviewboard.reviews.markdown_utils import render_markdown
 
 if TYPE_CHECKING:
-    from reviewboard.attachments.models import FileAttachment
+    from django.core.files import File
 
 
 logger = logging.getLogger(__name__)
@@ -39,53 +39,79 @@ _registered_mimetype_handlers = []
 DEFAULT_MIMETYPE = 'application/octet-stream'
 
 
-def guess_mimetype(uploaded_file):
+def guess_mimetype(
+    uploaded_file: File,
+) -> str:
     """Guess the mimetype of an uploaded file.
 
     Uploaded files don't necessarily have valid mimetypes provided,
     so attempt to guess them when they're blank.
 
-    This only works if `file` is in the path. If it's not, or guessing fails,
-    we fall back to a mimetype of :mimetype:`application/octet-stream`.
+    This only works if :program:`file` is in the path. If it's not, or
+    guessing fails, we fall back to a mimetype of
+    :mimetype:`application/octet-stream`.
 
     Args:
         uploaded_file (django.core.files.File):
             The uploaded file object.
 
     Returns:
-        unicode:
+        str:
         The guessed mimetype.
     """
+    # Set the default mimetype.
+    mimetype = DEFAULT_MIMETYPE
+
     if not is_exe_in_path('file'):
-        return DEFAULT_MIMETYPE
+        return mimetype
 
-    # The browser didn't know what this was, so we'll need to do
-    # some guess work. If we have 'file' available, use that to
-    # figure it out.
-    p = subprocess.Popen(['file', '--mime-type', '-b', '-'],
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,
-                         stdin=subprocess.PIPE)
+    try:
+        # The browser didn't know what this was, so we'll need to do
+        # some guess work. If we have 'file' available, use that to
+        # figure it out.
+        p = subprocess.Popen(['file', '--mime-type', '-b', '-'],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             stdin=subprocess.PIPE)
 
-    # Write the content from the file until file has enough data to
-    # make a determination.
-    for chunk in uploaded_file.chunks():
+        assert p.stdin is not None
+        assert p.stdout is not None
+
+        # Write the content from the file until file has enough data to
+        # make a determination.
+        for chunk in uploaded_file.chunks():
+            try:
+                p.stdin.write(chunk)
+            except IOError:
+                # `file` closed the stream. It no longer needs any more input,
+                # so we can stop now. We hopefully have an answer.
+                break
+
         try:
-            p.stdin.write(chunk)
+            p.stdin.close()
         except IOError:
-            # file closed, so we hopefully have an answer.
-            break
+            # This was closed by `file`.
+            #
+            # Note that we may not get this on all Python environments. A
+            # closed pipe doesn't necessarily fail when calling close() again.
+            pass
 
-    p.stdin.close()
-    ret = p.wait()
+        ret = p.wait()
 
-    if ret == 0:
-        mimetype = p.stdout.read().strip().decode('utf-8')
+        if ret == 0:
+            result = p.stdout.read().strip().decode('utf-8')
 
-    # Reset the read position so we can properly save this.
-    uploaded_file.seek(0)
+            if result:
+                mimetype = result
+    except Exception as e:
+        logger.exception('Unexpected error when determining mimetype '
+                         'using `file`: %s',
+                         e)
+    finally:
+        # Reset the read position so we can properly save this.
+        uploaded_file.seek(0)
 
-    return mimetype or DEFAULT_MIMETYPE
+    return mimetype
 
 
 def get_uploaded_file_mimetype(uploaded_file):

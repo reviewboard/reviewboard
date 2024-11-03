@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-from typing import cast
+from typing import Optional, cast
 
 from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
@@ -36,6 +36,10 @@ storage_backend_map = {
     's3':      'storages.backends.s3.S3Storage',
     'swift':   'swift.storage.SwiftStorage',
 }
+
+
+log_settings_map = log_siteconfig.settings_map
+log_settings_defaults = log_siteconfig.defaults
 
 
 # A mapping of siteconfig setting names to Django settings.py names.
@@ -71,7 +75,7 @@ settings_map = {
     'site_domain_method':              'DOMAIN_METHOD',
 }
 settings_map.update(get_django_settings_map())
-settings_map.update(log_siteconfig.settings_map)
+settings_map.update(log_settings_map)
 settings_map.update(recaptcha_siteconfig.settings_map)
 
 # Settings for django-storages
@@ -98,7 +102,7 @@ settings_map.update({
 
 # All the default values for settings.
 defaults = get_django_defaults()
-defaults.update(log_siteconfig.defaults)
+defaults.update(log_settings_defaults)
 defaults.update(recaptcha_siteconfig.defaults)
 defaults.update(avatar_services.get_siteconfig_defaults())
 defaults.update({
@@ -187,11 +191,22 @@ _original_webapi_auth_backends = settings.WEB_API_AUTH_BACKENDS
 logger = logging.getLogger(__name__)
 
 
-def load_site_config(full_reload=False):
+def load_site_config(
+    full_reload: bool = False,
+) -> Optional[SiteConfiguration]:
     """Load stored site configuration settings.
 
     This populates the Django settings object with any keys that need to be
     there.
+
+    Args:
+        full_reload (bool, optional):
+            Whether to perform a full reload. This would bypass some
+            settings comparisons where necessary.
+
+    Returns:
+        djblets.siteconfig.models.SiteConfiguration:
+        The loaded site configuration, if any.
     """
     global _original_webapi_auth_backends
 
@@ -216,7 +231,13 @@ def load_site_config(full_reload=False):
         # We got something else. Likely, this doesn't exist yet and we're
         # doing a syncdb or something, so silently ignore.
         logger.error('Could not load siteconfig: %s' % e)
-        return
+        return None
+
+    # Store some original state needed to check logging later.
+    old_logging_settings = {
+        key: getattr(settings, log_settings_map[key], default)
+        for key, default in log_settings_defaults.items()
+    }
 
     # Populate defaults if they weren't already set.
     if not siteconfig.get_defaults():
@@ -256,7 +277,21 @@ def load_site_config(full_reload=False):
     # Populate the settings object with anything relevant from the siteconfig.
     apply_django_settings(siteconfig, settings_map)
 
-    if full_reload and not getattr(settings, 'RUNNING_TEST', False):
+    # Check if we need to reload logging.
+    if getattr(settings, 'RUNNING_TEST', False):
+        # Never reload if running unit tests.
+        logging_dirty = False
+    elif full_reload:
+        # Force a full reload of logging.
+        logging_dirty = True
+    else:
+        # Check if any logging settings have changed. If so, reload logging.
+        logging_dirty = any(
+            siteconfig.get(key) != old_logging_settings[key]
+            for key, default in log_settings_defaults.items()
+        )
+
+    if logging_dirty:
         # Logging may have changed, so restart logging.
         restart_logging()
 

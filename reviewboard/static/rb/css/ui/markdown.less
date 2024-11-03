@@ -76,7 +76,7 @@
     &:before {
       border: var(--rb-u-inline-code-border-size)
               var(--ink-p-code-literal-border-color)
-               solid;
+              solid;
       border-radius: var(--rb-u-inline-code-border-radius);
       content: "";
       position: absolute;
@@ -84,6 +84,7 @@
       left: calc(-1 * var(--rb-u-inline-code-border-size));
       right: calc(-1 * var(--rb-u-inline-code-border-size));
       bottom: calc(-1 * var(--rb-u-inline-code-border-size));
+      pointer-events: none;
       visibility: visible;
     }
   }
