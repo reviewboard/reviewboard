@@ -111,6 +111,11 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
             The authenticated user, or ``None`` if the user could not be
             authenticated for any reason.
         """
+        if not username or not password:
+            # This may be an authentication request for a backend expecting
+            # different arguments.
+            return None
+
         return cast(
             User,
             ModelBackend.authenticate(self,
