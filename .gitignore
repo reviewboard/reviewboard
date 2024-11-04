@@ -38,7 +38,6 @@ _build
 build
 dist
 django_cache
-node_modules
 pickle
 search-index/
 temp
@@ -50,3 +49,8 @@ reviewboard/scmtools/testdata/hg_repo/.hg/cache/tags2-visible
 reviewboard/scmtools/testdata/hg_repo/.hg/cache/rbc-names-v1
 reviewboard/scmtools/testdata/hg_repo/.hg/cache/rbc-revs-v1
 reviewboard/scmtools/testdata/hg_repo/.hg/wcache/
+
+# Only ignore the top-level node_modules, so that if one is created somewhere
+# else in the tree (which may interfere with builds in strange ways), it'll
+# be easier to spot.
+/node_modules
