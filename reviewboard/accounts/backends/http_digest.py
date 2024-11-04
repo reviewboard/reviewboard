@@ -92,10 +92,8 @@ class HTTPDigestBackend(BaseAuthBackend):
             authenticated for any reason.
         """
         if not username or not password:
-            logger.error('Attempted to authenticate HTTP Digest user without '
-                         'supplying either a username or password parameter! '
-                         'This may be a bug in Review Board. Please report '
-                         'it.')
+            # This may be an authentication request for a backend expecting
+            # different arguments.
             return None
 
         username = username.strip()

@@ -1,5 +1,12 @@
 """Tests for reviewboard.diffviewer.views.DiffFragmentView."""
 
+from __future__ import annotations
+
+from django.contrib.auth.models import User
+from django.core.cache import cache
+
+from reviewboard.attachments.models import FileAttachment
+from reviewboard.attachments.tests.base import BaseFileAttachmentTestCase
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 
@@ -144,3 +151,93 @@ class ReviewsDiffFragmentViewTests(TestCase):
             b'for FileDiff %d.'
             % (base_filediff.pk, filediff.pk),
             rsp.content)
+
+
+class ReviewsFileAttachmentDiffFragmentViewTests(BaseFileAttachmentTestCase):
+    """Tests for inline diff file attachments in the diff viewer.
+
+    Version Added:
+        7.0.3:
+        This was split off from :py:mod:`reviewboard.attachments.tests`.
+    """
+
+    def setUp(self):
+        """Set up this test case."""
+        super().setUp()
+
+        # The diff viewer's caching breaks the result of these tests,
+        # so be sure we clear before each one.
+        cache.clear()
+
+    def test_added_file(self):
+        """Testing inline diff file attachments with newly added files"""
+        # Set up the initial state.
+        user = User.objects.get(username='doc')
+        review_request = self.create_review_request(submitter=user,
+                                                    target_people=[user])
+        filediff = self.make_filediff(
+            is_new=True,
+            diffset_history=review_request.diffset_history)
+
+        # Create a diff file attachment to be displayed inline.
+        diff_file_attachment = FileAttachment.objects.create_from_filediff(
+            filediff,
+            orig_filename='my-file',
+            file=self.make_uploaded_file(),
+            mimetype='image/png')
+        review_request.file_attachments.add(diff_file_attachment)
+        review_request.save()
+        review_request.publish(user)
+
+        # Load the diff viewer.
+        self.client.login(username='doc', password='doc')
+        response = self.client.get('/r/%d/diff/1/fragment/%s/'
+                                   % (review_request.pk, filediff.pk))
+        self.assertEqual(response.status_code, 200)
+
+        # The file attachment should appear as the right-hand side
+        # file attachment in the diff viewer.
+        self.assertEqual(response.context['orig_diff_file_attachment'], None)
+        self.assertEqual(response.context['modified_diff_file_attachment'],
+                         diff_file_attachment)
+
+    def test_modified_file(self):
+        """Testing inline diff file attachments with modified files"""
+        # Set up the initial state.
+        user = User.objects.get(username='doc')
+        review_request = self.create_review_request(submitter=user)
+        filediff = self.make_filediff(
+            is_new=False,
+            diffset_history=review_request.diffset_history)
+        self.assertFalse(filediff.is_new)
+
+        # Create diff file attachments to be displayed inline.
+        uploaded_file = self.make_uploaded_file()
+
+        orig_attachment = FileAttachment.objects.create_from_filediff(
+            filediff,
+            orig_filename='my-file',
+            file=uploaded_file,
+            mimetype='image/png',
+            from_modified=False)
+        modified_attachment = FileAttachment.objects.create_from_filediff(
+            filediff,
+            orig_filename='my-file',
+            file=uploaded_file,
+            mimetype='image/png')
+        review_request.file_attachments.add(orig_attachment)
+        review_request.file_attachments.add(modified_attachment)
+        review_request.publish(user)
+
+        # Load the diff viewer.
+        self.client.login(username='doc', password='doc')
+        response = self.client.get('/r/%d/diff/1/fragment/%s/'
+                                   % (review_request.pk, filediff.pk))
+        self.assertEqual(response.status_code, 200)
+
+        # The file attachment should appear as the right-hand side
+        # file attachment in the diff viewer.
+        self.assertEqual(response.context['orig_diff_file_attachment'],
+                         orig_attachment)
+        self.assertEqual(response.context['modified_diff_file_attachment'],
+                         modified_attachment)

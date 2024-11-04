@@ -41,14 +41,12 @@
  *     </div>
  */
 .rb-c-text-editor {
-  @_text-editor-vars: #rb-ns-ui.text-editor();
-
   background: var(--ink-p-input-bg);
   border: var(--ink-g-border-input);
   color: var(--ink-p-input-fg);
   display: flex;
   flex-direction: column;
-  margin: @_text-editor-vars[@margin];;
+  margin: var(--rb-c-textarea-margin);
   position: relative;
 
   /**
@@ -89,7 +87,7 @@
       box-sizing: border-box;
       margin: 0;
       outline: none;
-      padding: @_text-editor-vars[@padding];
+      padding: var(--rb-c-textarea-spacing);
 
       /*
        * This prevents extra spacing below a text area in different browsers.
@@ -104,7 +102,7 @@
 
     &.-is-rich {
       .CodeMirror-scroll {
-        margin-bottom: -@_text-editor-vars[@toolbar-spacing] !important;
+        margin-bottom: calc(-1 * var(--ink-u-spacing-l)) !important;
       }
     }
   }

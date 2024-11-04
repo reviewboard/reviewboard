@@ -695,7 +695,7 @@ class _SCMToolIDProperty(str):
         if not _SCMToolIDProperty._scmtool_ids_by_class_names:
             eps = importlib_metadata.entry_points(group='reviewboard.scmtools')
             _SCMToolIDProperty._scmtool_ids_by_class_names = {
-                '%s.%s' % (ep.module_name, ep.attrs[0]): force_str(ep.name)
+                f'{ep.module}.{ep.attr}': force_str(ep.name)
                 for ep in eps
             }
 

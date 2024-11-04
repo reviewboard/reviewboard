@@ -1,4 +1,4 @@
-{% load djblets_utils i18n log rbadmintags %}
+{% load djblets_extensions djblets_utils i18n log rbadmintags %}
 
 <li class="rb-c-sidebar__section">
  <header class="rb-c-sidebar__section-header">{% trans "Administration" %}</header>
@@ -8,6 +8,7 @@
 {% admin_subnav "extension-list" _("Extensions") %}
 {% admin_subnav "integration-list" _("Integrations") %}
 {% admin_subnav "admin:index" _("Database") %}
+{% template_hook_point "admin-sidebar-administration" %}
  </ul>
 </li>
 <li class="rb-c-sidebar__section">
@@ -24,6 +25,7 @@
 {% admin_subnav "settings-privacy" _("User Privacy") %}
 {% admin_subnav "settings-support" _("Support") %}
 {% admin_subnav "settings-search" _("Search") %}
+{% template_hook_point "admin-sidebar-settings" %}
  </ul>
 </li>
 <li class="rb-c-sidebar__section -has-icons">
@@ -64,5 +66,6 @@
    <a class="rb-c-sidebar__item-label" href="{{url_oauth_application_changelist}}">{% trans "OAuth2 Applications" %}</a>
    <span class="rb-c-sidebar__item-value">{{count_oauth_applications}}</span>
   </li>
+{% template_hook_point "admin-sidebar-manage" %}
  </ul>
 </li>

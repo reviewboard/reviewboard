@@ -70,7 +70,11 @@
   @_border-width: @_common-vars[@border-width];
   @_cell-padding: @_data-vars[@cell-padding];
 
-  margin: @textarea-editor-margin;
+  /*
+   * TODO: this margin shouldn't be dependent on textarea rules, but should be
+   * moved into a generic review request field rule.
+   */
+  margin: var(--rb-c-textarea-margin);
   width: 100%;
 
   /**

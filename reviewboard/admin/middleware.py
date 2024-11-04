@@ -73,7 +73,7 @@ def load_settings_middleware(get_response):
         # have a new one in the cache.
         if not hasattr(siteconfig, '_rb_settings_loaded'):
             # Load all site settings.
-            load_site_config(full_reload=True)
+            load_site_config()
             siteconfig._rb_settings_loaded = True
 
         if siteconfig.settings.get('site_domain_method', 'http') == 'https':

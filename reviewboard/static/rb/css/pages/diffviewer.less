@@ -212,6 +212,16 @@
      */
     overflow-wrap: break-word;
     word-break: break-all;
+
+    .tb {
+      /*
+       * Firefox (at least up through 131.02) overflows rather than breaking
+       * when we have tabs and `word-break: break-all;`. We could use
+       * `break-word` above, but that'd affect normal text. Fortunately we can
+       * just do that here and work around Firefox's bug.
+       */
+      word-break: break-word;
+    }
   }
 
   .fa-warning {

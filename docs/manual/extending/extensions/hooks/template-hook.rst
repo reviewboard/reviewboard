@@ -27,6 +27,12 @@ Template hooks have three parameters:
 Template Hook Names
 ===================
 
+Additional template hook points are trivially added. If these are insufficient
+for your needs, please send a message to our `mailing lists`_.
+
+.. _mailing lists: https://www.reviewboard.org/mailing-lists/
+
+
 All Pages
 ---------
 
@@ -181,13 +187,26 @@ Review Request Pages
     Right after the box's header text for reviews, before any comments.
 
 
+Administration UI
+-----------------
+
+``admin-sidebar-administration``
+    At the bottom of the built-in items in the "Administration" section of the
+    sidebar.
+
+``admin-sidebar-settings``
+    At the bottom of the built-in items in the "Settings" section of the
+    sidebar.
+
+``admin-sidebar-manage``
+    At the bottom of the built-in items in the "Manage" section of the
+    sidebar.
+
+
 ..
     TODO: Include ones for the initial status updates entry. We might want
           to normalize the ID a bit first, since it uses underscores. For now,
           it's undocumented.
-
-Additional template hook points are trivially added. If these are insufficient
-for your needs, please get in touch with the Review Board developer community.
 
 
 Example
