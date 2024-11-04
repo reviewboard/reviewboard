@@ -86,6 +86,14 @@ class FileAttachment(models.Model):
                              null=True,
                              related_name='file_attachments')
 
+    #: The local site that this attachment is on.
+    #:
+    #: This is only present for "user" file attachments (that is, attachments
+    #: that were uploaded into a comment box or otherwise created from the user
+    #: file attachments API). Attachments which are linked to a Review Request
+    #: will not have this relation populated, and should instead use the Review
+    #: Request's local site. Callers should use the :py:meth:`get_local_site`
+    #: method instead of accessing this directly.
     local_site = models.ForeignKey(LocalSite,
                                    on_delete=models.CASCADE,
                                    blank=True,
@@ -267,6 +275,21 @@ class FileAttachment(models.Model):
 
                 return draft.review_request
 
+    def get_local_site(self) -> Optional[LocalSite]:
+        """Return the local site for this attachment.
+
+        Version Added:
+            7.0.3
+
+        Returns:
+            reviewboard.site.models.LocalSite:
+            The local site that this attachment is related to, if any.
+        """
+        if self.user is not None:
+            return self.local_site
+        else:
+            return self.get_review_request().local_site
+
     def get_comments(self):
         """Return all the comments made on this file attachment."""
         if not hasattr(self, '_comments'):
@@ -361,7 +384,7 @@ class FileAttachment(models.Model):
             # This is a user-uploaded file attachment.
             path = local_site_reverse(
                 'user-file-attachment',
-                local_site=self.local_site,
+                local_site=self.get_local_site(),
                 kwargs={
                     'file_attachment_uuid': self.uuid,
                     'username': self.user.username,
@@ -373,7 +396,7 @@ class FileAttachment(models.Model):
 
                 path = local_site_reverse(
                     'download-file-attachment',
-                    local_site=self.local_site,
+                    local_site=self.get_local_site(),
                     kwargs={
                         'file_attachment_id': self.pk,
                         'review_request_id': review_request.get_display_id(),

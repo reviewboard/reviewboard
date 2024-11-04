@@ -397,3 +397,26 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         self.spy_on(ImageReviewUI.is_enabled_for, op=kgb.SpyOpReturn(False))
 
         self.assertFalse(file_attachment.is_review_ui_accessible_by(user=user))
+
+    def test_get_absolute_url(self) -> None:
+        """Testing FileAttachment.get_absolute_url"""
+        review_request = self.create_review_request()
+        file_attachment = self.create_file_attachment(
+            review_request=review_request,
+            mimetype='image/png')
+
+        self.assertEqual(
+            file_attachment.get_absolute_url(),
+            'http://example.com/r/1/file/1/download/')
+
+    def test_get_absolute_url_with_local_site(self) -> None:
+        """Testing FileAttachment.get_absolute_url with a local site"""
+        review_request = self.create_review_request(with_local_site=True)
+        local_site_name = review_request.local_site.name
+        file_attachment = self.create_file_attachment(
+            review_request=review_request,
+            mimetype='image/png')
+
+        self.assertEqual(
+            file_attachment.get_absolute_url(),
+            f'http://example.com/s/{local_site_name}/r/1001/file/1/download/')
