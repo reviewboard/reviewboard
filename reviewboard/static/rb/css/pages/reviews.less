@@ -4,6 +4,7 @@
 
 @import (reference) "rb/css/assets/paths.less";
 @import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/syntax.less";
 @import (reference) "rb/css/mixins/upload-diff.less";
 @import (reference) "rb/css/ui/colors.less";
 
@@ -1830,9 +1831,10 @@ pre.reviewtext {
   padding: var(--ink-u-spacing-m);
   position: absolute;
   max-width: 60em;
+  z-index: calc(var(--ink-z-event-overlay) + 1);
 
   &.comments {
-    border: 1px black solid;
+    border: 1px var(--ink-p-black) solid;
     border-bottom: 0;
     padding: 0;
     min-width: 25em;
@@ -1843,8 +1845,8 @@ pre.reviewtext {
       padding: 0;
 
       > li {
-        background-color: @comments-tooltip-background;
-        border-bottom: 1px @comments-tooltip-border-color solid;
+        background-color: var(--rb-p-flag-published-bg);
+        border-bottom: 1px var(--ink-p-light__blue-600) solid;
         display: flex;
         flex-direction: column;
         gap: inherit;
@@ -1852,8 +1854,8 @@ pre.reviewtext {
         padding: var(--ink-u-spacing-m);
 
         &.draft {
-          background-color: @comments-tooltip-draft-background;
-          border-bottom: 1px black solid;
+          background-color: var(--rb-p-flag-draft-bg);
+          border-bottom: 1px var(--rb-p-flag-draft-border-color) solid;
         }
 
         div {
@@ -1873,13 +1875,10 @@ pre.reviewtext {
         .rich-text {
           line-height: 1.2;
 
-          code {
-            border-color: @comments-tooltip-border-color;
-          }
-
           .codehilite {
             .flush-codehilite();
-            border-color: @comments-tooltip-border-color;
+            background: @default-code-theme-light-rich-text-code-bg;
+            color: var(--ink-p-fg-on-light);
             margin: 0 calc(-1 * var(--ink-u-spacing-m));
             padding: var(--ink-u-spacing-xs) var(--ink-u-spacing-m);
           }

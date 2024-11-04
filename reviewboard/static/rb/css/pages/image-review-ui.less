@@ -165,14 +165,15 @@
   }
 
   .selection {
-    border: 1px #a1c0e3 solid;
+    border: 1px var(--rb-p-flag-published-bg) solid;
     position: absolute;
 
     &.draft {
-      border: 1px #aceb6f solid;
+      border: 1px var(--rb-p-flag-draft-bg) solid;
 
       .selection-flag {
-        background: #aceb6f;
+        background-color: var(--rb-p-flag-draft-bg);
+        color: var(--rb-p-flag-draft-fg);
       }
 
       &.can-update-bound {
@@ -180,7 +181,7 @@
           cursor: move;
         }
         .resize-icon {
-          background-color: #aceb6f;
+          background-color: var(--rb-p-flag-draft-bg);
           bottom: 0;
           right: 0;
           position: absolute;
@@ -193,7 +194,8 @@
   }
 
   .selection-flag {
-    background-color: #a1c0e3;
+    background-color: var(--rb-p-flag-published-bg);
+    color: var(--rb-p-flag-published-fg);
     cursor: pointer;
     height: 2em;
     left: 0px;

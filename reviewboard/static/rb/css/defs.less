@@ -405,7 +405,14 @@
 @page-sidebar-item-vert-padding: 6px;
 @page-sidebar-section-vert-padding: 8px;
 
-// Review request labels in datagrids.
+/**
+ * Review request labels in datagrids.
+ *
+ * Deprecated:
+ *     7.0.3:
+ *     Use ``var(--rb-p-flag-draft-*)`` variables instead of the
+ *     ``summary-label-draft-*`` and ``summary-label-text-color`` definitions.
+ */
 @summary-label-draft-bg: @draft-color;
 @summary-label-draft-border-color: @draft-border-color;
 @summary-label-text-color: #005500;

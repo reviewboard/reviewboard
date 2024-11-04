@@ -7,7 +7,7 @@
  */
 
 
-/* Dark diff UI colors. */
+/* Light diff UI colors. */
 @default-code-theme-light-diff-delete-bg: #FDE9ED;
 @default-code-theme-light-diff-delete-highlight-bg:
   rgba(200, 0, 0, 0.15);
@@ -55,6 +55,11 @@
 @default-code-theme-dark-diff-linenum-fg: rgba(255, 255, 255, 0.8);
 
 
+/* Rich text colors. */
+@default-code-theme-light-rich-text-code-bg: #FBFAF8;
+@default-code-theme-dark-rich-text-code-bg: rgba(0, 0, 0, 0.08);
+
+
 /* Ensure the variables don't leak out of the scope of this theme. */
 &:root {
   @_linenum-fg:
@@ -62,10 +67,10 @@
     var(--if-dark, @default-code-theme-dark-diff-linenum-fg);
 
   --rb-theme-rich-text-code-bg:
-      var(--if-light, #FBFAF8)
-      var(--if-dark, rgba(0, 0, 0, 0.08));
+      var(--if-light, @default-code-theme-light-rich-text-code-bg)
+      var(--if-dark, @default-code-theme-dark-rich-text-code-bg);
 
-  --rb-theme-rich-text-code-fg: color: var(--ink-p-fg);
+  --rb-theme-rich-text-code-fg: var(--ink-p-fg);
 
   --rb-theme-diff-equals-bg:
     var(--if-dark, @default-code-theme-dark-diff-equal-bg)
