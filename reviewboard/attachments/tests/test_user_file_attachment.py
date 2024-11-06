@@ -345,3 +345,31 @@ class UserFileAttachmentTests(BaseFileAttachmentTestCase):
         self.assertFalse(file_attachment.is_mutable_by(AnonymousUser()))
         self.assertFalse(file_attachment.is_mutable_by(same_site_user))
         self.assertFalse(file_attachment.is_mutable_by(different_site_user))
+
+    def test_get_absolute_url(self) -> None:
+        """Testing user FileAttachment.get_absolute_url"""
+        user = User.objects.get(username='doc')
+
+        form = UploadUserFileForm(files={})
+        self.assertTrue(form.is_valid())
+        file_attachment = form.create(user, None)
+
+        self.assertEqual(
+            file_attachment.get_absolute_url(),
+            f'http://example.com/users/{user.username}/'
+            f'file-attachments/{file_attachment.uuid}/')
+
+    @add_fixtures(['test_site'])
+    def test_get_absolute_url_with_local_site(self) -> None:
+        """Testing user FileAttachment.get_absolute_url with a local site"""
+        user = User.objects.get(username='doc')
+        local_site = LocalSite.objects.get(name='local-site-1')
+
+        form = UploadUserFileForm(files={})
+        self.assertTrue(form.is_valid())
+        file_attachment = form.create(user, local_site)
+
+        self.assertEqual(
+            file_attachment.get_absolute_url(),
+            f'http://example.com/s/{local_site.name}/users/{user.username}/'
+            f'file-attachments/{file_attachment.uuid}/')

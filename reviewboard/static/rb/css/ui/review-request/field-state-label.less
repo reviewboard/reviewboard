@@ -17,10 +17,16 @@
 
     @bg-color-deleted: @_color-vars[@red-90];
     @border-color-deleted: @_color-vars[@red-60];
+    @border-deleted: var(--ink-u-border-thin)
+                     solid
+                     @border-color-deleted;
     @text-color-deleted: @_color-vars[@red-60];
 
     @bg-color-draft: @summary-label-draft-bg;
     @border-color-draft: @summary-label-draft-border-color;
+    @border-draft: var(--ink-u-border-thin)
+                   solid
+                   var(--rb-p-flag-draft-border-color);
     @text-color-draft: @summary-label-text-color;
   }
 }
@@ -46,25 +52,21 @@
  .rb-c-field-state-label {
   @_label-vars: #rb-ns-ui.field-state-label();
 
-  border-radius: @_label-vars[@border-radius];
+  border-radius: var(--ink-u-border-radius-s);
   line-height: @_label-vars[@line-height];
   padding: @_label-vars[@padding-vert] @_label-vars[@padding-horiz];
   width: fit-content;
 
   &.-is-deleted {
     background: @_label-vars[@bg-color-deleted];
-    border: @_label-vars[@border-width]
-            solid
-            @_label-vars[@border-color-deleted];
+    border: @_label-vars[@border-deleted];
     color: @_label-vars[@text-color-deleted];
   }
 
   &.-is-draft {
-    background: @_label-vars[@bg-color-draft];
-    border: @_label-vars[@border-width]
-            solid
-            @_label-vars[@border-color-draft];
-    color: @_label-vars[@text-color-draft];
+    background: var(--rb-p-flag-draft-bg);
+    border: @_label-vars[@border-draft];
+    color:  var(--rb-p-flag-draft-fg);
   }
 
   &.-is-inline {
