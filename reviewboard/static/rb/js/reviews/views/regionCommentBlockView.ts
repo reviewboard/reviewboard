@@ -71,6 +71,7 @@ export class RegionCommentBlockView<
     static events: EventsHash = {
         'click': '_onClicked',
         'mousedown': '_onMouseDown',
+        'touchend': '_onClicked',
     };
 
     static modelEvents: EventsHash = {
