@@ -485,6 +485,7 @@ setup(
         'elasticsearch2': ['elasticsearch~=2.0'],
         'elasticsearch5': ['elasticsearch~=5.0'],
         'elasticsearch7': ['elasticsearch~=7.0'],
+        'extension-packaging': ['setuptools>=74'],
         'ldap': ['python-ldap>=3.3.1'],
         'mercurial': ['mercurial'],
         'mysql': ['mysqlclient>=1.4,<=2.1.999'],
