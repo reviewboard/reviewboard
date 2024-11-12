@@ -1,22 +1,21 @@
-"""Packaging support for Review Board extensions."""
+"""A builder for static media files for extension packages.
+
+Version Added:
+    7.1:
+    This moved from the top-level :py:mod:`reviewboard.extensions.packaging`.
+"""
 
 from __future__ import annotations
 
 import json
 import os
-import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from djblets.extensions.packaging.setuptools_backend import (
-    BuildStaticFiles as DjbletsBuildStaticFiles,
-    build_extension_cmdclass,
-)
 from djblets.extensions.packaging.static_media import (
     StaticMediaBuilder,
     StaticMediaBuildContext,
 )
-from setuptools import setup as setuptools_setup
 
 import reviewboard
 from reviewboard import VERSION
@@ -33,6 +32,10 @@ class RBStaticMediaBuildContext(StaticMediaBuildContext):
 
     This will set up some default NPM workspace paths needed for building
     Review Board extensions.
+
+    Version Changed:
+        7.1:
+        This moved from :py:mod:`reviewboard.extensions.packaging`.
 
     Version Added:
         7.0
@@ -82,6 +85,10 @@ class RBStaticMediaBuilder(StaticMediaBuilder):
     This will take care of building static media files. As part of this, it
     will set up Babel, Rollup, and TypeScript configuration files needed to
     compile against Review Board JavaScript/TypeScript modules.
+
+    Version Changed:
+        7.1:
+        This moved from :py:mod:`reviewboard.extensions.packaging`.
 
     Version Added:
         7.0
@@ -172,36 +179,3 @@ class RBStaticMediaBuilder(StaticMediaBuilder):
                             f'{packaging_js_modpath}/rollup-extensions.mjs',
                         'static_dir': rel_static_dir,
                     })
-
-
-class BuildStaticFiles(DjbletsBuildStaticFiles):
-    """Builds static files for the extension.
-
-    This will build the static media files used by the extension. JavaScript
-    bundles will be minified and versioned. CSS bundles will be processed
-    through LessCSS (if using :file:`.less` files), minified and versioned.
-    """
-
-    extension_entrypoint_group = 'reviewboard.extensions'
-    django_settings_module = 'reviewboard.settings'
-    static_media_builder_cls = RBStaticMediaBuilder
-    static_media_build_context_cls = RBStaticMediaBuildContext
-
-
-def setup(**setup_kwargs):
-    # Add the included conf directory so that there's a settings_local.py
-    # file that can be used to package the static media.
-    extensions_dir = os.path.abspath(os.path.dirname(__file__))
-    sys.path.insert(0, os.path.join(extensions_dir, 'conf'))
-
-    os.environ[str('FORCE_BUILD_MEDIA')] = str('1')
-
-    setup_kwargs.update({
-        'zip_safe': False,
-        'include_package_data': True,
-        'cmdclass': dict(
-            build_extension_cmdclass(build_static_files_cls=BuildStaticFiles),
-            **setup_kwargs.get('cmdclass', {})),
-    })
-
-    setuptools_setup(**setup_kwargs)

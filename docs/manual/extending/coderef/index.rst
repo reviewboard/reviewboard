@@ -191,6 +191,8 @@ Extensions
    reviewboard.extensions.base
    reviewboard.extensions.hooks
    reviewboard.extensions.packaging
+   reviewboard.extensions.packaging.setuptools_backend
+   reviewboard.extensions.packaging.static_media
    reviewboard.extensions.testing
    reviewboard.extensions.testing.testcases
 
