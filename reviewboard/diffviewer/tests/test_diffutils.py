@@ -3191,7 +3191,7 @@ class DiffExpansionHeaderTests(TestCase):
                          lines[header['left']['line'] - 1][2])
 
 
-class PatchTests(TestCase):
+class PatchTests(kgb.SpyAgency, TestCase):
     """Unit tests for patch."""
 
     def test_patch(self):
@@ -3432,6 +3432,50 @@ class PatchTests(TestCase):
                         filename='README')
         self.assertEqual(patched, new)
 
+    def test_workaround_no_newline_marker(self) -> None:
+        """Testing patch with no trailing newline and missing
+        "No newline at end of file" marker
+        """
+        # This file doesn't contain a trailing newline.
+        old = (
+            b'Test data for a README file.\n'
+            b'\n'
+            b'Orig line without newline'
+        )
+
+        # This is the version we'll expect to see. It does contain a
+        # trailing newline, because we add one during patch failure
+        # workarounds.
+        new = (
+            b'Test data for a README file.\n'
+            b'\n'
+            b'Modified line with newline\n'
+        )
+
+        diff = (
+            b'--- README\t2008-02-25 03:40:42.000000000 -0800\n'
+            b'+++ README\t2008-02-25 03:40:55.000000000 -0800\n'
+            b'@@ -1,3 +1,3 @@\n'
+            b' Test data for a README file.\n'
+            b' \n'
+            b'-Orig line without newline\n'
+            b'+Modified line with newline\n'
+        )
+
+        self.spy_on(patch)
+
+        patched = patch(diff=diff,
+                        orig_file=old,
+                        filename='README')
+        self.assertEqual(patched, new)
+
+        self.assertSpyCallCount(patch, 2)
+        self.assertSpyCalledWith(
+            patch,
+            diff=diff,
+            orig_file=old + b'\n',
+            filename='README')
+
 
 class GetFileDiffEncodingsTests(TestCase):
     """Unit tests for get_filediff_encodings."""
@@ -3540,7 +3584,7 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         # input" error, but newer versions will handle it just fine. We stub
         # out patch here to always fail so we can test for the case of an older
         # version of patch without requiring it to be installed.
-        def _patch(diff, orig_file, filename, request=None):
+        def _patch(diff, orig_file, filename, request=None, **kwargs):
             raise PatchError(
                 filename=filename,
                 error_output=_PATCH_GARBAGE_INPUT,
@@ -3595,7 +3639,7 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         # Newer versions of patch will allow empty patches. We stub out patch
         # here to always fail so we can test for the case of a newer version
         # of patch without requiring it to be installed.
-        def _patch(diff, orig_file, filename, request=None):
+        def _patch(diff, orig_file, filename, request=None, **kwargs):
             # This is the only call to patch() that should be made.
             self.assertEqual(diff,
                              b'diff --git a/corge b/corge\n'

@@ -304,11 +304,36 @@ def split_line_endings(
     return lines
 
 
-def patch(diff, orig_file, filename, request=None):
+def patch(
+    diff: bytes,
+    orig_file: bytes,
+    filename: str,
+    request: Optional[HttpRequest] = None,
+    *,
+    workaround_errors: bool = True,
+) -> bytes:
     """Apply a diff to a file.
 
     This delegates out to ``patch`` because no one except Larry Wall knows how
     to patch.
+
+    If patching fails, this may attempt to work around the patch error,
+    depending on the nature of the error. The end result may be a viewable
+    diff, but may not be a byte-for-byte copy of the expected final patched
+    file.
+
+    Currently, patch workarounds only support the case where a file being
+    patched does not end in a newline and the diff is missing a
+    ``\\ No newline at end of file`` marker.
+
+    If patching fails and can't be worked around, the diff, reject file,
+    original file, and patched file will be made available to the caller
+    via the :py:class:`reviewboard.diffutils.errors.PatchError` exception.
+
+    Version Changed:
+        7.0.3:
+        Added mitigation workarounds for certain types of bad diffs. This
+        is controlled via the new ``workaround_errors``.
 
     Args:
         diff (bytes):
@@ -322,6 +347,13 @@ def patch(diff, orig_file, filename, request=None):
 
         request (django.http.HttpRequest, optional):
             The HTTP request, for use in logging.
+
+        workaround_errors (bool, optional):
+            Whether to attempt to work around errors encountered during
+            patching.
+
+            Version Added:
+                7.0.3
 
     Returns:
         bytes:
@@ -366,6 +398,25 @@ def patch(diff, orig_file, filename, request=None):
                 new_file = f.read()
         except Exception:
             new_file = None
+
+        if failure and workaround_errors:
+            # Let's see if this is a diff error we can work around.
+            if (not orig_file.endswith(b'\n') and
+                not diff.rfind(br'\ No newline at end of file') != -1):
+                # The file doesn't end with a newline, and this isn't
+                # reflected in the diff. See if we can patch if we add a
+                # trailing newline. This is not going to be a completely
+                # accurate representation of the resulting file, but it's
+                # suitable for viewing.
+                try:
+                    return patch(diff=diff,
+                                 orig_file=orig_file + b'\n',
+                                 filename=filename,
+                                 request=request,
+                                 workaround_errors=False)
+                except Exception:
+                    # Ignore this and fall back to the original error.
+                    pass
 
         if failure:
             rejects_file = '%s.rej' % newfile

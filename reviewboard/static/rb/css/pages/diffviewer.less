@@ -122,6 +122,15 @@
     }
   }
 
+  &.diff-binary {
+    /*
+     * When an image is larger than the diff container, this prevents the
+     * controls in the header from being clipped and allows the container to
+     * have a horizontal scrollbar if needed.
+     */
+    table-layout: fixed;
+  }
+
   &.deleted,
   &.newfile {
     /*
