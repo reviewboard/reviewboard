@@ -33,7 +33,7 @@ class DarkUITheme(BaseUITheme):
     """
 
     theme_id = 'dark'
-    name = _('Dark mode (beta)')
+    name = _('Dark mode')
     ink_color_scheme = InkColorScheme.DARK
 
 
@@ -48,5 +48,5 @@ class SystemUITheme(BaseUITheme):
     """
 
     theme_id = 'system'
-    name = _('Use system theme (beta)')
+    name = _('System theme')
     ink_color_scheme = InkColorScheme.SYSTEM

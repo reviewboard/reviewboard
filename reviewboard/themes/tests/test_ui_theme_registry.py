@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from reviewboard.testing import TestCase
-from reviewboard.themes.ui.default import DarkUITheme, LightUITheme
+from reviewboard.themes.ui.default import DarkUITheme, SystemUITheme
 from reviewboard.themes.ui.registry import UIThemeRegistry
 
 if TYPE_CHECKING:
@@ -41,11 +41,12 @@ class UIThemeRegistryTests(TestCase):
 
     def test_get_theme_with_default(self) -> None:
         """Testing UIThemeRegistry.get_theme with ID 'default'"""
-        self.assertIsInstance(self.registry.get_theme('default'), LightUITheme)
+        self.assertIsInstance(self.registry.get_theme('default'),
+                              SystemUITheme)
 
     def test_get_default_theme_id(self) -> None:
         """Testing UIThemeRegistry.get_default_theme_id"""
-        self.assertEqual(self.registry.get_default_theme_id(), 'light')
+        self.assertEqual(self.registry.get_default_theme_id(), 'system')
 
     def test_get_default_theme_id_with_siteconfig(self) -> None:
         """Testing UIThemeRegistry.get_default_theme_id with custom default
@@ -68,4 +69,4 @@ class UIThemeRegistryTests(TestCase):
         }
 
         with self.siteconfig_settings(siteconfig_settings):
-            self.assertEqual(self.registry.get_default_theme_id(), 'light')
+            self.assertEqual(self.registry.get_default_theme_id(), 'system')
