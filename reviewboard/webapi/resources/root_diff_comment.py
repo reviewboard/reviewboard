@@ -162,18 +162,18 @@ class RootDiffCommentResource(BaseDiffCommentResource):
             },
             'review-id': {
                 'type': StringFieldType,
-                'description': 'The review ID that the diff comments must '
-                               'be belonged to.',
+                'description': 'The ID of the review that the diff comments '
+                               'must belong to.',
             },
             'review-request-id': {
                 'type': StringFieldType,
-                'description': 'The review request ID that the diff comments '
-                               'must be belonged to.',
+                'description': 'The ID of the review request that the diff '
+                               'comments must belong to.',
             },
             'user': {
                 'type': StringFieldType,
-                'description': 'The username of the user that the diff '
-                               'comments must be owned by.',
+                'description': 'The username of the user that created the '
+                               'diff comments.',
             },
         },
         allow_unknown=True
