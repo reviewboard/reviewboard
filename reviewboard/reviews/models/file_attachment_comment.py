@@ -7,6 +7,7 @@ from typing import Optional, TYPE_CHECKING, cast
 
 from django.db import models
 from django.utils.functional import cached_property
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from typing_extensions import NotRequired, TypedDict
 
@@ -14,7 +15,7 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.models.base_comment import BaseComment
 
 if TYPE_CHECKING:
-    from django.utils.safestring import SafeText, mark_safe
+    from django.utils.safestring import SafeText
 
     from reviewboard.diffviewer.models import DiffSet, FileDiff
     from reviewboard.reviews.ui.base import ReviewUI
