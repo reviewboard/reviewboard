@@ -453,7 +453,7 @@ Contributors
 * Adriano Arce
 * André Klitzing
 * Anni Cao
-* Barret Rennie
+* Beth Rennie
 * Chenxi Ni
 * Christian Hammond
 * Connor Yoshimoto

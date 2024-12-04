@@ -107,7 +107,7 @@ Contributors
 ============
 
 * Alexey Neyman
-* Barret Rennie
+* Beth Rennie
 * Christian Hammond
 * David Trowbridge
 * Justin Wu

@@ -108,5 +108,5 @@ Contributors
 ============
 
 * Anthony Steinhauser
-* Barret Rennie
+* Beth Rennie
 * Christian Hammond

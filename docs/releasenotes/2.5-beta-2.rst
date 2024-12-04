@@ -185,7 +185,7 @@ Web API
 Contributors
 ============
 
-* Barret Rennie
+* Beth Rennie
 * Chris Arnold
 * Christian Hammond
 * David Trowbridge

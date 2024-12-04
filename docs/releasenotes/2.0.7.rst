@@ -201,7 +201,7 @@ Administration
 * Fixed the default crontab entry for clearing sessions to not use a
   deprecated command. (:bug:`3535`)
 
-  Patch by Barret Rennie.
+  Patch by Beth Rennie.
 
 
 Mercurial
@@ -228,7 +228,7 @@ Subversion
 Contributors
 ============
 
-* Barret Rennie
+* Beth Rennie
 * Christian Hammond
 * David Kus
 * David Trowbridge

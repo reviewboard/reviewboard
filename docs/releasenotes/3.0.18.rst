@@ -147,7 +147,7 @@ Review Requests
 * Fixed a regression in viewing the source mode for text files in the Text
   Review UI when a rendered mode was available.
 
-  Patch by Barret Rennie.
+  Patch by Beth Rennie.
 
 * Fixed a crash that could occur when showing changes in fields like
   Description or Testing Done that contained e-mail addresses with certain
@@ -236,7 +236,7 @@ Subversion
 Contributors
 ============
 
-* Barret Rennie
+* Beth Rennie
 * Christian Hammond
 * David Trowbridge
 * Erik Johansson

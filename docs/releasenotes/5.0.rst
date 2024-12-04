@@ -361,7 +361,7 @@ Extensions
 Contributors
 ============
 
-* Barret Rennie
+* Beth Rennie
 * Chaoyu Xiang
 * Christian Hammond
 * David Trowbridge

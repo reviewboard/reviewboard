@@ -824,7 +824,7 @@ SSH
 Contributors
 ============
 
-* Barret Rennie
+* Beth Rennie
 * Brett Kochendorfer
 * Chester Li
 * Chris Arnold

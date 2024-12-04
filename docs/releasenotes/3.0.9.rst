@@ -169,7 +169,7 @@ Contributors
 ============
 
 * Anni Cao
-* Barret Rennie
+* Beth Rennie
 * Christian Hammond
 * David Trowbridge
 * Ezra Buehler
