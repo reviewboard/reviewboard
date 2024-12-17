@@ -20,11 +20,16 @@ class UIThemeRegistry(OrderedRegistry[BaseUITheme]):
     This provides functionality for looking up available UI themes,
     determining a default theme, and registering new themes.
 
+    Version Changed:
+        7.1:
+        The ``system`` theme is now the default when using the ``default``
+        theme.
+
     Version Added:
         7.0
     """
 
-    DEFAULT_THEME_ID = 'light'
+    DEFAULT_THEME_ID = 'system'
 
     lookup_attrs = ['theme_id']
 

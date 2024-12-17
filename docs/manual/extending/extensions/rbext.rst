@@ -58,12 +58,13 @@ initial extension:
 .. option:: --package-version
 
    Sets a specific version to use for the package and extension. This will
-   be stored in the :file:`setup.py` in your package. It defaults to "1.0".
+   be stored in the :ref:`pyproject.toml` in your package. It defaults to
+   "1.0".
 
 .. option:: --summary
 
-   Sets a summary for the package's :file:`setup.py`, :file:`README.rst` and
-   for the extension information.
+   Sets a summary for the package's :ref:`pyproject.toml`, :file:`README.rst`
+   and for the extension information.
 
 .. option:: --description
 
@@ -71,14 +72,14 @@ initial extension:
 
 .. option:: --author-name
 
-   Sets the name of the author for the package's :file:`setup.py`. This can
-   be an individual or the name of an organization/company.
+   Sets the name of the author for the package's :ref:`pyproject.toml`. This
+   can be an individual or the name of an organization/company.
 
 .. option:: --author-email
 
-   Sets the e-mail address of the author for the package's :file:`setup.py`.
-   This can be any e-mail address suitable for contacting the developers of
-   the package.
+   Sets the e-mail address of the author for the package's
+   :ref:`pyproject.toml`.  This can be any e-mail address suitable for
+   contacting the developers of the package.
 
 .. option:: --enable-configuration
 
@@ -156,7 +157,7 @@ There's a few special arguments you may want to use:
 .. option:: --tree-root
 
    The path to the root of your extension's source tree (where
-   :file:`setup.py` lives). This defaults to the current directory.
+   :ref:`pyproject.toml` lives). This defaults to the current directory.
 
 .. option:: --with-coverage
 

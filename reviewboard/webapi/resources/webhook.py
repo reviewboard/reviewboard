@@ -108,7 +108,7 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
             'choices': WebHookTarget.ALL_ENCODINGS,
             'description': 'The encoding for the payload. This is one of '
                            '``application/json``, ``application/xml`` or '
-                           '``application/x-www-form-data``.',
+                           '``application/x-www-form-urlencoded``.',
         },
         'events': {
             'type': ListFieldType,

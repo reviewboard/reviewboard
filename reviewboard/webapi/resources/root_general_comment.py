@@ -132,18 +132,18 @@ class RootGeneralCommentResource(BaseReviewGeneralCommentResource):
             },
             'review-id': {
                 'type': StringFieldType,
-                'description': 'The review ID that the general '
-                               'comments must be belonged to.',
+                'description': 'The ID of the review that the general '
+                               'comments must belong to.',
             },
             'review-request-id': {
                 'type': StringFieldType,
-                'description': 'The review request ID that the general '
-                               'comments must be belonged to.',
+                'description': 'The ID of the review request that the general '
+                               'comments must belong to.',
             },
             'user': {
                 'type': StringFieldType,
-                'description': 'The username of the user that the general '
-                               'comments must be owned by.',
+                'description': 'The username of the user that created the '
+                               'general comments.',
             },
         },
         allow_unknown=True

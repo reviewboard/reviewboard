@@ -4,6 +4,7 @@
 
 @import (reference) "rb/css/assets/paths.less";
 @import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/syntax.less";
 @import (reference) "rb/css/mixins/upload-diff.less";
 @import (reference) "rb/css/ui/colors.less";
 
@@ -327,7 +328,7 @@
   position: fixed;
   top: 50%;
   transition: transform 0.3s, background 0.3s, margin 0.3s;
-  z-index: @z-index-nav-menu;
+  z-index: var(--ink-z-menu);
 
   &:hover {
     transform: translateY(-50%);
@@ -1613,6 +1614,8 @@ pre.reviewtext {
   overflow: hidden;
   position: absolute;
   max-width: calc(100vw - 2em);
+  max-height: calc(100vh - 2em);
+  z-index: var(--ink-z-dialog);
 
   form {
     background: var(--rb-p-draft-bg);
@@ -1650,6 +1653,11 @@ pre.reviewtext {
   .comment-dlg-footer,
   .comment-dlg-header {
     position: relative;
+  }
+
+  .comment-dlg-header,
+  .other-comments-header {
+    cursor: move;
   }
 
   .comment-dlg-footer {
@@ -1711,11 +1719,22 @@ pre.reviewtext {
       solid;
     padding: @comment-dlg-padding;
 
+    .other-comments-header {
+      padding-bottom: 2px;
+    }
+
     ul {
       background: var(--ink-c-data-table-body-bg);
       border: 1px #333333 solid;
       list-style: none;
-      margin: @comment-dlg-padding 0 0 0;
+
+      /*
+       * This plus the padding on .other-comments-header gives the header a
+       * total bottom "padding" equal to @comment-dlg-padding. The top margin
+       * here has to be 2px less than @comment-dlg-padding, otherwise the
+       * bottom margin for .other-comments box is too small.
+       */
+      margin: 4px 0 0 0;
       overflow: auto;
       padding: 0;
       position: relative;
@@ -1833,9 +1852,10 @@ pre.reviewtext {
   padding: var(--ink-u-spacing-m);
   position: absolute;
   max-width: 60em;
+  z-index: calc(var(--ink-z-event-overlay) + 1);
 
   &.comments {
-    border: 1px black solid;
+    border: 1px var(--ink-p-black) solid;
     border-bottom: 0;
     padding: 0;
     min-width: 25em;
@@ -1846,8 +1866,8 @@ pre.reviewtext {
       padding: 0;
 
       > li {
-        background-color: @comments-tooltip-background;
-        border-bottom: 1px @comments-tooltip-border-color solid;
+        background-color: var(--rb-p-flag-published-bg);
+        border-bottom: 1px var(--ink-p-light__blue-600) solid;
         display: flex;
         flex-direction: column;
         gap: inherit;
@@ -1855,8 +1875,8 @@ pre.reviewtext {
         padding: var(--ink-u-spacing-m);
 
         &.draft {
-          background-color: @comments-tooltip-draft-background;
-          border-bottom: 1px black solid;
+          background-color: var(--rb-p-flag-draft-bg);
+          border-bottom: 1px var(--rb-p-flag-draft-border-color) solid;
         }
 
         div {
@@ -1876,13 +1896,10 @@ pre.reviewtext {
         .rich-text {
           line-height: 1.2;
 
-          code {
-            border-color: @comments-tooltip-border-color;
-          }
-
           .codehilite {
             .flush-codehilite();
-            border-color: @comments-tooltip-border-color;
+            background: @default-code-theme-light-rich-text-code-bg;
+            color: var(--ink-p-fg-on-light);
             margin: 0 calc(-1 * var(--ink-u-spacing-m));
             padding: var(--ink-u-spacing-xs) var(--ink-u-spacing-m);
           }

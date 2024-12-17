@@ -1,3 +1,7 @@
+"""Unit tests for repository operations."""
+
+from __future__ import annotations
+
 import os
 
 import kgb
@@ -809,4 +813,25 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
         self.assertEqual(logs.output, [
             'ERROR:reviewboard.scmtools.models:Error finding registered '
             'SCMTool "xxxtool" in repository ID 2.',
+        ])
+
+    def test_password_decryption_failed(self) -> None:
+        """Testing the repository password with failed decryption"""
+        repository = self.repository
+        repository.password = 'abc123'
+        repository.save()
+
+        repository.refresh_from_db()
+
+        settings = {
+            'SECRET_KEY': 'acdef12345acdef123456abcdef123456abcdef12345',
+        }
+
+        with self.settings(**settings), \
+             self.assertLogs(level='CRITICAL') as logs:
+            self.assertIsNone(repository.password)
+
+        self.assertEqual(logs.output, [
+            f'CRITICAL:reviewboard.scmtools.models:Unable to decrypt stored '
+            f'password for repository pk={repository.pk}',
         ])

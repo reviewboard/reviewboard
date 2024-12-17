@@ -27,7 +27,10 @@ sys.path.insert(0, os.path.join(rbext_dir, 'conf', 'rbext'))
 from django.utils.encoding import force_str
 from importlib_metadata import Prepared
 
-from reviewboard import get_manual_url
+from reviewboard import (
+    __version__ as reviewboard_version,
+    get_manual_url,
+)
 from reviewboard.cmdline.utils.argparsing import (HelpFormatter,
                                                   RBProgVersionAction)
 from reviewboard.cmdline.utils.console import init_console
@@ -433,18 +436,13 @@ class CreateCommand(BaseCommand):
                                   templates_dir=templates_dir))
 
         self._write_file(
-            os.path.join(root_dir, 'setup.py'),
-            self._create_setup_py(package_name=package_name,
-                                  version=options.package_version,
-                                  summary=summary,
-                                  author=options.author_name,
-                                  author_email=options.author_email,
-                                  class_name=class_name),
-            mode=0o755)
-
-        self._write_file(
             os.path.join(root_dir, 'pyproject.toml'),
-            self._create_pyproject_toml(package_name=package_name))
+            self._create_pyproject_toml(author=options.author_name,
+                                        author_email=options.author_email,
+                                        class_name=class_name,
+                                        package_name=package_name,
+                                        summary=summary,
+                                        version=options.package_version))
 
         self._write_file(
             os.path.join(root_dir, 'conftest.py'),
@@ -656,96 +654,115 @@ class CreateCommand(BaseCommand):
             'static_dir': static_dir,
         }
 
-    def _create_setup_py(self, package_name, version, summary, author,
-                         author_email, class_name):
-        """Create the content for a setup.py file.
-
-        Args:
-            package_name (unicode):
-                The name of the package.
-
-            version (unicode):
-                The version of the package.
-
-            summary (unicode):
-                A summary of the package.
-
-            author (unicode):
-                The name of the author of the extension.
-
-            author_email (unicode):
-                The e-mail address of the author of the extension.
-
-            class_name (unicode):
-                The name of the extension class.
-
-        Returns:
-            unicode:
-            The resulting content for the file.
-        """
-        return """
-            #!/usr/bin/env python
-
-            from reviewboard.extensions.packaging import setup
-            from setuptools import find_packages
-
-
-            setup(
-                name='%(package_name)s',
-                version='%(version)s',
-                description=%(description)s,
-                author=%(author)s,
-                author_email=%(author_email)s,
-                packages=find_packages(),
-                install_requires=[
-                    # Your package dependencies go here.
-                    # Don't include "ReviewBoard" in this list.
-                ],
-                entry_points={
-                    'reviewboard.extensions': [
-                        '%(package_name)s = %(ext_class_path)s',
-                    ],
-                },
-                classifiers=[
-                    # For a full list of package classifiers, see
-                    # %(classifiers_url)s
-
-                    'Development Status :: 3 - Alpha',
-                    'Environment :: Web Framework',
-                    'Framework :: Review Board',
-                    'Operating System :: OS Independent',
-                    'Programming Language :: Python',
-                ],
-            )
-        """ % {
-            'author': self._sanitize_string_for_python(author or
-                                                       '<REPLACE ME>'),
-            'author_email': self._sanitize_string_for_python(author_email or
-                                                             '<REPLACE ME>'),
-            'classifiers_url':
-                'https://pypi.python.org/pypi?%3Aaction=list_classifiers',
-            'description': self._sanitize_string_for_python(summary or
-                                                            '<REPLACE ME>'),
-            'ext_class_path': '%s.extension:%s' % (package_name, class_name),
-            'package_name': package_name,
-            'version': version,
-        }
-
     def _create_pyproject_toml(
         self,
+        *,
+        author: str,
+        author_email: str,
+        class_name: str,
         package_name: str,
+        summary: str,
+        version: str,
     ) -> str:
         """Create the content for a pyproject.toml file.
 
+        Version Changed:
+            7.1:
+            Added ``author``, ``author_email``, ``class_name``, ``summary``,
+            and ``version`` arguments.
+
         Args:
+            author (str):
+                The name of the author of the extension.
+
+                Version Added:
+                    7.1
+
+            author_email (str):
+                The e-mail address of the author of the extension.
+
+                Version Added:
+                    7.1
+
+            class_name (str):
+                The name of the extension class.
+
+                Version Added:
+                    7.1
+
             package_name (str):
                 The name of the package.
+
+            summary (str):
+                A summary of the package.
+
+                Version Added:
+                    7.1
+
+            version (str):
+                The version of the package.
+
+                Version Added:
+                    7.1
 
         Returns:
             str:
             The resulting content for the file.
         """
+        if not author:
+            author = '<REPLACE ME>'
+
+        if not author_email:
+            author_email = '<REPLACE ME>'
+
+        if not summary:
+            summary = '<REPLACE ME>'
+
         return f"""
+            [build-system]
+            requires = [
+                # Update this for the target version of Review Board.
+                'reviewboard~={reviewboard_version}',
+
+                'reviewboard[extension-packaging]',
+            ]
+            build-backend = 'reviewboard.extensions.packaging.backend'
+
+
+            [project]
+            name = '{package_name}'
+            version = '{version}'
+            description = '{summary}'
+            authors = [
+                {{name = '{author}', email = '{author_email}'}}
+            ]
+
+            dependencies = [
+                # Your package dependencies go here.
+                # Don't include "ReviewBoard" in this list.
+            ]
+
+            classifiers = [
+                # For a full list of package classifiers, see
+                # https://pypi.python.org/pypi?%3Aaction=list_classifiers
+
+                'Development Status :: 3 - Alpha',
+                'Environment :: Web Framework',
+                'Framework :: Review Board',
+                'Operating System :: OS Independent',
+                'Programming Language :: Python',
+            ]
+
+
+            [project.entry-points."reviewboard.extensions"]
+            {package_name} = '{package_name}.extension:{class_name}'
+
+
+            [tool.setuptools.packages.find]
+            where = ['.']
+            namespaces = false
+
+
             [tool.pytest.ini_options]
             DJANGO_SETTINGS_MODULE = "reviewboard.settings"
             django_debug_mode = false
