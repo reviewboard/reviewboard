@@ -134,7 +134,7 @@ class Client(base.Client):
             msg = str(e)
 
             if 'callback_get_login required' in msg:
-                return AuthenticationError(_(
+                return AuthenticationError(msg=_(
                     'Authentication failed when talking to the Subversion '
                     'repository.'
                 ))
