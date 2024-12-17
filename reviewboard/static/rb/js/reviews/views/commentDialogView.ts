@@ -281,10 +281,12 @@ export class CommentDialogView extends BaseView<
     static _instance = null;
 
     static DIALOG_TOTAL_HEIGHT = 350;
+    static DIALOG_TOTAL_HEIGHT_PORTRAIT = 400;
     static DIALOG_NON_EDITABLE_HEIGHT = 120;
     static DIALOG_READ_ONLY_HEIGHT = 104;
     static SLIDE_DISTANCE = 10;
     static COMMENTS_BOX_WIDTH = 280;
+    static COMMENTS_BOX_HEIGHT_PORTRAIT = 175;
     static FORM_BOX_WIDTH = 450;
 
     static _cancelText = _`Cancel`;
@@ -303,7 +305,9 @@ export class CommentDialogView extends BaseView<
 
     static template = _.template(dedent`
         <div class="other-comments">
-         <h1 class="title"><%- otherReviewsText %></h1>
+         <h1 class="title other-comments-header">
+          <%- otherReviewsText %>
+         </h1>
          <ul></ul>
         </div>
         <form method="post">
@@ -403,7 +407,6 @@ export class CommentDialogView extends BaseView<
         });
 
         dlg.render().$el
-            .css('z-index', 999) // XXX Use classes for z-indexes.
             .appendTo(options.container || document.body);
 
         options.position = options.position || {};
@@ -667,9 +670,8 @@ export class CommentDialogView extends BaseView<
             })
             .proxyTouchEvents();
 
-        this._$header.css('cursor', 'move');
         this.$el.draggable({
-            handle: '.comment-dlg-header',
+            handle:  '.comment-dlg-header, .other-comments-header',
         });
 
         this.listenTo(model, 'change:dirty', this.#updateTitle);
@@ -835,23 +837,23 @@ export class CommentDialogView extends BaseView<
             comments, this.model.get('publishedCommentsType'));
 
         const showComments = (comments.length > 0);
+        const canFitPortraitMode = this.#canFitPortraitMode();
         this._$commentsPane.toggle(showComments);
 
         /* Do this here so that calculations can be done before open() */
         let width = CommentDialogView.FORM_BOX_WIDTH;
+        let height = CommentDialogView.DIALOG_NON_EDITABLE_HEIGHT;
 
-        if (showComments) {
+        if (showComments && !canFitPortraitMode) {
             width += CommentDialogView.COMMENTS_BOX_WIDTH;
         }
 
-        let height;
-
-        if (this.model.get('canEdit')) {
+        if (showComments && canFitPortraitMode) {
+            height = CommentDialogView.DIALOG_TOTAL_HEIGHT_PORTRAIT;
+        } else if (this.model.get('canEdit')) {
             height = CommentDialogView.DIALOG_TOTAL_HEIGHT;
         } else if (UserSession.instance.get('readOnly')) {
             height = CommentDialogView.DIALOG_READ_ONLY_HEIGHT;
-        } else {
-            height = CommentDialogView.DIALOG_NON_EDITABLE_HEIGHT;
         }
 
         this.$el
@@ -865,28 +867,48 @@ export class CommentDialogView extends BaseView<
      * This will lay out the elements in the dialog appropriately.
      */
     #handleResize() {
-        const height = this.$el.height();
+        const showComments = this._$commentsPane.is(':visible');
+        let height = this.$el.height();
         let width = this.$el.width();
-        let commentsWidth = 0;
+        let draftFormX = 0;
+        let draftFormY = 0;
 
-        if (this._$commentsPane.is(':visible')) {
+        if (showComments) {
+            let commentsHeight = height;
+            let commentsWidth = width;
+
+            if (this.#canFitPortraitMode()) {
+                /*
+                 * Portrait mode, stack the comments box and draft form
+                 * vertically.
+                 */
+                commentsHeight =
+                    CommentDialogView.COMMENTS_BOX_HEIGHT_PORTRAIT;
+                draftFormY = commentsHeight;
+                height -= commentsHeight;
+            } else {
+                /*
+                 * Landscape mode, stack the comments box and draft form
+                 * horizontally.
+                 */
+                commentsWidth = CommentDialogView.COMMENTS_BOX_WIDTH;
+                draftFormX = commentsWidth;
+                width -= commentsWidth;
+            }
+
             this._$commentsPane
-                .outerWidth(CommentDialogView.COMMENTS_BOX_WIDTH)
-                .outerHeight(height)
+                .outerWidth(commentsWidth)
+                .outerHeight(commentsHeight)
                 .move(0, 0, 'absolute');
-
             const $commentsList = this.commentsList.$el;
             $commentsList.height(this._$commentsPane.height() -
                                  $commentsList.position().top);
-
-            commentsWidth = this._$commentsPane.outerWidth(true);
-            width -= commentsWidth;
         }
 
         this._$draftForm
             .outerWidth(width)
             .outerHeight(height)
-            .move(commentsWidth, 0, 'absolute');
+            .move(draftFormX, draftFormY, 'absolute');
 
         const warningHeight = this.#$draftWarning.outerHeight(true) || 0;
 
@@ -900,6 +922,26 @@ export class CommentDialogView extends BaseView<
              this._$footer.outerHeight() -
              warningHeight -
              $textField.getExtents('b', 'tb')));
+    }
+
+    /**
+     * Return whether the portrait version of the dialog can fit on screen.
+     *
+     * This checks whether the height of the dialog fits within the screen
+     * height.
+     *
+     * Version Added:
+     *     7.0.3
+     *
+     * Returns:
+     *     boolean:
+     *     Whether the portrait version of the dialog can fit on screen.
+     */
+    #canFitPortraitMode(): boolean {
+        return (
+            RB.PageManager.getPage().inMobileMode &&
+            $(window).height() > CommentDialogView.DIALOG_TOTAL_HEIGHT_PORTRAIT
+        );
     }
 
     /**

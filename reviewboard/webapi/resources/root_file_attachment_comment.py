@@ -127,13 +127,13 @@ class RootFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         optional={
             'file-attachment-id': {
                 'type': StringFieldType,
-                'description': 'The file attachment ID that the comments '
-                               'must be belonged to.',
+                'description': 'The ID of the file attachment that the '
+                               'comments must belong to.',
             },
             'file-name': {
                 'type': StringFieldType,
-                'description': 'The file attachment name that the comments '
-                               'must be belonged to.',
+                'description': 'The filename of the file attachment name '
+                               'that the comments must belong to.',
             },
             'is-reply': {
                 'type': BooleanFieldType,
@@ -158,18 +158,18 @@ class RootFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
             },
             'review-id': {
                 'type': StringFieldType,
-                'description': 'The review ID that the file attachment '
-                               'comments must be belonged to.',
+                'description': 'The ID of the review that the file attachment '
+                               'comments must belong to.',
             },
             'review-request-id': {
                 'type': StringFieldType,
-                'description': 'The review request ID that the file '
-                               'attachment comments must be belonged to.',
+                'description': 'The ID of the review request that the file '
+                               'attachment comments must belong to.',
             },
             'user': {
                 'type': StringFieldType,
-                'description': 'The username of the user that the file '
-                               'attachment comments must be owned by.',
+                'description': 'The username of the user that created the '
+                               'file attachment comments.',
             },
         },
         allow_unknown=True

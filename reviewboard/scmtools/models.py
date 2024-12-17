@@ -316,7 +316,12 @@ class Repository(models.Model):
             password = password[len(self.ENCRYPTED_PASSWORD_PREFIX):]
 
             if password:
-                password = decrypt_password(password)
+                try:
+                    password = decrypt_password(password)
+                except ValueError:
+                    logger.critical('Unable to decrypt stored password for '
+                                    'repository pk=%d', self.pk)
+                    password = None
             else:
                 password = None
         else:

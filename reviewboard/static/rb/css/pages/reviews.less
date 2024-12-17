@@ -328,7 +328,7 @@
   position: fixed;
   top: 50%;
   transition: transform 0.3s, background 0.3s, margin 0.3s;
-  z-index: @z-index-nav-menu;
+  z-index: var(--ink-z-menu);
 
   &:hover {
     transform: translateY(-50%);
@@ -1614,6 +1614,8 @@ pre.reviewtext {
   overflow: hidden;
   position: absolute;
   max-width: calc(100vw - 2em);
+  max-height: calc(100vh - 2em);
+  z-index: var(--ink-z-dialog);
 
   form {
     background: var(--rb-p-draft-bg);
@@ -1651,6 +1653,11 @@ pre.reviewtext {
   .comment-dlg-footer,
   .comment-dlg-header {
     position: relative;
+  }
+
+  .comment-dlg-header,
+  .other-comments-header {
+    cursor: move;
   }
 
   .comment-dlg-footer {
@@ -1712,11 +1719,22 @@ pre.reviewtext {
       solid;
     padding: @comment-dlg-padding;
 
+    .other-comments-header {
+      padding-bottom: 2px;
+    }
+
     ul {
       background: var(--ink-c-data-table-body-bg);
       border: 1px #333333 solid;
       list-style: none;
-      margin: @comment-dlg-padding 0 0 0;
+
+      /*
+       * This plus the padding on .other-comments-header gives the header a
+       * total bottom "padding" equal to @comment-dlg-padding. The top margin
+       * here has to be 2px less than @comment-dlg-padding, otherwise the
+       * bottom margin for .other-comments box is too small.
+       */
+      margin: 4px 0 0 0;
       overflow: auto;
       padding: 0;
       position: relative;
