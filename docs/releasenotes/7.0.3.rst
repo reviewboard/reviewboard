@@ -1,0 +1,255 @@
+.. default-intersphinx:: djblets5.x rb7.x
+
+
+================================
+Review Board 7.0.3 Release Notes
+================================
+
+**Release date**: TBD
+
+
+Installation/Upgrade
+====================
+
+Review Board 7.0.3 is compatible with Python 3.8 - 3.12.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install ReviewBoard==7.0.3
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Packaging
+=========
+
+* :pypi:`Django` 4.2.17 (or a higher 4.2.x) is now required.
+
+  This is the latest security release for Django 4.2 LTS.
+
+
+Performance Improvements
+========================
+
+* Greatly improved search indexing performance when :ref:`ACL diff checks
+  <filediff-acl-hook>` are provided by extensions.
+
+* Reduced the chances of Review Board needing to reload and re-apply all
+  settings.
+
+
+Usability Improvements
+======================
+
+We've fixed and improved several mobile-related issues across the product in
+this release:
+
+* Review request banners and the comment dialog have an improved look on
+  mobile.
+
+* Menus are no longer shown partially off-screen.
+
+* Touch events now work consistently for menu buttons, drop-downs, banners,
+  and comment flags.
+
+* Review request actions are no longer cut off on small screen widths.
+
+* Diff comments on new or deleted files are no longer shown partially
+  off-screen.
+
+* File attachment comment thumbnails can now be scrolled when they're too big
+  to show on the screen.
+
+* The list of diff files in the change history are no longer shown partially
+  off-screen.
+
+* The mobile menu correctly renders Extension-provided navigation entries.
+
+
+Bug Fixes
+=========
+
+Administration
+--------------
+
+* Fixed wrapping issues when selecting users to add to groups, repositories,
+  or Default Reviewers.
+
+  When there were long usernames or full names, the UI for selecting users
+  could wrap in confusing ways. We've reworked the display of the widget to
+  avoid this.
+
+* Removed some confusing debug logging around authentication attempts that
+  incorrectly indicated a problem when logging in via the API.
+
+
+.. _Power Pack: https://www.reviewboard.org/powerpack/
+
+
+Diff Viewer
+-----------
+
+* Fixed breaking long lines containing tabs in Firefox.
+
+  Firefox has a non-standard way of breaking long strings of text, which
+  doesn't behave well with tabs. We've worked around this with Firefox,
+  ensuring very long lines containing tabs render correctly.
+
+* Improved the display of large images in diffs.
+
+  Images too large to fit in the diff viewer will now be scaled down
+  correctly, showing the zoom controls and scroll bar.
+
+* Added workarounds for parsing malformed diffs that lack both trailing
+  newlines and the ``\ No newline at end of file`` marker.
+
+  These are generated on some buggy older versions of GNU Patch and by some
+  third-party patch tools.
+
+
+File Attachments
+----------------
+
+* Fixed a crash that could occur when trying to detect mimetypes for file
+  attachments.
+
+  This could occur in very particular environments, depending on the version
+  and implementation of Python and of the :command:`file` command.
+
+* Fixed the URL for downloading file attachments when using the advanced
+  :term:`Local Sites` server partitioning feature.
+
+
+Repositories
+------------
+
+* Fixed a regression in attempting to migrate legacy repository backend
+  support from old installs of Review Board.
+
+  This could impact configurations provided by custom extensions or by
+  `Power Pack`_, depending on the versions in use. Most users wouldn't have
+  hit this.
+
+* Fixed a crash when failing to decrypt stored repository credentials.
+
+  This could occur if the data was corrupted or the server's ``SECRET_KEY``
+  was changed. Instead of crashing, we now log the error and invalidate the
+  credentials, allowing an administrator to supply new ones.
+
+* Fixed the display of authentication errors on Subversion.
+
+
+Review Requests
+---------------
+
+* Fixed a regression where file attachment thumbnails in review request
+  change history could disappear.
+
+  The data was not missing. It was simply not being shown correctly.
+
+* Fixed the appearance of the administrator-specific draft banner on dark
+  mode.
+
+* Fixed visually selecting Markdown code in comments and other text.
+
+
+Search
+------
+
+* Fixed the display of the search results in dark mode.
+
+
+Review Board Platform
+=====================
+
+This section covers important changes that may benefit or impact developers
+building extensions, clients, or integrations for Review Board.
+
+See also:
+
+* `Djblets 5.2 Release Notes
+  <https://www.reviewboard.org/docs/releasenotes/djblets/5.2/>`_
+
+
+REST API
+--------
+
+* Fixed authentication issues when creating new hosting service account
+  entries using the :ref:`webapi2.0-hosting-service-account-list-resource`
+  API.
+
+  This API now correctly integrates with the hosting service implementation's
+  authentication process to perform any authentication required. It does
+  require that the caller provides the necessary credentials to authenticate
+  with that specific service.
+
+* Fixed a crash with performing a HTTP GET on the
+  :ref:`webapi2.0-watched-resource`.
+
+
+Extensions
+----------
+
+* Added :py:meth:`FileAttachment.is_review_ui_accessible_by()
+  <reviewboard.attachments.models.FileAttachment.is_review_ui_accessible_by>`
+  for determining if a user can access a review UI.
+
+  This is important for showing the available actions for a user based on
+  any policy changes that may be provided by extensions.
+
+* Added new administration UI :ref:`template hook points
+  <extensions-template-hook>` for rendering custom HTML:
+
+  * ``admin-sidebar-administration``:
+    At the bottom of the built-in items in the "Administration" section of the
+    sidebar.
+
+  * ``admin-sidebar-settings``
+    At the bottom of the built-in items in the "Settings" section of the
+    sidebar.
+
+  * ``admin-sidebar-manage``
+    At the bottom of the built-in items in the "Manage" section of the
+    sidebar.
+
+* Added new CSS Variables for representing colors:
+
+  * ``--rb-p-flag-draft-bg``: Background color for a draft comment flag.
+  * ``--rb-p-flag-draft-hover-bg``: Background hover color for a draft
+    comment flag.
+  * ``--rb-p-flag-draft-fg``: Foreground color for a draft comment flag.
+  * ``--rb-p-flag-draft-border-color``: Border color for a draft comment flag.
+  * ``--rb-p-flag-published-bg``: Background color for a published comment
+    flag.
+  * ``--rb-p-flag-published-hover-bg``: Background hover color for a published
+    comment flag.
+  * ``--rb-p-flag-published-fg``: Foreground color for a published comment
+    flag.
+  * ``--rb-p-flag-published-border-color``: Border color for a published
+    comment flag.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin
+* Raymond Lam
