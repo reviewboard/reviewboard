@@ -74,6 +74,9 @@ this release:
 * Diff comments on new or deleted files are no longer shown partially
   off-screen.
 
+* File alerts (such as "This file only contains whitespace changes") in the
+  diff viewer no longer disturb the rest of the diff.
+
 * File attachment comment thumbnails can now be scrolled when they're too big
   to show on the screen.
 
