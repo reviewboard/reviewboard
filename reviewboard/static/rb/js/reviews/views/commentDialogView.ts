@@ -1042,9 +1042,12 @@ export class CommentDialogView extends BaseView<
         if (textEl === null) {
             /*
              * If the event is happening in the comment dialog but not in the
-             * text editor, we can just swallow it right away.
+             * text editor or Other Comments area, we can just swallow it
+             * right away.
              */
-            evt.preventDefault();
+            if (target.closest('.other-comments > ul') === null) {
+                evt.preventDefault();
+            }
         } else {
             /*
              * If the event is in the text editor, we need to figure out if the

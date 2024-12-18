@@ -123,6 +123,9 @@ Diff Viewer
   These are generated on some buggy older versions of GNU Patch and by some
   third-party patch tools.
 
+* Fixed being able to scroll the list of existing comments on a line in the
+  comment dialog.
+
 
 File Attachments
 ----------------
