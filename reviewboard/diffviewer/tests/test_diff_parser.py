@@ -16,7 +16,7 @@ class ParsedDiffTests(TestCase):
 
     def test_init(self):
         """Testing ParsedDiff.__init__"""
-        parser = BaseDiffParser(b'')
+        parser = BaseDiffParser(data=b'')
         parsed_diff = ParsedDiff(parser=parser)
 
         self.assertIs(parsed_diff.parser, parser)
@@ -27,7 +27,7 @@ class ParsedDiffChangeTests(TestCase):
 
     def test_init(self):
         """Testing ParsedDiffChange.__init__"""
-        parser = BaseDiffParser(b'')
+        parser = BaseDiffParser(data=b'')
         parsed_diff = ParsedDiff(parser=parser)
         parsed_diff_change = ParsedDiffChange(parsed_diff=parsed_diff)
 
@@ -40,7 +40,7 @@ class ParsedDiffFileTests(TestCase):
 
     def test_init_with_parsed_diff_change(self):
         """Testing ParsedDiffFile.__init__ with parsed_diff_change="""
-        parser = BaseDiffParser(b'')
+        parser = BaseDiffParser(data=b'')
         parsed_diff = ParsedDiff(parser=parser)
         parsed_diff_change = ParsedDiffChange(parsed_diff=parsed_diff)
         parsed_diff_file = ParsedDiffFile(

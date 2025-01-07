@@ -14,7 +14,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
 
     def test_parse_diff_with_basic_diff(self):
         """Testing DiffXParser.parse_diff with a basic DiffX file"""
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -49,7 +49,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b' \n'
             b'         if in_reply_to:\n'
             b'             headers["In-Reply-To"] = in_reply_to\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -121,7 +121,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
 
     def test_parse_diff_with_complex_diff(self):
         """Testing DiffXParser.parse_diff with a complex DiffX file"""
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-16, version=1.0\n'
             b'#.preamble: encoding=ascii, indent=2, length=36,'
             b' line_endings=dos, mimetype=text/plain\n'
@@ -238,7 +238,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'- old line\r\n'
             b'+ new line 1\r\n'
             b'+ new line 2\r\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -433,7 +433,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with file's meta.path as single
         string
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -465,7 +465,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b' \n'
             b'         if in_reply_to:\n'
             b'             headers["In-Reply-To"] = in_reply_to\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -536,7 +536,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with file's revision.old and no
         revision.new
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -567,7 +567,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b' \n'
             b'         if in_reply_to:\n'
             b'             headers["In-Reply-To"] = in_reply_to\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -637,7 +637,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with file's revision.new and no
         revision.old
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -668,7 +668,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b' \n'
             b'         if in_reply_to:\n'
             b'             headers["In-Reply-To"] = in_reply_to\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -738,7 +738,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with file's revision.new and no
         revision.old and op=create
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -770,7 +770,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b' \n'
             b'         if in_reply_to:\n'
             b'             headers["In-Reply-To"] = in_reply_to\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -839,7 +839,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
 
     def test_parse_diff_with_binary_file(self):
         """Testing DiffXParser.parse_diff with binary file"""
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -853,7 +853,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'}\n'
             b'#...diff: length=23, type=binary, line_endings=unix\n'
             b'This is a binary file.\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -902,7 +902,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
 
     def test_parse_diff_with_file_op_delete(self):
         """Testing DiffXParser.parse_diff with file op=delete"""
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -918,7 +918,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'#...diff: length=29, line_endings=unix\n'
             b'@@ -1 +0,0 @@\n'
             b'-Goodbye, file\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -971,7 +971,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
 
     def test_parse_diff_with_op_move(self):
         """Testing DiffXParser.parse_diff with file op=move"""
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -987,7 +987,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'        "new": "def456"\n'
             b'    }\n'
             b'}\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -1035,7 +1035,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
 
     def test_parse_diff_with_op_move_modify(self):
         """Testing DiffXParser.parse_diff with file op=move-modify"""
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -1057,7 +1057,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'@@ -1 +1 @@\n'
             b'-old line\n'
             b'+new line\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -1118,7 +1118,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
     def test_parse_diff_with_op_copy(self):
         """Testing DiffXParser.parse_diff with file op=copy"""
         parser = DiffXParser(
-            b'#diffx: encoding=utf-8, version=1.0\n'
+            data=b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
             b'#...meta: format=json, length=169\n'
@@ -1181,7 +1181,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
 
     def test_parse_diff_with_op_copy_modify(self):
         """Testing DiffXParser.parse_diff with file op=copy-modify"""
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -1203,7 +1203,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'@@ -1 +1 @@\n'
             b'-old line\n'
             b'+new line\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -1263,7 +1263,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
 
     def test_parse_diff_with_existing_stats(self):
         """Testing DiffXParser.parse_diff with existing file stats"""
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -1288,7 +1288,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'@@ -1 +1 @@\n'
             b'-old line\n'
             b'+new line\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -1352,7 +1352,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with file type=symlink, op=create,
         symlink target=string
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -1366,7 +1366,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'    "type": "symlink",\n'
             b'    "symlink target": "target/path/"\n'
             b'}\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -1415,7 +1415,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with file type=symlink, op=create,
         symlink target=dict
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -1431,7 +1431,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'         "new": "target/path/"\n'
             b'    }\n'
             b'}\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -1482,7 +1482,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with file type=symlink, op=modify,
         symlink target=string
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -1497,7 +1497,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'    "symlink target": "target/path/",\n'
             b'    "type": "symlink"\n'
             b'}\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -1548,7 +1548,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with file type=symlink, op=modify,
         symlink target=dict
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -1566,7 +1566,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'    },\n'
             b'    "type": "symlink"\n'
             b'}\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -1620,7 +1620,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with file type=symlink, op=delete,
         symlink target=str
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -1634,7 +1634,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'    "symlink target": "target/path/",\n'
             b'    "type": "symlink"\n'
             b'}\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -1684,7 +1684,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with file type=symlink, op=delete,
         symlink target=dict
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -1700,7 +1700,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'    },\n'
             b'    "type": "symlink"\n'
             b'}\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -1752,7 +1752,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with op=create, unix file
         mode=string
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -1765,7 +1765,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'    },\n'
             b'    "unix file mode": "0100644"\n'
             b'}\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -1812,7 +1812,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with op=create, unix file
         mode=dict
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -1827,7 +1827,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'        "new": "0100644"\n'
             b'    }\n'
             b'}\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -1876,7 +1876,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with op=modify, unix file
         mode=string
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -1890,7 +1890,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'    },\n'
             b'    "unix file mode": "0100644"\n'
             b'}\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -1939,7 +1939,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with op=modify, unix file
         mode=dict
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -1956,7 +1956,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'        "new": "0100755"\n'
             b'    }\n'
             b'}\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -2008,7 +2008,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with op=delete, unix file
         mode=string
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -2021,7 +2021,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'    },\n'
             b'    "unix file mode": "0100644"\n'
             b'}\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -2069,7 +2069,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with op=delete, unix file
         mode=dict
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -2084,7 +2084,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'        "old": "0100644"\n'
             b'    }\n'
             b'}\n'
-        )
+        ))
 
         parsed_diff = parser.parse_diff()
         self.assert_parsed_diff(
@@ -2132,10 +2132,10 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
 
     def test_parse_diff_with_invalid_diffx(self):
         """Testing DiffXParser.parse_diff with invalid DiffX file contents"""
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'BLARGH\n'
-        )
+        ))
 
         message = (
             "Error on line 2: Unexpected or improperly formatted header: %r"
@@ -2147,7 +2147,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
 
     def test_parse_diff_with_path_invalid_type(self):
         """Testing DiffXParser.parse_diff with invalid file path type"""
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -2159,7 +2159,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'        "old": "abc123"\n'
             b'    }\n'
             b'}\n'
-        )
+        ))
 
         message = (
             'Unexpected type %s for "path" key in change 1, file 1'
@@ -2173,7 +2173,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with file path as dictionary with
         missing "old" key
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -2187,7 +2187,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'        "old": "abc123"\n'
             b'    }\n'
             b'}\n'
-        )
+        ))
 
         message = 'Missing the "path.old" key in change 1, file 1'
 
@@ -2198,7 +2198,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         """Testing DiffXParser.parse_diff with file path as dictionary with
         missing "new" key
         """
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -2212,7 +2212,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'        "old": "abc123"\n'
             b'    }\n'
             b'}\n'
-        )
+        ))
 
         message = 'Missing the "path.new" key in change 1, file 1'
 
@@ -2221,7 +2221,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
 
     def test_parse_diff_with_revision_invalid_type(self):
         """Testing DiffXParser.parse_diff with invalid file revision type"""
-        parser = DiffXParser(
+        parser = DiffXParser(data=(
             b'#diffx: encoding=utf-8, version=1.0\n'
             b'#.change:\n'
             b'#..file:\n'
@@ -2230,7 +2230,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
             b'    "path": "file",\n'
             b'    "revision": 123\n'
             b'}\n'
-        )
+        ))
 
         message = (
             'Unexpected type %s for "revision" key in change 1, file 1'
@@ -2305,7 +2305,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         }
         filediff.save()
 
-        parser = DiffXParser(b'')
+        parser = DiffXParser(data=b'')
         self.assertEqual(
             parser.raw_diff(diffset),
             b'#diffx: encoding=utf-8, version=1.0\n'
@@ -2537,7 +2537,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         }
         filediff.save()
 
-        parser = DiffXParser(b'')
+        parser = DiffXParser(data=b'')
         self.assertEqual(
             parser.raw_diff(diffset),
             b'#diffx: encoding=utf-16, version=1.0\n'
@@ -2774,7 +2774,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         }
         filediff.save()
 
-        parser = DiffXParser(b'')
+        parser = DiffXParser(data=b'')
         self.assertEqual(
             parser.raw_diff(diffset),
             b'#diffx: encoding=utf-16, version=1.0\n'
@@ -3057,7 +3057,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         }
         filediff.save()
 
-        parser = DiffXParser(b'')
+        parser = DiffXParser(data=b'')
         self.assertEqual(
             parser.raw_diff(diffcommit1),
             b'#diffx: encoding=utf-16, version=1.0\n'
