@@ -4,6 +4,7 @@ Version Added:
     5.0
 """
 
+from django.conf import settings
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
@@ -186,7 +187,8 @@ def get_saml2_settings():
     siteconfig = SiteConfiguration.objects.get_current()
 
     assert constants is not None
-    return {
+
+    saml_settings = {
         'strict': True,
         'debug': True,
         'idp': {
@@ -222,3 +224,8 @@ def get_saml2_settings():
             'privateKey': '',
         },
     }
+
+    if hasattr(settings, 'SAML_CONFIG_ADVANCED'):
+        saml_settings.update(settings.SAML_CONFIG_ADVANCED)
+
+    return saml_settings
