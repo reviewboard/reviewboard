@@ -1074,7 +1074,10 @@ class Site(object):
             # custom settings. Then we can build the final script.
             to_remove = (
                 # Review Board <= 2.5
-                "os.environ['DJANGO_SETTINGS_MODULE']",
+                ("os.environ['DJANGO_SETTINGS_MODULE'] = "
+                 "'reviewboard.settings'"),
+                ("os.environ['DJANGO_SETTINGS_MODULE'] = "
+                 "\"reviewboard.settings\""),
                 "os.environ['PYTHON_EGG_CACHE']",
                 "os.environ['HOME']",
                 "os.environ['PYTHONPATH'] = '%s:" % conf_dir,
