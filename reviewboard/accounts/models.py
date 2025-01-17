@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import (Any, ClassVar, Literal, Optional, Sequence,
+                    TYPE_CHECKING, Union, overload)
 from uuid import uuid4
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User as DjangoUser
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Q
@@ -19,6 +20,7 @@ from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import CounterField, JSONField
 from djblets.forms.fields import TIMEZONE_CHOICES
 from djblets.siteconfig.models import SiteConfiguration
+from typing_extensions import TypedDict
 
 from reviewboard.accounts.managers import (LocalSiteProfileManager,
                                            ProfileManager,
@@ -33,6 +35,37 @@ from reviewboard.reviews.signals import (reply_published,
                                          review_request_published)
 from reviewboard.site.models import LocalSite
 from reviewboard.site.signals import local_site_user_added
+
+if TYPE_CHECKING:
+    BaseUser = DjangoUser
+else:
+    BaseUser = object
+    User = DjangoUser
+
+
+class UserLocalSiteStats(TypedDict):
+    """Statistics about a user's Local Site relationships.
+
+    Version Added:
+        7.1
+    """
+
+    #: The list of IDs of LocalSites for which the user is an administrator.
+    admined_local_site_ids: Sequence[int]
+
+    #: The list of IDs of LocalSites for which the user is a member.
+    #:
+    #: This may or may not be a subset of :py:attr:`admined_local_site_ids`.
+    local_site_ids: Sequence[int]
+
+    #: A UUID representing the current generation of statistics.
+    #:
+    #: This is suitable for use in other cache keys.
+    #:
+    #: This will be updated any time a new set of stats is created (i.e.,
+    #: when first generated, when invalidated, or when it expires from cache),
+    #: even if the actual data does not change.
+    state_uuid: str
 
 
 class ReviewRequestVisit(models.Model):
@@ -55,9 +88,11 @@ class ReviewRequestVisit(models.Model):
         (MUTED, 'Muted'),
     )
 
-    user = models.ForeignKey(User,
-                             on_delete=models.CASCADE,
-                             related_name='review_request_visits')
+    user = models.ForeignKey['User', 'User'](
+        DjangoUser,
+        on_delete=models.CASCADE,
+        related_name='review_request_visits')
+
     review_request = models.ForeignKey(ReviewRequest,
                                        on_delete=models.CASCADE,
                                        related_name='visits')
@@ -93,9 +128,11 @@ class LinkedAccount(models.Model):
         5.0
     """
 
-    user = models.ForeignKey(User,
-                             on_delete=models.CASCADE,
-                             related_name='linked_accounts')
+    user = models.ForeignKey['User', 'User'](
+        DjangoUser,
+        on_delete=models.CASCADE,
+        related_name='linked_accounts')
+
     service_id = models.CharField(max_length=64)
     service_user_id = models.CharField(max_length=254)
     service_data = JSONField(
@@ -113,7 +150,10 @@ class LinkedAccount(models.Model):
 class Profile(models.Model):
     """User profile which contains some basic configurable settings."""
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, unique=True)
+    user = models.ForeignKey['User', 'User'](
+        DjangoUser,
+        on_delete=models.CASCADE,
+        unique=True)
 
     # This will redirect new users to the account settings page the first time
     # they log in (or immediately after creating an account).  This allows
@@ -748,9 +788,11 @@ class Profile(models.Model):
 class LocalSiteProfile(models.Model):
     """User profile information specific to a LocalSite."""
 
-    user = models.ForeignKey(User,
-                             on_delete=models.CASCADE,
-                             related_name='site_profiles')
+    user = models.ForeignKey['User', 'User'](
+        DjangoUser,
+        on_delete=models.CASCADE,
+        related_name='site_profiles')
+
     profile = models.ForeignKey(Profile,
                                 on_delete=models.CASCADE,
                                 related_name='site_profiles')
@@ -827,9 +869,11 @@ class Trophy(models.Model):
                                    on_delete=models.CASCADE,
                                    null=True,
                                    related_name='trophies')
-    user = models.ForeignKey(User,
-                             on_delete=models.CASCADE,
-                             related_name='trophies')
+
+    user = models.ForeignKey['User', 'User'](
+        DjangoUser,
+        on_delete=models.CASCADE,
+        related_name='trophies')
 
     objects: ClassVar[TrophyManager] = TrophyManager()
 
@@ -852,371 +896,495 @@ class Trophy(models.Model):
 # The following functions are patched onto the User model.
 #
 
-def _is_user_profile_visible(self, user=None):
-    """Return whether or not the given user can view this user's profile.
+class _ReviewBoardUser(BaseUser):
+    """Stub class providing methods to mix in to User.
 
-    Profiles are hidden from unauthenticated users. For authenticated users, a
-    profile is visible if one of the following is true:
-
-    * The profile is not marked as private.
-    * The viewing user owns the profile.
-    * The viewing user is a staff member.
-    * The viewing user is an administrator on a Local Site which the viewed
-      user is a member.
-
-    Args:
-        user (django.contrib.auth.models.User, optional):
-            The user for which visibility to the profile is to be determined.
-
-    Returns:
-        bool:
-        Whether or not the given user can view the profile.
-    """
-    if user is None or user.is_anonymous:
-        return False
-
-    if hasattr(self, 'is_private'):
-        # This is an optimization used by the web API. It will set
-        # is_private on this User instance through a query, saving a
-        # lookup for each instance.
-        #
-        # This must be done because select_related() and
-        # prefetch_related() won't cache reverse foreign key relations.
-        is_private = self.is_private
-    else:
-        is_private = self.get_profile().is_private
-
-    return (not is_private or
-            user == self or
-            user.is_admin_for_user(self))
-
-
-def _has_private_profile(self):
-    """Return whether the user's profile is marked as private.
+    This class is used only to store methods and attributes that we'll copy
+    into :py:class:`django.contrib.auth.models.User`, and to provide a base
+    class that can be directly mixed into a new ``User`` class when type
+    checking.
 
     Version Added:
-        5.0
-
-    Returns:
-        bool:
-        Whether the user's profile is marked as private.
+        7.1
     """
-    try:
-        profile = self.get_profile(create_if_missing=False)
-    except Profile.DoesNotExist:
-        profile = None
 
-    return bool(profile and profile.is_private)
+    ######################
+    # Instance variables #
+    ######################
 
+    #: Whether the user is private.
+    #:
+    #: This is internal state that may or may not be set. No code outside
+    #: this class should check for this.
+    is_private: bool
 
-def _should_send_email(self):
-    """Get whether a user wants to receive emails.
+    #: A mapping of Local Site IDs to cached profiles.
+    #:
+    #: This is internal state that may or may not be set. No code outside
+    #: this class should check for this.
+    _site_profiles: dict[Any, LocalSiteProfile]
 
-    This is patched into the user object to make it easier to deal with missing
-    Profile objects.
-    """
-    return self.get_profile().should_send_email
+    def is_user_profile_visible(
+        self,
+        user: Optional[User] = None,
+    ) -> bool:
+        """Return whether or not the given user can view this user's profile.
 
+        Profiles are hidden from unauthenticated users. For authenticated
+        users, a profile is visible if one of the following is true:
 
-def _should_send_own_updates(self):
-    """Get whether a user wants to receive emails about their activity.
+        * The profile is not marked as private.
+        * The viewing user owns the profile.
+        * The viewing user is a staff member.
+        * The viewing user is an administrator on a Local Site which the
+          viewed user is a member.
 
-    This is patched into the user object to make it easier to deal with missing
-    Profile objects.
-    """
-    return self.get_profile().should_send_own_updates
+        Args:
+            user (django.contrib.auth.models.User, optional):
+                The user for which visibility to the profile is to be
+                determined.
 
+        Returns:
+            bool:
+            Whether or not the given user can view the profile.
+        """
+        if user is None or user.is_anonymous:
+            return False
 
-def _get_profile(self, cached_only=False, create_if_missing=True,
-                 return_is_new=False):
-    """Return the profile for the User.
+        if hasattr(self, 'is_private'):
+            # This is an optimization used by the web API. It will set
+            # is_private on this User instance through a query, saving a
+            # lookup for each instance.
+            #
+            # This must be done because select_related() and
+            # prefetch_related() won't cache reverse foreign key relations.
+            is_private = self.is_private
+        else:
+            is_private = self.get_profile().is_private
 
-    The profile will be cached, preventing queries for future lookups.
+        return (
+            not is_private or
+            user == self or
 
-    If a profile doesn't exist in the database, and a cached-only copy
-    isn't being returned, then a profile will be created in the database.
+            # We have to ignore the type here, because 'self' in this context
+            # is not 'User' but '_ReviewBoardUser'.
+            user.is_admin_for_user(self)  # type: ignore
+        )
 
-    Version Changed:
-        3.0.12:
-        Added support for ``create_if_missing`` and ``return_is_new``
-        arguments.
+    def has_private_profile(self) -> bool:
+        """Return whether the user's profile is marked as private.
 
-    Args:
-        cached_only (bool, optional):
-            Whether we should only return the profile cached for the user.
+        Version Added:
+            5.0
 
-            If True, this function will not retrieve an uncached profile or
-            create one that doesn't exist. Instead, it will return ``None``.
-
-        create_if_missing (bool, optional):
-            Whether to create a site profile if one doesn't already exist.
-
-        return_is_new (bool, optional);
-            If ``True``, the result of the call will be a tuple containing
-            the profile and a boolean indicating if the profile was
-            newly-created.
-
-    Returns:
-        Profile or tuple:
-        The user's profile.
-
-        If ``return_is_new`` is ``True``, then this will instead return
-        ``(Profile, is_new)``.
-
-    Raises:
-        Profile.DoesNotExist:
-            The profile did not exist. This can only be raised if passing
-            ``create_if_missing=False``.
-    """
-    # Note that we use the same cache variable that a select_related() call
-    # would use, ensuring that we benefit from Django's caching when possible.
-    profile = getattr(self, '_profile', None)
-    profile_was_none = (profile is None)
-    is_new = False
-
-    if profile is None:
-        # Check if this was pre-fetched.
+        Returns:
+            bool:
+            Whether the user's profile is marked as private.
+        """
         try:
-            profile = list(self._prefetched_objects_cache['profile_set'])[0]
-        except (AttributeError, IndexError, KeyError):
-            pass
+            profile = self.get_profile(create_if_missing=False)
+        except Profile.DoesNotExist:
+            profile = None
+
+        return bool(profile and profile.is_private)
+
+    def should_send_email(self) -> bool:
+        """Return whether a user wants to receive e-mails.
+
+        This is patched into the user object to make it easier to deal with
+        missing Profile objects.
+
+        Returns:
+            bool:
+            ``True`` if the user wants to receive e-mails. ``False`` if they
+            do not.
+        """
+        return self.get_profile().should_send_email
+
+    def should_send_own_updates(self) -> bool:
+        """Return whether a user wants to receive e-mails about their activity.
+
+        This is patched into the user object to make it easier to deal with
+        missing Profile objects.
+
+        Returns:
+            bool:
+            ``True`` if the user wants to receive e-mails about their own
+            activity. ``False`` if they do not.
+        """
+        return self.get_profile().should_send_own_updates
+
+    @overload
+    def get_profile(
+        self,
+        cached_only: Literal[False] = False,
+        create_if_missing: bool = ...,
+        return_is_new: Literal[False] = False,
+    ) -> Profile:
+        ...
+
+    @overload
+    def get_profile(
+        self,
+        cached_only: Literal[False] = False,
+        create_if_missing: bool = ...,
+        return_is_new: Literal[True] = True,
+    ) -> tuple[Profile, bool]:
+        ...
+
+    @overload
+    def get_profile(
+        self,
+        cached_only: Literal[True] = True,
+        create_if_missing: bool = ...,
+        return_is_new: Literal[False] = False,
+    ) -> Optional[Profile]:
+        ...
+
+    @overload
+    def get_profile(
+        self,
+        cached_only: Literal[True] = True,
+        create_if_missing: bool = ...,
+        return_is_new: Literal[True] = True,
+    ) -> tuple[Optional[Profile], bool]:
+        ...
+
+    def get_profile(
+        self,
+        cached_only: bool = False,
+        create_if_missing: bool = True,
+        return_is_new: bool = False,
+    ) -> Union[Optional[Profile],
+               tuple[Optional[Profile], bool]]:
+        """Return the profile for the User.
+
+        The profile will be cached, preventing queries for future lookups.
+
+        If a profile doesn't exist in the database, and a cached-only copy
+        isn't being returned, then a profile will be created in the database.
+
+        Version Changed:
+            3.0.12:
+            Added support for ``create_if_missing`` and ``return_is_new``
+            arguments.
+
+        Args:
+            cached_only (bool, optional):
+                Whether we should only return the profile cached for the user.
+
+                If True, this function will not retrieve an uncached profile
+                or create one that doesn't exist. Instead, it will return
+                ``None``.
+
+            create_if_missing (bool, optional):
+                Whether to create a site profile if one doesn't already exist.
+
+            return_is_new (bool, optional);
+                If ``True``, the result of the call will be a tuple containing
+                the profile and a boolean indicating if the profile was
+                newly-created.
+
+        Returns:
+            Profile or tuple:
+            The user's profile.
+
+            If ``return_is_new`` is ``True``, then this will instead return
+            ``(Profile, is_new)``.
+
+        Raises:
+            Profile.DoesNotExist:
+                The profile did not exist. This can only be raised if passing
+                ``create_if_missing=False``.
+        """
+        # Note that we use the same cache variable that a select_related() call
+        # would use, ensuring that we benefit from Django's caching when
+        # possible.
+        profile: Optional[Profile] = getattr(self, '_profile', None)
+        profile_was_none = profile is None
+        is_new: bool = False
 
         if profile is None:
-            # Check if it's in the field cache (select_related):
+            # Check if this was pre-fetched.
             try:
-                field = self._meta.get_field('profile')
-                profile = field.get_cached_value(self)
-            except KeyError:
+                profile = \
+                    list(self._prefetched_objects_cache['profile_set'])[0]
+            except (AttributeError, IndexError, KeyError):
                 pass
 
-            if profile is None and not cached_only:
-                # We may need to create or fetch this.
-                if create_if_missing:
-                    profile, is_new = Profile.objects.get_or_create(user=self)
-                else:
-                    # This may raise Profile.DoesNotExist.
-                    profile = Profile.objects.get(user=self)
+            if profile is None:
+                # Check if it's in the field cache (select_related):
+                try:
+                    field = self._meta.get_field('profile')
+                    profile = field.get_cached_value(self)
+                except KeyError:
+                    pass
 
-    if profile_was_none and profile is not None:
-        # We didn't have this cached before, but we have a profile now.
-        # Cache it on the user and set the user on the profile.
-        profile.user = self
-        self._profile = profile
+                if profile is None and not cached_only:
+                    # We may need to create or fetch this.
+                    if create_if_missing:
+                        profile, is_new = Profile.objects.get_or_create(
+                            user=self)
+                    else:
+                        # This may raise Profile.DoesNotExist.
+                        profile = Profile.objects.get(user=self)
 
-    # While modern versions of Review Board set this to an empty dictionary,
-    # old versions would initialize this to None. Since we don't want to litter
-    # our code with extra None checks everywhere we use it, normalize it here.
-    if profile is not None and profile.extra_data is None:
-        profile.extra_data = {}
+        if profile_was_none and profile is not None:
+            # We didn't have this cached before, but we have a profile now.
+            # Cache it on the user and set the user on the profile.
+            profile.user = self  # type: ignore
+            self._profile = profile
 
-    if return_is_new:
-        return profile, is_new
+        # While modern versions of Review Board set this to an empty
+        # dictionary, old versions would initialize this to None. Since we
+        # don't want to litter our code with extra None checks everywhere we
+        # use it, normalize it here.
+        if profile is not None and profile.extra_data is None:
+            profile.extra_data = {}
 
-    return profile
+        if return_is_new:
+            return profile, is_new
 
+        return profile
 
-def _get_site_profile(self, local_site, cached_only=False,
-                      create_if_missing=True, return_is_new=False):
-    """Return the LocalSiteProfile for a given LocalSite for the User.
+    @overload
+    def get_site_profile(
+        self,
+        local_site: Optional[LocalSite],
+        cached_only: Literal[False] = False,
+        create_if_missing: bool = ...,
+        return_is_new: Literal[False] = False,
+    ) -> LocalSiteProfile:
+        ...
 
-    The site profile will be cached, preventing queries for future lookups.
+    @overload
+    def get_site_profile(
+        self,
+        local_site: Optional[LocalSite],
+        cached_only: Literal[False] = False,
+        create_if_missing: bool = ...,
+        return_is_new: Literal[True] = True,
+    ) -> tuple[LocalSiteProfile, bool]:
+        ...
 
-    If a site profile doesn't exist in the database, and a cached-only copy
-    isn't being returned, then a profile will be created in the database,
-    unless passing ``create_if_missing=False``.
+    @overload
+    def get_site_profile(
+        self,
+        local_site: Optional[LocalSite],
+        cached_only: Literal[True] = True,
+        create_if_missing: bool = ...,
+        return_is_new: Literal[False] = False,
+    ) -> Optional[LocalSiteProfile]:
+        ...
 
-    Version Changed:
-        3.0.12:
-        * In previous versions, this would not create a site profile if one
-          didn't already exist. Now it does, unless passing
-          ``create_if_missing=False``. This change was made to standardize
-          behavior between this and :py:meth:`User.get_profile`.
+    @overload
+    def get_site_profile(
+        self,
+        local_site: Optional[LocalSite],
+        cached_only: Literal[True] = True,
+        create_if_missing: bool = ...,
+        return_is_new: Literal[True] = True,
+    ) -> tuple[Optional[LocalSiteProfile], bool]:
+        ...
 
-        * Added support for ``cached_only``, ``create_if_missing`` and
-          ``return_is_new`` arguments.
+    def get_site_profile(
+        self,
+        local_site: Optional[LocalSite],
+        cached_only: bool = False,
+        create_if_missing: bool = True,
+        return_is_new: bool = False,
+    ) -> Union[Optional[LocalSiteProfile],
+               tuple[Optional[LocalSiteProfile], bool]]:
+        """Return the LocalSiteProfile for a given LocalSite for the User.
 
-    Args:
-        local_site (reviewboard.site.models.LocalSite):
-            The LocalSite to return a profile for. This is allowed to be
-            ``None``, which means the profile applies to their global site
-            account.
+        The site profile will be cached, preventing queries for future lookups.
 
-        cached_only (bool, optional):
-            Whether we should only return the profile cached for the user.
+        If a site profile doesn't exist in the database, and a cached-only
+        copy isn't being returned, then a profile will be created in the
+        database, unless passing ``create_if_missing=False``.
 
-            If True, this function will not retrieve an uncached profile or
-            create one that doesn't exist. Instead, it will return ``None``.
+        Version Changed:
+            3.0.12:
+            * In previous versions, this would not create a site profile if
+              one didn't already exist. Now it does, unless passing
+              ``create_if_missing=False``. This change was made to standardize
+              behavior between this and :py:meth:`User.get_profile`.
 
-        create_if_missing (bool, optional):
-            Whether to create a site profile if one doesn't already exist.
+            * Added support for ``cached_only``, ``create_if_missing`` and
+              ``return_is_new`` arguments.
 
-        return_is_new (bool, optional);
-            If ``True``, the result of the call will be a tuple containing
-            the profile and a boolean indicating if the profile was
-            newly-created.
+        Args:
+            local_site (reviewboard.site.models.LocalSite):
+                The LocalSite to return a profile for. This is allowed to be
+                ``None``, which means the profile applies to their global site
+                account.
 
-    Returns:
-        LocalSiteProfile or tuple:
-        The user's LocalSite profile.
+            cached_only (bool, optional):
+                Whether we should only return the profile cached for the user.
 
-        If ``return_is_new`` is ``True``, then this will instead return
-        ``(LocalSiteProfile, is_new)``.
+                If True, this function will not retrieve an uncached profile
+                or create one that doesn't exist. Instead, it will return
+                ``None``.
 
-    Raises:
-        LocalSiteProfile.DoesNotExist:
-            The profile did not exist. This can only be raised if passing
-            ``create_if_missing=False``.
-    """
-    if not hasattr(self, '_site_profiles'):
-        self._site_profiles = {}
+            create_if_missing (bool, optional):
+                Whether to create a site profile if one doesn't already exist.
 
-    if local_site is None:
-        local_site_id = None
-    else:
-        local_site_id = local_site.pk
+            return_is_new (bool, optional);
+                If ``True``, the result of the call will be a tuple containing
+                the profile and a boolean indicating if the profile was
+                newly-created.
 
-    is_new = False
-    site_profile = self._site_profiles.get(local_site_id)
+        Returns:
+            LocalSiteProfile or tuple:
+            The user's LocalSite profile.
 
-    if site_profile is None and not cached_only:
-        profile = self.get_profile()
-        site_profile, is_new = LocalSiteProfile.objects.for_user(
-            user=self,
-            profile=profile,
-            local_site=local_site,
-            create_if_missing=create_if_missing)
+            If ``return_is_new`` is ``True``, then this will instead return
+            ``(LocalSiteProfile, is_new)``.
 
-        # Set these directly in order to avoid further lookups.
-        site_profile.user = self
-        site_profile.profile = profile
-        site_profile.local_site = local_site
+        Raises:
+            LocalSiteProfile.DoesNotExist:
+                The profile did not exist. This can only be raised if passing
+                ``create_if_missing=False``.
+        """
+        if not hasattr(self, '_site_profiles'):
+            self._site_profiles = {}
 
-        self._site_profiles[local_site_id] = site_profile
-
-    if return_is_new:
-        return site_profile, is_new
-
-    return site_profile
-
-
-def _is_admin_for_user(self, user):
-    """Return whether or not this user is an administrator for the given user.
-
-    Results will be cached for this user so that at most one query is done.
-
-    Args:
-        user (django.contrib.auth.models.User):
-            The user to check.
-
-    Returns:
-        bool:
-        Whether or not this user is an administrator for the given user.
-    """
-    if self.is_staff:
-        return True
-
-    if not user or user.is_anonymous:
-        return False
-
-    if not LocalSite.objects.has_local_sites():
-        return False
-
-    admined_local_site_ids = \
-        self.get_local_site_stats().get('admined_local_site_ids', [])
-
-    if admined_local_site_ids:
-        user_local_site_ids = \
-            user.get_local_site_stats().get('local_site_ids', [])
-
-        if user_local_site_ids:
-            # If there's any overlap in IDs, then the user is an admin for
-            # one of the other user's Local Sites.
-            return bool(set(admined_local_site_ids) &
-                        set(user_local_site_ids))
-
-    return False
-
-
-def _get_local_site_stats(self):
-    """Return statistics on LocalSite membership for this user.
-
-    Version Added:
-        5.0
-
-    Returns:
-        dict:
-        A dictionary of statistics, containing the following:
-
-        Keys:
-            admined_local_site_ids (list of int):
-                The list of IDs of LocalSites for which this user is an
-                administrator.
-
-            local_site_ids (list of int):
-                The list of IDs of LocalSites for which this user is a
-                member.
-
-                This may or may not be a subset of ``admined_local_site_ids``.
-
-            state_uuid (str):
-               A UUID representing the current generation of statistics.
-
-                This is suitable for use in other cache keys.
-
-                This will be updated any time a new set of stats is created
-                (i.e., when first generated, when invalidated, or when it
-                expires from cache), even if the actual data does not change.
-    """
-    def _gen_stats():
-        if LocalSite.objects.has_local_sites():
-            local_site_ids = list(
-                LocalSite.users.through.objects
-                .filter(user=self)
-                .values_list('localsite_id', flat=True)
-            )
-
-            admined_local_site_ids = list(
-                LocalSite.admins.through.objects
-                .filter(user=self)
-                .values_list('localsite_id', flat=True)
-            )
+        if local_site is None:
+            local_site_id = None
         else:
-            local_site_ids = []
-            admined_local_site_ids = []
+            local_site_id = local_site.pk
 
-        return {
-            'admined_local_site_ids': admined_local_site_ids,
-            'local_site_ids': local_site_ids,
-            'state_uuid': str(uuid4()),
-        }
+        is_new = False
+        site_profile = self._site_profiles.get(local_site_id)
 
-    local_sites_stats = LocalSite.objects.get_stats()
+        if site_profile is None and not cached_only:
+            profile = self.get_profile()
+            site_profile, is_new = LocalSiteProfile.objects.for_user(
+                user=self,
+                profile=profile,
+                local_site=local_site,
+                create_if_missing=create_if_missing)
 
-    if local_sites_stats.get('total_count', 0) == 0:
-        return {
-            'admined_local_site_ids': [],
-            'local_site_ids': [],
-            'state_uuid': local_sites_stats['state_uuid'],
-        }
+            # Set these directly in order to avoid further lookups.
+            site_profile.user = self
+            site_profile.profile = profile
+            site_profile.local_site = local_site
 
-    # Due to the state_uuid, this cache key will auto-invalidate when the
-    # LocalSite stats invalidate.
-    cache_key = 'user-local-site-stats-%s-%s' % (
-        self.pk,
-        local_sites_stats['state_uuid'])
+            self._site_profiles[local_site_id] = site_profile
 
-    return cache_memoize(cache_key, _gen_stats)
+        if return_is_new:
+            return site_profile, is_new
+
+        return site_profile
+
+    def is_admin_for_user(
+        self,
+        user: Optional[Union[AnonymousUser, User]],
+    ) -> bool:
+        """Return whether this user is an administrator for the given user.
+
+        Results will be cached for this user so that at most one query is done.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check.
+
+        Returns:
+            bool:
+            Whether or not this user is an administrator for the given user.
+        """
+        if self.is_staff:
+            return True
+
+        if not user or user.is_anonymous:
+            return False
+
+        if not LocalSite.objects.has_local_sites():
+            return False
+
+        assert isinstance(user, User)
+
+        admined_local_site_ids = \
+            self.get_local_site_stats().get('admined_local_site_ids', [])
+
+        if admined_local_site_ids:
+            user_local_site_ids = \
+                user.get_local_site_stats().get('local_site_ids', [])
+
+            if user_local_site_ids:
+                # If there's any overlap in IDs, then the user is an admin for
+                # one of the other user's Local Sites.
+                return bool(set(admined_local_site_ids) &
+                            set(user_local_site_ids))
+
+        return False
+
+    def get_local_site_stats(self) -> UserLocalSiteStats:
+        """Return statistics on LocalSite membership for this user.
+
+        Version Added:
+            5.0
+
+        Returns:
+            UserLocalSiteStats:
+            A dictionary of statistics.
+        """
+        def _gen_stats() -> UserLocalSiteStats:
+            if LocalSite.objects.has_local_sites():
+                local_site_ids = list(
+                    LocalSite.users.through.objects
+                    .filter(user=self)
+                    .values_list('localsite_id', flat=True)
+                )
+
+                admined_local_site_ids = list(
+                    LocalSite.admins.through.objects
+                    .filter(user=self)
+                    .values_list('localsite_id', flat=True)
+                )
+            else:
+                local_site_ids = []
+                admined_local_site_ids = []
+
+            return {
+                'admined_local_site_ids': admined_local_site_ids,
+                'local_site_ids': local_site_ids,
+                'state_uuid': str(uuid4()),
+            }
+
+        local_sites_stats = LocalSite.objects.get_stats()
+
+        if local_sites_stats.get('total_count', 0) == 0:
+            return {
+                'admined_local_site_ids': [],
+                'local_site_ids': [],
+                'state_uuid': local_sites_stats['state_uuid'],
+            }
+
+        # Due to the state_uuid, this cache key will auto-invalidate when the
+        # LocalSite stats invalidate.
+        cache_key = 'user-local-site-stats-%s-%s' % (
+            self.pk,
+            local_sites_stats['state_uuid'])
+
+        return cache_memoize(cache_key, _gen_stats)
 
 
-User.is_profile_visible = _is_user_profile_visible
-User.has_private_profile = _has_private_profile
-User.get_local_site_stats = _get_local_site_stats
-User.get_profile = _get_profile
-User.get_site_profile = _get_site_profile
-User.should_send_email = _should_send_email
-User.should_send_own_updates = _should_send_own_updates
-User.is_admin_for_user = _is_admin_for_user
-User._meta.ordering = ('username',)
+if TYPE_CHECKING:
+    # Define a new User type that's a mix of the standard user and our mixin.
+    class User(_ReviewBoardUser, BaseUser):
+        pass
+else:
+    # Manually mix in the methods we need back into User.
+    User.get_local_site_stats = _ReviewBoardUser.get_local_site_stats
+    User.get_profile = _ReviewBoardUser.get_profile
+    User.get_site_profile = _ReviewBoardUser.get_site_profile
+    User.has_private_profile = _ReviewBoardUser.has_private_profile
+    User.is_admin_for_user = _ReviewBoardUser.is_admin_for_user
+    User.is_profile_visible = _ReviewBoardUser.is_user_profile_visible
+    User.should_send_email = _ReviewBoardUser.should_send_email
+    User.should_send_own_updates = _ReviewBoardUser.should_send_own_updates
+    User._meta.ordering = ('username',)
 
 
 @receiver(review_request_published)
@@ -1306,3 +1474,15 @@ def _on_group_user_membership_changed(instance, action, pk_set, reverse,
         if q is not None:
             LocalSiteProfile.objects.filter(q).update(
                 total_incoming_request_count=None)
+
+
+__all__ = [
+    'AnonymousUser',
+    'LinkedAccount',
+    'LocalSiteProfile',
+    'Profile',
+    'ReviewRequestVisit',
+    'Trophy',
+    'User',
+    'UserLocalSiteStats',
+]
