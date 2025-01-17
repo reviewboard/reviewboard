@@ -345,9 +345,12 @@ autodoc_default_flags = [
 
 autodoc_excludes = {
     '*': [
+        '__annotations__',
         '__dict__',
         '__doc__',
         '__module__',
+        '__orig_bases__',
+        '__parameters__',
         '__weakref__',
     ],
     'class': [
