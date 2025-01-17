@@ -1,18 +1,27 @@
 """Account-related template tags."""
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime
+from typing import Iterator, TYPE_CHECKING
 
 import pytz
 from django import template
+from django.contrib.auth.models import User
 from django.utils import dateformat, timezone
-from django.utils.html import escape
+from django.utils.html import escape, format_html, format_html_join
+from django.utils.safestring import SafeString, mark_safe
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.templatetags.djblets_js import json_dumps
 
+from reviewboard.accounts.user_details import user_details_provider_registry
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.avatars import avatar_services
 from reviewboard.site.urlresolvers import local_site_reverse
+
+if TYPE_CHECKING:
+    from django.template.context import Context
 
 
 logger = logging.getLogger(__name__)
@@ -154,3 +163,66 @@ def js_user_session_info(context):
                                               request=request)
 
     return json_dumps(info)
+
+
+@register.simple_tag(takes_context=True)
+def user_badges(
+    context: Context,
+    user: User,
+) -> SafeString:
+    """Return badges shown for a user.
+
+    This will query for any badges provided for a user and return HTML
+    rendering them. No order is guaranteed.
+
+    Version Added:
+        7.1
+
+    Args:
+        context (django.template.context.Context):
+            The template rendering context.
+
+        user (django.contrib.auth.models.User):
+            The user to query for badges.
+
+    Returns:
+        django.utils.safestring.SafeString:
+        The HTML containing badges for the user.
+    """
+    if not user:
+        return mark_safe('')
+
+    assert isinstance(user, User), f'{user!r} must be a User'
+
+    def _iter_badges() -> Iterator[SafeString]:
+        request = context['request']
+
+        if request is not None:
+            local_site = request.local_site
+        else:
+            local_site = None
+
+        for provider in user_details_provider_registry:
+            try:
+                badges = provider.get_user_badges(user=user,
+                                                  local_site=local_site,
+                                                  request=request)
+
+                for user_badge in badges:
+                    yield user_badge.render_to_string()
+            except Exception as e:
+                logger.exception(
+                    'Unexpected error when fetching user badges from provider '
+                    '%r: %s',
+                    provider, e)
+
+    badges_html = format_html_join('', '{}', (
+        (html,)
+        for html in _iter_badges()
+    ))
+
+    if badges_html:
+        return format_html('<div class="rb-c-user-badges">{}</div>',
+                           badges_html)
+    else:
+        return mark_safe('')

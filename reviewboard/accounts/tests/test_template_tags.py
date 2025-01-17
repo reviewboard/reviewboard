@@ -9,6 +9,9 @@ from django.test.client import RequestFactory
 from django.utils.safestring import SafeText
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.accounts.user_details import (BaseUserDetailsProvider,
+                                               UserBadge,
+                                               user_details_provider_registry)
 from reviewboard.testing import TestCase
 
 
@@ -288,6 +291,115 @@ class JSUserSessionInfoTests(TestCase):
         self.assertIsInstance(rendered, SafeText)
 
         return rendered
+
+
+class UserBadgesTests(TestCase):
+    """Unit tests for {% user_badges %}.
+
+    Version Added:
+        7.1
+    """
+
+    def test_with_no_badges(self) -> None:
+        """Testing {% user_badges %} with no badges"""
+        user = self.create_user()
+        t = Template(
+            '{% load accounts %}'
+            '{% user_badges user %}'
+        )
+
+        rendered = t.render(Context({
+            'user': user,
+        }))
+
+        self.assertIsInstance(rendered, SafeText)
+
+        self.assertEqual(rendered, '')
+
+    def test_with_badges(self) -> None:
+        """Testing {% user_badges %} with badges"""
+        class MyUserDetailsProvider(BaseUserDetailsProvider):
+            user_details_provider_id = 'my-user-details-provider'
+
+            def get_user_badges(self, user):
+                yield UserBadge(user=user,
+                                label='Badge 1')
+                yield UserBadge(user=user,
+                                label='Badge 2',
+                                css_class='custom-badge-css')
+
+        user = self.create_user()
+        t = Template(
+            '{% load accounts %}'
+            '{% user_badges user %}'
+        )
+
+        provider = MyUserDetailsProvider()
+
+        try:
+            user_details_provider_registry.register(provider)
+
+            rendered = t.render(Context({
+                'user': user,
+            }))
+        finally:
+            user_details_provider_registry.unregister(provider)
+
+        self.assertIsInstance(rendered, SafeText)
+
+        self.assertHTMLEqual(
+            rendered,
+            '<div class="rb-c-user-badges">'
+            '<span class="rb-c-user-badge">Badge 1</span>'
+            '<span class="rb-c-user-badge custom-badge-css">Badge 2</span>'
+            '</div>')
+
+    def test_with_badges_with_crash(self) -> None:
+        """Testing {% user_badges %} with crash in get_user_badges()"""
+        class MyUserDetailsProvider(BaseUserDetailsProvider):
+            user_details_provider_id = 'my-user-details-provider'
+
+            def get_user_badges(self, user):
+                yield UserBadge(user=user,
+                                label='Badge 1')
+
+                raise Exception('oh no')
+
+        user = self.create_user()
+        t = Template(
+            '{% load accounts %}'
+            '{% user_badges user %}'
+        )
+
+        provider = MyUserDetailsProvider()
+
+        try:
+            user_details_provider_registry.register(provider)
+
+            with self.assertLogs() as cm:
+                rendered = t.render(Context({
+                    'user': user,
+                }))
+        finally:
+            user_details_provider_registry.unregister(provider)
+
+        self.assertEqual(len(cm.output), 1)
+        self.assertRegex(
+            cm.output[0],
+            r'^ERROR:reviewboard\.accounts\.templatetags\.accounts:'
+            r'Unexpected error when fetching user badges from provider '
+            r'<reviewboard\.accounts\.tests\.test_template_tags\.'
+            r'UserBadgesTests\.test_with_badges_with_crash\.<locals>\.'
+            r'MyUserDetailsProvider object at 0x[a-f0-9]+>: oh no\n.*'
+            r'Traceback')
+
+        self.assertIsInstance(rendered, SafeText)
+
+        self.assertHTMLEqual(
+            rendered,
+            '<div class="rb-c-user-badges">'
+            '<span class="rb-c-user-badge">Badge 1</span>'
+            '</div>')
 
 
 class UserProfileDisplayNameTests(TestCase):
