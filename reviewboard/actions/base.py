@@ -362,7 +362,7 @@ class BaseAction:
         *,
         request: HttpRequest,
         context: Context,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Return extra template context for the action.
 
         Subclasses can override this to provide additional context needed by

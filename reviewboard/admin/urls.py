@@ -35,6 +35,7 @@ from reviewboard.admin.forms.email_settings import EMailSettingsForm
 from reviewboard.admin.forms.general_settings import GeneralSettingsForm
 from reviewboard.admin.forms.logging_settings import LoggingSettingsForm
 from reviewboard.admin.forms.privacy_settings import PrivacySettingsForm
+from reviewboard.admin.forms.review_settings import ReviewSettingsForm
 from reviewboard.admin.forms.search_settings import SearchSettingsForm
 from reviewboard.admin.forms.storage_settings import StorageSettingsForm
 from reviewboard.admin.forms.support_settings import SupportSettingsForm
@@ -84,6 +85,13 @@ urlpatterns = [
                  'form_class': EMailSettingsForm,
              },
              name='settings-email'),
+
+        path('reviews/',
+             views.site_settings,
+             kwargs={
+                'form_class': ReviewSettingsForm,
+             },
+             name='settings-reviews'),
 
         path('diffs/',
              views.site_settings,

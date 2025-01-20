@@ -80,9 +80,17 @@ extension hooks available to you.
         Defines new URLs in Review Board, which can point to your own custom
         views.
 
+**User Information Hooks**
     :ref:`avatar-service-hook`:
         Adds a new avatar service, which can be used to provide pictures for
         user accounts.
+
+    :ref:`user-details-provider-hook`:
+        Adds a new User Details Provider, for providing extra information
+        about users.
+
+    :ref:`user-infobox-hook`:
+        Adds new information to user infoboxes.
 
 :ref:`Action Hooks <action-hooks>`:
     A series of hooks used to add new actions for review requests, the diff

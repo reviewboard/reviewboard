@@ -4,9 +4,11 @@ Version Added:
     6.0
 """
 
+from __future__ import annotations
+
 import json
 import logging
-from typing import Iterable, List
+from typing import Iterable
 
 from django.template import Context, Library
 from django.utils.safestring import SafeText, mark_safe
@@ -39,7 +41,7 @@ def actions_html(
     request = context['request']
     actions: Iterable[BaseAction] = \
         actions_registry.get_for_attachment(attachment)
-    rendered: List[str] = []
+    rendered: list[str] = []
 
     for action in actions:
         try:
@@ -70,7 +72,7 @@ def child_actions_html(
     """
     request = context['request']
     actions: Iterable[BaseAction] = context['children']
-    rendered: List[str] = []
+    rendered: list[str] = []
 
     for child in actions:
         try:
@@ -101,7 +103,7 @@ def actions_js(
     """
     request = context['request']
     actions: Iterable[BaseAction] = actions_registry
-    rendered: List[str] = []
+    rendered: list[str] = []
 
     for action in actions:
         try:

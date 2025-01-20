@@ -32,6 +32,7 @@ Extension Hooks
    signal-hook
    template-hook
    url-hook
+   user-details-provider-hook
    user-infobox-hook
    user-page-sidebar-items-hook
    webapi-capabilities-hook

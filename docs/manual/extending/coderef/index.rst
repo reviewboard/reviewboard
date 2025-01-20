@@ -52,6 +52,7 @@ User Accounts
    reviewboard.accounts.testing
    reviewboard.accounts.testing.queries
    reviewboard.accounts.trophies
+   reviewboard.accounts.user_details
 
 
 Actions
