@@ -185,4 +185,4 @@ class TestToolDiffX(TestTool):
             reviewboard.diffviewer.diffparser.DiffXParser:
             The diff parser used to parse this data.
         """
-        return DiffXParser(data)
+        return DiffXParser(data=data)
