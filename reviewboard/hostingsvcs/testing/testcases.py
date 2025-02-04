@@ -1,8 +1,11 @@
 """Test cases for testing hosting services."""
 
+from __future__ import annotations
+
 import io
 import json
 from contextlib import contextmanager
+from typing import Optional, TYPE_CHECKING
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 
@@ -12,6 +15,9 @@ from reviewboard.hostingsvcs.base import (HostingServiceHTTPResponse,
                                           hosting_service_registry)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from reviewboard.hostingsvcs.base.http import HTTPHeaders
 
 
 class HttpTestContext(object):
@@ -89,8 +95,15 @@ class HttpTestContext(object):
             hosting_account=self.hosting_account,
             **kwargs)
 
-    def assertHTTPCall(self, index=0, url='', method='GET', body=None,
-                       headers=None, **kwargs):
+    def assertHTTPCall(
+        self,
+        index: int = 0,
+        url: str = '',
+        method: str = 'GET',
+        body: Optional[str] = None,
+        headers: Optional[HTTPHeaders] = None,
+        **kwargs,
+    ) -> None:
         """Assert that an HTTP call was made.
 
         This sets some defaults based on the test case, helping both to
@@ -110,13 +123,13 @@ class HttpTestContext(object):
             index (int, optional):
                 The index of the HTTP call.
 
-            url (unicode, optional):
+            url (str, optional):
                 The URL being accessed.
 
-            method (unicode, optional);
+            method (str, optional);
                 The HTTP method expected for the call.
 
-            body (unicode, optional):
+            body (str, optional):
                 The expected body for the call (used for POST/PUT requests).
 
             headers (dict, optional):
@@ -130,9 +143,7 @@ class HttpTestContext(object):
         # Check arguments against the request.
         request = self.http_requests[index]
 
-        if 'url' in kwargs:
-            url = kwargs.pop('url')
-
+        if url:
             if request.url != url:
                 raise failureException('HTTP call %s: URL: %r != %r'
                                        % (index, request.url, url))
