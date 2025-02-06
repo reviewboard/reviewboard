@@ -4,9 +4,12 @@ Version Added:
     5.0
 """
 
-from enum import Enum
-from urllib.parse import urlparse
+from __future__ import annotations
+
 import logging
+from enum import Enum
+from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
@@ -18,6 +21,7 @@ from django.http import (Http404,
                          HttpResponseBadRequest,
                          HttpResponseRedirect,
                          HttpResponseServerError)
+from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.views.generic.base import View
@@ -36,6 +40,7 @@ except ImportError:
     OneLogin_Saml2_Settings = None
     OneLogin_Saml2_Utils = None
 
+from reviewboard.accounts.errors import LoginNotAllowedError
 from reviewboard.accounts.models import LinkedAccount
 from reviewboard.accounts.sso.backends.saml.forms import SAMLLinkUserForm
 from reviewboard.accounts.sso.backends.saml.settings import get_saml2_settings
@@ -44,6 +49,9 @@ from reviewboard.accounts.sso.users import (find_suggested_username,
 from reviewboard.accounts.sso.views import BaseSSOView
 from reviewboard.admin.server import get_server_url
 from reviewboard.site.urlresolvers import local_site_reverse
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
 
 
 logger = logging.getLogger(__name__)
@@ -226,7 +234,12 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
             request=self.request,
             kwargs={'backend_id': self.sso_backend.backend_id})
 
-    def post(self, request, *args, **kwargs):
+    def post(
+        self,
+        request: HttpRequest,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
         """Handle a POST request.
 
         Args:
@@ -279,7 +292,14 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
 
         if linked_account:
             user = linked_account.user
-            self.sso_backend.login_user(request, user)
+
+            try:
+                self.sso_backend.login_user(request, user)
+            except LoginNotAllowedError:
+                return render(request=request,
+                              template_name='permission_denied.html',
+                              status=403)
+
             return HttpResponseRedirect(self.success_url)
         else:
             username = auth.get_nameid()
@@ -533,8 +553,11 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
 
         return super(SAMLLinkUserView, self).get(request, *args, **kwargs)
 
-    def form_valid(self, form):
-        """Handler for when the form has successfully authenticated.
+    def form_valid(
+        self,
+        form: SAMLLinkUserForm,
+    ) -> HttpResponse:
+        """Handle a successfully authenticated form.
 
         Args:
             form (reviewboard.accounts.sso.backends.saml.forms.
@@ -568,7 +591,10 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
 
         return self.link_user(user)
 
-    def link_user(self, user):
+    def link_user(
+        self,
+        user: User,
+    ) -> HttpResponse:
         """Link the given user.
 
         Args:
@@ -576,8 +602,8 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
                 The user to link.
 
         Returns:
-            django.http.HttpResponseRedirect:
-            A redirect to the success URL.
+            django.http.HttpResponse:
+            A redirect to the success URL, or an error page.
         """
         sso_id = self._sso_user_data.get('id')
 
@@ -587,7 +613,9 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
         user.linked_accounts.create(
             service_id='sso:saml',
             service_user_id=sso_id)
+
         self.sso_backend.login_user(self.request, user)
+
         return HttpResponseRedirect(self.get_success_url())
 
 

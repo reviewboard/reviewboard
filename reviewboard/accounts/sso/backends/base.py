@@ -4,10 +4,19 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.contrib import auth
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.backends import StandardAuthBackend
+from reviewboard.accounts.errors import LoginNotAllowedError
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import User
+    from django.http import HttpRequest
 
 
 class BaseSSOBackend(object):
@@ -95,7 +104,11 @@ class BaseSSOBackend(object):
         siteconfig = SiteConfiguration.objects.get_current()
         return siteconfig.get('%s_enabled' % self.backend_id, False)
 
-    def login_user(self, request, user):
+    def login_user(
+        self,
+        request: HttpRequest,
+        user: User,
+    ) -> None:
         """Log in the given user.
 
         Args:
@@ -104,7 +117,14 @@ class BaseSSOBackend(object):
 
             user (django.contrib.auth.models.User):
                 The user to log in.
+
+        Raises:
+            reviewboard.accounts.errors.LoginNotAllowedError:
+                The user is not allowed to log in.
         """
+        if not user.is_active:
+            raise LoginNotAllowedError()
+
         user.backend = '%s.%s' % (StandardAuthBackend.__module__,
                                   StandardAuthBackend.__name__)
         auth.login(request, user)

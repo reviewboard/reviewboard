@@ -56,7 +56,7 @@ class SAMLSSOBackend(BaseSSOBackend):
         'saml_slo_url': '',
         'saml_sso_binding_type': SAMLBinding.HTTP_POST,
         'saml_sso_url': '',
-        'saml_verfication_cert': '',
+        'saml_verification_cert': '',
     }
     login_view_cls = SAMLLoginView
 
