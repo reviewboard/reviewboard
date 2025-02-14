@@ -1,5 +1,10 @@
 """Unit tests for SAML forms."""
 
+from __future__ import annotations
+
+from typing import ClassVar
+
+from django.contrib.auth.models import User
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.sso.backends import sso_backends
@@ -33,9 +38,9 @@ bef2JtIf7mGDw8/KsUrAA2jEIpCedToGyQxyE6GdN5b69ITWvyAemnIM
 class SAMLLinkUserFormTests(TestCase):
     """Unit tests for SAMLLinkUserForm."""
 
-    fixtures = ['test_users']
+    fixtures: ClassVar[list[str]] = ['test_users']
 
-    def test_valid_login(self):
+    def test_valid_login(self) -> None:
         """Testing SAMLLinkUserForm validation in login mode"""
         form = SAMLLinkUserForm(data={
             'username': 'doc',
@@ -45,9 +50,9 @@ class SAMLLinkUserFormTests(TestCase):
 
         self.assertTrue(form.is_valid())
 
-    def test_invalid_login(self):
+    def test_invalid_login(self) -> None:
         """Testing SAMLLinkUserForm validation with incorrect password in login
-        mode.
+        mode
         """
         form = SAMLLinkUserForm(data={
             'username': 'doc',
@@ -60,7 +65,23 @@ class SAMLLinkUserFormTests(TestCase):
                          ['Please enter a correct username and password. Note '
                           'that both fields may be case-sensitive.'])
 
-    def test_provision(self):
+    def test_inactive_user(self) -> None:
+        """Testing SAMLLinkUserForm validation with an inactive user"""
+        user = User.objects.get(username='doc')
+        user.is_active = False
+        user.save(update_fields=['is_active'])
+
+        form = SAMLLinkUserForm(data={
+            'username': 'doc',
+            'password': 'nope',
+            'provision': False,
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors['__all__'],
+                         ['This account is inactive.'])
+
+    def test_provision(self) -> None:
         """Testing SAMLLinkUserForm validation in provision mode"""
         form = SAMLLinkUserForm(data={
             'username': 'doc',
