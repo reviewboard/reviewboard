@@ -1,4 +1,4 @@
-.. default-intersphinx:: djblets4.x rb6.x
+.. default-intersphinx:: djblets1.0 rb3.0
 
 
 =================================

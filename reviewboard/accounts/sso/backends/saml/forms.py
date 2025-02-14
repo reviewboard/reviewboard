@@ -4,10 +4,15 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
+from typing import Any
+
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
@@ -31,11 +36,11 @@ class SAMLLinkUserForm(AuthenticationForm):
         5.0
     """
 
-    provision = forms.BooleanField(
+    provision: forms.BooleanField = forms.BooleanField(
         widget=forms.HiddenInput(),
         required=False)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize the form.
 
         Args:
@@ -53,7 +58,7 @@ class SAMLLinkUserForm(AuthenticationForm):
             self.fields['username'].required = False
             self.fields['password'].required = False
 
-    def clean(self):
+    def clean(self) -> dict[str, Any]:
         """Run validation on the form.
 
         Returns:
@@ -65,7 +70,13 @@ class SAMLLinkUserForm(AuthenticationForm):
             # authenticating the login/password.
             return self.cleaned_data
         else:
-            return super(SAMLLinkUserForm, self).clean()
+            username = self.cleaned_data.get('username')
+
+            if username:
+                user = User.objects.get(username=username)
+                self.confirm_login_allowed(user)
+
+            return super().clean()
 
 
 def validate_x509(value):

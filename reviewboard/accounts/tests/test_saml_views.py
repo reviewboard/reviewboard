@@ -1,15 +1,23 @@
 """Unit tests for SAML views."""
 
+from __future__ import annotations
+
+from typing import ClassVar, TYPE_CHECKING
 from xml.etree import ElementTree
 
 import kgb
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.urls import reverse
+from djblets.cache.backend import make_cache_key
 
 from reviewboard.accounts.sso.backends.saml.views import (SAMLACSView,
                                                           SAMLLinkUserView,
                                                           SAMLSLSView)
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from djblets.util.typing import JSONDict
 
 
 VALID_CERT = """-----BEGIN CERTIFICATE-----
@@ -29,14 +37,12 @@ bef2JtIf7mGDw8/KsUrAA2jEIpCedToGyQxyE6GdN5b69ITWvyAemnIM
 -----END CERTIFICATE-----"""
 
 
-class SAMLViewTests(kgb.SpyAgency, TestCase):
-    """Unit tests for SAML views."""
+class SAMLMetadataViewTests(TestCase):
+    """Unit tests for SAMLMetadataView."""
 
-    fixtures = ['test_users']
-
-    def test_metadata_view(self):
+    def test_metadata_view(self) -> None:
         """Testing SAMLMetadataView"""
-        settings = {
+        settings: JSONDict = {
             'saml_enabled': True,
             'saml_verification_cert': VALID_CERT,
         }
@@ -74,9 +80,15 @@ class SAMLViewTests(kgb.SpyAgency, TestCase):
                 acs.get('Location'),
                 'http://example.com/account/sso/saml/acs/')
 
-    def test_get_link_user_existing_account(self):
+
+class SAMLLinkUserViewTests(kgb.SpyAgency, TestCase):
+    """Unit tests for SAMLLinkUserView."""
+
+    fixtures: ClassVar[list[str]] = ['test_users']
+
+    def test_get_link_user_existing_account(self) -> None:
         """Testing SAMLLinkUserView form render with existing account"""
-        settings = {
+        settings: JSONDict = {
             'saml_enabled': True,
             'saml_require_login_to_link': True,
         }
@@ -103,11 +115,11 @@ class SAMLViewTests(kgb.SpyAgency, TestCase):
             self.assertEqual(context['mode'],
                              SAMLLinkUserView.Mode.CONNECT_EXISTING_ACCOUNT)
 
-    def test_get_link_user_existing_account_email_match(self):
+    def test_get_link_user_existing_account_email_match(self) -> None:
         """Testing SAMLLinkUserView form render with existing account matching
         email address
         """
-        settings = {
+        settings: JSONDict = {
             'saml_enabled': True,
             'saml_require_login_to_link': True,
         }
@@ -134,11 +146,11 @@ class SAMLViewTests(kgb.SpyAgency, TestCase):
             self.assertEqual(context['mode'],
                              SAMLLinkUserView.Mode.CONNECT_EXISTING_ACCOUNT)
 
-    def test_get_link_user_existing_account_email_username_match(self):
+    def test_get_link_user_existing_account_email_username_match(self) -> None:
         """Testing SAMLLinkUserView form render with existing account matching
         username from email address
         """
-        settings = {
+        settings: JSONDict = {
             'saml_enabled': True,
             'saml_require_login_to_link': True,
         }
@@ -165,9 +177,9 @@ class SAMLViewTests(kgb.SpyAgency, TestCase):
             self.assertEqual(context['mode'],
                              SAMLLinkUserView.Mode.CONNECT_EXISTING_ACCOUNT)
 
-    def test_get_link_user_no_match(self):
+    def test_get_link_user_no_match(self) -> None:
         """Testing SAMLLinkUserView form render with no match"""
-        settings = {
+        settings: JSONDict = {
             'saml_enabled': True,
             'saml_require_login_to_link': True,
         }
@@ -194,9 +206,9 @@ class SAMLViewTests(kgb.SpyAgency, TestCase):
             self.assertEqual(context['mode'],
                              SAMLLinkUserView.Mode.PROVISION)
 
-    def test_post_link_user_login(self):
+    def test_post_link_user_login(self) -> None:
         """Testing SAMLLinkUserView form POST with login"""
-        settings = {
+        settings: JSONDict = {
             'saml_enabled': True,
             'saml_require_login_to_link': True,
         }
@@ -232,9 +244,9 @@ class SAMLViewTests(kgb.SpyAgency, TestCase):
             self.assertEqual(linked_account.service_id, 'sso:saml')
             self.assertEqual(linked_account.service_user_id, 'doc2')
 
-    def test_post_link_user_provision(self):
+    def test_post_link_user_provision(self) -> None:
         """Testing SAMLLinkUserView form POST with provision"""
-        settings = {
+        settings: JSONDict = {
             'saml_enabled': True,
             'saml_require_login_to_link': True,
         }
@@ -274,9 +286,51 @@ class SAMLViewTests(kgb.SpyAgency, TestCase):
             self.assertEqual(linked_account.service_id, 'sso:saml')
             self.assertEqual(linked_account.service_user_id, 'sleepy')
 
-    def test_post_link_user_invalid_mode(self):
+    def test_post_link_user_inactive(self) -> None:
+        """Testing SAMLLinkUserView form POST with an inactive user"""
+        settings: JSONDict = {
+            'saml_enabled': True,
+            'saml_require_login_to_link': True,
+        }
+
+        with self.siteconfig_settings(settings):
+            session = self.client.session
+            session['sso'] = {
+                'user_data': {
+                    'id': 'doc2',
+                    'first_name': 'Doc',
+                    'last_name': 'Dwarf',
+                    'email': 'doc@example.com',
+                },
+            }
+            session.save()
+
+            user = User.objects.get(username='doc')
+            user.is_active = False
+            user.save(update_fields=['is_active'])
+            self.assertFalse(user.linked_accounts.exists())
+
+            url = reverse('sso:saml:link-user', kwargs={'backend_id': 'saml'})
+            rsp = self.client.post(url, {
+                'username': 'doc',
+                'password': 'doc',
+                'provision': False,
+            })
+
+            self.assertEqual(rsp.status_code, 200)
+
+            form = rsp.context['form']
+            self.assertFalse(form.is_valid())
+            self.assertEqual(form.errors['__all__'],
+                             ['This account is inactive.'])
+
+            linked_accounts = list(user.linked_accounts.all())
+
+            self.assertEqual(len(linked_accounts), 0)
+
+    def test_post_link_user_invalid_mode(self) -> None:
         """Testing SAMLLinkUserView form POST with invalid mode"""
-        settings = {
+        settings: JSONDict = {
             'saml_enabled': True,
             'saml_require_login_to_link': True,
         }
@@ -317,8 +371,14 @@ class SAMLViewTests(kgb.SpyAgency, TestCase):
             self.assertEqual(linked_account.service_id, 'sso:saml')
             self.assertEqual(linked_account.service_user_id, 'sleepy')
 
-    def test_post_assertion_replay_countermeasures(self):
-        """Testing SAMLACSView POST replay attack countermeasures"""
+
+class SAMLACSViewTests(kgb.SpyAgency, TestCase):
+    """Unit tests for SAMLACSView."""
+
+    fixtures: ClassVar[list[str]] = ['test_users']
+
+    def setUp(self) -> None:
+        """Set up the test case."""
         class FakeAuth:
             def process_response(*args, **kwargs):
                 pass
@@ -350,7 +410,72 @@ class SAMLViewTests(kgb.SpyAgency, TestCase):
                     op=kgb.SpyOpReturn(fake_auth),
                     owner=SAMLACSView)
 
-        settings = {
+        super().setUp()
+
+    def tearDown(self) -> None:
+        """Tear down the test case."""
+        cache.delete(make_cache_key('saml_replay_id_message-id'))
+
+        super().tearDown()
+
+    def test_post_assertion_login(self) -> None:
+        """Testing SAMLACSView POST log in to existing linked account"""
+        settings: JSONDict = {
+            'saml_enabled': True,
+        }
+
+        user = User.objects.get(username='doc')
+        user.linked_accounts.create(
+            service_id='sso:saml',
+            service_user_id='username')
+
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+        with self.siteconfig_settings(settings):
+            url = reverse('sso:saml:acs', kwargs={'backend_id': 'saml'})
+
+            rsp = self.client.post(
+                path=url,
+                data={},
+                HTTP_HOST='localhost')
+            self.assertEqual(rsp.status_code, 302)
+
+            # Make sure we've logged in as the expected user.
+            self.assertEqual(int(self.client.session['_auth_user_id']),
+                             user.pk)
+
+    def test_post_assertion_login_with_inactive_user(self) -> None:
+        """Testing SAMLACSView POST log in to existing linked account with an
+        inactive user
+        """
+        settings: JSONDict = {
+            'saml_enabled': True,
+        }
+
+        user = User.objects.get(username='doc')
+        user.is_active = False
+        user.save(update_fields=['is_active'])
+        user.linked_accounts.create(
+            service_id='sso:saml',
+            service_user_id='username')
+
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+        with self.siteconfig_settings(settings):
+            url = reverse('sso:saml:acs', kwargs={'backend_id': 'saml'})
+
+            rsp = self.client.post(
+                path=url,
+                data={},
+                HTTP_HOST='localhost')
+            self.assertEqual(rsp.status_code, 403)
+
+            # Make sure we're not logged in.
+            self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_post_assertion_replay_countermeasures(self) -> None:
+        """Testing SAMLACSView POST replay attack countermeasures"""
+        settings: JSONDict = {
             'saml_enabled': True,
         }
 
@@ -367,7 +492,11 @@ class SAMLViewTests(kgb.SpyAgency, TestCase):
             self.assertEqual(rsp.content,
                              b'SAML message IDs have already been used')
 
-    def test_get_sls_replay_countermeasures(self):
+
+class SAMLSLSViewTests(kgb.SpyAgency, TestCase):
+    """Unit tests for SAMLSLSView."""
+
+    def test_get_sls_replay_countermeasures(self) -> None:
         """Testing SAMLSLSView GET replay attack countermeasures"""
         class FakeAuth:
             def process_slo(*args, **kwargs):
@@ -388,7 +517,7 @@ class SAMLViewTests(kgb.SpyAgency, TestCase):
                     op=kgb.SpyOpReturn(fake_auth),
                     owner=SAMLSLSView)
 
-        settings = {
+        settings: JSONDict = {
             'saml_enabled': True,
         }
 
