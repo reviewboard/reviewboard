@@ -11,7 +11,7 @@
 {%  if auth_backends.0.login_instructions %}
  <p>{{auth_backends.0.login_instructions}}</p>
 {%  endif %}
-{%  if form.errors %}
+{%  if form.non_field_errors %}
 {%   errorbox %}{{form.non_field_errors}}{% enderrorbox %}
 {%  endif %}
 </div>
@@ -40,10 +40,14 @@
 
  <div class="auth-form-row">
   <div class="auth-button-container">
-   <button class="ink-c-button -is-primary" type="submit">{% trans "Log in" %}</button>
+   <button class="ink-c-button -is-primary" type="submit">
+    {% trans "Log in" %}
+   </button>
 {%  for sso_backend in enabled_sso_backends %}
    <a href="{{sso_backend.login_url}}{% if next %}?next={{next|urlencode}}{% endif %}">
-    <button class="ink-c-button" type="button">{{sso_backend.login_label}}</button>
+    <button class="ink-c-button" type="button">
+     {{sso_backend.login_label}}
+    </button>
    </a>
 {%  endfor %}
   </div>
