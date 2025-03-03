@@ -563,9 +563,11 @@ class FileDiffResource(WebAPIResource):
             request=request,
             syntax_highlighting=request.GET.get('syntax-highlighting', False))
 
-        files = get_diff_files(diffset=filediff.diffset,
-                               filediff=filediff,
-                               request=request)
+        files = get_diff_files(
+            diffset=filediff.diffset,
+            filediff=filediff,
+            request=request,
+            diff_settings=diff_settings)
         populate_diff_chunks(files=files,
                              request=request,
                              diff_settings=diff_settings)

@@ -1,8 +1,19 @@
+"""The diff opcode generator."""
+
+from __future__ import annotations
+
 import os
 import re
+from typing import Optional, TYPE_CHECKING
 
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                post_process_filtered_equals)
+from reviewboard.diffviewer.settings import DiffSettings
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+
+    from reviewboard.diffviewer.differ import Differ
 
 
 class MoveRange(object):
@@ -28,18 +39,55 @@ class MoveRange(object):
         return '<MoveRange(%d, %d, %r)>' % (self.start, self.end, self.groups)
 
 
-class DiffOpcodeGenerator(object):
+class DiffOpcodeGenerator:
+    """The diff opcode generator."""
+
     ALPHANUM_RE = re.compile(r'\w')
     WHITESPACE_RE = re.compile(r'\s')
 
     MOVE_PREFERRED_MIN_LINES = 2
     MOVE_MIN_LINE_LENGTH = 20
 
-    TAB_SIZE = 8
+    #: The default width for a tabstop.
+    TAB_SIZE = DiffSettings.DEFAULT_TAB_SIZE
 
-    def __init__(self, differ, diff=None, interdiff=None, request=None,
-                 **kwargs):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The raw contents for the diff.
+    diff: Optional[bytes]
+
+    #: The differ being used to generate the diff.
+    differ: Differ
+
+    #: The diff settings object.
+    #:
+    #: Version Added:
+    #:     7.0.4
+    diff_settings: DiffSettings
+
+    #: The raw contents of the interdiff range diff.
+    interdiff: Optional[bytes]
+
+    #: The HTTP request from the client.
+    request: Optional[HttpRequest]
+
+    def __init__(
+        self,
+        differ: Differ,
+        diff: Optional[bytes] = None,
+        interdiff: Optional[bytes] = None,
+        request: Optional[HttpRequest] = None,
+        *,
+        diff_settings: Optional[DiffSettings] = None,
+        **kwargs,
+    ) -> None:
         """Initialize the opcode generator.
+
+        Version Changed:
+            7.0.4:
+            Added the ``diff_settings`` parameter.
 
         Version Changed:
             3.0.18:
@@ -59,6 +107,13 @@ class DiffOpcodeGenerator(object):
             request (django.http.HttpRequest):
                 The HTTP request from the client.
 
+            diff_settings (reviewboard.diffviewer.settings.DiffSettings,
+                           optional):
+                The diff settings object.
+
+                Version Added:
+                    7.0.4
+
             **kwargs (dict):
                 Additional keyword arguments, for future expansion.
         """
@@ -66,6 +121,12 @@ class DiffOpcodeGenerator(object):
         self.diff = diff
         self.interdiff = interdiff
         self.request = request
+
+        if diff_settings is None:
+            diff_settings = DiffSettings.create(request=request)
+
+        assert diff_settings.tab_size
+        self.diff_settings = diff_settings
 
     def __iter__(self):
         """Returns opcodes from the differ with extra metadata.
@@ -351,8 +412,11 @@ class DiffOpcodeGenerator(object):
         old_line_indent = old_line[:old_line_indent_len]
         new_line_indent = new_line[:new_line_indent_len]
 
-        norm_old_line_indent = old_line_indent.expandtabs(self.TAB_SIZE)
-        norm_new_line_indent = new_line_indent.expandtabs(self.TAB_SIZE)
+        tab_size = self.diff_settings.tab_size
+        assert tab_size
+
+        norm_old_line_indent = old_line_indent.expandtabs(tab_size)
+        norm_new_line_indent = new_line_indent.expandtabs(tab_size)
         norm_old_line_indent_len = len(norm_old_line_indent)
         norm_new_line_indent_len = len(norm_new_line_indent)
         norm_old_line_len = (norm_old_line_indent_len +
@@ -733,18 +797,42 @@ class DiffOpcodeGenerator(object):
 _generator = DiffOpcodeGenerator
 
 
-def get_diff_opcode_generator_class():
-    """Returns the DiffOpcodeGenerator class used for generating opcodes."""
+def get_diff_opcode_generator_class() -> type[DiffOpcodeGenerator]:
+    """Return the DiffOpcodeGenerator class used for generating opcodes.
+
+    Returns:
+        type:
+        The opcode generator class.
+    """
     return _generator
 
 
-def set_diff_opcode_generator_class(renderer):
-    """Sets the DiffOpcodeGenerator class used for generating opcodes."""
+def set_diff_opcode_generator_class(
+    renderer: type[DiffOpcodeGenerator],
+) -> None:
+    """Set the DiffOpcodeGenerator class used for generating opcodes.
+
+    Args:
+        renderer (type):
+            The opcode generator class.
+    """
     assert renderer
 
     globals()['_generator'] = renderer
 
 
-def get_diff_opcode_generator(*args, **kwargs):
-    """Returns a DiffOpcodeGenerator instance used for generating opcodes."""
+def get_diff_opcode_generator(*args, **kwargs) -> DiffOpcodeGenerator:
+    """Return a DiffOpcodeGenerator instance used for generating opcodes.
+
+    Args:
+        *args (tuple):
+            Positional arguments to pass to the opcode generator.
+
+        **kwargs (dict):
+            Keyword arguments to pass to the opcode generator.
+
+    Returns:
+        DiffOpcodeGenerator:
+        The new opcode generator.
+    """
     return _generator(*args, **kwargs)

@@ -32,7 +32,19 @@ interface SerializedFileDiff {
 
 
 /** The set of serialized comment blocks in the diff. */
-type SerializedDiffCommentBlocks = { [key: string]: SerializedDiffComment };
+type SerializedDiffCommentBlocks = Record<string, SerializedDiffComment>;
+
+
+/**
+ * Extra context for rendering a diff file.
+ *
+ * Version Added:
+ *     7.0.4
+ */
+interface DiffFileExtraContext {
+    /* The tabstop width for a given file. */
+    tab_size: number | undefined;
+}
 
 
 /**
@@ -56,6 +68,9 @@ export interface DiffFileAttrs extends ModelAttributes {
 
     /** Whether or not the file was deleted. */
     deleted: boolean;
+
+    /** Extra context for rendering a diff file. */
+    extra: DiffFileExtraContext | null;
 
     /** Information about the filediff. */
     filediff: SerializedFileDiff | null;
@@ -134,6 +149,7 @@ export interface DiffFileResourceData {
     base_filediff_id: number;
     binary: boolean;
     deleted: boolean;
+    extra: DiffFileExtraContext;
     filediff: SerializedFileDiff;
     force_interdiff: boolean;
     id: number;
@@ -159,6 +175,7 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
         baseFileDiffID: null,
         binary: false,
         deleted: false,
+        extra: null,
         filediff: null,
         forceInterdiff: null,
         forceInterdiffRevision: null,
@@ -191,6 +208,7 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
             baseFileDiffID: rsp.base_filediff_id,
             binary: rsp.binary,
             deleted: rsp.deleted,
+            extra: rsp.extra,
             filediff: rsp.filediff,
             forceInterdiff: rsp.force_interdiff,
             forceInterdiffRevision: rsp.interdiff_revision,

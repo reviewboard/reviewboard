@@ -7,7 +7,7 @@ import os
 import re
 import traceback
 from io import BytesIO
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Mapping, Optional, TYPE_CHECKING, Union
 from zipfile import ZipFile
 
 from django.conf import settings
@@ -374,19 +374,19 @@ class DiffViewerView(TemplateView):
         except KeyError:
             filename_patterns = []
 
-        files = get_diff_files(diffset=diffset,
-                               interdiffset=interdiffset,
-                               request=self.request,
-                               filename_patterns=filename_patterns,
-                               base_commit=base_commit,
-                               tip_commit=tip_commit)
-
-        # Break the list of files into pages
-        siteconfig = SiteConfiguration.objects.get_current()
+        diff_settings = DiffSettings.create(request=self.request)
+        files = get_diff_files(
+            diffset=diffset,
+            interdiffset=interdiffset,
+            request=self.request,
+            filename_patterns=filename_patterns,
+            base_commit=base_commit,
+            tip_commit=tip_commit,
+            diff_settings=diff_settings)
 
         paginator = Paginator(files,
-                              siteconfig.get('diffviewer_paginate_by'),
-                              siteconfig.get('diffviewer_paginate_orphans'))
+                              diff_settings.paginate_by,
+                              diff_settings.paginate_orphans)
 
         page_num = int(self.request.GET.get('page', 1))
 
@@ -395,10 +395,8 @@ class DiffViewerView(TemplateView):
 
             for i, f in enumerate(files):
                 if f['filediff'].pk == file_id:
-                    page_num = i // paginator.per_page + 1
-
-                    if page_num > paginator.num_pages:
-                        page_num = paginator.num_pages
+                    page_num = min(i // paginator.per_page + 1,
+                                   paginator.num_pages)
 
                     break
 
@@ -715,9 +713,15 @@ class DiffFragmentView(View):
                interfilediff_id,
                settings.TEMPLATE_SERIAL))
 
-    def process_diffset_info(self, diffset_or_id, filediff_id,
-                             interfilediff_id=None, interdiffset_or_id=None,
-                             base_filediff_id=None, **kwargs):
+    def process_diffset_info(
+        self,
+        diffset_or_id: Union[DiffSet, int],
+        filediff_id: int,
+        interfilediff_id: Optional[int] = None,
+        interdiffset_or_id: Optional[Union[DiffSet, int]] = None,
+        base_filediff_id: Optional[int] = None,
+        **kwargs,
+    ) -> Mapping[str, Any]:
         """Process and return information on the desired diff.
 
         The diff IDs and other data passed to the view can be processed and
@@ -726,6 +730,33 @@ class DiffFragmentView(View):
 
         A subclass may instead return a HttpResponse to indicate an error
         with the DiffSets.
+
+        Args:
+            diffset_or_id (reviewboard.diffviewer.models.diffset.DiffSet or
+                           int):
+                The DiffSet object, or the ID of the diffset.
+
+            filediff_id (int):
+                The ID of the FileDiff.
+
+            interfilediff_id (int, optional):
+                The ID of the FileDiff for rendering an interdiff, if present.
+
+            interdiffset_or_id (reviewboard.diffviewer.models.diffset.DiffSet
+                                or int):
+                The diffset object, or the ID of the diffset.
+
+            base_filediff_id (int):
+                The ID of the base FileDiff to use, if present. This may only
+                be provided if ``filediff_id`` is provided and
+                ``interfilediff_id`` is not.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments, for future expansion.
+
+        Returns:
+            dict:
+            Information about the diff.
         """
         # Depending on whether we're invoked from a URL or from a wrapper
         # with precomputed diffsets, we may be working with either IDs or
@@ -788,12 +819,19 @@ class DiffFragmentView(View):
                     % (base_filediff_id, filediff_id)
                 ))
 
+        assert diffset is not None
+
         # Store this so we don't end up causing an SQL query later when looking
         # this up.
         filediff.diffset = diffset
 
         diff_file = self._get_requested_diff_file(
-            diffset, filediff, interdiffset, interfilediff, base_filediff)
+            diffset=diffset,
+            filediff=filediff,
+            interdiffset=interdiffset,
+            interfilediff=interfilediff,
+            base_filediff=base_filediff,
+            diff_settings=DiffSettings.create(request=self.request))
 
         if not diff_file:
             raise UserVisibleError(
@@ -875,9 +913,17 @@ class DiffFragmentView(View):
             'show_deleted': show_deleted,
         }
 
-    def _get_requested_diff_file(self, diffset, filediff, interdiffset,
-                                 interfilediff, base_filediff):
-        """Fetches information on the requested diff.
+    def _get_requested_diff_file(
+        self,
+        *,
+        diffset: DiffSet,
+        filediff: Optional[FileDiff],
+        interdiffset: Optional[DiffSet],
+        interfilediff: Optional[FileDiff],
+        base_filediff: Optional[FileDiff],
+        diff_settings: Optional[DiffSettings],
+    ) -> Optional[SerializedDiffFile]:
+        """Fetch information on the requested diff.
 
         This will look up information on the diff that's to be rendered
         and return it, if found. It may also augment it with additional
@@ -885,13 +931,59 @@ class DiffFragmentView(View):
 
         The file will not contain chunk information. That must be specifically
         populated later.
+
+        Version Changed:
+            7.0.4:
+            * Made arguments keyword-only.
+            * Added the ``diff_settings`` argument.
+
+        Args:
+            diffset (reviewboard.diffviewer.models.diffset.DiffSet):
+                The diffset containing the files to return.
+
+            filediff (reviewboard.diffviewer.models.filediff.FileDiff,
+                      optional):
+                A specific file in the diff to return information for.
+
+            interdiffset (reviewboard.diffviewer.models.diffset.DiffSet,
+                          optional):
+                A second diffset used for an interdiff range.
+
+            interfilediff (reviewboard.diffviewer.models.filediff.FileDiff,
+                           optional):
+                A second specific file in ``interdiffset`` used to return
+                information for. This should be provided if ``filediff`` and
+                ``interdiffset`` are both provided. If it's ``None`` in this
+                case, then the diff will be shown as reverted for this file.
+
+                This may not be provided if ``base_filediff`` is provided.
+
+            base_filediff (reviewbaord.diffviewer.models.filediff.FileDiff,
+                           optional):
+                The base FileDiff to use.
+
+                This may only be provided if ``filediff`` is provided and
+                ``interfilediff`` is not.
+
+            diff_settings (reviewboard.diffviewer.settings.DiffSettings,
+                           optional):
+                The diff settings object. This will become mandatory in Review
+                Board 9.0.
+
+                Version Added:
+                    7.0.4
+
+        Returns:
+            SerializedDiffFile:
+            The serialized file information.
         """
         files = get_diff_files(diffset=diffset,
                                interdiffset=interdiffset,
                                filediff=filediff,
                                interfilediff=interfilediff,
                                base_filediff=base_filediff,
-                               request=self.request)
+                               request=self.request,
+                               diff_settings=diff_settings)
 
         if files:
             diff_file = files[0]

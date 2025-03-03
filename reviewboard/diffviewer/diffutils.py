@@ -23,7 +23,8 @@ from housekeeping.functions import deprecate_non_keyword_only_args
 from typing_extensions import NotRequired, TypedDict
 
 from reviewboard.attachments.mimetypes import guess_mimetype
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import (RemovedInReviewBoard80Warning,
+                                     RemovedInReviewBoard90Warning)
 from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
 from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
 from reviewboard.diffviewer.filetypes import (HEADER_EXTENSIONS,
@@ -63,6 +64,17 @@ _PATCH_GARBAGE_INPUT = 'patch: **** Only garbage was found in the patch input.'
 _T = TypeVar('_T')
 
 
+class DiffFileExtraContext(TypedDict):
+    """Extra context for diff files.
+
+    Version Added:
+        7.0.4
+    """
+
+    #: The tabstop width for a given file.
+    tab_size: NotRequired[int]
+
+
 class SerializedDiffFile(TypedDict):
     """Serialized information on a diff file.
 
@@ -84,6 +96,12 @@ class SerializedDiffFile(TypedDict):
 
     #: Whether the file was deleted.
     deleted: bool
+
+    #: Extra information about the diff file.
+    #:
+    #: Version Added:
+    #:     7.0.4
+    extra: DiffFileExtraContext
 
     #: The FileDiff for the file.
     filediff: FileDiff
@@ -1090,7 +1108,9 @@ def get_filediffs_match(filediff1, filediff2):
               filediff1.patched_sha1 == filediff2.patched_sha1)))
 
 
+@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
 def get_diff_files(
+    *,
     diffset: DiffSet,
     filediff: Optional[FileDiff] = None,
     interdiffset: Optional[DiffSet] = None,
@@ -1100,6 +1120,7 @@ def get_diff_files(
     filename_patterns: Optional[list[str]] = None,
     base_commit: Optional[DiffCommit] = None,
     tip_commit: Optional[DiffCommit] = None,
+    diff_settings: Optional[DiffSettings] = None,
 ) -> list[SerializedDiffFile]:
     """Return a list of files that will be displayed in a diff.
 
@@ -1111,6 +1132,11 @@ def get_diff_files(
 
     This can be used along with :py:func:`populate_diff_chunks` to build a full
     list containing all diff chunks used for rendering a side-by-side diff.
+
+    Version Changed:
+        7.0.4:
+        * Made arguments keyword-only.
+        * Added the ``diff_settings`` argument.
 
     Args:
         diffset (reviewboard.diffviewer.models.diffset.DiffSet):
@@ -1165,6 +1191,13 @@ def get_diff_files(
             :py:class:`DiffCommits <reviewboard.diffviewer.models.diffcommit
             .DiffCommit>`.
 
+        diff_settings (reviewboard.diffviewer.settings.DiffSettings, optional):
+            The diff settings object. This will become mandatory in Review
+            Board 9.0.
+
+            Version Added:
+                7.0.4
+
     Returns:
         list of dict:
         A list of dictionaries containing information on the files to show
@@ -1174,6 +1207,12 @@ def get_diff_files(
     # would require base/tip commits for the interdiffset as well.
     assert not interdiffset or (base_commit is None and tip_commit is None)
     assert base_filediff is None or interfilediff is None
+
+    if diff_settings is None:
+        RemovedInReviewBoard90Warning.warn(
+            'get_diff_files was called without a diff_settings argument. '
+            'This argument will become mandatory in Review Board 9.0')
+        diff_settings = DiffSettings.create(request=request)
 
     if (diffset.commit_count > 0 and
         base_commit and
@@ -1376,9 +1415,9 @@ def get_diff_files(
                         base_filediff = requested_base_filediff
                     else:
                         raise ValueError(
-                            'Invalid base_filediff (ID %d) for filediff (ID '
-                            '%d)'
-                            % (requested_base_filediff.pk, filediff.pk))
+                            f'Invalid base_filediff (ID '
+                            f'{requested_base_filediff.pk}) for filediff (ID '
+                            f'{filediff.pk})')
                 elif base_commit:
                     base_filediff = filediff.get_base_filediff(
                         base_commit=base_commit,
@@ -1389,12 +1428,18 @@ def get_diff_files(
                     newfile = ancestors[0].is_new
                     orig_revision = get_revision_str(PRE_CREATION)
 
+        extra: DiffFileExtraContext = {}
+
+        if diff_settings.tab_size:
+            extra['tab_size'] = diff_settings.tab_size
+
         f: SerializedDiffFile = {
             'base_filediff': base_filediff,
             'binary': filediff.binary,
             'chunks_loaded': False,
             'copied': filediff.copied,
             'deleted': filediff.deleted,
+            'extra': extra,
             'filediff': filediff,
             'force_interdiff': force_interdiff,
             'index': len(files),
@@ -1604,13 +1649,13 @@ def get_file_from_filediff(
     """
     interdiffset = None
 
-    key = "_diff_files_%s_%s" % (filediff.diffset.id, filediff.id)
+    key = f'_diff_files_{filediff.diffset.pk}_{filediff.pk}'
 
     if base_filediff:
-        key += '_base%s' % base_filediff.id
+        key += f'_base{base_filediff.pk}'
 
     if interfilediff:
-        key += "_%s" % interfilediff.id
+        key += f'_{interfilediff.pk}'
         interdiffset = interfilediff.diffset
 
     if key in context:
@@ -1618,16 +1663,17 @@ def get_file_from_filediff(
     else:
         assert 'user' in context
 
-        request = context.get('request', None)
+        request = context.get('request')
         files = get_diff_files(
-            filediff.diffset,
-            filediff,
-            interdiffset,
+            diffset=filediff.diffset,
+            filediff=filediff,
+            interdiffset=interdiffset,
             interfilediff=interfilediff,
             base_filediff=base_filediff,
             request=request,
             base_commit=base_commit,
-            tip_commit=tip_commit)
+            tip_commit=tip_commit,
+            diff_settings=diff_settings)
 
         populate_diff_chunks(files=files,
                              request=request,

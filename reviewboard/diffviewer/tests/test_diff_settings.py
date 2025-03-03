@@ -4,9 +4,15 @@ Version Added:
     5.0.2
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.testing import TestCase
 
+if TYPE_CHECKING:
+    from djblets.util.typing import JSONDict
 
 class DiffSettingsTests(TestCase):
     """Unit tests for reviewboard.diffviewer.settings.DiffSettings."""
@@ -112,9 +118,31 @@ class DiffSettingsTests(TestCase):
 
         self.assertFalse(diff_settings.syntax_highlighting)
 
-    def test_state_hash(self):
+    def test_tab_size(self) -> None:
+        """Testing DiffSettings.tab_size normalization"""
+        with self.siteconfig_settings(
+            {'diffviewer_default_tab_size': None},
+        ):
+            diff_settings = DiffSettings.create()
+            self.assertEqual(diff_settings.tab_size,
+                             DiffSettings.DEFAULT_TAB_SIZE)
+
+        with self.siteconfig_settings(
+            {'diffviewer_default_tab_size': 0},
+        ):
+            diff_settings = DiffSettings.create()
+            self.assertEqual(diff_settings.tab_size,
+                             DiffSettings.DEFAULT_TAB_SIZE)
+
+        with self.siteconfig_settings(
+            {'diffviewer_default_tab_size': 4},
+        ):
+            diff_settings = DiffSettings.create()
+            self.assertEqual(diff_settings.tab_size, 4)
+
+    def test_state_hash(self) -> None:
         """Testing DiffSettings.state_hash"""
-        siteconfig_settings = {
+        siteconfig_settings: JSONDict = {
             'code_safety_checkers': {
                 'trojan_code': {
                     'enable_confusables': True,
@@ -124,6 +152,7 @@ class DiffSettingsTests(TestCase):
             'diffviewer_custom_pygments_lexers': {
                 '.foo': 'SomeLexer',
             },
+            'diffviewer_default_tab_size': 4,
             'diffviewer_include_space_patterns': ['*.a', '*.b'],
             'diffviewer_paginate_by': 20,
             'diffviewer_paginate_orphans': 5,
@@ -136,4 +165,4 @@ class DiffSettingsTests(TestCase):
 
         self.assertEqual(
             diff_settings.state_hash,
-            '178099a49bf920fd46866042e9013d90d8ad31edf986325cdd641d2e1de4e01f')
+            '2941f28d668cbe4ab38659f9b7369f649058a3d70393897dc5f8108b764e271b')
