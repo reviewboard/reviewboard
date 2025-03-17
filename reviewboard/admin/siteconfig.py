@@ -24,6 +24,7 @@ from reviewboard.accounts.backends import auth_backends
 from reviewboard.accounts.privacy import recompute_privacy_consents
 from reviewboard.accounts.sso.backends import sso_backends
 from reviewboard.avatars import avatar_services
+from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.notifications.email.message import EmailMessage
 from reviewboard.search.search_backends.whoosh import WhooshBackend
@@ -139,6 +140,7 @@ defaults.update({
     # Diff Viewer settings
     'code_safety_checkers': {},
     'diffviewer_context_num_lines': 5,
+    'diffviewer_default_tab_size': DiffSettings.DEFAULT_TAB_SIZE,
     'diffviewer_include_space_patterns': [],
     'diffviewer_max_binary_size': 10_485_760,
     'diffviewer_max_diff_size': 2_097_152,

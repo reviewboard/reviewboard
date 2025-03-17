@@ -221,9 +221,9 @@ Extensions
   * :py:mod:`reviewboard.diffviewer.parser`
   * :py:mod:`reviewboard.scmtools.managers`
   * :py:mod:`reviewboard.scmtools.models`
+  * :py:mod:`reviewboard.reviews.detail`
   * :py:mod:`reviewboard.reviews.models.review_request`
   * :py:mod:`reviewboard.reviews.templatetags.reviewtags`
-  * :py:mod:`reviewboard.reviews.views.detail`
   * :py:mod:`reviewboard.reviews.views.mixins`
 
 

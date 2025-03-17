@@ -48,6 +48,16 @@ class DiffSettingsForm(SiteSettingsForm):
         required=False,
         widget=ListEditWidget(value_widget=LexersMappingWidget))
 
+    diffviewer_default_tab_size = forms.IntegerField(
+        label=_('Tabstop size'),
+        help_text=_(
+            'Set this to override the default character width for tabstops. '
+            'If unset or set to 0, tabstops will show as 8 characters wide.'
+        ),
+        required=False,
+        widget=forms.TextInput(attrs={'size': '2'}))
+
+
     diffviewer_show_trailing_whitespace = forms.BooleanField(
         label=_('Show trailing whitespace'),
         help_text=_('Show excess trailing whitespace as red blocks. This '
@@ -216,6 +226,7 @@ class DiffSettingsForm(SiteSettingsForm):
                     'diffviewer_show_trailing_whitespace',
                     'diffviewer_syntax_highlighting',
                     'diffviewer_custom_pygments_lexers',
+                    'diffviewer_default_tab_size',
                 ),
             },
             {
@@ -237,7 +248,7 @@ class DiffSettingsForm(SiteSettingsForm):
                     'Review Board by default checks code for suspicious '
                     'Unicode characters used in '
                     '<a href="https://trojansource.codes/">Trojan Source</a> '
-                    'attacks. These checks can be fine-tunes to avoid '
+                    'attacks. These checks can be fine-tuned to avoid '
                     'matching characters in some languages, at the expense '
                     'of decreased code safety.'
                 ),

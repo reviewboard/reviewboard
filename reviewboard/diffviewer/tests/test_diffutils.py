@@ -591,7 +591,9 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                              dest_file='foo3.txt', status=FileDiff.MODIFIED,
                              diff=one_to_three)
 
-        diff_files = get_diff_files(diffset=diffset, interdiffset=interdiffset)
+        diff_files = get_diff_files(diffset=diffset,
+                                    interdiffset=interdiffset,
+                                    diff_settings=DiffSettings.create())
         two_to_three = diff_files[0]
 
         self.assertEqual(two_to_three['orig_filename'], 'foo2.txt')
@@ -688,7 +690,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
             diff=b'interdiff3')
 
         diff_files = get_diff_files(diffset=diffset,
-                                    interdiffset=interdiffset)
+                                    interdiffset=interdiffset,
+                                    diff_settings=DiffSettings.create())
         self.assertEqual(len(diff_files), 6)
 
         diff_file = diff_files[0]
@@ -799,7 +802,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         diff_files = get_diff_files(diffset=diffset,
                                     interdiffset=interdiffset,
-                                    filediff=filediff)
+                                    filediff=filediff,
+                                    diff_settings=DiffSettings.create())
         self.assertEqual(len(diff_files), 1)
 
         diff_file = diff_files[0]
@@ -860,7 +864,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         diff_files = get_diff_files(diffset=diffset,
                                     interdiffset=interdiffset,
                                     filediff=filediff,
-                                    interfilediff=interfilediff)
+                                    interfilediff=interfilediff,
+                                    diff_settings=DiffSettings.create())
         self.assertEqual(len(diff_files), 1)
 
         diff_file = diff_files[0]
@@ -881,7 +886,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                                                     create_with_history=True)
         review_request.diffset_history.diffsets.add(self.diffset)
 
-        result = get_diff_files(diffset=self.diffset)
+        result = get_diff_files(diffset=self.diffset,
+                                diff_settings=DiffSettings.create())
 
         self.assertEqual(len(result), len(self.diffset.cumulative_files))
 
@@ -911,7 +917,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         #
         # 1. Select all FileDiffs for a DiffSet.
         with self.assertNumQueries(1):
-            get_diff_files(diffset=self.diffset)
+            get_diff_files(diffset=self.diffset,
+                           diff_settings=DiffSettings.create())
 
     def test_get_diff_files_history_query_count_ancestors_precomputed(self):
         """Testing get_diff_files query count for a whole diffset with history
@@ -930,7 +937,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         #
         # 1. Select all FileDiffs for a DiffSet.
         with self.assertNumQueries(1):
-            get_diff_files(diffset=self.diffset)
+            get_diff_files(diffset=self.diffset,
+                           diff_settings=DiffSettings.create())
 
     def test_get_diff_files_query_count_filediff(self):
         """Testing get_diff_files for a single FileDiff with history"""
@@ -947,7 +955,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         with self.assertNumQueries(4):
             files = get_diff_files(diffset=self.diffset,
-                                   filediff=filediff)
+                                   filediff=filediff,
+                                   diff_settings=DiffSettings.create())
 
         self.assertEqual(len(files), 1)
         f = files[0]
@@ -976,7 +985,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         with self.assertNumQueries(1):
             files = get_diff_files(diffset=self.diffset,
-                                   filediff=filediff)
+                                   filediff=filediff,
+                                   diff_settings=DiffSettings.create())
 
         self.assertEqual(len(files), 1)
         f = files[0]
@@ -1013,7 +1023,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         # 9. Update extra_data on FileDiff id=9.
         with self.assertNumQueries(9):
             files = get_diff_files(diffset=self.diffset,
-                                   base_commit=diff_commit)
+                                   base_commit=diff_commit,
+                                   diff_settings=DiffSettings.create())
 
         expected_results = self._get_filediff_base_mapping_from_details(
             self.get_filediffs_by_details(),
@@ -1050,7 +1061,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         review_request.diffset_history.diffsets.add(self.diffset)
 
         files = get_diff_files(diffset=self.diffset,
-                               base_commit=DiffCommit.objects.get(pk=4))
+                               base_commit=DiffCommit.objects.get(pk=4),
+                               diff_settings=DiffSettings.create())
 
         self.assertEqual(files, [])
 
@@ -1083,7 +1095,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         # 9. Update extra_data on FileDiff id=9.
         with self.assertNumQueries(9):
             files = get_diff_files(diffset=self.diffset,
-                                   tip_commit=tip_commit)
+                                   tip_commit=tip_commit,
+                                   diff_settings=DiffSettings.create())
 
         expected_results = self._get_filediff_base_mapping_from_details(
             self.get_filediffs_by_details(),
@@ -1133,7 +1146,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         # 1. Select all FileDiffs for a DiffSet.
         with self.assertNumQueries(1):
             files = get_diff_files(diffset=self.diffset,
-                                   tip_commit=tip_commit)
+                                   tip_commit=tip_commit,
+                                   diff_settings=DiffSettings.create())
 
         expected_results = self._get_filediff_base_mapping_from_details(
             self.get_filediffs_by_details(),
@@ -1194,7 +1208,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         with self.assertNumQueries(8):
             files = get_diff_files(diffset=self.diffset,
                                    base_commit=base_commit,
-                                   tip_commit=tip_commit)
+                                   tip_commit=tip_commit,
+                                   diff_settings=DiffSettings.create())
 
         expected_results = self._get_filediff_base_mapping_from_details(
             self.get_filediffs_by_details(),
@@ -1243,7 +1258,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         with self.assertNumQueries(1):
             files = get_diff_files(diffset=self.diffset,
                                    base_commit=base_commit,
-                                   tip_commit=tip_commit)
+                                   tip_commit=tip_commit,
+                                   diff_settings=DiffSettings.create())
 
         expected_results = self._get_filediff_base_mapping_from_details(
             self.get_filediffs_by_details(),
@@ -1280,7 +1296,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         files = get_diff_files(diffset=self.diffset,
                                base_commit=None,
-                               tip_commit=commits[0])
+                               tip_commit=commits[0],
+                               diff_settings=DiffSettings.create())
 
         # File "foo" was added in the first commit in the series.
 
@@ -1293,7 +1310,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         files = get_diff_files(diffset=self.diffset,
                                base_commit=commits[0],
-                               tip_commit=commits[1])
+                               tip_commit=commits[1],
+                               diff_settings=DiffSettings.create())
 
         self.assertEqual(files[2]['modified_filename'], 'foo')
         self.assertFalse(files[1]['filediff'].is_new)
@@ -1359,7 +1377,9 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.spy_on(tool_class.normalize_path_for_display,
                     owner=tool_class)
 
-        get_diff_files(diffset=diffset, filediff=filediff)
+        get_diff_files(diffset=diffset,
+                       filediff=filediff,
+                       diff_settings=DiffSettings.create())
 
         self.assertSpyCalledWith(tool_class.normalize_path_for_display,
                                  'foo.txt', extra_data={'test': True})
@@ -1375,7 +1395,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.create_filediff(diffset=diffset, source_file='foo.txt',
                              dest_file='foo2.txt', status=FileDiff.MODIFIED)
 
-        diff_files = get_diff_files(diffset=diffset)
+        diff_files = get_diff_files(diffset=diffset,
+                                    diff_settings=DiffSettings.create())
         self.assertFalse(diff_files[0]['public'])
 
         draft = review_request.get_draft()
@@ -1383,7 +1404,8 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         draft.publish()
 
         diffset.refresh_from_db()
-        diff_files = get_diff_files(diffset=diffset)
+        diff_files = get_diff_files(diffset=diffset,
+                                    diff_settings=DiffSettings.create())
         self.assertTrue(diff_files[0]['public'])
 
     def test_get_diff_files_public_state_with_interdiff(self):
@@ -1408,7 +1430,9 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                              status=FileDiff.MODIFIED,
                              diff=b'interdiff2')
 
-        diff_files = get_diff_files(diffset=diffset, interdiffset=interdiffset)
+        diff_files = get_diff_files(diffset=diffset,
+                                    interdiffset=interdiffset,
+                                    diff_settings=DiffSettings.create())
         self.assertFalse(diff_files[0]['public'])
 
         draft = review_request.get_draft()
@@ -1417,7 +1441,9 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         diffset.refresh_from_db()
         interdiffset.refresh_from_db()
-        diff_files = get_diff_files(diffset=diffset, interdiffset=interdiffset)
+        diff_files = get_diff_files(diffset=diffset,
+                                    interdiffset=interdiffset,
+                                    diff_settings=DiffSettings.create())
         self.assertTrue(diff_files[0]['public'])
 
     def test_get_diff_files_added_in_ancestor(self) -> None:
@@ -1434,8 +1460,10 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         # file 'foo' added in commit pk=3, and then renamed/edited to 'qux' in
         # pk=4.
-        files = get_diff_files(diffset=self.diffset, tip_commit=tip_commit,
-                               filename_patterns=['qux'])
+        files = get_diff_files(diffset=self.diffset,
+                               tip_commit=tip_commit,
+                               filename_patterns=['qux'],
+                               diff_settings=DiffSettings.create())
 
         self.assertEqual(len(files), 1)
 

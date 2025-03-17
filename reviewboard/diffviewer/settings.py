@@ -9,15 +9,17 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, fields as dataclass_fields
 from hashlib import sha256
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, ClassVar, Dict, List, Optional, TYPE_CHECKING, cast
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpRequest
 from django.utils.functional import cached_property
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.site.models import LocalSite
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+
+    from reviewboard.site.models import LocalSite
 
 
 @dataclass
@@ -32,6 +34,16 @@ class DiffSettings:
     Version Added:
         5.0.2
     """
+
+    #: The default for tabstop widths.
+    #:
+    #: Version Added:
+    #:     7.0.4
+    DEFAULT_TAB_SIZE: ClassVar[int] = 8
+
+    ######################
+    # Instance variables #
+    ######################
 
     #: A mapping of code safety checker IDs to configurations.
     #:
@@ -93,6 +105,12 @@ class DiffSettings:
     #: Type:
     #:     int
     syntax_highlighting_threshold: int
+
+    #: The default tabstop width for diffs.
+    #:
+    #: Version Added:
+    #:     7.0.4
+    tab_size: int
 
     @classmethod
     def create(
@@ -166,6 +184,12 @@ class DiffSettings:
 
             assert syntax_highlighting is not None
 
+        tab_size = cast(Optional[int],
+                        siteconfig.get('diffviewer_default_tab_size'))
+
+        if not tab_size:
+            tab_size = cls.DEFAULT_TAB_SIZE
+
         return cls(
             code_safety_configs=cast(
                 Dict,
@@ -189,7 +213,9 @@ class DiffSettings:
             syntax_highlighting=syntax_highlighting,
             syntax_highlighting_threshold=cast(
                 int,
-                siteconfig.get('diffviewer_syntax_highlighting_threshold')))
+                siteconfig.get('diffviewer_syntax_highlighting_threshold')),
+            tab_size=tab_size,
+        )
 
     @cached_property
     def state_hash(self) -> str:

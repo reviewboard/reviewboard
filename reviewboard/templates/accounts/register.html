@@ -15,7 +15,7 @@
 
 <div class="auth-header">
  <h1>{% trans "Register an account" %}</h1>
-{%  if form.errors %}
+{%  if form.non_field_errors %}
 {%   errorbox %}{{form.non_field_errors}}{% enderrorbox %}
 {%  endif %}
 </div>
@@ -24,6 +24,7 @@
       id="register_form">
  {% csrf_token %}
 
+{%  block auth_form_fields %}
  <div class="auth-form-row auth-field-row">
   {{form.username.label_tag}}
   {{form.username}}
@@ -60,23 +61,26 @@
   {{form.errors.last_name}}
  </div>
 
-{%  if form.agree_to_policies %}
+{%   if form.agree_to_policies %}
  <div class="auth-form-row auth-field-row checkbox-row">
   {{form.agree_to_policies}}
   {{form.agree_to_policies.label_tag}}
   {{form.errors.agree_to_policies}}
  </div>
-{%  endif %}
+{%   endif %}
 
-{%  if siteconfig_settings.auth_registration_show_captcha %}
+{%   if siteconfig_settings.auth_registration_show_captcha %}
  <div class="auth-form-row register-captcha-row clearfix">
   {% recaptcha_form_field form %}
  </div>
-{%  endif %}
+{%   endif %}
+{%  endblock auth_form_fields %}
 
  <div class="auth-form-row">
   <div class="auth-button-container">
-   <input type="submit" class="primary" value="{% trans "Register" %}" />
+   <button class="ink-c-button -is-primary" type="submit">
+    {% trans "Register" %}
+   </button>
   </div>
  </div>
 </form>

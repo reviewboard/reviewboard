@@ -301,7 +301,6 @@ Review Requests and Reviews
    reviewboard.reviews.ui.text
    reviewboard.reviews.views.attachments
    reviewboard.reviews.views.bug_trackers
-   reviewboard.reviews.views.detail
    reviewboard.reviews.views.diff_fragments
    reviewboard.reviews.views.diffviewer
    reviewboard.reviews.views.download_diff
