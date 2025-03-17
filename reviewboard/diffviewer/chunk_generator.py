@@ -1,9 +1,13 @@
+"""Diff chunk generator implementations."""
+
+from __future__ import annotations
+
 import fnmatch
 import hashlib
 import logging
 import re
 from itertools import zip_longest
-from typing import List
+from typing import Optional, Sequence, TYPE_CHECKING, Union
 
 import pygments.util
 from django.utils.encoding import force_str
@@ -28,9 +32,13 @@ from reviewboard.diffviewer.diffutils import (get_filediff_encodings,
                                               get_patched_file,
                                               convert_to_unicode,
                                               split_line_endings)
-from reviewboard.diffviewer.opcode_generator import (DiffOpcodeGenerator,
-                                                     get_diff_opcode_generator)
+from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 from reviewboard.diffviewer.settings import DiffSettings
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+
+    from reviewboard.diffviewer.models.filediff import FileDiff
 
 
 logger = logging.getLogger(__name__)
@@ -105,8 +113,8 @@ class RawDiffChunkGenerator(object):
         '.txt',  # ResourceLexer is used as a default.
     )
 
-    # Default tab size used in browsers.
-    TAB_SIZE = DiffOpcodeGenerator.TAB_SIZE
+    #: The default width for a tabstop.
+    TAB_SIZE = DiffSettings.DEFAULT_TAB_SIZE
 
     ######################
     # Instance variables #
@@ -121,15 +129,17 @@ class RawDiffChunkGenerator(object):
     #:     reviewboard.diffviewer.settings.DiffSettings
     diff_settings: DiffSettings
 
-    def __init__(self,
-                 old,
-                 new,
-                 orig_filename,
-                 modified_filename,
-                 encoding_list=None,
-                 diff_compat=DiffCompatVersion.DEFAULT,
-                 *,
-                 diff_settings: DiffSettings):
+    def __init__(
+        self,
+        old: Optional[Union[bytes, Sequence[bytes]]],
+        new: Optional[Union[bytes, Sequence[bytes]]],
+        orig_filename: str,
+        modified_filename: str,
+        encoding_list: Optional[Sequence[str]] = None,
+        diff_compat: int = DiffCompatVersion.DEFAULT,
+        *,
+        diff_settings: DiffSettings,
+    ) -> None:
         """Initialize the chunk generator.
 
         Version Changed:
@@ -197,6 +207,9 @@ class RawDiffChunkGenerator(object):
             raise TypeError(
                 _('%s expects a Unicode value for "modified_filename"')
                 % type(self).__name__)
+
+        assert diff_settings.tab_size
+        self.diff_settings = diff_settings
 
         self.old = old
         self.new = new
@@ -868,17 +881,20 @@ class RawDiffChunkGenerator(object):
         i = 0
         j = 0
 
+        tab_size = self.diff_settings.tab_size
+        assert tab_size
+
         for j, c in enumerate(chars):
             if c == ' ':
                 s += '&gt;'
                 i += 1
             elif c == '\t':
                 # Build "------>|" with the room we have available.
-                in_tab_pos = i % self.TAB_SIZE
+                in_tab_pos = i % tab_size
 
-                if in_tab_pos < self.TAB_SIZE - 1:
-                    if in_tab_pos < self.TAB_SIZE - 2:
-                        num_dashes = (self.TAB_SIZE - 2 - in_tab_pos)
+                if in_tab_pos < tab_size - 1:
+                    if in_tab_pos < tab_size - 2:
+                        num_dashes = (tab_size - 2 - in_tab_pos)
                         s += '&mdash;' * num_dashes
                         i += num_dashes
 
@@ -921,23 +937,26 @@ class RawDiffChunkGenerator(object):
         i = 0
         j = 0
 
+        tab_size = self.diff_settings.tab_size
+        assert tab_size
+
         for j, c in enumerate(chars):
             if c == ' ':
                 s += '&lt;'
                 i += 1
             elif c == '\t':
                 # Build "|<------" with the room we have available.
-                in_tab_pos = i % self.TAB_SIZE
+                in_tab_pos = i % tab_size
 
                 s += '|'
                 i += 1
 
-                if in_tab_pos < self.TAB_SIZE - 1:
+                if in_tab_pos < tab_size - 1:
                     s += '&lt;'
                     i += 1
 
-                    if in_tab_pos < self.TAB_SIZE - 2:
-                        num_dashes = (self.TAB_SIZE - 2 - in_tab_pos)
+                    if in_tab_pos < tab_size - 2:
+                        num_dashes = (tab_size - 2 - in_tab_pos)
                         s += '&mdash;' * num_dashes
                         i += num_dashes
 
@@ -1121,14 +1140,16 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
     """
 
     @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
-    def __init__(self,
-                 request,
-                 filediff,
-                 interfilediff=None,
-                 force_interdiff=False,
-                 base_filediff=None,
-                 *,
-                 diff_settings):
+    def __init__(
+        self,
+        request: HttpRequest,
+        filediff: FileDiff,
+        interfilediff: Optional[FileDiff] = None,
+        force_interdiff: bool = False,
+        base_filediff: Optional[FileDiff] = None,
+        *,
+        diff_settings: DiffSettings,
+    ) -> None:
         """Initialize the DiffChunkGenerator.
 
         Version Changed:
@@ -1177,7 +1198,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         else:
             orig_filename = filediff.source_file
 
-        super(DiffChunkGenerator, self).__init__(
+        super().__init__(
             old=None,
             new=None,
             orig_filename=orig_filename,
@@ -1193,7 +1214,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             str:
             The new cache key.
         """
-        key: List[str] = []
+        key: list[str] = []
 
         key.append('diff-sidebyside')
 
@@ -1225,7 +1246,8 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             interdiff = None
 
         return get_diff_opcode_generator(self.differ, diff, interdiff,
-                                         request=self.request)
+                                         request=self.request,
+                                         diff_settings=self.diff_settings)
 
     def get_chunks(self):
         """Return the chunks for the given diff information.
@@ -1517,21 +1539,45 @@ def compute_chunk_last_header(lines, numlines, meta, last_header=None):
     return last_header
 
 
-_generator = DiffChunkGenerator
+_generator: type[DiffChunkGenerator] = DiffChunkGenerator
 
 
-def get_diff_chunk_generator_class():
-    """Returns the DiffChunkGenerator class used for generating chunks."""
+def get_diff_chunk_generator_class() -> type[DiffChunkGenerator]:
+    """Return the DiffChunkGenerator class used for generating chunks.
+
+    Returns:
+        type:
+        The class for the DiffChunkGenerator to use.
+    """
     return _generator
 
 
-def set_diff_chunk_generator_class(renderer):
-    """Sets the DiffChunkGenerator class used for generating chunks."""
+def set_diff_chunk_generator_class(
+    renderer: type[DiffChunkGenerator],
+) -> None:
+    """Set the DiffChunkGenerator class used for generating chunks.
+
+    Args:
+        renderer (type):
+            The class for the DiffChunkGenerator to use.
+    """
     assert renderer
 
     globals()['_generator'] = renderer
 
 
-def get_diff_chunk_generator(*args, **kwargs):
-    """Returns a DiffChunkGenerator instance used for generating chunks."""
+def get_diff_chunk_generator(*args, **kwargs) -> DiffChunkGenerator:
+    """Return a DiffChunkGenerator instance used for generating chunks.
+
+    Args:
+        *args (tuple):
+            Positional arguments to pass to the DiffChunkGenerator.
+
+        **kwargs (dict):
+            Keyword arguments to pass to the DiffChunkGenerator.
+
+    Returns:
+        DiffChunkGenerator:
+        The chunk generator instance.
+    """
     return _generator(*args, **kwargs)

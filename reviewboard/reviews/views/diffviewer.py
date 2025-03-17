@@ -13,6 +13,7 @@ from typing_extensions import NotRequired, TypeAlias, TypedDict
 from reviewboard.accounts.mixins import UserProfileRequiredViewMixin
 from reviewboard.attachments.models import get_latest_file_attachments
 from reviewboard.diffviewer.commit_utils import get_base_and_tip_commits
+from reviewboard.diffviewer.diffutils import DiffFileExtraContext
 from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
 from reviewboard.diffviewer.views import (DiffViewerContext,
                                           DiffViewerView,
@@ -23,7 +24,6 @@ from reviewboard.reviews.context import (ReviewRequestContext,
 from reviewboard.reviews.ui.diff import DiffReviewUI
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.reviews.models import (Review,
-                                        ReviewRequest,
                                         ReviewRequestDraft)
 
 if TYPE_CHECKING:
@@ -206,6 +206,12 @@ class SerializedReviewsDiffFile(TypedDict):
 
     #: Whether the file was deleted in the change.
     deleted: bool
+
+    #: Extra information about the diff file.
+    #:
+    #: Version Added:
+    #:     7.0.4
+    extra: DiffFileExtraContext
 
     #: The ID of the FileDiff.
     id: int
@@ -585,6 +591,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                 'base_filediff_id': base_filediff_id,
                 'binary': f['binary'],
                 'deleted': f['deleted'],
+                'extra': f['extra'],
                 'id': filediff.pk,
                 'index': f['index'],
                 'filediff': {
