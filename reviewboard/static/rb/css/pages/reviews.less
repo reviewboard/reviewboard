@@ -35,12 +35,12 @@
 
     label {
       .inline-editor-label();
+      display: flex;
+      gap: var(--ink-u-spacing-sm);
 
       .avatar-container {
         background: white;
         border-radius: 50%;
-        display: inline-block;
-        overflow: hidden;
         width: 32px;
         height: 32px;
       }
@@ -53,8 +53,9 @@
       }
 
       .user-reply-info {
-        display: inline-block;
-        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: var(--ink-u-spacing-s);
 
         .timestamp {
           color: var(--ink-p-fg-weak);
@@ -63,10 +64,6 @@
 
           &:hover {
             text-decoration: underline;
-          }
-
-          time {
-            vertical-align: middle;
           }
         }
       }
@@ -432,11 +429,13 @@
 
   .collapse-button {
     border: 1px #333333 solid;
+    display: inline-block;
     cursor: pointer;
-    float: left;
-    margin-right: 0.5rem;
-    margin-top: -1px;
     padding: 0;
+
+    .rb-icon {
+      vertical-align: top;
+    }
   }
 }
 
@@ -497,6 +496,8 @@
   .header {
     border-radius: @box-border-radius @box-border-radius 0 0;
     display: flex;
+    align-items: baseline;
+    gap: var(--ink-u-spacing-sm);
     padding: @review-request-entry-padding;
 
     a {
@@ -507,6 +508,7 @@
     .header-details {
       display: flex;
       flex-grow: 1;
+      align-items: baseline;
     }
 
     .summary {
@@ -515,18 +517,20 @@
       font-weight: bold;
 
       .review-request-page-entry-title {
-        vertical-align: middle;
+        display: flex;
+        align-items: center;
+        gap: var(--ink-u-spacing-s);
+
+        #rb-ns-pages.base.on-shell-mobile-mode({
+          align-items: start;
+          flex-direction: column;
+        });
       }
     }
 
     .timestamp {
       color: var(--ink-p-fg-weak);
       display: block;
-
-      .on-mobile-medium-screen-720({
-        margin-top: 0.5rem;
-        text-align: left;
-      });
 
       &:hover {
         text-decoration: underline;
