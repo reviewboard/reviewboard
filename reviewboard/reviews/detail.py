@@ -7,9 +7,10 @@ import logging
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from itertools import chain
-from typing import (Any, ClassVar, Final, Iterable, Mapping, Optional,
-                    Sequence, TYPE_CHECKING, Type, TypeVar, Union)
+from typing import (Any, ClassVar, Final, Iterable, Iterator, Mapping,
+                    Optional, Sequence, TYPE_CHECKING, Type, TypeVar, Union)
 
+from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Model, Q
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
@@ -19,6 +20,7 @@ from djblets.registries.registry import (ALREADY_REGISTERED,
                                          NOT_REGISTERED)
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import cached_property
+from typing_extensions import TypedDict
 
 from reviewboard.diffviewer.models import DiffCommit
 from reviewboard.registries.registry import OrderedRegistry
@@ -36,14 +38,33 @@ from reviewboard.reviews.models import (BaseComment,
                                         StatusUpdate)
 
 if TYPE_CHECKING:
-    from django.contrib.auth.models import User
     from django.http import HttpRequest
     from django.template.context import Context
     from django.utils.safestring import SafeString
     from djblets.util.typing import JSONDict
 
+    from reviewboard.attachments.models import FileAttachment
     from reviewboard.changedescs.models import ChangeDescription
-    from reviewboard.reviews.models import ReviewRequestDraft
+    from reviewboard.diffviewer.models import DiffSet
+    from reviewboard.reviews.fields import (
+        ReviewRequestFieldChangeEntrySection,
+    )
+    from reviewboard.reviews.models import (GeneralComment,
+                                            ReviewRequestDraft,
+                                            Screenshot)
+
+    class _IssueCountsMap(TypedDict):
+        dropped: int
+        open: int
+        resolved: int
+        total: int
+        verifying: int
+
+    class _ReviewEntryCommentsMap(TypedDict):
+        diff_comments: list[Comment]
+        screenshot_comments: list[ScreenshotComment]
+        file_attachment_comments: list[FileAttachmentComment]
+        general_comments: list[GeneralComment]
 
 
 logger = logging.getLogger(__name__)
@@ -67,123 +88,149 @@ class ReviewRequestPageData:
 
     This object is not meant to be public API, and may change at any time. You
     should not use it in extension code.
-
-    Attributes:
-        body_bottom_replies (dict):
-            A mapping from a top-level review ID to a list of the
-            :py:class:`~reviewboard.reviews.models.Review` objects which reply
-            to it.
-
-        body_top_replies (dict):
-            A mapping from a top-level review ID to a list of the
-            :py:class:`~reviewboard.reviews.models.Review` objects which reply
-            to it.
-
-        review_comments (dict):
-            A dictionary of comments across all reviews. The keys are
-            :py:class:`~reviewboard.reviews.models.review.Review` IDs and the
-            values are lists of comments.
-
-        draft_body_top_replies (dict):
-            A dictionary of draft replies to ``body_top`` fields across all
-            reviews. The keys are are
-            :py:class:`~reviewboard.reviews.models.review.Review` IDs that are
-            being replied to and the values are lists of replies.
-
-        draft_body_bottom_replies (dict):
-            A dictionary of draft replies to ``body_bottom`` fields across all
-            reviews. The keys are are
-            :py:class:`~reviewboard.reviews.models.review.Review` IDs that are
-            being replied to and the values are lists of replies.
-
-        draft_reply_comments (dict):
-            A dictionary of draft reply comments across all reviews. The keys
-            are :py:class:`~reviewboard.reviews.models.review.Review` IDs that
-            are being replied to and the values are lists of reply comments.
-
-        changedescs (list of reviewboard.changedescs.models.ChangeDescription):
-            All the change descriptions to be shown on the page.
-
-        diffsets (list of reviewboard.diffviewer.models.diffset.DiffSet):
-            All of the diffsets associated with the review request.
-
-        diffsets_by_id (dict):
-            A mapping from ID to
-            :py:class:`~reviewboard.diffviewer.models.diffset.DiffSet`.
-
-        draft (reviewboard.reviews.models.ReviewRequestDraft):
-            The active draft of the review request, if any. May be ``None``.
-
-        active file_attachments (list of reviewboard.attachments.models.
-                                 FileAttachment):
-            All the active file attachments associated with the review request.
-
-        all_file_attachments (list of reviewboard.attachments.models.
-                              FileAttachment):
-            All the file attachments associated with the review request.
-
-        file_attachments_by_id (dict):
-            A mapping from ID to
-            :py:class:`~reviewboard.attachments.models.FileAttachment`
-
-        issues (list of reviewboard.reviews.models.BaseComment):
-            A list of all the comments (of all types) which are marked as
-            issues.
-
-        issue_counts (dict):
-            A dictionary storing counts of the various issue states throughout
-            the page.
-
-        latest_changedesc_timestamp (datetime.datetime):
-            The timestamp of the most recent change description on the page.
-
-        latest_review_timestamp (datetime.datetime):
-            The timestamp of the most recent review on the page.
-
-        latest_timestamps_by_review_id (dict):
-            A mapping from top-level review ID to the latest timestamp of the
-            thread.
-
-        active_screenshots (list of reviewboard.reviews.models.screenshots.
-                            Screenshot):
-            All the active screenshots associated with the review request.
-
-        all_screenshots (list of reviewboard.reviews.models.Screenshot):
-            All the screenshots associated with the review request.
-
-        screenshots_by_id (dict):
-            A mapping from ID to
-            :py:class:`~reviewboard.reviews.models.Screenshot`.
-
-        all_status_updates (list of reviewboard.reviews.models.
-                            status_updates.StatusUpdate):
-            All status updates recorded for the review request.
-
-        initial_status_updates (list of reviewboard.reviews.models.
-                                status_updates.StatusUpdate):
-            The status updates recorded on the initial publish of the
-            review request.
-
-        change_status_updates (dict):
-            The status updates associated with change descriptions. Each key
-            in the dictionary is a
-            :py:class:`~reviewboard.changedescs.models.ChangeDescription` ID,
-            and each key is a list of
-            :py:class:`reviewboard.reviews.models. status_updates.StatusUpdate`
-            instances.
-
-        status_updates_enabled (bool):
-            Whether the status updates feature is enabled for this
-            review request. This does not necessarily mean that there are
-            status updates on the review request.
     """
 
     ######################
     # Instance variables #
     ######################
 
+    #: All the active file attachments associated with the review request.
+    active_file_attachments: Sequence[FileAttachment]
+
+    #: All the active screenshots associated with the review request.
+    active_screenshots: Sequence[Screenshot]
+
+    #: All the file attachments associated with the review request.
+    all_file_attachments: Sequence[FileAttachment]
+
+    #: All the screenshots associated with the review request.
+    all_screenshots: Sequence[Screenshot]
+
+    #: All status updates associated with the review request.
+    all_status_updates: Sequence[StatusUpdate]
+
+    #: A mapping from review IDs to lists of replies.
+    #:
+    #: Each key is the ID of a
+    #: :py:class:`~reviewboard.reviews.models.review.Review`.
+    #:
+    #: Each value is a list of replies that directly reply to the
+    #: :py:attr:`~reviewboard.reviews.models.Review.body_bottom` attribute
+    #: of the review ID.
+    body_bottom_replies: Mapping[int, Sequence[Review]]
+
+    #: A mapping from review IDs to lists of replies.
+    #:
+    #: Each key is the ID of a
+    #: :py:class:`~reviewboard.reviews.models.review.Review`.
+    #:
+    #: Each value is a list of replies that directly reply to the
+    #: :py:attr:`~reviewboard.reviews.models.Review.body_top` attribute
+    #: of the review ID.
+    body_top_replies: Mapping[int, Sequence[Review]]
+
+    #: A mapping from ChangeDescription IDs to status updates.
+    #:
+    #: Each key is the ID of a
+    #: :py:class:`~reviewboard.changedescs.models.ChangeDescription`.
+    #:
+    #: Each value is a list of :py:class:`~reviewboard.reviews.models.
+    #: status_update.StatusUpdate` instances filed on the Change Description.
+    change_status_updates: Mapping[int, Sequence[StatusUpdate]]
+
+    #: All the change descriptions to be shown on the page.
+    changedescs: Sequence[ChangeDescription]
+
+    #: All of the diffsets associated with the review request.
+    diffsets: Sequence[DiffSet]
+
+    #: A mapping from diffset IDs to instances.
+    diffsets_by_id: Mapping[int, DiffSet]
+
+    #: The active draft of the review request, if any.
+    draft: Optional[ReviewRequestDraft]
+
+    #: A mapping from review IDs to lists of draft replies.
+    #:
+    #: Each key is the ID of a
+    #: :py:class:`~reviewboard.reviews.models.review.Review`.
+    #:
+    #: Each value is a list of draft replies that directly reply to the
+    #: :py:attr:`~reviewboard.reviews.models.Review.body_bottom`
+    #: attribute of the review ID.
+    draft_body_bottom_replies: Mapping[int, Sequence[Review]]
+
+    #: A mapping from review IDs to lists of draft replies.
+    #:
+    #: Each key is the ID of a
+    #: :py:class:`~reviewboard.reviews.models.review.Review`.
+    #:
+    #: Each value is a list of draft replies that directly reply to the
+    #: :py:attr:`~reviewboard.reviews.models.Review.body_top` attribute
+    #: of the review ID.
+    draft_body_top_replies: Mapping[int, Sequence[Review]]
+
+    #: A mapping from review IDs to draft reply comments.
+    #:
+    #: Each key is the ID of a
+    #: :py:class:`~reviewboard.reviews.models.review.Review`.
+    #:
+    #: Each value is a list of comments in the following order:
+    #:
+    #: 1. All General Comments (ordered by timestamp)
+    #: 2. All Screenshot Comments (ordered by timestamp)
+    #: 3. All File Attachment Comments (ordered by timestamp)
+    #: 4. All Diff Comments (ordered by file, then first line, then timestamp)
+    draft_reply_comments: Mapping[int, Sequence[BaseComment]]
+
+    #: The list of classes used for displaying review request entries.
+    entry_classes: Sequence[type[BaseReviewRequestPageEntry]]
+
+    #: A mapping from FileAttachment IDs to instances.
+    file_attachments_by_id: Mapping[int, FileAttachment]
+
+    #: The status updates recorded on initial publish of the review request.
+    initial_status_updates: Sequence[StatusUpdate]
+
+    #: A mapping from issue states to counts throughout the review request.
+    #:
+    #: The values will contain the total count across all comments across
+    #: all published reviews.
+    issue_counts: _IssueCountsMap
+
+    #: A list of all the comments (of all types) which are marked as issues.
+    issues: Sequence[BaseComment]
+
+    #: The timestamp of the most recent change description on the page.
+    latest_changedesc_timestamp: Optional[datetime]
+
+    #: The timestamp of the most recent comment, for the issue summary table.
+    #:
+    #: Version Added:
+    #:     6.0
+    latest_issue_timestamp: Optional[datetime]
+
+    #: The timestamp of the most recent review on the page.
+    latest_review_timestamp: Optional[datetime]
+
+    #: A mapping from review IDs to the latest reply timestamp.
+    latest_timestamps_by_review_id: Mapping[int, datetime]
+
     #: The current HTTP request.
     request: HttpRequest
+
+    #: A mapping from review IDs to each review's comments.
+    #:
+    #: Each key is the ID of a
+    #: :py:class:`~reviewboard.reviews.models.review.Review`.
+    #:
+    #: Each value is a list of comments in the following order:
+    #:
+    #: 1. All General Comments (ordered by timestamp)
+    #: 2. All Screenshot Comments (ordered by timestamp)
+    #: 3. All File Attachment Comments (ordered by timestamp)
+    #: 4. All Diff Comments (ordered by file, then first line, then timestamp)
+    review_comments: Mapping[int, Sequence[BaseComment]]
 
     #: The review request.
     review_request: ReviewRequest
@@ -195,23 +242,28 @@ class ReviewRequestPageData:
     #:
     #: This includes any draft reviews owned by the requesting user, but not
     #: drafts owned by others.
-    reviews: list[Review]
+    reviews: Sequence[Review]
 
     #: A mapping from the review ID to the review object.
-    reviews_by_id: dict[int, Review]
+    reviews_by_id: Mapping[int, Review]
 
-    #: The timestamp of the most recent comment, for the issue summary table.
+    #: A mapping from Screenshot IDs to instances.
+    screenshots_by_id: Mapping[int, Screenshot]
+
+    #: Whether the status updates feature is enabled for this review request.
     #:
-    #: Version Added:
-    #:     6.0
-    latest_issue_timestamp: Optional[datetime]
+    #: This does not necessarily mean that there are status updates on the
+    #: review request.
+    status_updates_enabled: bool
 
     def __init__(
         self,
         review_request: ReviewRequest,
         request: HttpRequest,
         last_visited: Optional[datetime] = None,
-        entry_classes: Optional[Sequence[BaseReviewRequestPageEntry]] = None,
+        entry_classes: Optional[
+            Sequence[type[BaseReviewRequestPageEntry]]
+        ] = None,
     ) -> None:
         """Initialize the data object.
 
@@ -252,8 +304,8 @@ class ReviewRequestPageData:
         self.reviews_by_id = {}
         self.latest_timestamps_by_review_id = {}
         self.latest_issue_timestamp = None
-        self.body_top_replies = defaultdict(list)
-        self.body_bottom_replies = defaultdict(list)
+        self.body_top_replies = {}
+        self.body_bottom_replies = {}
         self.review_request_details = None
         self.active_file_attachments = []
         self.all_file_attachments = []
@@ -264,8 +316,8 @@ class ReviewRequestPageData:
         self.screenshots_by_id = {}
         self.review_comments = {}
         self.draft_reply_comments = {}
-        self.draft_body_top_replies = defaultdict(list)
-        self.draft_body_bottom_replies = defaultdict(list)
+        self.draft_body_top_replies = {}
+        self.draft_body_bottom_replies = {}
         self.issues = []
         self.issue_counts = {
             'total': 0,
@@ -278,27 +330,33 @@ class ReviewRequestPageData:
         self.status_updates_enabled = status_updates_feature.is_enabled(
             local_site=review_request.local_site)
 
-        self._needs_draft = False
-        self._needs_reviews = False
-        self._needs_changedescs = False
-        self._needs_status_updates = False
-        self._needs_file_attachments = False
-        self._needs_screenshots = False
+        needs_draft: bool = False
+        needs_reviews: bool = False
+        needs_changedescs: bool = False
+        needs_status_updates: bool = False
+        needs_file_attachments: bool = False
+        needs_screenshots: bool = False
 
         # There's specific entries being used for the data collection.
         # Loop through them and determine what sets of data we need.
         for entry_cls in self.entry_classes:
-            self._needs_draft = self._needs_draft or entry_cls.needs_draft
-            self._needs_reviews = (self._needs_reviews or
-                                   entry_cls.needs_reviews)
-            self._needs_changedescs = (self._needs_changedescs or
-                                       entry_cls.needs_changedescs)
-            self._needs_status_updates = (self._needs_status_updates or
-                                          entry_cls.needs_status_updates)
-            self._needs_file_attachments = (self._needs_file_attachments or
-                                            entry_cls.needs_file_attachments)
-            self._needs_screenshots = (self._needs_screenshots or
-                                       entry_cls.needs_screenshots)
+            needs_draft = needs_draft or entry_cls.needs_draft
+            needs_reviews = needs_reviews or entry_cls.needs_reviews
+            needs_changedescs = (needs_changedescs or
+                                 entry_cls.needs_changedescs)
+            needs_status_updates = (needs_status_updates or
+                                    entry_cls.needs_status_updates)
+            needs_file_attachments = (needs_file_attachments or
+                                      entry_cls.needs_file_attachments)
+            needs_screenshots = (needs_screenshots or
+                                 entry_cls.needs_screenshots)
+
+        self._needs_draft = needs_draft
+        self._needs_reviews = needs_reviews
+        self._needs_changedescs = needs_changedescs
+        self._needs_status_updates = needs_status_updates
+        self._needs_file_attachments = needs_file_attachments
+        self._needs_screenshots = needs_screenshots
 
     def query_data_pre_etag(self) -> None:
         """Perform initial queries for the page.
@@ -308,37 +366,50 @@ class ReviewRequestPageData:
         possible before reporting to the client that they can just use their
         cached copy.
         """
-        user = self.request.user
+        request = self.request
+        user = request.user
         review_request = self.review_request
+
+        needs_reviews = self._needs_reviews
+        needs_status_updates = self._needs_status_updates
 
         # Query for all the reviews that should be shown on the page (either
         # ones which are public or draft reviews owned by the current user).
         reviews_query = Q(public=True)
 
         if user.is_authenticated:
+            assert isinstance(user, User)
+
             reviews_query |= Q(user_id=user.pk)
 
-        if self._needs_reviews or self._needs_status_updates:
-            self.reviews = list(
+        reviews: list[Review] = []
+
+        if needs_reviews or needs_status_updates:
+            reviews = list(
                 review_request.reviews
                 .filter(reviews_query)
                 .order_by('-timestamp')
                 .select_related('user', 'user__profile')
             )
 
-        if len(self.reviews) == 0:
+        self.reviews = reviews
+
+        if len(reviews) == 0:
             self.latest_review_timestamp = \
                 datetime.fromtimestamp(0, timezone.utc)
         else:
-            self.latest_review_timestamp = self.reviews[0].timestamp
+            self.latest_review_timestamp = reviews[0].timestamp
 
         # Get all the public ChangeDescriptions.
-        if self._needs_changedescs:
-            self.changedescs = list(
-                review_request.changedescs.filter(public=True))
+        changedescs: list[ChangeDescription] = []
 
-        if self.changedescs:
-            self.latest_changedesc_timestamp = self.changedescs[0].timestamp
+        if self._needs_changedescs:
+            changedescs = list(review_request.changedescs.filter(public=True))
+
+        if changedescs:
+            self.latest_changedesc_timestamp = changedescs[0].timestamp
+
+        self.changedescs = changedescs
 
         # Get the active draft (if any).
         if self._needs_draft:
@@ -353,14 +424,20 @@ class ReviewRequestPageData:
                 self.draft = draft
 
         # Get diffsets.
-        if self._needs_reviews:
-            self.diffsets = self.review_request.get_diffsets()
+        if needs_reviews:
+            self.diffsets = review_request.get_diffsets()
             self.diffsets_by_id = self._build_id_map(self.diffsets)
 
         # Get all status updates.
-        if self.status_updates_enabled and self._needs_status_updates:
-            self.all_status_updates = list(
-                self.review_request.status_updates.order_by('summary'))
+        all_status_updates: list[StatusUpdate] = []
+
+        if self.status_updates_enabled and needs_status_updates:
+            all_status_updates = list(
+                review_request.status_updates
+                .order_by('summary')
+            )
+
+        self.all_status_updates = all_status_updates
 
     def query_data_post_etag(self) -> None:
         """Perform remaining queries for the page.
@@ -369,40 +446,58 @@ class ReviewRequestPageData:
         review request page other than that which was required to compute the
         ETag.
         """
-        self.reviews_by_id = self._build_id_map(self.reviews)
+        request = self.request
+        draft = self.draft
+        review_request = self.review_request
+
+        reviews = self.reviews
+        reviews_by_id = self._build_id_map(reviews)
+        self.reviews_by_id = reviews_by_id
+
+        initial_status_updates: list[StatusUpdate] = []
+        change_status_updates: dict[int, list[StatusUpdate]] = {}
 
         for status_update in self.all_status_updates:
             if status_update.review_id is not None:
-                review = self.reviews_by_id[status_update.review_id]
+                review = reviews_by_id[status_update.review_id]
                 review.status_update = status_update
                 status_update.review = review
 
             if status_update.change_description_id:
-                self.change_status_updates.setdefault(
+                change_status_updates.setdefault(
                     status_update.change_description_id,
                     []).append(status_update)
             else:
-                self.initial_status_updates.append(status_update)
+                initial_status_updates.append(status_update)
 
-        for review in self.reviews:
+        self.change_status_updates = change_status_updates
+        self.initial_status_updates = initial_status_updates
+
+        body_bottom_replies: dict[int, list[Review]] = defaultdict(list)
+        body_top_replies: dict[int, list[Review]] = defaultdict(list)
+        draft_body_bottom_replies: dict[int, list[Review]] = defaultdict(list)
+        draft_body_top_replies: dict[int, list[Review]] = defaultdict(list)
+        latest_timestamps_by_review_id: dict[int, datetime] = {}
+
+        for review in reviews:
             review._body_top_replies = []
             review._body_bottom_replies = []
 
             body_reply_info = (
                 (review.body_top_reply_to_id,
-                 self.body_top_replies,
-                 self.draft_body_top_replies),
+                 body_top_replies,
+                 draft_body_top_replies),
                 (review.body_bottom_reply_to_id,
-                 self.body_bottom_replies,
-                 self.draft_body_bottom_replies),
+                 body_bottom_replies,
+                 draft_body_bottom_replies),
             )
 
-            for reply_to_id, replies, draft_replies in body_reply_info:
+            for reply_to_id, replies_map, draft_replies_map in body_reply_info:
                 if reply_to_id is not None:
-                    replies[reply_to_id].append(review)
+                    replies_map[reply_to_id].append(review)
 
                     if not review.public:
-                        draft_replies[reply_to_id].append(review)
+                        draft_replies_map[reply_to_id].append(review)
 
             # Find the latest reply timestamp for each top-level review.
             parent_id = review.base_reply_to_id
@@ -410,16 +505,14 @@ class ReviewRequestPageData:
             if parent_id is not None:
                 new_timestamp = review.timestamp.replace(tzinfo=timezone.utc)
 
-                if parent_id in self.latest_timestamps_by_review_id:
-                    old_timestamp = \
-                        self.latest_timestamps_by_review_id[parent_id]
+                if parent_id in latest_timestamps_by_review_id:
+                    old_timestamp = latest_timestamps_by_review_id[parent_id]
 
                     if old_timestamp < new_timestamp:
-                        self.latest_timestamps_by_review_id[parent_id] = \
+                        latest_timestamps_by_review_id[parent_id] = \
                             new_timestamp
                 else:
-                    self.latest_timestamps_by_review_id[parent_id] = \
-                        new_timestamp
+                    latest_timestamps_by_review_id[parent_id] = new_timestamp
 
             # We've already attached all the status updates above, but
             # any reviews that don't have status updates can still result
@@ -427,20 +520,29 @@ class ReviewRequestPageData:
             if not hasattr(review, '_status_update_cache'):
                 review._status_update_cache = None
 
+        self.body_bottom_replies = body_bottom_replies
+        self.body_top_replies = body_top_replies
+        self.draft_body_bottom_replies = draft_body_bottom_replies
+        self.draft_body_top_replies = draft_body_top_replies
+        self.latest_timestamps_by_review_id = latest_timestamps_by_review_id
+
         # Link up all the review body replies.
         for reply_id, replies in self.body_top_replies.items():
-            self.reviews_by_id[reply_id]._body_top_replies = reversed(replies)
+            reviews_by_id[reply_id]._body_top_replies = \
+                list(reversed(replies))
 
         for reply_id, replies in self.body_bottom_replies.items():
-            self.reviews_by_id[reply_id]._body_bottom_replies = \
-                reversed(replies)
+            reviews_by_id[reply_id]._body_bottom_replies = \
+                list(reversed(replies))
 
-        if should_view_draft(request=self.request,
-                             review_request=self.review_request,
-                             draft=self.draft):
-            review_request_details = self.draft or self.review_request
+        # Determine whether the user viewing the page should be presented with
+        # the review request or the draft.
+        if should_view_draft(request=request,
+                             review_request=review_request,
+                             draft=draft):
+            review_request_details = draft or review_request
         else:
-            review_request_details = self.review_request
+            review_request_details = review_request
 
         self.review_request_details = review_request_details
 
@@ -450,31 +552,52 @@ class ReviewRequestPageData:
         # screenshots. We do this because even though they've been removed,
         # they still will be rendered in change descriptions.
         if self._needs_file_attachments or self._needs_reviews:
-            self.active_file_attachments = \
+            active_file_attachments = \
                 list(review_request_details.get_file_attachments())
-            self.all_file_attachments = (
-                self.active_file_attachments + list(
-                    review_request_details
-                    .get_inactive_file_attachments()))
-            self.file_attachments_by_id = \
-                self._build_id_map(self.all_file_attachments)
+            all_file_attachments = active_file_attachments + list(
+                review_request_details
+                .get_inactive_file_attachments()
+            )
+            file_attachments_by_id = self._build_id_map(all_file_attachments)
 
-            for attachment in self.all_file_attachments:
+            for attachment in all_file_attachments:
                 attachment._comments = []
 
-        if self._needs_screenshots or self._needs_reviews:
-            self.active_screenshots = \
-                list(review_request_details.get_screenshots())
-            self.all_screenshots = (
-                self.active_screenshots +
-                list(review_request_details.get_inactive_screenshots()))
-            self.screenshots_by_id = self._build_id_map(self.all_screenshots)
+            self.active_file_attachments = active_file_attachments
+            self.all_file_attachments = all_file_attachments
+        else:
+            file_attachments_by_id = {}
 
-            for screenshot in self.all_screenshots:
+        self.file_attachments_by_id = file_attachments_by_id
+
+        # Now the screenshots.
+        if self._needs_screenshots or self._needs_reviews:
+            active_screenshots = list(review_request_details.get_screenshots())
+            all_screenshots = (
+                active_screenshots +
+                list(review_request_details.get_inactive_screenshots()))
+            screenshots_by_id = self._build_id_map(all_screenshots)
+
+            for screenshot in all_screenshots:
                 screenshot._comments = []
 
-        if self.reviews:
-            review_ids = list(self.reviews_by_id.keys())
+            self.active_screenshots = active_screenshots
+            self.all_screenshots = all_screenshots
+        else:
+            screenshots_by_id = {}
+
+        self.screenshots_by_id = screenshots_by_id
+
+        # Now process all the reviews and associated state (comments, diffs,
+        # file attachments, screenshots, and status updates).
+        all_comments: list[BaseComment] = []
+
+        if reviews:
+            draft_reply_comments: dict[int, list[BaseComment]] = {}
+            review_comments: dict[int, list[BaseComment]] = {}
+            review_ids = list(reviews_by_id.keys())
+            issue_counts = self.issue_counts
+            issues: list[BaseComment] = []
 
             for review_field_name, key, ordering in (
                 ('general_comments',
@@ -514,7 +637,7 @@ class ReviewRequestPageData:
 
                 # We do two passes. One to build a mapping, and one to actually
                 # process comments.
-                comment_map = {}
+                comment_map: dict[int, BaseComment] = {}
 
                 for obj in objs:
                     comment = getattr(obj, comment_field_name)
@@ -525,22 +648,22 @@ class ReviewRequestPageData:
                 for obj in objs:
                     comment = getattr(obj, comment_field_name)
 
-                    self.all_comments.append(comment)
+                    all_comments.append(comment)
 
                     # Short-circuit some object fetches for the comment by
                     # setting some internal state on them.
-                    assert obj.review_id in self.reviews_by_id
-                    review = self.reviews_by_id[obj.review_id]
+                    assert obj.review_id in reviews_by_id
+                    review = reviews_by_id[obj.review_id]
                     comment.review_obj = review
                     comment._review = review
-                    comment._review_request = self.review_request
+                    comment._review_request = review_request
 
                     # If the comment has an associated object (such as a file
                     # attachment) that we've already fetched, attach it to
                     # prevent future queries.
                     if isinstance(comment, FileAttachmentComment):
                         attachment_id = comment.file_attachment_id
-                        f = self.file_attachments_by_id[attachment_id]
+                        f = file_attachments_by_id[attachment_id]
                         comment.file_attachment = f
                         f._comments.append(comment)
 
@@ -548,11 +671,11 @@ class ReviewRequestPageData:
                             comment.diff_against_file_attachment_id
 
                         if diff_against_id is not None:
-                            f = self.file_attachments_by_id[diff_against_id]
-                            comment.diff_against_file_attachment = f
+                            comment.diff_against_file_attachment = \
+                                file_attachments_by_id[diff_against_id]
                     elif isinstance(comment, ScreenshotComment):
                         screenshot = \
-                            self.screenshots_by_id[comment.screenshot_id]
+                            screenshots_by_id[comment.screenshot_id]
                         comment.screenshot = screenshot
                         screenshot._comments.append(comment)
 
@@ -567,11 +690,11 @@ class ReviewRequestPageData:
                             replied_comment._replies.append(comment)
 
                             if not review.public:
-                                self.draft_reply_comments.setdefault(
+                                draft_reply_comments.setdefault(
                                     review.base_reply_to_id, []).append(
                                         comment)
                         else:
-                            self.review_comments.setdefault(
+                            review_comments.setdefault(
                                 review.pk, []).append(comment)
 
                     if review.public and comment.issue_opened:
@@ -584,23 +707,32 @@ class ReviewRequestPageData:
                                           'verifying-dropped'):
                             status_key = 'verifying'
 
-                        self.issue_counts[status_key] += 1
-                        self.issue_counts['total'] += 1
-                        self.issues.append(comment)
+                        # We have to ignore the type here, since status_key
+                        # is a string and not a literal.
+                        issue_counts[status_key] += 1  # type: ignore
+                        issue_counts['total'] += 1
+                        issues.append(comment)
 
-        if self.all_comments:
+            self.draft_reply_comments = draft_reply_comments
+            self.review_comments = review_comments
+            self.issues = issues
+
+        self.all_comments = all_comments
+
+        if all_comments:
             self.latest_issue_timestamp = max(
                 comment.timestamp
-                for comment in self.all_comments)
+                for comment in all_comments
+            )
         else:
             self.latest_issue_timestamp = \
                 datetime.fromtimestamp(0, timezone.utc)
 
-        if self.review_request.created_with_history:
+        if review_request.created_with_history:
             pks = [diffset.pk for diffset in self.diffsets]
 
-            if self.draft and self.draft.diffset_id is not None:
-                pks.append(self.draft.diffset_id)
+            if draft and draft.diffset_id is not None:
+                pks.append(draft.diffset_id)
 
             self.commits_by_diffset_id = DiffCommit.objects.by_diffset_ids(pks)
 
@@ -773,7 +905,7 @@ class BaseReviewRequestPageEntry:
     #:
     #: This represents the added time for the entry, and is used for sorting
     #: the entry in the page. This timestamp should never change.
-    added_timestamp: Optional[datetime]
+    added_timestamp: datetime
 
     #: The user to display an avatar for.
     #:
@@ -796,7 +928,7 @@ class BaseReviewRequestPageEntry:
     def build_entries(
         cls,
         data: ReviewRequestPageData,
-    ) -> Iterable[BaseReviewRequestPageEntry]:
+    ) -> Optional[Iterator[BaseReviewRequestPageEntry]]:
         """Generate entry instances from review request page data.
 
         Subclasses should override this to yield any entries needed, based on
@@ -810,6 +942,7 @@ class BaseReviewRequestPageEntry:
             BaseReviewRequestPageEntry:
             An entry to include on the page.
         """
+        return None
 
     @classmethod
     def build_etag_data(
@@ -856,7 +989,7 @@ class BaseReviewRequestPageEntry:
         self,
         data: ReviewRequestPageData,
         entry_id: str,
-        added_timestamp: Optional[datetime],
+        added_timestamp: datetime,
         updated_timestamp: Optional[datetime] = None,
         avatar_user: Optional[User] = None,
     ) -> None:
@@ -909,7 +1042,7 @@ class BaseReviewRequestPageEntry:
     def is_entry_new(
         self,
         last_visited: datetime,
-        user: User,
+        user: Union[AnonymousUser, User],
         **kwargs,
     ) -> bool:
         """Return whether the entry is new, from the user's perspective.
@@ -922,7 +1055,8 @@ class BaseReviewRequestPageEntry:
             last_visited (datetime.datetime):
                 The last visited timestamp.
 
-            user (django.contrib.auth.models.User):
+            user (django.contrib.auth.models.AnonymousUser or
+                  django.contrib.auth.models.User):
                 The user viewing the page.
 
             **kwargs (dict):
@@ -1054,9 +1188,14 @@ class BaseReviewRequestPageEntry:
             return mark_safe('')
 
         user = request.user
+        assert isinstance(user, (AnonymousUser, User))
+
         last_visited = context.get('last_visited')
 
-        new_context = context.flatten()
+        # Typing for context.flatten() is unnecessarily specific and limited.
+        # To work around typing confusion, we need to type the destination
+        # dict more generically.
+        new_context: dict[Any, Any] = context.flatten()
 
         try:
             new_context.update({
@@ -1213,23 +1352,35 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
 
     This provides common functionality for the two entries that include status
     updates (the initial status updates entry and change description entries).
-
-    Attributes:
-        status_updates (list of reviewboard.reviews.models.StatusUpdate):
-            The status updates in this entry.
-
-        status_updates_by_review (dict):
-            A mapping from review ID to the matching status update.
     """
 
     needs_reviews = True
     needs_status_updates = True
 
+    ######################
+    # Instance variables #
+    ######################
+
+    #: A counter for each possible status update state.
+    state_counts: Counter
+
+    #: The current summary of all status updates.
+    state_summary: str
+
+    #: The CSS class representing the overall status of the status updates.
+    state_summary_class: str
+
+    #: The status updates in this entry.
+    status_updates: list[StatusUpdate]
+
+    #: A mapping from review ID to the matching status update.
+    status_updates_by_review: dict[int, StatusUpdate]
+
     @classmethod
     def build_etag_data(
         cls,
         data: ReviewRequestPageData,
-        entry: Optional[StatusUpdatesEntryMixin] = None,
+        entry: Optional[BaseReviewRequestPageEntry] = None,
         **kwargs,
     ) -> str:
         """Build ETag data for the entry.
@@ -1256,7 +1407,11 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
             str:
             The ETag data for the entry.
         """
+        status_updates: Sequence[StatusUpdate]
+
         if entry is not None:
+            assert isinstance(entry, StatusUpdatesEntryMixin)
+
             status_updates = entry.status_updates
         elif data.status_updates_enabled:
             status_updates = data.all_status_updates
@@ -1312,18 +1467,19 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
             if any are not marked as collapsed.
         """
         data = self.data
+        last_visited = data.last_visited
+        reviews_by_id = data.reviews_by_id
 
         for status_update in status_updates:
-            if (data.last_visited and
-                status_update.timestamp > data.last_visited):
+            if last_visited and status_update.timestamp > data.last_visited:
                 return False
 
-            if (status_update.effective_state in (status_update.PENDING,
-                                                  status_update.NOT_YET_RUN)):
+            if (status_update.effective_state in (StatusUpdate.PENDING,
+                                                  StatusUpdate.NOT_YET_RUN)):
                 return False
 
             if status_update.review_id is not None:
-                review = data.reviews_by_id[status_update.review_id]
+                review = reviews_by_id[status_update.review_id]
 
                 if not self.is_review_collapsed(review):
                     return False
@@ -1400,13 +1556,14 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
                 The list of status updates to add.
         """
         data = self.data
+        review_comments = data.review_comments
 
         for update in status_updates:
             self.add_update(update)
 
             # Add all the comments for the review on this status
             # update.
-            for comment in data.review_comments.get(update.review_id, []):
+            for comment in review_comments.get(update.review_id, []):
                 self.add_comment(comment._type, comment)
 
     def add_comment(
@@ -1431,50 +1588,55 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
 
     def finalize(self) -> None:
         """Perform final computations after all comments have been added."""
+        state_counts = self.state_counts
+
         for update in self.status_updates:
-            self.state_counts[update.effective_state] += 1
+            state_counts[update.effective_state] += 1
 
-        summary_parts = []
+        summary_parts: list[str] = []
 
-        if self.state_counts[StatusUpdate.DONE_FAILURE] > 0:
+        if state_counts[StatusUpdate.DONE_FAILURE] > 0:
             summary_parts.append(
-                _('%s failed') % self.state_counts[StatusUpdate.DONE_FAILURE])
+                _('%s failed') % state_counts[StatusUpdate.DONE_FAILURE])
 
-        if self.state_counts[StatusUpdate.DONE_SUCCESS] > 0:
+        if state_counts[StatusUpdate.DONE_SUCCESS] > 0:
             summary_parts.append(
                 _('%s succeeded')
-                % self.state_counts[StatusUpdate.DONE_SUCCESS])
+                % state_counts[StatusUpdate.DONE_SUCCESS])
 
-        if self.state_counts[StatusUpdate.PENDING] > 0:
+        if state_counts[StatusUpdate.PENDING] > 0:
             summary_parts.append(
-                _('%s pending') % self.state_counts[StatusUpdate.PENDING])
+                _('%s pending') % state_counts[StatusUpdate.PENDING])
 
-        if self.state_counts[StatusUpdate.NOT_YET_RUN] > 0:
+        if state_counts[StatusUpdate.NOT_YET_RUN] > 0:
             summary_parts.append(
                 _('%s not yet run')
-                % self.state_counts[StatusUpdate.NOT_YET_RUN])
+                % state_counts[StatusUpdate.NOT_YET_RUN])
 
-        if self.state_counts[StatusUpdate.ERROR] > 0:
+        if state_counts[StatusUpdate.ERROR] > 0:
             summary_parts.append(
                 _('%s failed with error')
-                % self.state_counts[StatusUpdate.ERROR])
+                % state_counts[StatusUpdate.ERROR])
 
-        if self.state_counts[StatusUpdate.TIMEOUT] > 0:
+        if state_counts[StatusUpdate.TIMEOUT] > 0:
             summary_parts.append(
                 _('%s timed out')
-                % self.state_counts[StatusUpdate.TIMEOUT])
+                % state_counts[StatusUpdate.TIMEOUT])
 
-        if (self.state_counts[StatusUpdate.DONE_FAILURE] > 0 or
-            self.state_counts[StatusUpdate.ERROR] > 0 or
-            self.state_counts[StatusUpdate.TIMEOUT] > 0):
-            self.state_summary_class = 'status-update-state-failure'
-        elif (self.state_counts[StatusUpdate.PENDING] > 0 or
-              self.state_counts[StatusUpdate.NOT_YET_RUN] > 0):
-            self.state_summary_class = 'status-update-state-pending'
-        elif self.state_counts[StatusUpdate.DONE_SUCCESS]:
-            self.state_summary_class = 'status-update-state-success'
+        if (state_counts[StatusUpdate.DONE_FAILURE] > 0 or
+            state_counts[StatusUpdate.ERROR] > 0 or
+            state_counts[StatusUpdate.TIMEOUT] > 0):
+            state_summary_class = 'status-update-state-failure'
+        elif (state_counts[StatusUpdate.PENDING] > 0 or
+              state_counts[StatusUpdate.NOT_YET_RUN] > 0):
+            state_summary_class = 'status-update-state-pending'
+        elif state_counts[StatusUpdate.DONE_SUCCESS]:
+            state_summary_class = 'status-update-state-success'
+        else:
+            state_summary_class = ''
 
         self.state_summary = ', '.join(summary_parts)
+        self.state_summary_class = state_summary_class
 
     def get_js_model_data(self) -> JSONDict:
         """Return data to pass to the JavaScript Model during instantiation.
@@ -1487,16 +1649,18 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
             dict:
             A dictionary of attributes to pass to the Model instance.
         """
+        status_updates = self.status_updates
+
         diff_comments_data = list(chain.from_iterable(
             self.serialize_diff_comments_js_model_data(
                 update.comments['diff_comments'])
-            for update in self.status_updates
+            for update in status_updates
             if update.comments['diff_comments']
         ))
 
         reviews_data = [
             self.serialize_review_js_model_data(update.review)
-            for update in self.status_updates
+            for update in status_updates
             if update.review_id is not None
         ]
 
@@ -1562,7 +1726,7 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
     def build_entries(
         cls,
         data: ReviewRequestPageData,
-    ) -> Iterable[BaseReviewRequestPageEntry]:
+    ) -> Iterator[BaseReviewRequestPageEntry]:
         """Generate the entry instance from review request page data.
 
         This will only generate a single instance.
@@ -1620,12 +1784,14 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
             str:
             The ID used for the element.
         """
+        assert self.entry_type_id
+
         return self.entry_type_id
 
     def is_entry_new(
         self,
         last_visited: datetime,
-        user: User,
+        user: Union[AnonymousUser, User],
         **kwargs,
     ) -> bool:
         """Return whether the entry is new, from the user's perspective.
@@ -1637,7 +1803,8 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
             last_visited (datetime.datetime, unused):
                 The last visited timestamp.
 
-            user (django.contrib.auth.models.User, unused):
+            user (django.contrib.auth.models.AnonymousUser or
+                  django.contrib.auth.models.User, unused):
                 The user viewing the page.
 
             **kwargs (dict, unused):
@@ -1693,7 +1860,7 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
     #:
     #: Each key in this represents a comment type, and the values are lists of
     #: comment objects.
-    comments: dict[str, list[BaseComment]]
+    comments: _ReviewEntryCommentsMap
 
     #: Whether there are any issues (open or not).
     has_issues: bool
@@ -1705,7 +1872,10 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
     review: Review
 
     @classmethod
-    def build_entries(cls, data):
+    def build_entries(
+        cls,
+        data: ReviewRequestPageData,
+    ) -> Iterator[ReviewEntry]:
         """Generate review entry instances from review request page data.
 
         Args:
@@ -1716,17 +1886,20 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
             ReviewEntry:
             A review entry to include on the page.
         """
+        status_updates_enabled = data.status_updates_enabled
+        review_comments = data.review_comments
+
         for review in data.reviews:
             if (not review.public or
                 review.is_reply() or
-                (data.status_updates_enabled and
+                (status_updates_enabled and
                  hasattr(review, 'status_update'))):
                 continue
 
             entry = cls(data=data,
                         review=review)
 
-            for comment in data.review_comments.get(review.pk, []):
+            for comment in review_comments.get(review.pk, []):
                 entry.add_comment(comment._type, comment)
 
             yield entry
@@ -1783,7 +1956,7 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
     def is_entry_new(
         self,
         last_visited: datetime,
-        user: User,
+        user: Union[AnonymousUser, User],
         **kwargs,
     ) -> bool:
         """Return whether the entry is new, from the user's perspective.
@@ -1792,7 +1965,8 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
             last_visited (datetime.datetime):
                 The last visited timestamp.
 
-            user (django.contrib.auth.models.User):
+            user (django.contrib.auth.models.AnonymousUser or
+                  django.contrib.auth.models.User):
                 The user viewing the page.
 
             **kwargs (dict, unused):
@@ -1869,6 +2043,12 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
         return self.is_review_collapsed(self.review)
 
 
+if TYPE_CHECKING:
+    class _ChangeEntryFieldsChangedGroup(TypedDict):
+        fields: list[ReviewRequestFieldChangeEntrySection]
+        inline: bool
+
+
 class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
     """A change description box."""
 
@@ -1887,11 +2067,14 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
     #: The change description.
     changedesc: ChangeDescription
 
+    #: The groups of field changes to show.
+    fields_changed_groups: Sequence[_ChangeEntryFieldsChangedGroup]
+
     @classmethod
     def build_entries(
         cls,
         data: ReviewRequestPageData,
-    ) -> Iterable[ChangeEntry]:
+    ) -> Iterator[ChangeEntry]:
         """Generate change entry instances from review request page data.
 
         Args:
@@ -1902,11 +2085,13 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             ChangeEntry:
             A change entry to include on the page.
         """
+        change_status_updates = data.change_status_updates
+
         for changedesc in data.changedescs:
             entry = cls(data=data,
                         changedesc=changedesc)
             entry.populate_status_updates(
-                data.change_status_updates.get(changedesc.pk, []))
+                change_status_updates.get(changedesc.pk, []))
 
             yield entry
 
@@ -1947,7 +2132,8 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
         if data.status_updates_enabled:
             StatusUpdatesEntryMixin.__init__(self)
 
-        cur_field_changed_group = None
+        cur_field_changed_group: Optional[_ChangeEntryFieldsChangedGroup] = \
+            None
 
         # See if there was a review request status change.
         status_change = changedesc.fields_changed.get('status')
@@ -1965,6 +2151,8 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
         fieldsets = get_review_request_fieldsets(
             include_change_entries_only=True)
 
+        fields_changed_groups: list[_ChangeEntryFieldsChangedGroup] = []
+
         for fieldset in fieldsets:
             for field_cls in fieldset.field_classes:
                 field_id = field_cls.field_id
@@ -1981,7 +2169,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
                         'inline': inline,
                         'fields': [],
                     }
-                    self.fields_changed_groups.append(cur_field_changed_group)
+                    fields_changed_groups.append(cur_field_changed_group)
 
                 if issubclass(field_cls, ReviewRequestPageDataMixin):
                     field = field_cls(review_request, request=request,
@@ -1992,6 +2180,8 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
                 cur_field_changed_group['fields'] += \
                     field.get_change_entry_sections_html(
                         changedesc.fields_changed[field_id])
+
+        self.fields_changed_groups = fields_changed_groups
 
     def get_dom_element_id(self) -> str:
         """Return the ID used for the DOM element for this entry.
@@ -2005,7 +2195,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
     def is_entry_new(
         self,
         last_visited: datetime,
-        user: User,
+        user: Union[AnonymousUser, User],
         **kwargs,
     ) -> bool:
         """Return whether the entry is new, from the user's perspective.
@@ -2014,7 +2204,8 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             last_visited (datetime.datetime):
                 The last visited timestamp.
 
-            user (django.contrib.auth.models.User):
+            user (django.contrib.auth.models.AnonymousUser or
+                  django.contrib.auth.models.User):
                 The user viewing the page.
 
             **kwargs (dict, unused):
