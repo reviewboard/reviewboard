@@ -10,13 +10,14 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, prefetch_related_objects
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import (CounterField, ModificationTimestampField,
                                RelationCounterField)
-from djblets.db.query import get_object_or_none
+from djblets.db.query import get_object_cached_field, get_object_or_none
+from djblets.util.symbols import UNSET
 from typing_extensions import TypedDict
 
 from reviewboard.admin.read_only import is_site_read_only_for
@@ -50,6 +51,7 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
     from django.db.models import QuerySet
     from django.http import HttpRequest
+    from djblets.util.symbols import Unsettable
 
     from reviewboard.attachments.models import FileAttachmentSequence
     from reviewboard.reviews.models import (Review,
@@ -455,6 +457,34 @@ class ReviewRequest(BaseReviewRequestDetails):
     local_id = models.IntegerField('site-local ID', blank=True, null=True)
 
     objects: ClassVar[ReviewRequestManager] = ReviewRequestManager()
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The cached list of diffsets associated with this review request.
+    #:
+    #: This is purely internal and should never be accessed directly by any
+    #: extension authors. Please us :py:meth:`get_diffsets` directly.
+    _diffsets: Sequence[DiffSet]
+
+    #: Whether the cached diffsets have filediffs pre-fetched.
+    #:
+    #: This is purely internal and should never be accessed directly by any
+    #: extension authors. Please us :py:meth:`get_diffsets` directly.
+    #:
+    #: Version Added:
+    #:     7.1
+    _diffsets_with_filediffs: bool
+
+    #: The cached latest diffset for the review request.
+    #:
+    #: This is purely internal and should never be accessed directly by any
+    #: extension authors. Please us :py:meth:`get_latest_diffset` directly.
+    #:
+    #: Version Added:
+    #:     7.1
+    _latest_diffset: Optional[DiffSet]
 
     @staticmethod
     def status_to_string(
@@ -1129,10 +1159,18 @@ class ReviewRequest(BaseReviewRequestDetails):
             local_site_name=local_site_name,
             kwargs={'review_request_id': self.display_id})
 
-    def get_diffsets(self) -> Sequence[DiffSet]:
+    def get_diffsets(
+        self,
+        *,
+        with_filediffs: bool = True,
+    ) -> Sequence[DiffSet]:
         """Return a list of all diffsets on this review request.
 
         This will also fetch all associated FileDiffs.
+
+        Version Changed:
+            7.1:
+            Added the ``with_filediffs`` argument.
 
         Version Changed:
             7.0.3:
@@ -1146,6 +1184,17 @@ class ReviewRequest(BaseReviewRequestDetails):
             7.0:
             Made this pre-fetch the related DiffCommit objects.
 
+        Args:
+            with_filediffs (bool, optional):
+                Whether to pre-fetch filediffs associated with each diffset.
+
+                If diffsets are already cached with files, this will have
+                no effect. If they're cached without files pre-fetched,
+                this will update the cache with the pre-fetched files.
+
+                Version Added:
+                    7.1
+
         Returns:
             list of reviewboard.diffviewer.models.DiffSet:
             The list of all diffsets on the review request.
@@ -1153,7 +1202,11 @@ class ReviewRequest(BaseReviewRequestDetails):
         if not self.repository_id:
             return []
 
-        if not hasattr(self, '_diffsets'):
+        if hasattr(self, '_diffsets'):
+            if with_filediffs and not self._diffsets_with_filediffs:
+                prefetch_related_objects(self._diffsets, 'files')
+                self._diffsets_with_filediffs = True
+        else:
             # If we've prefetched anything, we can hopefully skip a new
             # query.
             diffsets_result: Optional[list[DiffSet]] = None
@@ -1161,12 +1214,10 @@ class ReviewRequest(BaseReviewRequestDetails):
                 self._state.fields_cache.get('diffset_history')
 
             if diffset_history is not None:
-                diffsets: Optional[Sequence[DiffSet]] = (
-                    getattr(diffset_history, '_prefetched_objects_cache', {})
-                    .get('diffsets')
-                )
+                diffsets: Unsettable[Sequence[DiffSet]] = \
+                    get_object_cached_field(diffset_history, 'diffsets')
 
-                if diffsets is not None:
+                if diffsets is not UNSET:
                     # We know we've fetched diffsets. We can now see if
                     # there's anything we want to reuse.
                     diffsets = list(diffsets)
@@ -1175,41 +1226,65 @@ class ReviewRequest(BaseReviewRequestDetails):
                         # We know there are no diffsets. The result will be
                         # an empty list.
                         diffsets_result = []
-                    else:
-                        diffset_cache = \
-                            getattr(diffsets[0], '_prefetched_objects_cache',
-                                    {})
-
-                        if 'files' in diffset_cache:
-                            # We have the full prefetched chain with everything
-                            # we need (well, assuming no .only() or anything).
-                            # Trust it and return it.
-                            diffsets_result = list(diffsets)
+                    elif (not with_filediffs or
+                          get_object_cached_field(diffsets[0],
+                                                  'files') is not UNSET):
+                        # We have the full prefetched chain with everything
+                        # we need (well, assuming no .only() or anything).
+                        # Trust it and return it.
+                        diffsets_result = list(diffsets)
 
             if diffsets_result is None:
                 # We don't have a result we can work with. We'll want to
                 # query from scratch.
-                diffsets_result = list(
+                queryset = (
                     DiffSet.objects
                     .filter(history__pk=self.diffset_history_id)
-                    .prefetch_related('files'))
+                )
+
+                if with_filediffs:
+                    queryset = queryset.prefetch_related('files')
+
+                diffsets_result = list(queryset)
 
             self._diffsets = diffsets_result
+            self._diffsets_with_filediffs = with_filediffs
 
         return self._diffsets
 
     def get_latest_diffset(self) -> Optional[DiffSet]:
         """Return the latest diffset for this review request.
 
+        The result is cached on this object for future calls.
+
+        Version Changed:
+            7.1:
+            The result is now cached.
+
         Returns:
             reviewboard.diffviewer.models.DiffSet:
             The latest published DiffSet, if present.
         """
         try:
-            return DiffSet.objects.filter(
-                history=self.diffset_history_id).latest()
-        except DiffSet.DoesNotExist:
-            return None
+            diffset = self._latest_diffset
+        except AttributeError:
+            diffset: Optional[DiffSet]
+
+            diffsets = self.get_diffsets(with_filediffs=False)
+
+            if diffsets:
+                assert isinstance(DiffSet._meta.get_latest_by, str)
+                latest_by = DiffSet._meta.get_latest_by
+
+                diffset = max(
+                    diffsets,
+                    key=lambda diffset: getattr(diffset, latest_by))
+            else:
+                diffset = None
+
+            self._latest_diffset = diffset
+
+        return diffset
 
     @property
     def has_diffsets(self) -> bool:
@@ -2069,6 +2144,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         * :py:meth:`get_blocks`
         * :py:meth:`get_diffsets`
         * :py:meth:`get_file_attachments_data`
+        * :py:meth:`get_latest_diffset`
 
         Version Added:
             7.1
@@ -2079,7 +2155,9 @@ class ReviewRequest(BaseReviewRequestDetails):
                     '_approved',
                     '_blocks',
                     '_diffsets',
-                    '_file_attachments_data'):
+                    '_diffsets_with_filediffs',
+                    '_file_attachments_data',
+                    '_latest_diffset'):
             d.pop(key, None)
 
     def _is_diffset_accessible_by(

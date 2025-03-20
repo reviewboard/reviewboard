@@ -133,12 +133,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             },
             {
                 'limit': 1,
-                'model': DiffSet,
-                'order_by': ('revision',),
-                'where': Q(history=1),
-            },
-            {
-                'limit': 1,
                 'model': Review,
                 'order_by': ('timestamp',),
                 'where': (
@@ -193,12 +187,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(review_request=review_request),
             },
             {
-                'limit': 1,
-                'model': DiffSet,
-                'order_by': ('revision',),
-                'where': Q(history=1),
-            },
-            {
                 'model': Profile,
                 'where': Q(user=doc),
             },
@@ -239,12 +227,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(directed_review_requests__id=1),
             },
             {
-                'limit': 1,
-                'model': DiffSet,
-                'order_by': ('revision',),
-                'where': Q(history=1),
-            },
-            {
                 'join_types': {
                     'reviews_reviewrequest_target_groups': 'INNER JOIN',
                 },
@@ -267,12 +249,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                     'reviews_reviewrequest_target_people',
                 },
                 'where': Q(directed_review_requests__id=1),
-            },
-            {
-                'limit': 1,
-                'model': DiffSet,
-                'order_by': ('revision',),
-                'where': Q(history=1),
             },
         ]
 
@@ -423,12 +399,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             },
             {
                 'limit': 1,
-                'model': DiffSet,
-                'order_by': ('revision',),
-                'where': Q(history=1),
-            },
-            {
-                'limit': 1,
                 'model': Review,
                 'order_by': ('timestamp',),
                 'where': (
@@ -523,12 +493,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(review_request=review_request),
             },
             {
-                'limit': 1,
-                'model': DiffSet,
-                'order_by': ('revision',),
-                'where': Q(history=1),
-            },
-            {
                 'model': Profile,
                 'where': Q(user=admin),
             },
@@ -569,12 +533,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(directed_review_requests__id=1),
             },
             {
-                'limit': 1,
-                'model': DiffSet,
-                'order_by': ('revision',),
-                'where': Q(history=1),
-            },
-            {
                 'join_types': {
                     'reviews_reviewrequest_target_groups': 'INNER JOIN',
                 },
@@ -597,12 +555,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                     'reviews_reviewrequest_target_people',
                 },
                 'where': Q(directed_review_requests__id=1),
-            },
-            {
-                'limit': 1,
-                'model': DiffSet,
-                'order_by': ('revision',),
-                'where': Q(history=1),
             },
             {
                 'model': ReviewRequestDraft,
@@ -808,12 +760,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(review_request=review_request),
             },
             {
-                'limit': 1,
-                'model': DiffSet,
-                'order_by': ('revision',),
-                'where': Q(history=1),
-            },
-            {
                 'model': Profile,
                 'where': Q(user=user1),
             },
@@ -854,12 +800,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(directed_review_requests__id=1),
             },
             {
-                'limit': 1,
-                'model': DiffSet,
-                'order_by': ('revision',),
-                'where': Q(history=1),
-            },
-            {
                 'join_types': {
                     'reviews_reviewrequest_target_groups': 'INNER JOIN',
                 },
@@ -882,12 +822,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                     'reviews_reviewrequest_target_people',
                 },
                 'where': Q(directed_review_requests__id=1),
-            },
-            {
-                'limit': 1,
-                'model': DiffSet,
-                'order_by': ('revision',),
-                'where': Q(history=1),
             },
         ]
 
@@ -1124,12 +1058,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                     Q(starred_by__id=user1.pk) &
                     Q(pk=1)
                 ),
-            },
-            {
-                'limit': 1,
-                'model': DiffSet,
-                'order_by': ('revision',),
-                'where': Q(history=1),
             },
             {
                 'join_types': {
