@@ -1149,6 +1149,26 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                         tipCommitID: null,
                     });
                 });
+
+                it('With commit range', () => {
+                    page.revision.set('baseCommitID', 1);
+                    page.revision.set('tipCommitID', 3);
+                    pageView._onPageSelected(true, 2);
+
+                    expect(router.navigate).toHaveBeenCalledWith(
+                        '1/?page=2&base-commit-id=1&tip-commit-id=3',
+                        {
+                            trigger: true,
+                        });
+                    expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        baseCommitID: 1,
+                        filenamePatterns: null,
+                        interdiffRevision: null,
+                        page: 2,
+                        revision: 1,
+                        tipCommitID: 3,
+                    });
+                });
             });
 
             it('Anchor selection', function() {
