@@ -188,7 +188,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
                 review_request.public and
                 review_request.status == review_request.PENDING_REVIEW):
                 visited.timestamp = django_timezone.now()
-                visited.save()
+                visited.save(update_fields=('timestamp',))
 
         return visited, last_visited
 
