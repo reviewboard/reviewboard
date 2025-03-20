@@ -508,6 +508,10 @@ class ReviewRequestPageDataTests(TestCase):
                     'order_by': ('summary',),
                     'where': Q(review_request=self.review_request),
                 },
+                {
+                    'model': User,
+                    'where': Q(pk__in=(3,)),
+                },
             ],
             expect_diffs=True,
             expect_draft=True,
@@ -1498,18 +1502,6 @@ class ReviewRequestPageDataTests(TestCase):
 
         queries: list[ExpectedQuery] = [
             {
-                'model': User,
-                'where': Q(id=2),
-            },
-            {
-                'model': User,
-                'where': Q(id=2),
-            },
-            {
-                'model': User,
-                'where': Q(id=2),
-            },
-            {
                 'join_types': {
                     'reviews_reviewrequest_changedescs': 'INNER JOIN',
                 },
@@ -1613,88 +1605,40 @@ class ReviewRequestPageDataTests(TestCase):
                 'where': Q(id=1),
             },
             {
-                'model': Profile,
-                'where': Q(user=reviewer)
+                'model': HostingServiceAccount,
+                'where': Q(id=1),
             },
             {
                 'model': HostingServiceAccount,
                 'where': Q(id=1),
             },
             {
-                'model': Profile,
-                'where': Q(user=reviewer)
+                'model': HostingServiceAccount,
+                'where': Q(id=1),
             },
             {
                 'model': HostingServiceAccount,
                 'where': Q(id=1),
             },
             {
-                'model': Profile,
-                'where': Q(user=reviewer)
+                'model': HostingServiceAccount,
+                'where': Q(id=1),
             },
             {
                 'model': HostingServiceAccount,
                 'where': Q(id=1),
             },
             {
-                'model': Profile,
-                'where': Q(user=reviewer)
+                'model': HostingServiceAccount,
+                'where': Q(id=1),
             },
             {
                 'model': HostingServiceAccount,
                 'where': Q(id=1),
             },
             {
-                'model': Profile,
-                'where': Q(user=reviewer)
-            },
-            {
                 'model': HostingServiceAccount,
                 'where': Q(id=1),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=reviewer)
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=reviewer)
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=reviewer)
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=reviewer)
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
-            },
-            {
-                'model': Profile,
-                'where': Q(user=owner)
-            },
-            {
-                'model': Profile,
-                'where': Q(user=owner)
-            },
-            {
-                'model': Profile,
-                'where': Q(user=owner)
             },
         ]
 

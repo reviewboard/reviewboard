@@ -445,6 +445,48 @@ class ReviewRequestPageData:
 
         self.all_status_updates = all_status_updates
 
+        # Fetch any users we don't already have, and apply them to the
+        # objects. This ensures we don't have to fetch per-object later.
+        #
+        # We'll start by figuring out what users we have and what we're
+        # missing. We can then fetch all the missing ones in one go. Then
+        # we can re-assign everything back to the objects.
+        users_map: dict[int, Optional[User]] = {
+            review.user.pk: review.user
+            for review in reviews
+        }
+
+        if user.is_authenticated:
+            assert isinstance(user, User)
+
+            users_map[user.pk] = user
+
+        for changedesc in changedescs:
+            if changedesc.user_id is not None:
+                users_map.setdefault(changedesc.user_id, None)
+
+        for status_update in all_status_updates:
+            users_map.setdefault(status_update.user_id, None)
+
+        missing_user_ids = [
+            _user_id
+            for _user_id, _user in users_map.items()
+            if _user is None
+        ]
+
+        if missing_user_ids:
+            users_map.update(User.objects.in_bulk(missing_user_ids))
+
+        for review in reviews:
+            review.user = users_map[review.user_id]
+
+        for changedesc in changedescs:
+            if changedesc.user_id is not None:
+                changedesc.user = users_map[changedesc.user_id]
+
+        for status_update in all_status_updates:
+            status_update.user = users_map[status_update.user_id]
+
     def query_data_post_etag(self) -> None:
         """Perform remaining queries for the page.
 
