@@ -1365,12 +1365,6 @@ class ReviewRequestPageDataTests(TestCase):
                     'where': Q(review__in=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1]),
                 },
                 {
-                    'model': Review.file_attachment_comments.through,
-                    'order_by': ('fileattachmentcomment__timestamp',),
-                    'select_related': True,
-                    'where': Q(review__in=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1]),
-                },
-                {
                     'model': Review.comments.through,
                     'order_by': ('comment__filediff',
                                  'comment__first_line',
@@ -1462,12 +1456,6 @@ class ReviewRequestPageDataTests(TestCase):
                 {
                     'model': Review.general_comments.through,
                     'order_by': ('generalcomment__timestamp',),
-                    'select_related': True,
-                    'where': Q(review__in=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1]),
-                },
-                {
-                    'model': Review.screenshot_comments.through,
-                    'order_by': ('screenshotcomment__timestamp',),
                     'select_related': True,
                     'where': Q(review__in=[10, 9, 8, 7, 6, 5, 4, 3, 2, 1]),
                 },
@@ -1599,46 +1587,6 @@ class ReviewRequestPageDataTests(TestCase):
             {
                 'model': Profile,
                 'where': Q(user=reviewer)
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
             },
         ]
 

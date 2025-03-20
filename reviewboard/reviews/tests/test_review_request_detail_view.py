@@ -774,18 +774,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(review__in=[2, 3, 1]),
             },
             {
-                'model': Review.screenshot_comments.through,
-                'order_by': ('screenshotcomment__timestamp',),
-                'select_related': True,
-                'where': Q(review__in=[2, 3, 1]),
-            },
-            {
-                'model': Review.file_attachment_comments.through,
-                'order_by': ('fileattachmentcomment__timestamp',),
-                'select_related': True,
-                'where': Q(review__in=[2, 3, 1]),
-            },
-            {
                 'model': Review.comments.through,
                 'order_by': (
                     'comment__filediff',
@@ -870,10 +858,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'model': DiffSet,
                 'order_by': ('revision',),
                 'where': Q(history=1),
-            },
-            {
-                'model': HostingServiceAccount,
-                'where': Q(id=1),
             },
             {
                 'join_types': {
@@ -1184,12 +1168,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             {
                 'model': Review.general_comments.through,
                 'order_by': ('generalcomment__timestamp',),
-                'select_related': True,
-                'where': Q(review__in=[1]),
-            },
-            {
-                'model': Review.screenshot_comments.through,
-                'order_by': ('screenshotcomment__timestamp',),
                 'select_related': True,
                 'where': Q(review__in=[1]),
             },
@@ -1678,22 +1656,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             {
                 'model': Review.screenshot_comments.through,
                 'order_by': ('screenshotcomment__timestamp',),
-                'select_related': True,
-                'where': Q(review__in=[1]),
-            },
-            {
-                'model': Review.file_attachment_comments.through,
-                'order_by': ('fileattachmentcomment__timestamp',),
-                'select_related': True,
-                'where': Q(review__in=[1]),
-            },
-            {
-                'model': Review.comments.through,
-                'order_by': (
-                    'comment__filediff',
-                    'comment__first_line',
-                    'comment__timestamp',
-                ),
                 'select_related': True,
                 'where': Q(review__in=[1]),
             },

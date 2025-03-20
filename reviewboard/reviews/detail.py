@@ -431,8 +431,24 @@ class ReviewRequestPageData:
 
         # Get diffsets.
         if needs_reviews:
-            self.diffsets = review_request.get_diffsets()
-            self.diffsets_by_id = self._build_id_map(self.diffsets)
+            diffsets = review_request.get_diffsets()
+
+            # We're going to attach the repository to each diffset. This is
+            # faster than including them in a select_related(), and ensures
+            # that they operate on the same state. It's needed because
+            # operations are performed on diffset.repository, which would
+            # cause a new query per-diff.
+            repository = review_request.repository
+
+            if repository is not None:
+                repository_id = repository.pk
+
+                for diffset in diffsets:
+                    if diffset.repository_id == repository_id:
+                        diffset.repository = repository
+
+            self.diffsets = diffsets
+            self.diffsets_by_id = self._build_id_map(diffsets)
 
         # Get all status updates.
         all_status_updates: list[StatusUpdate] = []
@@ -649,24 +665,67 @@ class ReviewRequestPageData:
             draft_reply_comments: dict[int, list[BaseComment]] = {}
             review_comments: dict[int, list[BaseComment]] = {}
             review_ids = list(reviews_by_id.keys())
+            diffsets_by_id = self.diffsets_by_id
             issue_counts = self.issue_counts
             issues: list[BaseComment] = []
 
-            for review_field_name, key, ordering in (
-                ('general_comments',
-                 'general_comments',
-                 ('generalcomment__timestamp',)),
-                ('screenshot_comments',
-                 'screenshot_comments',
-                 ('screenshotcomment__timestamp',)),
-                ('file_attachment_comments',
-                 'file_attachment_comments',
-                 ('fileattachmentcomment__timestamp',)),
-                ('comments',
-                 'diff_comments',
-                 ('comment__filediff',
-                  'comment__first_line',
-                  'comment__timestamp'))):
+            def _process_file_attachment_comment(
+                comment: FileAttachmentComment,
+            ) -> None:
+                attachment_id = comment.file_attachment_id
+                f = file_attachments_by_id[attachment_id]
+                comment.file_attachment = f
+                f._comments.append(comment)
+
+                diff_against_id = comment.diff_against_file_attachment_id
+
+                if diff_against_id is not None:
+                    comment.diff_against_file_attachment = \
+                        file_attachments_by_id[diff_against_id]
+
+            def _process_screenshot_comment(
+                comment: ScreenshotComment,
+            ) -> None:
+                screenshot = screenshots_by_id[comment.screenshot_id]
+                comment.screenshot = screenshot
+                screenshot._comments.append(comment)
+
+            def _process_diff_comment(
+                comment: Comment,
+            ) -> None:
+                filediff = comment.filediff
+                filediff.diffset = diffsets_by_id[filediff.diffset_id]
+
+            for (can_process,
+                 review_field_name,
+                 key,
+                 ordering,
+                 process_comment_func) in (
+                    (True,
+                     'general_comments',
+                     'general_comments',
+                     ('generalcomment__timestamp',),
+                     None),
+                    (bool(screenshots_by_id),
+                     'screenshot_comments',
+                     'screenshot_comments',
+                     ('screenshotcomment__timestamp',),
+                     _process_screenshot_comment),
+                    (bool(file_attachments_by_id),
+                     'file_attachment_comments',
+                     'file_attachment_comments',
+                     ('fileattachmentcomment__timestamp',),
+                     _process_file_attachment_comment),
+                    (review_request.repository_id is not None,
+                     'comments',
+                     'diff_comments',
+                     ('comment__filediff',
+                      'comment__first_line',
+                      'comment__timestamp'),
+                     _process_diff_comment)):
+                if not can_process:
+                    continue
+
                 # Due to mistakes in how we initially made the schema, we have
                 # a ManyToManyField in between comments and reviews, instead of
                 # comments having a ForeignKey to the review. This makes it
@@ -714,23 +773,8 @@ class ReviewRequestPageData:
                     # If the comment has an associated object (such as a file
                     # attachment) that we've already fetched, attach it to
                     # prevent future queries.
-                    if isinstance(comment, FileAttachmentComment):
-                        attachment_id = comment.file_attachment_id
-                        f = file_attachments_by_id[attachment_id]
-                        comment.file_attachment = f
-                        f._comments.append(comment)
-
-                        diff_against_id = \
-                            comment.diff_against_file_attachment_id
-
-                        if diff_against_id is not None:
-                            comment.diff_against_file_attachment = \
-                                file_attachments_by_id[diff_against_id]
-                    elif isinstance(comment, ScreenshotComment):
-                        screenshot = \
-                            screenshots_by_id[comment.screenshot_id]
-                        comment.screenshot = screenshot
-                        screenshot._comments.append(comment)
+                    if process_comment_func:
+                        process_comment_func(comment)
 
                     # We've hit legacy database cases where there were entries
                     # that weren't a reply, and were just orphaned. Check and
@@ -782,12 +826,15 @@ class ReviewRequestPageData:
                 datetime.fromtimestamp(0, timezone.utc)
 
         if review_request.created_with_history:
-            pks = [diffset.pk for diffset in self.diffsets]
+            extra_pks: list[int] = []
 
             if draft and draft.diffset_id is not None:
-                pks.append(draft.diffset_id)
+                extra_pks.append(draft.diffset_id)
 
-            self.commits_by_diffset_id = DiffCommit.objects.by_diffset_ids(pks)
+            self.commits_by_diffset_id = DiffCommit.objects.by_diffset_ids([
+                *self.diffsets_by_id.keys(),
+                *extra_pks,
+            ])
 
     def get_entries(
         self,
