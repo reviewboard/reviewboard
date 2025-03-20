@@ -1810,6 +1810,8 @@ class ReviewRequest(BaseReviewRequestDetails):
                                       review_request=self, trivial=trivial,
                                       changedesc=changes)
 
+        self.clear_local_caches()
+
         return changes
 
     def determine_user_for_changedesc(
@@ -2056,6 +2058,29 @@ class ReviewRequest(BaseReviewRequestDetails):
             This object.
         """
         return self
+
+    def clear_local_caches(self) -> None:
+        """Clear all caches for locally-computed state.
+
+        This will force the following operations to re-fetch state:
+
+        * :py:attr:`approval_failure`
+        * :py:attr:`approved`
+        * :py:meth:`get_blocks`
+        * :py:meth:`get_diffsets`
+        * :py:meth:`get_file_attachments_data`
+
+        Version Added:
+            7.1
+        """
+        d = self.__dict__
+
+        for key in ('_approval_failure',
+                    '_approved',
+                    '_blocks',
+                    '_diffsets',
+                    '_file_attachments_data'):
+            d.pop(key, None)
 
     def _is_diffset_accessible_by(
         self,

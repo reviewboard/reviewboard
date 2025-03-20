@@ -65,10 +65,7 @@ def _on_review_request_draft_deleted(
         diffset.delete()
 
     review_request = instance.get_review_request()
-
-    if hasattr(review_request, '_file_attachments_data'):
-        # Clear the cached file attachments data.
-        del review_request._file_attachments_data
+    review_request.clear_local_caches()
 
 
 def _on_review_request_deleted(
