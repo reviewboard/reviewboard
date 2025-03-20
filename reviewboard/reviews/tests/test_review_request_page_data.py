@@ -1551,46 +1551,6 @@ class ReviewRequestPageDataTests(TestCase):
                 'type': 'UPDATE',
                 'where': Q(pk=2),
             },
-            {
-                'model': StatusUpdate,
-                'where': Q(review__id=10),
-            },
-            {
-                'model': StatusUpdate,
-                'where': Q(review__id=9),
-            },
-            {
-                'model': StatusUpdate,
-                'where': Q(review__id=8),
-            },
-            {
-                'model': StatusUpdate,
-                'where': Q(review__id=7),
-            },
-            {
-                'model': StatusUpdate,
-                'where': Q(review__id=6),
-            },
-            {
-                'model': StatusUpdate,
-                'where': Q(review__id=5),
-            },
-            {
-                'model': StatusUpdate,
-                'where': Q(review__id=4),
-            },
-            {
-                'model': StatusUpdate,
-                'where': Q(review__id=3),
-            },
-            {
-                'model': StatusUpdate,
-                'where': Q(review__id=2),
-            },
-            {
-                'model': StatusUpdate,
-                'where': Q(review__id=1),
-            },
         ]
 
         with self.assertQueries(queries):

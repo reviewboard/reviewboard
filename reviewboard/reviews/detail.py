@@ -250,6 +250,12 @@ class ReviewRequestPageData:
     #: A mapping from Screenshot IDs to instances.
     screenshots_by_id: Mapping[int, Screenshot]
 
+    #: A mapping from Review IDs to an assigned StatusUpdate.
+    #:
+    #: Version Added:
+    #:     7.1
+    status_updates_by_review_id: Mapping[int, StatusUpdate]
+
     #: Whether the status updates feature is enabled for this review request.
     #:
     #: This does not necessarily mean that there are status updates on the
@@ -455,23 +461,28 @@ class ReviewRequestPageData:
         self.reviews_by_id = reviews_by_id
 
         initial_status_updates: list[StatusUpdate] = []
-        change_status_updates: dict[int, list[StatusUpdate]] = {}
+        change_status_updates: dict[int, list[StatusUpdate]] = \
+            defaultdict(list)
+        status_updates_by_review_id: dict[int, StatusUpdate] = {}
 
         for status_update in self.all_status_updates:
-            if status_update.review_id is not None:
-                review = reviews_by_id[status_update.review_id]
+            review_id = status_update.review_id
+            changedesc_id = status_update.change_description_id
+
+            if review_id is not None:
+                review = reviews_by_id[review_id]
                 review.status_update = status_update
                 status_update.review = review
+                status_updates_by_review_id[review_id] = status_update
 
-            if status_update.change_description_id:
-                change_status_updates.setdefault(
-                    status_update.change_description_id,
-                    []).append(status_update)
+            if changedesc_id:
+                change_status_updates[changedesc_id].append(status_update)
             else:
                 initial_status_updates.append(status_update)
 
         self.change_status_updates = change_status_updates
         self.initial_status_updates = initial_status_updates
+        self.status_updates_by_review_id = status_updates_by_review_id
 
         body_bottom_replies: dict[int, list[Review]] = defaultdict(list)
         body_top_replies: dict[int, list[Review]] = defaultdict(list)
@@ -1886,14 +1897,13 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
             ReviewEntry:
             A review entry to include on the page.
         """
-        status_updates_enabled = data.status_updates_enabled
         review_comments = data.review_comments
+        status_updates_by_review_id = data.status_updates_by_review_id
 
         for review in data.reviews:
             if (not review.public or
                 review.is_reply() or
-                (status_updates_enabled and
-                 hasattr(review, 'status_update'))):
+                review.pk in status_updates_by_review_id):
                 continue
 
             entry = cls(data=data,

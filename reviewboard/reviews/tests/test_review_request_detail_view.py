@@ -796,10 +796,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(review__in=[2, 3, 1]),
             },
             {
-                'model': StatusUpdate,
-                'where': Q(review__id=1),
-            },
-            {
                 'join_types': {
                     'reviews_reviewrequest_changedescs': 'INNER JOIN',
                 },
@@ -1212,10 +1208,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 ),
                 'select_related': True,
                 'where': Q(review__in=[1]),
-            },
-            {
-                'model': StatusUpdate,
-                'where': Q(review__id=1),
             },
             {
                 'model': Review,
@@ -1704,10 +1696,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 ),
                 'select_related': True,
                 'where': Q(review__in=[1]),
-            },
-            {
-                'model': StatusUpdate,
-                'where': Q(review__id=1),
             },
             {
                 'model': Review,
