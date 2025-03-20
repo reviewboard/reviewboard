@@ -325,7 +325,7 @@ class UserBadgesTests(TestCase):
         class MyUserDetailsProvider(BaseUserDetailsProvider):
             user_details_provider_id = 'my-user-details-provider'
 
-            def get_user_badges(self, user):
+            def get_user_badges(self, user, **kwargs):
                 yield UserBadge(user=user,
                                 label='Badge 1')
                 yield UserBadge(user=user,
@@ -363,7 +363,7 @@ class UserBadgesTests(TestCase):
         class MyUserDetailsProvider(BaseUserDetailsProvider):
             user_details_provider_id = 'my-user-details-provider'
 
-            def get_user_badges(self, user):
+            def get_user_badges(self, user, **kwargs):
                 yield UserBadge(user=user,
                                 label='Badge 1')
 
