@@ -1,7 +1,10 @@
 """Definitions for review request fields."""
 
+from __future__ import annotations
+
 import logging
 from html import unescape
+from typing import Iterator, Optional, Sequence, Union
 
 from django.template.loader import render_to_string
 from django.utils.functional import cached_property
@@ -9,12 +12,13 @@ from django.utils.html import (escape,
                                format_html,
                                format_html_join,
                                strip_tags)
-from django.utils.safestring import mark_safe
+from django.utils.safestring import SafeString, mark_safe
 from django.utils.translation import gettext_lazy as _
 from djblets.markdown import iter_markdown_lines
 from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import ALREADY_REGISTERED, NOT_REGISTERED
 
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.diffviewer.diffutils import get_line_changed_regions
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
@@ -562,9 +566,16 @@ class BaseReviewRequestField(object):
             list of dict:
             A list of the change entry sections.
         """
+        assert self.label
+
+        rendered_html = _legacy_mark_safe(
+            self.render_change_entry_html(info),
+            self,
+            'render_change_entry_html')
+
         return [{
             'title': self.label,
-            'rendered_html': mark_safe(self.render_change_entry_html(info)),
+            'rendered_html': rendered_html,
         }]
 
     def render_change_entry_html(self, info):
@@ -581,6 +592,13 @@ class BaseReviewRequestField(object):
         Subclasses can override ``render_change_entry_value_html`` to
         change how the value itself will be rendered in the string.
 
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
+
         Args:
             info (dict):
                 A dictionary describing how the field has changed. This is
@@ -588,34 +606,44 @@ class BaseReviewRequestField(object):
                 contain ``added`` and ``removed`` keys as well.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The HTML representation of the change entry.
         """
-        old_value = ''
-        new_value = ''
+        rendered_old_value: SafeString
+        rendered_new_value: SafeString
 
         if 'old' in info:
-            old_value = info['old'][0]
+            rendered_old_value = _legacy_mark_safe(
+                self.render_change_entry_removed_value_html(info,
+                                                            info['old'][0]),
+                self,
+                'render_change_entry_removed_value_html')
+        else:
+            rendered_old_value = mark_safe('')
 
         if 'new' in info:
-            new_value = info['new'][0]
+            rendered_new_value = _legacy_mark_safe(
+                self.render_change_entry_added_value_html(info,
+                                                          info['new'][0]),
+                self,
+                'render_change_entry_added_value_html')
+        else:
+            rendered_new_value = mark_safe('')
 
-        s = ['<div class="rb-c-review-request-changed-value">']
-
-        if old_value:
-            s.append(self.render_change_entry_removed_value_html(
-                info, old_value))
-
-        if new_value:
-            s.append(self.render_change_entry_added_value_html(
-                info, new_value))
-
-        s.append('</div>')
-
-        return ''.join(s)
+        return format_html(
+            '<div class="rb-c-review-request-changed-value">{}{}</div>',
+            rendered_old_value,
+            rendered_new_value)
 
     def render_change_entry_added_value_html(self, info, value):
         """Render the change entry for an added value to HTML.
+
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
 
         Args:
             info (dict):
@@ -625,14 +653,17 @@ class BaseReviewRequestField(object):
                 The value of the field.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered change entry.
         """
         value_html = self.render_change_entry_value_html(info, value)
 
         if value_html:
-            # TODO: Deprecate non-safe value_html strings, and later treat
-            #       them as unsafe.
+            value_html = _legacy_mark_safe(
+                value_html,
+                self,
+                'render_change_entry_value_html')
+
             return format_html(
                 '<div class="rb-c-review-request-changed-value__new">'
                 '<div class="rb-c-review-request-changed-value__marker"'
@@ -641,12 +672,19 @@ class BaseReviewRequestField(object):
                 '{value_html}</div>'
                 '</div>',
                 label=_('New value'),
-                value_html=mark_safe(value_html))
+                value_html=value_html)
         else:
-            return ''
+            return mark_safe('')
 
     def render_change_entry_removed_value_html(self, info, value):
         """Render the change entry for a removed value to HTML.
+
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
 
         Args:
             info (dict):
@@ -656,14 +694,17 @@ class BaseReviewRequestField(object):
                 The value of the field.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered change entry.
         """
         value_html = self.render_change_entry_value_html(info, value)
 
         if value_html:
-            # TODO: Deprecate non-safe value_html strings, and later treat
-            #       them as unsafe.
+            value_html = _legacy_mark_safe(
+                value_html,
+                self,
+                'render_change_entry_value_html')
+
             return format_html(
                 '<div class="rb-c-review-request-changed-value__old">'
                 '<div class="rb-c-review-request-changed-value__marker"'
@@ -672,15 +713,22 @@ class BaseReviewRequestField(object):
                 '{value_html}</div>'
                 '</div>',
                 label=_('Old value'),
-                value_html=mark_safe(value_html))
+                value_html=value_html)
         else:
-            return ''
+            return mark_safe('')
 
     def render_change_entry_value_html(self, info, value):
         """Render the value for a change description string to HTML.
 
         By default, this just converts the value to text and escapes it.
         This can be overridden to customize how the value is displayed.
+
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
 
         Args:
             info (dict):
@@ -690,7 +738,7 @@ class BaseReviewRequestField(object):
                 The value of the field.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered change entry.
         """
         return escape(str(value or ''))
@@ -755,12 +803,19 @@ class BaseReviewRequestField(object):
 
         This must use ``value`` instead of ``self.value``.
 
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
+
         Args:
             value (object):
                 The value to render.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered value.
         """
         return escape(str(value or ''))
@@ -827,11 +882,20 @@ class BaseReviewRequestField(object):
         By default, this just calls ``render_value`` with the value
         from the database.
 
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
+
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered field.
         """
-        return self.render_value(self.value)
+        return _legacy_mark_safe(self.render_value(self.value),
+                                 self,
+                                 'render_value')
 
     def __str__(self):
         """Represent the field as a unicode string.
@@ -931,30 +995,44 @@ class BaseCommaEditableField(BaseEditableField):
         This will call out to ``render_item`` for every item. The list
         of rendered items will be separated by a comma and a space.
 
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
+
         Args:
             value (object):
                 The value to render.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered value.
         """
-        return ', '.join([
-            self.render_item(value)
-            for value in values
-        ])
+        return format_html_join(', ', '{}', (
+            (_legacy_mark_safe(self.render_item(item), self, 'render_item'),)
+            for item in values
+        ))
 
     def render_item(self, item):
         """Render an item from the list.
 
         By default, this will convert the item to text and then escape it.
 
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
+
         Args:
             item (object):
                 The item to render.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered item.
         """
         return escape(str(item or ''))
@@ -970,6 +1048,13 @@ class BaseCommaEditableField(BaseEditableField):
         coming from a field or any other form of user input must be
         properly escaped.
 
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
+
         Args:
             info (dict):
                 A dictionary describing how the field has changed. This is
@@ -977,38 +1062,48 @@ class BaseCommaEditableField(BaseEditableField):
                 contain ``added`` and ``removed`` keys as well.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The HTML representation of the change entry.
         """
-        s = ['<div class="rb-c-review-request-changed-value">']
+        removed_items: SafeString
+        added_items: SafeString
 
         if 'removed' in info:
             values = info['removed']
 
-            if self.one_line_per_change_entry:
-                s += [
-                    self.render_change_entry_removed_value_html(info, [value])
-                    for value in values
-                ]
-            else:
-                s.append(self.render_change_entry_removed_value_html(
-                    info, values))
+            if not self.one_line_per_change_entry:
+                values = [values]
+
+            removed_items = format_html_join('', '{}', (
+                (_legacy_mark_safe(
+                    self.render_change_entry_removed_value_html(info, [value]),
+                    self,
+                    'render_change_entry_removed_value_html'),)
+                for value in values
+            ))
+        else:
+            removed_items = mark_safe('')
 
         if 'added' in info:
             values = info['added']
 
-            if self.one_line_per_change_entry:
-                s += [
-                    self.render_change_entry_added_value_html(info, [value])
-                    for value in values
-                ]
-            else:
-                s.append(self.render_change_entry_added_value_html(
-                    info, values))
+            if not self.one_line_per_change_entry:
+                values = [values]
 
-        s.append('</table>')
+            added_items = format_html_join('', '{}', (
+                (_legacy_mark_safe(
+                    self.render_change_entry_added_value_html(info, [value]),
+                    self,
+                    'render_change_entry_added_value_html'),)
+                for value in values
+            ))
+        else:
+            added_items = mark_safe('')
 
-        return ''.join(s)
+        return format_html(
+            '<div class="rb-c-review-request-changed-value">{}{}</table>',
+            removed_items,
+            added_items)
 
     def render_change_entry_value_html(self, info, values):
         """Render a list of items for change description HTML.
@@ -1016,6 +1111,13 @@ class BaseCommaEditableField(BaseEditableField):
         By default, this will call ``render_change_entry_item_html`` for every
         item in the list. The list of rendered items will be separated by a
         comma and a space.
+
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
 
         Args:
             info (dict):
@@ -1025,19 +1127,29 @@ class BaseCommaEditableField(BaseEditableField):
                 The value of the field.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered change entry.
         """
-        return ', '.join([
-            self.render_change_entry_item_html(info, item)
+        return format_html_join(', ', '{}', (
+            (_legacy_mark_safe(
+                self.render_change_entry_item_html(info, item),
+                self,
+                'render_change_entry_item_html'),)
             for item in values
-        ])
+        ))
 
     def render_change_entry_item_html(self, info, item):
         """Render an item for change description HTML.
 
         By default, this just converts the value to text and escapes it.
         This can be overridden to customize how the value is displayed.
+
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
 
         Args:
             info (dict):
@@ -1047,7 +1159,7 @@ class BaseCommaEditableField(BaseEditableField):
                 The value of the item.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered change entry.
         """
         return escape(str(item[0]))
@@ -1175,18 +1287,25 @@ class BaseTextAreaField(BaseEditableField):
         If Markdown is enabled, and the text is not in Markdown format,
         the text will be escaped.
 
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
+
         Args:
             text (unicode):
                 The value of the field.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered value.
         """
         text = text or ''
 
         if self.should_render_as_markdown(text):
-            return render_markdown(text)
+            return mark_safe(render_markdown(text))
         else:
             return escape(text)
 
@@ -1215,6 +1334,13 @@ class BaseTextAreaField(BaseEditableField):
         coming from a field or any other form of user input must be
         properly escaped.
 
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
+
         Args:
             info (dict):
                 A dictionary describing how the field has changed. This is
@@ -1222,7 +1348,7 @@ class BaseTextAreaField(BaseEditableField):
                 contain ``added`` and ``removed`` keys as well.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The HTML representation of the change entry.
         """
         old_value = ''
@@ -1234,6 +1360,13 @@ class BaseTextAreaField(BaseEditableField):
         if 'new' in info:
             new_value = info['new'][0] or ''
 
+        # NOTE: These are HTML-safe strings, but not a SafeString. Changing
+        #       iter_markdown_lines to yield SafeStrings is an API breakage
+        #       (it could have consequences in rendering pipelines), so it
+        #       cannot be done until a major Djblets release.
+        #
+        #       We will be treating these as strings here and marking them
+        #       safe later.
         old_value = render_markdown(old_value)
         new_value = render_markdown(new_value)
         old_lines = list(iter_markdown_lines(old_value))
@@ -1241,49 +1374,166 @@ class BaseTextAreaField(BaseEditableField):
 
         differ = MyersDiffer(old_lines, new_lines)
 
-        return ('<table class="diffed-text-area">%s</table>'
-                % ''.join(self._render_all_change_lines(differ, old_lines,
-                                                        new_lines)))
+        return format_html(
+            '<table class="diffed-text-area">{}</table>',
+            format_html_join(
+                '',
+                '{}',
+                (
+                    (line,)
+                    for line in self._render_all_change_lines(
+                        differ=differ,
+                        old_lines=old_lines,
+                        new_lines=new_lines)
+                )))
 
-    def _render_all_change_lines(self, differ, old_lines, new_lines):
+    def _render_all_change_lines(
+        self,
+        *,
+        differ: MyersDiffer,
+        old_lines: Sequence[str],
+        new_lines: Sequence[str],
+    ) -> Iterator[SafeString]:
+        """Render all lines of a diff.
+
+        Version Changed:
+            7.1:
+            All arguments are now keyword-only arguments.
+
+        Args:
+            differ (reviewboard.diffviewer.myersdiff.MyersDiffer):
+                The differ used to generate the lines.
+
+            old_lines (list of str):
+                The list of old lines to diff.
+
+            new_lines (list of str):
+                The list of new lines to diff.
+
+        Yields:
+            django.utils.safestring.SafeString:
+            Each line in the diff.
+        """
         for tag, i1, i2, j1, j2 in differ.get_opcodes():
             if tag == 'equal':
-                lines = self._render_change_lines(differ, tag, None, None,
-                                                  i1, i2, old_lines)
+                yield from self._render_change_lines(
+                    tag=tag,
+                    i1=i1,
+                    i2=i2,
+                    lines=old_lines)
             elif tag == 'insert':
-                lines = self._render_change_lines(differ, tag, None, '+',
-                                                  j1, j2, new_lines)
+                yield from self._render_change_lines(
+                    tag=tag,
+                    new_marker='+',
+                    i1=j1,
+                    i2=j2,
+                    lines=new_lines)
             elif tag == 'delete':
-                lines = self._render_change_lines(differ, tag, '-', None,
-                                                  i1, i2, old_lines)
+                yield from self._render_change_lines(
+                    tag=tag,
+                    old_marker='-',
+                    i1=i1,
+                    i2=i2,
+                    lines=old_lines)
             elif tag == 'replace':
-                lines = self._render_change_replace_lines(differ, i1, i2,
-                                                          j1, j2, old_lines,
-                                                          new_lines)
+                yield from self._render_change_replace_lines(
+                    i1=i1,
+                    i2=i2,
+                    j1=j1,
+                    j2=j2,
+                    old_lines=old_lines,
+                    new_lines=new_lines)
             else:
-                raise ValueError('Unexpected tag "%s"' % tag)
+                raise ValueError(f'Unexpected tag "{tag}"')
 
-            for line in lines:
-                yield line
+    def _render_change_lines(
+        self,
+        *,
+        tag: str,
+        i1: int,
+        i2: int,
+        lines: Sequence[str],
+        old_marker: str = '&nbsp;',
+        new_marker: str = '&nbsp;',
+    ) -> Iterator[SafeString]:
+        """Render all lines in an equal/insert/delete chunk.
 
-    def _render_change_lines(self, differ, tag, old_marker, new_marker,
-                             i1, i2, lines):
-        old_marker = old_marker or '&nbsp;'
-        new_marker = new_marker or '&nbsp;'
+        Version Changed:
+            7.1:
+            All arguments are now keyword-only arguments.
 
+        Args:
+            tag (str);
+                The equal/insert/delete tag.
+
+            i1 (int):
+                The starting line offset of the chunk.
+
+            i2 (int):
+                The ending line offset of the chunk.
+
+            lines (list of str):
+                The lines in the chunk.
+
+            old_marker (str, optional):
+                The marker to show for the original line.
+
+            new_marker (str, optional):
+                The marker to show for the modified line.
+
+        Yields:
+            django.utils.safestring.SafeString:
+            Each line in the chunk.
+        """
         for i in range(i1, i2):
-            line = lines[i]
+            # NOTE: These variables are HTML-safe, but are standard strings.
+            yield mark_safe(
+                f'<tr class="{tag}">'
+                f' <td class="marker">{old_marker}</td>'
+                f' <td class="marker">{new_marker}</td>'
+                f' <td class="line rich-text">{lines[i]}</td>'
+                f'</tr>')
 
-            yield ('<tr class="%s">'
-                   ' <td class="marker">%s</td>'
-                   ' <td class="marker">%s</td>'
-                   ' <td class="line rich-text">%s</td>'
-                   '</tr>'
-                   % (tag, old_marker, new_marker, line))
+    def _render_change_replace_lines(
+        self,
+        *,
+        i1: int,
+        i2: int,
+        j1: int,
+        j2: int,
+        old_lines: Sequence[str],
+        new_lines: Sequence[str],
+    ) -> Iterator[SafeString]:
+        """Render all lines in a replace chunk.
 
-    def _render_change_replace_lines(self, differ, i1, i2, j1, j2,
-                                     old_lines, new_lines):
-        replace_new_lines = []
+        Version Changed:
+            7.1:
+            All arguments are now keyword-only arguments.
+
+        Args:
+            i1 (int):
+                The starting line offset of the original chunk.
+
+            i2 (int):
+                The ending line offset of the original chunk.
+
+            j1 (int):
+                The starting line offset of the modified chunk.
+
+            j2 (int):
+                The ending line offset of the modified chunk.
+
+            old_lines (list of str):
+                The original lines in the chunk.
+
+            new_lines (list of str):
+                The modified lines in the chunk.
+
+        Yields:
+            django.utils.safestring.SafeString:
+            Each line in the chunk.
+        """
+        replace_new_lines: list[str] = []
 
         for i, j in zip(range(i1, i2), range(j1, j2)):
             old_line = old_lines[i]
@@ -1296,24 +1546,24 @@ class BaseTextAreaField(BaseEditableField):
             old_line = highlightregion(old_line, old_regions)
             new_line = highlightregion(new_line, new_regions)
 
-            yield (
-                '<tr class="replace-old">'
-                ' <td class="marker">~</td>'
-                ' <td class="marker">&nbsp;</td>'
-                ' <td class="line rich-text">%s</td>'
-                '</tr>'
-                % old_line)
+            # NOTE: old_line is HTML-safe, but is a standard string.
+            yield mark_safe(
+                f'<tr class="replace-old">'
+                f' <td class="marker">~</td>'
+                f' <td class="marker">&nbsp;</td>'
+                f' <td class="line rich-text">{old_line}</td>'
+                f'</tr>')
 
             replace_new_lines.append(new_line)
 
         for line in replace_new_lines:
-            yield (
-                '<tr class="replace-new">'
-                ' <td class="marker">&nbsp;</td>'
-                ' <td class="marker">~</td>'
-                ' <td class="line rich-text">%s</td>'
-                '</tr>'
-                % line)
+            # NOTE: line is HTML-safe, but is a standard string.
+            yield mark_safe(
+                f'<tr class="replace-new">'
+                f' <td class="marker">&nbsp;</td>'
+                f' <td class="marker">~</td>'
+                f' <td class="line rich-text">{line}</td>'
+                f'</tr>')
 
 
 class BaseCheckboxField(BaseReviewRequestField):
@@ -1360,6 +1610,13 @@ class BaseCheckboxField(BaseReviewRequestField):
         coming from a field or any other form of user input must be
         properly escaped.
 
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
+
         Args:
             info (dict):
                 A dictionary describing how the field has changed. This is
@@ -1367,34 +1624,44 @@ class BaseCheckboxField(BaseReviewRequestField):
                 contain ``added`` and ``removed`` keys as well.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The HTML representation of the change entry.
         """
-        old_value = None
-        new_value = None
+        rendered_old_value: Optional[SafeString] = None
+        rendered_new_value: Optional[SafeString] = None
 
         if 'old' in info:
-            old_value = info['old'][0]
+            rendered_old_value = _legacy_mark_safe(
+                self.render_change_entry_removed_value_html(info,
+                                                            info['old'][0]),
+                self,
+                'render_change_entry_removed_value_html')
+        else:
+            rendered_old_value = mark_safe('')
 
         if 'new' in info:
-            new_value = info['new'][0]
+            rendered_new_value = _legacy_mark_safe(
+                self.render_change_entry_added_value_html(info,
+                                                          info['new'][0]),
+                self,
+                'render_change_entry_added_value_html')
+        else:
+            rendered_new_value = mark_safe('')
 
-        s = ['<table class="changed">']
-
-        if old_value is not None:
-            s.append(self.render_change_entry_removed_value_html(
-                info, old_value))
-
-        if new_value is not None:
-            s.append(self.render_change_entry_added_value_html(
-                info, new_value))
-
-        s.append('</table>')
-
-        return ''.join(s)
+        return format_html(
+            '<table class="changed">{}{}</table>',
+            rendered_old_value,
+            rendered_new_value)
 
     def render_change_entry_value_html(self, info, value):
         """Render the value for a change description string to HTML.
+
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
 
         Args:
             info (dict):
@@ -1404,16 +1671,17 @@ class BaseCheckboxField(BaseReviewRequestField):
                 The value of the field.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered change entry.
         """
         if value:
-            checked = 'checked'
+            checked = ' checked'
         else:
             checked = ''
 
-        return ('<input type="checkbox" autocomplete="off" disabled %s>'
-                % checked)
+        return mark_safe(
+            f'<input type="checkbox" autocomplete="off" disabled{checked}>'
+        )
 
     def get_dom_attributes(self):
         """Return any additional attributes to include in the element.
@@ -1440,11 +1708,18 @@ class BaseCheckboxField(BaseReviewRequestField):
         Because the value is included as a boolean attribute on the checkbox
         element, this just returns the empty string.
 
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
+
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered field.
         """
-        return ''
+        return mark_safe('')
 
 
 class BaseDropdownField(BaseReviewRequestField):
@@ -1490,6 +1765,13 @@ class BaseDropdownField(BaseReviewRequestField):
     def render_change_entry_value_html(self, info, value):
         """Render the value for a change description string to HTML.
 
+        Version Changed:
+            7.1:
+            This is now expected to return a
+            :py:class:`~django.utils.safestring.SafeString`, and this will
+            be required in Review Board 9. Subclasses must use functions
+            like :py:func:`django.utils.html.format_html()`.
+
         Args:
             info (dict):
                 A dictionary describing how the field has changed.
@@ -1498,14 +1780,14 @@ class BaseDropdownField(BaseReviewRequestField):
                 The value of the field.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered change entry.
         """
         for key, label in self.options:
             if value == key:
                 return escape(label)
 
-        return ''
+        return mark_safe('')
 
     def value_as_html(self):
         """Return the field rendered as HTML.
@@ -1515,7 +1797,7 @@ class BaseDropdownField(BaseReviewRequestField):
         field as those options, to fit in with the base field's template.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered field.
         """
         data = []
@@ -1666,3 +1948,45 @@ def unregister_review_request_fieldset(fieldset):
                      '"%s"',
                      fieldset.fieldset_id)
         raise e
+
+
+def _legacy_mark_safe(
+    s: Union[str, SafeString],
+    obj: object,
+    func_name: str,
+) -> SafeString:
+    """Ensure a SafeString, warning if the string is not safe.
+
+    This is a compatibility function for taking in a string and ensuring a safe
+    string result. If it's not a safe string, this will emit a deprecation
+    warning and then cast, ensuring old implementations continue to work.
+
+    This will be removed in Review Board 9.
+
+    Version Added:
+        7.1
+
+    Args:
+        s (str or django.utils.safestring.SafeString):
+            The string to process.
+
+        obj (object):
+            The object containing the function called to generate the string.
+
+        func_name (str):
+            The name of the function that generated the string.
+
+    Returns:
+        django.utils.safestring.SafeString:
+        The safe string.
+    """
+    if not isinstance(s, SafeString):
+        RemovedInReviewBoard90Warning.warn(
+            f'{type(obj).__name__}.{func_name}() must return an HTML-safe '
+            'string (using format_html() or similar). This will be required '
+            'in Review Board 9.',
+            stacklevel=3)
+
+        s = mark_safe(s)
+
+    return s
