@@ -497,3 +497,12 @@ class ReviewRequestConditionChoices(ConditionChoices):
         ReviewRequestSummaryChoice,
         ReviewRequestTestingDoneChoice,
     ]
+
+
+#: All condition choices available for review requests.
+#:
+#: This can be used in condition fields or to register new conditions.
+#:
+#: Version Added:
+#:     7.1
+review_request_condition_choices = ReviewRequestConditionChoices()

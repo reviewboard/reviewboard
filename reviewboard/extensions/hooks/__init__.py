@@ -24,6 +24,8 @@ from reviewboard.extensions.hooks.auth_backend import AuthBackendHook
 from reviewboard.extensions.hooks.avatar_service import AvatarServiceHook
 from reviewboard.extensions.hooks.comment_detail_display import \
     CommentDetailDisplayHook
+from reviewboard.extensions.hooks.conditions import \
+    ReviewRequestConditionChoicesHook
 from reviewboard.extensions.hooks.dashboard import (DashboardColumnsHook,
                                                     DashboardSidebarItemsHook,
                                                     DataGridSidebarItemsHook,
@@ -84,6 +86,7 @@ __all__ = [
     'ReviewRequestActionHook',
     'ReviewRequestApprovalHook',
     'ReviewRequestClosedEmailHook',
+    'ReviewRequestConditionChoicesHook',
     'ReviewRequestDropdownActionHook',
     'ReviewRequestFieldSetsHook',
     'ReviewRequestFieldsHook',
