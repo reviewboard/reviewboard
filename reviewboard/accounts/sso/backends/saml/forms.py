@@ -17,6 +17,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
 from djblets.siteconfig.forms import SiteSettingsForm
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.sso.backends.saml.settings import (
     DEFAULT_ATTR_EMAIL,
@@ -65,13 +66,26 @@ class SAMLLinkUserForm(AuthenticationForm):
             dict:
             The cleaned data.
         """
+        username = self.cleaned_data.get('username')
+
         if self.cleaned_data.get('provision'):
-            # If we're provisioning a new user, we don't actually care about
-            # authenticating the login/password.
+            # If we're provisioning a new user, the only thing we need to check
+            # is if automatic provisioning is enabled. We don't actually care
+            # about authenticating the login/password.
+            siteconfig = SiteConfiguration.objects.get_current()
+
+            if not siteconfig.get('saml_automatically_provision_users', True):
+                raise ValidationError(
+                    _(
+                        'A user account for {username} does not exist. Your '
+                        'administrator will need to provision an account '
+                        'before you can log in.'
+                    )
+                    .format(username=username))
+
+
             return self.cleaned_data
         else:
-            username = self.cleaned_data.get('username')
-
             if username:
                 user = User.objects.get(username=username)
                 self.confirm_login_allowed(user)
@@ -103,6 +117,15 @@ class SAMLSettingsForm(SiteSettingsForm):
     Version Added:
         5.0
     """
+
+    saml_automatically_provision_users = forms.BooleanField(
+        label=_('Automatically provision user accounts'),
+        help_text=_(
+            'When a new user logs in with SSO, automatically create a Review '
+            'Board account for them. If unchecked, user accounts will need to '
+            'be provisioned manually before users can log in.'
+        ),
+        required=False)
 
     saml_login_button_text = forms.CharField(
         label=_('Login button label'))
@@ -186,7 +209,7 @@ class SAMLSettingsForm(SiteSettingsForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
     saml_attr_fullname = forms.CharField(
-        label=_('Custom e-mail attribute'),
+        label=_('Custom full name attribute'),
         required=True,
         initial=DEFAULT_ATTR_FULLNAME,
         help_text=_('If your Identity Provider does not allow you to '
@@ -212,6 +235,7 @@ class SAMLSettingsForm(SiteSettingsForm):
                            'saml_sso_binding_type',
                            'saml_slo_url',
                            'saml_slo_binding_type',
+                           'saml_automatically_provision_users',
                            'saml_require_login_to_link',
                            'saml_attr_email',
                            'saml_attr_firstname',
