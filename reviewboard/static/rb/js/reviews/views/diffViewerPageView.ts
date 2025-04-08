@@ -1330,8 +1330,18 @@ export class DiffViewerPageView extends ReviewablePageView<
             this.selectAnchorByName('index_header', true);
         }
 
+        const revisionModel = this.model.revision;
+
         this._navigate({
             page: page,
+
+            /*
+             * Ensure any selected commit revision ranges persist across
+             * pages. If there's no range selected, these will be filtered
+             * out.
+             */
+            baseCommitID: revisionModel.get('baseCommitID'),
+            tipCommitID: revisionModel.get('tipCommitID'),
         });
     }
 

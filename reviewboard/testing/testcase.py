@@ -65,6 +65,8 @@ from reviewboard.testing.scmtool import (TestTool,
 from reviewboard.webapi.models import WebAPIToken
 
 if TYPE_CHECKING:
+    from contextlib import AbstractContextManager
+
     from django.http import HttpRequest
     from djblets.db.query_comparator import ExpectedQuery
     from djblets.util.typing import JSONDict
@@ -592,7 +594,6 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             token_info=token_info,
             **kwargs)
 
-    @contextmanager
     def assertQueries(
         self,
         queries: Sequence[Union[ExpectedQuery,
@@ -603,7 +604,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         traceback_size: int = 15,
         check_join_types: Optional[bool] = True,
         check_subqueries: Optional[bool] = True,
-    ) -> Iterator[None]:
+    ) -> AbstractContextManager[None]:
         """Assert the number and complexity of queries.
 
         This is a wrapper around :py:meth:`assertQueries()
@@ -658,13 +659,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 The parameters passed, or the queries compared, failed
                 expectations.
         """
-        with super().assertQueries(queries=queries,
-                                   num_statements=num_statements,
-                                   with_tracebacks=with_tracebacks,
-                                   traceback_size=traceback_size,
-                                   check_join_types=check_join_types,
-                                   check_subqueries=check_subqueries):
-            yield
+        return super().assertQueries(queries=queries,
+                                     num_statements=num_statements,
+                                     with_tracebacks=with_tracebacks,
+                                     traceback_size=traceback_size,
+                                     check_join_types=check_join_types,
+                                     check_subqueries=check_subqueries)
 
     @contextmanager
     def assert_warns(

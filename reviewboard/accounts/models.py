@@ -18,8 +18,10 @@ from django.utils.translation import gettext_lazy as _
 from djblets.auth.signals import user_registered
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import CounterField, JSONField
+from djblets.db.query import get_object_cached_field
 from djblets.forms.fields import TIMEZONE_CHOICES
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.symbols import UNSET
 from typing_extensions import TypedDict
 
 from reviewboard.accounts.managers import (LocalSiteProfileManager,
@@ -1103,29 +1105,28 @@ class _ReviewBoardUser(BaseUser):
         is_new: bool = False
 
         if profile is None:
-            # Check if this was pre-fetched.
-            try:
-                profile = \
-                    list(self._prefetched_objects_cache['profile_set'])[0]
-            except (AttributeError, IndexError, KeyError):
-                pass
+            cached_profile = get_object_cached_field(self, 'profile')
 
-            if profile is None:
-                # Check if it's in the field cache (select_related):
-                try:
-                    field = self._meta.get_field('profile')
-                    profile = field.get_cached_value(self)
-                except KeyError:
-                    pass
+            if cached_profile is not UNSET:
+                if isinstance(cached_profile, list):
+                    assert len(cached_profile) == 1
 
-                if profile is None and not cached_only:
-                    # We may need to create or fetch this.
-                    if create_if_missing:
-                        profile, is_new = Profile.objects.get_or_create(
-                            user=self)
-                    else:
-                        # This may raise Profile.DoesNotExist.
-                        profile = Profile.objects.get(user=self)
+                    cached_profile = cached_profile[0]
+
+                profile = cached_profile
+
+            # At this stage, we may still have a None profile. We may have
+            # select_related() but without a profile existing, which would
+            # cache a None value. So, check for that and see if we need to
+            # create one.
+            if profile is None and not cached_only:
+                # We may need to create or fetch this.
+                if create_if_missing:
+                    profile, is_new = Profile.objects.get_or_create(
+                        user=self)
+                else:
+                    # This may raise Profile.DoesNotExist.
+                    profile = Profile.objects.get(user=self)
 
         if profile_was_none and profile is not None:
             # We didn't have this cached before, but we have a profile now.

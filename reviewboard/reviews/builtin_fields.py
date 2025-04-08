@@ -12,7 +12,7 @@ from django.urls import NoReverseMatch
 from django.utils.functional import cached_property
 from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
@@ -224,7 +224,7 @@ class BaseCaptionsField(ReviewRequestPageDataMixin, BaseReviewRequestField):
                 contain ``added`` and ``removed`` keys as well.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The HTML representation of the change entry.
         """
         render_item = super(BaseCaptionsField, self).render_change_entry_html
@@ -246,7 +246,7 @@ class BaseCaptionsField(ReviewRequestPageDataMixin, BaseReviewRequestField):
 
         s.append('</table>')
 
-        return ''.join(s)
+        return mark_safe(''.join(s))
 
     def serialize_change_entry(self, changedesc):
         """Serialize a change entry for public consumption.
@@ -330,13 +330,13 @@ class BaseModelListEditableField(BaseCommaEditableField):
                 The value of the item.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered change entry.
         """
         label, url, pk = item
 
         if url:
-            return '<a href="%s">%s</a>' % (escape(url), escape(label))
+            return format_html('<a href="{}">{}</a>', url, label)
         else:
             return escape(label)
 
@@ -440,7 +440,7 @@ class OwnerField(BuiltinFieldMixin, BaseEditableField):
                 The value to render.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered value.
         """
         return format_html(
@@ -478,13 +478,13 @@ class OwnerField(BuiltinFieldMixin, BaseEditableField):
                 The value of the field.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered change entry.
         """
         label, url, pk = item
 
         if url:
-            return '<a href="%s">%s</a>' % (escape(url), escape(label))
+            return format_html('<a href="{}">{}</a>', url, label)
         else:
             return escape(label)
 
@@ -582,7 +582,7 @@ class BugsField(BuiltinFieldMixin, BaseCommaEditableField):
                 The item to render.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered item.
         """
         bug_url = self._get_bug_url(bug_id)
@@ -604,7 +604,7 @@ class BugsField(BuiltinFieldMixin, BaseCommaEditableField):
                 The value of the item.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered change entry.
         """
         return self.render_item(item[0])
@@ -663,7 +663,7 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
                 The value of the item.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered change entry.
         """
         item = ReviewRequest.objects.get(pk=item[2])
@@ -676,9 +676,9 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
 
         if item.status in (ReviewRequest.SUBMITTED,
                            ReviewRequest.DISCARDED):
-            return '<s>%s</s>' % rendered_item
-        else:
-            return rendered_item
+            rendered_item = format_html('<s>{}</s>', rendered_item)
+
+        return rendered_item
 
     def render_item(self, item):
         """Render an item from the list.
@@ -688,7 +688,7 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
                 The item to render.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered item.
         """
         rendered_item = format_html(
@@ -700,9 +700,9 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
 
         if item.status in (ReviewRequest.SUBMITTED,
                            ReviewRequest.DISCARDED):
-            return '<s>%s</s>' % rendered_item
-        else:
-            return rendered_item
+            rendered_item = format_html('<s>{}</s>', rendered_item)
+
+        return rendered_item
 
 
 class BlocksField(BuiltinFieldMixin, BaseReviewRequestField):
@@ -740,7 +740,7 @@ class BlocksField(BuiltinFieldMixin, BaseReviewRequestField):
                 The value to render.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered value.
         """
         return format_html_join(
@@ -795,7 +795,7 @@ class ChangeField(BuiltinFieldMixin, BaseReviewRequestField):
                 The value to render.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered value.
         """
         review_request = self.review_request_details.get_review_request()
@@ -803,9 +803,11 @@ class ChangeField(BuiltinFieldMixin, BaseReviewRequestField):
         is_pending, changenum = review_request.changeset_is_pending(changenum)
 
         if is_pending:
-            return escape(_('%s (pending)') % changenum)
+            fmt = gettext('{} (pending)')
         else:
-            return changenum
+            fmt = '{}'
+
+        return format_html(fmt, changenum)
 
 
 class CommitField(BuiltinFieldMixin, BaseReviewRequestField):
@@ -837,15 +839,16 @@ class CommitField(BuiltinFieldMixin, BaseReviewRequestField):
                 The value to render.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered value.
         """
         # Abbreviate SHA-1s
         if len(commit_id) == 40:
             abbrev_commit_id = commit_id[:7] + '...'
 
-            return '<span title="%s">%s</span>' % (escape(commit_id),
-                                                   escape(abbrev_commit_id))
+            return format_html('<span title="{}">{}</span>',
+                               commit_id,
+                               abbrev_commit_id)
         else:
             return escape(commit_id)
 
@@ -880,7 +883,7 @@ class DiffField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
                 contain ``added`` and ``removed`` keys as well.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The HTML representation of the change entry.
         """
         added_diff_info = info['added'][0]
@@ -892,7 +895,7 @@ class DiffField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
             # If a published revision of a diff has been deleted from the
             # database, this will explode. Just return a blank string for this,
             # so that it doesn't show a traceback.
-            return ''
+            return mark_safe('')
 
         diff_revision = diffset.revision
         past_revision = diff_revision - 1
@@ -1004,7 +1007,7 @@ class DiffField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
                 '</div>',
             ]
 
-        return ''.join(s)
+        return mark_safe(''.join(s))
 
     def has_value_changed(self, old_value, new_value):
         """Return whether the value has changed.
@@ -1180,7 +1183,7 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
                 file attachment in the database.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The HTML representation of the change entry.
         """
         # Fetch the template ourselves only once and render it for each item,
@@ -1205,7 +1208,7 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
             }))
 
         if not items:
-            return ''
+            return mark_safe('')
 
         return format_html(
             '<div class="rb-c-file-attachments">{}</div>',
@@ -1321,11 +1324,12 @@ class TargetGroupsField(BuiltinFieldMixin, BaseModelListEditableField):
                 The item to render.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered item.
         """
-        return '<a href="%s">%s</a>' % (escape(group.get_absolute_url()),
-                                        escape(group.name))
+        return format_html('<a href="{}">{}</a>',
+                           group.get_absolute_url(),
+                           group.name)
 
 
 class TargetPeopleField(BuiltinFieldMixin, BaseModelListEditableField):
@@ -1347,7 +1351,7 @@ class TargetPeopleField(BuiltinFieldMixin, BaseModelListEditableField):
                 The item to render.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeString:
             The rendered item.
         """
         extra_classes = ['user']
@@ -1442,11 +1446,11 @@ class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
                 The diffset primary key.
 
         returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered value.
         """
         if not value:
-            return ''
+            return mark_safe('')
 
         commits = list(
             DiffCommit.objects
@@ -1508,7 +1512,7 @@ class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
                 :py:meth:`record_change_entry` for the format.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered HTML.
         """
         commits = self.data.commits_by_diffset_id

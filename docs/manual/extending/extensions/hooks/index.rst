@@ -25,6 +25,7 @@ Extension Hooks
    integration-hook
    navigation-bar-hook
    review-request-approval-hook
+   review-request-condition-choices-hook
    review-request-fields-hook
    review-request-fieldsets-hook
    review-ui-hook

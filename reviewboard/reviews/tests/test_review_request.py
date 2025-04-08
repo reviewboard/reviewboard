@@ -1,3 +1,9 @@
+"""Unit tests for reviewboard.reviews.models.review_request."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import kgb
 from django.contrib.auth.models import User
 from django.db.models import Max, Q, Value
@@ -16,6 +22,9 @@ from reviewboard.reviews.signals import (review_request_reopened,
                                          review_request_reopening)
 from reviewboard.scmtools.core import ChangeSet
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from djblets.db.query_comparator import ExpectedQueries
 
 
 class ReviewRequestTests(kgb.SpyAgency, TestCase):
@@ -52,6 +61,53 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
         with self.assertNumQueries(1):
             self.assertFalse(review_request.can_add_default_reviewers())
 
+    def test_get_blocks(self) -> None:
+        """Testing ReviewRequest.get_blocks"""
+        review_request1 = self.create_review_request(
+            publish=True,
+            summary='Review request 1')
+
+        review_request2 = self.create_review_request(
+            publish=True,
+            summary='Review request 2')
+        review_request2.depends_on.add(review_request1)
+
+        review_request3 = self.create_review_request(
+            publish=True,
+            summary='Review request 3')
+        review_request3.depends_on.add(review_request1)
+
+        queries: ExpectedQueries = [
+            {
+                'join_types': {
+                    'reviews_reviewrequest_depends_on': 'INNER JOIN',
+                },
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_depends_on',
+                },
+                'where': Q(depends_on__id=1),
+            }
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(review_request1.get_blocks(),
+                             [review_request3, review_request2])
+
+        # A second query should use the cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(review_request1.get_blocks(),
+                             [review_request3, review_request2])
+
+        # A cache clear should reset that.
+        review_request1.clear_local_caches()
+
+        with self.assertQueries(queries):
+            self.assertEqual(review_request1.get_blocks(),
+                             [review_request3, review_request2])
+
     def test_get_close_info_returns_correct_information(self):
         """Testing ReviewRequest.get_close_info returns all necessary
         information
@@ -82,6 +138,196 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
         difference = review.timestamp.date() - close_info['timestamp'].date()
         self.assertEqual(difference.days, 10)
         self.assertEqual(past_close_info['timestamp'], close_info['timestamp'])
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_diffsets(self) -> None:
+        """Testing ReviewRequest.get_diffsets"""
+        review_request = self.create_review_request(create_repository=True)
+
+        diffset1 = self.create_diffset(review_request)
+        filediff1 = self.create_filediff(diffset1)
+        filediff2 = self.create_filediff(diffset1)
+
+        diffset2 = self.create_diffset(review_request)
+        filediff3 = self.create_filediff(diffset2)
+
+        queries: ExpectedQueries = [
+            {
+                'model': DiffSet,
+                'where': Q(history__pk=1),
+            },
+            {
+                'model': FileDiff,
+                'where': Q(diffset__in=[diffset1, diffset2]),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            diffsets = review_request.get_diffsets()
+
+            self.assertEqual(diffsets, [diffset1, diffset2])
+            self.assertEqual(list(diffsets[0].files.all()),
+                             [filediff1, filediff2])
+            self.assertEqual(list(diffsets[1].files.all()), [filediff3])
+
+        # A second query should use the cache.
+        with self.assertNumQueries(0):
+            diffsets = review_request.get_diffsets()
+
+            self.assertEqual(diffsets, [diffset1, diffset2])
+            self.assertEqual(list(diffsets[0].files.all()),
+                             [filediff1, filediff2])
+            self.assertEqual(list(diffsets[1].files.all()), [filediff3])
+
+        # A cache clear should reset that.
+        review_request.clear_local_caches()
+
+        with self.assertQueries(queries):
+            diffsets = review_request.get_diffsets()
+
+            self.assertEqual(diffsets, [diffset1, diffset2])
+            self.assertEqual(list(diffsets[0].files.all()),
+                             [filediff1, filediff2])
+            self.assertEqual(list(diffsets[1].files.all()), [filediff3])
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_diffsets_with_filediffs_false(self) -> None:
+        """Testing ReviewRequest.get_diffsets with with_filediffs=False"""
+        review_request = self.create_review_request(create_repository=True)
+
+        diffset1 = self.create_diffset(review_request)
+        filediff1 = self.create_filediff(diffset1)
+        filediff2 = self.create_filediff(diffset1)
+
+        diffset2 = self.create_diffset(review_request)
+        filediff3 = self.create_filediff(diffset2)
+
+        queries: ExpectedQueries = [
+            {
+                'model': DiffSet,
+                'where': Q(history__pk=1),
+            },
+            {
+                'model': FileDiff,
+                'where': Q(diffset=diffset1),
+            },
+            {
+                'model': FileDiff,
+                'where': Q(diffset=diffset2),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            diffsets = review_request.get_diffsets(with_filediffs=False)
+
+            self.assertEqual(diffsets, [diffset1, diffset2])
+
+            self.assertEqual(list(diffsets[0].files.all()),
+                             [filediff1, filediff2])
+            self.assertEqual(list(diffsets[1].files.all()), [filediff3])
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_diffsets_with_filediffs_true_after_false(self) -> None:
+        """Testing ReviewRequest.get_diffsets with with_filediffs=True after
+        cached with_filediffs=False
+        """
+        review_request = self.create_review_request(create_repository=True)
+
+        diffset1 = self.create_diffset(review_request)
+        filediff1 = self.create_filediff(diffset1)
+        filediff2 = self.create_filediff(diffset1)
+
+        diffset2 = self.create_diffset(review_request)
+        filediff3 = self.create_filediff(diffset2)
+
+        queries: ExpectedQueries = [
+            {
+                'model': DiffSet,
+                'where': Q(history__pk=1),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            diffsets = review_request.get_diffsets(with_filediffs=False)
+
+            self.assertEqual(diffsets, [diffset1, diffset2])
+
+        queries: ExpectedQueries = [
+            {
+                'model': FileDiff,
+                'where': Q(diffset__in=[diffset1, diffset2])
+            },
+        ]
+
+        with self.assertQueries(queries):
+            diffsets = review_request.get_diffsets(with_filediffs=True)
+
+            self.assertEqual(diffsets, [diffset1, diffset2])
+            self.assertEqual(list(diffsets[0].files.all()),
+                             [filediff1, filediff2])
+            self.assertEqual(list(diffsets[1].files.all()), [filediff3])
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_latest_diffset(self) -> None:
+        """Testing ReviewRequest.get_latest_diffset"""
+        review_request = self.create_review_request(create_repository=True)
+
+        self.create_diffset(review_request,
+                            revision=1)
+        diffset2 = self.create_diffset(review_request,
+                                       revision=2)
+
+        queries: ExpectedQueries = [
+            {
+                'model': DiffSet,
+                'where': Q(history__pk=1),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(review_request.get_latest_diffset(), diffset2)
+
+        # A second query should use the cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(review_request.get_latest_diffset(), diffset2)
+
+        # A cache clear should reset that.
+        review_request.clear_local_caches()
+
+        with self.assertQueries(queries):
+            self.assertEqual(review_request.get_latest_diffset(), diffset2)
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_latest_diffset_after_get_diffsets(self) -> None:
+        """Testing ReviewRequest.get_latest_diffset after get_diffsets"""
+        review_request = self.create_review_request(create_repository=True)
+
+        self.create_diffset(review_request,
+                            revision=1)
+        diffset2 = self.create_diffset(review_request,
+                                       revision=2)
+
+        review_request.get_diffsets()
+
+        with self.assertNumQueries(0):
+            self.assertEqual(review_request.get_latest_diffset(), diffset2)
+
+        # A second query should use the cache.
+        with self.assertNumQueries(0):
+            self.assertEqual(review_request.get_latest_diffset(), diffset2)
+
+        # A cache clear should reset that.
+        review_request.clear_local_caches()
+
+        queries: ExpectedQueries = [
+            {
+                'model': DiffSet,
+                'where': Q(history__pk=1),
+            },
+        ]
+
+        with self.assertQueries(queries):
+            self.assertEqual(review_request.get_latest_diffset(), diffset2)
 
     def test_public_with_discard_reopen_submitted(self):
         """Testing ReviewRequest.public when discarded, reopened, submitted"""
@@ -619,6 +865,23 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
         review_request.get_diffsets()
 
         with self.assertNumQueries(0):
+            self.assertTrue(review_request.has_diffsets)
+
+        # A cache clear should reset that.
+        review_request.clear_local_caches()
+
+        queries: ExpectedQueries = [
+            {
+                'annotations': {
+                    'a': Value(1),
+                },
+                'limit': 1,
+                'model': DiffSet,
+                'where': Q(history=review_request.diffset_history),
+            },
+        ]
+
+        with self.assertQueries(queries):
             self.assertTrue(review_request.has_diffsets)
 
     @add_fixtures(['test_scmtools'])
@@ -1288,7 +1551,7 @@ class IssueCounterTests(TestCase):
         self.review_request.save()
 
 
-class ApprovalTests(TestCase):
+class ApprovalTests(kgb.SpyAgency, TestCase):
     """Unit tests for ReviewRequest approval logic."""
 
     fixtures = ['test_users']
@@ -1342,6 +1605,35 @@ class ApprovalTests(TestCase):
         self.assertEqual(self.review_request.approval_failure,
                          'The review request has unverified issues.')
 
+    def test_caching(self) -> None:
+        """Testing ReviewRequest approval caching"""
+        review_request = self.review_request
+
+        self.spy_on(review_request._calculate_approval)
+
+        self.assertFalse(review_request.approved)
+        self.assertEqual(review_request.approval_failure,
+                         'The review request has not been marked "Ship It!"')
+
+        self.assertSpyCallCount(review_request._calculate_approval, 1)
+
+        # A second call should use the cache. We'll test with new state.
+        review_request.shipit_count = 1
+
+        self.assertFalse(review_request.approved)
+        self.assertEqual(review_request.approval_failure,
+                         'The review request has not been marked "Ship It!"')
+
+        self.assertSpyCallCount(review_request._calculate_approval, 1)
+
+        # A cache clear should reset that.
+        review_request.clear_local_caches()
+
+        self.assertIsNone(review_request.approval_failure)
+        self.assertTrue(review_request.approved)
+
+        self.assertSpyCallCount(review_request._calculate_approval, 2)
+
 
 class GetFileAttachmentsDataTests(TestCase):
     """Unit tests for ReviewRequest.get_file_attachments_data"""
@@ -1358,26 +1650,29 @@ class GetFileAttachmentsDataTests(TestCase):
 
     def test_get_file_attachments_data(self):
         """Testing ReviewRequest.get_file_attachments_data"""
+        review_request = self.review_request
+
         active = self.create_file_attachment(
-            self.review_request)
+            review_request)
         active_2 = self.create_file_attachment(
-            self.review_request)
+            review_request)
         inactive = self.create_file_attachment(
-            self.review_request,
+            review_request,
             active=False)
         draft_active = self.create_file_attachment(
-            self.review_request,
+            review_request,
             draft=True)
         draft_inactive = self.create_file_attachment(
-            self.review_request,
+            review_request,
             draft=True,
             active=False)
         draft_inactive_2 = self.create_file_attachment(
-            self.review_request,
+            review_request,
             draft=True,
             active=False)
 
-        draft = self.review_request.get_draft()
+        draft = review_request.get_draft()
+        assert draft is not None
 
         # 5 queries:
         #
@@ -1397,7 +1692,7 @@ class GetFileAttachmentsDataTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_file_attachments',
                 },
-                'where': Q(review_request__id=self.review_request.pk),
+                'where': Q(review_request__id=review_request.pk),
             },
             {
                 'join_types': {
@@ -1410,11 +1705,11 @@ class GetFileAttachmentsDataTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_inactive_file_attachments',
                 },
-                'where': Q(inactive_review_request__id=self.review_request.pk),
+                'where': Q(inactive_review_request__id=review_request.pk),
             },
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=self.review_request),
+                'where': Q(review_request=review_request),
             },
             {
                 'join_types': {
@@ -1466,6 +1761,29 @@ class GetFileAttachmentsDataTests(TestCase):
 
         # The data should be cached. No queries.
         with self.assertNumQueries(0):
+            self._assert_data_equals(
+                active_ids={
+                    active.pk,
+                    active_2.pk,
+                },
+                inactive_ids={
+                    inactive.pk,
+                },
+                draft_active_ids={
+                    active.pk,
+                    active_2.pk,
+                    draft_active.pk
+                },
+                draft_inactive_ids={
+                    inactive.pk,
+                    draft_inactive.pk,
+                    draft_inactive_2.pk,
+                })
+
+        # A cache clear should reset that.
+        review_request.clear_local_caches()
+
+        with self.assertQueries(equeries):
             self._assert_data_equals(
                 active_ids={
                     active.pk,

@@ -1,11 +1,18 @@
 """Utilities for creating FileDiffs."""
 
+from __future__ import annotations
+
 import os
 from copy import deepcopy
+from typing import (Iterator, Mapping, Optional, Protocol, Sequence,
+                    TYPE_CHECKING, Union)
 
 from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import gettext as _
+from housekeeping import deprecate_non_keyword_only_args
+from typing_extensions import TypedDict
 
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.diffviewer.errors import EmptyDiffError
 from reviewboard.scmtools.core import (FileLookupContext,
                                        PRE_CREATION,
@@ -13,12 +20,76 @@ from reviewboard.scmtools.core import (FileLookupContext,
                                        UNKNOWN)
 from reviewboard.scmtools.errors import FileNotFoundError
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest
 
-def create_filediffs(diff_file_contents, parent_diff_file_contents,
-                     repository, basedir, base_commit_id, diffset,
-                     request=None, check_existence=True, get_file_exists=None,
-                     diffcommit=None, validate_only=False):
+    from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
+    from reviewboard.diffviewer.parser import (BaseDiffParser,
+                                               ParsedDiff,
+                                               ParsedDiffFile)
+    from reviewboard.scmtools.core import SCMTool
+    from reviewboard.scmtools.models import Repository
+
+    class _GetFileExistsFunc(Protocol):
+        def __call__(
+            self,
+            *,
+            path: str,
+            revision: str,
+            context: FileLookupContext,
+        ) -> bool:
+            ...
+
+
+class _PreparedDiffInfo(TypedDict):
+    """Intermediary information on a prepared diff.
+
+    This is used for the FileDiff preparation stages. This is available
+    only for internal typing.
+
+    Version Added:
+        7.1
+    """
+
+    #: All parsed files in the diff.
+    files: Sequence[ParsedDiffFile]
+
+    #: A mapping of modified filenames to parsed diff files.
+    #:
+    #: Each filename corresponds to a file in :py:attr:`files`.
+    parent_files: Mapping[bytes, ParsedDiffFile]
+
+    #: The parsed diff file.
+    parsed_diff: ParsedDiff
+
+    #: The parsed diff file for the parent diff.
+    parsed_parent_diff: Optional[ParsedDiff]
+
+    #: The parent diff file.
+    parser: BaseDiffParser
+
+
+@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+def create_filediffs(
+    *,
+    diff_file_contents: bytes,
+    parent_diff_file_contents: Optional[bytes],
+    repository: Repository,
+    basedir: Optional[Union[bytes, str]],
+    base_commit_id: Optional[str],
+    diffset: DiffSet,
+    request: Optional[HttpRequest] = None,
+    check_existence: bool = True,
+    get_file_exists: Optional[_GetFileExistsFunc] = None,
+    diffcommit: Optional[DiffCommit] = None,
+    validate_only: bool = False,
+) -> Sequence[FileDiff]:
     """Create FileDiffs from the given data.
+
+    Version Changed:
+        7.1:
+        All arguments are now keyword-only arguments. Passing as positional
+        arguments is deprecated and will be removed in Review Board 9.
 
     Args:
         diff_file_contents (bytes):
@@ -30,10 +101,10 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
         repository (reviewboard.scmtools.models.Repository):
             The repository the diff is being posted against.
 
-        basedir (unicode):
+        basedir (bytes or str):
             The base directory to prepend to all file paths in the diff.
 
-        base_commit_id (unicode):
+        base_commit_id (str):
             The ID of the commit that the diff is based upon. This is
             needed by some SCMs or hosting services to properly look up
             files, if the diffs represent blob IDs instead of commit IDs
@@ -79,7 +150,7 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
         parent_diff_file_contents=parent_diff_file_contents,
         repository=repository,
         request=request,
-        basedir=basedir,
+        basedir=force_bytes(basedir),
         check_existence=check_existence,
         get_file_exists=get_file_exists,
         base_commit_id=base_commit_id)
@@ -127,16 +198,17 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
             diffset.extra_data['parent_extra_data'] = parent_extra_data
 
     # Convert the list of parsed files into FileDiffs.
-    filediffs = []
+    filediffs: list[FileDiff] = []
 
     for f in diff_info['files']:
-        parent_file = None
-        parent_content = b''
+        parent_file: Optional[ParsedDiffFile] = None
+        parent_content: bytes = b''
 
         extra_data = f.extra_data.copy()
 
         if parsed_parent_diff is not None:
-            parent_file = parent_files.get(f.orig_filename)
+            if f.orig_filename:
+                parent_file = parent_files.get(f.orig_filename)
 
             if parent_file is not None:
                 parent_content = parent_file.data
@@ -266,10 +338,22 @@ def create_filediffs(diff_file_contents, parent_diff_file_contents,
     return filediffs
 
 
-def _prepare_diff_info(diff_file_contents, parent_diff_file_contents,
-                       repository, request, basedir, check_existence,
-                       get_file_exists=None, base_commit_id=None):
+def _prepare_diff_info(
+    *,
+    diff_file_contents: bytes,
+    parent_diff_file_contents: Optional[bytes],
+    repository: Repository,
+    request: Optional[HttpRequest],
+    basedir: bytes,
+    check_existence: bool,
+    get_file_exists: Optional[_GetFileExistsFunc] = None,
+    base_commit_id: Optional[str] = None,
+) -> _PreparedDiffInfo:
     """Extract information and files from a diff.
+
+    Version Changed:
+        7.1:
+        All arguments are now keyword-only arguments.
 
     Args:
         diff_file_contents (bytes):
@@ -284,7 +368,7 @@ def _prepare_diff_info(diff_file_contents, parent_diff_file_contents,
         request (django.http.HttpRequest):
             The current HTTP request.
 
-        basedir (unicode):
+        basedir (bytes):
             The base directory to prepend to all file paths in the diff.
 
         check_existence (bool):
@@ -303,30 +387,8 @@ def _prepare_diff_info(diff_file_contents, parent_diff_file_contents,
             and the service doesn't support those lookups.
 
     Returns:
-        dict:
-        A dictionary of information about the diff and parser. This contains
-        the following keys:
-
-        ``files`` (:py:class:`list` of
-        :py:class:`reviewboard.diffviewer.parser.ParsedDiffFile):
-            All parsed files in the diff.
-
-        ``parent_commit_id`` (:py:class:`unicode`):
-            The ID of the parent commit, if any.
-
-        ``parent_files`` (:py:class:`dict`):
-            A mapping of modified filenames from ``files`` (:py:class:`bytes`)
-            to :py:class:`reviewboard.diffviewer.parser.ParsedDiffFile`
-            instances.
-
-        ``parsed_diff`` (:py:class:`ParsedDiff`):
-            The parsed diff file.
-
-        ``parsed_parent_diff`` (:py:class:`ParsedDiff`):
-            The parsed diff file for the parent diff.
-
-        ``parser`` (:py:class:`BaseDiffParser`):
-            The parent diff file.
+        _PreparedDiffInfo:
+        A dictionary of information about the diff and parser.
 
     Raises:
         reviewboard.diffviewer.errors.EmptyDiffError:
@@ -341,7 +403,8 @@ def _prepare_diff_info(diff_file_contents, parent_diff_file_contents,
                          'is True')
 
     tool = repository.get_scmtool()
-    parsed_diff = _parse_diff(tool, diff_file_contents)
+    parsed_diff = _parse_diff(tool=tool,
+                              diff_content=diff_file_contents)
 
     files = list(_process_files(
         parsed_diff=parsed_diff,
@@ -357,11 +420,17 @@ def _prepare_diff_info(diff_file_contents, parent_diff_file_contents,
         raise EmptyDiffError(_('The diff is empty.'))
 
     parsed_parent_diff = None
-    parent_files = {}
+    parent_files: dict[bytes, ParsedDiffFile] = {}
 
     if parent_diff_file_contents:
-        diff_filenames = {f.orig_filename for f in files}
-        parsed_parent_diff = _parse_diff(tool, parent_diff_file_contents)
+        diff_filenames = {
+            f.orig_filename
+            for f in files
+            if f.orig_filename
+        }
+        parsed_parent_diff = _parse_diff(
+            tool=tool,
+            diff_content=parent_diff_file_contents)
 
         # If the user supplied a base diff, we need to parse it and later
         # apply each of the files that are in main diff.
@@ -376,6 +445,7 @@ def _prepare_diff_info(diff_file_contents, parent_diff_file_contents,
                 request=request,
                 check_existence=check_existence,
                 limit_to=diff_filenames)
+            if f.modified_filename
         }
 
     return {
@@ -387,8 +457,16 @@ def _prepare_diff_info(diff_file_contents, parent_diff_file_contents,
     }
 
 
-def _parse_diff(tool, diff_content):
+def _parse_diff(
+    *,
+    tool: SCMTool,
+    diff_content: bytes,
+) -> ParsedDiff:
     """Parse a diff using the SCMTool's diff parser.
+
+    Version Changed:
+        7.1:
+        All arguments are now keyword-only arguments.
 
     Args:
         tool (reviewboard.scmtools.core.SCMTool):
@@ -414,22 +492,34 @@ def _parse_diff(tool, diff_content):
     return parsed_diff
 
 
-def _process_files(parsed_diff, basedir, repository, base_commit_id,
-                   request, get_file_exists=None, check_existence=False,
-                   limit_to=None):
+def _process_files(
+    *,
+    parsed_diff: ParsedDiff,
+    basedir: bytes,
+    repository: Repository,
+    base_commit_id: Optional[str],
+    request: Optional[HttpRequest],
+    get_file_exists: Optional[_GetFileExistsFunc] = None,
+    check_existence: bool = False,
+    limit_to: Optional[set[bytes]] = None,
+) -> Iterator[ParsedDiffFile]:
     """Collect metadata about files in the parser.
+
+    Version Changed:
+        7.1:
+        All arguments are now keyword-only arguments.
 
     Args:
         parsed_diff (reviewboard.diffviewer.parser.ParsedDiff):
             The parsed diff to process.
 
-        basedir (unicode):
+        basedir (bytes):
             The base directory to prepend to all file paths in the diff.
 
         repository (reviewboard.scmtools.models.Repository):
             The repository that the diff was created against.
 
-        base_commit_id (unicode):
+        base_commit_id (str):
             The ID of the commit that the diff is based upon. This is
             needed by some SCMs or hosting services to properly look up
             files, if the diffs represent blob IDs instead of commit IDs
@@ -449,7 +539,7 @@ def _process_files(parsed_diff, basedir, repository, base_commit_id,
             If ``check_existence`` is ``True`` this argument must be
             provided.
 
-        limit_to (list of unicode, optional):
+        limit_to (set of bytes, optional):
             A list of filenames to limit the results to.
 
     Yields:
@@ -466,14 +556,15 @@ def _process_files(parsed_diff, basedir, repository, base_commit_id,
                          'is True')
 
     tool = repository.get_scmtool()
-    basedir = force_bytes(basedir)
-
     parsed_change = parsed_diff.changes[0]
 
     for f in parsed_change.files:
         # This will either be a Revision or bytes. Either way, convert it
         # bytes now.
         orig_revision = force_bytes(f.orig_file_details)
+
+        assert f.orig_filename is not None
+        assert f.modified_filename is not None
 
         source_filename, source_revision = tool.parse_diff_revision(
             f.orig_filename,
@@ -489,14 +580,16 @@ def _process_files(parsed_diff, basedir, repository, base_commit_id,
             'bytes or reviewboard.scmtools.core.Revision, not %r'
             % (type(tool).__name__, type(source_revision)))
 
-        dest_filename = _normalize_filename(f.modified_filename, basedir)
+        dest_filename = _normalize_filename(filename=f.modified_filename,
+                                            basedir=basedir)
 
         if limit_to is not None and dest_filename not in limit_to:
             # This file isn't actually needed for the diff, so save
             # ourselves a remote file existence check and some storage.
             continue
 
-        source_filename = _normalize_filename(source_filename, basedir)
+        source_filename = _normalize_filename(filename=source_filename,
+                                              basedir=basedir)
 
         if (check_existence and
             source_revision not in (PRE_CREATION, UNKNOWN) and
@@ -504,6 +597,8 @@ def _process_files(parsed_diff, basedir, repository, base_commit_id,
             not f.deleted and
             not f.moved and
             not f.copied):
+            assert get_file_exists is not None
+
             context = FileLookupContext(
                 request=request,
                 base_commit_id=base_commit_id,
@@ -543,8 +638,16 @@ def _process_files(parsed_diff, basedir, repository, base_commit_id,
         yield f
 
 
-def _normalize_filename(filename, basedir):
+def _normalize_filename(
+    *,
+    filename: bytes,
+    basedir: bytes,
+) -> bytes:
     """Normalize a filename to be relative to the repository root.
+
+    Version Changed:
+        7.1:
+        All arguments are now keyword-only arguments.
 
     Args:
         filename (bytes):

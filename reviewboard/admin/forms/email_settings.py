@@ -6,13 +6,12 @@ from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.sites.models import Site
-from django.core.mail import send_mail
 from django.utils.translation import gettext, gettext_lazy as _
-from djblets.mail.message import EmailMessage
 from djblets.siteconfig.forms import SiteSettingsForm
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.admin.siteconfig import load_site_config
+from reviewboard.notifications.email.message import EmailMessage
 
 
 logger = logging.getLogger(__name__)
@@ -129,12 +128,12 @@ class EMailSettingsForm(SiteSettingsForm):
                 to_user = siteconfig.get('site_admin_email')
 
             try:
-                send_mail(
+                message = EmailMessage(
                     subject=(
                         gettext('%s e-mail settings test')
                         % product_name
                     ),
-                    message=(
+                    text_body=(
                         gettext("This is a test of the e-mail settings "
                                 "for the %(product)s server at %(url)s. "
                                 "If you got this, you're all set!")
@@ -144,8 +143,9 @@ class EMailSettingsForm(SiteSettingsForm):
                         }
                     ),
                     from_email=siteconfig.get('mail_default_from'),
-                    recipient_list=[to_user],
-                    fail_silently=False)
+                    to=[to_user])
+
+                message.send()
             except Exception as e:
                 error = str(e)
 

@@ -196,10 +196,10 @@ def user_badges(
     assert isinstance(user, User), f'{user!r} must be a User'
 
     def _iter_badges() -> Iterator[SafeString]:
-        request = context['request']
+        request = context.get('request')
 
         if request is not None:
-            local_site = request.local_site
+            local_site = getattr(request, 'local_site', None)
         else:
             local_site = None
 

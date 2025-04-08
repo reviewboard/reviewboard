@@ -248,6 +248,19 @@ Integrations
    :ref:`djblets.integrations <coderef-djblets-integrations>`
 
 
+Licensing
+=========
+
+.. autosummary::
+   :toctree: python
+
+   reviewboard.licensing
+   reviewboard.licensing.features
+   reviewboard.licensing.license
+   reviewboard.licensing.provider
+   reviewboard.licensing.registry
+
+
 E-mail and WebHooks
 ===================
 

@@ -145,7 +145,8 @@ class EMailSettingsFormTestCase(kgb.SpyAgency, TestCase):
         HTTP request and error sending e-mail
         """
         self.spy_on(logger.exception)
-        self.spy_on(mail.send_mail,
+        self.spy_on(EmailMessage.send,
+                    owner=EmailMessage,
                     op=kgb.SpyOpRaise(Exception('Kaboom!')))
 
         user = self.create_user(username='admin',
@@ -184,7 +185,8 @@ class EMailSettingsFormTestCase(kgb.SpyAgency, TestCase):
         HTTP request and error sending e-mail
         """
         self.spy_on(logger.exception)
-        self.spy_on(mail.send_mail,
+        self.spy_on(EmailMessage.send,
+                    owner=EmailMessage,
                     op=kgb.SpyOpRaise(Exception('Kaboom!')))
 
         siteconfig = SiteConfiguration.objects.get_current()
