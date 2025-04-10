@@ -261,8 +261,11 @@ class FileDiffResource(WebAPIResource):
                 **kwargs)
             review_request_id = review_request.pk
 
-        return self.model.objects.filter(
-            diffset__history__review_request=review_request_id)
+        return (
+            self.model.objects
+            .filter(diffset__history__review_request=review_request_id)
+            .order_by('pk')
+        )
 
     def has_access_permissions(self, request, filediff, *args, **kwargs):
         review_request = resources.review_request.get_object(
