@@ -1342,7 +1342,7 @@ class DiffParser(BaseDiffParser):
             if TYPE_CHECKING:
                 assert isinstance(diffset_or_commit, DiffCommit)
 
-            filediffs = diffset_or_commit.files.all()
+            filediffs = diffset_or_commit.files.order_by('pk')
         else:
             raise TypeError('%r is not a valid value. Please pass a DiffSet '
                             'or DiffCommit.'
@@ -1698,7 +1698,7 @@ class DiffXParser(BaseDiffParser):
                 changes = [
                     {
                         'extra_data': diffcommit.extra_data,
-                        'files': diffcommit.files.all(),
+                        'files': diffcommit.files.order_by('pk'),
                     }
                     for diffcommit in diffcommits
                 ]
@@ -1724,7 +1724,7 @@ class DiffXParser(BaseDiffParser):
             changes = [
                 {
                     'extra_data': diffcommit.extra_data,
-                    'files': diffcommit.files.all(),
+                    'files': diffcommit.files.order_by('pk'),
                 },
             ]
 
