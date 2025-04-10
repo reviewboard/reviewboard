@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Optional
 
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.http import HttpResponse
@@ -364,14 +365,14 @@ class DiffResource(WebAPIResource):
                     }
                 }
 
-        discarded_diffset = None
+        discarded_diffset: Optional[DiffSet] = None
 
-        try:
-            draft = review_request.draft.get()
+        draft = review_request.get_draft(user=request.user)
 
-            if draft.diffset and draft.diffset != diffset:
+        if draft is not None:
+            if draft.diffset_id and draft.diffset_id != diffset.pk:
                 discarded_diffset = draft.diffset
-        except ReviewRequestDraft.DoesNotExist:
+        else:
             try:
                 draft = ReviewRequestDraftResource.prepare_draft(
                     request, review_request)
