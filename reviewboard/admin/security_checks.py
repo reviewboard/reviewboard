@@ -10,6 +10,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from django.utils.translation import ngettext
 from django.utils.translation import gettext_lazy as _
+from djblets.log import log_timed
 
 from reviewboard.admin.server import build_server_url
 
@@ -247,7 +248,11 @@ class ServerExecutableFileCheck(BaseExecutableFileCheck):
             didn't match expectations.
         """
         try:
-            data = urlopen(url).read()
+            with log_timed(f'Performing security check HTTP GET for '
+                           f'executable file at {url}',
+                           default_level=logging.INFO,
+                           logger=logger):
+                data = urlopen(url).read()
         except HTTPError as e:
             # An HTTP 403 is also an acceptable response
             if e.code == 403:
@@ -332,7 +337,11 @@ class BrowserExecutableFileCheck(BaseExecutableFileCheck):
             was not what we expected.
         """
         # Exceptions coming from this will be caught higher up.
-        headers = urlopen(url).info()
+        with log_timed(f'Performing security check HTTP GET for file '
+                       f'attachment at {url}',
+                       default_level=logging.INFO,
+                       logger=logger):
+            headers = urlopen(url).info()
 
         return headers.get('Content-Disposition', '').startswith('attachment')
 

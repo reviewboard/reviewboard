@@ -24,6 +24,7 @@ from urllib.request import (
     build_opener)
 
 from django.utils.encoding import force_str
+from djblets.log import log_timed
 from djblets.util.decorators import cached_property
 from typing_extensions import TypeAlias, TypedDict
 
@@ -410,10 +411,13 @@ class HostingServiceHTTPRequest:
                 An error occurred talking to the server, or an HTTP error
                 (400+) was returned.
         """
-        request = BaseURLRequest(url=self.url,
+        url = self.url
+        method = self.method
+
+        request = BaseURLRequest(url=url,
                                  data=self.body,
                                  headers=self.headers,
-                                 method=self.method)
+                                 method=method)
 
         hosting_service = self.hosting_service
 
@@ -430,8 +434,20 @@ class HostingServiceHTTPRequest:
 
             self._urlopen_handlers.append(HTTPSHandler(context=context))
 
+            timer_msg = (
+                f'Performing HTTP {method} request for '
+                f'{hosting_service.name} at {url}'
+            )
+        else:
+            timer_msg = (
+                f'Performing HTTP {method} request at {url}'
+            )
+
         opener = build_opener(*self._urlopen_handlers)
-        response = opener.open(request)
+
+        with log_timed(timer_msg,
+                       logger=logger):
+            response = opener.open(request)
 
         if hosting_service:
             response_cls = hosting_service.client.http_response_cls

@@ -17,6 +17,7 @@ from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import (CounterField, ModificationTimestampField,
                                RelationCounterField)
 from djblets.db.query import get_object_cached_field, get_object_or_none
+from djblets.log import log_timed
 from djblets.util.symbols import UNSET
 from typing_extensions import TypedDict
 
@@ -1870,62 +1871,66 @@ class ReviewRequest(BaseReviewRequestDetails):
             # a profile.
             old_submitter.get_site_profile(self.local_site)
 
-        review_request_publishing.send(sender=self.__class__, user=user,
-                                       review_request_draft=draft)
+        with log_timed(f'Publishing review request {self.pk}',
+                       logger=logger):
+            review_request_publishing.send(sender=self.__class__, user=user,
+                                           review_request_draft=draft)
 
-        # Decrement the counts on everything. We'll increment the resulting
-        # set during _update_counts() (called from ReviewRequest.save()).
-        # This must be done before the draft is published, or we'll end up
-        # with bad counts.
-        #
-        # Once the draft is published, the target people and groups will be
-        # updated with new values.
-        if self.public:
-            self._decrement_reviewer_counts()
+            # Decrement the counts on everything. We'll increment the resulting
+            # set during _update_counts() (called from ReviewRequest.save()).
+            # This must be done before the draft is published, or we'll end up
+            # with bad counts.
+            #
+            # Once the draft is published, the target people and groups will be
+            # updated with new values.
+            if self.public:
+                self._decrement_reviewer_counts()
 
-        # Calculate the timestamp once and use it for all things that are
-        # considered as happening now. If we do not do this, there will be
-        # millisecond timestamp differences between review requests and their
-        # changedescs, diffsets, and reviews.
-        #
-        # Keeping them in sync means that get_last_activity() can work as
-        # intended. Otherwise, the review request will always have the most
-        # recent timestamp since it gets saved last.
-        timestamp = timezone.now()
+            # Calculate the timestamp once and use it for all things that are
+            # considered as happening now. If we do not do this, there will be
+            # millisecond timestamp differences between review requests and
+            # their changedescs, diffsets, and reviews.
+            #
+            # Keeping them in sync means that get_last_activity() can work as
+            # intended. Otherwise, the review request will always have the most
+            # recent timestamp since it gets saved last.
+            timestamp = timezone.now()
 
-        if draft is not None:
-            # This will in turn save the review request, so we'll be done.
-            try:
-                changes = draft.publish(self,
-                                        send_notification=False,
-                                        user=user,
-                                        validate_fields=validate_fields,
-                                        timestamp=timestamp)
-            except Exception:
-                # The draft failed to publish, for one reason or another.
-                # Check if we need to re-increment those counters we
-                # previously decremented.
-                if self.public:
-                    self._increment_reviewer_counts()
+            if draft is not None:
+                # This will in turn save the review request, so we'll be done.
+                try:
+                    changes = draft.publish(self,
+                                            send_notification=False,
+                                            user=user,
+                                            validate_fields=validate_fields,
+                                            timestamp=timestamp)
+                except Exception:
+                    # The draft failed to publish, for one reason or another.
+                    # Check if we need to re-increment those counters we
+                    # previously decremented.
+                    if self.public:
+                        self._increment_reviewer_counts()
 
-                raise
+                    raise
 
-            draft.delete()
-        else:
-            changes = None
+                draft.delete()
+            else:
+                changes = None
 
-        if not self.public and not self.changedescs.exists():
-            # This is a brand new review request that we're publishing
-            # for the first time. Set the creation timestamp to now.
-            self.time_added = timestamp
+            if not self.public and not self.changedescs.exists():
+                # This is a brand new review request that we're publishing
+                # for the first time. Set the creation timestamp to now.
+                self.time_added = timestamp
 
-        self.public = True
-        self.last_updated = timestamp
-        self.save(update_counts=True, old_submitter=old_submitter)
+            self.public = True
+            self.last_updated = timestamp
+            self.save(update_counts=True, old_submitter=old_submitter)
 
-        review_request_published.send(sender=self.__class__, user=user,
-                                      review_request=self, trivial=trivial,
-                                      changedesc=changes)
+            review_request_published.send(sender=self.__class__,
+                                          user=user,
+                                          review_request=self,
+                                          trivial=trivial,
+                                          changedesc=changes)
 
         # Once again, clear the cache.
         self.clear_local_caches()
