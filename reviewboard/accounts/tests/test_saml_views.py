@@ -232,7 +232,7 @@ class SAMLLinkUserViewTests(kgb.SpyAgency, TestCase):
             rsp = self.client.post(url, {
                 'username': 'doc',
                 'password': 'doc',
-                'provision': False,
+                'provision': '0',
             })
 
             self.assertEqual(rsp.status_code, 302)
@@ -269,7 +269,7 @@ class SAMLLinkUserViewTests(kgb.SpyAgency, TestCase):
             rsp = self.client.post(url, {
                 'username': '',
                 'password': '',
-                'provision': True,
+                'provision': '1',
             })
 
             self.assertEqual(rsp.status_code, 302)
@@ -285,6 +285,40 @@ class SAMLLinkUserViewTests(kgb.SpyAgency, TestCase):
             linked_account = linked_accounts[0]
             self.assertEqual(linked_account.service_id, 'sso:saml')
             self.assertEqual(linked_account.service_user_id, 'sleepy')
+
+    def test_post_link_user_provision_disabled(self) -> None:
+        """Testing SAMLLinkUserView form POST with provision when provisioning
+        is disabled
+        """
+        settings: JSONDict = {
+            'saml_enabled': True,
+            'saml_require_login_to_link': True,
+            'saml_automatically_provision_users': False,
+        }
+
+        with self.siteconfig_settings(settings):
+            session = self.client.session
+            session['sso'] = {
+                'user_data': {
+                    'id': 'sleepy',
+                    'first_name': 'Sleepy',
+                    'last_name': 'Dwarf',
+                    'email': 'sleepy@example.com',
+                },
+            }
+            session.save()
+
+            self.assertFalse(User.objects.filter(username='sleepy').exists())
+
+            url = reverse('sso:saml:link-user', kwargs={'backend_id': 'saml'})
+            rsp = self.client.post(url, {
+                'username': '',
+                'password': '',
+                'provision': '1',
+            })
+
+            self.assertEqual(rsp.status_code, 200)
+            self.assertFalse(User.objects.filter(username='sleepy').exists())
 
     def test_post_link_user_inactive(self) -> None:
         """Testing SAMLLinkUserView form POST with an inactive user"""
@@ -314,7 +348,7 @@ class SAMLLinkUserViewTests(kgb.SpyAgency, TestCase):
             rsp = self.client.post(url, {
                 'username': 'doc',
                 'password': 'doc',
-                'provision': False,
+                'provision': '0',
             })
 
             self.assertEqual(rsp.status_code, 200)
@@ -353,7 +387,7 @@ class SAMLLinkUserViewTests(kgb.SpyAgency, TestCase):
             rsp = self.client.post(url, {
                 'username': '',
                 'password': '',
-                'provision': True,
+                'provision': '1',
                 'mode': 'invalid',
             })
 

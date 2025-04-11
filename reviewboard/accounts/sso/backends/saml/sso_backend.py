@@ -45,6 +45,7 @@ class SAMLSSOBackend(BaseSSOBackend):
         'saml_attr_firstname': DEFAULT_ATTR_FIRSTNAME,
         'saml_attr_fullname': DEFAULT_ATTR_FULLNAME,
         'saml_attr_lastname': DEFAULT_ATTR_LASTNAME,
+        'saml_automatically_provision_users': True,
         'saml_digest_algorithm': SAMLDigestAlgorithm.SHA1,
         'saml_enabled': False,
         'saml_issuer': '',

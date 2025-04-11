@@ -5,7 +5,9 @@
 
 {% block auth_content %}
 <div class="auth-header">
- <h1>{% trans "Create Review Board account" %}</h1>
+{%  blocktrans %}
+ Create a {{PRODUCT_NAME}} account
+{%  endblocktrans %}
  <p>
 {%  blocktrans %}
   Create a new account on {{PRODUCT_NAME}}. If you already have a username and

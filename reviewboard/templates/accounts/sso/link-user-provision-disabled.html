@@ -1,0 +1,24 @@
+{% extends "accounts/base.html" %}
+{% load avatars djblets_deco i18n %}
+
+{% block title %}
+{%  blocktrans %}
+ You do not have a {{PRODUCT_NAME}} account
+{%  endblocktrans %}
+{% endblock title %}
+
+{% block auth_content %}
+<div class="auth-header">
+ <h1>
+{%  blocktrans %}
+  You do not have a {{PRODUCT_NAME}} account
+{%  endblocktrans %}
+ </h1>
+ <p>
+{%  blocktrans %}
+  You do not have an account on {{PRODUCT_NAME}}. Your administrator will need
+  to create an account before you can log in.
+{%  endblocktrans %}
+ </p>
+</div>
+{% endblock auth_content %}
