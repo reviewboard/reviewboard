@@ -485,7 +485,12 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
         elif self._mode == self.Mode.CONNECT_WITH_LOGIN:
             return ['accounts/sso/link-user-login.html']
         elif self._mode == self.Mode.PROVISION:
-            return ['accounts/sso/link-user-provision.html']
+            siteconfig = SiteConfiguration.objects.get_current()
+
+            if siteconfig.get('saml_automatically_provision_users', True):
+                return ['accounts/sso/link-user-provision.html']
+            else:
+                return ['accounts/sso/link-user-provision-disabled.html']
         else:
             raise ValueError('Unknown link-user mode "%s"' % self._mode)
 
