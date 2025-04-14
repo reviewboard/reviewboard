@@ -776,9 +776,11 @@ class GitClient(SCMClient):
             else:
                 self.git_dir = url_parts[2]
 
-            p = self._run_git(['--git-dir=%s' % self.git_dir, 'config',
-                               'core.repositoryformatversion'])
-            failure = p.wait()
+            with self._run_git(
+                [f'--git-dir={self.git_dir}', 'config',
+                 'core.repositoryformatversion'],
+            ) as p:
+                failure = p.wait()
 
             if failure:
                 # See if we have a permissions error
@@ -811,9 +813,9 @@ class GitClient(SCMClient):
         else:
             path = self.path
 
-        p = self._run_git(['ls-remote', path, 'HEAD'])
-        errmsg = p.stderr.read()
-        failure = p.wait()
+        with self._run_git(['ls-remote', path, 'HEAD']) as p:
+            errmsg = p.stderr.read()
+            failure = p.wait()
 
         if failure:
             logger.error('Git: Failed to find valid repository %s: %s',
@@ -876,11 +878,12 @@ class GitClient(SCMClient):
         """
         commit = self._resolve_head(revision, path)
 
-        p = self._run_git(['--git-dir=%s' % self.git_dir, 'cat-file',
-                           option, commit])
-        contents = force_bytes(p.stdout.read())
-        errmsg = force_bytes(p.stderr.read())
-        failure = p.wait()
+        with self._run_git(
+            [f'--git-dir={self.git_dir}', 'cat-file', option, commit],
+        ) as p:
+            contents = force_bytes(p.stdout.read())
+            errmsg = force_bytes(p.stderr.read())
+            failure = p.wait()
 
         if failure:
             if errmsg.startswith(b'fatal: Not a valid object name'):
