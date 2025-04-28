@@ -3,7 +3,9 @@
         "development": {
             "presets": [
                 "@babel/preset-env",
-                "@babel/preset-typescript",
+                ["@babel/preset-typescript", {
+                    "allowDeclareFields": true
+                }],
                 "@beanbag/ink/babel-preset"
             ]
         }
