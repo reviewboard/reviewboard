@@ -1,8 +1,18 @@
+"""Base definitions for differ implementations."""
+
+from __future__ import annotations
+
 import os
+from typing import Any, Literal, Optional, TYPE_CHECKING
 
 from reviewboard.diffviewer.errors import DiffCompatError
 from reviewboard.diffviewer.filetypes import (HEADER_REGEXES,
                                               HEADER_REGEX_ALIASES)
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from typing_extensions import TypeAlias
 
 
 # Compatibility versions:
@@ -21,6 +31,46 @@ class DiffCompatVersion(object):
     DEFAULT = MYERS_SMS_COST_BAIL
 
     MYERS_VERSIONS = (MYERS, MYERS_SMS_COST_BAIL)
+
+
+#: The potential values for opcode tags.
+#:
+#: Version Added:
+#:     8.0
+DiffOpcodeTag: TypeAlias = Literal[
+    'delete',
+    'equal',
+    'filtered-equal',
+    'insert',
+    'replace',
+]
+
+
+#: The structure used for opcodes.
+#:
+#: Version Added:
+#:     8.0
+DiffOpcode: TypeAlias = tuple[
+    DiffOpcodeTag,  # tag
+    int,  # i1
+    int,  # i2
+    int,  # j1
+    int,  # j2
+]
+
+
+#: The structure used for opcodes with metadata.
+#:
+#: Version Added:
+#:     8.0
+DiffOpcodeWithMetadata: TypeAlias = tuple[
+    DiffOpcodeTag,  # tag
+    int,  # i1
+    int,  # i2
+    int,  # j1
+    int,  # j2
+    Optional[dict[str, Any]],  # metadata
+]
 
 
 class Differ(object):
@@ -78,7 +128,13 @@ class Differ(object):
 
         return self.interesting_lines[index].get(name, [])
 
-    def get_opcodes(self):
+    def get_opcodes(self) -> Iterator[DiffOpcode]:
+        """Yield the opcodes for the diff.
+
+        Yields:
+            DiffOpcode:
+            The opcodes for the diff.
+        """
         raise NotImplementedError
 
 

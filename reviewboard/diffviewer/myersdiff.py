@@ -1,4 +1,16 @@
+"""Differ implementation using the Myers diff algorithm."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from reviewboard.diffviewer.differ import Differ, DiffCompatVersion
+
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from reviewboard.diffviewer.differ import DiffOpcode, DiffOpcodeTag
 
 
 class MyersDiffer(Differ):
@@ -45,35 +57,42 @@ class MyersDiffer(Differ):
         return 1.0 * (a_equals + b_equals) / \
                      (self.a_data.length + self.b_data.length)
 
-    def get_opcodes(self):
-        """
-        Generator that returns opcodes representing the contents of the
-        diff.
+    def get_opcodes(self) -> Iterator[DiffOpcode]:
+        """Yield the opcodes for the diff.
 
-        The resulting opcodes are in the format of
-        (tag, i1, i2, j1, j2)
+        Yields:
+            reviewboard.diffviewer.differ.DiffOpcode:
+            The opcodes for the diff.
         """
         self._gen_diff_data()
 
-        if self.a_data.length == 0 and self.b_data.length == 0:
+        a_data = self.a_data
+        b_data = self.b_data
+
+        assert a_data is not None
+        assert b_data is not None
+
+        if a_data.length == 0 and b_data.length == 0:
             # There's nothing to process or yield. Bail.
             return
 
         a_line = b_line = 0
-        last_group = None
+        last_group: (DiffOpcode | None) = None
 
         # Go through the entire set of lines on both the old and new files
-        while a_line < self.a_data.length or b_line < self.b_data.length:
+        while a_line < a_data.length or b_line < b_data.length:
             a_start = a_line
             b_start = b_line
 
-            if a_line < self.a_data.length and \
-               not self.a_data.modified.get(a_line, False) and \
-               b_line < self.b_data.length and \
-               not self.b_data.modified.get(b_line, False):
+            tag: (DiffOpcodeTag | None) = None
+
+            if (a_line < a_data.length and
+                not a_data.modified.get(a_line, False) and
+                b_line < b_data.length and
+                not b_data.modified.get(b_line, False)):
                 # Equal
                 a_changed = b_changed = 1
-                tag = "equal"
+                tag = 'equal'
                 a_line += 1
                 b_line += 1
             else:
@@ -82,17 +101,17 @@ class MyersDiffer(Differ):
                 # Count every old line that's been modified, and the
                 # remainder of old lines if we've reached the end of the new
                 # file.
-                while (a_line < self.a_data.length and
-                       (b_line >= self.b_data.length or
-                        self.a_data.modified.get(a_line, False))):
+                while (a_line < a_data.length and
+                       (b_line >= b_data.length or
+                        a_data.modified.get(a_line, False))):
                     a_line += 1
 
                 # Count every new line that's been modified, and the
                 # remainder of new lines if we've reached the end of the old
                 # file.
-                while (b_line < self.b_data.length and
-                       (a_line >= self.a_data.length or
-                        self.b_data.modified.get(b_line, False))):
+                while (b_line < b_data.length and
+                       (a_line >= a_data.length or
+                        b_data.modified.get(b_line, False))):
                     b_line += 1
 
                 a_changed = a_line - a_start
@@ -102,11 +121,11 @@ class MyersDiffer(Differ):
                 assert a_changed != 0 or b_changed != 0
 
                 if a_changed == 0 and b_changed > 0:
-                    tag = "insert"
+                    tag = 'insert'
                 elif a_changed > 0 and b_changed == 0:
-                    tag = "delete"
+                    tag = 'delete'
                 elif a_changed > 0 and b_changed > 0:
-                    tag = "replace"
+                    tag = 'replace'
 
                     if a_changed != b_changed:
                         if a_changed > b_changed:
@@ -116,20 +135,36 @@ class MyersDiffer(Differ):
 
                         a_changed = b_changed = min(a_changed, b_changed)
 
+            assert tag is not None
+
             if last_group and last_group[0] == tag:
-                last_group = (tag,
-                              last_group[1], last_group[2] + a_changed,
-                              last_group[3], last_group[4] + b_changed)
+                last_group = (
+                    tag,
+                    last_group[1],
+                    last_group[2] + a_changed,
+                    last_group[3],
+                    last_group[4] + b_changed,
+                )
             else:
                 if last_group:
                     yield last_group
 
-                last_group = (tag, a_start, a_start + a_changed,
-                              b_start, b_start + b_changed)
+                last_group = (
+                    tag,
+                    a_start,
+                    a_start + a_changed,
+                    b_start,
+                    b_start + b_changed,
+                )
 
         if not last_group:
-            last_group = ("equal", 0, self.a_data.length,
-                          0, self.b_data.length)
+            last_group = (
+                'equal',
+                0,
+                a_data.length,
+                0,
+                b_data.length,
+            )
 
         yield last_group
 

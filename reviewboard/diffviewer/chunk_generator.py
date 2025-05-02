@@ -370,7 +370,7 @@ class RawDiffChunkGenerator(object):
         collapse_threshold = 2 * context_num_lines + 3
 
         line_num = 1
-        opcodes_generator = self.get_opcode_generator()
+        opcode_generator = self.get_opcode_generator()
 
         counts = {
             'equal': 0,
@@ -379,7 +379,7 @@ class RawDiffChunkGenerator(object):
             'delete': 0,
         }
 
-        for tag, i1, i2, j1, j2, meta in opcodes_generator:
+        for tag, i1, i2, j1, j2, meta in opcode_generator:
             old_lines = markup_a[i1:i2]
             new_lines = markup_b[j1:j2]
             num_lines = max(len(old_lines), len(new_lines))
