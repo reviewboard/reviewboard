@@ -611,10 +611,17 @@ class OwnerField(BuiltinFieldMixin[User],
         field_id = self.field_id
         assert field_id
 
-        changedesc.record_field_change(field=field_id,
-                                       old_value=old_value,
-                                       new_value=new_value,
-                                       name_field=self.model_name_attr)
+        changedesc.record_field_change(
+            field=field_id,
+            old_value=old_value,
+            new_value=new_value,
+            name_field=self.model_name_attr,
+            build_url_func=lambda user: local_site_reverse(
+                'user',
+                local_site=self.review_request_details.local_site,
+                kwargs={
+                    'username': user.username,
+                }))
 
     def render_change_entry_value_html(
         self,
