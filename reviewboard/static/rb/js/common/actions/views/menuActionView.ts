@@ -171,22 +171,38 @@ export class MenuActionView<
      *     7.0.3
      */
     protected positionMenu() {
+        const $el = this.$el;
         const $menuEl = this.menu.$el;
         const menuWidth = $menuEl.width();
-        const windowWidth = $(window).width();
-        const elOffsetLeft = this.$el.offset().left;
+        const windowWidth = $(window).outerWidth();
+        const elOffsetLeft = $el.offset().left;
 
         let newMenuLeft: string | number = 'auto';
 
         if (elOffsetLeft + menuWidth > windowWidth) {
             /*
-             * The right side of the menu is being clipped. Move to the left
-             * so that the full menu fits on screen.
+             * The right side of the menu is being clipped. Try to right-align
+             * it with the handle first.
              */
-            newMenuLeft = (
-                windowWidth -
-                (elOffsetLeft + Math.min(menuWidth, windowWidth))
-            );
+            let newMenuLeftNum = this.$el.width() - menuWidth;
+
+            if (newMenuLeftNum + menuWidth > windowWidth) {
+                /*
+                 * That was still off-screen (meaning the handle was likely
+                 * off-screen. Align this with the right edge of the viewport.
+                 */
+                newMenuLeftNum = windowWidth - menuWidth - elOffsetLeft;
+            }
+
+            if (newMenuLeftNum + elOffsetLeft < 0) {
+                /*
+                 * It's off the left of the screen. Align this with the
+                 * left edge of the viewport.
+                 */
+                newMenuLeftNum = -elOffsetLeft;
+            }
+
+            newMenuLeft = `${newMenuLeftNum}px`;
         }
 
         $menuEl.css({
