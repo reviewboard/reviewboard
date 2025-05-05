@@ -73,7 +73,7 @@ export const ExtraDataMixin = {
         }
 
         const useExtraData = (_.has(attrs, 'extraData') &&
-                              _.has(this, 'extraData'));
+                              !!this.extraData);
 
         if (useExtraData) {
             if (attrs.extraData instanceof ExtraData) {
@@ -89,7 +89,14 @@ export const ExtraDataMixin = {
         Backbone.Model.prototype.set.call(this, attrs, options);
 
         if (useExtraData) {
-            this.extraData.attributes = this.attributes.extraData;
+            if (this.extraData) {
+                this.extraData.attributes = this.attributes.extraData;
+            } else {
+                console.error(
+                    '%s was passed in extraData but does not have an ' +
+                    'extraData attribute defined! This is an internal error.',
+                    this.constructor.name);
+            }
         }
 
         return this;
