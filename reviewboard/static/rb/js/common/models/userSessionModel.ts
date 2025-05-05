@@ -3,6 +3,7 @@
  */
 import {
     type ModelAttributes,
+    type Result,
     BaseModel,
     spina,
 } from '@beanbag/spina';
@@ -266,6 +267,14 @@ interface UserSessionAttrs extends ModelAttributes {
     /** Whether to open an issue by default */
     commentsOpenAnIssue: boolean;
 
+    /**
+     * Whether to prompt to confirm publishing a Ship It! review.
+     *
+     * Version Added:
+     *     7.1
+     */
+    confirmShipIt: boolean;
+
     /** Whether to use rich text by default. */
     defaultUseRichText: boolean;
 
@@ -321,6 +330,17 @@ interface UserSessionAttrs extends ModelAttributes {
 
 
 /**
+ * A map of UserSession attributes to stored settings names.
+ *
+ * Version Added:
+ *     7.1
+ */
+const _storeSettingsMap: Record<keyof UserSessionAttrs, string> = {
+    'confirmShipIt': 'confirm_ship_it',
+};
+
+
+/**
  * Manages the user's active session.
  *
  * This stores basic information on the user (the username and session API URL)
@@ -367,6 +387,7 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
         avatarHTML: {},
         avatarURLs: {},
         commentsOpenAnIssue: true,
+        confirmShipIt: true,
         defaultUseRichText: false,
         diffsShowExtraWhitespace: false,
         enableDesktopNotifications: false,
@@ -475,6 +496,48 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
         const urls = this.get('avatarHTML') || {};
 
         return urls[size] || '';
+    }
+
+    /**
+     * Store a setting for the user.
+     *
+     * Only a pre-defined list of settings are supported.
+     *
+     * This should be considered internal to the Review Board codebase.
+     *
+     * Version Added:
+     *     7.1
+     *
+     * Args:
+     *     setting (Array of string):
+     *         The attributes for the settings to store on the server.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the operation.
+     */
+    storeSettings(
+        settings: (keyof typeof _storeSettingsMap)[],
+    ): Promise<void> {
+        return new Promise((success, error) => {
+            RB.apiCall({
+                data: {
+                    'settings:json': JSON.stringify(Object.fromEntries(
+                        settings.map((
+                            setting: string,
+                        ) => [
+                            _storeSettingsMap[setting],
+                            this.get(setting),
+                        ])
+                    )),
+                },
+                path: '/session/',
+                type: 'PUT',
+
+                error: () => error(),
+                success: () => success(),
+            });
+        });
     }
 
     /**

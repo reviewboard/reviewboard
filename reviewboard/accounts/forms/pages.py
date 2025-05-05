@@ -1,5 +1,10 @@
+"""My Account configuration pages."""
+
+from __future__ import annotations
+
 import logging
 from collections import OrderedDict
+from typing import TYPE_CHECKING
 from urllib.parse import unquote
 
 from django import forms
@@ -24,6 +29,9 @@ from reviewboard.reviews.models import Group
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.themes.ui.registry import ui_theme_registry
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 logger = logging.getLogger(__name__)
@@ -70,6 +78,11 @@ class AccountSettingsForm(AccountPageForm):
     syntax_highlighting = forms.BooleanField(
         label=_('Enable syntax highlighting in the diff viewer'),
         required=False)
+
+    confirm_ship_it = forms.BooleanField(
+        label=_('Prompt to confirm when publishing Ship It! reviews'),
+        required=False)
+
     open_an_issue = forms.BooleanField(
         label=_('Always open an issue when comment box opens'),
         required=False)
@@ -90,7 +103,24 @@ class AccountSettingsForm(AccountPageForm):
         label=_('Show desktop notifications'),
         required=False)
 
-    def load(self):
+    #: Mapping of Profile attribute names to form field names.
+    #:
+    #: This is not necessarily comprehensive. Settings that require further
+    #: processing may not be included.
+    #:
+    #: Version Added:
+    #:     7.1
+    _PROFILE_ATTRS_MAP: Mapping[str, str] = {
+        'default_use_rich_text': 'default_use_rich_text',
+        'open_an_issue': 'open_an_issue',
+        'should_confirm_ship_it': 'confirm_ship_it',
+        'should_enable_desktop_notifications': 'enable_desktop_notifications',
+        'should_send_email': 'should_send_email',
+        'should_send_own_updates': 'should_send_own_updates',
+        'timezone': 'timezone',
+    }
+
+    def load(self) -> None:
         """Load data for the form."""
         profile = self.user.get_profile()
 
@@ -98,41 +128,32 @@ class AccountSettingsForm(AccountPageForm):
         diffviewer_syntax_highlighting = siteconfig.get(
             'diffviewer_syntax_highlighting')
 
-        self.set_initial({
-            'open_an_issue': profile.open_an_issue,
-            'syntax_highlighting': (profile.syntax_highlighting and
-                                    diffviewer_syntax_highlighting),
-            'timezone': profile.timezone,
-            'default_use_rich_text': profile.should_use_rich_text,
-            'should_send_email': profile.should_send_email,
-            'should_send_own_updates': profile.should_send_own_updates,
-            'enable_desktop_notifications':
-                profile.should_enable_desktop_notifications,
-        })
+        initial = {
+            field_name: getattr(profile, attr_name)
+            for attr_name, field_name in self._PROFILE_ATTRS_MAP.items()
+        }
+        initial['syntax_highlighting'] = (profile.syntax_highlighting and
+                                          diffviewer_syntax_highlighting)
+
+        self.set_initial(initial)
 
         if not diffviewer_syntax_highlighting:
             self.fields['syntax_highlighting'].widget.attrs.update({
                 'disabled': True,
             })
 
-    def save(self):
+    def save(self) -> None:
         """Save the form."""
         profile = self.user.get_profile()
         siteconfig = SiteConfiguration.objects.get_current()
+        cleaned_data = self.cleaned_data
 
         if siteconfig.get('diffviewer_syntax_highlighting'):
-            profile.syntax_highlighting = \
-                self.cleaned_data['syntax_highlighting']
+            profile.syntax_highlighting = cleaned_data['syntax_highlighting']
 
-        profile.open_an_issue = self.cleaned_data['open_an_issue']
-        profile.default_use_rich_text = \
-            self.cleaned_data['default_use_rich_text']
-        profile.timezone = self.cleaned_data['timezone']
-        profile.should_send_email = self.cleaned_data['should_send_email']
-        profile.should_send_own_updates = \
-            self.cleaned_data['should_send_own_updates']
-        profile.settings['enable_desktop_notifications'] = \
-            self.cleaned_data['enable_desktop_notifications']
+        for attr_name, field_name in self._PROFILE_ATTRS_MAP.items():
+            setattr(profile, attr_name, cleaned_data[field_name])
+
         profile.save(update_fields=(
             'default_use_rich_text',
             'open_an_issue',
@@ -149,11 +170,14 @@ class AccountSettingsForm(AccountPageForm):
     class Meta:
         fieldsets = (
             (_('General Settings'), {
-                'fields': ('form_target',
-                           'timezone',
-                           'syntax_highlighting',
-                           'open_an_issue',
-                           'default_use_rich_text'),
+                'fields': (
+                    'form_target',
+                    'timezone',
+                    'confirm_ship_it',
+                    'open_an_issue',
+                    'default_use_rich_text',
+                    'syntax_highlighting',
+                ),
             }),
             (_('Notifications'), {
                 'fields': ('should_send_email',

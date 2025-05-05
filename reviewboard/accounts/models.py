@@ -249,6 +249,32 @@ class Profile(models.Model):
     objects: ClassVar[ProfileManager] = ProfileManager()
 
     @property
+    def should_confirm_ship_it(self) -> bool:
+        """Whether to prompt to confirm publishing a Ship It! review.
+
+        Version Added:
+            7.1
+        """
+        return (not self.settings or
+                self.settings.get('confirm_ship_it', True))
+
+    @should_confirm_ship_it.setter
+    def should_confirm_ship_it(
+        self,
+        confirm_ship_it: bool,
+    ) -> None:
+        """Set whether to prompt to confirm publishing a Ship It! review.
+
+        Version Added:
+            7.1
+
+        Args:
+            confirm_ship_it (bool):
+                The new value for the setting.
+        """
+        self.settings['confirm_ship_it'] = confirm_ship_it
+
+    @property
     def should_use_rich_text(self):
         """Get whether rich text should be used by default for this user.
 
@@ -271,6 +297,10 @@ class Profile(models.Model):
         explicitly, then that choice will be respected. Otherwise, we
         enable desktop notifications by default.
 
+        Version Changed:
+            7.1:
+            This property can now be changed.
+
         Type:
             bool:
             If the user has set whether they wish to receive desktop
@@ -279,6 +309,22 @@ class Profile(models.Model):
         """
         return (not self.settings or
                 self.settings.get('enable_desktop_notifications', True))
+
+    @should_enable_desktop_notifications.setter
+    def should_enable_desktop_notifications(
+        self,
+        enabled: bool,
+    ) -> None:
+        """Set whether desktop notifications should be used for this user.
+
+        Version Added:
+            7.1
+
+        Args:
+            enabled (bool):
+                The new value for the setting.
+        """
+        self.settings['enable_desktop_notifications'] = enabled
 
     @property
     def ui_theme_id(self) -> str:
