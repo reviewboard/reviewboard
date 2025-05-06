@@ -57,6 +57,9 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
 
         doc = User.objects.get(username='doc')
 
+        # Clear the review request's caches so we'll re-fetch the draft.
+        review_request.clear_local_caches()
+
         queries: ExpectedQueries = [
             {
                 'model': SiteConfiguration,
@@ -105,10 +108,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                     Q(review_request__id=1) &
                     Q(public=True)
                 ),
-            },
-            {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
             },
             {
                 'model': DiffSet,
@@ -169,10 +168,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             {
                 'model': HostingServiceAccount,
                 'where': Q(id=1),
-            },
-            {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
             },
             {
                 'annotations': {
@@ -290,6 +285,9 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             summary=summary,
             description=description,
             testing_done=testing_done)
+
+        # Clear the review request's caches so we'll re-fetch the draft.
+        review_request.clear_local_caches()
 
         queries: ExpectedQueries = [
             {
@@ -447,10 +445,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(id=1),
             },
             {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
-            },
-            {
                 'annotations': {
                     'a': Value(1),
                 },
@@ -487,10 +481,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                     Q(starred_by__id=admin.pk) &
                     Q(pk=1)
                 ),
-            },
-            {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
             },
             {
                 'model': Profile,
@@ -555,10 +545,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                     'reviews_reviewrequest_target_people',
                 },
                 'where': Q(directed_review_requests__id=1),
-            },
-            {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
             },
         ]
 
@@ -640,6 +626,9 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
         user1.get_profile()
         user2.get_profile()
 
+        # Clear the review request's caches so we'll re-fetch the draft.
+        review_request.clear_local_caches()
+
         # Now figure out the order on the page.
         queries: ExpectedQueries = [
             {
@@ -689,10 +678,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                     Q(review_request__id=1) &
                     Q(public=True)
                 ),
-            },
-            {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
             },
             {
                 'model': DiffSet,
@@ -750,10 +735,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             {
                 'model': HostingServiceAccount,
                 'where': Q(id=1),
-            },
-            {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
             },
             {
                 'model': Trophy,
@@ -951,6 +932,9 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
 
         # Prime the caches.
         user1.get_profile()
+
+        # Clear the review request's caches so we'll re-fetch the draft.
+        review_request.clear_local_caches()
 
         # Check that we can find all the objects we expect on the page.
         queries: ExpectedQueries = [
@@ -1179,10 +1163,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(inactive_review_request__id=1),
             },
             {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
-            },
-            {
                 'join_types': {
                     'reviews_reviewrequestdraft_file_attachments':
                         'INNER JOIN',
@@ -1291,10 +1271,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(group__user=user1),
             },
             {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
-            },
-            {
                 'model': Profile,
                 'where': Q(user=user1),
             },
@@ -1362,10 +1338,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'model': ChangeDescription,
                 'where': Q(id=1),
             },
-            {
-                'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
-            },
         ]
 
         with self.assertQueries(queries):
@@ -1403,7 +1375,7 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
         self.assertEqual(comments[0].text, comment_text_1)
         self.assertEqual(comments[1].text, comment_text_2)
 
-    def test_screenshots_visibility(self):
+    def test_screenshots_visibility(self) -> None:
         """Testing ReviewRequestDetailView default visibility of screenshots"""
         caption_1 = 'Screenshot 1'
         caption_2 = 'Screenshot 2'
@@ -1446,6 +1418,9 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
 
         # Prime the caches.
         user1.get_profile()
+
+        # Clear the review request's caches so we'll re-fetch the draft.
+        review_request.clear_local_caches()
 
         # Check that we can find all the objects we expect on the page.
         queries: ExpectedQueries = [

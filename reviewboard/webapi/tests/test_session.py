@@ -1,3 +1,10 @@
+"""Unit tests for reviewboard.webapi.resources.session."""
+
+from __future__ import annotations
+
+import json
+from typing import TYPE_CHECKING
+
 from django.http import SimpleCookie
 from djblets.webapi.errors import NOT_LOGGED_IN
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -8,9 +15,18 @@ from reviewboard.webapi.tests.mimetypes import session_mimetype
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import get_session_url
 
+if TYPE_CHECKING:
+    from typing import Any
+
+    from django.contrib.auth.models import User
+    from djblets.util.typing import JSONDict
+
+    from reviewboard.webapi.tests.mixins import BasicPutTestSetupState
+
 
 class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     """Testing the SessionResource APIs."""
+
     fixtures = ['test_users']
     sample_api_url = 'session/'
     resource = resources.session
@@ -40,11 +56,24 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     def test_get_with_anonymous_user(self):
         """Testing the GET session/ API with anonymous user"""
         self.client.logout()
+
         rsp = self.api_get(get_session_url(),
                            expected_mimetype=session_mimetype)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertIn('session', rsp)
-        self.assertFalse(rsp['session']['authenticated'])
+
+        self.assertEqual(
+            rsp,
+            {
+                'session': {
+                    'authenticated': False,
+                    'links': {
+                        'self': {
+                            'href': 'http://testserver/api/session/',
+                            'method': 'GET',
+                        },
+                    },
+                },
+                'stat': 'ok',
+            })
 
     #
     # HTTP DELETE test
@@ -68,5 +97,134 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.client.cookies = SimpleCookie()
 
         rsp = self.api_delete(url, expected_status=401)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], NOT_LOGGED_IN.code)
+
+        self.assertEqual(
+            rsp,
+            {
+                'err': {
+                    'code': NOT_LOGGED_IN.code,
+                    'msg': NOT_LOGGED_IN.msg,
+                    'type': NOT_LOGGED_IN.error_type,
+                },
+                'stat': 'fail',
+            })
+
+    #
+    # HTTP PUT tests
+    #
+
+    # This test does not apply, so remove it.
+    test_put_not_owner = None
+
+    def populate_put_test_objects(
+        self,
+        *,
+        setup_state: BasicPutTestSetupState,
+        create_valid_request_data: bool,
+        **kwargs,
+    ) -> None:
+        """Populate objects for a PUT test.
+
+        Version Added:
+            7.1
+
+        Args:
+            setup_state (reviewboard.webapi.tests.mixins.
+                         BasicPutTestSetupState):
+                The setup state for the test.
+
+            create_valid_request_data (bool):
+                Whether ``request_data`` in ``setup_state`` should provide
+                valid data for a PUT test, given the populated objects.
+
+            **kwargs (dict):
+                Additional keyword arguments for future expansion.
+        """
+        setup_state.update({
+            'item': None,
+            'mimetype': session_mimetype,
+            'request_data': {},
+            'url': get_session_url(
+                local_site_name=setup_state['local_site_name']),
+        })
+
+    def check_put_result(
+        self,
+        user: User,
+        item_rsp: JSONDict,
+        item: Any,
+        *args,
+    ) -> None:
+        """Check the results of an HTTP PUT.
+
+        Version Added:
+            7.1
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user performing the requesdt.
+
+            item_rsp (dict):
+                The item payload from the response.
+
+            item (object):
+                The item to compare to.
+
+            *args (tuple):
+                Positional arguments provided by
+                :py:meth:`setup_basic_put_test`.
+
+        Raises:
+            AssertionError:
+                One of the checks failed.
+        """
+        self.compare_item(item_rsp, user)
+
+    @webapi_test_template
+    def test_put_with_settings_json(self) -> None:
+        """Testing the PUT <URL> API with settings:json"""
+        user = self._login_user()
+
+        profile = user.get_profile()
+        profile.settings['some_setting'] = '123'
+        profile.save(update_fields=('settings',))
+
+        rsp = self.api_put(
+            get_session_url(),
+            {
+                'settings:json': json.dumps({
+                    'bad_option': '123',
+                    'confirm_ship_it': False,
+                })
+            },
+            expected_mimetype=session_mimetype)
+
+        self.assertEqual(
+            rsp,
+            {
+                'session': {
+                    'authenticated': True,
+                    'links': {
+                        'delete': {
+                            'href': 'http://testserver/api/session/',
+                            'method': 'DELETE',
+                        },
+                        'self': {
+                            'href': 'http://testserver/api/session/',
+                            'method': 'GET',
+                        },
+                        'user': {
+                            'href': 'http://testserver/api/users/grumpy/',
+                            'method': 'GET',
+                            'title': 'grumpy',
+                        },
+                    },
+                },
+                'stat': 'ok',
+            })
+
+        profile.refresh_from_db()
+        self.assertEqual(profile.settings, {
+            'some_setting': '123',
+            'confirm_ship_it': False,
+        })

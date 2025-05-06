@@ -17,6 +17,7 @@ from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import (CounterField, ModificationTimestampField,
                                RelationCounterField)
 from djblets.db.query import get_object_cached_field, get_object_or_none
+from djblets.log import log_timed
 from djblets.util.symbols import UNSET
 from typing_extensions import TypedDict
 
@@ -476,6 +477,14 @@ class ReviewRequest(BaseReviewRequestDetails):
     #: Version Added:
     #:     7.1
     _diffsets_with_filediffs: bool
+
+    #: The cached review request draft.
+    #:
+    #: This is purely internal and should never be accessed directly by any
+    #: extension authors. Please us :py:meth:`get_draft` directly.
+    #:
+    #: Note that this draft may not be accessible by the given user.
+    _draft: Optional[ReviewRequestDraft]
 
     #: The cached latest diffset for the review request.
     #:
@@ -954,6 +963,13 @@ class ReviewRequest(BaseReviewRequestDetails):
         If a user is specified, then the draft will be returned only if it is
         accessible by the user. Otherwise, ``None`` will be returned.
 
+        The result is cached on this object to avoid performance issues or
+        inconsistencies in repeated calls.
+
+        Version Changed:
+            7.1:
+            The result of this is now cached by this object.
+
         Version Changed:
             7.0.2:
             Changed the behavior of the ``user`` argument to check if the draft
@@ -967,15 +983,35 @@ class ReviewRequest(BaseReviewRequestDetails):
             reviewboard.reviews.models.review_request_draft.ReviewRequestDraft:
             The draft of the review request or None.
         """
-        draft = get_object_or_none(self.draft)
+        draft: Optional[ReviewRequestDraft] = None
 
-        if (user is None or
-            (user.is_authenticated and
-             draft is not None and
-             draft.is_accessible_by(user))):
-            return draft
+        if user is None or user.is_authenticated:
+            try:
+                draft = self._draft
+            except AttributeError:
+                cached_draft = get_object_cached_field(self, 'draft')
 
-        return None
+                if cached_draft is UNSET:
+                    try:
+                        draft = self.draft.get()
+                    except ObjectDoesNotExist:
+                        draft = None
+                else:
+                    draft = cached_draft
+
+                self._draft = draft
+
+            if (user is not None and
+                draft is not None and
+                not draft.is_accessible_by(user)):
+                # The user can't see this draft, so clear this for the final
+                # result.
+                draft = None
+
+        if draft is not None:
+            assert draft.pk is not None
+
+        return draft
 
     def get_pending_review(
         self,
@@ -1558,7 +1594,10 @@ class ReviewRequest(BaseReviewRequestDetails):
             ``True`` if the review request is not yet public, or if there is a
             draft present.
         """
-        return not self.public or get_object_or_none(self.draft) is not None
+        return (
+            not self.public or
+            self.get_draft() is not None
+        )
 
     def can_add_default_reviewers(self) -> bool:
         """Return whether default reviewers can be added to the review request.
@@ -1647,7 +1686,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             description=description,
             rich_text=rich_text)
 
-        draft = get_object_or_none(self.draft)
+        draft = self.get_draft()
 
         if self.status != close_type:
             if (draft is not None and
@@ -1791,8 +1830,12 @@ class ReviewRequest(BaseReviewRequestDetails):
         if not self.is_mutable_by(user):
             raise PermissionError
 
-        draft = get_object_or_none(self.draft)
+        # We need to ensure we have the latest content for the draft from
+        # the database.
+        self.clear_local_caches()
+
         old_submitter = self.submitter
+        draft = self.get_draft()
 
         if (draft is not None and
             draft.owner is not None and
@@ -1828,63 +1871,68 @@ class ReviewRequest(BaseReviewRequestDetails):
             # a profile.
             old_submitter.get_site_profile(self.local_site)
 
-        review_request_publishing.send(sender=self.__class__, user=user,
-                                       review_request_draft=draft)
+        with log_timed(f'Publishing review request {self.pk}',
+                       logger=logger):
+            review_request_publishing.send(sender=self.__class__, user=user,
+                                           review_request_draft=draft)
 
-        # Decrement the counts on everything. We'll increment the resulting
-        # set during _update_counts() (called from ReviewRequest.save()).
-        # This must be done before the draft is published, or we'll end up
-        # with bad counts.
-        #
-        # Once the draft is published, the target people and groups will be
-        # updated with new values.
-        if self.public:
-            self._decrement_reviewer_counts()
+            # Decrement the counts on everything. We'll increment the resulting
+            # set during _update_counts() (called from ReviewRequest.save()).
+            # This must be done before the draft is published, or we'll end up
+            # with bad counts.
+            #
+            # Once the draft is published, the target people and groups will be
+            # updated with new values.
+            if self.public:
+                self._decrement_reviewer_counts()
 
-        # Calculate the timestamp once and use it for all things that are
-        # considered as happening now. If we do not do this, there will be
-        # millisecond timestamp differences between review requests and their
-        # changedescs, diffsets, and reviews.
-        #
-        # Keeping them in sync means that get_last_activity() can work as
-        # intended. Otherwise, the review request will always have the most
-        # recent timestamp since it gets saved last.
-        timestamp = timezone.now()
+            # Calculate the timestamp once and use it for all things that are
+            # considered as happening now. If we do not do this, there will be
+            # millisecond timestamp differences between review requests and
+            # their changedescs, diffsets, and reviews.
+            #
+            # Keeping them in sync means that get_last_activity() can work as
+            # intended. Otherwise, the review request will always have the most
+            # recent timestamp since it gets saved last.
+            timestamp = timezone.now()
 
-        if draft is not None:
-            # This will in turn save the review request, so we'll be done.
-            try:
-                changes = draft.publish(self,
-                                        send_notification=False,
-                                        user=user,
-                                        validate_fields=validate_fields,
-                                        timestamp=timestamp)
-            except Exception:
-                # The draft failed to publish, for one reason or another.
-                # Check if we need to re-increment those counters we
-                # previously decremented.
-                if self.public:
-                    self._increment_reviewer_counts()
+            if draft is not None:
+                # This will in turn save the review request, so we'll be done.
+                try:
+                    changes = draft.publish(self,
+                                            send_notification=False,
+                                            user=user,
+                                            validate_fields=validate_fields,
+                                            timestamp=timestamp)
+                except Exception:
+                    # The draft failed to publish, for one reason or another.
+                    # Check if we need to re-increment those counters we
+                    # previously decremented.
+                    if self.public:
+                        self._increment_reviewer_counts()
 
-                raise
+                    raise
 
-            draft.delete()
-        else:
-            changes = None
+                draft.delete()
+            else:
+                changes = None
 
-        if not self.public and not self.changedescs.exists():
-            # This is a brand new review request that we're publishing
-            # for the first time. Set the creation timestamp to now.
-            self.time_added = timestamp
+            if not self.public and not self.changedescs.exists():
+                # This is a brand new review request that we're publishing
+                # for the first time. Set the creation timestamp to now.
+                self.time_added = timestamp
 
-        self.public = True
-        self.last_updated = timestamp
-        self.save(update_counts=True, old_submitter=old_submitter)
+            self.public = True
+            self.last_updated = timestamp
+            self.save(update_counts=True, old_submitter=old_submitter)
 
-        review_request_published.send(sender=self.__class__, user=user,
-                                      review_request=self, trivial=trivial,
-                                      changedesc=changes)
+            review_request_published.send(sender=self.__class__,
+                                          user=user,
+                                          review_request=self,
+                                          trivial=trivial,
+                                          changedesc=changes)
 
+        # Once again, clear the cache.
         self.clear_local_caches()
 
         return changes
@@ -2143,6 +2191,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         * :py:attr:`approved`
         * :py:meth:`get_blocks`
         * :py:meth:`get_diffsets`
+        * :py:meth:`get_draft`
         * :py:meth:`get_file_attachments_data`
         * :py:meth:`get_latest_diffset`
 
@@ -2156,6 +2205,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                     '_blocks',
                     '_diffsets',
                     '_diffsets_with_filediffs',
+                    '_draft',
                     '_file_attachments_data',
                     '_latest_diffset'):
             d.pop(key, None)

@@ -1344,7 +1344,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
     def test_put_with_archive(self) -> None:
         """Testing the PUT <URL> API with archive_name=True"""
         rsp = self._put_repository(data={
-            'archive_name': True,
+            'archive_name': '1',
         })
         assert rsp is not None
 
@@ -1354,7 +1354,34 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
                 'archived': True,
                 'public': False,
             })
-        self.assertEqual(repository.name[:23], 'ar:New Test Repository:')
+        self.assertTrue(repository.name.startswith('ar:New Test Repository:'))
+        self.assertIsNotNone(repository.archived_timestamp)
+
+    @webapi_test_template
+    def test_put_with_archive_and_bad_host_key(self) -> None:
+        """Testing the PUT <URL> API with archive_name=True and a repository
+        with a bad host key
+        """
+        repository = self.create_repository(tool_name='Test',
+                                            name='Test repo')
+        self.spy_on(TestTool.check_repository,
+                    owner=TestTool,
+                    op=kgb.SpyOpRaise(BadHostKeyError('example.com', key1,
+                                                      key2)))
+
+        rsp = self._put_repository(
+            repository=repository,
+            data={'archive_name': '1'},
+            send_name=False)
+        assert rsp is not None
+
+        repository = self._verify_repository_info(
+            rsp=rsp,
+            expected_attrs={
+                'archived': True,
+                'public': False,
+            })
+        self.assertTrue(repository.name.startswith('ar:Test repo'))
         self.assertIsNotNone(repository.archived_timestamp)
 
     @webapi_test_template
@@ -1552,11 +1579,13 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
 
     def _put_repository(
         self,
+        *,
         data: Optional[dict[str, Any]] = None,
         use_local_site: bool = False,
         use_admin: bool = True,
         repository: Optional[Repository] = None,
         expected_status: int = 200,
+        send_name: bool = True,
     ) -> Optional[dict[str, Any]]:
         """Modify a repository via the API.
 
@@ -1565,6 +1594,11 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
 
         By default, the form data will set the ``name`` to a default value.
         This can be overridden by the caller to another value.
+
+        Version Changed:
+            7.1:
+            * Made all arguments keyword-only.
+            * Added the ``send_name`` argument.
 
         Args:
             data (dict, optional):
@@ -1584,6 +1618,12 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
 
             expected_status (int, optional):
                 The expected HTTP status code for the operation.
+
+            send_name (bool, optional):
+                Whether to send the name in the payload.
+
+                Version Added:
+                    7.1
 
         Returns:
             dict:
@@ -1612,11 +1652,12 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
         if data is None:
             data = {}
 
+        if send_name and 'name' not in data:
+            data['name'] = repo_name
+
         return self.api_put(
             get_repository_item_url(repository, local_site_name),
-            dict({
-                'name': repo_name,
-            }, **data),
+            data,
             expected_status=expected_status,
             expected_mimetype=expected_mimetype)
 

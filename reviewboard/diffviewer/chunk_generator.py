@@ -1381,25 +1381,27 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             old_encoding_list, new_encoding_list = \
                 new_encoding_list, old_encoding_list
 
+        timer_msg: str
+
         if interfilediff:
-            log_timer = log_timed(
-                "Generating diff chunks for interdiff ids %s-%s (%s)" %
-                (filediff.id, interfilediff.id,
-                 filediff.source_file),
-                request=request)
+            timer_msg = (
+                f'Generating diff chunks for interdiff ids '
+                f'{filediff.pk}-{interfilediff.pk} ({filediff.source_file})'
+            )
         else:
-            log_timer = log_timed(
-                "Generating diff chunks for filediff id %s (%s)" %
-                (filediff.id, filediff.source_file),
-                request=request)
+            timer_msg = (
+                f'Generating diff chunks for filediff id {filediff.pk} '
+                f'({filediff.source_file})'
+            )
 
-        for chunk in self.generate_chunks(old=old,
-                                          new=new,
-                                          old_encoding_list=old_encoding_list,
-                                          new_encoding_list=new_encoding_list):
-            yield chunk
-
-        log_timer.done()
+        with log_timed(timer_msg,
+                       logger=logger,
+                       request=request):
+            yield from self.generate_chunks(
+                old=old,
+                new=new,
+                old_encoding_list=old_encoding_list,
+                new_encoding_list=new_encoding_list)
 
         if (not interfilediff and
             not self.base_filediff and

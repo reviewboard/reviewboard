@@ -279,9 +279,9 @@ class DraftDiffCommitResource(DiffCommitResource):
                 ),
             }
 
-        try:
-            draft = review_request.draft.get()
-        except ReviewRequestDraft.DoesNotExist:
+        draft = review_request.get_draft(user=request.user)
+
+        if draft is None:
             return DOES_NOT_EXIST, {
                 'reason': 'Review request draft does not exist.',
             }

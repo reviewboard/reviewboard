@@ -87,7 +87,23 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         return (get_review_request_draft_url(review_request, local_site_name),
                 [review_request])
 
-    def check_delete_result(self, user, review_request):
+    def check_delete_result(
+        self,
+        user: User,
+        review_request: ReviewRequest,
+    ) -> None:
+        """Check the results from an HTTP DELETE.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user performing the request.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request whose draft was deleted.
+        """
+        # Make sure we're fetching fresh content.
+        review_request.clear_local_caches()
+
         self.assertIsNone(review_request.get_draft())
 
     #

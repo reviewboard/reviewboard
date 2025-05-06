@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import ClassVar, TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from djblets.siteconfig.models import SiteConfiguration
@@ -16,6 +16,9 @@ from reviewboard.accounts.sso.backends.saml.settings import (
     SAMLNameIDFormat,
     SAMLSignatureAlgorithm)
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from djblets.util.typing import JSONDict
 
 
 VALID_CERT = """-----BEGIN CERTIFICATE-----
@@ -90,6 +93,25 @@ class SAMLLinkUserFormTests(TestCase):
         })
 
         self.assertTrue(form.is_valid())
+
+    def test_provision_disabled(self) -> None:
+        """Testing SAMLLinkUserForm validation in provision mode"""
+        form = SAMLLinkUserForm(data={
+            'username': 'doc',
+            'password': 'nope',
+            'provision': True,
+        })
+
+        settings: JSONDict = {
+            'saml_automatically_provision_users': False,
+        }
+
+        with self.siteconfig_settings(settings):
+            self.assertFalse(form.is_valid())
+            self.assertEqual(
+                form.errors['__all__'],
+                ['A user account for doc does not exist. Your administrator '
+                 'will need to provision an account before you can log in.'])
 
 
 class SAMLSettingsFormTests(TestCase):

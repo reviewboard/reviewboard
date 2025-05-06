@@ -1,3 +1,5 @@
+/// <reference types="babel-plugin-django-gettext"/>
+
 declare const MANUAL_URL: string;
 declare const SITE_ROOT: string;
 declare const STATIC_URLS: { [key: string]: string };

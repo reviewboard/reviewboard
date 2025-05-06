@@ -63,6 +63,18 @@
      */
     moment.tz.setDefault('US/Pacific');
 
+    beforeAll(function() {
+        /*
+         * Style HTML elements as their HTML representations when showing
+         * values.
+         */
+        jasmine.addCustomObjectFormatter(value => {
+            if (value instanceof HTMLElement) {
+                return `\`${value.outerHTML}\``;
+            }
+        });
+    });
+
     beforeEach(function() {
         /*
          * Set the session to be authenticated by default. If tests need
@@ -72,6 +84,7 @@
         RB.UserSession.create({
             authenticated: true,
             commentsOpenAnIssue: true,
+            confirmShipIt: true,
             username: 'testuser',
             userPageURL: '{{SITE_ROOT}}users/test/'
         });

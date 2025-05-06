@@ -49,7 +49,7 @@ suite('rb/admin/views/relatedUserSelectorView', function() {
             expect(view.options.useAvatars).toBe(true);
             expect(view.options.multivalued).toBe(true);
 
-            expect(view.$el.find('.related-object-selected li').length)
+            expect(view.$el.find('.related-object-selected tr').length)
                 .toBe(3);
             expect(view.$el.siblings('#id_people').val()).toBe('');
             /* The input element value should be empty, since the widget will

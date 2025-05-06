@@ -121,6 +121,7 @@ def js_user_session_info(context):
             use_rich_text = profile.should_use_rich_text
             info.update({
                 'commentsOpenAnIssue': profile.open_an_issue,
+                'confirmShipIt': profile.should_confirm_ship_it,
                 'enableDesktopNotifications':
                     profile.should_enable_desktop_notifications,
             })

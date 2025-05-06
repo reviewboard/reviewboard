@@ -2,7 +2,10 @@
  * A page managing reviewable content for a review request.
  */
 import {
+    type DialogView,
+    DialogActionType,
     craft,
+    paint,
     renderInto,
 } from '@beanbag/ink';
 import {
@@ -573,20 +576,112 @@ export class ReviewablePageView<
      *     e (JQuery.ClickEvent, optional):
      *         The event which triggered the action, if available.
      */
-    async shipIt(e?: JQuery.ClickEvent) {
+    shipIt(e?: JQuery.ClickEvent) {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
         }
 
-        if (confirm(_`Are you sure you want to post this review?`)) {
-            await this.model.markShipIt();
+        const session = UserSession.instance;
 
-            const reviewRequest = this.model.get('reviewRequest');
-            RB.navigateTo(reviewRequest.get('reviewURL'));
+        if (session.get('confirmShipIt')) {
+            const onConfirm = async () => {
+                if (doNotAskEl.checked) {
+                    session.set('confirmShipIt', false);
+                    await session.storeSettings(['confirmShipIt']);
+                }
+
+                await this.#postShipItReview();
+            };
+
+            const cid = this.cid;
+            const doNotAskEl = paint<HTMLInputElement>`
+                <input id="confirm-ship-it-do-not-ask-${cid}"
+                       type="checkbox"/>
+            `;
+
+            /*
+             * Work around bad default layout for checkboxes and labels.
+             *
+             * Ideally this would be in CSS, but this is a stopgap until we
+             * have a more formal component for this kind of dialog or for
+             * form controls.
+             */
+            const doNotAskStyle = {
+                'align-items': 'center',
+                'display': 'flex',
+                'gap': '0.5ch',
+                'margin': '2em 0 0 0',
+            };
+
+            const dialogView = craft<DialogView>`
+                <Ink.Dialog id="confirm-ship-it-dialog-${cid}"
+                            title="${_`
+                 Are you sure you want to post this Ship It! review?
+                `}">
+                 <Ink.Dialog.Body>
+                  <p>
+                   ${_`
+                    This review will tell the author that you approve of their
+                    review request.
+                   `}
+                  </p>
+                  <p>
+                   <strong>${_`Tip:`} </strong>
+                   ${_`
+                    You can revoke this Ship It! or publish new reviews
+                    after this is published.
+                   `}
+                  </p>
+                  <label for="confirm-ship-it-do-not-ask-${cid}"
+                         style=${doNotAskStyle}>
+                   ${doNotAskEl}
+                   ${' '}
+                   ${_`Do not ask again`}
+                  </label>
+                 </Ink.Dialog.Body>
+                 <Ink.Dialog.PrimaryActions>
+                  <Ink.DialogAction
+                    id="confirm-ship-it-button-${cid}"
+                    type="primary"
+                    action=${DialogActionType.CALLBACK_AND_CLOSE}
+                    callback=${() => onConfirm()}>
+                   ${_`Post the Review`}
+                  </Ink.DialogAction>
+                  <Ink.DialogAction
+                    id="cancel-ship-it-button-${cid}"
+                    action=${DialogActionType.CLOSE}>
+                   ${_`Cancel`}
+                  </Ink.DialogAction>
+                 </Ink.Dialog.PrimaryActions>
+                </Ink.Dialog>
+            `;
+
+            dialogView.open();
+        } else {
+            this.#postShipItReview();
         }
+    }
 
-        return false;
+    /**
+     * Post a Ship-It! review.
+     *
+     * After posting, this will navigate to the review request page.
+     *
+     * Version Added:
+     *     7.1
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the operation.
+     */
+    async #postShipItReview() {
+        const model = this.model;
+
+        await model.markShipIt();
+
+        const reviewRequest = model.get('reviewRequest');
+        RB.navigateTo(reviewRequest.get('reviewURL'));
     }
 
     /**

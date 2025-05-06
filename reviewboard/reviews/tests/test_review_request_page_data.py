@@ -2178,3 +2178,6 @@ class ReviewRequestPageDataTests(TestCase):
             ]
 
         self.status_updates = status_updates
+
+        # Clear the review request's caches so we'll re-fetch the draft.
+        review_request.clear_local_caches()

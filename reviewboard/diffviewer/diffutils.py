@@ -381,93 +381,93 @@ def patch(
         reviewboard.diffutils.errors.PatchError:
             An error occurred when trying to apply the patch.
     """
-    log_timer = log_timed('Patching file %s' % filename, request=request)
-
     if not diff.strip():
         # Someone uploaded an unchanged file. Return the one we're patching.
         return orig_file
 
-    # Prepare the temporary directory if none is available
-    tempdir = tempfile.mkdtemp(prefix='reviewboard.')
-
-    try:
-        orig_file = convert_line_endings(orig_file)
-        diff = convert_line_endings(diff)
-
-        (fd, oldfile) = tempfile.mkstemp(dir=tempdir)
-        f = os.fdopen(fd, 'w+b')
-        f.write(orig_file)
-        f.close()
-
-        newfile = '%s-new' % oldfile
-
-        process = subprocess.Popen(['patch', '-o', newfile, oldfile],
-                                   stdin=subprocess.PIPE,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   cwd=tempdir)
-
-        with controlled_subprocess('patch', process) as p:
-            stdout, stderr = p.communicate(diff)
-            failure = p.returncode
+    with log_timed(f'Patching file {filename}',
+                   logger=logger,
+                   request=request):
+        # Prepare the temporary directory if none is available
+        tempdir = tempfile.mkdtemp(prefix='reviewboard.')
 
         try:
-            with open(newfile, 'rb') as f:
-                new_file = f.read()
-        except Exception:
-            new_file = None
+            orig_file = convert_line_endings(orig_file)
+            diff = convert_line_endings(diff)
 
-        if failure and workaround_errors:
-            # Let's see if this is a diff error we can work around.
-            if (not orig_file.endswith(b'\n') and
-                not diff.rfind(br'\ No newline at end of file') != -1):
-                # The file doesn't end with a newline, and this isn't
-                # reflected in the diff. See if we can patch if we add a
-                # trailing newline. This is not going to be a completely
-                # accurate representation of the resulting file, but it's
-                # suitable for viewing.
-                try:
-                    return patch(diff=diff,
-                                 orig_file=orig_file + b'\n',
-                                 filename=filename,
-                                 request=request,
-                                 workaround_errors=False)
-                except Exception:
-                    # Ignore this and fall back to the original error.
-                    pass
+            (fd, oldfile) = tempfile.mkstemp(dir=tempdir)
+            f = os.fdopen(fd, 'w+b')
+            f.write(orig_file)
+            f.close()
 
-        if failure:
-            rejects_file = '%s.rej' % newfile
+            newfile = '%s-new' % oldfile
+
+            process = subprocess.Popen(['patch', '-o', newfile, oldfile],
+                                       stdin=subprocess.PIPE,
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE,
+                                       cwd=tempdir)
+
+            with controlled_subprocess('patch', process) as p:
+                stdout, stderr = p.communicate(diff)
+                failure = p.returncode
 
             try:
-                with open(rejects_file, 'rb') as f:
-                    rejects = f.read()
+                with open(newfile, 'rb') as f:
+                    new_file = f.read()
             except Exception:
-                rejects = None
+                new_file = None
 
-            error_output = force_str(stderr.strip() or stdout.strip())
+            if failure and workaround_errors:
+                # Let's see if this is a diff error we can work around.
+                if (not orig_file.endswith(b'\n') and
+                    not diff.rfind(br'\ No newline at end of file') != -1):
+                    # The file doesn't end with a newline, and this isn't
+                    # reflected in the diff. See if we can patch if we add a
+                    # trailing newline. This is not going to be a completely
+                    # accurate representation of the resulting file, but it's
+                    # suitable for viewing.
+                    try:
+                        return patch(diff=diff,
+                                     orig_file=orig_file + b'\n',
+                                     filename=filename,
+                                     request=request,
+                                     workaround_errors=False)
+                    except Exception:
+                        # Ignore this and fall back to the original error.
+                        pass
 
-            # Munge the output to show the filename instead of
-            # randomly-generated tempdir locations.
-            base_filename = os.path.basename(filename)
+            if failure:
+                rejects_file = '%s.rej' % newfile
 
-            error_output = (
-                error_output
-                .replace(rejects_file, '%s.rej' % base_filename)
-                .replace(oldfile, base_filename)
-            )
+                try:
+                    with open(rejects_file, 'rb') as f:
+                        rejects = f.read()
+                except Exception:
+                    rejects = None
 
-            raise PatchError(filename=filename,
-                             error_output=error_output,
-                             orig_file=orig_file,
-                             new_file=new_file,
-                             diff=diff,
-                             rejects=rejects)
+                error_output = force_str(stderr.strip() or stdout.strip())
 
-        return new_file
-    finally:
-        shutil.rmtree(tempdir)
-        log_timer.done()
+                # Munge the output to show the filename instead of
+                # randomly-generated tempdir locations.
+                base_filename = os.path.basename(filename)
+
+                error_output = (
+                    error_output
+                    .replace(rejects_file, '%s.rej' % base_filename)
+                    .replace(oldfile, base_filename)
+                )
+
+                raise PatchError(filename=filename,
+                                 error_output=error_output,
+                                 orig_file=orig_file,
+                                 new_file=new_file,
+                                 diff=diff,
+                                 rejects=rejects)
+
+            return new_file
+        finally:
+            shutil.rmtree(tempdir)
 
 
 def get_original_file_from_repo(filediff, request=None):
@@ -1225,19 +1225,21 @@ def get_diff_files(
     per_commit_filediffs = None
     requested_base_filediff = base_filediff
 
+    timer_msg: str
+
     if filediff:
         filediffs = [filediff]
 
         if interdiffset:
-            log_timer = log_timed(
+            timer_msg = (
                 f'Generating diff file info for interdiffset ids '
-                f'{diffset.pk}-{interdiffset.pk}, filediff {filediff.pk}',
-                request=request)
+                f'{diffset.pk}-{interdiffset.pk}, filediff {filediff.pk}'
+            )
         else:
-            log_timer = log_timed(
+            timer_msg = (
                 f'Generating diff file info for diffset id {diffset.pk}, '
-                f'filediff {filediff.pk}',
-                request=request)
+                f'filediff {filediff.pk}'
+            )
 
             if (diffset.commit_count > 0 and
                 ((base_commit and filediff.commit_id <= base_commit.pk) or
@@ -1275,209 +1277,229 @@ def get_diff_files(
             filediffs = diffset.cumulative_files
 
         if interdiffset:
-            log_timer = log_timed("Generating diff file info for "
-                                  "interdiffset ids %s-%s" %
-                                  (diffset.id, interdiffset.id),
-                                  request=request)
+            timer_msg = (
+                f'Generating diff file info for interdiffset ids '
+                f'{diffset.pk}-{interdiffset.pk}'
+            )
         else:
-            log_timer = log_timed("Generating diff file info for "
-                                  "diffset id %s" % diffset.id,
-                                  request=request)
+            timer_msg = (
+                f'Generating diff file info for diffset id {diffset.pk}'
+            )
 
-    # Filediffs that were created with leading slashes stripped won't match
-    # those created with them present, so we need to compare them without in
-    # order for the filenames to match up properly.
-    tool = diffset.repository.get_scmtool()
-
-    if interdiffset:
-        if not filediff:
-            if interdiffset.commit_count > 0:
-                # Currently, only interdiffing between cumulative diffs is
-                # supported.
-                interfilediffs = interdiffset.cumulative_files
-            else:
-                interfilediffs = list(interdiffset.files.all())
-
-        elif interfilediff:
-            interfilediffs = [interfilediff]
-        else:
-            interfilediffs = []
-
-        filediff_parts = []
-        matched_filediffs = get_matched_interdiff_files(
-            tool=tool,
-            filediffs=filediffs,
-            interfilediffs=interfilediffs)
-
-        for temp_filediff, temp_interfilediff in matched_filediffs:
-            if temp_filediff:
-                filediff_parts.append((temp_filediff, temp_interfilediff,
-                                       True))
-            elif temp_interfilediff:
-                filediff_parts.append((temp_interfilediff, None, False))
-            else:
-                logger.error(
-                    'get_matched_interdiff_files returned an entry with an '
-                    'empty filediff and interfilediff for diffset=%r, '
-                    'interdiffset=%r, filediffs=%r, interfilediffs=%r',
-                    diffset, interdiffset, filediffs, interfilediffs)
-
-                raise ValueError(
-                    'Internal error: get_matched_interdiff_files returned an '
-                    'entry with an empty filediff and interfilediff! Please '
-                    'report this along with information from the server '
-                    'error log.')
-    else:
-        # We're not working with interdiffs. We can easily create the
-        # filediff_parts directly.
-        filediff_parts = [
-            (temp_filediff, None, False)
-            for temp_filediff in filediffs
-        ]
-
-    # Now that we have all the bits and pieces we care about for the filediffs,
-    # we can start building information about each entry on the diff viewer.
-    files: list[SerializedDiffFile] = []
-
-    for parts in filediff_parts:
-        filediff, interfilediff, force_interdiff = parts
-
-        newfile = filediff.is_new
+    with log_timed(timer_msg,
+                   logger=logger,
+                   request=request) as log_timer:
+        # Filediffs that were created with leading slashes stripped won't match
+        # those created with them present, so we need to compare them without
+        # in order for the filenames to match up properly.
+        tool = diffset.repository.get_scmtool()
 
         if interdiffset:
-            # First, find out if we want to even process this one.
-            # If the diffs are identical, or the patched files are identical,
-            # or if the files were deleted in both cases, then we can be
-            # absolutely sure that there's nothing interesting to show to
-            # the user.
-            if get_filediffs_match(filediff, interfilediff):
-                continue
-
-            orig_revision = _('Diff Revision %s') % diffset.revision
-        else:
-            orig_revision = get_revision_str(filediff.source_revision)
-
-        if interfilediff:
-            assert interdiffset is not None
-            modified_revision = _('Diff Revision %s') % interdiffset.revision
-        elif force_interdiff and interdiffset:
-            modified_revision = (_('Diff Revision %s - File Reverted') %
-                                 interdiffset.revision)
-        elif newfile:
-            modified_revision = _('New File')
-        else:
-            modified_revision = _('New Change')
-
-        orig_extra_data = filediff.extra_data
-
-        if interfilediff:
-            raw_orig_filename = filediff.dest_file
-            raw_modified_filename = interfilediff.dest_file
-            modified_extra_data = interfilediff.extra_data
-        else:
-            raw_orig_filename = filediff.source_file
-            raw_modified_filename = filediff.dest_file
-            modified_extra_data = filediff.extra_data
-
-        orig_filename = tool.normalize_path_for_display(
-            raw_orig_filename,
-            extra_data=orig_extra_data)
-        modified_filename = tool.normalize_path_for_display(
-            raw_modified_filename,
-            extra_data=modified_extra_data)
-
-        if filename_patterns:
-            if modified_filename == orig_filename:
-                filenames = [modified_filename]
-            else:
-                filenames = [modified_filename, orig_filename]
-
-            if not get_filenames_match_patterns(patterns=filename_patterns,
-                                                filenames=filenames):
-                continue
-
-        base_filediff = None
-
-        if filediff.commit_id:
-            # If we pre-computed this above (or before) and we have all
-            # FileDiffs, this will cost no additional queries.
-            #
-            # Otherwise this will cost up to
-            # ``1 + len(diffset.per_commit_files.count())`` queries.
-            ancestors = filediff.get_ancestors(minimal=False,
-                                               filediffs=per_commit_filediffs)
-
-            if ancestors:
-                if requested_base_filediff:
-                    assert len(filediffs) == 1
-
-                    if requested_base_filediff in ancestors:
-                        base_filediff = requested_base_filediff
-                    else:
-                        raise ValueError(
-                            f'Invalid base_filediff (ID '
-                            f'{requested_base_filediff.pk}) for filediff (ID '
-                            f'{filediff.pk})')
-                elif base_commit:
-                    base_filediff = filediff.get_base_filediff(
-                        base_commit=base_commit,
-                        ancestors=ancestors)
+            if not filediff:
+                if interdiffset.commit_count > 0:
+                    # Currently, only interdiffing between cumulative diffs is
+                    # supported.
+                    interfilediffs = interdiffset.cumulative_files
                 else:
-                    # If the file was newly-added in the ancestors, we need to
-                    # propagate that state forward.
-                    newfile = ancestors[0].is_new
-                    orig_revision = get_revision_str(PRE_CREATION)
+                    interfilediffs = list(interdiffset.files.all())
 
-        extra: DiffFileExtraContext = {}
+            elif interfilediff:
+                interfilediffs = [interfilediff]
+            else:
+                interfilediffs = []
 
-        if diff_settings.tab_size:
-            extra['tab_size'] = diff_settings.tab_size
+            filediff_parts = []
+            matched_filediffs = get_matched_interdiff_files(
+                tool=tool,
+                filediffs=filediffs,
+                interfilediffs=interfilediffs)
 
-        f: SerializedDiffFile = {
-            'base_filediff': base_filediff,
-            'binary': filediff.binary,
-            'chunks_loaded': False,
-            'copied': filediff.copied,
-            'deleted': filediff.deleted,
-            'extra': extra,
-            'filediff': filediff,
-            'force_interdiff': force_interdiff,
-            'index': len(files),
-            'interfilediff': interfilediff,
-            'is_new_file': (
-                newfile and
-                base_filediff is None and
-                interfilediff is None and
-                not filediff.parent_diff
-            ),
-            'is_symlink': filediff.extra_data.get('is_symlink', False),
-            'modified_filename': modified_filename or orig_filename,
-            'modified_revision': modified_revision,
-            'moved': filediff.moved,
-            'moved_or_copied': filediff.moved or filediff.copied,
-            'newfile': newfile,
-            'orig_filename': orig_filename,
-            'orig_revision': orig_revision,
-            'public': (diffset.history is not None and
-                       (interdiffset is None or
-                        interdiffset.history is not None)),
-        }
+            for temp_filediff, temp_interfilediff in matched_filediffs:
+                if temp_filediff:
+                    filediff_parts.append((temp_filediff, temp_interfilediff,
+                                           True))
+                elif temp_interfilediff:
+                    filediff_parts.append((temp_interfilediff, None, False))
+                else:
+                    logger.error(
+                        '[%s] get_matched_interdiff_files returned an entry '
+                        'with an empty filediff and interfilediff for '
+                        'diffset=%r, interdiffset=%r, filediffs=%r, '
+                        'interfilediffs=%r',
+                        log_timer.trace_id, diffset, interdiffset, filediffs,
+                        interfilediffs,
+                        extra={'request': request})
 
-        # When displaying an interdiff, we do not want to display the
-        # revision of the base filediff. Instead, we will display the diff
-        # revision as computed above.
-        if base_filediff and not interdiffset:
-            f['orig_revision'] = \
-                get_revision_str(base_filediff.source_revision)
-            f['orig_filename'] = tool.normalize_path_for_display(
-                base_filediff.source_file)
+                    raise ValueError(
+                        _('Internal error: get_matched_interdiff_files '
+                          'returned an entry with an empty filediff and '
+                          'interfilediff! Administrators can find details in '
+                          'the Review Board server logs (error ID %s)')
+                        % log_timer.trace_id
+                    )
+        else:
+            # We're not working with interdiffs. We can easily create the
+            # filediff_parts directly.
+            filediff_parts = [
+                (temp_filediff, None, False)
+                for temp_filediff in filediffs
+            ]
 
-        if force_interdiff and interdiffset:
-            f['force_interdiff_revision'] = interdiffset.revision
+        # Now that we have all the bits and pieces we care about for the
+        # filediffs, we can start building information about each entry on the
+        # diff viewer.
+        files: list[SerializedDiffFile] = []
 
-        files.append(f)
+        for parts in filediff_parts:
+            filediff, interfilediff, force_interdiff = parts
+            assert filediff is not None
 
-    log_timer.done()
+            newfile = filediff.is_new
+
+            if interdiffset:
+                # First, find out if we want to even process this one.  If the
+                # diffs are identical, or the patched files are identical, or
+                # if the files were deleted in both cases, then we can be
+                # absolutely sure that there's nothing interesting to show to
+                # the user.
+                if get_filediffs_match(filediff, interfilediff):
+                    continue
+
+                orig_revision = _('Diff Revision %s') % diffset.revision
+            else:
+                orig_revision = get_revision_str(filediff.source_revision)
+
+            if interfilediff:
+                assert interdiffset is not None
+                modified_revision = (
+                    _('Diff Revision %s')
+                    % interdiffset.revision
+                )
+            elif force_interdiff and interdiffset:
+                modified_revision = (_('Diff Revision %s - File Reverted') %
+                                     interdiffset.revision)
+            elif newfile:
+                modified_revision = _('New File')
+            else:
+                modified_revision = _('New Change')
+
+            orig_extra_data = filediff.extra_data
+
+            if interfilediff:
+                raw_orig_filename = filediff.dest_file
+                raw_modified_filename = interfilediff.dest_file
+                modified_extra_data = interfilediff.extra_data
+            else:
+                raw_orig_filename = filediff.source_file
+                raw_modified_filename = filediff.dest_file
+                modified_extra_data = filediff.extra_data
+
+            orig_filename = tool.normalize_path_for_display(
+                raw_orig_filename,
+                extra_data=orig_extra_data)
+            modified_filename = tool.normalize_path_for_display(
+                raw_modified_filename,
+                extra_data=modified_extra_data)
+
+            if filename_patterns:
+                if modified_filename == orig_filename:
+                    filenames = [modified_filename]
+                else:
+                    filenames = [modified_filename, orig_filename]
+
+                if not get_filenames_match_patterns(patterns=filename_patterns,
+                                                    filenames=filenames):
+                    continue
+
+            base_filediff = None
+
+            if filediff.commit_id:
+                # If we pre-computed this above (or before) and we have all
+                # FileDiffs, this will cost no additional queries.
+                #
+                # Otherwise this will cost up to
+                # ``1 + len(diffset.per_commit_files.count())`` queries.
+                ancestors = filediff.get_ancestors(
+                    minimal=False,
+                    filediffs=per_commit_filediffs)
+
+                if ancestors:
+                    if requested_base_filediff:
+                        assert len(filediffs) == 1
+
+                        if requested_base_filediff in ancestors:
+                            base_filediff = requested_base_filediff
+                        else:
+                            raise ValueError(
+                                _('Internal error: Invalid base_filediff '
+                                  '(ID %(base_filediff_id)s) for filediff '
+                                  '(ID %(filediff_id)s). Administrators can '
+                                  'find details in the Review Board server '
+                                  'logs (error ID %(error_id)s).')
+                                % {
+                                    'base_filediff_id':
+                                        requested_base_filediff.pk,
+                                    'error_id': log_timer.trace_id,
+                                    'filediff_id': filediff.pk,
+                                })
+                    elif base_commit:
+                        base_filediff = filediff.get_base_filediff(
+                            base_commit=base_commit,
+                            ancestors=ancestors)
+                    else:
+                        # If the file was newly-added in the ancestors, we
+                        # need to propagate that state forward.
+                        newfile = ancestors[0].is_new
+                        orig_revision = get_revision_str(PRE_CREATION)
+
+            extra: DiffFileExtraContext = {}
+
+            if diff_settings.tab_size:
+                extra['tab_size'] = diff_settings.tab_size
+
+            f: SerializedDiffFile = {
+                'base_filediff': base_filediff,
+                'binary': filediff.binary,
+                'chunks_loaded': False,
+                'copied': filediff.copied,
+                'deleted': filediff.deleted,
+                'extra': extra,
+                'filediff': filediff,
+                'force_interdiff': force_interdiff,
+                'index': len(files),
+                'interfilediff': interfilediff,
+                'is_new_file': (
+                    newfile and
+                    base_filediff is None and
+                    interfilediff is None and
+                    not filediff.parent_diff
+                ),
+                'is_symlink': filediff.extra_data.get('is_symlink', False),
+                'modified_filename': modified_filename or orig_filename,
+                'modified_revision': modified_revision,
+                'moved': filediff.moved,
+                'moved_or_copied': filediff.moved or filediff.copied,
+                'newfile': newfile,
+                'orig_filename': orig_filename,
+                'orig_revision': orig_revision,
+                'public': (diffset.history is not None and
+                           (interdiffset is None or
+                            interdiffset.history is not None)),
+            }
+
+            # When displaying an interdiff, we do not want to display the
+            # revision of the base filediff. Instead, we will display the diff
+            # revision as computed above.
+            if base_filediff and not interdiffset:
+                f['orig_revision'] = \
+                    get_revision_str(base_filediff.source_revision)
+                f['orig_filename'] = tool.normalize_path_for_display(
+                    base_filediff.source_file)
+
+            if force_interdiff and interdiffset:
+                f['force_interdiff_revision'] = interdiffset.revision
+
+            files.append(f)
 
     if len(files) == 1:
         return files
