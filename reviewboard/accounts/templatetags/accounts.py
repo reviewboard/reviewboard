@@ -124,6 +124,7 @@ def js_user_session_info(context):
                 'confirmShipIt': profile.should_confirm_ship_it,
                 'enableDesktopNotifications':
                     profile.should_enable_desktop_notifications,
+                'quickAccessActions': profile.quick_access_actions,
             })
         else:
             cur_timezone = timezone.get_current_timezone()

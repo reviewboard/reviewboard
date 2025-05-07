@@ -12,6 +12,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from reviewboard.actions import (AttachmentPoint,
                                  BaseAction,
                                  BaseMenuAction,
+                                 QuickAccessActionMixin,
                                  actions_registry)
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
@@ -320,7 +321,7 @@ class CreateReviewAction(BaseAction):
     """
 
     action_id = 'create-review'
-    parent_id = 'review-menu'
+    parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Create a new review')
@@ -369,7 +370,7 @@ class EditReviewAction(BaseAction):
     """
 
     action_id = 'edit-review'
-    parent_id = 'review-menu'
+    parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Edit your review')
@@ -415,7 +416,7 @@ class AddGeneralCommentAction(BaseAction):
     """
 
     action_id = 'add-general-comment'
-    parent_id = 'review-menu'
+    parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Add a general comment')
@@ -461,7 +462,7 @@ class ShipItAction(BaseAction):
     """
 
     action_id = 'ship-it'
-    parent_id = 'review-menu'
+    parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Ship it!')
@@ -508,8 +509,70 @@ class ShipItAction(BaseAction):
         )
 
 
+class QuickAccessShipItAction(QuickAccessActionMixin, ShipItAction):
+    """A Quick Access button for the "Ship It" action.
+
+    When enabled, this action provides quick access to posting a Ship It
+    on a review request from the Quick Access hotbar.
+
+    Version Added:
+        7.1
+    """
+
+    action_id = 'quickaccess-ship-it'
+    label = _('Ship It!')
+
+
+class QuickAccessCreateReviewAction(QuickAccessActionMixin,
+                                    CreateReviewAction):
+    """A Quick Access button for the "Create Review" action.
+
+    When enabled, this action provides quick access to creating a new, empty
+    review request from the Quick Access hotbar.
+
+    Version Added:
+        7.1
+    """
+
+    action_id = 'quickaccess-create-review'
+    label = _('Create Review')
+
+
+class QuickAccessEditReviewAction(QuickAccessActionMixin, EditReviewAction):
+    """A Quick Access button for the "Edit Review" action.
+
+    When enabled, this action provides quick access to editing an existing
+    review from the Quick Access hotbar.
+
+    Version Added:
+        7.1
+    """
+
+    action_id = 'quickaccess-edit-review'
+    label = _('Edit Review')
+
+
+class QuickAccessAddGeneralCommentAction(QuickAccessActionMixin,
+                                         AddGeneralCommentAction):
+    """A Quick Access button for the "Add General Comment" action.
+
+    When enabled, this action provides quick access to adding a new General
+    Comment from the Quick Access hotbar.
+
+    Version Added:
+        7.1
+    """
+
+    action_id = 'quickaccess-add-general-comment'
+    label = _('Add General Comment')
+
+
 class LegacyAddGeneralCommentAction(BaseAction):
     """The action for adding a general comment.
+
+    Deprecated:
+        7.1:
+        This will be removed in Review Board 9.
 
     Version Added:
         6.0
@@ -554,6 +617,10 @@ class LegacyEditReviewAction(BaseAction):
     This exists within the review request actions area, and will be supplanted
     by the new action in the Review menu in the unified banner.
 
+    Deprecated:
+        7.1:
+        This will be removed in Review Board 9.
+
     Version Added:
         6.0
     """
@@ -595,6 +662,10 @@ class LegacyShipItAction(BaseAction):
 
     This exists within the review request actions area, and will be supplanted
     by the new action in the Review menu in the unified banner.
+
+    Deprecated:
+        7.1:
+        This will be removed in Review Board 9.
 
     Version Added:
         6.0

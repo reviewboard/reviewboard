@@ -327,6 +327,37 @@ class Profile(models.Model):
         self.settings['enable_desktop_notifications'] = enabled
 
     @property
+    def quick_access_actions(self) -> Sequence[str]:
+        """The IDs of the user's enabled Quick Access actions.
+
+        Version Added:
+            7.1
+
+        Type:
+            list of str
+        """
+        if not self.settings:
+            return []
+
+        return self.settings.get('quick_access_actions', [])
+
+    @quick_access_actions.setter
+    def quick_access_actions(
+        self,
+        action_ids: Sequence[str],
+    ) -> None:
+        """Set the IDs of the user's enabled Quick Access actions.
+
+        Version Added:
+            7.1
+
+        Args:
+            action_ids (list of str):
+                The list of enabled Quick Access action IDs.
+        """
+        self.settings['quick_access_actions'] = list(action_ids)
+
+    @property
     def ui_theme_id(self) -> str:
         """Return the user's preferred UI theme.
 

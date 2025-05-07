@@ -15,6 +15,10 @@ export class ActionView<
     TElement extends HTMLDivElement = HTMLDivElement,
     TExtraViewOptions extends object = object
 > extends BaseView<TModel, TElement, TExtraViewOptions> {
+    static modelEvents = {
+        'change:isQuickAccessEnabled': '_onQuickAccessEnabledChanged',
+    };
+
     /**********************
      * Instance variables *
      **********************/
@@ -89,6 +93,39 @@ export class ActionView<
         visibilityEl.hidden = true;
 
         return this;
+    }
+
+    /**
+     * Handle the initial render of the view.
+     *
+     * If this is a Quick Access action, the view will be given CSS classes
+     * to manage its visibility state separate from the action's standard
+     * visibility state.
+     *
+     * Version Added:
+     *     7.1
+     */
+    protected onInitialRender() {
+        if (this.model.get('isQuickAccess')) {
+            this.#getVisibilityEl().classList.add('-is-quick-access');
+
+            this._onQuickAccessEnabledChanged();
+        }
+    }
+
+    /**
+     * Handle changes to the Quick Access enabled state.
+     *
+     * This will toggle a CSS class on or off to enable or disable its
+     * visibility, separate from the action's standard visibility state.
+     *
+     * Version Added:
+     *     7.1
+     */
+    private _onQuickAccessEnabledChanged() {
+        this.#getVisibilityEl().classList.toggle(
+            '-quick-access-enabled',
+            this.model.get('isQuickAccessEnabled'));
     }
 
     /**

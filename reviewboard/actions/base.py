@@ -49,6 +49,12 @@ class AttachmentPoint:
     #: Attachment for actions in the unified draft banner.
     UNIFIED_BANNER = 'unified-banner'
 
+    #: Attachment for actions in the quick access area.
+    #:
+    #: Version Added:
+    #:     7.1
+    QUICK_ACCESS = 'quick-access'
+
 
 class BaseAction:
     """Base class for actions.
@@ -573,5 +579,75 @@ class BaseMenuAction(BaseAction):
 
         data = super().get_js_model_data(context=context)
         data['children'] = children
+
+        return data
+
+
+if TYPE_CHECKING:
+    BaseQuickAccessActionMixin = BaseAction
+else:
+    BaseQuickAccessActionMixin = object
+
+
+class QuickAccessActionMixin(BaseQuickAccessActionMixin):
+    """Mixin for creating a Quick Access button.
+
+    Quick Access buttons are user-customizable actions placed in the Unified
+    Banner's Quick Access hotbar location. They can be registered and made
+    available to users who want them, working just like any standard action.
+
+    This mixin can be used to create brand-new Quick Access actions, and
+    can also be mixed in with an existing action to create a new Quick Access
+    version of it.
+
+    Quick Access actions are typically displayed as buttons. They must use
+    the Quick Access attachment point and may not have a parent ID.
+    """
+
+    parent_id: (str | None) = None
+    template_name = 'actions/button_action.html'
+    attachment = AttachmentPoint.QUICK_ACCESS
+
+    def get_js_model_data(
+        self,
+        *,
+        context: Context,
+    ) -> SerializableJSONDict:
+        """Return data to be passed to the JavaScript model.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            dict:
+            A dictionary of attributes to pass to the model instance.
+        """
+        request = context['request']
+
+        action_ids: set[str]
+
+        # Fetch the list of enabled Quick Access action IDs once and convert
+        # to a set for fast lookup across actions.
+        try:
+            action_ids = request._rb_quick_access_action_ids
+        except AttributeError:
+            try:
+                action_ids = set(
+                    request.user.get_profile()
+                    .quick_access_actions
+                )
+            except Exception:
+                # If anything goes wrong with fetching the profile or accessing
+                # a setting, just ignore the actions entirely.
+                action_ids = set()
+
+            request._rb_quick_access_action_ids = action_ids
+
+        data = super().get_js_model_data(context=context)
+        data.update({
+            'isQuickAccess': True,
+            'isQuickAccessEnabled': self.action_id in action_ids,
+        })
 
         return data

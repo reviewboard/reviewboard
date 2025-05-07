@@ -1,0 +1,58 @@
+/**
+ * A list of registered actions that can be taken in a UI.
+ *
+ * TODO: This needs to be fleshed out. Currently, this component is
+ * specialized across many different stylesheets, tied to parent containers.
+ *
+ * Version Added:
+ *     7.1
+ *
+ * Structure:
+ *     <menu class="rb-c-actions"
+ *           role="menu">
+ *      <li class="rb-c-actions__action ..."...</li>  [0+]
+ *     </menu>
+ */
+.rb-c-actions {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  /**
+   * An action available in the UI.
+   *
+   * Actions can take many forms, and perform an action managed by a
+   * JavaScript view. Actions may be extensible, added via JavaScript or
+   * a Python extension.
+   *
+   * Actions may also be registered as Quick Access actions, which are only
+   * shown if a user has added them to their Quick Access hotbar.
+   *
+   * Version Added:
+   *     7.1
+   *
+   * Modifiers:
+   *     -is-quick-access:
+   *         Whether this is a Quick Access action.
+   *
+   *     -quick-access-enabled
+   *         Whether this Quick Access action is enabled for use.
+   *
+   * Structure:
+   *     <li class="rb-c-actions__action
+   *                [-is-quick-access]
+   *                [-quick-access-enabled]">
+   *          role="<presentation|menuitem>"
+   *          [hidden]
+   *          [display="..."]>
+   *      ...
+   *     </li>
+   */
+  &__action {
+    &.-is-quick-access:not(.-quick-access-enabled) {
+      display: none !important;
+    }
+  }
+}
