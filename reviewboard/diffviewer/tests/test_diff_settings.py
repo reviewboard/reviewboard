@@ -14,12 +14,13 @@ from reviewboard.testing import TestCase
 if TYPE_CHECKING:
     from djblets.util.typing import JSONDict
 
+
 class DiffSettingsTests(TestCase):
     """Unit tests for reviewboard.diffviewer.settings.DiffSettings."""
 
-    def test_create(self):
+    def test_create(self) -> None:
         """Testing DiffSettings.create"""
-        siteconfig_settings = {
+        siteconfig_settings: JSONDict = {
             'code_safety_checkers': {
                 'trojan_code': {
                     'enable_confusables': True,
@@ -56,11 +57,11 @@ class DiffSettingsTests(TestCase):
         self.assertEqual(diff_settings.syntax_highlighting_threshold,
                          10_000)
 
-    def test_create_with_siteconfig_syntax_highlighting_true(self):
+    def test_create_with_siteconfig_syntax_highlighting_true(self) -> None:
         """Testing DiffSettings.create with
         siteconfig.diffviewer_syntax_highlighting=True
         """
-        siteconfig_settings = {
+        siteconfig_settings: JSONDict = {
             'diffviewer_syntax_highlighting': True,
         }
 
@@ -69,11 +70,11 @@ class DiffSettingsTests(TestCase):
 
         self.assertTrue(diff_settings.syntax_highlighting)
 
-    def test_create_with_siteconfig_syntax_highlighting_false(self):
+    def test_create_with_siteconfig_syntax_highlighting_false(self) -> None:
         """Testing DiffSettings.create with
         siteconfig.diffviewer_syntax_highlighting=False
         """
-        siteconfig_settings = {
+        siteconfig_settings: JSONDict = {
             'diffviewer_syntax_highlighting': False
         }
 
@@ -82,16 +83,18 @@ class DiffSettingsTests(TestCase):
 
         self.assertFalse(diff_settings.syntax_highlighting)
 
-    def test_create_with_siteconfig_syntax_highlighting_true_user_true(self):
+    def test_create_with_siteconfig_syntax_highlighting_true_user_true(
+        self,
+    ) -> None:
         """Testing DiffSettings.create with
         siteconfig.diffviewer_syntax_highlighting=True and
         Profile.syntax_highlighting=True
         """
         user = self.create_user()
-        profile = user.get_profile()
+        profile = user.get_profile()  # type: ignore
         profile.syntax_highlighting = True
 
-        siteconfig_settings = {
+        siteconfig_settings: JSONDict = {
             'diffviewer_syntax_highlighting': True,
         }
 
@@ -100,16 +103,18 @@ class DiffSettingsTests(TestCase):
 
         self.assertTrue(diff_settings.syntax_highlighting)
 
-    def test_create_with_siteconfig_syntax_highlighting_true_user_false(self):
+    def test_create_with_siteconfig_syntax_highlighting_true_user_false(
+        self,
+    ) -> None:
         """Testing DiffSettings.create with
         siteconfig.diffviewer_syntax_highlighting=True and
         Profile.syntax_highlighting=False
         """
         user = self.create_user()
-        profile = user.get_profile()
+        profile = user.get_profile()  # type: ignore
         profile.syntax_highlighting = False
 
-        siteconfig_settings = {
+        siteconfig_settings: JSONDict = {
             'diffviewer_syntax_highlighting': True,
         }
 

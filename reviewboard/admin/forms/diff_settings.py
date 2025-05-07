@@ -57,7 +57,6 @@ class DiffSettingsForm(SiteSettingsForm):
         required=False,
         widget=forms.TextInput(attrs={'size': '2'}))
 
-
     diffviewer_show_trailing_whitespace = forms.BooleanField(
         label=_('Show trailing whitespace'),
         help_text=_('Show excess trailing whitespace as red blocks. This '
@@ -150,12 +149,12 @@ class DiffSettingsForm(SiteSettingsForm):
         required=False,
         widget=forms.widgets.CheckboxSelectMultiple())
 
-    def load(self):
+    def load(self) -> None:
         """Load settings from the form.
 
         This will populate initial fields based on the site configuration.
         """
-        super(DiffSettingsForm, self).load()
+        super().load()
 
         siteconfig = self.siteconfig
 
@@ -165,12 +164,10 @@ class DiffSettingsForm(SiteSettingsForm):
         # any and all registered code safety checkers, but that will require
         # additional support in the checkers.
         code_safety_config = cast(
-            Dict[str, Dict],
+            Dict[str, Dict[str, Any]],
             siteconfig.get('code_safety_checkers'))
-        trojan_source_config = cast(
-            Dict[str, Any],
-            code_safety_config.get(TrojanSourceCodeSafetyChecker.checker_id,
-                                   {}))
+        trojan_source_config = code_safety_config.get(
+            TrojanSourceCodeSafetyChecker.checker_id, {})
 
         if trojan_source_config:
             for key in ('check_confusables',
@@ -184,7 +181,7 @@ class DiffSettingsForm(SiteSettingsForm):
             cast(List[str],
                  siteconfig.get('diffviewer_include_space_patterns')))
 
-    def save(self):
+    def save(self) -> None:
         """Save the form.
 
         This will write the new configuration to the database.
@@ -207,9 +204,11 @@ class DiffSettingsForm(SiteSettingsForm):
             'diffviewer_include_space_patterns',
             re.split(r',\s*', self.cleaned_data['include_space_patterns']))
 
-        super(DiffSettingsForm, self).save()
+        super().save()
 
     class Meta:
+        """Metadata for the form."""
+
         title = _('Diff Viewer Settings')
 
         save_blacklist = (

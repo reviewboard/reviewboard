@@ -49,7 +49,7 @@ class DiffSettings:
     #:
     #: Type:
     #:     dict
-    code_safety_configs: Dict[str, Dict[str, Any]]
+    code_safety_configs: dict[str, dict[str, Any]]
 
     #: The number of lines of context to show around modifications in a chunk.
     #:
@@ -61,7 +61,7 @@ class DiffSettings:
     #:
     #: Type:
     #:     dict
-    custom_pygments_lexers: Dict[str, str]
+    custom_pygments_lexers: dict[str, str]
 
     #: A list of file globs for which legacy whitespace rules should be used.
     #:
@@ -73,7 +73,7 @@ class DiffSettings:
     #:
     #: Type:
     #:     list of str
-    include_space_patterns: List[str]
+    include_space_patterns: list[str]
 
     #: The number of files to include in each page of a diff.
     #:
@@ -116,10 +116,10 @@ class DiffSettings:
     def create(
         cls,
         *,
-        user: Optional[User] = None,
-        local_site: Optional[LocalSite] = None,
-        request: Optional[HttpRequest] = None,
-        syntax_highlighting: Optional[bool] = None,
+        user: (User | None) = None,
+        local_site: (LocalSite | None) = None,
+        request: (HttpRequest | None) = None,
+        syntax_highlighting: (bool | None) = None,
     ) -> DiffSettings:
         """Create diff settings based on the provided arguments.
 
@@ -174,25 +174,24 @@ class DiffSettings:
                 # The server enables syntax highlighting. See if the user has
                 # enabled or disabled it.
                 try:
-                    # Satisfy the type checker.
-                    assert hasattr(user, 'get_profile')
-
-                    syntax_highlighting = \
-                        user.get_profile().syntax_highlighting
+                    profile = user.get_profile()  # type: ignore
+                    syntax_highlighting = profile.syntax_highlighting
                 except ObjectDoesNotExist:
                     pass
 
             assert syntax_highlighting is not None
 
-        tab_size = cast(Optional[int],
-                        siteconfig.get('diffviewer_default_tab_size'))
+        tab_size = cast(
+            Optional[int],
+            siteconfig.get('diffviewer_default_tab_size'))
 
+        # If the tab size is zero or unset, set to default.
         if not tab_size:
             tab_size = cls.DEFAULT_TAB_SIZE
 
         return cls(
             code_safety_configs=cast(
-                Dict,
+                Dict[str, Dict[str, Any]],
                 siteconfig.get('code_safety_checkers')
             ),
             context_num_lines=cast(
