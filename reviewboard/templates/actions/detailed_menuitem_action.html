@@ -1,8 +1,9 @@
-{% spaceless %}
-<a id="{{action.get_dom_element_id}}"
+{% extends "actions/action_base.html" %}
+
+{% block action_content %}
+<a {{action_attrs}}
    href="{{url}}"
-   role="menuitem"
-   {% if not visible or has_parent %} style="display: none;"{% endif %}>
+   role="menuitem">
  <h4>
   <span class="{{action.icon_class}}"></span>
   {{label}}
@@ -13,4 +14,4 @@
  </p>
 {%  endfor %}
 </a>
-{% endspaceless %}
+{% endblock action_content %}

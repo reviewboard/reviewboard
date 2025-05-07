@@ -6,6 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
+import logging
 from typing import Any, List, Mapping, Optional, TYPE_CHECKING, cast
 
 from django.http import HttpRequest
@@ -16,8 +17,10 @@ from django.utils.safestring import SafeText, mark_safe
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
-    # This is available only in django-stubs.
-    from django.utils.functional import _StrOrPromise
+    from djblets.util.typing import SerializableJSONDict, StrOrPromise
+
+
+logger = logging.getLogger(__name__)
 
 
 class AttachmentPoint:
@@ -108,7 +111,7 @@ class BaseAction:
     #:
     #: Type:
     #:     str
-    label: Optional[_StrOrPromise] = None
+    label: (StrOrPromise | None) = None
 
     #: The ID of the parent menu action, if available.
     #:
@@ -243,7 +246,7 @@ class BaseAction:
         self,
         *,
         context: Context,
-    ) -> dict:
+    ) -> SerializableJSONDict:
         """Return data to be passed to the JavaScript model.
 
         Args:
@@ -260,7 +263,7 @@ class BaseAction:
         url = self.get_url(context=context)
         visible = self.get_visible(context=context)
 
-        data: dict = {
+        data: SerializableJSONDict = {
             'actionId': self.action_id,
             'visible': visible,
         }
@@ -303,7 +306,7 @@ class BaseAction:
         self,
         *,
         context: Context,
-    ) -> _StrOrPromise:
+    ) -> StrOrPromise:
         """Return the label for the action.
 
         Args:
@@ -418,10 +421,13 @@ class BaseAction:
                     template_name=self.template_name,
                     context=cast(Mapping[str, Any], context.flatten()),
                     request=request)
+            except Exception as e:
+                logger.exception('Error rendering action "%r": %s',
+                                 self, e)
             finally:
                 context.pop()
-        else:
-            return mark_safe('')
+
+        return mark_safe('')
 
     def render_js(
         self,

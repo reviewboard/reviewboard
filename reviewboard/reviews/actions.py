@@ -287,6 +287,7 @@ class ReviewMenuAction(BaseMenuAction):
 
     def should_render(
         self,
+        *,
         context: Context,
     ) -> bool:
         """Return whether this action should render.
@@ -335,6 +336,7 @@ class CreateReviewAction(BaseAction):
 
     def should_render(
         self,
+        *,
         context: Context,
     ) -> bool:
         """Return whether this action should render.
@@ -380,6 +382,7 @@ class EditReviewAction(BaseAction):
 
     def should_render(
         self,
+        *,
         context: Context,
     ) -> bool:
         """Return whether this action should render.

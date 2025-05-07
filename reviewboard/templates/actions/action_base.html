@@ -1,0 +1,28 @@
+{% load djblets_utils %}
+
+{% spaceless %}
+{%  definevar "visibility_attrs" spaceless %}
+{%   if not visible or has_parent %}hidden style="display: none;"{% endif %}
+{%  enddefinevar %}
+
+{%  definevar "action_attrs" spaceless %}
+ id="{{action.get_dom_element_id}}"
+{%  enddefinevar %}
+
+{%  if has_parent %}
+{%   definevar "action_attrs" spaceless %}
+ {{action_attrs}}
+ {{visibility_attrs}}
+{%   enddefinevar %}
+{%  else %}
+<li class="rb-c-actions__action" {{visibility_attrs}}
+    role="{% block action_container_role %}presentation{% endblock %}"
+    {% block action_container_attrs %}{% endblock %}>
+{%  endif %}
+
+{%  block action_content %}{% endblock %}
+
+{%  if not has_parent %}
+</li>
+{%  endif %}
+{% endspaceless %}

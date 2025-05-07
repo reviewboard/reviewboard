@@ -1,0 +1,28 @@
+{% extends "actions/action_base.html" %}
+{% load djblets_utils %}
+
+
+{% block action_content %}
+{%  definevar "action_attrs" spaceless %}
+ class="ink-c-button"
+ {{action_attrs}}
+{%  if action.description %}
+ title="{{action.description|join:'&#10;&#10;'}}"
+{%  endif %}
+{%  enddefinevar %}
+
+{%  if url and url != "#" %}
+ <a {{action_attrs}} href="{{url}}" role="button">
+{%  else %}
+ <button {{action_attrs}} type="button">
+{%  endif %}
+{%  if action.icon_class %}
+  <span class="ink-c-button__icon {{action.icon_class}}"></span>
+{%  endif %}
+  <label class="ink-c-button__label">{{label}}</label>
+{%  if url and url != "#" %}
+ </a>
+{%  else %}
+ </button>
+{%  endif %}
+{% endblock action_content %}
