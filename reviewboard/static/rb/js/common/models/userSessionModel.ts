@@ -541,8 +541,8 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
                         ])
                     )),
                 },
-                path: '/session/',
                 type: 'PUT',
+                url: this.get('sessionURL'),
 
                 error: () => error(),
                 success: () => success(),
