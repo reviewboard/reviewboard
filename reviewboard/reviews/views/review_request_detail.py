@@ -87,6 +87,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
             The ETag for the page.
         """
         review_request = self.review_request
+        user = request.user
 
         # Track the visit to this review request, so the dashboard can
         # reflect whether there are new updates.
@@ -116,21 +117,27 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
             for entry_cls in entry_registry
         )
 
+        profile_settings = ''
+
+        if user.is_authenticated:
+            profile_settings = user.get_profile().get_settings_json()
+
         if data.draft:
             draft_timestamp = data.draft.last_updated
         else:
             draft_timestamp = ''
 
         return ':'.join(str(value) for value in (
-            request.user,
+            user,
             etag_timestamp,
             draft_timestamp,
             data.latest_changedesc_timestamp,
             entry_etags,
             data.latest_review_timestamp,
             review_request.last_review_activity_timestamp,
-            is_rich_text_default_for_user(request.user),
-            is_site_read_only_for(request.user),
+            is_rich_text_default_for_user(user),
+            is_site_read_only_for(user),
+            profile_settings,
             [r.pk for r in self.blocks],
             starred,
             self.visited and self.visited.visibility,
