@@ -18,6 +18,7 @@ from djblets.siteconfig.models import SiteConfiguration
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from djblets.util.typing import JSONDict
 
     from reviewboard.site.models import LocalSite
 
@@ -164,11 +165,21 @@ class DiffSettings:
             if local_site is None:
                 local_site = getattr(request, 'local_site', None)
 
+        # Set up config layers to allow Local Sites to override the global
+        # settings. We may eventually want to add repository- and user-level
+        # settings as well.
+        config_layers: list[JSONDict] = []
+
+        if (local_site and
+            (local_site_config := local_site.extra_data.get('siteconfig'))):
+            config_layers.append(local_site_config)
+
         # Figure out the default for syntax highlighting.
         if syntax_highlighting is None:
             syntax_highlighting = cast(
                 bool,
-                siteconfig.get('diffviewer_syntax_highlighting'))
+                siteconfig.get('diffviewer_syntax_highlighting',
+                               layers=config_layers))
 
             if syntax_highlighting and user and user.is_authenticated:
                 # The server enables syntax highlighting. See if the user has
@@ -183,7 +194,8 @@ class DiffSettings:
 
         tab_size = cast(
             Optional[int],
-            siteconfig.get('diffviewer_default_tab_size'))
+            siteconfig.get('diffviewer_default_tab_size',
+                           layers=config_layers))
 
         # If the tab size is zero or unset, set to default.
         if not tab_size:
@@ -192,27 +204,34 @@ class DiffSettings:
         return cls(
             code_safety_configs=cast(
                 Dict[str, Dict[str, Any]],
-                siteconfig.get('code_safety_checkers')
+                siteconfig.get('code_safety_checkers',
+                               layers=config_layers)
             ),
             context_num_lines=cast(
                 int,
-                siteconfig.get('diffviewer_context_num_lines')),
+                siteconfig.get('diffviewer_context_num_lines',
+                               layers=config_layers)),
             custom_pygments_lexers=cast(
                 Dict[str, str],
-                siteconfig.get('diffviewer_custom_pygments_lexers')),
+                siteconfig.get('diffviewer_custom_pygments_lexers',
+                               layers=config_layers)),
             include_space_patterns=cast(
                 List[str],
-                siteconfig.get('diffviewer_include_space_patterns')),
+                siteconfig.get('diffviewer_include_space_patterns',
+                               layers=config_layers)),
             paginate_by=cast(
                 int,
-                siteconfig.get('diffviewer_paginate_by')),
+                siteconfig.get('diffviewer_paginate_by',
+                               layers=config_layers)),
             paginate_orphans=cast(
                 int,
-                siteconfig.get('diffviewer_paginate_orphans')),
+                siteconfig.get('diffviewer_paginate_orphans',
+                               layers=config_layers)),
             syntax_highlighting=syntax_highlighting,
             syntax_highlighting_threshold=cast(
                 int,
-                siteconfig.get('diffviewer_syntax_highlighting_threshold')),
+                siteconfig.get('diffviewer_syntax_highlighting_threshold',
+                               layers=config_layers)),
             tab_size=tab_size,
         )
 

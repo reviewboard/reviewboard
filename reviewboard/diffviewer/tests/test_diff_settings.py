@@ -123,6 +123,38 @@ class DiffSettingsTests(TestCase):
 
         self.assertFalse(diff_settings.syntax_highlighting)
 
+    def test_create_with_local_site_layer(self) -> None:
+        """Testing DiffSettings.create with a local site that has settings
+        overrides
+        """
+        local_site = self.create_local_site(extra_data={
+            'siteconfig': {
+                'diffviewer_context_num_lines': 5,
+            },
+        })
+        siteconfig_settings: JSONDict = {
+            'diffviewer_context_num_lines': 10,
+        }
+
+        with self.siteconfig_settings(siteconfig_settings):
+            diff_settings = DiffSettings.create(local_site=local_site)
+
+        self.assertEqual(diff_settings.context_num_lines, 5)
+
+    def test_create_with_local_site_no_settings(self) -> None:
+        """Testing DiffSettings.create with a local site that does not have
+        settings overrides
+        """
+        local_site = self.create_local_site(extra_data={})
+        siteconfig_settings: JSONDict = {
+            'diffviewer_context_num_lines': 10,
+        }
+
+        with self.siteconfig_settings(siteconfig_settings):
+            diff_settings = DiffSettings.create(local_site=local_site)
+
+        self.assertEqual(diff_settings.context_num_lines, 10)
+
     def test_tab_size(self) -> None:
         """Testing DiffSettings.tab_size normalization"""
         with self.siteconfig_settings(
