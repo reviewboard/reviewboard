@@ -54,7 +54,11 @@
     align-items: center;
     margin: 0;
     padding: @headerbar-padding;
+    padding-left: 0;
     vertical-align: middle;
+
+    /* Ensure we have a stacking context for action menus. */
+    position: relative;
     z-index: @z-index-mobile-headerbar;
 
     .rb-c-search-field {
