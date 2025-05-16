@@ -1,5 +1,10 @@
+"""Template tags for the diffviewer."""
+
+from __future__ import annotations
+
 import logging
 import re
+from typing import TYPE_CHECKING
 
 from django import template
 from django.template.loader import render_to_string
@@ -9,6 +14,11 @@ from django.utils.translation import gettext as _
 
 from reviewboard.codesafety import code_safety_checker_registry
 from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
+
+if TYPE_CHECKING:
+    from django.utils.safestring import SafeString
+
+    from reviewboard.diffviewer.chunk_generator import DiffChunk
 
 
 logger = logging.getLogger(__name__)
@@ -182,10 +192,18 @@ def diff_chunk_header(context, header):
 
 
 @register.simple_tag
-def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
-               begin_collapse_fmt='', end_collapse_fmt='', moved_fmt='',
-               line_warnings_fmt=''):
-    """Renders the lines of a diff.
+def diff_lines(
+    index: str,
+    chunk: DiffChunk,
+    standalone: bool,
+    line_fmt: str,
+    anchor_fmt: str = '',
+    begin_collapse_fmt: str = '',
+    end_collapse_fmt: str = '',
+    moved_fmt: str = '',
+    line_warnings_fmt: str = '',
+) -> SafeString:
+    """Render the lines of a diff.
 
     This will render each line in the diff viewer. The function expects
     some basic data on what will be rendered, as well as printf-formatted
@@ -277,11 +295,7 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
         show_collapse = False
         anchor = None
         warning_labels = set()
-
-        try:
-            line_meta = line[8]
-        except IndexError:
-            line_meta = {}
+        line_meta = line[8] or {}
 
         code_safety_results = line_meta.get('code_safety', [])
 
@@ -293,7 +307,7 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
 
         if not is_equal:
             if i == 0:
-                anchor = '%s.%s' % (index, chunk_index)
+                anchor = f'{index}.{chunk_index}'
 
             if line[7]:
                 row_classes.append('whitespace-line')
@@ -368,9 +382,8 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
                     cell_2_classes.append('moved-from-start')
                     moved_from = {
                         'class': 'moved-flag',
-                        'line': mark_safe('moved-from-%s'
-                                          % moved_from_linenum),
-                        'target': mark_safe('moved-to-%s' % linenum2),
+                        'line': mark_safe(f'moved-from-{moved_from_linenum}'),
+                        'target': mark_safe(f'moved-to-{linenum2}'),
                         'text': _('Moved from line %s') % moved_from_linenum,
                     }
 
@@ -388,8 +401,8 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
                     cell_1_classes.append('moved-to-start')
                     moved_to = {
                         'class': 'moved-flag',
-                        'line': mark_safe('moved-to-%s' % moved_to_linenum),
-                        'target': mark_safe('moved-from-%s' % linenum1),
+                        'line': mark_safe(f'moved-to-{moved_to_linenum}'),
+                        'target': mark_safe(f'moved-from-{linenum1}'),
                         'text': _('Moved to line %s') % moved_to_linenum,
                     }
 
@@ -401,19 +414,24 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
             row_classes.append('moved-row-start')
 
         if row_classes:
-            row_class_attr = ' class="%s"' % ' '.join(row_classes)
+            classes = ' '.join(row_classes)
+            row_class_attr = f' class="{classes}"'
 
         if cell_1_classes:
-            cell_1_class_attr = ' class="%s"' % ' '.join(cell_1_classes)
+            classes = ' '.join(cell_1_classes)
+            cell_1_class_attr = f' class="{classes}"'
 
         if cell_2_classes:
-            cell_2_class_attr = ' class="%s"' % ' '.join(cell_2_classes)
+            classes = ' '.join(cell_2_classes)
+            cell_2_class_attr = f' class="{classes}"'
 
         if header_1_classes:
-            header_1_class_attr = ' class="%s"' % ' '.join(header_1_classes)
+            classes = ' '.join(header_1_classes)
+            header_1_class_attr = f' class="{classes}"'
 
         if header_2_classes:
-            header_2_class_attr = ' class="%s"' % ' '.join(header_2_classes)
+            classes = ' '.join(header_2_classes)
+            header_2_class_attr = ' class="{classes}"'
 
         # Build all the HTML used for the line.
         anchor_html = ''
@@ -431,8 +449,8 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
             'cell_1_class_attr': cell_1_class_attr,
             'cell_2_class_attr': cell_2_class_attr,
             'linenum_row': line[0],
-            'linenum1': linenum1,
-            'linenum2': linenum2,
+            'linenum1': linenum1 or '',
+            'linenum2': linenum2 or '',
             'line1': line_html_sides[0],
             'line2': line_html_sides[1],
             'moved_from': moved_from,

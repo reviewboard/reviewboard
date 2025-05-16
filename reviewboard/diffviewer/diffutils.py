@@ -9,8 +9,9 @@ import re
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Sequence
 from difflib import SequenceMatcher
-from typing import (Any, AnyStr, Callable, Iterator, Optional, Sequence,
+from typing import (Any, AnyStr, Callable, Iterator, Optional,
                     TYPE_CHECKING, TypeVar)
 
 from django.core.files.base import ContentFile
@@ -34,6 +35,10 @@ from reviewboard.scmtools.core import FileLookupContext, PRE_CREATION, HEAD
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+
+    from typing_extensions import TypeAlias
+
+    from reviewboard.diffviewer.chunk_generator import DiffChunk
     from reviewboard.diffviewer.models import (
         DiffCommit,
         DiffSet,
@@ -64,6 +69,13 @@ _PATCH_GARBAGE_INPUT = 'patch: **** Only garbage was found in the patch input.'
 _T = TypeVar('_T')
 
 
+#: Type definition for differing regions inside a line.
+#:
+#: Version Added:
+#:     8.0
+DiffRegions: TypeAlias = Optional[Sequence[tuple[int, int]]]
+
+
 class DiffFileExtraContext(TypedDict):
     """Extra context for diff files.
 
@@ -88,8 +100,14 @@ class SerializedDiffFile(TypedDict):
     #: Whether the file is binary.
     binary: bool
 
+    #: The indexes of the chunks with non-equal tags.
+    changed_chunk_indexes: NotRequired[Sequence[int]]
+
     #: Whether the diff chunks have been loaded.
     chunks_loaded: bool
+
+    #: The diff chunks.
+    chunks: NotRequired[Sequence[DiffChunk]]
 
     #: Whether the file was copied from another location.
     copied: bool
@@ -145,6 +163,9 @@ class SerializedDiffFile(TypedDict):
     #: Whether the file was a new file in the original diff.
     newfile: bool
 
+    #: The number of chunks in the file.
+    num_changes: NotRequired[int]
+
     #: The filename for the original version of the file.
     orig_filename: str
 
@@ -155,7 +176,10 @@ class SerializedDiffFile(TypedDict):
     public: bool
 
 
-def convert_to_unicode(s, encoding_list):
+def convert_to_unicode(
+    s: bytes | bytearray | str,
+    encoding_list: Sequence[str],
+) -> tuple[str, str]:
     """Return the passed string as a unicode object.
 
     If conversion to unicode fails, we try the user-specified encoding, which
@@ -179,8 +203,12 @@ def convert_to_unicode(s, encoding_list):
         tuple:
         A tuple with the following information:
 
-        1. A compatible encoding (:py:class:`unicode`).
-        2. The Unicode data (:py:class:`unicode`).
+        Tuple:
+            0 (str):
+                The compatible encoding.
+
+            1 (str):
+                The decoded string.
 
     Raises:
         TypeError:
@@ -285,10 +313,10 @@ def convert_line_endings(data):
 def split_line_endings(
     data: AnyStr,
 ) -> list[AnyStr]:
-    """Split a string into lines while preserving all non-CRLF characters.
+    r"""Split a string into lines while preserving all non-CRLF characters.
 
     Unlike :py:meth:`str.splitlines`, this will only split on the following
-    character sequences: ``\\n``, ``\\r``, ``\\r\\n``, and ``\\r\\r\\n``.
+    character sequences: ``\n``, ``\r``, ``\r\n``, and ``\r\r\n``.
 
     This is needed to prevent the sort of issues encountered with
     Unicode strings when calling :py:meth:`str.splitlines``, which is that form
@@ -298,11 +326,11 @@ def split_line_endings(
     anyway.
 
     Args:
-        data (bytes or unicode):
+        data (bytes or str):
             The data to split into lines.
 
     Returns:
-        list of bytes or unicode:
+        list of bytes or str:
         The list of lines.
     """
     if isinstance(data, bytes):
@@ -591,7 +619,10 @@ def get_original_file_from_repo(filediff, request=None):
     return data
 
 
-def get_original_file(filediff, request=None):
+def get_original_file(
+    filediff: FileDiff,
+    request: (HttpRequest | None) = None,
+) -> bytes:
     """Return the pre-patch file of a FileDiff.
 
     Version Changed:
@@ -669,7 +700,11 @@ def get_original_file(filediff, request=None):
     return data
 
 
-def get_patched_file(source_data, filediff, request=None):
+def get_patched_file(
+    source_data: bytes,
+    filediff: FileDiff,
+    request: (HttpRequest | None) = None,
+) -> bytes:
     """Return the patched version of a file.
 
     This will normalize the patch, applying any changes needed for the
@@ -702,9 +737,9 @@ def get_patched_file(source_data, filediff, request=None):
 
 def get_original_and_patched_files(
     filediff: FileDiff,
-    request: Optional[HttpRequest] = None,
+    request: (HttpRequest | None) = None,
     update_mimetypes: bool = True,
-) -> tuple[Optional[bytes], Optional[bytes]]:
+) -> tuple[bytes, bytes]:
     """Return the original and patched version of a file.
 
     Args:
@@ -1511,10 +1546,11 @@ def get_diff_files(
 
 @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
 def populate_diff_chunks(
-    files,
+    files: Sequence[SerializedDiffFile],
     *,
-    request=None,
-    diff_settings: DiffSettings):
+    request: (HttpRequest | None) = None,
+    diff_settings: DiffSettings,
+) -> None:
     """Populate a list of diff files with chunk data.
 
     This accepts a list of files (generated by :py:func:`get_diff_files`) and
@@ -2165,8 +2201,30 @@ def get_chunks_in_range(chunks, first_line, num_lines):
                 break
 
 
-def get_line_changed_regions(oldline, newline):
-    """Returns regions of changes between two similar lines."""
+def get_line_changed_regions(
+    oldline: str | None,
+    newline: str | None,
+) -> tuple[DiffRegions, DiffRegions]:
+    """Return regions of changes between two similar lines.
+
+    Args:
+        oldline (str):
+            The old line.
+
+        newline (str):
+            The new line.
+
+    Returns:
+        tuple:
+        A 2-tuple of:
+
+        Tuple:
+            0 (DiffRegions):
+                A list of (int, int) for changed regions in the old line.
+
+            1 (DiffRegions):
+                A list of (int, int) for changed regions in the new line.
+    """
     if oldline is None or newline is None:
         return None, None
 
@@ -2209,7 +2267,7 @@ def get_line_changed_regions(oldline, newline):
 
         back = (0, 0)
 
-    return oldchanges, newchanges
+    return oldchanges or None, newchanges or None
 
 
 def get_sorted_filediffs(

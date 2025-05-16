@@ -1,9 +1,20 @@
+"""Unit tests for DiffChunkGenerator."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from kgb import SpyAgency
 
 from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from reviewboard.diffviewer.models import DiffCommit
 
 
 class DiffChunkGeneratorTests(SpyAgency, TestCase):
@@ -61,8 +72,9 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
         b'+Yo, dog.\n'
     )
 
-    def setUp(self):
-        super(DiffChunkGeneratorTests, self).setUp()
+    def setUp(self) -> None:
+        """Set up the test."""
+        super().setUp()
 
         self.repository = self.create_repository(tool_name='Test')
         self.diffset = self.create_diffset(repository=self.repository)
@@ -70,7 +82,7 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
         self.generator = DiffChunkGenerator(
             None, self.filediff, diff_settings=DiffSettings.create())
 
-    def test_get_chunks_with_empty_added_file(self):
+    def test_get_chunks_with_empty_added_file(self) -> None:
         """Testing DiffChunkGenerator.get_chunks with empty added file"""
         self.filediff.source_revision = PRE_CREATION
         self.filediff.extra_data.update({
@@ -80,7 +92,7 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
 
         self.assertEqual(len(list(self.generator.get_chunks())), 0)
 
-    def test_get_chunks_with_explicit_encoding(self):
+    def test_get_chunks_with_explicit_encoding(self) -> None:
         """Testing DiffChunkGenerator.get_chunks with explicit encoding on
         FileDiff
         """
@@ -107,7 +119,7 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
                 'collapsable': False,
                 'index': 0,
                 'lines': [
-                    [
+                    (
                         1, 1,
                         'Hello, world!',
                         None,
@@ -115,7 +127,8 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
                         'Hi, everybody!',
                         None,
                         False,
-                    ]
+                        None,
+                    ),
                 ],
                 'meta': {
                     'left_headers': [],
@@ -129,7 +142,9 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
         self.assertTrue(self.repository.get_file.last_returned(
             'Hello, world!\n'.encode('utf-16')))
 
-    def test_get_chunks_with_replace_in_added_file_with_parent_diff(self):
+    def test_get_chunks_with_replace_in_added_file_with_parent_diff(
+        self,
+    ) -> None:
         """Testing DiffChunkGenerator.get_chunks with replace chunks in
         added file with parent diff
         """
@@ -156,8 +171,9 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
 
         self.assertEqual(len(list(self.generator.get_chunks())), 1)
 
-    def test_get_chunks_with_commit_and_base_filediff(self):
-        """Testing DiffChunkGenerator.get_chunks with commit using base_filediff
+    def test_get_chunks_with_commit_and_base_filediff(self) -> None:
+        """Testing DiffChunkGenerator.get_chunks with commit using
+        base_filediff
         """
         commit1 = self.create_diffcommit(
             commit_id='abc1234',
@@ -192,14 +208,17 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
         self.assertEqual(chunk['change'], 'replace')
         self.assertEqual(
             chunk['lines'],
-            [[
-                1,
-                1, 'Hi, world!', [(0, 2), (9, 10)],
-                1, 'Yo, world.', [(0, 2), (9, 10)],
-                False,
-            ]])
+            [
+                (
+                    1,
+                    1, 'Hi, world!', [(0, 2), (9, 10)],
+                    1, 'Yo, world.', [(0, 2), (9, 10)],
+                    False,
+                    None,
+                ),
+            ])
 
-    def test_get_chunks_with_commit_and_no_base_filediff(self):
+    def test_get_chunks_with_commit_and_no_base_filediff(self) -> None:
         """Testing DiffChunkGenerator.get_chunks with commit and no
         base_filediff
         """
@@ -239,14 +258,17 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
         self.assertEqual(chunk['change'], 'replace')
         self.assertEqual(
             chunk['lines'],
-            [[
-                1,
-                1, 'Hello, world!', None,
-                1, 'Yo, dog.', None,
-                False,
-            ]])
+            [
+                (
+                    1,
+                    1, 'Hello, world!', None,
+                    1, 'Yo, dog.', None,
+                    False,
+                    None,
+                ),
+            ])
 
-    def test_get_chunks_with_commit_and_base_tip_same(self):
+    def test_get_chunks_with_commit_and_base_tip_same(self) -> None:
         """Testing DiffChunkGenerator.get_chunks with commit and base_filediff
         same as filediff
         """
@@ -277,14 +299,17 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
         self.assertEqual(chunk['change'], 'equal')
         self.assertEqual(
             chunk['lines'],
-            [[
-                1,
-                1, 'Hi, world!', [],
-                1, 'Hi, world!', [],
-                False,
-            ]])
+            [
+                (
+                    1,
+                    1, 'Hi, world!', None,
+                    1, 'Hi, world!', None,
+                    False,
+                    None,
+                ),
+            ])
 
-    def test_get_chunks_with_commit_and_file_recreated(self):
+    def test_get_chunks_with_commit_and_file_recreated(self) -> None:
         """Testing DiffChunkGenerator.get_chunks with commit and file recreated
         in prior commit
         """
@@ -303,14 +328,19 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
         self.assertEqual(chunk['change'], 'insert')
         self.assertEqual(
             chunk['lines'],
-            [[
-                1,
-                '', '', [],
-                1, 'This is a new file.', [],
-                False,
-            ]])
+            [
+                (
+                    1,
+                    None, '', None,
+                    1, 'This is a new file.', None,
+                    False,
+                    None,
+                ),
+            ])
 
-    def test_get_chunks_with_commit_and_file_recreated_and_base_deleted(self):
+    def test_get_chunks_with_commit_and_file_recreated_and_base_deleted(
+        self,
+    ) -> None:
         """Testing DiffChunkGenerator.get_chunks with commit and file recreated
         in prior commit with base_filediff as deleted file
         """
@@ -331,14 +361,17 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
         self.assertEqual(chunk['change'], 'insert')
         self.assertEqual(
             chunk['lines'],
-            [[
-                1,
-                '', '', [],
-                1, 'This is a new file.', [],
-                False,
-            ]])
+            [
+                (
+                    1,
+                    None, '', None,
+                    1, 'This is a new file.', None,
+                    False,
+                    None,
+                ),
+            ])
 
-    def test_line_counts_unmodified_by_interdiff(self):
+    def test_line_counts_unmodified_by_interdiff(self) -> None:
         """Testing that line counts are not modified by interdiffs where the
         changes are reverted
         """
@@ -369,7 +402,7 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
 
         self.assertEqual(line_counts, self.filediff.get_line_counts())
 
-    def _make_delete_recreate_commits(self):
+    def _make_delete_recreate_commits(self) -> Sequence[DiffCommit]:
         """Finalize and return commits for a delete/re-create test.
 
         This creates two commits. In the first one, an upstream file is

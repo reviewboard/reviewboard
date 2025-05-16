@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.reviews.ui.text.TextBasedReviewUI."""
 
+from __future__ import annotations
+
 from django.test.client import RequestFactory
 
 from reviewboard.reviews.ui.text import TextBasedReviewUI
@@ -58,7 +60,7 @@ class TextBasedReviewUITests(TestCase):
                          ['<pre>And this is revision 2.</pre>'])
         self.assertEqual(extra_context['rendered_lines'], [])
 
-    def test_get_extra_context_with_diff(self):
+    def test_get_extra_context_with_diff(self) -> None:
         """Testing TextBasedReviewUI.get_extra_context with diff_against_obj"""
         new_attachment = self.create_file_attachment(
             self.review_request,
@@ -92,7 +94,7 @@ class TextBasedReviewUITests(TestCase):
                     'collapsable': False,
                     'index': 0,
                     'lines': [
-                        [
+                        (
                             1,
                             1,
                             'This is revision 1.',
@@ -101,7 +103,8 @@ class TextBasedReviewUITests(TestCase):
                             'And this is revision 2.',
                             [(0, 5), (21, 22)],
                             False,
-                        ],
+                            None,
+                        ),
                     ],
                     'meta': {
                         'left_headers': [],

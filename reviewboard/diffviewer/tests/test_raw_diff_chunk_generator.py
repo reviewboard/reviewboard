@@ -46,16 +46,17 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'collapsable': False,
                 'index': 0,
                 'lines': [
-                    [
+                    (
                         1,
                         1,
                         'This is line 1',
-                        [],
+                        None,
                         1,
                         'This is line 1',
-                        [],
+                        None,
                         False,
-                    ],
+                        None,
+                    ),
                 ],
                 'meta': {
                     'left_headers': [],
@@ -72,16 +73,17 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'collapsable': False,
                 'index': 1,
                 'lines': [
-                    [
+                    (
                         2,
                         2,
                         'Another line',
-                        [],
+                        None,
+                        None,
                         '',
-                        '',
-                        [],
+                        None,
                         False,
-                    ],
+                        None,
+                    ),
                 ],
                 'meta': {
                     'left_headers': [],
@@ -98,16 +100,17 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'collapsable': False,
                 'index': 2,
                 'lines': [
-                    [
+                    (
                         3,
                         3,
                         'Line 3.',
-                        [],
+                        None,
                         2,
                         'Line 3.',
-                        [],
+                        None,
                         False,
-                    ],
+                        None,
+                    ),
                 ],
                 'meta': {
                     'left_headers': [],
@@ -124,7 +127,7 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'collapsable': False,
                 'index': 3,
                 'lines': [
-                    [
+                    (
                         4,
                         4,
                         'la de da.',
@@ -133,7 +136,8 @@ class RawDiffChunkGeneratorTests(TestCase):
                         'la de doo.',
                         [(7, 9)],
                         False,
-                    ],
+                        None,
+                    ),
                 ],
                 'meta': {
                     'left_headers': [],
@@ -171,7 +175,7 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'collapsable': False,
                 'index': 0,
                 'lines': [
-                    [
+                    (
                         1,
                         1,
                         'This is <span class="gs">**bold**</span>',
@@ -180,7 +184,8 @@ class RawDiffChunkGeneratorTests(TestCase):
                         'This is <span class="ge">*italic*</span>',
                         [(9, 16)],
                         False,
-                    ],
+                        None,
+                    ),
                 ],
                 'meta': {
                     'left_headers': [],
@@ -218,7 +223,7 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'collapsable': False,
                 'index': 0,
                 'lines': [
-                    [
+                    (
                         1,
                         1,
                         'This is **bold**',
@@ -227,7 +232,8 @@ class RawDiffChunkGeneratorTests(TestCase):
                         'This is *italic*',
                         [(9, 16)],
                         False,
-                    ],
+                        None,
+                    ),
                 ],
                 'meta': {
                     'left_headers': [],
@@ -269,7 +275,7 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'collapsable': False,
                 'index': 0,
                 'lines': [
-                    [
+                    (
                         1,
                         1,
                         'This is **bold**',
@@ -278,7 +284,8 @@ class RawDiffChunkGeneratorTests(TestCase):
                         'This is *italic*',
                         [(9, 16)],
                         False,
-                    ],
+                        None,
+                    ),
                 ],
                 'meta': {
                     'left_headers': [],
@@ -327,16 +334,17 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'collapsable': False,
                 'index': 0,
                 'lines': [
-                    [
+                    (
                         1,
                         1,
                         'This is line 1',
-                        [],
+                        None,
                         1,
                         'This is line 1',
-                        [],
+                        None,
                         False,
-                    ],
+                        None,
+                    ),
                 ],
                 'meta': {
                     'left_headers': [],
@@ -353,16 +361,17 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'collapsable': False,
                 'index': 1,
                 'lines': [
-                    [
+                    (
                         2,
                         2,
                         'Another line',
-                        [],
+                        None,
+                        None,
                         '',
-                        '',
-                        [],
+                        None,
                         False,
-                    ],
+                        None,
+                    ),
                 ],
                 'meta': {
                     'left_headers': [],
@@ -379,16 +388,17 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'collapsable': False,
                 'index': 2,
                 'lines': [
-                    [
+                    (
                         3,
                         3,
                         'Line 3.',
-                        [],
+                        None,
                         2,
                         'Line 3.',
-                        [],
+                        None,
                         False,
-                    ],
+                        None,
+                    ),
                 ],
                 'meta': {
                     'left_headers': [],
@@ -405,7 +415,7 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'collapsable': False,
                 'index': 3,
                 'lines': [
-                    [
+                    (
                         4,
                         4,
                         'la de da.',
@@ -414,7 +424,8 @@ class RawDiffChunkGeneratorTests(TestCase):
                         'la de doo.',
                         [(7, 9)],
                         False,
-                    ],
+                        None,
+                    ),
                 ],
                 'meta': {
                     'left_headers': [],
@@ -446,7 +457,7 @@ class RawDiffChunkGeneratorTests(TestCase):
                 'collapsable': False,
                 'index': 0,
                 'lines': [
-                    [
+                    (
                         1,
                         1,
                         ('<span class="cm">/* Say hello; newline\u2067 /*/'
@@ -472,7 +483,7 @@ class RawDiffChunkGeneratorTests(TestCase):
                                 }),
                             ],
                         },
-                    ],
+                    ),
                 ],
                 'meta': {
                     'left_headers': [],
