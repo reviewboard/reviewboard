@@ -1348,10 +1348,16 @@ export class ReviewDialogView extends BaseView<
         const userSession = UserSession.instance;
 
         const reviewRequest = this.model.get('parentObject');
+        const links = reviewRequest.get('links');
+        let submitter: (string | null) = null;
+
+        if (links && links['submitter']) {
+            submitter = links['submitter']['title'];
+        }
+
         const allowShipIt = (
             userSession.get('allowSelfShipIt') ||
-            (userSession.get('username') !==
-             reviewRequest.get('links')['submitter']['title']));
+            (userSession.get('username') !== submitter));
 
         this.$el.html(this.template({
             addFooterText: _`Add footer`,
