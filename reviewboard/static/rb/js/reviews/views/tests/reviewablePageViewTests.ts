@@ -189,7 +189,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
             it('Confirmed with Do Not Ask Again', done => {
                 spyOn(pendingReview, 'save').and.resolveTo();
                 spyOn(pendingReview, 'publish').and.callThrough();
-                spyOn(userSession, 'storeSettings').and.callThrough();
+                spyOn(userSession, 'storeSettings').and.resolveTo();
                 RB.navigateTo.and.callFake(() => {
                     expect(userSession.get('confirmShipIt')).toBeFalse();
                     expect(userSession.storeSettings).toHaveBeenCalledWith([

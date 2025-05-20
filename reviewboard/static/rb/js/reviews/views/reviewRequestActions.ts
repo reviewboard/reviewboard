@@ -369,6 +369,8 @@ export class CreateReviewActionView extends Actions.MenuItemActionView {
      *     This object, for chaining.
      */
     protected onInitialRender() {
+        super.onInitialRender();
+
         this.listenTo(this.#pendingReview, 'saved destroy sync', this.#update);
         this.#update();
     }
@@ -379,7 +381,11 @@ export class CreateReviewActionView extends Actions.MenuItemActionView {
      * This will show the action only when there's no existing pending review.
      */
     #update() {
-        this.$el.parent().toggle(this.#pendingReview.isNew());
+        if (this.#pendingReview.isNew()) {
+            this.show();
+        } else {
+            this.hide();
+        }
     }
 
     /**
@@ -431,6 +437,8 @@ export class EditReviewActionView extends Actions.MenuItemActionView {
      * Render the action.
      */
     protected onInitialRender() {
+        super.onInitialRender();
+
         this.listenTo(this.#pendingReview, 'saved destroy sync', this.#update);
         this.#update();
     }
@@ -439,7 +447,11 @@ export class EditReviewActionView extends Actions.MenuItemActionView {
      * Update the visibility state of the action.
      */
     #update() {
-        this.$el.parent().toggle(!this.#pendingReview.isNew());
+        if (this.#pendingReview.isNew()) {
+            this.hide();
+        } else {
+            this.show();
+        }
     }
 
     /**

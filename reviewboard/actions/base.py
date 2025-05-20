@@ -6,6 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
+import logging
 from typing import Any, List, Mapping, Optional, TYPE_CHECKING, cast
 
 from django.http import HttpRequest
@@ -16,8 +17,10 @@ from django.utils.safestring import SafeText, mark_safe
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
-    # This is available only in django-stubs.
-    from django.utils.functional import _StrOrPromise
+    from djblets.util.typing import SerializableJSONDict, StrOrPromise
+
+
+logger = logging.getLogger(__name__)
 
 
 class AttachmentPoint:
@@ -45,6 +48,12 @@ class AttachmentPoint:
 
     #: Attachment for actions in the unified draft banner.
     UNIFIED_BANNER = 'unified-banner'
+
+    #: Attachment for actions in the quick access area.
+    #:
+    #: Version Added:
+    #:     7.1
+    QUICK_ACCESS = 'quick-access'
 
 
 class BaseAction:
@@ -108,7 +117,7 @@ class BaseAction:
     #:
     #: Type:
     #:     str
-    label: Optional[_StrOrPromise] = None
+    label: (StrOrPromise | None) = None
 
     #: The ID of the parent menu action, if available.
     #:
@@ -243,7 +252,7 @@ class BaseAction:
         self,
         *,
         context: Context,
-    ) -> dict:
+    ) -> SerializableJSONDict:
         """Return data to be passed to the JavaScript model.
 
         Args:
@@ -260,7 +269,7 @@ class BaseAction:
         url = self.get_url(context=context)
         visible = self.get_visible(context=context)
 
-        data: dict = {
+        data: SerializableJSONDict = {
             'actionId': self.action_id,
             'visible': visible,
         }
@@ -303,7 +312,7 @@ class BaseAction:
         self,
         *,
         context: Context,
-    ) -> _StrOrPromise:
+    ) -> StrOrPromise:
         """Return the label for the action.
 
         Args:
@@ -418,10 +427,13 @@ class BaseAction:
                     template_name=self.template_name,
                     context=cast(Mapping[str, Any], context.flatten()),
                     request=request)
+            except Exception as e:
+                logger.exception('Error rendering action "%r": %s',
+                                 self, e)
             finally:
                 context.pop()
-        else:
-            return mark_safe('')
+
+        return mark_safe('')
 
     def render_js(
         self,
@@ -567,5 +579,75 @@ class BaseMenuAction(BaseAction):
 
         data = super().get_js_model_data(context=context)
         data['children'] = children
+
+        return data
+
+
+if TYPE_CHECKING:
+    BaseQuickAccessActionMixin = BaseAction
+else:
+    BaseQuickAccessActionMixin = object
+
+
+class QuickAccessActionMixin(BaseQuickAccessActionMixin):
+    """Mixin for creating a Quick Access button.
+
+    Quick Access buttons are user-customizable actions placed in the Unified
+    Banner's Quick Access hotbar location. They can be registered and made
+    available to users who want them, working just like any standard action.
+
+    This mixin can be used to create brand-new Quick Access actions, and
+    can also be mixed in with an existing action to create a new Quick Access
+    version of it.
+
+    Quick Access actions are typically displayed as buttons. They must use
+    the Quick Access attachment point and may not have a parent ID.
+    """
+
+    parent_id: (str | None) = None
+    template_name = 'actions/button_action.html'
+    attachment = AttachmentPoint.QUICK_ACCESS
+
+    def get_js_model_data(
+        self,
+        *,
+        context: Context,
+    ) -> SerializableJSONDict:
+        """Return data to be passed to the JavaScript model.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            dict:
+            A dictionary of attributes to pass to the model instance.
+        """
+        request = context['request']
+
+        action_ids: set[str]
+
+        # Fetch the list of enabled Quick Access action IDs once and convert
+        # to a set for fast lookup across actions.
+        try:
+            action_ids = request._rb_quick_access_action_ids
+        except AttributeError:
+            try:
+                action_ids = set(
+                    request.user.get_profile()
+                    .quick_access_actions
+                )
+            except Exception:
+                # If anything goes wrong with fetching the profile or accessing
+                # a setting, just ignore the actions entirely.
+                action_ids = set()
+
+            request._rb_quick_access_action_ids = action_ids
+
+        data = super().get_js_model_data(context=context)
+        data.update({
+            'isQuickAccess': True,
+            'isQuickAccessEnabled': self.action_id in action_ids,
+        })
 
         return data

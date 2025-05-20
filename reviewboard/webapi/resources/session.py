@@ -44,6 +44,7 @@ class SessionResource(WebAPIResource):
     #:     7.1
     _MUTABLE_PROFILE_SETTING_PATHS: set[tuple[str, ...]] = {
         ('confirm_ship_it',),
+        ('quick_access_actions',),
     }
 
     def serialize_object(

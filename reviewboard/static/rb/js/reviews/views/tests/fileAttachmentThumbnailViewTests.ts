@@ -126,7 +126,10 @@ suite('rb/views/FileAttachmentThumbnailView', function() {
             });
 
             it('With review UI', function() {
-                model.set('reviewURL', '/review/');
+                model.set({
+                    canAccessReviewUI: true,
+                    reviewURL: '/review/',
+                });
 
                 view = new FileAttachmentThumbnailView({
                     model: model,

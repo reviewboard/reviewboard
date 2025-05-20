@@ -356,6 +356,35 @@ export class PageView<
     }
 
     /**
+     * Return all action views that are registered.
+     *
+     * Version Added:
+     *     7.1
+     *
+     * Args:
+     *     filter (Object, optional):
+     *         An optional mapping of attributes to filter for.
+     *
+     * Returns:
+     *     ActionView[]:
+     *     The list of action views.
+     */
+    getActionViews(
+        filter?: Record<string, unknown>,
+    ): ActionView[] {
+        let actionViews = this._actionViews;
+
+        if (filter && !_.isEmpty(filter)) {
+            const matcher = _.matcher(filter);
+
+            actionViews = _.filter(actionViews,
+                                   view => matcher(view.model.attributes));
+        }
+
+        return actionViews;
+    }
+
+    /**
      * Update the size of the page.
      *
      * This will be called in response to window resizes and certain other

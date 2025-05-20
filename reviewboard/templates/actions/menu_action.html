@@ -1,18 +1,22 @@
+{% extends "actions/action_base.html" %}
 {% load actions %}
-{% spaceless %}
-<li class="rb-c-actions__action" id="{{action.get_dom_element_id}}"
-    {% if not visible %} style="display: none;"{% endif %}
-    role="menuitem">
- <a href="#" role="presentation"
-    aria-label="{{label}}">
-  <label class="rb-c-actions__action-label">
+
+
+{% block action_container_css_class %}rb-c-actions__action{% endblock %}
+{% block action_container_role %}menuitem{% endblock %}
+{% block action_container_attrs %}{{action_attrs}}{% endblock %}
+
+
+{% block action_content %}
+<a href="#" role="presentation"
+   aria-label="{{label}}">
+ <label class="rb-c-actions__action-label">
 {%  if action.icon_class %}
-   <span class="{{action.icon_class}}"></span>
+  <span class="{{action.icon_class}}"></span>
 {%  endif %}
-   {{label}}
-  </label>
-  <span class="ink-i-dropdown"></span>
- </a>
+  {{label}}
+ </label>
+ <span class="ink-i-dropdown"></span>
+</a>
 {%  child_actions_html %}
-</li>
-{% endspaceless %}
+{% endblock action_content %}

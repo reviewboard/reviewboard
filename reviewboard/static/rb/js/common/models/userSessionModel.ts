@@ -295,6 +295,14 @@ interface UserSessionAttrs extends ModelAttributes {
     /** The URL for the muted review requests API resource. */
     mutedReviewRequestsURL: string;
 
+    /**
+     * A list of actions available in the Quick Access area.
+     *
+     * Version Added:
+     *     7.1
+     */
+    quickAccessActions: string[];
+
     /** Whether the server is operating in read-only mode. */
     readOnly: boolean;
 
@@ -337,6 +345,7 @@ interface UserSessionAttrs extends ModelAttributes {
  */
 const _storeSettingsMap: Record<keyof UserSessionAttrs, string> = {
     'confirmShipIt': 'confirm_ship_it',
+    'quickAccessActions': 'quick_access_actions',
 };
 
 
@@ -394,6 +403,7 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
         fullName: null,
         loginURL: null,
         mutedReviewRequestsURL: null,
+        quickAccessActions: null,
         readOnly: false,
         sessionURL: null,
         showReviewDialogTips: true,
@@ -531,8 +541,8 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
                         ])
                     )),
                 },
-                path: '/session/',
                 type: 'PUT',
+                url: this.get('sessionURL'),
 
                 error: () => error(),
                 success: () => success(),

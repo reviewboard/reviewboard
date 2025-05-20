@@ -2,6 +2,7 @@
  * The unified banner view.
  */
 import {
+    type MenuLabelView,
     MenuButtonView,
     MenuItem,
     MenuItemType,
@@ -395,6 +396,14 @@ export class UnifiedBannerView extends FloatingBannerView<
     /** The container for all draft action buttons/menus. */
     #$draftActions: JQuery;
 
+    /**
+     * The menu label handle for the Edit Quick Access menu.
+     *
+     * Version Added:
+     *     7.1
+     */
+    #editQuickAccessMenuLabelView: MenuLabelView;
+
     /** The link for accessing the interdiff for a new draft diff. */
     #$interdiffLink: JQuery;
 
@@ -536,6 +545,8 @@ export class UnifiedBannerView extends FloatingBannerView<
                 </Ink.Button>
             `)
             .appendTo(this.#$draftActions);
+
+        this.#buildQuickAccessMenu();
 
         const reviewRequestEditor = model.get('reviewRequestEditor');
         const reviewRequest = model.get('reviewRequest');
@@ -731,6 +742,93 @@ export class UnifiedBannerView extends FloatingBannerView<
         }
 
         RB.navigateTo(reviewRequest.get('reviewURL'));
+    }
+
+    /**
+     * Build and populate the menu for the Quick Access options.
+     *
+     * Version Added:
+     *     7.1
+     */
+    #buildQuickAccessMenu() {
+        const parentEl = this.$('.rb-c-unified-banner__edit-quick-access')[0];
+
+        if (!parentEl) {
+            /*
+             * We're probably running in a unit test. Don't build any of
+             * this state.
+             */
+            return;
+        }
+
+        const menuLabelView = craft<MenuLabelView>`
+            <Ink.MenuLabel
+              iconName="ink-i-settings"
+              dropDownIconName=""
+              menuLabel="${_`Customize quick access buttons`}">
+             <Ink.MenuLabel.Header>
+              Pinned Actions
+             </Ink.MenuLabel.Header>
+            </Ink.MenuLabel>
+        `;
+
+        this.#editQuickAccessMenuLabelView = menuLabelView;
+
+        /*
+         * Go through all the Quick Access actions and add them to the menu.
+         */
+        let optionsDirty = false;
+        const pageView = RB.PageManager.getPage();
+        const actionViews = pageView.getActionViews({
+            isQuickAccess: true,
+        });
+
+        const menuItemsByActionID: Record<string, MenuItem> = {};
+
+        menuLabelView.menuItems.add(actionViews.map(actionView => {
+            const action = actionView.model;
+
+            const menuItem = new MenuItem({
+                checked: action.get('isQuickAccessEnabled'),
+                label: action.get('label'),
+                type: MenuItemType.CHECKBOX_ITEM,
+            });
+
+            menuItem.on('change:checked', () => {
+                action.set('isQuickAccessEnabled', menuItem.get('checked'));
+                optionsDirty = true;
+            });
+
+            menuItemsByActionID[action.get('actionId')] = menuItem;
+
+            return menuItem;
+        }));
+
+        /* Render the menu. */
+        menuLabelView.renderInto(
+            this.$('.rb-c-unified-banner__edit-quick-access'));
+
+        /* Update settings after the menu closes, if options have changed. */
+        this.listenTo(menuLabelView.menuView, 'closed', async () => {
+            if (optionsDirty) {
+                const session = UserSession.instance;
+                const newActionIDs: string[] = [];
+
+                for (const actionView of actionViews) {
+                    const actionID = actionView.model.get('actionId');
+                    const action = menuItemsByActionID[actionID];
+
+                    if (action.get('checked')) {
+                        newActionIDs.push(actionID);
+                    }
+                }
+
+                session.set('quickAccessActions', newActionIDs);
+                await session.storeSettings(['quickAccessActions']);
+
+                optionsDirty = false;
+            }
+        });
     }
 
     /**

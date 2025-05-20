@@ -32,6 +32,7 @@ class LoggedInUserMixin(MixinParent):
 
     def should_render(
         self,
+        *,
         context: Context,
     ) -> bool:
         """Return whether this action should render.
@@ -92,6 +93,7 @@ class LoginAction(BaseAction):
 
     def should_render(
         self,
+        *,
         context: Context,
     ) -> bool:
         """Return whether this action should render.
@@ -138,6 +140,7 @@ class AdminAction(BaseAction):
 
     def should_render(
         self,
+        *,
         context: Context,
     ) -> bool:
         """Return whether this action should render.
@@ -237,6 +240,7 @@ class FollowMenuAction(BaseMenuAction):
 
     def should_render(
         self,
+        *,
         context: Context,
     ) -> bool:
         """Return whether this action should render.
