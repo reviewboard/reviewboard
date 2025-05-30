@@ -135,7 +135,7 @@ defaults.update({
 
     # Reviews settings
     'default_use_rich_text': True,
-    'reviews_allow_self_shipit': False,
+    'reviews_allow_self_shipit': True,
 
     # Diff Viewer settings
     'code_safety_checkers': {},
