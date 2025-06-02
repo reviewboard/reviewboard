@@ -329,8 +329,9 @@ enterprises, including:
   * :rbintegration:`GitHub Enterprise <github-enterprise>`
   * :rbintegration:`HCL VersionVault <versionvault>`
   * :rbintegration:`IBM ClearCase <clearcase>`
-  * :rbintegration:`Microsoft Azure DevOps / Team Foundation Server / TFS
-    <tfs>`
+  * :rbintegration:`Microsoft Azure DevOps / Team Foundation Server
+    <azure-devops-server>`
+  * :rbintegration:`Microsoft Azure DevOps Services <azure-devops-services>`
 
 60-day `Power Pack trial licenses`_ are available, and automatically convert
 to a perpetual 2-user license after your trial period expires.

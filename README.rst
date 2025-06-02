@@ -30,7 +30,7 @@ frameworks, allowing custom features, review UIs, data analysis, and more to be
 built without ever having to fork Review Board.
 
 There's support for Bazaar, ClearCase, CVS, Git, Mercurial, Perforce, Plastic,
-and Team Foundation Server, hosted on your own server or on Assembla,
+and Azure DevOps, hosted on your own server or on Assembla,
 Beanstalk, Bitbucket, Codebase, GitHub, GitLab, Gitorious, Kiln, or Unfuddle.
 
 To learn more, visit the `Review Board website`_.
@@ -73,7 +73,7 @@ Installing Power Pack
 * `Report generation`_
 * `PDF document review`_
 * Better multi-server scalability
-* Integration with `Microsoft Team Foundation Server`_
+* Integration with `Microsoft Azure DevOps`_
 * Integration with `GitHub Enterprise`_
 * LDAP/Active Directory user sync (coming soon)
 
@@ -85,8 +85,8 @@ To get started, `download a trial license`_, or read the
    https://www.reviewboard.org/docs/powerpack/latest/powerpack/manual/reports/
 .. _`PDF document review`:
    https://www.reviewboard.org/docs/powerpack/latest/powerpack/manual/pdf/
-.. _`Microsoft Team Foundation Server`:
-   https://www.visualstudio.com/en-us/products/tfs-overview-vs.aspx
+.. _`Microsoft Azure DevOps`:
+   https://azure.microsoft.com/en-us/services/devops/server/
 .. _`GitHub Enterprise`: https://enterprise.github.com/
 .. _`download a trial license`: https://www.reviewboard.org/powerpack/trial/
 .. _`Power Pack documentation`:

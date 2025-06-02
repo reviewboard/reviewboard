@@ -115,6 +115,7 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
 
   .. hlist::
 
+     * :ref:`Azure DevOps Server / TFS <repository-hosting-azure-devops-server>`
      * :ref:`Bazaar <repository-scm-bazaar>`
      * :ref:`Cliosoft SOS <repository-scm-sos>`
      * :ref:`CVS <repository-scm-cvs>`
@@ -128,6 +129,7 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
 
      * :ref:`Assembla <repository-hosting-assembla>`
      * :ref:`AWS CodeCommit <repository-hosting-aws-codecommit>`
+     * :ref:`Azure DevOps Services <repository-hosting-azure-devops-services>`
      * :ref:`Beanstalk <repository-hosting-beanstalk>`
      * :ref:`Bitbucket <repository-hosting-bitbucket>`
      * :ref:`Bitbucket Data Center <repository-hosting-bitbucket-data-center>`
@@ -140,7 +142,6 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
      * :ref:`Gitorious <repository-hosting-gitorious>`
      * :ref:`SourceForge <repository-hosting-sourceforge>`
      * :ref:`Unfuddle STACK <repository-hosting-unfuddle>`
-     * :ref:`VisualStudio.com <repository-hosting-visualstudio>`
 
 * :doc:`Managing review groups <configuration/review-groups>`
 * :doc:`Managing default reviewers <configuration/default-reviewers>`

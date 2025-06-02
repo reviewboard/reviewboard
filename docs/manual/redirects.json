@@ -1,3 +1,4 @@
 {
-    "admin/configuration/repositories/bitbucket-server": "admin/configuration/repositories/bitbucket-data-center"
+    "admin/configuration/repositories/bitbucket-server": "admin/configuration/repositories/bitbucket-data-center",
+    "admin/configuration/repositories/visualstudio": "admin/configuration/repositories/azure-devops-services"
 }

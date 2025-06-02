@@ -18,8 +18,8 @@ and CI services`_, and source code management systems, such as:
 * :rbintegration:`Cliosoft SOS <cliosoft-sos>`
 * :rbintegration:`IBM ClearCase <clearcase>`
 * :rbintegration:`HCL VersionVault <versionvault>`
-* :rbintegration:`Microsoft Azure DevOps / TFS / Team Foundation Services
-  <tfs>`
+* :rbintegration:`Microsoft Azure DevOps Server / TFS <azure-devops-server>`
+* :rbintegration:`Microsoft Azure DevOps Services <azure-devops-services>`
 
 Plus `many more <https://www.reviewboard.org/integrations/>`_.
 

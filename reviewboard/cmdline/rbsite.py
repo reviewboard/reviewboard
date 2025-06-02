@@ -2630,7 +2630,7 @@ class InstallCommand(Command):
         console.print(
             'To enable PDF document review, code review reports, enhanced '
             'scalability, and support for GitHub Enterprise, Bitbucket '
-            'Server, AWS CodeCommit, Team Foundation Server, and more, '
+            'Server, AWS CodeCommit, Azure DevOps, and more, '
             'install Power Pack at:'
             '\n'
             'https://www.reviewboard.org/powerpack/'

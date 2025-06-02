@@ -54,7 +54,9 @@ Review Board supports a variety of common source code management systems:
 
 And more enterprise/market-focused systems through `Power Pack`_.
 
-* :rbintegration:`Azure DevOps / Team Foundation Server <tfs>`
+* :rbintegration:`Azure DevOps Server / Team Foundation Server
+  <azure-devops-server>`
+* :rbintegration:`Azure DevOps Services <azure-devops-services>`
 * :rbintegration:`Cliosoft SOS <cliosoft-sos>`
 * :rbintegration:`HCL VersionVault <versionvault>`
 * :rbintegration:`IBM ClearCase <clearcase>`
