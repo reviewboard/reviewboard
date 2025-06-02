@@ -117,10 +117,10 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
 
      * :ref:`Azure DevOps Server / TFS <repository-hosting-azure-devops-server>`
      * :ref:`Bazaar <repository-scm-bazaar>`
-     * :ref:`Cliosoft SOS <repository-scm-sos>`
      * :ref:`CVS <repository-scm-cvs>`
      * :ref:`Git <repository-scm-git>`
      * :ref:`HCL VersionVault and IBM ClearCase <repository-scm-clearcase>`
+     * :ref:`Keysight SOS <repository-scm-sos>`
      * :ref:`Mercurial <repository-scm-mercurial>`
      * :ref:`Perforce <repository-scm-perforce>`
      * :ref:`Subversion <repository-scm-subversion>`

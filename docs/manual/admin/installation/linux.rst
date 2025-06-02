@@ -325,10 +325,10 @@ enterprises, including:
 
   * :rbintegration:`Amazon CodeCommit <aws-codecommit>`
   * :rbintegration:`Bitbucket Data Center <bitbucket-data-center>`
-  * :rbintegration:`Cliosoft SOS <cliosoft-sos>`
   * :rbintegration:`GitHub Enterprise <github-enterprise>`
   * :rbintegration:`HCL VersionVault <versionvault>`
   * :rbintegration:`IBM ClearCase <clearcase>`
+  * :rbintegration:`Keysight SOS <keysight-sos>`
   * :rbintegration:`Microsoft Azure DevOps / Team Foundation Server
     <azure-devops-server>`
   * :rbintegration:`Microsoft Azure DevOps Services <azure-devops-services>`
