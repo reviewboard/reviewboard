@@ -373,7 +373,7 @@ Configuring Hosted Repositories
    aws-codecommit
    beanstalk
    bitbucket
-   bitbucket-server
+   bitbucket-data-center
    codebasehq
    fedorahosted
    gerrit

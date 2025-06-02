@@ -324,7 +324,7 @@ enterprises, including:
 * Support for additional source code management solutions:
 
   * :rbintegration:`Amazon CodeCommit <aws-codecommit>`
-  * :rbintegration:`Bitbucket Server <bitbucket-server>`
+  * :rbintegration:`Bitbucket Data Center <bitbucket-data-center>`
   * :rbintegration:`Cliosoft SOS <cliosoft-sos>`
   * :rbintegration:`GitHub Enterprise <github-enterprise>`
   * :rbintegration:`HCL VersionVault <versionvault>`

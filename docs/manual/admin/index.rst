@@ -130,7 +130,7 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
      * :ref:`AWS CodeCommit <repository-hosting-aws-codecommit>`
      * :ref:`Beanstalk <repository-hosting-beanstalk>`
      * :ref:`Bitbucket <repository-hosting-bitbucket>`
-     * :ref:`Bitbucket Server <repository-hosting-bitbucket-server>`
+     * :ref:`Bitbucket Data Center <repository-hosting-bitbucket-data-center>`
      * :ref:`Codebase <repository-hosting-codebasehq>`
      * :ref:`Fedora Hosted <repository-hosting-fedorahosted>`
      * :ref:`Gerrit <repository-hosting-gerrit>`
