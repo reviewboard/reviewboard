@@ -18,12 +18,13 @@ Integration Configuration
 
 To configure an integration with Jenkins CI:
 
-1. Navigate to the :ref:`Administration UI <administration-ui>` ->
-   :guilabel:`Integrations`.
+1. Click :guilabel:`Add Integration` on the :guilabel:`Integrations` page
+   in the :ref:`Administration UI <administration-ui>` and select
+   :guilabel:`Jenkins CI` from the list.
 
-2. Click :guilabel:`Add Integration` and select :guilabel:`Jenkins CI`.
+   .. image:: images/add-integration.png
 
-3. Fill out the general fields:
+2. Fill out the general fields:
 
    :guilabel:`Name`:
        A name for this particular configuration.
@@ -43,7 +44,7 @@ To configure an integration with Jenkins CI:
 
        Most users can leave this blank.
 
-4. Set the :guilabel:`Conditions` for when Review Board will trigger a build.
+3. Set the :guilabel:`Conditions` for when Review Board will trigger a build.
 
    At a minimum, you should set a condition to match a specific repository.
    Even if you only have one repository configured now, you'll want to set
@@ -52,9 +53,9 @@ To configure an integration with Jenkins CI:
    config (for example, if you only want to run a test suite for certain
    branches).
 
-   .. image:: images/ci-conditions.png
+   .. image:: images/config-conditions.png
 
-5. Fill out the address and authentication credentials for the Jenkins server
+4. Fill out the address and authentication credentials for the Jenkins server
    handling your builds:
 
    :guilabel:`Server`:
@@ -68,7 +69,7 @@ To configure an integration with Jenkins CI:
        The API token used for authentication. Older versions may require
        the user's password instead.
 
-6. Fill out the information for the build processes in Jenkins.
+5. Fill out the information for the build processes in Jenkins.
 
    :guilabel:`Job Name`:
        This allows you to specify which job to run on your Jenkins server.
@@ -99,7 +100,7 @@ To configure an integration with Jenkins CI:
 
        If you switch the local site, this will be regenerated upon saving.
 
-7. Set the information for when to run builds.
+6. Set the information for when to run builds.
 
    :guilabel:`Run builds manually`:
        Enable this if you want Jenkins builds to only run when manually
