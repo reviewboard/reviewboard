@@ -1,3 +1,7 @@
+"""Unit tests for the UserResource API."""
+
+from __future__ import annotations
+
 import logging
 
 from django.contrib.auth.models import Permission, User
@@ -412,6 +416,25 @@ class ResourceListTests(AvatarServicesTestMixin, SpyAgency,
                 '48': '<div class="avatar" data-size="48">myuser</div>',
                 '128': '<div class="avatar" data-size="128">myuser</div>',
             })
+
+    @webapi_test_template
+    def test_post_without_password(self) -> None:
+        """Testing the POST <URL> API with no password"""
+        self.client.login(username='admin', password='admin')
+        rsp = self.api_post(
+            get_user_list_url(),
+            {
+                'username': 'myuser',
+                'email': 'myuser@example.com',
+            },
+            expected_mimetype=user_item_mimetype,
+        )
+
+        assert rsp is not None
+        self.assertEqual(rsp['stat'], 'ok')
+
+        user = User.objects.get(username='myuser')
+        self.assertFalse(user.has_usable_password())
 
 
 class ResourceItemTests(AvatarServicesTestMixin, SpyAgency,

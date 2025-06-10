@@ -23,14 +23,14 @@ Integration Configuration
 
 To configure an integration with Matrix:
 
-1. Click :guilabel:`Add Integration`, then select :guilabel:`Matrix` on the
-   :guilabel:`Integrations` page in the :ref:`Administration UI
-   <administration-ui>`.
+1. Click :guilabel:`Add Integration` on the :guilabel:`Integrations` page
+   in the :ref:`Administration UI <administration-ui>` and select
+   :guilabel:`Matrix` from the list.
+
+   .. image:: images/add-integration.png
 
 2. Give the configuration a descriptive name. This can be anything at all, and
    just helps identify this configuration.
-
-   .. image:: images/matrix-config-general.png
 
 3. Select the conditions under which Review Board will send notifications to
    Matrix under this configuration. If you have a small Review Board server and
@@ -38,7 +38,7 @@ To configure an integration with Matrix:
    :guilabel:`Always match`. However, you can also create complex rules to
    match based on repository, groups, or other criteria.
 
-   .. image:: images/matrix-config-conditions.png
+   .. image:: images/config-conditions.png
 
 4. Connect Review Board to Matrix. This requires three pieces of information.
 

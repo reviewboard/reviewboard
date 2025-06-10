@@ -1,4 +1,9 @@
+"""API resource for managing users."""
+
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -26,6 +31,12 @@ from reviewboard.webapi.decorators import (webapi_check_local_site,
 from reviewboard.webapi.errors import USER_QUERY_ERROR
 from reviewboard.webapi.resources import resources
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+    from djblets.webapi.resources.base import WebAPIResourceHandlerResult
+
+    from reviewboard.site.models import LocalSite
+
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +47,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     If a user's profile is private, the fields ``email``, ``first_name``,
     ``last_name``, and ``fullname`` will be omitted for non-staff users.
     """
+
     item_child_resources = [
         resources.api_token,
         resources.archived_review_request,
@@ -397,12 +409,12 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                 'type': StringFieldType,
                 'description': 'The e-mail address of the user to create.',
             },
+        },
+        optional={
             'password': {
                 'type': StringFieldType,
                 'description': 'The password of the user to create.',
-            }
-        },
-        optional={
+            },
             'first_name': {
                 'type': StringFieldType,
                 'description': 'The first name of the user to create.',
@@ -421,8 +433,18 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             },
         },
     )
-    def create(self, request, username, email, password, first_name='',
-               last_name='', local_site=None, *args, **kwargs):
+    def create(
+        self,
+        request: HttpRequest,
+        username: str,
+        email: str,
+        password: (str | None) = None,
+        first_name: str = '',
+        last_name: str = '',
+        local_site: (LocalSite | None) = None,
+        *args,
+        **kwargs,
+    ) -> WebAPIResourceHandlerResult:
         """Create a new user.
 
         The user will be allowed to authenticate into Review Board with the
@@ -433,6 +455,8 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
         This API cannot be used on :term:`Local Sites`.
         """
+        assert isinstance(request.user, User)
+
         if (not request.user.is_superuser and
             not request.user.has_perm('auth.add_user')):
             return PERMISSION_DENIED.with_message(

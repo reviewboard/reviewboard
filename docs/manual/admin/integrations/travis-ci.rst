@@ -18,12 +18,13 @@ Integration Configuration
 
 To configure an integration with Travis CI:
 
-1. Navigate to the :ref:`Administration UI <administration-ui>` ->
-   :guilabel:`Integrations`.
+1. Click :guilabel:`Add Integration` on the :guilabel:`Integrations` page
+   in the :ref:`Administration UI <administration-ui>` and select
+   :guilabel:`Travis CI` from the list.
 
-2. Click :guilabel:`Add Integration` and select :guilabel:`Travis CI`.
+   .. image:: images/add-integration.png
 
-3. Fill out the general fields:
+2. Fill out the general fields:
 
    :guilabel:`Name`:
        A name for this particular configuration.
@@ -43,7 +44,7 @@ To configure an integration with Travis CI:
 
        Most users can leave this blank.
 
-4. Set the :guilabel:`Conditions` for when Review Board will trigger a build.
+3. Set the :guilabel:`Conditions` for when Review Board will trigger a build.
 
    At a minimum, you should set a condition to match a specific repository.
    Even if you only have one repository configured now, you'll want to set
@@ -52,12 +53,12 @@ To configure an integration with Travis CI:
    config (for example, if you only want to run a test suite for certain
    branches).
 
-   .. image:: images/ci-conditions.png
+   .. image:: images/config-conditions.png
 
    Because Travis CI only works with GitHub repositories, only changes on
    repositories configured with those hosting services will trigger builds.
 
-5. Fill out the endpoint and authentication credentials for the Travis CI
+4. Fill out the endpoint and authentication credentials for the Travis CI
    server handling your project:
 
    :guilabel:`Travis CI`:
@@ -67,7 +68,7 @@ To configure an integration with Travis CI:
        The API token used for authentication. To get an API token, follow
        the instructions in their documentation_.
 
-6. Fill out the information for the build processes in Travis CI.
+5. Fill out the information for the build processes in Travis CI.
 
    This configuration will be used instead of anything that is set in the
    repository's :file:`.travis.yml` file.
@@ -111,7 +112,7 @@ To configure an integration with Travis CI:
              and it never needs to be updated, since the source will be
              completely replaced during the build process.
 
-7. Set the information for when to run builds.
+6. Set the information for when to run builds.
 
    :guilabel:`Run builds manually`:
        Enable this if you want Travis CI builds to only run when manually

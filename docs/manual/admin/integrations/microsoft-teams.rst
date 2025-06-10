@@ -27,12 +27,10 @@ To configure an integration with Microsoft Teams:
    in the :ref:`Administration UI <administration-ui>` and select
    :guilabel:`Microsoft Teams` from the list.
 
-   .. image:: images/microsoftteams-add-integration.png
+   .. image:: images/add-integration.png
 
 2. Give the integration a name. This can be anything at all, and helps
    to identify this integration.
-
-   .. image:: images/microsoftteams-config-general.png
 
 3. Select the conditions under which Review Board will send notifications to
    Microsoft Teams under this integration.
@@ -42,7 +40,7 @@ To configure an integration with Microsoft Teams:
    can also create complex rules to match based on repositories, groups, or
    other criteria.
 
-   .. image:: images/microsoftteams-config-conditions.png
+   .. image:: images/config-conditions.png
 
 4. Create a new Incoming WebHook on Microsoft Teams. See here_ for more
    information.
@@ -53,8 +51,6 @@ To configure an integration with Microsoft Teams:
    Once it is created, copy the WebHook URL then go back to Review
    Board and paste it in the :guilabel:`WebHook URL` field for your
    integration.
-
-   .. image:: images/microsoftteams-config-where.png
 
 .. _here: https://www.reviewboard.org/integrations/microsoft-teams/#microsoft-teams-setup
 .. _Review Board logo: https://static.reviewboard.org/integration-assets/msteams/reviewboard.png?20240501-1234

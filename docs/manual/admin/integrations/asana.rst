@@ -25,13 +25,11 @@ Configuring Asana
 
 To configure an integration with Asana:
 
-1. Click :guilabel:`Add a new configuration` for Asana on the
-   :guilabel:`Integrations` page in the :ref:`Administration UI
-   <administration-ui>`.
+1. Click :guilabel:`Add Integration` on the :guilabel:`Integrations` page
+   in the :ref:`Administration UI <administration-ui>` and select
+   :guilabel:`Asana` from the list.
 
-   .. image:: images/asana-add-integration.png
-
-   .. image:: images/asana-config.png
+   .. image:: images/add-integration.png
 
 2. Give the configuration a descriptive name. This can be anything you choose,
    and is only important if you plan to have multiple configurations.
@@ -40,6 +38,8 @@ To configure an integration with Asana:
    this integration. This lets you limit this configuration for specific
    repositories or review groups, if needed. To always show the field, select
    :guilabel:`Always match`.
+
+   .. image:: images/config-conditions.png
 
 4. Enter your Asana user's personal access token. This allows Review Board to
    communicate with Asana on your behalf. To create a token, click

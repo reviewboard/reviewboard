@@ -24,16 +24,14 @@ Integration Configuration
 
 To configure an integration with Mattermost:
 
-1. Click :guilabel:`Add a new configuration` for Mattermost on the
-   :guilabel:`Integrations` page in the :ref:`Administration UI
-   <administration-ui>`.
+1. Click :guilabel:`Add Integration` on the :guilabel:`Integrations` page
+   in the :ref:`Administration UI <administration-ui>` and select
+   :guilabel:`Mattermost` from the list.
 
-   .. image:: images/mattermost-add-integration.png
+   .. image:: images/add-integration.png
 
 2. Give the configuration a descriptive name. This can be anything at all, and
    just helps identify this configuration.
-
-   .. image:: images/mattermost-config-general.png
 
 3. Select the conditions under which Review Board will send notifications
    to Mattermost under this configuration. If you have a small Review Board server
@@ -41,7 +39,7 @@ To configure an integration with Mattermost:
    :guilabel:`Always match`. However, you can also create complex rules to
    match based on repository, groups, or other criteria.
 
-   .. image:: images/mattermost-config-conditions.png
+   .. image:: images/config-conditions.png
 
 4. Register a new Incoming WebHook on Mattermost. To do this, open the Main
    Menu in Mattermost and click :guilabel:`Integrations`. Then click
@@ -55,7 +53,7 @@ To configure an integration with Mattermost:
    This will create your Incoming WebHook. Copy the URL it generates and paste
    that in the matching field for your configuration on Review Board.
 
-   .. image:: images/mattermost-config-where.png
+   .. image:: images/chat-config-where.png
 
 5. If you want to reuse the same WebHook URL for multiple channels on the
    same Mattermost team, you can. Just provide the same URL you used in another
