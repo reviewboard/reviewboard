@@ -115,11 +115,12 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
 
   .. hlist::
 
+     * :ref:`Azure DevOps Server / TFS <repository-hosting-azure-devops-server>`
      * :ref:`Bazaar <repository-scm-bazaar>`
-     * :ref:`Cliosoft SOS <repository-scm-sos>`
      * :ref:`CVS <repository-scm-cvs>`
      * :ref:`Git <repository-scm-git>`
      * :ref:`HCL VersionVault and IBM ClearCase <repository-scm-clearcase>`
+     * :ref:`Keysight SOS <repository-scm-sos>`
      * :ref:`Mercurial <repository-scm-mercurial>`
      * :ref:`Perforce <repository-scm-perforce>`
      * :ref:`Subversion <repository-scm-subversion>`
@@ -128,9 +129,10 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
 
      * :ref:`Assembla <repository-hosting-assembla>`
      * :ref:`AWS CodeCommit <repository-hosting-aws-codecommit>`
+     * :ref:`Azure DevOps Services <repository-hosting-azure-devops-services>`
      * :ref:`Beanstalk <repository-hosting-beanstalk>`
      * :ref:`Bitbucket <repository-hosting-bitbucket>`
-     * :ref:`Bitbucket Server <repository-hosting-bitbucket-server>`
+     * :ref:`Bitbucket Data Center <repository-hosting-bitbucket-data-center>`
      * :ref:`Codebase <repository-hosting-codebasehq>`
      * :ref:`Fedora Hosted <repository-hosting-fedorahosted>`
      * :ref:`Gerrit <repository-hosting-gerrit>`
@@ -140,7 +142,6 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
      * :ref:`Gitorious <repository-hosting-gitorious>`
      * :ref:`SourceForge <repository-hosting-sourceforge>`
      * :ref:`Unfuddle STACK <repository-hosting-unfuddle>`
-     * :ref:`VisualStudio.com <repository-hosting-visualstudio>`
 
 * :doc:`Managing review groups <configuration/review-groups>`
 * :doc:`Managing default reviewers <configuration/default-reviewers>`

@@ -32,9 +32,11 @@ more information.
 
    * :ref:`Assembla <repository-hosting-assembla>`
    * :ref:`AWS CodeCommit <repository-hosting-aws-codecommit>`
+   * :ref:`Azure DevOps Server / TFS <repository-hosting-azure-devops-server>`
+   * :ref:`Azure DevOps Services <repository-hosting-azure-devops-services>`
    * :ref:`Beanstalk <repository-hosting-beanstalk>`
    * :ref:`Bitbucket <repository-hosting-bitbucket>`
-   * :ref:`Bitbucket Server <repository-hosting-bitbucket-server>`
+   * :ref:`Bitbucket Data Center <repository-hosting-bitbucket-data-center>`
    * :ref:`Codebase <repository-hosting-codebasehq>`
    * :ref:`Fedora Hosted <repository-hosting-fedorahosted>`
    * :ref:`GitHub <repository-hosting-github>`
@@ -42,7 +44,6 @@ more information.
    * :ref:`GitLab <repository-hosting-gitlab>`
    * :ref:`Gitorious <repository-hosting-gitorious>`
    * :ref:`Unfuddle <repository-hosting-unfuddle>`
-   * :ref:`VisualStudio.com <repository-hosting-visualstudio>`
 
    If your Git repository is hosted on another third-party service, it
    will not work with Review Board! Please contact us to request support

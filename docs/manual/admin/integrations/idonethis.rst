@@ -26,13 +26,11 @@ configuration for the integration and then have each user configure their own
 I Done This API token. The integration won't post status updates on behalf of
 users who haven't configured their tokens.
 
-1. Click :guilabel:`Add a new configuration` for I Done This on the
-   :guilabel:`Integrations` page in the :ref:`Administration UI
-   <administration-ui>`.
+1. Click :guilabel:`Add Integration` on the :guilabel:`Integrations` page
+   in the :ref:`Administration UI <administration-ui>` and select
+   :guilabel:`I Done This` from the list.
 
-   .. image:: images/idonethis-add-integration.png
-
-   .. image:: images/idonethis-config.png
+   .. image:: images/add-integration.png
 
 2. Give the configuration a descriptive name. This can be anything you choose,
    and is only important if you plan to have multiple configurations.
@@ -41,6 +39,8 @@ users who haven't configured their tokens.
    Done This. Conditions allow you to limit reporting to certain groups or
    repositories, or other criteria that you choose. To always report status
    updates, select :guilabel:`Always match`.
+
+   .. image:: images/config-conditions.png
 
 4. Enter your I Done This Team ID. You can find this in the URL when logged in
    to your team. For instance, if your URL is

@@ -21,12 +21,13 @@ Integration Configuration
 
 To configure an integration with CircleCI:
 
-1. Navigate to the :ref:`Administration UI <administration-ui>` ->
-   :guilabel:`Integrations`.
+1. Click :guilabel:`Add Integration` on the :guilabel:`Integrations` page
+   in the :ref:`Administration UI <administration-ui>` and select
+   :guilabel:`CircleCI` from the list.
 
-2. Click :guilabel:`Add Integration` and select :guilabel:`CircleCI`.
+   .. image:: images/add-integration.png
 
-3. Fill out the general fields:
+2. Fill out the general fields:
 
    :guilabel:`Name`:
        A name for this particular configuration.
@@ -46,7 +47,7 @@ To configure an integration with CircleCI:
 
        Most users can leave this blank.
 
-4. Set the :guilabel:`Conditions` for when Review Board will trigger a build.
+3. Set the :guilabel:`Conditions` for when Review Board will trigger a build.
 
    At a minimum, you should set a condition to match a specific repository.
    Even if you only have one repository configured now, you'll want to set
@@ -55,13 +56,13 @@ To configure an integration with CircleCI:
    config (for example, if you only want to run a test suite for certain
    branches).
 
-   .. image:: images/ci-conditions.png
+   .. image:: images/config-conditions.png
 
    Because CircleCI only works with GitHub and Bitbucket repositories, only
    changes on repositories configured with those hosting services will
    trigger builds.
 
-5. Fill out the information for the build processes in CircleCI.
+4. Fill out the information for the build processes in CircleCI.
 
    :guilabel:`API Token`:
        The API token used for authentication. You can use a personal or
@@ -83,7 +84,7 @@ To configure an integration with CircleCI:
              and it never needs to be updated, since the source will be
              completely replaced during the build process.
 
-6. Set the information for when to run builds.
+5. Set the information for when to run builds.
 
    :guilabel:`Run builds manually`:
        Enable this if you want CircleCI builds to only run when manually

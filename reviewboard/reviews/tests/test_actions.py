@@ -928,18 +928,18 @@ class ShipItActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
         """Testing ShipItAction.should_render with a user reviewing their own
         review request and reviews_allow_self_shipit=False
         """
-        self.assertFalse(self.action.should_render(
-            context=self._create_request_context(
-                user=User.objects.get(username='grumpy'))))
+        with self.siteconfig_settings({'reviews_allow_self_shipit': False}):
+            self.assertFalse(self.action.should_render(
+                context=self._create_request_context(
+                    user=User.objects.get(username='grumpy'))))
 
     def test_should_render_with_self_ship_it(self) -> None:
         """Testing ShipItAction.should_render with a user reviewing their own
         review request and reviews_allow_self_shipit=True
         """
-        with self.siteconfig_settings({'reviews_allow_self_shipit': True}):
-            self.assertTrue(self.action.should_render(
-                context=self._create_request_context(
-                    user=User.objects.get(username='grumpy'))))
+        self.assertTrue(self.action.should_render(
+            context=self._create_request_context(
+                user=User.objects.get(username='grumpy'))))
 
 
 class LegacyShipItActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):

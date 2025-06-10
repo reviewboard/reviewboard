@@ -25,13 +25,11 @@ Configuring Trello
 
 To configure an integration with Trello:
 
-1. Click :guilabel:`Add a new configuration` for Trello on the
-   :guilabel:`Integrations` page in the :ref:`Administration UI
-   <administration-ui>`.
+1. Click :guilabel:`Add Integration` on the :guilabel:`Integrations` page
+   in the :ref:`Administration UI <administration-ui>` and select
+   :guilabel:`Trello` from the list.
 
-   .. image:: images/trello-add-integration.png
-
-   .. image:: images/trello-config.png
+   .. image:: images/add-integration.png
 
 2. Give the configuration a descriptive name. This can be anything you choose,
    and is only important if you plan to have multiple configurations.
@@ -40,6 +38,8 @@ To configure an integration with Trello:
    this integration. This lets you limit this configuration for specific
    repositories or review groups, if needed. To always show the field, select
    :guilabel:`Always match`.
+
+   .. image:: images/config-conditions.png
 
 4. Enter your Trello API key and API token. You can find the API key by
    visiting the `Trello Developer API Key`_ page. In the same section as your

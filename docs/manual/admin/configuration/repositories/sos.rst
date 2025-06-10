@@ -1,12 +1,13 @@
 .. _repository-scm-sos:
 
 =========================
-Cliosoft SOS Repositories
+Keysight SOS Repositories
 =========================
 
 Review Board supports posting and reviewing code on
-:rbintegration:`Cliosoft SOS <cliosoft-sos>` repositories, enabling your team
-to review code or other files across all of your projects.
+:rbintegration:`Keysight SOS <keysight-sos>` (formerly Cliosoft SOS)
+repositories, enabling your team to review code or other files across
+all of your projects.
 
 RBTools_ is used to take your pending changes in a workarea and put them up
 for review. This is a collection of command line tools that simplifies
@@ -77,7 +78,7 @@ To get started:
 
 1. :ref:`Add a repository <adding-repositories>`
 
-2. Choose :guilabel:`Repository type -> Cliosoft SOS`.
+2. Choose :guilabel:`Repository type -> Keysight SOS`.
 
 
 .. _repository-scm-sos-fields:

@@ -57,7 +57,6 @@ class DiffSettingsForm(SiteSettingsForm):
         required=False,
         widget=forms.TextInput(attrs={'size': '2'}))
 
-
     diffviewer_show_trailing_whitespace = forms.BooleanField(
         label=_('Show trailing whitespace'),
         help_text=_('Show excess trailing whitespace as red blocks. This '
@@ -150,14 +149,12 @@ class DiffSettingsForm(SiteSettingsForm):
         required=False,
         widget=forms.widgets.CheckboxSelectMultiple())
 
-    def load(self):
+    def load(self) -> None:
         """Load settings from the form.
 
         This will populate initial fields based on the site configuration.
         """
-        super(DiffSettingsForm, self).load()
-
-        siteconfig = self.siteconfig
+        super().load()
 
         # Load the settings from the Trojan Code checker.
         #
@@ -165,12 +162,10 @@ class DiffSettingsForm(SiteSettingsForm):
         # any and all registered code safety checkers, but that will require
         # additional support in the checkers.
         code_safety_config = cast(
-            Dict[str, Dict],
-            siteconfig.get('code_safety_checkers'))
-        trojan_source_config = cast(
-            Dict[str, Any],
-            code_safety_config.get(TrojanSourceCodeSafetyChecker.checker_id,
-                                   {}))
+            Dict[str, Dict[str, Any]],
+            self.get_key_value('code_safety_checkers'))
+        trojan_source_config = code_safety_config.get(
+            TrojanSourceCodeSafetyChecker.checker_id, {})
 
         if trojan_source_config:
             for key in ('check_confusables',
@@ -182,34 +177,34 @@ class DiffSettingsForm(SiteSettingsForm):
         # Load the "Show all whitespace for" setting.
         self.fields['include_space_patterns'].initial = ', '.join(
             cast(List[str],
-                 siteconfig.get('diffviewer_include_space_patterns')))
+                 self.get_key_value('diffviewer_include_space_patterns')))
 
-    def save(self):
+    def save(self) -> None:
         """Save the form.
 
         This will write the new configuration to the database.
         """
-        siteconfig = self.siteconfig
-
         # Store the settings for the Trojan Code checker.
         code_safety_config = cast(
             Dict[str, Any],
-            siteconfig.get('code_safety_checkers'))
+            self.get_key_value('code_safety_checkers'))
         code_safety_config[TrojanSourceCodeSafetyChecker.checker_id] = {
             key: self.cleaned_data[f'trojan_source_{key}']
             for key in ('check_confusables',
                         'confusable_aliases_allowed')
         }
-        siteconfig.set('code_safety_checkers', code_safety_config)
+        self.set_key_value('code_safety_checkers', code_safety_config)
 
         # Save the "Show all whitespace for" setting.
-        siteconfig.set(
+        self.set_key_value(
             'diffviewer_include_space_patterns',
             re.split(r',\s*', self.cleaned_data['include_space_patterns']))
 
-        super(DiffSettingsForm, self).save()
+        super().save()
 
     class Meta:
+        """Metadata for the form."""
+
         title = _('Diff Viewer Settings')
 
         save_blacklist = (

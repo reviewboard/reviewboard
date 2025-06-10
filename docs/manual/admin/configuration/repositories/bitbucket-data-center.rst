@@ -1,16 +1,18 @@
+.. _repository-hosting-bitbucket-data-center:
 .. _repository-hosting-bitbucket-server:
 
-=============================
-Bitbucket Server Repositories
-=============================
+==================================
+Bitbucket Data Center Repositories
+==================================
 
 .. note::
 
-   Bitbucket Server support requires a license of `Power Pack`_. You can
+   Bitbucket Data Center support requires a license of `Power Pack`_. You can
    `download a trial license`_ or `purchase a license`_ for your team.
 
 Review Board supports posting and reviewing code on Git repositories hosted on
-:rbintegration:`Bitbucket Server <bitbucket-server>`.
+:rbintegration:`Bitbucket Data Center <bitbucket-data-center>` (formerly Bitbucket
+Server).
 
 To simplify posting changes to Review Board, we recommend using RBTools_. This
 ensures that the diffs are in the correct format, and makes managing review
@@ -27,17 +29,18 @@ more information.
 Adding the Repository
 =====================
 
-To configure a Bitbucket Server repository, first proceed to :ref:`add the
-repository <adding-repositories>` and select :guilabel:`Bitbucket Server`
-from the :guilabel:`Hosting type` field.
+To configure a Bitbucket Data Center repository, first proceed to :ref:`add
+the repository <adding-repositories>` and select :guilabel:`Bitbucket
+Data Center` from the :guilabel:`Hosting type` field.
 
 
-Step 1: Link Your Bitbucket Server Account
-------------------------------------------
+Step 1: Link Your Bitbucket Data Center Account
+-----------------------------------------------
 
-You will need to link an account on Bitbucket Server to Review Board, so that
-Review Board can access content from the repository. If you've already linked
-an account with sufficient access to the repository, you can use that instead.
+You will need to link an account on Bitbucket Data Center to Review Board, so
+that Review Board can access content from the repository. If you've already
+linked an account with sufficient access to the repository, you can use that
+instead.
 
 If you're linking for the first time, you'll need to make sure you have your
 username and password handy.
@@ -45,14 +48,14 @@ username and password handy.
 Fill out the following fields:
 
 :guilabel:`Service URL`:
-    The URL to the root of your Bitbucket Server. For example,
+    The URL to the root of your Bitbucket Data Center. For example,
     ``https://bitbucket.example.com/``.
 
 :guilabel:`Account username`:
-    The username used to log into your Bitbucket Server account.
+    The username used to log into your Bitbucket Data Center account.
 
 :guilabel:`Account password`:
-    The password used to log into your Bitbucket Server account.
+    The password used to log into your Bitbucket Data Center account.
 
     Due to some requirements when accessing your repositories, your password
     will be stored in encrypted form in the database.
@@ -97,6 +100,7 @@ numbers will link to the appropriate ticket.
 :ref:`Learn more about bug tracker configuration <repository-bug-tracker>`.
 
 
+.. _repository-hosting-bitbucket-data-center-access-control:
 .. _repository-hosting-bitbucket-server-access-control:
 
 Step 4: Manage Access Control
@@ -104,7 +108,7 @@ Step 4: Manage Access Control
 
 You can now choose who should have access to this repository (both posting
 against it and viewing review requests posted against it). This is separate
-from Bitbucket Server's own access controls.
+from Bitbucket Data Center's own access controls.
 
 :ref:`Learn more about access control <repository-access-control>`.
 

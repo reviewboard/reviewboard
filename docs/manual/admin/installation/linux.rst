@@ -324,13 +324,14 @@ enterprises, including:
 * Support for additional source code management solutions:
 
   * :rbintegration:`Amazon CodeCommit <aws-codecommit>`
-  * :rbintegration:`Bitbucket Server <bitbucket-server>`
-  * :rbintegration:`Cliosoft SOS <cliosoft-sos>`
+  * :rbintegration:`Bitbucket Data Center <bitbucket-data-center>`
   * :rbintegration:`GitHub Enterprise <github-enterprise>`
   * :rbintegration:`HCL VersionVault <versionvault>`
   * :rbintegration:`IBM ClearCase <clearcase>`
-  * :rbintegration:`Microsoft Azure DevOps / Team Foundation Server / TFS
-    <tfs>`
+  * :rbintegration:`Keysight SOS <keysight-sos>`
+  * :rbintegration:`Microsoft Azure DevOps / Team Foundation Server
+    <azure-devops-server>`
+  * :rbintegration:`Microsoft Azure DevOps Services <azure-devops-services>`
 
 60-day `Power Pack trial licenses`_ are available, and automatically convert
 to a perpetual 2-user license after your trial period expires.

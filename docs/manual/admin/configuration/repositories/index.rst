@@ -352,6 +352,7 @@ Configuring Self-Hosted Repositories
 .. toctree::
    :maxdepth: 1
 
+   azure-devops-server
    bazaar
    cvs
    git
@@ -371,9 +372,10 @@ Configuring Hosted Repositories
 
    assembla
    aws-codecommit
+   azure-devops-services
    beanstalk
    bitbucket
-   bitbucket-server
+   bitbucket-data-center
    codebasehq
    fedorahosted
    gerrit
@@ -384,4 +386,3 @@ Configuring Hosted Repositories
    sos
    sourceforge
    unfuddle
-   visualstudio

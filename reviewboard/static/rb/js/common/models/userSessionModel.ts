@@ -390,7 +390,7 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
     }
 
     defaults: UserSessionAttrs = {
-        allowSelfShipIt: false,
+        allowSelfShipIt: true,
         archivedReviewRequestsURL: null,
         authenticated: false,
         avatarHTML: {},
