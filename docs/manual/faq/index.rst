@@ -57,7 +57,7 @@ And more enterprise/market-focused systems through `Power Pack`_.
 * :rbintegration:`Azure DevOps Server / Team Foundation Server
   <azure-devops-server>`
 * :rbintegration:`Azure DevOps Services <azure-devops-services>`
-* :rbintegration:`HCL VersionVault <versionvault>`
+* :rbintegration:`HCL ClearCase <hcl-clearcase>`
 * :rbintegration:`IBM ClearCase <clearcase>`
 * :rbintegration:`Keysight SOS <keysight-sos>`
 

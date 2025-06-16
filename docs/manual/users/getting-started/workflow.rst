@@ -12,7 +12,7 @@ We also have detailed guides for using Review Board with specific source code
 management systems:
 
 * :ref:`Git <rbtools-workflow-git>`
-* :ref:`IBM ClearCase / HCL VersionVault <rbtools-workflow-versionvault>`
+* :ref:`IBM ClearCase / HCL ClearCase <rbtools-workflow-clearcase>`
 * :ref:`Keysight SOS <rbtools-workflow-sos>`
 * :ref:`Perforce <rbtools-workflow-perforce>`
 

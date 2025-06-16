@@ -326,7 +326,7 @@ enterprises, including:
   * :rbintegration:`Amazon CodeCommit <aws-codecommit>`
   * :rbintegration:`Bitbucket Data Center <bitbucket-data-center>`
   * :rbintegration:`GitHub Enterprise <github-enterprise>`
-  * :rbintegration:`HCL VersionVault <versionvault>`
+  * :rbintegration:`HCL ClearCase <hcl-clearcase>`
   * :rbintegration:`IBM ClearCase <clearcase>`
   * :rbintegration:`Keysight SOS <keysight-sos>`
   * :rbintegration:`Microsoft Azure DevOps / Team Foundation Server
