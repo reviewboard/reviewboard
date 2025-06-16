@@ -39,12 +39,8 @@ class FakeVisualStudioTeamServicesHostingService(FakeHostingService):
 
 
 FAKE_HOSTING_SERVICES = {
-    'rbpowerpack.hostingsvcs.aws_codecommit.AWSCodeCommit':
-        FakeAWSCodeCommitHostingService,
-    'rbpowerpack.hostingsvcs.bitbucket_server.BitbucketServer':
-        FakeBitbucketServerHostingService,
-    'rbpowerpack.hostingsvcs.githubenterprise.GitHubEnterprise':
-        FakeGitHubEnterpriseHostingService,
-    'rbpowerpack.hostingsvcs.visualstudio.VisualStudioTeamServices':
-        FakeVisualStudioTeamServicesHostingService,
+    'aws-codecommit': FakeAWSCodeCommitHostingService,
+    'bitbucket-server': FakeBitbucketServerHostingService,
+    'github-enterprise': FakeGitHubEnterpriseHostingService,
+    'visual-studio-online': FakeVisualStudioTeamServicesHostingService,
 }
