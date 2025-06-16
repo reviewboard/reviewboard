@@ -6,7 +6,7 @@ const origRepoTypes = [];
 const powerPackTemplate = dedent`
     <h3>${gettext('Power Pack Required')}</h3>
     <p>
-    ${gettext('<span class="power-pack-advert-hosting-type"></span> support is available with <a href="https://www.reviewboard.org/powerpack/">Power Pack</a>, an extension which also offers powerful reports, document review, and more.')}
+    ${gettext('<span class="power-pack-advert-hosting-type"></span> support is available with <a href="https://www.reviewboard.org/powerpack/">Power Pack</a>, an extension which also offers powerful reports, PDF and Office document review, and more.')}
     </p>
 `;
 const gerritPluginRequiredTemplate = dedent`

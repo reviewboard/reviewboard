@@ -99,7 +99,7 @@ File Attachment Comments
 
 Reviewers can :ref:`leave comments on file attachments
 <reviewing-file-attachments>`.  Depending on the type of file attachment, this
-might be on a line in a text file, an area of an image or PDF, or on the
+might be on a line in a text file, an area of an image or document, or on the
 entire file as a whole. For supported file types, reviews will show the
 portion of the file being reviewed (such as a cropped part of the image
 containing the comment).
