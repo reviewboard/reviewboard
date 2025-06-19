@@ -77,8 +77,15 @@ class StatusUpdateResource(WebAPIResource):
         },
         'state': {
             'type': ChoiceFieldType,
-            'choices': ('pending', 'done_success', 'done_failure', 'error',
-                        'timed-out'),
+            'choices': (
+                'cancelled',
+                'done-failure',
+                'done-success',
+                'error',
+                'not-yet-run',
+                'pending',
+                'timed-out',
+            ),
             'description': 'The current state of the status update.',
         },
         'summary': {
@@ -223,8 +230,15 @@ class StatusUpdateResource(WebAPIResource):
             },
             'state': {
                 'type': ChoiceFieldType,
-                'choices': ('pending', 'done-success', 'done-failure',
-                            'error'),
+                'choices': (
+                    'cancelled',
+                    'done-failure',
+                    'done-success',
+                    'error',
+                    'not-yet-run',
+                    'pending',
+                    'timed-out',
+                ),
                 'description': 'The state to query for.',
             },
         },
@@ -317,8 +331,15 @@ class StatusUpdateResource(WebAPIResource):
             },
             'state': {
                 'type': ChoiceFieldType,
-                'choices': ('pending', 'not-yet-run', 'done-success',
-                            'done-failure', 'error'),
+                'choices': (
+                    'cancelled',
+                    'done-failure',
+                    'done-success',
+                    'error',
+                    'not-yet-run',
+                    'pending',
+                    'timed-out',
+                ),
                 'description': 'The current state of the status update.',
             },
             'timeout': {
@@ -395,8 +416,16 @@ class StatusUpdateResource(WebAPIResource):
             },
             'state': {
                 'type': ChoiceFieldType,
-                'choices': ('pending', 'not-yet-run', 'request-run',
-                            'done-success', 'done-failure', 'error'),
+                'choices': (
+                    'cancelled',
+                    'done-failure',
+                    'done-success',
+                    'error',
+                    'not-yet-run',
+                    'pending',
+                    'timed-out',
+                    'request-run',
+                ),
                 'description': 'The current state of the status update.',
             },
             'summary': {

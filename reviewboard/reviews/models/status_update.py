@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import ClassVar, Optional
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -20,6 +20,24 @@ from reviewboard.reviews.models.review import Review
 from reviewboard.reviews.models.review_request import ReviewRequest
 from reviewboard.reviews.signals import status_update_request_run
 from reviewboard.site.models import LocalSite
+
+if TYPE_CHECKING:
+    from typing import ClassVar, Literal, Optional
+
+    from django.contrib.auth.models import AnonymousUser
+    from djblets.util.typing import StrOrPromise
+    from typing_extensions import TypeAlias
+
+    _StateFlag: TypeAlias = Literal['C', 'E', 'F', 'P', 'R', 'S', 'T']
+    _StateStr: TypeAlias = Literal[
+        'cancelled',
+        'done-failure',
+        'done-success',
+        'error',
+        'not-yet-run',
+        'pending',
+        'timed-out',
+    ]
 
 
 class StatusUpdate(models.Model):
@@ -51,13 +69,17 @@ class StatusUpdate(models.Model):
     #: Not yet run state.
     NOT_YET_RUN = 'R'
 
+    #: Cancelled state.
+    CANCELLED = 'C'
+
     STATUSES = (
         (PENDING, _('Pending')),
         (DONE_SUCCESS, _('Done (Success)')),
         (DONE_FAILURE, _('Done (Failure)')),
         (ERROR, _('Error')),
         (TIMEOUT, _('Timed Out')),
-        (NOT_YET_RUN, _('Not Yet Run'))
+        (NOT_YET_RUN, _('Not Yet Run')),
+        (CANCELLED, _('Cancelled')),
     )
 
     _INTEGRATION_CONFIG_KEY = '__integration_config_id'
@@ -158,15 +180,17 @@ class StatusUpdate(models.Model):
     _integration_config: Optional[IntegrationConfig]
 
     @staticmethod
-    def state_to_string(state):
+    def state_to_string(
+        state: _StateFlag,
+    ) -> _StateStr:
         """Return a string representation of a status update state.
 
         Args:
-            state (unicode):
+            state (str):
                 A single-character string representing the state.
 
         Returns:
-            unicode:
+            str:
             A longer string representation of the state suitable for use in
             the API.
         """
@@ -182,19 +206,23 @@ class StatusUpdate(models.Model):
             return 'timed-out'
         elif state == StatusUpdate.NOT_YET_RUN:
             return 'not-yet-run'
+        elif state == StatusUpdate.CANCELLED:
+            return 'cancelled'
         else:
-            raise ValueError('Invalid state "%s"' % state)
+            raise ValueError(f'Invalid state "{state}"')  # type:ignore
 
     @staticmethod
-    def string_to_state(state):
+    def string_to_state(
+        state: _StateStr,
+    ) -> _StateFlag:
         """Return a status update state from an API string.
 
         Args:
-            state (unicode):
+            state (str):
                 A string from the API representing the state.
 
         Returns:
-            unicode:
+            str:
             A single-character string representing the state, suitable for
             storage in the ``state`` field.
         """
@@ -210,8 +238,10 @@ class StatusUpdate(models.Model):
             return StatusUpdate.TIMEOUT
         elif state == 'not-yet-run':
             return StatusUpdate.NOT_YET_RUN
+        elif state == 'cancelled':
+            return StatusUpdate.CANCELLED
         else:
-            raise ValueError('Invalid state string "%s"' % state)
+            raise ValueError(f'Invalid state string "{state}"')  # type:ignore
 
     @property
     def integration_config(self) -> Optional[IntegrationConfig]:
@@ -258,7 +288,7 @@ class StatusUpdate(models.Model):
     @integration_config.setter
     def integration_config(
         self,
-        config: IntegrationConfig,
+        config: IntegrationConfig | None,
     ) -> None:
         """Set the integration configuration for this status update.
 
@@ -292,7 +322,10 @@ class StatusUpdate(models.Model):
 
         self._integration_config = config
 
-    def is_mutable_by(self, user):
+    def is_mutable_by(
+        self,
+        user: User | AnonymousUser,
+    ) -> bool:
         """Return whether the user can modify this status update.
 
         Args:
@@ -309,8 +342,12 @@ class StatusUpdate(models.Model):
                                self.review_request.local_site)))
 
     @property
-    def effective_state(self):
-        """The state of the status update, taking into account timeouts."""
+    def effective_state(self) -> _StateFlag:
+        """The state of the status update, taking into account timeouts.
+
+        Type:
+            str
+        """
         if self.state == self.PENDING and self.timeout is not None:
             timeout = self.timestamp + datetime.timedelta(seconds=self.timeout)
 
@@ -319,7 +356,7 @@ class StatusUpdate(models.Model):
 
         return self.state
 
-    def drop_open_issues(self):
+    def drop_open_issues(self) -> None:
         """Drop any open issues associated with this status update."""
         if self.review is None:
             return
@@ -345,7 +382,7 @@ class StatusUpdate(models.Model):
             self.review_request.reinit_issue_open_count()
 
     @property
-    def can_run(self):
+    def can_run(self) -> bool:
         """Whether or not the checker associated can be run.
 
         Type:
@@ -353,22 +390,22 @@ class StatusUpdate(models.Model):
         """
         state = self.effective_state
         return (state == StatusUpdate.NOT_YET_RUN or
-                (state in (StatusUpdate.ERROR, StatusUpdate.TIMEOUT) and
+                (state in {StatusUpdate.ERROR, StatusUpdate.TIMEOUT} and
                  self.extra_data.get('can_retry')))
 
     @property
-    def action_name(self):
+    def action_name(self) -> StrOrPromise:
         """The name of the action to use for running or re-running the check.
 
         Type:
-            unicode
+            str
         """
-        if self.effective_state in (StatusUpdate.ERROR, StatusUpdate.TIMEOUT):
+        if self.effective_state in {StatusUpdate.ERROR, StatusUpdate.TIMEOUT}:
             return gettext('Retry')
         else:
             return gettext('Run')
 
-    def run(self):
+    def run(self) -> None:
         """Run the tool associated with this status update.
 
         This will emit the :py:data:`~reviewboard.reviews.signals.
@@ -387,6 +424,8 @@ class StatusUpdate(models.Model):
                                        config=self.integration_config)
 
     class Meta:
+        """Metadata for the model."""
+
         app_label = 'reviews'
         db_table = 'reviews_statusupdate'
         ordering = ['timestamp']
