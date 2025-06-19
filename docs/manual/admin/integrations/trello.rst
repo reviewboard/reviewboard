@@ -20,8 +20,8 @@ repositories on Review Board or for them to map to different Trello teams.
 .. _Trello: https://trello.com/
 
 
-Configuring Trello
-==================
+Integration Configuration
+=========================
 
 To configure an integration with Trello:
 

@@ -1,6 +1,5 @@
 .. _integrations-idonethis:
 
-
 =======================
 I Done This Integration
 =======================
@@ -18,8 +17,8 @@ reviews.
 .. _I Done This: https://idonethis.com/
 
 
-Configuring I Done This
-=======================
+Integration Configuration
+=========================
 
 To configure an integration with I Done This, you need to create a
 configuration for the integration and then have each user configure their own

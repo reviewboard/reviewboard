@@ -32,12 +32,12 @@ To configure an integration with Jenkins CI:
        Each integration must have its own name. You can provide any name
        you choose. This will be shown whenever a build is in progress.
 
-   :guilabel:`Enable this integration`
+   :guilabel:`Enable this integration`:
        This will be on by default. You can turn this off to temporarily or
        permanently disable this Jenkins configuration without having to
        delete it.
 
-   :guilabel:`Local Site`
+   :guilabel:`Local Site`:
        If you're using the advanced :term:`Local Site` (multi-server
        partition) support, you can specify which site contains this
        configuration.
@@ -109,7 +109,7 @@ To configure an integration with Jenkins CI:
        When enabled, this will add a :guilabel:`Run` button to the build
        entry.
 
-   :guilabel:`Build timeout`
+   :guilabel:`Build timeout`:
        The amount of time until the build is considered to have timed out.
 
        If the build takes longer than this, it will be marked as timed out

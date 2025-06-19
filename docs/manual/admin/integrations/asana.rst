@@ -20,8 +20,8 @@ or for them to map to different Asana workspaces.
 .. _Asana: https://asana.com/
 
 
-Configuring Asana
-=================
+Integration Configuration
+=========================
 
 To configure an integration with Asana:
 

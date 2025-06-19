@@ -29,8 +29,9 @@ To configure an integration with Discord:
 
    .. image:: images/add-integration.png
 
-2. Give the configuration a descriptive name. This can be anything at all, and
-   just helps identify this configuration.
+2. Give the configuration a descriptive name. This can be anything you
+   choose, and is only important if you plan to have multiple
+   configurations.
 
 3. Select the conditions under which Review Board will send notifications
    to Discord under this configuration. If you have a small Review Board

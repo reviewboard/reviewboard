@@ -35,12 +35,12 @@ To configure an integration with CircleCI:
        Each integration must have its own name. You can provide any name
        you choose. This will be shown whenever a build is in progress.
 
-   :guilabel:`Enable this integration`
+   :guilabel:`Enable this integration`:
        This will be on by default. You can turn this off to temporarily or
        permanently disable this CircleCI configuration without having to
        delete it.
 
-   :guilabel:`Local Site`
+   :guilabel:`Local Site`:
        If you're using the advanced :term:`Local Site` (multi-server
        partition) support, you can specify which site contains this
        configuration.
@@ -93,7 +93,7 @@ To configure an integration with CircleCI:
        When enabled, this will add a :guilabel:`Run` button to the build
        entry.
 
-   :guilabel:`Build timeout`
+   :guilabel:`Build timeout`:
        The amount of time until the build is considered to have timed out.
 
        If the build takes longer than this, it will be marked as timed out
@@ -143,27 +143,27 @@ using :ref:`rbt patch <rbtools:rbt-patch>`.
         steps:
           - checkout
           - run:
-            name: Install dependencies
-            command: sudo pip install -e .
+              name: Install dependencies
+              command: sudo pip install -e .
           - run:
-            name: Run tests
-            command: python ./tests/runtests.py
+              name: Run tests
+              command: python ./tests/runtests.py
       reviewboard:
         docker:
           - image: circleci/python:2.7
         steps:
           - checkout
           - run:
-            name: Apply patch
-            command: |
-              sudo pip install rbtools
-              rbt patch --api-token "$REVIEWBOARD_API_TOKEN" --server "$REVIEWBOARD_SERVER" --diff-revision "$REVIEWBOARD_DIFF_REVISION" "$REVIEWBOARD_REVIEW_REQUEST"
+              name: Apply patch
+              command: |
+                sudo pip install rbtools
+                rbt patch --api-token "$REVIEWBOARD_API_TOKEN" --server "$REVIEWBOARD_SERVER" --diff-revision "$REVIEWBOARD_DIFF_REVISION" "$REVIEWBOARD_REVIEW_REQUEST"
           - run:
-            name: Install dependencies
-            command: sudo pip install -e .
+              name: Install dependencies
+              command: sudo pip install -e .
           - run:
-            name: Run tests
-            command: python ./tests/runtests.py
+              name: Run tests
+              command: python ./tests/runtests.py
     notify:
       webhooks:
         - url: https://reviewboard.example.com/rbintegrations/circle-ci/webhook/
