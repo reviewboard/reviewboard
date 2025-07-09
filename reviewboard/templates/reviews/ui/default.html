@@ -1,15 +1,41 @@
 {% extends base_template %}
-{% load djblets_js pipeline %}
+{% load djblets_extensions djblets_js pipeline %}
 
 {% block review_ui_css %}
 {%  for bundle_name in review_ui.css_bundle_names %}
-{%   stylesheet bundle_name %}
+{%   comment %}
+NOTE: On Review Board local development servers, rendering review UI static
+      media from installed extension packages is broken when running with
+      Djblets <4.1 and <5.3. Using development setups of extension
+      packages works fine, and this is not an issue on production servers.
+
+      Using `ext_css_bundle` here and `ext_js_bundle` below fixes the issue
+      when running with Djblets >=4.1 and >=5.3. If in any case this is
+      being run with a lower Djblets version, then the `bundle_output` will
+      be empty and we'll fall back on using the `javascript` template tag
+      which will do the right thing on production servers.
+{%   endcomment %}
+{%   if review_ui.extension %}
+{%    ext_css_bundle review_ui.extension bundle_name as bundle_output %}
+{%   endif %}
+{%   if bundle_output %}
+{{bundle_output}}
+{%   else %}
+{%    stylesheet bundle_name %}
+{%   endif %}
 {%  endfor %}
 {% endblock %}
 
 {% block review_ui_scripts %}
 {%  for bundle_name in review_ui.js_bundle_names %}
-{%   javascript bundle_name %}
+{%   if review_ui.extension %}
+{%    ext_js_bundle review_ui.extension bundle_name as bundle_output %}
+{%   endif %}
+{%   if bundle_output %}
+{{bundle_output}}
+{%   else %}
+{%    javascript bundle_name %}
+{%   endif %}
 {%  endfor %}
 {%  for js_file in review_ui.js_files %}
 <script src="{{js_file}}"></script>
