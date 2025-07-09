@@ -71,7 +71,7 @@ Installing Power Pack
 `Power Pack`_ extends Review Board, adding such helpful features as:
 
 * `Report generation`_
-* `PDF document review`_
+* `PDF and Office document review`_
 * Better multi-server scalability
 * Integration with `Microsoft Azure DevOps`_
 * Integration with `GitHub Enterprise`_
@@ -83,8 +83,8 @@ To get started, `download a trial license`_, or read the
 .. _`Power Pack`: https://www.reviewboard.org/powerpack/
 .. _`Report generation`:
    https://www.reviewboard.org/docs/powerpack/latest/powerpack/manual/reports/
-.. _`PDF document review`:
-   https://www.reviewboard.org/docs/powerpack/latest/powerpack/manual/pdf/
+.. _`PDF and Office document review`:
+   https://www.reviewboard.org/docs/powerpack/latest/powerpack/manual/doc-review/
 .. _`Microsoft Azure DevOps`:
    https://azure.microsoft.com/en-us/services/devops/server/
 .. _`GitHub Enterprise`: https://enterprise.github.com/
