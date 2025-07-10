@@ -255,6 +255,7 @@ Licensing
    :toctree: python
 
    reviewboard.licensing
+   reviewboard.licensing.errors
    reviewboard.licensing.features
    reviewboard.licensing.license
    reviewboard.licensing.provider

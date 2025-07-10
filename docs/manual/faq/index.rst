@@ -57,7 +57,7 @@ And more enterprise/market-focused systems through `Power Pack`_.
 * :rbintegration:`Azure DevOps Server / Team Foundation Server
   <azure-devops-server>`
 * :rbintegration:`Azure DevOps Services <azure-devops-services>`
-* :rbintegration:`HCL VersionVault <versionvault>`
+* :rbintegration:`HCL ClearCase <hcl-clearcase>`
 * :rbintegration:`IBM ClearCase <clearcase>`
 * :rbintegration:`Keysight SOS <keysight-sos>`
 
@@ -163,8 +163,8 @@ You can also read through our documentation on:
 * :ref:`Using Review Board <rb-users-guide>`
 * `Review Bot`_ automated code review for Review Board
 * `RBTools`_ command line tools for Review Board
-* `Power Pack`_ document review, reports, management, and integrations for
-  Review Board
+* `Power Pack`_ PDF and Office document review, reports, management, and
+  integrations for Review Board
 
 
 .. _Get Review Board: https://www.reviewboard.org/get/

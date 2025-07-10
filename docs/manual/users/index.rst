@@ -16,7 +16,7 @@ and CI services`_, and source code management systems, such as:
 * :rbintegration:`Mercurial <mercurial>`
 * :rbintegration:`Perforce <perforce>`
 * :rbintegration:`IBM ClearCase <clearcase>`
-* :rbintegration:`HCL VersionVault <versionvault>`
+* :rbintegration:`HCL ClearCase <hcl-clearcase>`
 * :rbintegration:`Keysight SOS <keysight-sos>`
 * :rbintegration:`Microsoft Azure DevOps Server / TFS <azure-devops-server>`
 * :rbintegration:`Microsoft Azure DevOps Services <azure-devops-services>`

@@ -119,7 +119,7 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
      * :ref:`Bazaar <repository-scm-bazaar>`
      * :ref:`CVS <repository-scm-cvs>`
      * :ref:`Git <repository-scm-git>`
-     * :ref:`HCL VersionVault and IBM ClearCase <repository-scm-clearcase>`
+     * :ref:`HCL ClearCase and IBM ClearCase <repository-scm-clearcase>`
      * :ref:`Keysight SOS <repository-scm-sos>`
      * :ref:`Mercurial <repository-scm-mercurial>`
      * :ref:`Perforce <repository-scm-perforce>`

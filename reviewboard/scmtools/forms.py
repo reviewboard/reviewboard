@@ -895,9 +895,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 continue
 
             hosting_service_id = hosting_service.hosting_service_id
-            class_name = '%s.%s' % (hosting_service.__module__,
-                                    hosting_service.__name__)
-            hosting_services.add(class_name)
+            hosting_services.add(hosting_service_id)
 
             auth_form_cls = hosting_service.auth_form or HostingServiceAuthForm
 
@@ -960,14 +958,14 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 logger.exception('Error loading hosting service %s: %s',
                                  hosting_service_id, e)
 
-        for class_name, cls in FAKE_HOSTING_SERVICES.items():
-            if class_name not in hosting_services:
+        for hosting_service_id, cls in FAKE_HOSTING_SERVICES.items():
+            if hosting_service_id not in hosting_services:
                 service_info = self._get_hosting_service_info(cls)
                 service_info['fake'] = True
-                self.hosting_service_info[cls.hosting_service_id] = \
+                self.hosting_service_info[hosting_service_id] = \
                     service_info
 
-                hosting_service_choices.append((cls.hosting_service_id,
+                hosting_service_choices.append((hosting_service_id,
                                                 cls.name))
 
         # Build the list of hosting service choices, sorted, with
