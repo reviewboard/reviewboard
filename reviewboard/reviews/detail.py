@@ -1457,12 +1457,23 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
     needs_reviews = True
     needs_status_updates = True
 
+    #: A mapping from status update state to the HTML class to apply.
+    _state_to_header_class: ClassVar[Mapping[str, str]] = {
+        StatusUpdate.CANCELLED: 'status-update-state-failure',
+        StatusUpdate.DONE_FAILURE: 'status-update-state-failure',
+        StatusUpdate.ERROR: 'status-update-state-failure',
+        StatusUpdate.TIMEOUT: 'status-update-state-failure',
+        StatusUpdate.PENDING: 'status-update-state-pending',
+        StatusUpdate.NOT_YET_RUN: 'status-update-state-not-yet-run',
+        StatusUpdate.DONE_SUCCESS: 'status-update-state-success',
+    }
+
     ######################
     # Instance variables #
     ######################
 
     #: A counter for each possible status update state.
-    state_counts: Counter
+    state_counts: Counter[str]
 
     #: The current summary of all status updates.
     state_summary: str
@@ -1574,8 +1585,8 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
             if last_visited and status_update.timestamp > data.last_visited:
                 return False
 
-            if (status_update.effective_state in (StatusUpdate.PENDING,
-                                                  StatusUpdate.NOT_YET_RUN)):
+            if (status_update.effective_state in {StatusUpdate.PENDING,
+                                                  StatusUpdate.NOT_YET_RUN}):
                 return False
 
             if status_update.review_id is not None:
@@ -1608,18 +1619,10 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
 
         state = update.effective_state
 
-        if state in (StatusUpdate.DONE_FAILURE,
-                     StatusUpdate.ERROR,
-                     StatusUpdate.TIMEOUT):
-            update.header_class = 'status-update-state-failure'
-        elif state == StatusUpdate.PENDING:
-            update.header_class = 'status-update-state-pending'
-        elif state == StatusUpdate.NOT_YET_RUN:
-            update.header_class = 'status-update-state-not-yet-run'
-        elif state == StatusUpdate.DONE_SUCCESS:
-            update.header_class = 'status-update-state-success'
-        else:
-            raise ValueError('Unexpected state "%s"' % state)
+        try:
+            update.header_class = self._state_to_header_class[state]
+        except KeyError:
+            raise ValueError(f'Unexpected state "{state}"')
 
         if state == StatusUpdate.TIMEOUT:
             description = _('timed out.')
@@ -1723,9 +1726,15 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
                 _('%s timed out')
                 % state_counts[StatusUpdate.TIMEOUT])
 
+        if state_counts[StatusUpdate.CANCELLED] > 0:
+            summary_parts.append(
+                _('%s cancelled')
+                % state_counts[StatusUpdate.CANCELLED])
+
         if (state_counts[StatusUpdate.DONE_FAILURE] > 0 or
             state_counts[StatusUpdate.ERROR] > 0 or
-            state_counts[StatusUpdate.TIMEOUT] > 0):
+            state_counts[StatusUpdate.TIMEOUT] > 0 or
+            state_counts[StatusUpdate.CANCELLED] > 0):
             state_summary_class = 'status-update-state-failure'
         elif (state_counts[StatusUpdate.PENDING] > 0 or
               state_counts[StatusUpdate.NOT_YET_RUN] > 0):
