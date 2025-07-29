@@ -269,6 +269,8 @@ export class LicenseView<
                     ${_`Manage your license`}
                    </Ink.Button>
                   `}
+                  ${model.get('canUploadLicense') &&
+                    this.#buildUploadLicenseActionButton()}
                   ${actions.map(actionInfo => buildActionButton(actionInfo))}
                  </div>
                  ${detailsNodes}
@@ -328,6 +330,72 @@ export class LicenseView<
         `;
 
         return actionButton;
+    }
+
+    /**
+     * Build the Upload License action elements.
+     *
+     * This will build the action and upload field, and handle all
+     * interactions and UI updates for the upload process.
+     *
+     * Returns:
+     *     HTMLElement[]:
+     *     The resulting action elements.
+     */
+    #buildUploadLicenseActionButton(): HTMLElement[] {
+        const buttonLabel = _`Upload a new license file`;
+        const fileFieldID = `license-upload-form-field-${this.cid}`;
+
+        function resetButton() {
+            button.busy = false;
+            button.label = buttonLabel;
+        }
+
+        function onClick() {
+            button.busy = true;
+            button.label = _`Selecting license file...`;
+            fileFieldEl.click();
+        }
+
+        const button = craft<ButtonView>`
+            <Ink.Button onClick=${onClick}>
+             ${buttonLabel}
+            </Ink.Button>
+        `;
+
+        const fileFieldEl = paint<HTMLInputElement>`
+            <input id="${fileFieldID}"
+                   name="license_data"
+                   type="file"
+                   style="display: none"/>
+        `;
+        fileFieldEl.addEventListener('cancel', () => resetButton());
+        fileFieldEl.addEventListener('change', async () => {
+            /* Handle the file upload. */
+            const file = fileFieldEl.files[0];
+
+            /*
+             * Just a quick sanity-check before we start uploading content.
+             */
+            console.assert(file.size < 1000000);
+
+            button.label = _`Uploading license file...`;
+
+            try {
+                await this.model.uploadLicenseFile(file);
+            } catch (err) {
+                alert(err.message);
+            }
+
+            resetButton();
+        });
+
+        return paint<HTMLElement[]>`
+            ${fileFieldEl}
+            <label htmlFor="${fileFieldID}">
+             ${button}
+            </label>
+        `;
     }
 
     /**

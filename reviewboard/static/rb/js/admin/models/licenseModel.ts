@@ -13,6 +13,10 @@ import {
     spina,
 } from '@beanbag/spina';
 
+import {
+    CallLicenseActionError,
+} from './callLicenseActionError';
+
 
 /**
  * The current status of a license.
@@ -62,6 +66,38 @@ export enum LicenseCheckStatus {
 
     /** There was an error applying a new license. */
     ERROR_APPLYING = 'error-applying',
+}
+
+
+/**
+ * Response payload from checking for license updates.
+ *
+ * This is returned by Review Board.
+ *
+ * Version Added:
+ *     7.1
+ */
+export interface CheckUpdatesProcessResponsePayload {
+    /** The current status of the license check. */
+    status: LicenseCheckStatus;
+
+    /** Optional license information to set. */
+    license_info?: Record<string, unknown>;
+}
+
+
+/**
+ * Options for calling an action on the license provider.
+ *
+ * Version Added:
+ *     7.1
+ */
+export interface CallActionOptions {
+    /** The name of the action. */
+    action: string;
+
+    /** Encoded arguments for the action. */
+    args?: Record<string, Blob | string>;
 }
 
 
@@ -234,5 +270,260 @@ export class License<
         >,
     ) {
         this.actionCSRFToken = options?.actionCSRFToken;
+    }
+
+    /**
+     * Upload a new set of license data to the license provider.
+     *
+     * Args:
+     *     contents (Blob):
+     *         The binary contents of the file to upload.
+     *
+     * Returns:
+     *     Promise:
+     *     The promise for the upload request.
+     */
+    async uploadLicenseFile(contents: Blob) {
+        await this.callAction({
+            action: 'upload-license',
+            args: {
+                license_data: contents,
+            },
+        });
+    }
+
+    /**
+     * Call an action in the license provider backend.
+     *
+     * Args:
+     *     options (CallActionOptions):
+     *         Options for the action call.
+     *
+     * Returns:
+     *     Promise:
+     *     The promise for the action call.
+     */
+    async callAction(
+        options: CallActionOptions,
+    ): Promise<unknown> {
+        /*
+         * For this, we're going to use $.ajax instead of RB.apiCall, so
+         * that we don't have to worry about turning things off like the
+         * activity indicator or dealing with anything specific to the
+         * Review Board API.
+         *
+         * Also, let any errors bubble up.
+         */
+        const action = options.action;
+        const actionTarget = this.get('actionTarget');
+
+        const formData = new FormData();
+        formData.append('action', action);
+        formData.append('action_target', actionTarget);
+        formData.append('csrfmiddlewaretoken', this.actionCSRFToken);
+
+        if (options.args) {
+            for (const [key, value] of Object.entries(options.args)) {
+                formData.append(key, value);
+            }
+        }
+
+        let response: Response = null;
+        let rsp;
+
+        try {
+            response = await fetch('.', {
+                body: formData,
+                method: 'POST',
+            });
+
+            rsp = await response.json();
+        } catch (err) {
+            /* Fall through and handle this below. */
+        }
+
+        if (!rsp || !response.ok) {
+            throw new CallLicenseActionError({
+                action: action,
+                actionTarget: actionTarget,
+                message: rsp?.error,
+                response: response,
+            });
+        }
+
+        if (rsp.license_info) {
+            this.set(this.parse(rsp.license_info));
+            this.trigger('licenseUpdated');
+        }
+
+        return rsp;
+    }
+
+    /**
+     * Check for license updates.
+     *
+     * This will start by fetching request data from the license provider's
+     * configured endpoint, passing in the data needed for the request. If
+     * successful, the data will be processed by the license provider backend
+     * in Review Board, returning new attributes .
+     *
+     * The status will be updated throughout the process to reflect the current
+     * state. Listeners can monitor the ``checkStatus`` attribute for changes.
+     * Upon completion, the ``licenseUpdates`` event will be triggered.
+     */
+    async checkForUpdates() {
+        this.set('checkStatus', LicenseCheckStatus.CHECKING);
+
+        /* Fetch a license check request payload. */
+        let checkRsp;
+
+        try {
+            checkRsp = await this.callAction({
+                action: 'license-update-check',
+            });
+        } catch (xhr) {
+            this.set('checkStatus', LicenseCheckStatus.ERROR_CHECKING);
+
+            return;
+        }
+
+        if (!checkRsp.canCheck) {
+            /* There's nothing to do. */
+            this.set('checkStatus', LicenseCheckStatus.HAS_LATEST);
+
+            return;
+        }
+
+        const checkStatusURL = checkRsp.checkStatusURL;
+        const requestData = checkRsp.data;
+
+        let data: (FormData | string) = null;
+
+        if (typeof requestData === 'string') {
+            data = requestData;
+        } else if (requestData) {
+            data = new FormData();
+
+            for (const [key, value] of Object.entries(requestData)) {
+                data.append(key, value as string);
+            }
+        }
+
+        /* Send it to the configured endpoint. */
+        let response: Response;
+        let licenseRsp;
+
+        try {
+            const request: RequestInit = {
+                body: data,
+                method: 'POST',
+            };
+
+            if (checkRsp.credentials) {
+                request.credentials = checkRsp.credentials;
+            }
+
+            if (checkRsp.headers) {
+                request.headers = checkRsp.headers;
+            }
+
+            response = await fetch(checkStatusURL, request);
+
+            licenseRsp = await response.json();
+        } catch (err) {
+            /* Fall through and handle this below. */
+            licenseRsp = null;
+        }
+
+        if (!licenseRsp || !response.ok) {
+            this.onCheckForUpdatesHTTPError(response);
+
+            return;
+        }
+
+        this.#processCheckForUpdatesResponse(licenseRsp, requestData);
+    }
+
+    /**
+     * Handle HTTP errors when checking for updates.
+     *
+     * This will update the status of the license check depending on the error
+     * code we get back.
+     *
+     * Subclasses can override this to provide custom error handling.
+     *
+     * By default, this will set the following values for ``checkStatus``:
+     *
+     * * :js:attr:`LicenseCheckStatus.NO_LICENSE` if the server returns a 403.
+     * * :js:attr:`LicenseCheckStatus.ERROR_CHECKING` for any other error.
+     *
+     * Args:
+     *     rsp (Response):
+     *         The fetch response object.
+     */
+    onCheckForUpdatesHTTPError(response: Response) {
+        if (response.status === 403) {
+            /*
+             * A 403 resposne from a license server indicates that there's
+             * no accessible license.
+             */
+            this.set('checkStatus', LicenseCheckStatus.NO_LICENSE);
+        } else {
+            console.error('Error checking for license %o: response=%o',
+                          this, response);
+
+            this.set('checkStatus', LicenseCheckStatus.ERROR_CHECKING);
+        }
+    }
+
+    /**
+     * Process the response from checking for updates.
+     *
+     * This will pass the request and response payloads to the license
+     * provider on the server, allowing it to handle the data as needed.
+     * The result will be a new set of attributes to set on the license.
+     *
+     * Args:
+     *     checkLicenseData (object):
+     *         The license data received from the server.
+     *
+     *     options (CheckForUpdatesOptions):
+     *         The options used for checking for updates.
+     */
+    async #processCheckForUpdatesResponse(
+        checkLicenseData: object,
+        requestData: object,
+    ) {
+        this.set('checkStatus', LicenseCheckStatus.APPLYING);
+
+        let rsp: CheckUpdatesProcessResponsePayload;
+
+        try {
+            rsp = await this.callAction({
+                action: 'process-license-update',
+                args: {
+                    check_request_data: JSON.stringify(requestData),
+                    check_response_data: JSON.stringify(checkLicenseData),
+                },
+            }) as CheckUpdatesProcessResponsePayload;
+        } catch (xhr) {
+            const responseText = xhr.responseText;
+
+            console.error(
+                'Error processing license %o response %o: rsp=%o, ' +
+                'textStatus=%o',
+                this, checkLicenseData, responseText, xhr.statusText);
+
+            this.set('checkStatus', LicenseCheckStatus.ERROR_APPLYING);
+
+            return;
+        }
+
+        /* The call succeeded. Notify the UI and listeners. */
+        this.set('checkStatus', rsp.status);
+
+        if (rsp.status === LicenseCheckStatus.APPLIED) {
+            this.trigger('licenseUpdated');
+        }
     }
 }

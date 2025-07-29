@@ -283,6 +283,7 @@ suite('rb/admin/views/LicenseView', () => {
                             url: 'https://example.com/action2',
                         },
                     ],
+                    canUploadLicense: true,
                     licenseID: 'license1',
                     manageURL: 'https://example.com/manage/',
                     productName: 'Test Product',
@@ -313,6 +314,16 @@ suite('rb/admin/views/LicenseView', () => {
                       href="https://example.com/manage/">
                     Manage your license
                    </a>
+                   <input id="license-upload-form-field-${cid}"
+                          name="license_data"
+                          type="file"
+                          style="display: none;"/>
+                   <label htmlFor="license-upload-form-field-${cid}">
+                    <button class="ink-c-button"
+                            type="button">
+                     Upload a new license file
+                    </button>
+                   </label>
                    <button class="ink-c-button" type="button">
                     Action 1
                    </button>

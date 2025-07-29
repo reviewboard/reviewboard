@@ -47,6 +47,7 @@ RB.PageManager.ready(function(page) {
         model: license
     });
     licenseView.renderInto(licensesEl);
+    license.checkForUpdates();
 {%   endfor %}
 });
 </script>

@@ -6,14 +6,21 @@ Version Added:
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone as tz
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
 import kgb
 from django.urls import reverse
 from django.utils import timezone
 
+from reviewboard.licensing.errors import LicenseActionError
 from reviewboard.licensing.license import LicenseInfo, LicenseStatus
+from reviewboard.licensing.license_checks import (
+    ProcessCheckLicenseResult,
+    ProcessCheckLicenseResultStatus,
+)
 from reviewboard.licensing.provider import BaseLicenseProvider
 from reviewboard.licensing.registry import (LicenseProviderRegistry,
                                             license_provider_registry)
@@ -23,7 +30,9 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
     from django.http import HttpRequest
+    from djblets.util.typing import JSONValue
 
+    from reviewboard.licensing.license_checks import RequestCheckLicenseResult
     from reviewboard.licensing.provider import LicenseAction
 
 
@@ -87,6 +96,61 @@ class _MyLicenseProvider1(BaseLicenseProvider):
             return f'https://example.com/{license_info.license_id}/'
 
         return None
+
+    def get_check_license_status_url(
+        self,
+        *,
+        license_info: LicenseInfo,
+    ) -> str | None:
+        return f'https://example.com/{license_info.license_id}/check/'
+
+    def get_check_license_request(
+        self,
+        *,
+        license_info: LicenseInfo,
+        request: (HttpRequest | None) = None,
+    ) -> RequestCheckLicenseResult | None:
+        return {
+            'data': {
+                'license_id': license_info.license_id,
+                'something': 'special',
+                'version': '1.0',
+            },
+            'url': f'https://example.com/{license_info.license_id}/check/'
+        }
+
+    def process_check_license_result(
+        self,
+        *,
+        license_info: LicenseInfo,
+        check_request_data: JSONValue,
+        check_response_data: JSONValue,
+        request: (HttpRequest | None) = None,
+    ) -> ProcessCheckLicenseResult:
+        assert isinstance(check_response_data, dict)
+
+        if check_response_data.get('version') != '1.0':
+            raise LicenseActionError(
+                'Invalid version from the licensing server! Oh no!'
+            )
+
+        status: ProcessCheckLicenseResultStatus
+
+        if check_response_data.get('updated'):
+            status = ProcessCheckLicenseResultStatus.APPLIED
+            license_info.expires = timezone.now() + timedelta(days=365)
+            license_info.plan_id = 'smpbpe1'
+            license_info.plan_name = 'Super Mega Power Bundle Pro Enterprise'
+        elif check_response_data.get('latest'):
+            status = ProcessCheckLicenseResultStatus.HAS_LATEST
+        else:
+            status = ProcessCheckLicenseResultStatus.ERROR_APPLYING
+
+        return {
+            'status': status,
+            'license_info': self.get_js_license_model_data(
+                license_info=license_info),
+        }
 
 
 class _MyLicenseProvider2(BaseLicenseProvider):
@@ -267,7 +331,8 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                         },
                     ],
                     'canUploadLicense': False,
-                    'expiresDate': datetime(2025, 4, 26, 0, 0, tzinfo=tz.utc),
+                    'expiresDate': datetime(2025, 4, 26, 0, 0,
+                                            tzinfo=tz.utc),
                     'expiresSoon': True,
                     'gracePeriodDaysRemaining': 0,
                     'hardExpiresDate': datetime(2025, 4, 26, 0, 0,
@@ -292,7 +357,8 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                     'actionTarget': 'my-provider-2:license1',
                     'actions': [],
                     'canUploadLicense': False,
-                    'expiresDate': datetime(2025, 3, 2, 0, 0, tzinfo=tz.utc),
+                    'expiresDate': datetime(2025, 3, 2, 0, 0,
+                                            tzinfo=tz.utc),
                     'expiresSoon': False,
                     'gracePeriodDaysRemaining': 0,
                     'hardExpiresDate': datetime(2025, 3, 2, 0, 0,
@@ -317,7 +383,8 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                     'actionTarget': 'my-provider-2:license2',
                     'actions': [],
                     'canUploadLicense': False,
-                    'expiresDate': datetime(2025, 4, 19, 0, 0, tzinfo=tz.utc),
+                    'expiresDate': datetime(2025, 4, 19, 0, 0,
+                                            tzinfo=tz.utc),
                     'expiresSoon': False,
                     'gracePeriodDaysRemaining': 0,
                     'hardExpiresDate': datetime(2025, 4, 19, 0, 0,
@@ -343,3 +410,382 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                 'view': 'RB.LicenseView',
             },
         ])
+
+    def test_post_as_anonymous(self) -> None:
+        """Testing LicenseView.post as anonymous"""
+        client = self.client
+        response = client.post(reverse('admin-licenses'))
+
+        self.assertEqual(response.status_code, 302)
+
+    def test_post_as_non_admin(self) -> None:
+        """Testing LicenseView.post as non-admin user"""
+        client = self.client
+        self.assertTrue(self.client.login(username='dopey', password='dopey'))
+        response = client.post(reverse('admin-licenses'))
+
+        self.assertEqual(response.status_code, 302)
+
+    def test_post_with_no_action(self) -> None:
+        """Testing LicenseView.post as admin with no action"""
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'))
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {
+            'error': 'Missing action data.',
+        })
+
+    def test_post_with_no_action_target(self) -> None:
+        """Testing LicenseView.post as admin with no action_target"""
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'xxx',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {
+            'error': 'Missing action target.',
+        })
+
+    def test_post_with_invalid_action_target(self) -> None:
+        """Testing LicenseView.post as admin with invalid action_target"""
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'xxx',
+            'action_target': 'xxx',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {
+            'error': 'Invalid action target.',
+        })
+
+    def test_post_with_license_not_found(self) -> None:
+        """Testing LicenseView.post as admin with license not found"""
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'xxx',
+            'action_target': 'my-provider-2:xxx',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {
+            'error': 'The license entry could not be found.',
+        })
+
+    def test_post_with_invalid_action(self) -> None:
+        """Testing LicenseView.post as admin with invalid action"""
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'xxx',
+            'action_target': 'my-provider-2:license1',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {
+            'error': 'Unsupported license action "xxx".',
+        })
+
+    def test_post_with_license_update_check(self) -> None:
+        """Testing LicenseView.post as admin with action="license-update-check"
+        """
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'license-update-check',
+            'action_target': 'my-provider-1:license1',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {
+            'canCheck': True,
+            'checkStatusURL': 'https://example.com/license1/check/',
+            'credentials': None,
+            'data': {
+                'license_id': 'license1',
+                'something': 'special',
+                'version': '1.0',
+            },
+            'headers': None,
+        })
+
+    def test_post_with_license_update_check_not_supported(self) -> None:
+        """Testing LicenseView.post as admin with action="license-update-check"
+        not supported
+        """
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'license-update-check',
+            'action_target': 'my-provider-2:license1',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {
+            'canCheck': False,
+        })
+
+    def test_post_with_process_license_update_and_applied(self) -> None:
+        """Testing LicenseView.post as admin with
+        action="process-license-update" and new license data applied
+        """
+        trace_id = '00000000-0000-0000-0000-000000000001'
+        self.spy_on(uuid4, op=kgb.SpyOpReturn(trace_id))
+
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'process-license-update',
+            'action_target': 'my-provider-1:license2',
+            'check_request_data': json.dumps({
+                'license_id': 'license1',
+                'something': 'special',
+                'version': '1.0',
+            }),
+            'check_response_data': json.dumps({
+                'updated': True,
+                'version': '1.0',
+            }),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {
+            'status': 'applied',
+            'license_info': {
+                'actionTarget': 'my-provider-1:license2',
+                'actions': [
+                    {
+                        'actionID': 'test',
+                        'label': 'Test',
+                        'url': 'https://example.com/license2/',
+                    },
+                ],
+                'canUploadLicense': False,
+                'expiresDate': '2026-04-21T00:00:00Z',
+                'expiresSoon': False,
+                'gracePeriodDaysRemaining': 0,
+                'hardExpiresDate': '2026-04-21T00:00:00Z',
+                'isTrial': False,
+                'licenseID': 'license2',
+                'licensedTo': 'Test User',
+                'lineItems': [],
+                'manageURL': None,
+                'noticeHTML': '',
+                'planID': 'smpbpe1',
+                'planName': 'Super Mega Power Bundle Pro Enterprise',
+                'productName': 'Test Product',
+                'status': 'licensed',
+                'summary': (
+                    'License for Test Product (Super Mega Power Bundle '
+                    'Pro Enterprise)'
+                ),
+            },
+        })
+
+    def test_post_with_process_license_update_and_has_latest(self) -> None:
+        """Testing LicenseView.post as admin with
+        action="process-license-update" and already has latest data
+        """
+        trace_id = '00000000-0000-0000-0000-000000000001'
+        self.spy_on(uuid4, op=kgb.SpyOpReturn(trace_id))
+
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'process-license-update',
+            'action_target': 'my-provider-1:license2',
+            'check_request_data': json.dumps({
+                'license_id': 'license1',
+                'something': 'special',
+                'version': '1.0',
+            }),
+            'check_response_data': json.dumps({
+                'latest': True,
+                'version': '1.0',
+            }),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {
+            'status': 'has-latest',
+            'license_info': {
+                'actionTarget': 'my-provider-1:license2',
+                'actions': [
+                    {
+                        'actionID': 'test',
+                        'label': 'Test',
+                        'url': 'https://example.com/license2/',
+                    },
+                ],
+                'canUploadLicense': False,
+                'expiresDate': '2025-04-26T00:00:00Z',
+                'expiresSoon': True,
+                'gracePeriodDaysRemaining': 0,
+                'hardExpiresDate': '2025-04-26T00:00:00Z',
+                'isTrial': False,
+                'licenseID': 'license2',
+                'licensedTo': 'Test User',
+                'lineItems': [],
+                'manageURL': None,
+                'noticeHTML': '',
+                'planID': 'plan1',
+                'planName': 'Plan 1',
+                'productName': 'Test Product',
+                'status': 'licensed',
+                'summary': 'License for Test Product (Plan 1)',
+            },
+        })
+
+    def test_post_with_process_license_update_and_error(self) -> None:
+        """Testing LicenseView.post as admin with
+        action="process-license-update" and error
+        """
+        trace_id = '00000000-0000-0000-0000-000000000001'
+        self.spy_on(uuid4, op=kgb.SpyOpReturn(trace_id))
+
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'process-license-update',
+            'action_target': 'my-provider-1:license2',
+            'check_request_data': json.dumps({
+                'license_id': 'license1',
+                'something': 'special',
+                'version': '1.0',
+            }),
+            'check_response_data': json.dumps({
+                'latest': True,
+                'version': '2.0',
+            }),
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {
+            'error': (
+                'Error processing license update: Invalid version from '
+                'the licensing server! Oh no!'
+            ),
+        })
+
+    def test_post_with_process_license_update_no_check_data(self) -> None:
+        """Testing LicenseView.post as admin with
+        action="process-license-update" and missing check_request_data
+        """
+        trace_id = '00000000-0000-0000-0000-000000000001'
+        self.spy_on(uuid4, op=kgb.SpyOpReturn(trace_id))
+
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'process-license-update',
+            'action_target': 'my-provider-1:license2',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {
+            'error': (
+                f'Missing check_request_data value for license check. This '
+                f'may be an internal error or an issue with the licensing '
+                f'server. Check the Review Board server logs for more '
+                f'information (error ID {trace_id}).'
+            ),
+        })
+
+    def test_post_with_process_license_update_no_response_data(self) -> None:
+        """Testing LicenseView.post as admin with
+        action="process-license-update" and missing check_response_data
+        """
+        trace_id = '00000000-0000-0000-0000-000000000001'
+        self.spy_on(uuid4, op=kgb.SpyOpReturn(trace_id))
+
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'process-license-update',
+            'action_target': 'my-provider-1:license2',
+            'check_request_data': '"abc123"',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {
+            'error': (
+                f'Missing check_response_data value for license check. This '
+                f'may be an internal error or an issue with the licensing '
+                f'server. Check the Review Board server logs for more '
+                f'information (error ID {trace_id}).'
+            ),
+        })
+
+    def test_post_with_process_license_update_invalid_check_data(self) -> None:
+        """Testing LicenseView.post as admin with
+        action="process-license-update" and non-JSON check_response_data
+        """
+        trace_id = '00000000-0000-0000-0000-000000000001'
+        self.spy_on(uuid4, op=kgb.SpyOpReturn(trace_id))
+
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'process-license-update',
+            'action_target': 'my-provider-1:license2',
+            'check_request_data': 'xxx',
+            'check_response_data': '"def456"',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {
+            'error': (
+                f'Invalid check_request_data value for license check. This '
+                f'may be an internal error or an issue with the licensing '
+                f'server. Check the Review Board server logs for more '
+                f'information (error ID {trace_id}).'
+            ),
+        })
+
+    def test_post_with_process_license_update_invalid_response_data(
+        self,
+    ) -> None:
+        """Testing LicenseView.post as admin with
+        action="process-license-update" and non-JSON check_response_data
+        """
+        trace_id = '00000000-0000-0000-0000-000000000001'
+        self.spy_on(uuid4, op=kgb.SpyOpReturn(trace_id))
+
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'process-license-update',
+            'action_target': 'my-provider-1:license2',
+            'check_request_data': '"abc123"',
+            'check_response_data': 'xxx',
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {
+            'error': (
+                f'Invalid check_response_data value for license check. This '
+                f'may be an internal error or an issue with the licensing '
+                f'server. Check the Review Board server logs for more '
+                f'information (error ID {trace_id}).'
+            ),
+        })
