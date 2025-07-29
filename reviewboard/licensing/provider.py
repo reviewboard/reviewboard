@@ -6,17 +6,23 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Generic, TYPE_CHECKING, TypeVar
+from datetime import datetime, timedelta
+from typing import Generic, TYPE_CHECKING
 
-from typing_extensions import NotRequired, TypedDict
+from django.utils.html import format_html
+from django.utils.translation import gettext as _
+from typing_extensions import NotRequired, TypeVar, TypedDict
 
-from reviewboard.licensing.license import LicenseInfo
+from reviewboard.licensing.license import LicenseInfo, LicenseStatus
 
 if TYPE_CHECKING:
     from typing import ClassVar, Sequence
 
     from django.http import HttpRequest
-    from djblets.util.typing import JSONValue, StrOrPromise
+    from djblets.util.typing import (JSONValue,
+                                     SerializableJSONDict,
+                                     SerializableJSONList,
+                                     StrOrPromise)
 
     from reviewboard.licensing.license_checks import (
         RequestCheckLicenseResult,
@@ -28,7 +34,9 @@ if TYPE_CHECKING:
 #:
 #: Version Added:
 #:    7.1
-_TLicenseInfo = TypeVar('_TLicenseInfo', bound=LicenseInfo)
+_TLicenseInfo = TypeVar('_TLicenseInfo',
+                        bound=LicenseInfo,
+                        default=LicenseInfo)
 
 
 class LicenseAction(TypedDict):
@@ -67,8 +75,11 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
     #: The unique ID of the license provider.
     license_provider_id: ClassVar[str]
 
-    #: The name of the JavaScript model for the license provider front-end.
-    js_model_name: ClassVar[str]
+    #: The name of the JavaScript model for the license front-end.
+    js_license_model_name: ClassVar[str] = 'RB.License'
+
+    #: The name of the JavaScript view for the license front-end.
+    js_license_view_name: ClassVar[str] = 'RB.LicenseView'
 
     def get_licenses(self) -> Sequence[_TLicenseInfo]:
         """Return the list of available licenses.
@@ -176,6 +187,130 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
                 There was an error generating data for this request.
         """
         return None
+
+    def get_js_license_model_data(
+        self,
+        *,
+        license_info: _TLicenseInfo,
+        request: (HttpRequest | None) = None,
+    ) -> SerializableJSONDict:
+        """Return data for the JavaScript license model.
+
+        This provides all the data needed by the JavaScript license model
+        to display and manage the license in the UI.
+
+        Args:
+            license_info (reviewboard.licensing.license.LicenseInfo):
+                The license information to convert to model data.
+
+            request (django.http.HttpRequest, optional):
+                The HTTP request from the client.
+
+        Returns:
+            djblets.util.typing.SerializableJSONDict:
+            The data for the JavaScript license model.
+        """
+        is_trial = license_info.is_trial
+        plan_name = license_info.plan_name
+        product = license_info.product_name
+        status = license_info.status
+        summary = license_info.summary
+
+        # Calculate expiration information.
+        expires = license_info.expires
+        grace_period_days = license_info.grace_period_days_remaining
+        hard_expires_date: datetime | None
+
+        if expires and grace_period_days:
+            hard_expires_date = expires + timedelta(days=grace_period_days)
+        else:
+            hard_expires_date = expires
+
+        # Generate a notice, if needed.
+        notice_html: str = ''
+
+        if status == LicenseStatus.EXPIRED_GRACE_PERIOD:
+            # NOTE: This is in Ink syntax, not raw HTML.
+            datetime_ink = format_html(
+                '<time class="timesince" dateTime="{expires_date}"/>',
+                expires_date=hard_expires_date)
+
+            notice_html = format_html(
+                _('Your grace period is now active. Unless renewed, '
+                  '{product} will be disabled {datetime_ink}.'),
+                datetime_ink=datetime_ink,
+                product=product)
+
+        # Generate a default summary.
+        if not summary:
+            if status == LicenseStatus.LICENSED:
+                if is_trial:
+                    if plan_name:
+                        summary = _(
+                            'Trial license for {product} ({plan_name})'
+                        )
+                    else:
+                        summary = _('Trial license for {product}')
+                else:
+                    if plan_name:
+                        summary = _('License for {product} ({plan_name})')
+                    else:
+                        summary = _('License for {product}')
+            elif status == LicenseStatus.UNLICENSED:
+                summary = _('{product} is not licensed!')
+            elif status in (LicenseStatus.HARD_EXPIRED,
+                            LicenseStatus.EXPIRED_GRACE_PERIOD):
+                if is_trial:
+                    if plan_name:
+                        summary = _(
+                            'Expired trial license for {product} ({plan_name})'
+                        )
+                    else:
+                        summary = _('Expired trial license for {product}')
+                else:
+                    if plan_name:
+                        summary = _(
+                            'Expired license for {product} ({plan_name})'
+                        )
+                    else:
+                        summary = _('Expired license for {product}')
+
+            summary = summary.format(plan_name=plan_name,
+                                     product=product)
+
+        # Build actions for the license.
+        actions_data: SerializableJSONList = [
+            {
+                'actionID': action['action_id'],
+                'label': action['label'],
+                'url': action.get('url'),
+            }
+            for action in self.get_license_actions(license_info=license_info)
+        ]
+
+        return {
+            'actionTarget': (
+                f'{self.license_provider_id}:{license_info.license_id}'
+            ),
+            'actions': actions_data,
+            'canUploadLicense': license_info.can_upload_license,
+            'expiresDate': expires,
+            'expiresSoon': license_info.get_expires_soon(),
+            'gracePeriodDaysRemaining': grace_period_days,
+            'hardExpiresDate': hard_expires_date,
+            'isTrial': is_trial,
+            'licenseID': license_info.license_id,
+            'licensedTo': license_info.licensed_to,
+            'lineItems': license_info.line_items,
+            'manageURL': self.get_manage_license_url(
+                license_info=license_info),
+            'noticeHTML': notice_html,
+            'planID': license_info.plan_id,
+            'planName': plan_name,
+            'productName': product,
+            'status': status.value,
+            'summary': summary,
+        }
 
     def process_check_license_result(
         self,

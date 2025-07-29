@@ -50,6 +50,8 @@ urlpatterns = [
 
     path('integrations/', include('reviewboard.integrations.urls')),
 
+    path('licenses/', include('reviewboard.licensing.urls')),
+
     path('log/', include('djblets.log.urls')),
 
     path('security/', views.security, name='admin-security-checks'),
