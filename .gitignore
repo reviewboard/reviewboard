@@ -19,6 +19,7 @@
 # Files
 .coverage
 .noseids
+package-requirements.txt
 reviewboard/settings_local.py
 reviewboard.log
 settings_local.py
@@ -42,6 +43,7 @@ pickle
 search-index/
 temp
 .idea
+.local-packages
 .npm-workspaces
 bak
 reviewboard/scmtools/testdata/hg_repo/.hg/cache/branch2-served

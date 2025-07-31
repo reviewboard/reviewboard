@@ -7,11 +7,23 @@ The contents in this file might change substantially between releases. If
 you're going to make use of data from this file, code defensively.
 """
 
+from __future__ import annotations
+
 import sys
 import textwrap
-from typing import Dict
+from typing import TYPE_CHECKING
 
-from djblets.dependencies import npm_dependencies as djblets_npm_dependencies
+try:
+    from djblets.dependencies import (
+        npm_dependencies as djblets_npm_dependencies,
+    )
+except ImportError:
+    # We're probably being called as part of the build backend process.
+    # Don't worry too much about this dependency.
+    djblets_npm_dependencies = []
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
 
 
 ###########################################################################
@@ -114,7 +126,7 @@ package_only_dependencies = {
 
 
 #: Dependencies required for runtime or static media building.
-runtime_npm_dependencies: Dict[str, str] = {
+runtime_npm_dependencies: dict[str, str] = {
     '@babel/plugin-external-helpers': '^7.18.6',
     '@beanbag/jasmine-suites': '~2.0.0',
     '@prantlf/jsonlint': '^11.7.0',
@@ -137,7 +149,7 @@ runtime_npm_dependencies: Dict[str, str] = {
 
 
 #: Node dependencies required to package/develop/test Djblets.
-npm_dependencies: Dict[str, str] = {}
+npm_dependencies: dict[str, str] = {}
 npm_dependencies.update(djblets_npm_dependencies)
 npm_dependencies.update(runtime_npm_dependencies)
 
@@ -149,26 +161,50 @@ _dependency_error_count = 0
 _dependency_warning_count = 0
 
 
-def build_dependency_list(deps, version_prefix=''):
+def build_dependency_list(
+    deps: Mapping[str, (str | Sequence[Mapping[str, str]])],
+    version_prefix: str = '',
+    *,
+    local_packages: Mapping[str, str] = {},
+) -> Sequence[str]:
     """Build a list of dependency specifiers from a dependency map.
 
     This can be used along with :py:data:`package_dependencies`,
     :py:data:`npm_dependencies`, or other dependency dictionaries to build a
-    list of dependency specifiers for use on the command line or in
-    :file:`setup.py`.
+    list of dependency specifiers for use on the command line or in the
+    package build backend.
+
+    Version Changed:
+        7.1:
+        * Added the ``local_packages`` argument.
 
     Args:
         deps (dict):
             A dictionary of dependencies.
 
+        version_prefix (str, optional):
+            A prefix to include before any package versions.
+
+        local_packages (dict, optional):
+            A mapping of dependency names to local paths where they could
+            be found.
+
+            Version Added:
+                7.1
+
     Returns:
-        list of unicode:
+        list of str:
         A list of dependency specifiers.
     """
-    new_deps = []
+    new_deps: list[str] = []
 
     for dep_name, dep_details in deps.items():
-        if isinstance(dep_details, list):
+        lower_dep_name = dep_name.lower()
+
+        if lower_dep_name in local_packages:
+            package_path = local_packages[lower_dep_name]
+            new_deps.append(f'{dep_name} @ file://{package_path}')
+        elif isinstance(dep_details, list):
             new_deps += [
                 '%s%s%s; python_version%s'
                 % (dep_name, version_prefix, entry['version'], entry['python'])
