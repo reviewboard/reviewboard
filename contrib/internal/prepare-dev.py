@@ -1,13 +1,22 @@
 #!/usr/bin/env python
 """Prepare a Review Board tree for development."""
 
+from __future__ import annotations
+
 import argparse
 import os
 import platform
+import re
 import stat
 import subprocess
 import sys
+from configparser import ConfigParser
+from importlib import import_module
 from random import choice
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from reviewboard.cmdline.rbsite import Site
 
 
 FAQ_URL = \
@@ -165,7 +174,9 @@ def install_git_hooks():
     console.print('The post-checkout hook has been installed.')
 
 
-def install_media(site):
+def install_media(
+    site: Site,
+) -> None:
     """Install static media.
 
     Args:
@@ -223,24 +234,148 @@ def install_media(site):
             i += 1
 
 
-def install_dependencies(options):
-    """Install dependencies via setup.py and pip (and therefore npm).
+def setup_local_packages() -> None:
+    """Set up links to any standard local development packages.
+
+    If there's a local editable build of Djblets available, it will be used
+    for the editable install for Review Board.
+
+    Version Added:
+        7.1
+    """
+    packages: dict[str, str] = {}
+
+    for package_name, module_name in (('Djblets', 'djblets'),
+                                      ('django-pipeline', 'pipeline')):
+        try:
+            mod = import_module(module_name)
+        except ImportError:
+            # This is not installed, so we can skip it.
+            continue
+
+        tree_path = os.path.abspath(os.path.join(mod.__path__[0], '..'))
+
+        if (os.path.basename(tree_path) != 'site-packages' and
+            (os.path.exists(os.path.join(tree_path, 'setup.py')) or
+             os.path.exists(os.path.join(tree_path, 'pyproject.toml')))):
+            # This looks like a local editable install.
+            packages[package_name] = tree_path
+
+    if packages:
+        local_packages_dir = '.local-packages'
+
+        os.makedirs(local_packages_dir, 0o755, exist_ok=True)
+
+        for package_name, tree_path in packages.items():
+            local_package_link = os.path.join(local_packages_dir,
+                                              package_name)
+
+            if os.path.lexists(local_package_link):
+                os.unlink(local_package_link)
+
+            os.symlink(tree_path, local_package_link,
+                       target_is_directory=True)
+
+
+def install_dependencies(
+    options: argparse.Namespace,
+) -> None:
+    """Install Review Board and all dependencies in editable mode.
+
+    Version Changed:
+        7.1:
+        This now uses :command:`pip install -e`, and supports multiple
+        Python versions using virtualenv-multiver's :command:`pydo`.
 
     Args:
         options (argparse.Namespace):
             The parsed command line arguments.
     """
+    python_exes: list[str] = []
+
     # We can't use console.print() or console.header() here, since we're
     # running before we know we even have Django installed.
     print('Bootstrapping: Installing the Review Board package and '
           'dependencies..')
 
-    cmdline = [sys.executable, 'setup.py', '-q', 'develop']
-
     if options.all_pyvers:
-        cmdline.append('--all-pyvers')
+        # We need to determine which Python versions to use.
+        #
+        # Back when we were setup.py-based, we just had a hard-coded list of
+        # versions to try, and we'd invoke a flag that would loop through the
+        # versions in setup.py. Now, that looping logic is here, and it's
+        # smarter.
+        #
+        # We grab the list of supported versions from pyproject.toml, and we
+        # AND that with the list of versions supported by the virtualenv
+        # (which requires a virtualenv-multiver-based approach).
+        virtualenv_path = os.environ.get('VIRTUAL_ENV')
 
-    os.system(subprocess.list2cmdline(cmdline))
+        if virtualenv_path:
+            pydorc_path = os.path.join(virtualenv_path, '.pydorc')
+        else:
+            pydorc_path = None
+
+        if not pydorc_path or not os.path.exists(pydorc_path):
+            sys.stderr.write(
+                '--all-pyvers can only be used when run in a '
+                'virtualenv built using virtualenv-multiver.\n')
+            sys.exit(1)
+
+        # Read .pydorc.
+        config_parser = ConfigParser()
+        config_parser.read(pydorc_path)
+        pydorc_pyvers = set(config_parser.get('pydo', 'pyvers').split(' '))
+
+        # Read pyproject.toml.
+        pyproject_pyvers: set[str] = set()
+
+        with open('pyproject.toml', 'r', encoding='utf-8') as fp:
+            PYVER_RE = re.compile(
+                r"'Programming Language :: Python :: (\d\.\d+)'"
+            )
+
+            for line in fp:
+                m = PYVER_RE.search(line)
+
+                if m:
+                    pyproject_pyvers.add(m.group(1))
+
+        # Generate a list of all the Python executables we'll run.
+        python_exes = [
+            f'python{pyver}'
+            for pyver in sorted(
+                pyproject_pyvers & pydorc_pyvers,
+                key=lambda ver: [
+                    int(part)
+                    for part in ver.split('.')
+                ])
+        ]
+    else:
+        python_exes = [sys.executable]
+
+    for python_exe in python_exes:
+        os.system(subprocess.list2cmdline([
+            python_exe, '-m', 'pip', 'install', '-e', '.',
+        ]))
+
+    # `pip install -e` will try to manage .npm-workspaces, but it doesn't
+    # know the packages in the containing virtualenv. If we didn't build
+    # using a local editable copy of Djblets, then we're going to have a
+    # dangling symlink. We need to fix this up here.
+    try:
+        import djblets
+    except ImportError:
+        sys.stderr.write('Could not import djblets. Something must have '
+                         'gone wrong during environment setup.\n')
+        sys.exit(1)
+
+    djblets_link_path = os.path.join('.npm-workspaces', 'djblets')
+
+    if os.path.lexists(djblets_link_path):
+        os.unlink(djblets_link_path)
+
+    os.symlink(djblets.__path__[0], djblets_link_path)
 
 
 def create_superuser(site):
@@ -431,6 +566,8 @@ def main():
         sys.exit(1)
 
     options = parse_options(sys.argv[1:])
+
+    setup_local_packages()
 
     if options.install_deps:
         install_dependencies(options)

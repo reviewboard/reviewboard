@@ -1,0 +1,84 @@
+[build-system]
+requires = [
+    'setuptools>=74',
+]
+build-backend = 'build-backend'
+backend-path = ['.']
+
+[project]
+name = 'ReviewBoard'
+description = 'Extensible code review and document review built for Git, Perforce, Mercurial, and more'
+authors = [
+    {name = 'Beanbag, Inc.', email = 'questions@beanbaginc.com'},
+]
+license = { text = 'MIT' }
+readme = 'README.rst'
+dynamic = ['dependencies', 'version']
+requires-python = '>=3.8'
+
+classifiers = [
+    'Development Status :: 5 - Production/Stable',
+    'Environment :: Web Environment',
+    'Framework :: Django',
+    'Framework :: Django :: 4.2',
+    'Framework :: Review Board',
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: MIT License',
+    'Natural Language :: English',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Topic :: Software Development',
+    'Topic :: Software Development :: Quality Assurance',
+]
+
+
+[project.urls]
+Homepage = 'https://www.reviewboard.org'
+Documentation = 'https://www.reviewboard.org/docs/'
+Repository = 'https://github.com/reviewboard/reviewboard'
+Support = 'https://www.reviewboard.org/support/'
+Hosting = 'https://rbcommons.com/'
+
+
+[project.scripts]
+rb-site = 'reviewboard.cmdline.rbsite:main'
+rbext = 'reviewboard.cmdline.rbext:main'
+rbssh = 'reviewboard.cmdline.rbssh:main'
+
+
+[project.optional-dependencies]
+elasticsearch1 = ['elasticsearch~=1.0']
+elasticsearch2 = ['elasticsearch~=2.0']
+elasticsearch5 = ['elasticsearch~=5.0']
+elasticsearch7 = ['elasticsearch~=7.0']
+extension-packaging = ['setuptools>=74']
+ldap = ['python-ldap>=3.3.1']
+mercurial = ['mercurial']
+mysql = ['mysqlclient>=1.4,<=2.1.999']
+p4 = ['p4python']
+postgres = ['psycopg2-binary']
+s3 = ['django-storages[s3]']
+saml = ['python3-saml']
+subvertpy = ['subvertpy']
+swift = ['django-storage-swift']
+
+
+[tool.setuptools.package-data]
+reviewboard = ['py.typed']
+
+
+[tool.setuptools.packages.find]
+where = ['.']
+include = ['reviewboard*']
+namespaces = false
+
+
+[tool.setuptools.dynamic]
+dependencies = { file = 'package-requirements.txt' }
+version = { attr = 'reviewboard.__version__' }
