@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import unittest
 from typing import TYPE_CHECKING, Union
 
 import kgb
@@ -293,6 +294,12 @@ class FileDiffCreatorTests(kgb.SpyAgency, TestCase):
         validated parent ID
         """
         repository = self.create_repository(tool_name='Mercurial')
+
+        try:
+            repository.get_scmtool()
+        except ImportError:
+            raise unittest.SkipTest('Hg is not installed')
+
         diffset = self.create_diffset(repository=repository)
 
         self.assertEqual(diffset.files.count(), 0)
