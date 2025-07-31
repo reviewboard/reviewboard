@@ -1,37 +1,60 @@
 #!/usr/bin/env python
 
 import os
+import shutil
+import subprocess
 import sys
 
 scripts_dir = os.path.abspath(os.path.dirname(__file__))
 
 # Source root directory
-sys.path.insert(0, os.path.abspath(os.path.join(scripts_dir, '..', '..')))
+root_dir = os.path.abspath(os.path.join(scripts_dir, '..', '..'))
+sys.path.insert(0, root_dir)
 
 # Script config directory
 sys.path.insert(0, os.path.join(scripts_dir, 'conf'))
-
-from reviewboard.dependencies import django_version
-
-import __main__
-__main__.__requires__ = ['Django' + django_version]
-import pkg_resources
-
-from django_evolution.compat.patches import apply_patches
-apply_patches()
 
 import django
 from django.core.management import call_command
 
 
 if __name__ == '__main__':
+    os.chdir(root_dir)
+
+    # Verify that we have npm.
+    npm_command = 'npm'
+
+    try:
+        subprocess.check_call([npm_command, '--version'],
+                              stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+        raise RuntimeError(
+            f'Unable to locate {npm_command} in the path, which is needed to '
+            f'compile static media.'
+        )
+
+    # Install dependencies.
+    subprocess.call([npm_command, 'install'])
+
+    # Set up the Django environment.
     os.environ['FORCE_BUILD_MEDIA'] = '1'
-    os.environ.setdefault(str('DJANGO_SETTINGS_MODULE'),
-                          str('reviewboard.settings'))
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 
-    if hasattr(django, 'setup'):
-        # Django >= 1.7
-        django.setup()
+    django.setup()
 
-    # This will raise a CommandError or call sys.exit(1) on failure.
-    call_command('collectstatic', interactive=False, verbosity=2)
+    # Check if we're actually building media. This internal flag is used to
+    # by the package build backend to better control setup vs. building of
+    # static media.
+    if os.environ.get('RUN_COLLECT_STATIC') != '0':
+        # Remove any stale htdocs files.
+        htdocs_static_dir = os.path.join(root_dir, 'reviewboard', 'htdocs',
+                                         'static')
+
+        if os.path.exists(htdocs_static_dir):
+            shutil.rmtree(htdocs_static_dir)
+
+        # Build the static media.
+        #
+        # This will raise a CommandError or call sys.exit(1) on failure.
+        call_command('collectstatic', interactive=False, verbosity=2)

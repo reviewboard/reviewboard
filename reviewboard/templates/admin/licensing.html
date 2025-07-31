@@ -1,0 +1,55 @@
+{% extends "admin/base_site.html" %}
+{% load djblets_js i18n %}
+
+
+{% block title %}{% trans "Licenses" %}{% endblock %}
+
+
+{% block content %}
+{%  if license_entries %}
+<div class="rb-c-licenses" id="licenses-list"></div>
+{%  else %}
+ <div class="ink-c-alert" role="status">
+  <div class="ink-c-alert__content">
+   <h3 class="ink-c-alert__heading">
+{%   blocktrans %}
+    No licensed products are installed.
+{%   endblocktrans %}
+   </h3>
+   <div class="ink-c-alert__body">
+    <p>
+{%   blocktrans with url="https://www.reviewboard.org/powerpack/" %}
+     Upgrade Review Board with <a href="{{url}}">Power Pack</a> for Document
+     Review, Reports, User Roles, new source code management integrations, and
+     more.
+{%   endblocktrans %}
+    </p>
+  </div>
+ </div>
+{%  endif %}
+{% endblock content %}
+
+
+{% block scripts-post %}
+{{block.super}}
+{%  if license_entries %}
+<script>
+RB.PageManager.ready(function(page) {
+    const licensesEl = document.getElementById('licenses-list');
+    let license;
+    let licenseView;
+
+{%   for license_entry in license_entries %}
+    license = new {{license_entry.model}}({{license_entry.attrs|json_dumps}}, {
+        actionCSRFToken: "{{csrf_token}}"
+    });
+    licenseView = new {{license_entry.view}}({
+        model: license
+    });
+    licenseView.renderInto(licensesEl);
+    license.checkForUpdates();
+{%   endfor %}
+});
+</script>
+{%  endif %}
+{% endblock scripts-post %}

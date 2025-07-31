@@ -6,6 +6,9 @@ prune docs/*/_build
 prune docs/manual/data/htdocs/media/uploaded/
 prune docs/manual/extending/coderef/python
 
+# Make sure any logs are out.
+prune */logs
+
 # Specifically clear out content from static/ and add what we know we want.
 prune reviewboard/htdocs/static
 graft reviewboard/htdocs/static/admin
@@ -17,13 +20,42 @@ prune reviewboard/htdocs/media
 include reviewboard/htdocs/media/ext/.gitignore
 
 include AUTHORS
+include CONTRIBUTING
 include COPYING
 include INSTALL
+include Makefile
 include NEWS
 include README.md
-include *-requirements.txt
+include .gitignore
+include .reviewboardrc
+
+global-exclude .*.sw[op] *.py[co] __pycache__ .DS_Store .noseids
+global-exclude .mypy_cache
+prune .mypy_cache
+prune **/.mypy_cache
 
 exclude docs/manual/docs.db
 exclude settings_local.py
 
-global-exclude .*.sw[op] *.py[co] __pycache__ .DS_Store .noseids
+# Python builds
+include build-backend.py
+include *-requirements.txt
+
+# Unit testing
+include conftest.py
+graft */testdata
+graft tests
+prune tests/static
+
+# Media builds
+include .storybook/*.css
+include .storybook/*.ts*
+include .browserslistrc
+include .eslintrc.yaml
+include babel.config.json
+include package-lock.json
+include package.json
+include reviewboard/package.json
+include rollup.config.mjs
+include tsconfig.json
+include vite.config.mjs
