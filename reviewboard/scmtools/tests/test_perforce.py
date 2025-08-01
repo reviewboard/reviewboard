@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import os
 import shutil
+import subprocess
+import time
 import unittest
 from hashlib import md5
-from itertools import zip_longest
+from typing import TYPE_CHECKING, cast
 
 try:
     import P4
@@ -29,8 +31,16 @@ from reviewboard.scmtools.errors import (AuthenticationError,
 from reviewboard.scmtools.perforce import PerforceTool, STunnelProxy
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.site.models import LocalSite
-from reviewboard.testing import online_only
 from reviewboard.testing.testcase import TestCase
+
+if TYPE_CHECKING:
+    from typing import ClassVar
+
+    from typing_extensions import Self
+
+
+has_p4 = is_exe_in_path('p4')
+has_p4d = is_exe_in_path('p4d')
 
 
 if P4 is not None:
@@ -41,58 +51,105 @@ if P4 is not None:
         actually talking to a server.
         """
 
-        def connect(self):
+        def connect(self) -> Self:
+            """Connect to the server."""
             return self
 else:
-    DummyP4 = None
+    DummyP4 = None  # type: ignore
 
 
+@unittest.skipIf(P4 is None, 'The p4python module is not installed')
+@unittest.skipIf(not has_p4, 'The p4 command line tool is not installed')
 class BasePerforceTestCase(SpyAgency, SCMTestCase):
     """Base class for all Perforce tests.
 
-    This will ensure that the test suite has proper Perforce support before
-    it runs.
+    This will set up a local p4d server for use by tests which need to connect
+    to a real server.
     """
 
-    def setUp(self):
-        super(BasePerforceTestCase, self).setUp()
+    #: The local p4d process.
+    p4d_process: ClassVar[subprocess.Popen[str]]
 
-        if P4 is None:
-            raise unittest.SkipTest('The p4python module is not installed')
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Set up the test case class.
 
-        if not is_exe_in_path('p4'):
-            raise unittest.SkipTest(
-                'The p4 command line tool is not installed')
+        Raises:
+            RuntimeError:
+                The local p4d failed to start.
+        """
+        super().setUpClass()
+
+        cls.local_repo_path = os.path.join(os.path.dirname(__file__),
+                                           '..', 'testdata', 'p4_repo')
+
+        if has_p4d:
+            cls.p4d_process = subprocess.Popen(
+                ['p4d', '-p', '61666', '-r', cls.local_repo_path],
+                text=True,
+            )
+
+            # Poll until `p4 info` succeeds.
+            timeout = 5.0  # seconds
+            poll_interval = 0.1  # seconds
+            elapsed = 0.0
+
+            while elapsed < timeout:
+                try:
+                    result = subprocess.run(
+                        ['p4', '-p', 'localhost:61666', 'info'],
+                        capture_output=True,
+                        timeout=1.0,
+                        check=True,
+                    )
+                    if result.returncode == 0:
+                        break
+                except (subprocess.TimeoutExpired,
+                        subprocess.CalledProcessError):
+                    pass
+
+                time.sleep(poll_interval)
+                elapsed += poll_interval
+            else:
+                # If we get here, we timed out.
+                cls.p4d_process.terminate()
+                raise RuntimeError('p4d failed to start within timeout period')
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        """Tear down the test case class."""
+        super().tearDownClass()
+
+        if has_p4d:
+            cls.p4d_process.terminate()
 
 
 class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
-    """Unit tests for Perforce.
-
-    This uses the open server at public.perforce.com to test various
-    pieces. Because we have no control over things like pending
-    changesets, not everything can be tested.
-    """
+    """Unit tests for Perforce."""
 
     fixtures = ['test_scmtools']
+    tool: PerforceTool
 
-    def setUp(self):
-        super(PerforceTests, self).setUp()
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
 
         self.repository = self.create_repository(
-            name='Perforce.com',
-            path='public.perforce.com:1666',
+            name='localhost',
+            path='localhost:61666',
             username='guest',
             encoding='none',
             tool_name='Perforce')
-        self.tool = self.repository.get_scmtool()
+        self.tool = cast(PerforceTool, self.repository.get_scmtool())
 
-    def tearDown(self):
-        super(PerforceTests, self).tearDown()
+    def tearDown(self) -> None:
+        """Tear down the test case."""
+        super().tearDown()
 
         shutil.rmtree(os.path.join(settings.SITE_DATA_DIR, 'p4'),
                       ignore_errors=True)
 
-    def test_init_with_p4_client(self):
+    def test_init_with_p4_client(self) -> None:
         """Testing PerforceTool.__init__ with p4_client"""
         self.repository.extra_data['p4_client'] = 'test-client'
 
@@ -100,18 +157,18 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         self.assertIsInstance(tool.client.client_name, str)
         self.assertEqual(tool.client.client_name, 'test-client')
 
-    def test_init_with_p4_client_none(self):
+    def test_init_with_p4_client_none(self) -> None:
         """Testing PerforceTool.__init__ with p4_client=None"""
         self.repository.extra_data['p4_client'] = None
 
         tool = PerforceTool(self.repository)
         self.assertIsNone(tool.client.client_name)
 
-    def test_init_without_p4_client(self):
+    def test_init_without_p4_client(self) -> None:
         """Testing PerforceTool.__init__ without p4_client"""
         self.assertIsNone(self.tool.client.client_name)
 
-    def test_init_with_p4_host(self):
+    def test_init_with_p4_host(self) -> None:
         """Testing PerforceTool.__init__ with p4_host"""
         self.repository.extra_data['p4_host'] = 'test-host'
 
@@ -119,18 +176,18 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         self.assertIsInstance(tool.client.p4host, str)
         self.assertEqual(tool.client.p4host, 'test-host')
 
-    def test_init_with_p4_host_none(self):
+    def test_init_with_p4_host_none(self) -> None:
         """Testing PerforceTool.__init__ with p4_host=None"""
         self.repository.extra_data['p4_host'] = None
 
         tool = PerforceTool(self.repository)
         self.assertIsNone(tool.client.p4host)
 
-    def test_init_without_p4_host(self):
+    def test_init_without_p4_host(self) -> None:
         """Testing PerforceTool.__init__ without p4_host"""
         self.assertIsNone(self.tool.client.p4host)
 
-    def test_connect_sets_required_client_args(self):
+    def test_connect_sets_required_client_args(self) -> None:
         """Testing PerforceTool.connect sets required client args"""
         self.repository.username = 'test-user'
         self.repository.password = 'test-pass'
@@ -157,7 +214,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             self.assertEqual(p4.charset, 'utf8')
 
             self.assertIsInstance(p4.port, str)
-            self.assertEqual(p4.port, 'public.perforce.com:1666')
+            self.assertEqual(p4.port, 'localhost:61666')
 
             # Perforce will set a default for the host and client. They'll
             # be the same. We don't care what they are, just that they're
@@ -173,7 +230,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             self.assertIsInstance(p4.ticket_file, str)
             self.assertTrue(p4.ticket_file.endswith('.p4tickets'))
 
-    def test_connect_sets_optional_client_args(self):
+    def test_connect_sets_optional_client_args(self) -> None:
         """Testing PerforceTool.connect sets optional client args"""
         self.repository.extra_data.update({
             'use_ticket_auth': True,
@@ -201,7 +258,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             self.assertTrue(p4.ticket_file.endswith(
                 os.path.join('data', 'p4', 'p4tickets')))
 
-    def test_run_worker_with_unverified_cert(self):
+    def test_run_worker_with_unverified_cert(self) -> None:
         """Testing PerforceTool.run_worker with unverified certificate"""
         self.repository.path = 'p4.example.com:1666'
         self.repository.username = 'test-user'
@@ -218,20 +275,18 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             'A0:B1:C2:D3:E4:F5:6A:7B:8C:9D:E0:F1:2A:3B:4C:5D:6E:7F:A1:B2'
 
         err_msg = (
-            "The authenticity of '1.2.3.4' can't be established,\\n"
-            "this may be your first attempt to connect to this P4PORT.\\n"
-            "The fingerprint for the key sent to your client is\\n"
-            "%s\\n"
-            "To allow connection use the 'p4 trust' command.\\n"
-            % fingerprint
+            f"The authenticity of '1.2.3.4' can't be established,\\n"
+            f"this may be your first attempt to connect to this P4PORT.\\n"
+            f"The fingerprint for the key sent to your client is\\n"
+            f"{fingerprint}\\n"
+            f"To allow connection use the 'p4 trust' command.\\n"
         )
 
         expected_msg = (
-            'The SSL certificate for this repository (hostname '
-            '"p4.example.com:1666", fingerprint "%s") was not verified and '
-            'might not be safe. This certificate needs to be verified before '
-            'the repository can be accessed.'
-            % fingerprint
+            f'The SSL certificate for this repository (hostname '
+            f'"p4.example.com:1666", fingerprint "{fingerprint}") was not '
+            f'verified and might not be safe. This certificate needs to be '
+            f'verified before the repository can be accessed.'
         )
 
         with self.assertRaisesMessage(UnverifiedCertificateError,
@@ -239,7 +294,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             with client.run_worker():
                 raise P4Exception(err_msg)
 
-    def test_run_worker_with_unverified_cert_new(self):
+    def test_run_worker_with_unverified_cert_new(self) -> None:
         """Testing PerforceTool.run_worker with new unverified certificate"""
         self.repository.path = 'p4.example.com:1666'
 
@@ -252,20 +307,18 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             'A0:B1:C2:D3:E4:F5:6A:7B:8C:9D:E0:F1:2A:3B:4C:5D:6E:7F:A1:B2'
 
         err_msg = (
-            "The authenticity of '1.2.3.4:1666' can't be established,\\n"
-            "this may be your first attempt to connect to this P4PORT.\\n"
-            "The fingerprint for the key sent to your client is\\n"
-            "%s\\n"
-            "To allow connection use the 'p4 trust' command.\\n"
-            % fingerprint
+            f"The authenticity of '1.2.3.4:1666' can't be established,\\n"
+            f"this may be your first attempt to connect to this P4PORT.\\n"
+            f"The fingerprint for the key sent to your client is\\n"
+            f"{fingerprint}\\n"
+            f"To allow connection use the 'p4 trust' command.\\n"
         )
 
         expected_msg = (
-            'The SSL certificate for this repository (hostname '
-            '"p4.example.com:1666", fingerprint "%s") was not verified and '
-            'might not be safe. This certificate needs to be verified before '
-            'the repository can be accessed.'
-            % fingerprint
+            f'The SSL certificate for this repository (hostname '
+            f'"p4.example.com:1666", fingerprint "{fingerprint}") was not '
+            f'verified and might not be safe. This certificate needs to be '
+            f'verified before the repository can be accessed.'
         )
 
         with self.assertRaisesMessage(UnverifiedCertificateError,
@@ -273,7 +326,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             with client.run_worker():
                 raise P4Exception(err_msg)
 
-    def test_run_worker_with_unverified_cert_changed_error(self):
+    def test_run_worker_with_unverified_cert_changed_error(self) -> None:
         """Testing PerforceTool.run_worker with unverified certificate and
         cert changed error
         """
@@ -288,23 +341,22 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             'A0:B1:C2:D3:E4:F5:6A:7B:8C:9D:E0:F1:2A:3B:4C:5D:6E:7F:A1:B2'
 
         err_msg = (
-            "******* WARNING P4PORT IDENTIFICATION HAS CHANGED! *******\\n"
-            "It is possible that someone is intercepting your connection\\n"
-            "to the Perforce P4PORT '1.2.3.4:1666'\\n"
-            "If this is not a scheduled key change, then you should contact\\n"
-            "your Perforce administrator.\\n"
-            "The fingerprint for the mismatched key sent to your client is\\n"
-            "%s\n"
-            "To allow connection use the 'p4 trust' command.\n"
-            % fingerprint
+            f"******* WARNING P4PORT IDENTIFICATION HAS CHANGED! *******\\n"
+            f"It is possible that someone is intercepting your connection\\n"
+            f"to the Perforce P4PORT '1.2.3.4:1666'\\n"
+            f"If this is not a scheduled key change, then you should "
+            f"contact\\n"
+            f"your Perforce administrator.\\n"
+            f"The fingerprint for the mismatched key sent to your client is\\n"
+            f"{fingerprint}\n"
+            f"To allow connection use the 'p4 trust' command.\n"
         )
 
         expected_msg = (
-            'The SSL certificate for this repository (hostname '
-            '"p4.example.com:1666", fingerprint "%s") was not verified and '
-            'might not be safe. This certificate needs to be verified before '
-            'the repository can be accessed.'
-            % fingerprint
+            f'The SSL certificate for this repository (hostname '
+            f'"p4.example.com:1666", fingerprint "{fingerprint}") was not '
+            f'verified and might not be safe. This certificate needs to be '
+            f'verified before the repository can be accessed.'
         )
 
         with self.assertRaisesMessage(UnverifiedCertificateError,
@@ -312,56 +364,46 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             with client.run_worker():
                 raise P4Exception(err_msg)
 
-    @online_only
-    def test_changeset(self):
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_changeset(self) -> None:
         """Testing PerforceTool.get_changeset"""
-        desc = self.tool.get_changeset(157)
-        self.assertEqual(desc.changenum, 157)
-        self.assertEqual(type(desc.description), str)
-        self.assertEqual(md5(desc.description.encode('utf-8')).hexdigest(),
-                         'b7eff0ca252347cc9b09714d07397e64')
+        desc = self.tool.get_changeset(4)
 
-        expected_files = [
-            '//public/perforce/api/python/P4Client/P4Clientmodule.cc',
-            '//public/perforce/api/python/P4Client/p4.py',
-            '//public/perforce/api/python/P4Client/review.py',
-            '//public/perforce/python/P4Client/P4Clientmodule.cc',
-            '//public/perforce/python/P4Client/p4.py',
-            '//public/perforce/python/P4Client/review.py',
-        ]
+        assert desc is not None
 
-        for file, expected in zip_longest(desc.files, expected_files):
-            self.assertEqual(file, expected)
+        self.assertEqual(desc.changenum, 4)
+        self.assertEqual(desc.files, ['//depot/model.py', '//depot/readme'])
+        self.assertEqual(desc.summary, 'Make some changes.')
 
-        self.assertEqual(md5(desc.summary.encode('utf-8')).hexdigest(),
-                         '99a335676b0e5821ffb2f7469d4d7019')
-
-    @online_only
-    def test_encoding(self):
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_encoding(self) -> None:
         """Testing PerforceTool.get_changeset with a specified encoding"""
         repo = self.create_repository(
-            path='public.perforce.com:1666',
+            path='localhost:61666',
             username='guest',
             tool_name='Perforce',
             encoding='utf8')
         tool = repo.get_scmtool()
 
         try:
-            tool.get_changeset(157)
-            self.fail('Expected an error about unicode-enabled servers. Did '
-                      'perforce.com turn on unicode for public.perforce.com?')
+            tool.get_changeset('4')
+
+            self.fail('Expected an error about unicode-enabled servers.')
         except SCMError as e:
-            # public.perforce.com doesn't have unicode enabled. Getting this
+            # Our local p4d doesn't have unicode enabled. Getting this
             # error means we at least passed the charset through correctly
             # to the p4 client.
             self.assertTrue('clients require a unicode enabled server' in
                             str(e))
 
-    @online_only
-    def test_changeset_broken(self):
-        """Testing PerforceTool.get_changeset error conditions"""
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_changeset_authentication_error(self) -> None:
+        """Testing PerforceTool.get_changeset with an authentication error"""
         repo = self.create_repository(
-            path='public.perforce.com:1666',
+            path='localhost:61666',
             tool_name='Perforce',
             username='samwise',
             password='bogus',
@@ -369,8 +411,12 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         tool = repo.get_scmtool()
 
         self.assertRaises(AuthenticationError,
-                          lambda: tool.get_changeset(157))
+                          lambda: tool.get_changeset('4'))
 
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_changeset_bad_p4port(self) -> None:
+        """Testing PerforceTool.get_changeset with a bad P4PORT"""
         repo = self.create_repository(
             name='localhost:1',
             path='localhost:1',
@@ -378,10 +424,11 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
 
         tool = repo.get_scmtool()
         self.assertRaises(RepositoryNotFoundError,
-                          lambda: tool.get_changeset(1))
+                          lambda: tool.get_changeset('1'))
 
-    @online_only
-    def test_get_file(self):
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_get_file(self) -> None:
         """Testing PerforceTool.get_file"""
         tool = self.tool
 
@@ -389,46 +436,49 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         self.assertIsInstance(content, bytes)
         self.assertEqual(content, b'')
 
-        content = tool.get_file('//public/perforce/api/python/P4Client/p4.py',
-                                1)
+        content = tool.get_file('//depot/model.py', '4')
         self.assertIsInstance(content, bytes)
         self.assertEqual(md5(content).hexdigest(),
-                         '227bdd87b052fcad9369e65c7bf23fd0')
+                         'd41d8cd98f00b204e9800998ecf8427e')
 
-    @online_only
-    def test_file_exists(self):
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_file_exists(self) -> None:
         """Testing PerforceTool.file_exists"""
         self.assertTrue(self.tool.file_exists(
-            '//public/perforce/api/python/P4Client/p4.py', '1'))
+            '//depot/model.py', '2'))
 
         self.assertFalse(self.tool.file_exists(
-            '//public/perforce/xxx-non-existent', '1'))
+            '//depot/xxx-non-existent', '1'))
 
-    @online_only
-    def test_file_exists_with_pre_creation(self):
+    def test_file_exists_with_pre_creation(self) -> None:
         """Testing PerforceTool.file_exists"""
         self.assertFalse(self.tool.file_exists('//depot/xxx-new-file',
                                                PRE_CREATION))
 
-    @online_only
-    def test_custom_host(self):
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_custom_host(self) -> None:
         """Testing Perforce client initialization with a custom P4HOST"""
         repo = self.create_repository(
-            path='public.perforce.com:1666',
+            path='localhost:61666',
             username='guest',
             tool_name='Perforce',
             encoding='utf8')
         repo.extra_data['p4_host'] = 'my-custom-host'
 
         tool = repo.get_scmtool()
+        assert isinstance(tool, PerforceTool)
 
         with tool.client.connect():
             self.assertEqual(tool.client.p4.host, 'my-custom-host')
 
-    def test_ticket_login(self):
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_ticket_login(self) -> None:
         """Testing Perforce with ticket-based logins"""
         repo = self.create_repository(
-            path='public.perforce.com:1666',
+            path='localhost:61666',
             tool_name='Perforce',
             username='samwise',
             password='bogus')
@@ -436,7 +486,10 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             'use_ticket_auth': True,
         }
 
-        client = repo.get_scmtool().client
+        tool = repo.get_scmtool()
+        assert isinstance(tool, PerforceTool)
+
+        client = tool.client
         self.assertTrue(client.use_ticket_auth)
 
         self.spy_on(client.get_ticket_status, call_fake=lambda *args: {
@@ -450,17 +503,19 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             settings.SITE_DATA_DIR, 'p4', 'p4tickets')))
 
         with client.connect():
-            self.assertFalse(client.login.called)
+            self.assertSpyNotCalled(client.login)
             self.assertEqual(client.p4.ticket_file,
                              os.path.join(settings.SITE_DATA_DIR, 'p4',
                                           'p4tickets'))
 
-    def test_ticket_login_with_expiring_ticket(self):
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_ticket_login_with_expiring_ticket(self) -> None:
         """Testing Perforce with ticket-based logins with ticket close to
         expiring
         """
         repo = self.create_repository(
-            path='public.perforce.com:1666',
+            path='localhost:61666',
             tool_name='Perforce',
             username='samwise',
             password='bogus')
@@ -468,7 +523,10 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             'use_ticket_auth': True,
         }
 
-        client = repo.get_scmtool().client
+        tool = repo.get_scmtool()
+        assert isinstance(tool, PerforceTool)
+
+        client = tool.client
         self.assertTrue(client.use_ticket_auth)
 
         self.spy_on(client.get_ticket_status, call_fake=lambda *args: {
@@ -480,16 +538,18 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
 
         with client.connect():
             self.assertIsNotNone(client.p4.ticket_file)
-            self.assertTrue(client.login.called)
+            self.assertSpyCalled(client.login)
             self.assertEqual(client.p4.ticket_file,
                              os.path.join(settings.SITE_DATA_DIR, 'p4',
                                           'p4tickets'))
 
-    def test_ticket_login_with_no_valid_ticket(self):
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_ticket_login_with_no_valid_ticket(self) -> None:
         """Testing Perforce with ticket-based logins without a valid ticket
         """
         repo = self.create_repository(
-            path='public.perforce.com:1666',
+            path='localhost:61666',
             tool_name='Perforce',
             username='samwise',
             password='bogus')
@@ -497,24 +557,29 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             'use_ticket_auth': True,
         }
 
-        client = repo.get_scmtool().client
+        tool = repo.get_scmtool()
+        assert isinstance(tool, PerforceTool)
+
+        client = tool.client
         self.assertTrue(client.use_ticket_auth)
 
         self.spy_on(client.get_ticket_status, call_fake=lambda *args: None)
         self.spy_on(client.login, call_original=False)
 
         with client.connect():
-            self.assertTrue(client.login.called)
+            self.assertSpyCalled(client.login)
             self.assertEqual(client.p4.ticket_file,
                              os.path.join(settings.SITE_DATA_DIR, 'p4',
                                           'p4tickets'))
 
-    def test_ticket_login_with_different_user(self):
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_ticket_login_with_different_user(self) -> None:
         """Testing Perforce with ticket-based logins with ticket for a
         different user
         """
         repo = self.create_repository(
-            path='public.perforce.com:1666',
+            path='localhost:61666',
             tool_name='Perforce',
             username='samwise',
             password='bogus')
@@ -522,7 +587,10 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             'use_ticket_auth': True,
         }
 
-        client = repo.get_scmtool().client
+        tool = repo.get_scmtool()
+        assert isinstance(tool, PerforceTool)
+
+        client = tool.client
         self.assertTrue(client.use_ticket_auth)
 
         self.spy_on(client.get_ticket_status, call_fake=lambda *args: {
@@ -533,16 +601,18 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         self.spy_on(client.login, call_original=False)
 
         with client.connect():
-            self.assertTrue(client.login.called)
+            self.assertSpyCalled(client.login)
             self.assertEqual(client.p4.ticket_file,
                              os.path.join(settings.SITE_DATA_DIR, 'p4',
                                           'p4tickets'))
 
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
     @add_fixtures(['test_site', 'test_users'])
-    def test_ticket_login_with_local_site(self):
+    def test_ticket_login_with_local_site(self) -> None:
         """Testing Perforce with ticket-based logins with Local Sites"""
         repo = self.create_repository(
-            path='public.perforce.com:1666',
+            path='localhost:61666',
             tool_name='Perforce',
             username='samwise',
             password='bogus',
@@ -551,7 +621,10 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             'use_ticket_auth': True,
         }
 
-        client = repo.get_scmtool().client
+        tool = repo.get_scmtool()
+        assert isinstance(tool, PerforceTool)
+
+        client = tool.client
         self.assertTrue(client.use_ticket_auth)
 
         self.spy_on(client.get_ticket_status, call_fake=lambda *args: {
@@ -562,51 +635,12 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         self.spy_on(client.login, call_original=False)
 
         with client.connect():
-            self.assertFalse(client.login.called)
+            self.assertSpyNotCalled(client.login)
             self.assertEqual(client.p4.ticket_file,
                              os.path.join(settings.SITE_DATA_DIR, 'p4',
                                           'local-site-1', 'p4tickets'))
 
-    @online_only
-    def test_parse_diff_revision_with_revision_eq_0(self):
-        """Testing Perforce.parse_diff_revision with revision == 0"""
-        self.assertEqual(
-            self.tool.parse_diff_revision(
-                filename=b'xxx-foo.py',
-                revision=b'//public/perforce/xxx-foo.py#0'),
-            (b'//public/perforce/xxx-foo.py', PRE_CREATION))
-
-    @online_only
-    def test_parse_diff_revision_with_revision_eq_1_and_existing(self):
-        """Testing Perforce.parse_diff_revision with revision == 1 and existing
-        file
-        """
-        self.assertEqual(
-            self.tool.parse_diff_revision(
-                filename=b'p4.p',
-                revision=b'//public/perforce/api/python/P4Client/p4.py#1'),
-            (b'//public/perforce/api/python/P4Client/p4.py', b'1'))
-
-    @online_only
-    def test_parse_diff_revision_with_revision_eq_1_and_new(self):
-        """Testing Perforce.parse_diff_revision with revision == 1 and new file
-        """
-        self.assertEqual(
-            self.tool.parse_diff_revision(
-                filename=b'xxx-newfile',
-                revision=b'//public/perforce/xxx-newfile#1'),
-            (b'//public/perforce/xxx-newfile', PRE_CREATION))
-
-    @online_only
-    def test_parse_diff_revision_with_revision_gt_1(self):
-        """Testing Perforce.parse_diff_revision with revision > 1"""
-        self.assertEqual(
-            self.tool.parse_diff_revision(
-                filename=b'xxx-foo.py',
-                revision=b'//public/perforce/xxx-foo.py#2'),
-            (b'//public/perforce/xxx-foo.py', b'2'))
-
-    def test_empty_diff(self):
+    def test_empty_diff(self) -> None:
         """Testing Perforce empty diff parsing"""
         diff = b'==== //depot/foo/proj/README#2 ==M== /src/proj/README ====\n'
 
@@ -621,7 +655,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             modified_file_details=b'',
             data=diff)
 
-    def test_binary_diff(self):
+    def test_binary_diff(self) -> None:
         """Testing Perforce binary diff parsing"""
         diff = (
             b'==== //depot/foo/proj/test.png#1 ==A== /src/proj/test.png '
@@ -640,7 +674,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             binary=True,
             data=diff)
 
-    def test_deleted_diff(self):
+    def test_deleted_diff(self) -> None:
         """Testing Perforce deleted diff parsing"""
         diff = (
             b'==== //depot/foo/proj/test.png#1 ==D== /src/proj/test.png '
@@ -659,7 +693,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             deleted=True,
             data=diff)
 
-    def test_moved_file_diff(self):
+    def test_moved_file_diff(self) -> None:
         """Testing Perforce moved file diff parsing"""
         diff = (
             b'Moved from: //depot/foo/proj/test.txt\n'
@@ -686,7 +720,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             delete_count=1,
             data=diff)
 
-    def test_moved_file_diff_no_changes(self):
+    def test_moved_file_diff_no_changes(self) -> None:
         """Testing Perforce moved file diff parsing without changes"""
         diff = (
             b'==== //depot/foo/proj/test.png#5 ==MV== '
@@ -705,7 +739,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             moved=True,
             data=diff)
 
-    def test_empty_and_normal_diffs(self):
+    def test_empty_and_normal_diffs(self) -> None:
         """Testing Perforce empty and normal diff parsing"""
         diff1_text = (
             b'==== //depot/foo/proj/test.png#1 ==A== '
@@ -742,13 +776,13 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             delete_count=1,
             data=diff2_text)
 
-    def test_diff_file_normalization(self):
+    def test_diff_file_normalization(self) -> None:
         """Testing perforce diff filename normalization"""
         parser = self.tool.get_parser(b'')
         self.assertEqual(parser.normalize_diff_filename('//depot/test'),
                          '//depot/test')
 
-    def test_unicode_diff(self):
+    def test_unicode_diff(self) -> None:
         """Testing Perforce diff parsing with unicode characters"""
         diff = (
             '--- tést.c  //depot/foo/proj/tést.c#2\n'
@@ -783,88 +817,74 @@ class PerforceStunnelTests(BasePerforceTestCase):
     localhost: P4PORT.
 
     For these tests, we set up an stunnel server which will accept secure
-    connections and proxy (insecurely) to the public perforce server. We can
-    then tell the Perforce SCMTool to connect securely to localhost.
+    connections and proxy (insecurely) to the local perforce server. We can
+    then tell the Perforce SCMTool to connect securely to stunnel.
     """
 
     fixtures = ['test_scmtools']
 
-    def setUp(self):
-        super(PerforceStunnelTests, self).setUp()
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
 
         if not is_exe_in_path('stunnel'):
             raise unittest.SkipTest('stunnel is not installed')
 
         cert = os.path.join(os.path.dirname(__file__),
                             '..', 'testdata', 'stunnel.pem')
-        self.proxy = STunnelProxy('public.perforce.com:1666')
+        self.proxy = STunnelProxy('localhost:61666')
         self.proxy.start_server(cert)
 
         # Find an available port to listen on
-        path = 'stunnel:localhost:%d' % self.proxy.port
+        path = f'stunnel:localhost:{self.proxy.port}'
 
         self.repository = self.create_repository(
-            name='Perforce.com - secure',
+            name='localhost - secure',
             path=path,
             username='guest',
             encoding='none',
             tool_name='Perforce')
 
         self.tool = self.repository.get_scmtool()
+        assert isinstance(self.tool, PerforceTool)
+
         self.tool.use_stunnel = True
 
-    def tearDown(self):
-        super(PerforceStunnelTests, self).tearDown()
+    def tearDown(self) -> None:
+        """Tear down the test case."""
+        super().tearDown()
 
         self.proxy.shutdown()
 
-    def test_changeset(self):
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_changeset(self) -> None:
         """Testing PerforceTool.get_changeset with stunnel"""
-        desc = self.tool.get_changeset(157)
+        desc = self.tool.get_changeset('4')
 
-        self.assertEqual(desc.changenum, 157)
-        self.assertEqual(md5(desc.description.encode('utf-8')).hexdigest(),
-                         'b7eff0ca252347cc9b09714d07397e64')
+        self.assertEqual(desc.changenum, 4)
+        self.assertEqual(desc.files, ['//depot/model.py', '//depot/readme'])
+        self.assertEqual(desc.summary, 'Make some changes.')
 
-        expected_files = [
-            '//public/perforce/api/python/P4Client/P4Clientmodule.cc',
-            '//public/perforce/api/python/P4Client/p4.py',
-            '//public/perforce/api/python/P4Client/review.py',
-            '//public/perforce/python/P4Client/P4Clientmodule.cc',
-            '//public/perforce/python/P4Client/p4.py',
-            '//public/perforce/python/P4Client/review.py',
-        ]
-
-        for file, expected in zip_longest(desc.files, expected_files):
-            self.assertEqual(file, expected)
-
-        self.assertEqual(md5(desc.summary.encode('utf-8')).hexdigest(),
-                         '99a335676b0e5821ffb2f7469d4d7019')
-
-    def test_get_file(self):
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_get_file(self) -> None:
         """Testing PerforceTool.get_file with stunnel"""
         file = self.tool.get_file('//depot/foo', PRE_CREATION)
+
         self.assertIsInstance(file, bytes)
         self.assertEqual(file, b'')
 
-        try:
-            file = self.tool.get_file(
-                '//public/perforce/api/python/P4Client/p4.py', 1)
-        except Exception as e:
-            if str(e).startswith('Connect to server failed'):
-                raise unittest.SkipTest(
-                    'Connection to public.perforce.com failed.  No internet?')
-            else:
-                raise
+        file = self.tool.get_file('//depot/model.py', '4')
 
         self.assertEqual(md5(file).hexdigest(),
-                         '227bdd87b052fcad9369e65c7bf23fd0')
+                         'd41d8cd98f00b204e9800998ecf8427e')
 
 
 class PerforceAuthFormTests(TestCase):
     """Unit tests for PerforceTool's authentication form."""
 
-    def test_fields(self):
+    def test_fields(self) -> None:
         """Testing PerforceTool authentication form fields"""
         form = PerforceTool.create_auth_form()
 
@@ -875,7 +895,7 @@ class PerforceAuthFormTests(TestCase):
         self.assertEqual(form['password'].label, 'Password')
 
     @add_fixtures(['test_scmtools'])
-    def test_load(self):
+    def test_load(self) -> None:
         """Tetting PerforceTool authentication form load"""
         repository = self.create_repository(
             tool_name='Perforce',
@@ -889,7 +909,7 @@ class PerforceAuthFormTests(TestCase):
         self.assertEqual(form['password'].value(), 'test-pass')
 
     @add_fixtures(['test_scmtools'])
-    def test_save(self):
+    def test_save(self) -> None:
         """Tetting PerforceTool authentication form save"""
         repository = self.create_repository(tool_name='Perforce')
 
@@ -909,7 +929,7 @@ class PerforceAuthFormTests(TestCase):
 class PerforceRepositoryFormTests(TestCase):
     """Unit tests for PerforceTool's repository form."""
 
-    def test_fields(self):
+    def test_fields(self) -> None:
         """Testing PerforceTool repository form fields"""
         form = PerforceTool.create_repository_form()
 
@@ -931,7 +951,7 @@ class PerforceRepositoryFormTests(TestCase):
                          'Use ticket-based authentication')
 
     @add_fixtures(['test_scmtools'])
-    def test_load(self):
+    def test_load(self) -> None:
         """Tetting PerforceTool repository form load"""
         repository = self.create_repository(
             tool_name='Perforce',
@@ -950,7 +970,7 @@ class PerforceRepositoryFormTests(TestCase):
         self.assertTrue(form['use_ticket_auth'].value())
 
     @add_fixtures(['test_scmtools'])
-    def test_save(self):
+    def test_save(self) -> None:
         """Tetting PerforceTool repository form save"""
         repository = self.create_repository(tool_name='Perforce')
         self.assertIsNone(repository.extra_data.get('use_ticket_auth'))
