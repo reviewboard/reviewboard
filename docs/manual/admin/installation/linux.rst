@@ -318,7 +318,7 @@ several additional features to Review Board that are useful to businesses and
 enterprises, including:
 
 * Report generation/analytics
-* PDF and Office document review
+* Document review
 * Scalability enhancements
 * Database import/export and conversion
 * Support for additional source code management solutions:
