@@ -22,10 +22,16 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
+    from reviewboard.attachments.models import FileAttachment
     from reviewboard.changedescs.models import ChangeDescription
     from reviewboard.integrations.base import Integration
     from reviewboard.integrations.models import IntegrationConfig
-    from reviewboard.reviews.models import Review, ReviewRequest, StatusUpdate
+    from reviewboard.reviews.models import (
+        FileAttachmentComment,
+        Review,
+        ReviewRequest,
+        StatusUpdate,
+    )
     from reviewboard.site.models import AnyOrAllLocalSites
 
 
@@ -233,6 +239,60 @@ class CommentManager(ConcurrencyManager):
             queryset = queryset.distinct()
 
         return queryset
+
+
+class FileAttachmentCommentManager(CommentManager):
+    """A manager for FileAttachmentComment models.
+
+    Version Added:
+        7.1.0
+    """
+
+    def for_file_attachment(
+        self,
+        *,
+        attachment: FileAttachment | None,
+        diff_against_file_attachment: (FileAttachment | None) = None,
+        user: (User | AnonymousUser | None) = None,
+    ) -> QuerySet[FileAttachmentComment]:
+        """Return a queryset for accessible comments on a given attachment.
+
+        Args:
+            attachment (reviewboard.attachments.models.FileAttachment):
+                The file attachment.
+
+            diff_against_file_attachment (reviewboard.attachments.models.
+                                          FileAttachment, optional):
+                The file attachment being diffed against.
+
+            user (django.contrib.auth.models.User, optional):
+                The user making the request.
+
+        Returns:
+            django.db.models.QuerySet:
+            A queryset for the visible comments.
+
+        Raises:
+            ValueError:
+                The method was called without a valid file attachment.
+        """
+        if attachment is None and diff_against_file_attachment is None:
+            raise ValueError(
+                'attachment and diff_against_file_attachment cannot both be '
+                'None'
+            )
+
+        q = Q(file_attachment=attachment)
+
+        if diff_against_file_attachment is not None:
+            q &= Q(diff_against_file_attachment=diff_against_file_attachment)
+
+        if user is not None and user.is_authenticated:
+            q &= Q(review__public=True) | Q(review__user=user)
+        else:
+            q &= Q(review__public=True)
+
+        return self.filter(q)
 
 
 class DefaultReviewerManager(Manager):

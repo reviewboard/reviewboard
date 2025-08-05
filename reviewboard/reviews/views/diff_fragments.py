@@ -6,42 +6,47 @@ import io
 import logging
 import os
 import struct
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple, cast
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple
 
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.core.files.base import ContentFile
 from django.db.models import Q
-from django.http import HttpRequest, HttpResponse
-from django.shortcuts import get_list_or_404
+from django.http import Http404, HttpRequest, HttpResponse
+from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.cache import patch_cache_control
 from django.utils.safestring import SafeString, mark_safe
 from django.views.generic.base import ContextMixin, View
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.dates import get_latest_timestamp
+from djblets.util.http import encode_etag
 from djblets.views.generic.etag import ETagViewMixin
+from housekeeping import deprecate_non_keyword_only_args
 from typing_extensions import TypedDict
 
 from reviewboard.attachments.mimetypes import guess_mimetype
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.diffviewer.diffutils import (get_file_chunks_in_range,
                                               get_last_header_before_line,
                                               get_last_line_number_in_diff)
 from reviewboard.diffviewer.models import FileDiff
-from reviewboard.diffviewer.renderers import DiffRenderer
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.diffviewer.views import (DiffFragmentView,
                                           exception_traceback_string)
-from reviewboard.reviews.models import Comment
+from reviewboard.reviews.models import Comment, FileAttachmentComment
 from reviewboard.reviews.ui.base import ReviewUI
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from reviewboard.diffviewer.diffutils import SerializedDiffFile
     from reviewboard.diffviewer.models import DiffCommit
+    from reviewboard.diffviewer.renderers import DiffRenderer
 
 
 logger = logging.getLogger(__name__)
@@ -297,6 +302,10 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
         Returns:
             str:
             The ETag for the page.
+
+        Raises:
+            django.http.Http404:
+                The given parameters were not valid.
         """
         q = (Q(pk__in=comment_ids.split(',')) &
              Q(review__review_request=self.review_request))
@@ -306,15 +315,19 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
         else:
             q &= Q(review__public=True)
 
-        self.comments = get_list_or_404(Comment, q)
+        comments = list(Comment.objects.filter(q).order_by('pk'))
 
-        latest_timestamp = get_latest_timestamp(
-            comment.timestamp
-            for comment in self.comments
+        if not comments:
+            raise Http404()
+
+        timestamps = ':'.join(
+            comment.timestamp.isoformat()
+            for comment in comments
         )
 
-        return '%s:%s:%s' % (comment_ids, latest_timestamp,
-                             settings.TEMPLATE_SERIAL)
+        self.comments = comments
+
+        return f'{comment_ids}:{timestamps}:{settings.TEMPLATE_SERIAL}'
 
     def get(
         self,
@@ -426,20 +439,35 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
     accepted query parameters.
     """
 
+    def __init__(
+        self,
+        *args,
+        **kwargs,
+    ) -> None:
+        """Initialize the view.
+
+        Args:
+            *args (tuple):
+                Positional arguments to pass through to the parent class.
+
+            **kwargs (dict):
+                Keyword arguments to pass through to the parent class.
+        """
+        super().__init__(*args, **kwargs)
+
+        self._cached_diffset_info: (Mapping[str, Any] | None) = None
+
     def process_diffset_info(
         self,
         revision: int,
-        interdiff_revision: Optional[int] = None,
+        interdiff_revision: (int | None) = None,
         **kwargs,
-    ) -> dict[str, Any]:
+    ) -> Mapping[str, Any]:
         """Process and return information on the desired diff.
 
         The diff IDs and other data passed to the view can be processed and
         converted into DiffSets. A dictionary with the DiffSet and FileDiff
         information will be returned.
-
-        If the review request cannot be accessed by the user, an HttpResponse
-        will be returned instead.
 
         Args:
             revision (int):
@@ -455,6 +483,9 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             dict:
             Information on the diff for use in the template and in queries.
         """
+        if self._cached_diffset_info is not None:
+            return self._cached_diffset_info
+
         draft = self.review_request.get_draft(user=self.request.user)
 
         if interdiff_revision is not None:
@@ -464,23 +495,114 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
 
         diffset = self.get_diff(revision, draft)
 
-        return super().process_diffset_info(
+        info = super().process_diffset_info(
             diffset_or_id=diffset,
             interdiffset_or_id=interdiffset,
             **kwargs)
 
+        self._cached_diffset_info = info
+
+        return info
+
+    def make_etag(
+        self,
+        *,
+        request: (HttpRequest | None) = None,
+        **kwargs,
+    ) -> str:
+        """Return an ETag identifying this render.
+
+        Version Added:
+            7.1.0
+
+        Args:
+            request (django.http.HttpRequest):
+                The request from the client.
+
+                Version Added:
+                    7.1.0
+
+            **kwargs (dict):
+                Additional keyword arguments passed to the function.
+
+        Returns:
+            str:
+            The encoded ETag identifying this render.
+
+        Raises:
+            django.http.Http404:
+                The diff for the given parameters was not found.
+        """
+        etag = super().make_etag(request=request, **kwargs)
+
+        filediff_id = kwargs.get('filediff_id')
+        filediff = get_object_or_404(FileDiff, pk=filediff_id)
+
+        if filediff.binary:
+            # For binary files, serialized comments get included with the
+            # Review UI's rendered HTML. We therefore need to include the
+            # comment timestamps in the ETag or reloading the page can
+            # show out of date comments.
+            #
+            # This isn't an issue for non-binary files because all the comments
+            # are included along with the main diff viewer page, rather than
+            # with individual fragments.
+            assert request is not None
+
+            diff_info = self.process_diffset_info(
+                base_filediff_id=request.GET.get('base-filediff-id'),
+                **kwargs)
+            diff_file = diff_info['diff_file']
+
+            orig_attachment, modified_attachment = \
+                self._get_attachment_objects_for_binary(
+                    request=request,
+                    filediff=diff_file['filediff'],
+                    interfilediff=diff_file['interfilediff'],
+                    base_filediff=diff_file['base_filediff'],
+                    force_interdiff=diff_file['force_interdiff'],
+                    is_new_file=diff_file['is_new_file'],
+                )
+
+            if orig_attachment or modified_attachment:
+                comment_timestamps = (
+                    FileAttachmentComment.objects.for_file_attachment(
+                        attachment=modified_attachment,
+                        diff_against_file_attachment=orig_attachment,
+                        user=request.user,
+                    )
+                    .order_by('pk')
+                    .values_list('timestamp', flat=True)
+                )
+
+                if comment_timestamps:
+                    timestamps = ':'.join(
+                        timestamp.isoformat()
+                        for timestamp in comment_timestamps
+                    )
+                    etag = encode_etag(f'{etag}:{timestamps}')
+
+        return etag
+
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def create_renderer(
         self,
-        context: dict[str, Any],
-        renderer_settings: dict[str, Any],
-        diff_file: dict[str, Any],
-        *args,
+        *,
+        context: Mapping[str, Any],
+        renderer_settings: Mapping[str, Any],
+        diff_file: SerializedDiffFile,
+        request: HttpRequest,
         **kwargs,
     ) -> DiffRenderer:
         """Create the DiffRenderer for this fragment.
 
         This will augment the renderer for binary files by looking up
         file attachments, if review UIs are involved, disabling caching.
+
+        Version Changed:
+            7.1:
+            * Deprecated non-keyword arguments.
+            * Added the ``request`` parameter.
 
         Args:
             context (dict):
@@ -489,11 +611,11 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             renderer_settings (dict):
                 The diff renderer settings.
 
-            diff_file (dict):
+            diff_file (reviewboard.diffviewer.diffutils.SerializedDiffFile):
                 The information on the diff file to render.
 
-            *args (tuple):
-                Additional positional arguments from the parent class.
+            request (django.http.HttpRequest):
+                The request from the client.
 
             **kwargs (dict):
                 Additional keyword arguments from the parent class.
@@ -503,54 +625,33 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             The resulting diff renderer.
         """
         renderer = super().create_renderer(
+            request=request,
             context=context,
             renderer_settings=renderer_settings,
             diff_file=diff_file,
-            *args, **kwargs)
+            **kwargs)
 
         if diff_file['binary']:
             # Determine the file attachments to display in the diff viewer,
             # if any.
-            filediff = diff_file['filediff']
-            interfilediff = diff_file['interfilediff']
+            orig_attachment, modified_attachment = \
+                self._get_attachment_objects_for_binary(
+                    request=request,
+                    filediff=diff_file['filediff'],
+                    interfilediff=diff_file['interfilediff'],
+                    base_filediff=diff_file['base_filediff'],
+                    force_interdiff=diff_file['force_interdiff'],
+                    is_new_file=diff_file['is_new_file'],
+                )
 
-            orig_attachment = None
-            modified_attachment = None
-
-            if diff_file['force_interdiff']:
-                orig_attachment = self._get_diff_file_attachment(
-                    filediff=filediff)
-                modified_attachment = self._get_diff_file_attachment(
-                    filediff=interfilediff)
-            else:
-                modified_attachment = self._get_diff_file_attachment(
-                    filediff=filediff)
-
-                base_filediff = diff_file['base_filediff']
-
-                if base_filediff is not None:
-                    orig_attachment = self._get_diff_file_attachment(
-                        filediff=base_filediff)
-                elif not diff_file['is_new_file']:
-                    orig_attachment = self._get_diff_file_attachment(
-                        filediff=filediff, use_modified=False)
-
-                    if (orig_attachment is None and
-                        modified_attachment is not None):
-                        # We only fetch the original version of the file if we
-                        # already have an attachment for the modified version.
-                        # This way we're not cluttering up the DB and
-                        # filesystem with attachments that aren't helpful for
-                        # the review process.
-                        request = cast(HttpRequest, context.get('request'))
-                        orig_attachment = self._create_attachment_for_orig(
-                            request=request, filediff=filediff)
-
-            diff_review_ui_html: Optional[str] = None
-            orig_review_ui_class: Optional[type[ReviewUI]] = None
-            orig_review_ui_html: Optional[str] = None
-            modified_review_ui_class: Optional[type[ReviewUI]] = None
-            modified_review_ui_html: Optional[str] = None
+            diff_review_ui_html: (str | None) = None
+            orig_review_ui_class: (type[ReviewUI[Any, Any, Any]] | None) = None
+            orig_review_ui_html: (str | None) = None
+            modified_review_ui_class: (
+                type[ReviewUI[Any, Any, Any]] |
+                None
+            ) = None
+            modified_review_ui_html: (str | None) = None
             review_request = context['review_request']
 
             if orig_attachment:
@@ -601,6 +702,90 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
             self._get_download_links(renderer, diff_file))
 
         return renderer
+
+    def _get_attachment_objects_for_binary(
+        self,
+        *,
+        request: HttpRequest,
+        filediff: FileDiff,
+        interfilediff: FileDiff | None,
+        base_filediff: FileDiff | None,
+        force_interdiff: bool,
+        is_new_file: bool,
+    ) -> tuple[FileAttachment | None, FileAttachment | None]:
+        """Return the file attachments to display in the diff viewer.
+
+        For any binary files which are part of the change, we use file
+        attachments for storage and review.
+
+        Version Added:
+            7.1.0
+
+        Args:
+            request (django.http.HttpRequest):
+                The request from the client.
+
+            filediff (reviewboard.diffviewer.models.FileDiff):
+                The filediff for the file.
+
+            interfilediff (reviewboard.diffviewer.models.FileDiff):
+                The filediff for the interdiff, if present.
+
+            base_filediff (reviewboard.diffviewer.models.FileDiff):
+                The filediff for the base diff, if present.
+
+            force_interdiff (bool):
+                Whether to force rendering an interdiff.
+
+                This is used to show correct interdiffs for files that were
+                reverted in later versions.
+
+            is_new_file (bool):
+                Whether the filediff corresponds to a newly-added file.
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            Tuple:
+                0 (reviewboard.attachments.models.FileAttachment):
+                    The file attachment for the original version of the file,
+                    if present.
+
+                1 (reviewboard.attachments.models.FileAttachment):
+                    The file attachment for the modified version of the file,
+                    if present.
+        """
+        orig_attachment: (FileAttachment | None) = None
+        modified_attachment: (FileAttachment | None) = None
+
+        if force_interdiff:
+            assert interfilediff is not None
+
+            orig_attachment = self._get_diff_file_attachment(filediff=filediff)
+            modified_attachment = self._get_diff_file_attachment(
+                filediff=interfilediff)
+        else:
+            modified_attachment = self._get_diff_file_attachment(
+                filediff=filediff)
+
+            if base_filediff is not None:
+                orig_attachment = self._get_diff_file_attachment(
+                    filediff=base_filediff)
+            elif not is_new_file:
+                orig_attachment = self._get_diff_file_attachment(
+                    filediff=filediff, use_modified=False)
+
+                if (orig_attachment is None and
+                    modified_attachment is not None):
+                    # We only fetch the original version of the file if we
+                    # already have an attachment for the modified version. This
+                    # way we're not cluttering up the DB and filesystem with
+                    # attachments that aren't helpful for the review process.
+                    orig_attachment = self._create_attachment_for_orig(
+                        request=request, filediff=filediff)
+
+        return orig_attachment, modified_attachment
 
     def get_context_data(
         self,
