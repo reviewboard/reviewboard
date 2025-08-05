@@ -1,0 +1,182 @@
+.. default-intersphinx:: djblets5.x rb7.x
+
+
+================================
+Review Board 7.0.4 Release Notes
+================================
+
+**Release date**: TBD
+
+
+Installation/Upgrade
+====================
+
+Review Board 7.0.4 is compatible with Python 3.8 - 3.12.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To upgrade to this release in an existing Review Board environment, run:
+
+.. code-block:: console
+
+    $ rb-site manage /path/to/sitedir pip install ReviewBoard==7.0.4
+    $ rb-site upgrade /path/to/sitedir
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Packaging
+=========
+
+* :pypi:`Django` 4.2.23 (or a higher 4.2.x) is now required.
+
+  This is the latest security release for Django 4.2 LTS.
+
+* :pypi:`paramiko` 3.4.1 (or a higher 3.4.x) is now required.
+
+  Paramiko 4.0 released on August 3rd, 2025, and is not currently
+  compatible. We're constraining this release to the 3.4.x series.
+
+* :pypi:`rbintegrations` 4.0.2 (or a higher 4.0.x) is now required.
+
+  This is the latest release of the integrations package for Review Board.
+
+* The Review Board package is now built using modern Python
+  :file:`pyproject.toml`-based standards.
+
+  This should not effect installation or upgrades, but please let us know if
+  you do hit any problems.
+
+
+New Features
+============
+
+Single Sign-On
+--------------
+
+* Added the ability to override advanced SAML settings.
+
+  We use the :pypi:`python3-saml` package to provide SAML support, and
+  this supports a number of advanced settings that may be important in
+  some uncommon deployments.
+
+  These settings can now be set in :file:`settings_local.py` in a
+  ``SAML_CONFIG_ADVANCED`` settings dictionary.
+
+  For example:
+
+  .. code-block:: python
+
+     SAML_CONFIG_ADVANCED = {
+         'security': {
+             'requestAuthnContext': False,
+         },
+     }
+
+* Users can be blocked from logging in to Review Board even if allowed by
+  the SSO provider.
+
+  Previously, we respected the SSO Identity Provider's determination on
+  whether a user has access to Review Board, but there are cases where
+  organizations may want to control this separately on the Review Board
+  side.
+
+  Now, if a user account has the "Is Active" state disabled, they won't
+  be able to log in via SSO.
+
+* Added a setting for turning off automatic user provisioning for SAML.
+
+  The new :guilabel:`Automatically provision user accounts` setting in the
+  SAML settings can be turned off to ensure that only user accounts that
+  were explicitly created or already exist can be logged into via SSO.
+
+
+Diff Settings
+-------------
+
+* Added a setting for the default tabstop width in the diff viewer.
+  (:bug:`839`)
+
+  Companies that use a tabstop width other than 8 characters can now
+  change the width in the :ref:`diffviewer-settings` page.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed some styling issues throughout the product on dark mode.
+
+
+Installation and Upgrades
+-------------------------
+
+* Fixed failures that could occur when upgrading from certain older versions
+  of Review Board to 7.0.x.
+
+* Custom settings stored in a :file:`reviewboard.wsgi` file are no longer
+  removed during upgrade.
+
+
+Administration
+--------------
+
+* Fixed rendering issues that could occur when selecting review groups,
+  repositories, or users in configuration forms.
+
+
+Diff Viewer
+-----------
+
+* Fixed preserving the selected commit range when paginating through the
+  diff viewer.
+
+* Fixed the order of files in a downloaded diff.
+
+  When downloading a diff, the order of the files was dependent on the
+  order returned from the database. For some Postgres configurations, this
+  might not be same order they were in when uploading the file.
+
+  The downloaded diff is now guaranteed to have the files in the correct
+  order.
+
+
+Review Board Platform
+=====================
+
+This section covers important changes that may benefit or impact developers
+building extensions, clients, or integrations for Review Board.
+
+
+REST API
+--------
+
+* The :ref:`webapi2.0-user-resource` can now be used to create users without
+  a password.
+
+  Doing an HTTP POST to the resource without a ``password`` field will
+  result in a user that does not have a password set. This user can then
+  only be logged into via SSO or an API token.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Michelle Aubin

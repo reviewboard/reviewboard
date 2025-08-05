@@ -1,6 +1,9 @@
 Review Board
 ============
 
+|release-badge| |license-badge| |reviewed-with-badge| |python-badge|
+
+
 `Review Board`_ is an open source, web-based code and document review tool
 built to help companies, open source projects, and other organizations keep
 their quality high and their bug count low.
@@ -14,6 +17,22 @@ and companies, ranging from small startups of two people to enterprises of
 thousands.
 
 .. _`Review Board`: https://www.reviewboard.org/
+
+.. |release-badge| image:: https://img.shields.io/pypi/v/reviewboard
+   :target: https://pypi.org/project/reviewboard
+   :alt: Latest release
+
+.. |license-badge| image:: https://img.shields.io/badge/license-MIT-green.svg
+   :target: https://opensource.org/licenses/MIT
+   :alt: MIT License
+
+.. |reviewed-with-badge| image:: https://img.shields.io/badge/Review%20Board-d0e6ff?label=reviewed%20with
+   :target: https://www.reviewboard.org
+   :alt: Reviewed with Review Board
+
+.. |python-badge| image:: https://img.shields.io/pypi/pyversions/reviewboard
+   :target: https://pypi.org/project/reviewboard
+   :alt: Compatible python versions
 
 
 What does Review Board do?
