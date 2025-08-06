@@ -50,7 +50,7 @@ django_doc_major_version = '4.2'
 djblets_doc_major_version = '5.x'
 
 #: The version of Django required for the current version of Python.
-django_version = '~=4.2.17'
+django_version = '~=4.2.23'
 
 #: The version range required for Djblets.
 djblets_version = '~=5.3.0a0.dev0'
@@ -66,7 +66,7 @@ package_dependencies = {
     'cryptography': '~=41.0.7',
     'Django': django_version,
     'django-cors-headers': '~=3.11.0',
-    'django_evolution': '~=2.4.1',
+    'django_evolution': '~=2.4.2',
     'django-haystack': '~=3.2.1',
     'django_oauth_toolkit': '~=1.6.3',
     'django-storages': '~=1.14.2',
@@ -109,7 +109,7 @@ package_dependencies = {
 #: The dependencies here are generally intended to be those that themselves
 #: require Review Board.
 package_only_dependencies = {
-    'rbintegrations': '~=4.0.1',
+    'rbintegrations': '~=4.0.2',
 }
 
 

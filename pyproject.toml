@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    'setuptools>=74',
+    'setuptools>=77',
 ]
 build-backend = 'build-backend'
 backend-path = ['.']
@@ -11,7 +11,8 @@ description = 'Extensible code review and document review built for Git, Perforc
 authors = [
     {name = 'Beanbag, Inc.', email = 'questions@beanbaginc.com'},
 ]
-license = { text = 'MIT' }
+license = 'MIT'
+license-files = [ 'COPYING', 'AUTHORS' ]
 readme = 'README.rst'
 dynamic = ['dependencies', 'version']
 requires-python = '>=3.8'
@@ -23,7 +24,6 @@ classifiers = [
     'Framework :: Django :: 4.2',
     'Framework :: Review Board',
     'Intended Audience :: Developers',
-    'License :: OSI Approved :: MIT License',
     'Natural Language :: English',
     'Operating System :: OS Independent',
     'Programming Language :: Python',
@@ -41,6 +41,7 @@ classifiers = [
 [project.urls]
 Homepage = 'https://www.reviewboard.org'
 Documentation = 'https://www.reviewboard.org/docs/'
+ChangeLog = 'https://www.reviewboard.org/docs/releasenotes/reviewboard/'
 Repository = 'https://github.com/reviewboard/reviewboard'
 Support = 'https://www.reviewboard.org/support/'
 Hosting = 'https://rbcommons.com/'
