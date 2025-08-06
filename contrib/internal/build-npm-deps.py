@@ -5,9 +5,11 @@ Version Added:
     6.0
 """
 
+from __future__ import annotations
+
 import json
 import os
-from typing import Dict, TextIO
+from typing import TextIO
 
 
 MARKER_START = '# Auto-generated Node.js dependencies {\n'
@@ -19,7 +21,7 @@ def _write_deps(
     fp: TextIO,
     doc: str,
     name: str,
-    deps: Dict[str, str],
+    deps: dict[str, str],
 ) -> None:
     """Write dependencies to the file.
 
@@ -41,7 +43,7 @@ def _write_deps(
     """
     fp.write(
         '#: %(doc)s\n'
-        '%(name)s: Dict[str, str] = {\n'
+        '%(name)s: dict[str, str] = {\n'
         '%(deps)s\n'
         '}\n'
         '\n'
@@ -66,7 +68,7 @@ def main() -> None:
     with open(os.path.join(top_dir, 'package.json'), 'r') as fp:
         package_json = json.load(fp)
 
-    deps: Dict[str, str] = package_json['dependencies']
+    deps: dict[str, str] = package_json['dependencies']
 
     # Parse out the existing dependencies.py and grab everything outside the
     # markers.
