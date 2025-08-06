@@ -120,14 +120,18 @@ class LicensesView(ContextMixin, View):
         """
         license_entries = [
             {
-                'attrs': license_provider.get_js_license_model_data(
-                    license_info=license_info,
-                    request=request),
+                'license_infos': [
+                    {
+                        'attrs': license_provider.get_js_license_model_data(
+                           license_info=license_info,
+                           request=request),
+                    }
+                    for license_info in license_provider.get_licenses()
+                ],
                 'model': license_provider.js_license_model_name,
                 'view': license_provider.js_license_view_name,
             }
             for license_provider in license_provider_registry
-            for license_info in license_provider.get_licenses()
         ]
 
         return render(

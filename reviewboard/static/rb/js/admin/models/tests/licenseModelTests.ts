@@ -12,13 +12,17 @@ import {
     CallLicenseActionError,
     License,
     LicenseCheckStatus,
+    LicenseCollection,
 } from 'reviewboard/admin';
 
 
 suite('rb/admin/models/License', () => {
     let model: License;
+    let collection: LicenseCollection;
 
     beforeEach(() => {
+        collection = new LicenseCollection();
+
         model = new License({
             actionTarget: 'provider1:license1',
             licenseID: 'license1',
@@ -27,6 +31,7 @@ suite('rb/admin/models/License', () => {
         }, {
             actionCSRFToken: 'abc123',
         });
+        collection.add(model);
     });
 
     describe('Methods', () => {
@@ -63,51 +68,6 @@ suite('rb/admin/models/License', () => {
                 });
 
                 expect(fetch).toHaveBeenCalled();
-            });
-
-            it('With success and license_info', async () => {
-                spyOn(window, 'fetch').and.callFake(async (url, options) => {
-                    expect(options.method).toBe('POST');
-                    expect(Array.from(options.body.entries())).toEqual([
-                        ['action', 'my-action'],
-                        ['action_target', 'provider1:license1'],
-                        ['csrfmiddlewaretoken', 'abc123'],
-                        ['arg1', 'value1'],
-                        ['arg2', 'value2'],
-                    ]);
-
-                    return {
-                        json: async () => ({
-                            fields: 123,
-                            license_info: {
-                                summary: 'New summary',
-                            },
-                        }),
-                        ok: true,
-                    };
-                });
-
-                spyOn(model, 'trigger').and.callThrough();
-
-                const rsp = await model.callAction({
-                    action: 'my-action',
-                    args: {
-                        arg1: 'value1',
-                        arg2: 'value2',
-                    },
-                });
-
-                expect(rsp).toEqual({
-                    fields: 123,
-                    license_info: {
-                        summary: 'New summary',
-                    },
-                });
-
-                expect(fetch).toHaveBeenCalled();
-
-                expect(model.get('summary')).toBe('New summary');
-                expect(model.trigger).toHaveBeenCalledWith('licenseUpdated');
             });
 
             it('With error message', async () => {
@@ -381,6 +341,12 @@ suite('rb/admin/models/License', () => {
                         },
                     }),
                     Promise.resolve({
+                        license_infos: {
+                            license1: {
+                                licenseID: 'license1',
+                                summary: 'New summary',
+                            },
+                        },
                         status: 'applied',
                     }),
                 );
@@ -389,6 +355,7 @@ suite('rb/admin/models/License', () => {
 
                 expect(model.get('checkStatus'))
                     .toBe(LicenseCheckStatus.APPLIED);
+                expect(model.get('summary')).toBe('New summary');
 
                 expect(seenStatuses).toEqual([
                     LicenseCheckStatus.CHECKING,

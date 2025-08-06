@@ -17,6 +17,10 @@ import {
     CallLicenseActionError,
 } from './callLicenseActionError';
 
+import {
+    type LicenseCollection,
+} from '../collections/licenseCollection';
+
 
 /**
  * The current status of a license.
@@ -82,7 +86,7 @@ export interface CheckUpdatesProcessResponsePayload {
     status: LicenseCheckStatus;
 
     /** Optional license information to set. */
-    license_info?: Record<string, unknown>;
+    license_infos?: Record<string, Record<string, unknown>>;
 }
 
 
@@ -222,6 +226,8 @@ export class License<
     TExtraOptions extends LicenseOptions = LicenseOptions,
     TOptions = Backbone.ModelSetOptions,
 > extends BaseModel<TAttrs, TExtraOptions, TOptions> {
+    static idAttribute = 'licenseID';
+
     static defaults: LicenseAttrs = {
         actionTarget: null,
         actions: null,
@@ -349,11 +355,6 @@ export class License<
                 message: rsp?.error,
                 response: response,
             });
-        }
-
-        if (rsp.license_info) {
-            this.set(this.parse(rsp.license_info));
-            this.trigger('licenseUpdated');
         }
 
         return rsp;
@@ -520,10 +521,28 @@ export class License<
         }
 
         /* The call succeeded. Notify the UI and listeners. */
-        this.set('checkStatus', rsp.status);
+        if (rsp.license_infos) {
+            /*
+             * There's new license information. We'll set this on all affected
+             * licenses, set the status, and notify listeners of updates.
+             *
+             * This should be the common case.
+             */
+            const collection = this.collection as unknown as LicenseCollection;
 
-        if (rsp.status === LicenseCheckStatus.APPLIED) {
-            this.trigger('licenseUpdated');
+            collection.updateLicenses(rsp.license_infos, {
+                checkStatus: rsp.status,
+            });
+        } else {
+            /*
+             * There's no license data. We'll set the status on this license
+             * and notify if this is marked as applied.
+             */
+            this.set('checkStatus', rsp.status);
+
+            if (rsp.status === LicenseCheckStatus.APPLIED) {
+                this.trigger('licenseUpdated');
+            }
         }
     }
 }

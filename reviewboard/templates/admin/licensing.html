@@ -36,18 +36,29 @@
 <script>
 RB.PageManager.ready(function(page) {
     const licensesEl = document.getElementById('licenses-list');
+    let collection;
     let license;
     let licenseView;
 
-{%   for license_entry in license_entries %}
-    license = new {{license_entry.model}}({{license_entry.attrs|json_dumps}}, {
-        actionCSRFToken: "{{csrf_token}}"
+{%   for license_entry_batch in license_entries %}
+{%    if license_entry_batch %}
+    collection = new RB.LicenseCollection([], {
+        model: {{license_entry_batch.model}},
     });
-    licenseView = new {{license_entry.view}}({
-        model: license
+
+{%     for license_entry in license_entry_batch.license_infos %}
+    license = new {{license_entry_batch.model}}({{license_entry.attrs|json_dumps}}, {
+        actionCSRFToken: "{{csrf_token}}",
+    });
+    licenseView = new {{license_entry_batch.view}}({
+        model: license,
     });
     licenseView.renderInto(licensesEl);
-    license.checkForUpdates();
+    collection.add(license);
+{%     endfor %}
+
+    collection.checkForUpdates();
+{%    endif %}
 {%   endfor %}
 });
 </script>
