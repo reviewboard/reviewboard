@@ -13,7 +13,7 @@ import json
 import logging
 import ssl
 from email.generator import _make_boundary as generate_boundary
-from typing import Callable, Optional, TYPE_CHECKING, Tuple, Type, Union
+from typing import TYPE_CHECKING
 from urllib.error import URLError
 from urllib.parse import urlparse
 
@@ -30,6 +30,8 @@ from reviewboard.scmtools.crypto_utils import decrypt_password
 from reviewboard.scmtools.errors import UnverifiedCertificateError
 
 if TYPE_CHECKING:
+    from typing import Callable
+
     from typelets.json import JSONValue
 
     from reviewboard.hostingsvcs.base.hosting_service import (
@@ -70,7 +72,7 @@ class HostingServiceClient:
     #:
     #: Version Added:
     #:     4.0
-    http_request_cls: Type[HostingServiceHTTPRequest] = \
+    http_request_cls: type[HostingServiceHTTPRequest] = \
         HostingServiceHTTPRequest
 
     #: The HTTP response class to construct HTTP responses.
@@ -80,7 +82,7 @@ class HostingServiceClient:
     #:
     #: Version Added:
     #:     4.0
-    http_response_cls: Type[HostingServiceHTTPResponse] = \
+    http_response_cls: type[HostingServiceHTTPResponse] = \
         HostingServiceHTTPResponse
 
     #: Whether to add HTTP Basic Auth headers by default.
@@ -131,7 +133,7 @@ class HostingServiceClient:
     def http_delete(
         self,
         url: str,
-        headers: Optional[HTTPHeaders] = None,
+        headers: (HTTPHeaders | None) = None,
         *args,
         **kwargs,
     ) -> HostingServiceHTTPResponse:
@@ -178,7 +180,7 @@ class HostingServiceClient:
     def http_get(
         self,
         url: str,
-        headers: Optional[HTTPHeaders] = None,
+        headers: (HTTPHeaders | None) = None,
         *args,
         **kwargs,
     ) -> HostingServiceHTTPResponse:
@@ -225,7 +227,7 @@ class HostingServiceClient:
     def http_head(
         self,
         url: str,
-        headers: Optional[HTTPHeaders] = None,
+        headers: (HTTPHeaders | None) = None,
         *args,
         **kwargs,
     ) -> HostingServiceHTTPResponse:
@@ -270,11 +272,11 @@ class HostingServiceClient:
     def http_post(
         self,
         url: str,
-        body: Optional[bytes] = None,
-        fields: Optional[FormFields] = None,
-        files: Optional[UploadedFiles] = None,
-        content_type: Optional[str] = None,
-        headers: Optional[HTTPHeaders] = None,
+        body: (bytes | None) = None,
+        fields: (FormFields | None) = None,
+        files: (UploadedFiles | None) = None,
+        content_type: (str | None) = None,
+        headers: (HTTPHeaders | None) = None,
         *args,
         **kwargs,
     ) -> HostingServiceHTTPResponse:
@@ -351,11 +353,11 @@ class HostingServiceClient:
     def http_put(
         self,
         url: str,
-        body: Optional[bytes] = None,
-        fields: Optional[FormFields] = None,
-        files: Optional[UploadedFiles] = None,
-        content_type: Optional[str] = None,
-        headers: Optional[HTTPHeaders] = None,
+        body: (bytes | None) = None,
+        fields: (FormFields | None) = None,
+        files: (UploadedFiles | None) = None,
+        content_type: (str | None) = None,
+        headers: (HTTPHeaders | None) = None,
         *args,
         **kwargs,
     ) -> HostingServiceHTTPResponse:
@@ -429,8 +431,8 @@ class HostingServiceClient:
     def http_request(
         self,
         url: str,
-        body: Optional[bytes] = None,
-        headers: Optional[HTTPHeaders] = None,
+        body: (bytes | None) = None,
+        headers: (HTTPHeaders | None) = None,
         method: str = 'GET',
         **kwargs,
     ) -> HostingServiceHTTPResponse:
@@ -523,8 +525,8 @@ class HostingServiceClient:
     def get_http_credentials(
         self,
         account: HostingServiceAccount,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
         **kwargs,
     ) -> HostingServiceCredentials:
         """Return credentials used to authenticate with the service.
@@ -762,7 +764,7 @@ class HostingServiceClient:
         self,
         *args,
         **kwargs,
-    ) -> Tuple[JSONValue, HTTPHeaders]:
+    ) -> tuple[JSONValue, HTTPHeaders]:
         """Perform an HTTP DELETE and interpret the results as JSON.
 
         Deprecated:
@@ -814,7 +816,7 @@ class HostingServiceClient:
         self,
         *args,
         **kwargs,
-    ) -> Tuple[JSONValue, HTTPHeaders]:
+    ) -> tuple[JSONValue, HTTPHeaders]:
         """Perform an HTTP GET and interpret the results as JSON.
 
         Deprecated:
@@ -866,7 +868,7 @@ class HostingServiceClient:
         self,
         *args,
         **kwargs,
-    ) -> Tuple[JSONValue, HTTPHeaders]:
+    ) -> tuple[JSONValue, HTTPHeaders]:
         """Perform an HTTP POST and interpret the results as JSON.
 
         Deprecated:
@@ -916,11 +918,13 @@ class HostingServiceClient:
 
     def _do_json_method(
         self,
-        method: Callable[..., Union[Tuple[bytes, HTTPHeaders],
-                                    HostingServiceHTTPResponse]],
+        method: Callable[
+            ...,
+            tuple[bytes, HTTPHeaders] | HostingServiceHTTPResponse
+        ],
         *args,
         **kwargs,
-    ) -> Tuple[JSONValue, HTTPHeaders]:
+    ) -> tuple[JSONValue, HTTPHeaders]:
         """Parse the result of an HTTP operation as JSON.
 
         Deprecated:
@@ -971,16 +975,16 @@ class HostingServiceClient:
 
             return data, headers
         else:
-            raise NotImplementedError('Unsupported response from %r' % method)
+            raise NotImplementedError(f'Unsupported response from {method!r}')
 
     def _build_put_post_request(
         self,
-        body: Optional[bytes] = None,
-        fields: Optional[FormFields] = None,
-        files: Optional[UploadedFiles] = None,
-        content_type: Optional[str] = None,
-        headers: Optional[HTTPHeaders] = None,
-    ) -> Tuple[bytes, HTTPHeaders]:
+        body: (bytes | None) = None,
+        fields: (FormFields | None) = None,
+        files: (UploadedFiles | None) = None,
+        content_type: (str | None) = None,
+        headers: (HTTPHeaders | None) = None,
+    ) -> tuple[bytes, HTTPHeaders]:
         """Build a request body and headers for a HTTP PUT or POST.
 
         Args:
@@ -1030,7 +1034,7 @@ class HostingServiceClient:
         if content_type:
             headers['Content-Type'] = content_type
 
-        headers['Content-Length'] = '%d' % len(body)
+        headers['Content-Length'] = str(len(body))
 
         return body, headers
 
@@ -1040,9 +1044,9 @@ class HostingServiceClient:
 
     @staticmethod
     def build_form_data(
-        fields: Optional[FormFields],
-        files: Optional[UploadedFiles] = None,
-    ) -> Tuple[bytes, str]:
+        fields: FormFields | None,
+        files: (UploadedFiles | None) = None,
+    ) -> tuple[bytes, str]:
         """Encode data for use in an HTTP POST.
 
         Args:
@@ -1119,7 +1123,7 @@ class HostingServiceClient:
         content_parts.append(b'--%s--' % enc_boundary)
 
         content = b''.join(content_parts)
-        content_type = 'multipart/form-data; boundary=%s' % boundary
+        content_type = f'multipart/form-data; boundary={boundary}'
 
         return content, content_type
 

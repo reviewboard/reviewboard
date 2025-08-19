@@ -1,3 +1,7 @@
+"""Hosting service for Review Board Gateway."""
+
+from __future__ import annotations
+
 import hashlib
 import hmac
 import json
@@ -11,8 +15,10 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.template.loader import render_to_string
 from django.urls import path
 from django.utils.translation import gettext_lazy as _, gettext
+from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import build_server_url, get_server_url
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
@@ -638,18 +644,21 @@ class ReviewBoardGateway(BaseHostingService):
              name='rbgateway-hooks-close-submitted'),
     ]
 
-    def check_repository(self, rbgateway_repo_name, *args, **kwargs):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def check_repository(
+        self,
+        *,
+        rbgateway_repo_name: str,
+        **kwargs,
+    ) -> None:
         """Checks the validity of a repository configuration.
 
         Args:
-            rbgateway_repo_name (unicode):
+            rbgateway_repo_name (str):
                 The name of the repository to check.
 
-            *args (tuple, unused):
-                Unused positional arguments.
-
             **kwargs (dict, unused):
-                Unused dictionary arguments.
+                Additional keyword arguments provided by the repository form.
 
         Raises:
             reviewboard.hostingsvcs.errors.RepositoryError:
@@ -666,22 +675,30 @@ class ReviewBoardGateway(BaseHostingService):
 
             raise
 
-    def authorize(self, username, password, *args, **kwargs):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def authorize(
+        self,
+        *,
+        username: str | None,
+        password: str | None,
+        **kwargs,
+    ) -> None:
         """Authorize an account on the RB Gateway service.
 
         This will perform an authentication request against the API. If
         successful, the generated API token will be stored, encrypted, for
         future requests to the API.
 
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
         Args:
-            username (unicode):
+            username (str):
                 The username for the account.
 
-            password (unicode):
+            password (str):
                 The password for the account.
-
-            *args (tuple, unused):
-                Unused positional arguments.
 
             **kwargs (dict, unused):
                 Unused keyword arguments.

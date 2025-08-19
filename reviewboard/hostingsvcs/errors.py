@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional
-
 from django.utils.translation import gettext, gettext_lazy as _
 
 
@@ -15,22 +13,22 @@ class HostingServiceError(Exception):
     ######################
 
     #: The optional HTTP status code for the error.
-    http_code: Optional[int]
+    http_code: int | None
 
     #: An optional URL for further information on the error.
-    help_link: Optional[str]
+    help_link: str | None
 
     #: A label for the optional URL for further information on the error.
     #:
     #: This will always be provided if :py:attr:`help_link` is set.
-    help_link_text: Optional[str]
+    help_link_text: str | None
 
     def __init__(
         self,
         message: str,
-        http_code: Optional[int] = None,
-        help_link: Optional[str] = None,
-        help_link_text: Optional[str] = None,
+        http_code: (int | None) = None,
+        help_link: (str | None) = None,
+        help_link_text: (str | None) = None,
     ) -> None:
         """Initialize the error.
 
@@ -79,21 +77,21 @@ class HostingServiceAPIError(HostingServiceError):
     ######################
 
     #: The HTTP status code for the error, if available.
-    http_code: Optional[int]
+    http_code: int | None
 
     #: The parsed payload for the error, if available.
-    rsp: Optional[Dict]
+    rsp: object | None
 
     def __init__(
         self,
-        msg: Optional[str] = None,
-        http_code: Optional[int] = None,
-        rsp: Optional[Dict] = None,
+        msg: (str | None) = None,
+        http_code: (int | None) = None,
+        rsp: (object | None) = None,
     ) -> None:
         """Initialize the error.
 
         Args:
-            msg (unicode, optional):
+            msg (str, optional):
                 The error message from the service.
 
             http_code (int, optional):
@@ -132,7 +130,7 @@ class MissingHostingServiceError(HostingServiceError):
     def __init__(
         self,
         hosting_service_id: str,
-        repository: Optional[str] = None,
+        repository: (str | None) = None,
     ) -> None:
         """Initialize the error.
 

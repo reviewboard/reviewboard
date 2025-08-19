@@ -12,7 +12,7 @@ import inspect
 import logging
 import re
 from importlib import import_module
-from typing import Dict, Iterator, Optional, Sequence, TYPE_CHECKING, Type
+from typing import TYPE_CHECKING
 
 from django.urls import include, re_path
 from django.utils.translation import gettext_lazy as _
@@ -25,13 +25,16 @@ from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.registries.registry import EntryPointRegistry
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator, Sequence
+    from importlib.metadata import EntryPoint
+
     from django.urls import _AnyURL
 
 
 logger = logging.getLogger(__name__)
 
 
-class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
+class HostingServiceRegistry(EntryPointRegistry[type[BaseHostingService]]):
     """A registry for managing hosting services.
 
     Version Changed:
@@ -64,15 +67,15 @@ class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
     #:
     #: Type:
     #:     dict
-    _url_patterns: Dict[str, Sequence[_AnyURL]]
+    _url_patterns: dict[str, Sequence[_AnyURL]]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the registry."""
         super().__init__()
 
         self._url_patterns = {}
 
-    def get_defaults(self) -> Iterator[Type[BaseHostingService]]:
+    def get_defaults(self) -> Iterator[type[BaseHostingService]]:
         """Yield the built-in hosting services.
 
         This will make sure the standard hosting services are always present in
@@ -106,7 +109,8 @@ class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
                 ('unfuddle', 'Unfuddle'),
                 ('versionone', 'VersionOne'),
             ):
-            mod = import_module('reviewboard.hostingsvcs.%s' % _module)
+            mod = import_module(f'reviewboard.hostingsvcs.{_module}')
+
             yield getattr(mod, _service_cls_name)
 
         yield from super().get_defaults()
@@ -114,7 +118,7 @@ class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
     def get_hosting_service(
         self,
         hosting_service_id: str,
-    ) -> Optional[Type[BaseHostingService]]:
+    ) -> type[BaseHostingService] | None:
         """Return a hosting service with the given ID.
 
         Args:
@@ -132,7 +136,7 @@ class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
 
     def unregister(
         self,
-        service: Type[BaseHostingService],
+        service: type[BaseHostingService],
     ) -> None:
         """Unregister a hosting service.
 
@@ -164,10 +168,8 @@ class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
         defined.
 
         Args:
-            service (type):
-                The
-                :py:class:`~reviewboard.hostingsvcs.base.hosting_service.
-                BaseHostingService` subclass.
+            hosting_service_id (str):
+                The ID of the hosting service to unregister.
         """
         try:
             self.unregister_by_attr('hosting_service_id', hosting_service_id)
@@ -179,8 +181,8 @@ class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
 
     def process_value_from_entry_point(
         self,
-        entry_point,
-    ) -> Type[BaseHostingService]:
+        entry_point: EntryPoint,
+    ) -> type[BaseHostingService]:
         """Load the class from the entry point.
 
         The ``hosting_service_id`` attribute will be set on the class from the
@@ -203,7 +205,7 @@ class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
 
     def register(
         self,
-        service: Type[BaseHostingService],
+        service: type[BaseHostingService],
     ) -> None:
         """Register a hosting service.
 
@@ -220,9 +222,10 @@ class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
         if service.repository_url_patterns:
             assert service.hosting_service_id
 
+            escaped_id = re.escape(service.hosting_service_id)
+
             cls_urlpatterns = [
-                re_path(r'^(?P<hosting_service_id>%s)/'
-                        % re.escape(service.hosting_service_id),
+                re_path(rf'^(?P<hosting_service_id>{escaped_id})/',
                         include(service.repository_url_patterns)),
             ]
 

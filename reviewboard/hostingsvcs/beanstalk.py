@@ -1,3 +1,7 @@
+"""Hosting service for Beanstalk."""
+
+from __future__ import annotations
+
 import json
 import logging
 import os
@@ -10,8 +14,10 @@ from django.http import HttpResponse
 from django.urls import path
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
+from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import get_server_url
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base.forms import (
     BaseHostingServiceAuthForm,
     BaseHostingServiceRepositoryForm,
@@ -252,22 +258,63 @@ class Beanstalk(BaseHostingService):
              BeanstalkHookViews.process_post_receive_hook),
     ]
 
-    def check_repository(self, beanstalk_account_domain=None,
-                         beanstalk_repo_name=None, *args, **kwargs):
-        """Checks the validity of a repository.
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def check_repository(
+        self,
+        *,
+        beanstalk_account_domain: str,
+        beanstalk_repo_name: str,
+        **kwargs,
+    ) -> None:
+        """Check the validity of a repository.
 
         This will perform an API request against Beanstalk to get
         information on the repository. This will throw an exception if
         the repository was not found, and return cleanly if it was found.
+
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
+        Args:
+            beanstalk_account_domain (str):
+                The domain for the Beanstalk account.
+
+            beanstalk_repo_name (str):
+                The name of the repository.
+
+            **kwargs (dict, unused):
+                Additional information passed by the repository form.
         """
         self._api_get_repository(beanstalk_account_domain, beanstalk_repo_name)
 
-    def authorize(self, username, password, hosting_url,
-                  local_site_name=None, *args, **kwargs):
-        """Authorizes the Beanstalk repository.
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def authorize(
+        self,
+        *,
+        username: str | None,
+        password: str | None,
+        **kwargs,
+    ) -> None:
+        """Authorize the Beanstalk repository.
 
         Beanstalk uses HTTP Basic Auth for the API, so this will store the
         provided password, encrypted, for use in later API requests.
+
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
+        Args:
+            username (str):
+                The username for the account.
+
+            password (str):
+                The password for the account.
+
+            **kwargs (dict, unused):
+                Extra keyword arguments containing values from the
+                repository's configuration.
         """
         self.account.data['password'] = encrypt_password(password)
         self.account.save()

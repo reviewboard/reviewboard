@@ -65,7 +65,7 @@ class BeanstalkTests(HostingServiceTestCase[Beanstalk]):
 
         self.assertFalse(service.is_authorized())
 
-        service.authorize('myuser', 'abc123', None)
+        service.authorize(username='myuser', password='abc123')
 
         self.assertIn('password', account.data)
         self.assertNotEqual(account.data['password'], 'abc123')

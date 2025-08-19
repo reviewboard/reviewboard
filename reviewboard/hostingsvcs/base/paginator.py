@@ -8,12 +8,17 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import (Any, Callable, Generic, Iterator, Optional, Sequence,
-                    TYPE_CHECKING, TypeVar)
+from collections.abc import Callable, Sequence
+from typing import Any, Generic, TYPE_CHECKING, TypeVar, Union
 
+from housekeeping import deprecate_non_keyword_only_args
 from typing_extensions import NotRequired, TypeAlias, TypedDict
 
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
+
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from typelets.funcs import KwargsDict
 
     from reviewboard.hostingsvcs.base import HostingServiceClient
@@ -28,8 +33,8 @@ _PageDataT = TypeVar('_PageDataT')
 #:
 #: Version Added:
 #:     6.0
-_ProxyNormalizePageDataFunc: TypeAlias = Callable[[Optional[Any]],
-                                                  Optional[_PageDataT]]
+_ProxyNormalizePageDataFunc: TypeAlias = Callable[[Any],
+                                                  Union[_PageDataT, None]]
 
 
 class APIPaginatorPageData(TypedDict):
@@ -55,19 +60,19 @@ class APIPaginatorPageData(TypedDict):
     #:
     #: Type:
     #:     str
-    next_url: NotRequired[Optional[str]]
+    next_url: NotRequired[str | None]
 
     #: The optional limit on the number of items fetched on each page.
     #:
     #: Type:
     #:     int
-    per_page: NotRequired[Optional[int]]
+    per_page: NotRequired[int | None]
 
     #: The optional URL to the previous page.
     #:
     #: Type:
     #:     str
-    prev_url: NotRequired[Optional[str]]
+    prev_url: NotRequired[str | None]
 
     #: The API response data.
     #:
@@ -79,7 +84,7 @@ class APIPaginatorPageData(TypedDict):
     #:
     #: Type:
     #:     int
-    total_count: NotRequired[Optional[int]]
+    total_count: NotRequired[int | None]
 
 
 class InvalidPageError(Exception):
@@ -118,13 +123,13 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
     #:
     #: Type:
     #:     object
-    page_data: Optional[_PageDataT]
+    page_data: _PageDataT | None
 
     #: The number of items to fetch per page.
     #:
     #: Type:
     #:     int
-    per_page: Optional[int]
+    per_page: int | None
 
     #: Keyword arguments to pass when making HTTP requests.
     #:
@@ -138,7 +143,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
     #:
     #: Type:
     #:     int
-    start: Optional[int]
+    start: int | None
 
     #: The total number of results across all pages.
     #:
@@ -146,15 +151,21 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
     #:
     #: Type:
     #:     int
-    total_count: Optional[int]
+    total_count: int | None
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def __init__(
         self,
-        start: Optional[int] = None,
-        per_page: Optional[int] = None,
-        request_kwargs: Optional[KwargsDict] = None,
+        *,
+        start: (int | None) = None,
+        per_page: (int | None) = None,
+        request_kwargs: (KwargsDict | None) = None,
     ) -> None:
         """Initialize the paginator.
+
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
 
         Args:
             start (int, optional):
@@ -197,7 +208,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
         """
         raise NotImplementedError
 
-    def prev(self) -> Optional[_PageDataT]:
+    def prev(self) -> _PageDataT | None:
         """Fetch the previous page, returning the page data.
 
         Subclasses must override this to provide the logic for fetching pages.
@@ -215,7 +226,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
         """
         raise NotImplementedError
 
-    def next(self) -> Optional[_PageDataT]:
+    def next(self) -> _PageDataT | None:
         """Fetch the next page, returning the page data.
 
         Subclasses must override this to provide the logic for fetching pages.
@@ -235,7 +246,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
 
     def iter_items(
         self,
-        max_pages: Optional[int] = None,
+        max_pages: (int | None) = None,
     ) -> Iterator[_PageDataItemT]:
         """Iterate through all items across pages.
 
@@ -256,18 +267,18 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
         for page in self.iter_pages(max_pages=max_pages):
             if page:
                 assert isinstance(page, Sequence), (
-                    "page_data is not a sequence (it's a %s). This is "
-                    "either an unexpected result, or %s.iter_items() needs "
-                    "to be overridden."
-                    % (type(page), type(self).__name__)
+                    f"page_data is not a sequence (it's a {type(page)}). This "
+                    f"is either an unexpected result, or "
+                    f"{type(self).__name__}.iter_items() needs to be "
+                    "overridden."
                 )
 
                 yield from page
 
     def iter_pages(
         self,
-        max_pages: Optional[int] = None,
-    ) -> Iterator[Optional[_PageDataT]]:
+        max_pages: (int | None) = None,
+    ) -> Iterator[_PageDataT | None]:
         """Iterate through pages of results.
 
         This will repeatedly fetch pages, providing each parsed page payload
@@ -298,7 +309,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
         except InvalidPageError:
             pass
 
-    def __iter__(self) -> Iterator[Optional[_PageDataT]]:
+    def __iter__(self) -> Iterator[_PageDataT | None]:
         """Iterate through pages of results.
 
         This is a simple wrapper for :py:meth:`iter_pages`.
@@ -342,7 +353,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
     #:
     #: Type:
     #:     str
-    start_query_param: Optional[str] = None
+    start_query_param: (str | None) = None
 
     #: Query parameter name for the requested number of results per page.
     #:
@@ -351,7 +362,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
     #:
     #: Type:
     #:     str
-    per_page_query_param: Optional[str] = None
+    per_page_query_param: (str | None) = None
 
     ######################
     # Instance variables #
@@ -367,37 +378,46 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
     #:
     #: Type:
     #:     str
-    next_url: Optional[str]
+    next_url: str | None
 
     #: HTTP headers returned for the current page.
     #:
     #: Type:
     #:     dict
-    page_headers: Optional[HTTPHeaders]
+    page_headers: HTTPHeaders | None
 
     #: The URL for the previous set of results in the page.
     #:
     #: Type:
     #:     str
-    prev_url: Optional[str]
+    prev_url: str | None
 
     #: The URL used to fetch the current page of data.
     #:
     #: Type:
     #:     str
-    url: Optional[str]
+    url: str | None
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def __init__(
         self,
-        client: HostingServiceClient,
+        *,
+        client: HostingServiceClient | None,
         url: str,
         query_params: QueryArgs = {},
-        *args,
-        **kwargs,
+        start: (int | None) = None,
+        per_page: (int | None) = None,
+        request_kwargs: (KwargsDict | None) = None,
     ) -> None:
         """Initialize the paginator.
 
         Once initialized, the first page will be fetched automatically.
+
+        Version Changed:
+            7.1:
+            * Made arguments keyword-only.
+            * Explicitly listed out arguments that are passed to the base
+              class.
 
         Args:
             client (reviewboard.hostingsvcs.base.client.HostingServiceClient):
@@ -415,10 +435,22 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
             *args (tuple):
                 Positional arguments for the parent constructor.
 
-            **kwargs (dict):
-                Keyword arguments for the parent constructor.
+            start (int, optional):
+                The starting page.
+
+                Whether this is 0-based or 1-based depends on the hosting
+                service.
+
+            per_page (int, optional):
+                The number of items per page.
+
+            request_kwargs (dict, optional):
+                Keyword arguments to pass when making a request.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            start=start,
+            per_page=per_page,
+            request_kwargs=request_kwargs)
 
         self.client = client
         self.url = url
@@ -457,7 +489,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         """
         return self.next_url is not None
 
-    def prev(self) -> Optional[_PageDataT]:
+    def prev(self) -> _PageDataT | None:
         """Fetch the previous page, returning the page data.
 
         Returns:
@@ -477,7 +509,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         self.url = self.prev_url
         return self._fetch_page()
 
-    def next(self) -> Optional[_PageDataT]:
+    def next(self) -> _PageDataT | None:
         """Fetch the next page, returning the page data.
 
         Returns:
@@ -517,7 +549,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         """
         raise NotImplementedError
 
-    def _fetch_page(self) -> Optional[_PageDataT]:
+    def _fetch_page(self) -> _PageDataT | None:
         """Fetch a page and extracts the information from it.
 
         Returns:
@@ -538,34 +570,32 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         self.total_count = page_info.get('total_count')
 
         # Make sure the implementation sent the correct data to us.
-        assert self.prev_url is None or isinstance(self.prev_url, str), \
-            ('"prev_url" result from fetch_url() must be None or Unicode '
-             'string, not %r'
-             % type(self.prev_url))
+        assert self.prev_url is None or isinstance(self.prev_url, str), (
+            f'"prev_url" result from fetch_url() must be None or Unicode '
+            f'string, not {type(self.prev_url)!r}'
+        )
 
-        assert self.next_url is None or isinstance(self.next_url, str), \
-            ('"next_url" result from fetch_url() must be None or Unicode '
-             'string, not %r'
-             % type(self.next_url))
+        assert self.next_url is None or isinstance(self.next_url, str), (
+            f'"next_url" result from fetch_url() must be None or Unicode '
+            f'string, not {type(self.next_url)!r}'
+        )
 
-        assert self.total_count is None or isinstance(self.total_count, int), \
-            ('"total_count" result from fetch_url() must be None or int, not '
-             '%r'
-             % type(self.total_count))
+        assert self.total_count is None or isinstance(self.total_count, int), (
+            f'"total_count" result from fetch_url() must be None or int, not '
+            f'{type(self.total_count)!r}'
+        )
 
-        assert self.per_page is None or isinstance(self.per_page, int), \
-            ('"per_page" result from fetch_url() must be an int, not %r'
-             % type(self.per_page))
+        assert self.per_page is None or isinstance(self.per_page, int), (
+            f'"per_page" result from fetch_url() must be an int, not '
+            f'{type(self.per_page)!r}'
+        )
 
-        assert isinstance(self.page_headers, dict), \
-            ('"page_headers" result from fetch_url() must be a dictionary, '
-             'not %r'
-             % type(self.page_headers))
+        assert isinstance(self.page_headers, dict), (
+            f'"page_headers" result from fetch_url() must be a dictionary, '
+            f'not {type(self.page_headers)!r}'
+        )
 
         return self.page_data
-
-
-_ProxiedPaginatorT = TypeVar('_ProxiedPaginatorT', bound=BasePaginator)
 
 
 class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
@@ -605,12 +635,16 @@ class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
     #:
     #: Type:
     #:     callable
-    normalize_page_data_func: Optional[_ProxyNormalizePageDataFunc]
+    normalize_page_data_func: (
+        _ProxyNormalizePageDataFunc[_PageDataItemT] | None
+    )
 
     def __init__(
         self,
         paginator: BasePaginator[Any, Any],
-        normalize_page_data_func: Optional[_ProxyNormalizePageDataFunc] = None,
+        normalize_page_data_func: (
+            _ProxyNormalizePageDataFunc[_PageDataItemT] | None
+        ) = None,
     ) -> None:
         """Initialize the paginator.
 
@@ -647,7 +681,7 @@ class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         return self.paginator.has_next
 
     @property
-    def per_page(self) -> Optional[int]:  # type: ignore
+    def per_page(self) -> int | None:
         """The number of items requested per page.
 
         Type:
@@ -656,7 +690,7 @@ class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         return self.paginator.per_page
 
     @property
-    def total_count(self) -> Optional[int]:  # type: ignore
+    def total_count(self) -> int | None:
         """The number of items across all pages, if known.
 
         Type:
@@ -664,7 +698,7 @@ class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         """
         return self.paginator.total_count
 
-    def prev(self) -> Optional[_PageDataT]:
+    def prev(self) -> _PageDataT | None:
         """Fetch the previous page, returning the page data.
 
         Returns:
@@ -680,7 +714,7 @@ class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         """
         return self._process_page(self.paginator.prev())
 
-    def next(self) -> Optional[_PageDataT]:
+    def next(self) -> _PageDataT | None:
         """Fetch the next page, returning the page data.
 
         Returns:
@@ -698,8 +732,8 @@ class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
 
     def normalize_page_data(
         self,
-        data: Optional[Any],
-    ) -> Optional[_PageDataT]:
+        data: Any,
+    ) -> _PageDataT | None:
         """Normalize a page of data.
 
         If :py:attr:`normalize_page_data_func` was passed on construction, this
@@ -724,8 +758,8 @@ class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
 
     def _process_page(
         self,
-        page_data: Optional[Any],
-    ) -> Optional[_PageDataT]:
+        page_data: Any,
+    ) -> _PageDataT | None:
         """Process a page of data.
 
         This will normalize the page data, store it, and return it.

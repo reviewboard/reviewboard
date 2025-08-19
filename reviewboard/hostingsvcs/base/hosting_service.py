@@ -9,26 +9,32 @@ Version Added:
 from __future__ import annotations
 
 import logging
-from typing import (Any, Dict, List, Mapping, Optional, Sequence,
-                    TYPE_CHECKING, Tuple, Type)
+from collections.abc import Mapping
+from typing import Any, Dict, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.utils.translation import gettext_lazy as _
-from typing_extensions import NotRequired, TypeAlias, TypedDict
+from housekeeping import deprecate_non_keyword_only_args
+from typing_extensions import TypedDict
 
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from typing import ClassVar
+
     from django.http import HttpRequest
     from django.urls import _AnyURL
     from django.utils.safestring import SafeString
     from paramiko import PKey
     from typelets.django.strings import StrOrPromise
+    from typing_extensions import NotRequired, TypeAlias
 
     from reviewboard.hostingsvcs.base.forms import (
         BaseHostingServiceAuthForm,
         BaseHostingServiceRepositoryForm)
-    from reviewboard.hostingsvcs.base.paginator import APIPaginator
+    from reviewboard.hostingsvcs.base.paginator import BasePaginator
     from reviewboard.hostingsvcs.models import HostingServiceAccount
     from reviewboard.hostingsvcs.repository import RemoteRepository
     from reviewboard.scmtools.core import Branch, Commit, SCMTool
@@ -70,7 +76,7 @@ class HostingServicePlan(TypedDict):
     #:
     #: Type:
     #:     type
-    form: NotRequired[Type[BaseHostingServiceRepositoryForm]]
+    form: NotRequired[type[BaseHostingServiceRepositoryForm]]
 
     #: Templated values to set for model repository fields.
     #:
@@ -142,13 +148,13 @@ class BaseHostingService:
     #:
     #: Type:
     #:     str
-    hosting_service_id: Optional[str] = None
+    hosting_service_id: ClassVar[str | None] = None
 
     #: The display name for the hosting service.
     #:
     #: Type:
     #:     str
-    name: Optional[StrOrPromise] = None
+    name: ClassVar[StrOrPromise | None] = None
 
     #: A list of available hosting service plans.
     #:
@@ -159,7 +165,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     list
-    plans: Optional[Sequence[Tuple[str, HostingServicePlan]]] = None
+    plans: ClassVar[Sequence[tuple[str, HostingServicePlan]] | None] = None
 
     #: Whether this service supports bug trackers.
     #:
@@ -171,7 +177,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     bool
-    supports_bug_trackers: bool = False
+    supports_bug_trackers: ClassVar[bool] = False
 
     #: Whether this service supports post-commit requests.
     #:
@@ -184,7 +190,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     bool
-    supports_post_commit: bool = False
+    supports_post_commit: ClassVar[bool] = False
 
     #: Whether this service supports source code repositories.
     #:
@@ -201,7 +207,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     bool
-    supports_repositories: bool = False
+    supports_repositories: ClassVar[bool] = False
 
     #: Whether this service supports automatic association of SSH keys.
     #:
@@ -214,7 +220,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     bool
-    supports_ssh_key_association: bool = False
+    supports_ssh_key_association: ClassVar[bool] = False
 
     #: Whether this service supports two-factor authentication.
     #:
@@ -224,7 +230,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     bool
-    supports_two_factor_auth: bool = False
+    supports_two_factor_auth: ClassVar[bool] = False
 
     #: Whether this service supports listing remote repositories.
     #:
@@ -237,7 +243,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     bool
-    supports_list_remote_repositories: bool = False
+    supports_list_remote_repositories: ClassVar[bool] = False
 
     #: Whether this service provides repository hook instructions.
     #:
@@ -248,7 +254,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     bool
-    has_repository_hook_instructions: bool = False
+    has_repository_hook_instructions: ClassVar[bool] = False
 
     #: Whether this service should be shown as an available option.
     #:
@@ -262,7 +268,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     bool
-    visible: bool = True
+    visible: ClassVar[bool] = True
 
     #: Whether this service can be self-hosted.
     #:
@@ -271,7 +277,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     bool
-    self_hosted: bool = False
+    self_hosted: ClassVar[bool] = False
 
     #: Custom URL patterns to include for the hosting service.
     #:
@@ -283,7 +289,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     list
-    repository_url_patterns: Optional[List[_AnyURL]] = None
+    repository_url_patterns: ClassVar[list[_AnyURL] | None] = None
 
     #: The utility class used to perform client functionality.
     #:
@@ -296,7 +302,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     type
-    client_class: Type[HostingServiceClient] = HostingServiceClient
+    client_class: ClassVar[type[HostingServiceClient]] = HostingServiceClient
 
     #: Optional form used to configure authentication settings for an account.
     #:
@@ -304,7 +310,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     type
-    auth_form: Optional[Type[BaseHostingServiceAuthForm]] = None
+    auth_form: ClassVar[type[BaseHostingServiceAuthForm] | None] = None
 
     #: Whether usage of this hosting service requires authorization.
     #:
@@ -312,7 +318,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     bool
-    needs_authorization: bool = False
+    needs_authorization: ClassVar[bool] = False
 
     #: Optional form used to configure repository settings.
     #:
@@ -322,7 +328,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     type
-    form: Optional[Type[BaseHostingServiceRepositoryForm]] = None
+    form: ClassVar[type[BaseHostingServiceRepositoryForm] | None] = None
 
     #: Templated values to set for model repository fields.
     #:
@@ -333,7 +339,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     dict
-    repository_fields: SCMToRepositoryFields = {}
+    repository_fields: ClassVar[SCMToRepositoryFields] = {}
 
     #: A templated value for the bug tracker field.
     #:
@@ -342,7 +348,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     str
-    bug_tracker_field: Optional[str] = None
+    bug_tracker_field: ClassVar[str | None] = None
 
     #: A list of SCMTools IDs or names that are supported by this service.
     #:
@@ -359,7 +365,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     list of str
-    supported_scmtools: List[str] = []
+    supported_scmtools: ClassVar[Sequence[str]] = []
 
     #: A list of SCMTool IDs that are visible when configuring the service.
     #:
@@ -379,7 +385,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     list of str
-    visible_scmtools: Optional[List[str]] = None
+    visible_scmtools: ClassVar[Sequence[str] | None] = None
 
     ######################
     # Instance variables #
@@ -420,7 +426,7 @@ class BaseHostingService:
         """
         return False
 
-    def get_password(self) -> Optional[str]:
+    def get_password(self) -> str | None:
         """Return the raw password for this hosting service.
 
         Not all hosting services provide this, and not all would need it.
@@ -487,18 +493,23 @@ class BaseHostingService:
         """
         raise NotImplementedError
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def authorize(
         self,
-        username: Optional[str],
-        password: Optional[str],
-        hosting_url: Optional[str],
-        credentials: HostingServiceCredentials,
-        two_factor_auth_code: Optional[str] = None,
-        local_site_name: Optional[str] = None,
-        *args,
+        *,
+        username: str | None,
+        password: str | None,
+        hosting_url: (str | None) = None,
+        credentials: (HostingServiceCredentials | None) = None,
+        two_factor_auth_code: (str | None) = None,
+        local_site_name: (str | None) = None,
         **kwargs,
     ) -> None:
         """Authorize an account for the hosting service.
+
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
 
         Args:
             username (str):
@@ -507,10 +518,10 @@ class BaseHostingService:
             password (str):
                 The password for the account.
 
-            hosting_url (str):
+            hosting_url (str, optional):
                 The hosting URL for the service, if self-hosted.
 
-            credentials (dict):
+            credentials (dict, optional):
                 All credentials provided by the authentication form.
 
                 This will contain the username, password, and anything else
@@ -522,9 +533,6 @@ class BaseHostingService:
             local_site_name (str, optional):
                 The Local Site name, if any, that the account should be
                 bound to.
-
-            *args (tuple):
-                Extra unused positional arguments.
 
             **kwargs (dict):
                 Extra keyword arguments containing values from the
@@ -542,17 +550,18 @@ class BaseHostingService:
         """
         raise NotImplementedError
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def check_repository(
         self,
-        path: str,
-        username: Optional[str],
-        password: Optional[str],
-        scmtool_class: Type[SCMTool],
-        local_site_name: Optional[str],
-        *args,
+        *,
+        path: str | None,
+        username: str | None,
+        password: str | None,
+        scmtool_class: type[SCMTool],
+        local_site_name: str | None,
         **kwargs,
     ) -> None:
-        """Checks the validity of a repository configuration.
+        """Check the validity of a repository configuration.
 
         This performs a check against the hosting service or repository
         to ensure that the information provided by the user represents
@@ -562,6 +571,10 @@ class BaseHostingService:
         raw credentials, as well as the SCMTool class being used, the
         LocalSite's name (if any), and all field data from the
         HostingServiceForm as keyword arguments.
+
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
 
         Args:
             path (str):
@@ -577,13 +590,9 @@ class BaseHostingService:
                 The subclass of :py:class:`~reviewboard.scmtools.core.SCMTool`
                 that should be used.
 
-            local_site_name (unicode):
+            local_site_name (str):
                 The name of the local site associated with the repository, or
                 ``None``.
-
-            *args (tuple):
-                Additional positional arguments, unique to each hosting
-                service.
 
             **kwargs (dict):
                 Additional keyword arguments, unique to each hosting service.
@@ -592,6 +601,7 @@ class BaseHostingService:
             reviewboard.hostingsvcs.errors.RepositoryError:
                 The repository is not valid.
         """
+        assert path is not None
         scmtool_class.check_repository(path, username, password,
                                        local_site_name)
 
@@ -704,8 +714,8 @@ class BaseHostingService:
     def get_commits(
         self,
         repository: Repository,
-        branch: Optional[str] = None,
-        start: Optional[str] = None,
+        branch: (str | None) = None,
+        start: (str | None) = None,
     ) -> Sequence[Commit]:
         """Return a list of commits backward in history from a given point.
 
@@ -770,13 +780,13 @@ class BaseHostingService:
 
     def get_remote_repositories(
         self,
-        owner: Optional[str] = None,
-        owner_type: Optional[str] = None,
-        filter_type: Optional[str] = None,
-        start: Optional[int] = None,
-        per_page: Optional[int] = None,
+        owner: (str | None) = None,
+        owner_type: (str | None) = None,
+        filter_type: (str | None) = None,
+        start: (int | None) = None,
+        per_page: (int | None) = None,
         **kwargs,
-    ) -> APIPaginator:
+    ) -> BasePaginator[RemoteRepository, Any]:
         """Return a list of remote repositories for the owner.
 
         This method should be implemented by subclasses.
@@ -800,8 +810,11 @@ class BaseHostingService:
             per_page (int, optional):
                 The number of results per page.
 
+            **kwargs (dict):
+                Additional keyword arguments.
+
         Returns:
-            reviewboard.hostingsvcs.utils.APIPaginator:
+            reviewboard.hostingsvcs.utils.BasePaginator:
             A paginator for the returned repositories.
         """
         raise NotImplementedError
@@ -871,10 +884,10 @@ class BaseHostingService:
     def get_repository_fields(
         cls,
         username: str,
-        hosting_url: Optional[str],
-        plan: str,
+        hosting_url: str | None,
+        plan: str | None,
         tool_name: str,
-        field_vars: Dict[str, str],
+        field_vars: dict[str, str],
     ) -> RepositoryFields:
         """Return the repository fields based on the given plan and tool.
 
@@ -972,7 +985,7 @@ class BaseHostingService:
     @classmethod
     def get_bug_tracker_requires_username(
         cls,
-        plan: Optional[str] = None,
+        plan: (str | None) = None,
     ) -> bool:
         """Return whether or not the bug tracker requires usernames.
 
@@ -1000,8 +1013,8 @@ class BaseHostingService:
     @classmethod
     def get_bug_tracker_field(
         cls,
-        plan: str,
-        field_vars: Dict[str, str],
+        plan: str | None,
+        field_vars: dict[str, str],
     ) -> str:
         """Return the bug tracker field for the given plan.
 
@@ -1016,7 +1029,7 @@ class BaseHostingService:
             str:
             The value of the bug tracker field.
 
-        Raises
+        Raises:
             KeyError:
                The provided plan is not valid for the hosting service.
         """
@@ -1044,9 +1057,9 @@ class BaseHostingService:
     @classmethod
     def get_field(
         cls,
-        plan: str,
+        plan: str | None,
         name: str,
-        default: Optional[str] = None,
+        default: (str | None) = None,
     ) -> Any:
         """Return the value of the field for the given plan.
 
@@ -1073,10 +1086,6 @@ class BaseHostingService:
 
             for plan_name, info in cls.plans:
                 if plan_name == plan and name in info:
-                    # NOTE: The type checker can complain here due to a
-                    #       non-Literal name being used to index into a
-                    #       TypedDict. However, we've already checked for
-                    #       presence above.
-                    return info[name]  # type: ignore
+                    return info[name]
 
         return getattr(cls, name, default)

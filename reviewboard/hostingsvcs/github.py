@@ -19,8 +19,10 @@ from django.template.loader import render_to_string
 from django.urls import path
 from django.utils.translation import gettext, gettext_lazy as _
 from django.views.decorators.http import require_POST
+from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import build_server_url, get_server_url
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
@@ -346,7 +348,11 @@ class GitHubClient(HostingServiceClient):
             # GitHub uses 1-based indexing, so add one.
             start += 1
 
-        return GitHubAPIPaginator(self, url, start=start, per_page=per_page)
+        return GitHubAPIPaginator(
+            client=self,
+            url=url,
+            start=start,
+            per_page=per_page)
 
     def api_get_blob(self, repo_api_url, path, sha):
         """Return the contents of a file using the GitHub API.
@@ -724,12 +730,33 @@ class GitHub(BaseHostingService, BaseBugTracker):
                             name)
         return plan_data[key]
 
-    def check_repository(self, plan=None, *args, **kwargs):
-        """Checks the validity of a repository.
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def check_repository(
+        self,
+        *,
+        plan: str,
+        **kwargs,
+    ) -> None:
+        """Check the validity of a repository.
 
         This will perform an API request against GitHub to get
         information on the repository. This will throw an exception if
         the repository was not found, and return cleanly if it was found.
+
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
+        Args:
+            plan (str):
+                The ID of the plan that the repository is on.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments passed by the repository form.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.RepositoryError:
+                The repository is not valid.
         """
         try:
             rsp = self.client.http_get(
@@ -739,7 +766,7 @@ class GitHub(BaseHostingService, BaseBugTracker):
             repo_info = rsp.json
         except HostingServiceError as e:
             if e.http_code == 404:
-                if plan in ('public', 'private'):
+                if plan in {'public', 'private'}:
                     raise RepositoryError(
                         gettext('A repository with this name was not found, '
                                 'or your user may not own it.'))
@@ -761,37 +788,46 @@ class GitHub(BaseHostingService, BaseBugTracker):
         if 'private' in repo_info:
             is_private = repo_info['private']
 
-            if is_private and plan in ('public', 'public-org'):
+            if is_private and plan in {'public', 'public-org'}:
                 raise RepositoryError(
                     gettext('This is a private repository, but you have '
                             'selected a public plan.'))
-            elif not is_private and plan in ('private', 'private-org'):
+            elif not is_private and plan in {'private', 'private-org'}:
                 raise RepositoryError(
                     gettext('This is a public repository, but you have '
                             'selected a private plan.'))
 
-    def authorize(self, username, password, hosting_url=None,
-                  local_site_name=None, *args, **kwargs):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def authorize(
+        self,
+        *,
+        username: str | None,
+        password: str | None,
+        hosting_url: (str | None) = None,
+        local_site_name: (str | None) = None,
+        **kwargs,
+    ) -> None:
         """Authorize an account for the hosting service.
 
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
         Args:
-            username (unicode):
+            username (str):
                 The username for the account.
 
-            password (unicode):
+            password (str):
                 The Personal Access Token for the account.
 
-            hosting_url (unicode):
+            hosting_url (str, optional):
                 The hosting URL for the service, if self-hosted.
 
-            local_site_name (unicode, optional):
+            local_site_name (str, optional):
                 The Local Site name, if any, that the account should be
                 bound to.
 
-            *args (tuple):
-                Extra unused positional arguments.
-
-            **kwargs (dict):
+            **kwargs (dict, unused):
                 Extra keyword arguments containing values from the
                 repository's configuration.
 

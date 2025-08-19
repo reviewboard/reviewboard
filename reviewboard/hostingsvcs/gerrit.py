@@ -1,15 +1,20 @@
 """Gerrit source code hosting support."""
 
+from __future__ import annotations
+
 import base64
 import json
 import logging
+from typing import TYPE_CHECKING
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus, urljoin, urlparse
 
 from django import forms
 from django.utils.translation import gettext, gettext_lazy as _
 from djblets.util.decorators import cached_property
+from housekeeping import deprecate_non_keyword_only_args
 
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.forms import (
     BaseHostingServiceAuthForm,
@@ -25,6 +30,10 @@ from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
+
+if TYPE_CHECKING:
+    from reviewboard.hostingsvcs.base.hosting_service import \
+        HostingServiceCredentials
 
 
 logger = logging.getLogger(__name__)
@@ -288,26 +297,33 @@ class Gerrit(BaseHostingService):
         },
     }
 
-    def check_repository(self, gerrit_url=None, gerrit_project_name=None,
-                         *args, **kwargs):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def check_repository(
+        self,
+        *,
+        gerrit_url: str,
+        gerrit_project_name: str,
+        **kwargs,
+    ) -> None:
         """Check that the repository is configured correctly.
 
         This method ensures that the user has access to an existing repository
         on the Gerrit server and that the ``gerrit-reviewboard`` plugin is
         installed and of a compatible version.
 
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
         Args:
-            gerrit_url (unicode):
+            gerrit_url (str):
                 The URL to the Gerrit server.
 
-            gerrit_project_name (unicode):
+            gerrit_project_name (str):
                 The repository's configured project name on Gerrit.
 
-            *args (tuple):
-                Ignored positional arguments.
-
-            **kwargs (dict):
-                Ignored keyword arguments.
+            **kwargs (dict, unused):
+                Additional keyword arguments passed by the repository form.
 
         Raises:
             reviewboard.hostingsvcs.errors.RepositoryError:
@@ -386,31 +402,41 @@ class Gerrit(BaseHostingService):
                     }
                 )
 
-    def authorize(self, username, password, credentials,
-                  local_site_name=None, gerrit_url=None, *args, **kwargs):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def authorize(
+        self,
+        *,
+        username: str | None,
+        password: str | None,
+        credentials: HostingServiceCredentials,
+        local_site_name: (str | None) = None,
+        gerrit_url: str,
+        **kwargs,
+    ) -> None:
         """Authorize against the Gerrit server.
 
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
         Args:
-            username (unicode):
+            username (str):
                 The username to use for authentication.
 
-            password  unicode):
+            password (str):
                 The password to use for authentication.
 
             credentials (dict):
                 The credentials from the authentication form.
 
-            local_site_name (unicode, optional):
+            local_site_name (str, optional):
                 The name of the :py:class:`~reviewboard.site.models.LocalSite`
                 the repository is associated with.
 
-            gerrit_url (unicode):
+            gerrit_url (str):
                 The URL of the Gerrit server.
 
-            *args (tuple):
-                Ignored positional arguments.
-
-            **kwargs (dict):
+            **kwargs (dict, unused):
                 Ignored keyword arguments.
 
         Raises:

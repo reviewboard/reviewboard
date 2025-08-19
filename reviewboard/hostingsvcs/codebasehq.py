@@ -1,10 +1,17 @@
+"""Hosting service for CodebaseHQ."""
+
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 from urllib.error import HTTPError, URLError
 from xml.dom.minidom import parseString
 
 from django import forms
 from django.utils.translation import gettext_lazy as _, gettext
+from housekeeping import deprecate_non_keyword_only_args
 
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.forms import (
     BaseHostingServiceAuthForm,
@@ -17,6 +24,10 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
+
+if TYPE_CHECKING:
+    from reviewboard.hostingsvcs.base.hosting_service import \
+        HostingServiceCredentials
 
 
 logger = logging.getLogger(__name__)
@@ -388,7 +399,15 @@ class CodebaseHQ(BaseHostingService):
 
         self.client = CodebaseHQClient(self)
 
-    def authorize(self, username, password, credentials, *args, **kwargs):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def authorize(
+        self,
+        *,
+        username: str | None,
+        password: str | None,
+        credentials: HostingServiceCredentials,
+        **kwargs,
+    ) -> None:
         """Authorize an account for Codebase.
 
         Codebase uses HTTP Basic Auth with an API username (consisting of the
@@ -396,20 +415,21 @@ class CodebaseHQ(BaseHostingService):
         the password) for API calls, and a standard username/password for
         Subversion repository access. We need to store all of this.
 
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
         Args:
-            username (unicode):
+            username (str):
                 The username to authorize.
 
-            password (unicode):
+            password (str):
                 The API token used as a password.
 
             credentials (dict):
                 Additional credentials from the authentication form.
 
-            *args (tuple):
-                Extra unused positional arguments.
-
-            **kwargs (dict):
+            **kwargs (dict, unused):
                 Extra unused keyword arguments.
 
         Raises:
@@ -466,30 +486,37 @@ class CodebaseHQ(BaseHostingService):
         """
         return decrypt_password(self.account.data['password'])
 
-    def check_repository(self, codebasehq_project_name=None,
-                         codebasehq_repo_name=None, tool_name=None,
-                         *args, **kwargs):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def check_repository(
+        self,
+        *,
+        codebasehq_project_name: (str | None) = None,
+        codebasehq_repo_name: (str | None) = None,
+        tool_name: (str | None) = None,
+        **kwargs,
+    ) -> None:
         """Check the validity of a repository.
 
         This will perform an API request against Codebase to get information on
         the repository. This will throw an exception if the repository was not
         found, and return cleanly if it was found.
 
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
         Args:
-            codebase_project_name (unicode):
+            codebasehq_project_name (str):
                 The name of the project on Codebase.
 
-            codebasehq_repo_name (unicode):
+            codebasehq_repo_name (str):
                 The name of the repository on Codebase.
 
-            tool_name (unicode):
+            tool_name (str):
                 The name of the SCMTool for the repository.
 
-            *args (tuple):
-                Extra unused positional arguments passed to this function.
-
-            **kwargs (dict):
-                Extra unused keyword arguments passed to this function.
+            **kwargs (dict, unused):
+                Additional keyword arguments passed by the repository form.
 
         Raises:
             reviewboard.hostingsvcs.errors.RepositoryError:

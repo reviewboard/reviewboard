@@ -362,7 +362,7 @@ class GitLabTests(GitLabTestCase):
                                   hosting_account=hosting_account) as ctx:
             with self.assertRaisesMessage(GitLabAPIVersionError, message):
                 ctx.service.authorize(
-                    'myuser',
+                    username='myuser',
                     credentials={
                         'username': 'myuser',
                         'private_token': 'foobarbaz',
@@ -1303,7 +1303,7 @@ class GitLabTests(GitLabTestCase):
         with self.setup_http_test(hosting_account=hosting_account,
                                   *args, **kwargs) as ctx:
             ctx.service.authorize(
-                'myuser',
+                username='myuser',
                 credentials={
                     'username': 'myuser',
                     'private_token': 'foobarbaz',
