@@ -6,7 +6,6 @@ Version Added:
 
 from __future__ import annotations
 
-from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -14,6 +13,7 @@ from django.utils import timezone
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from datetime import datetime
     from typing import Any
 
 

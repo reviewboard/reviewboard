@@ -18,7 +18,6 @@ from django.utils.translation import gettext_lazy as _
 from djblets.markdown import iter_markdown_lines
 from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import ALREADY_REGISTERED, NOT_REGISTERED
-from djblets.util.typing import StrOrPromise
 from typing_extensions import TypeVar, TypedDict
 
 from reviewboard.deprecation import RemovedInReviewBoard90Warning
@@ -33,8 +32,9 @@ from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
 if TYPE_CHECKING:
     from django.db.models import Model
     from django.http import HttpRequest
-    from djblets.util.typing import SerializableJSONDict
     from djblets.webapi.responses import WebAPIResponsePayload
+    from typelets.django.json import SerializableDjangoJSONDict
+    from typelets.django.strings import StrOrPromise
 
     from reviewboard.changedescs.models import ChangeDescription
     from reviewboard.reviews.models.base_review_request_details import \
@@ -1162,7 +1162,7 @@ class BaseCommaEditableField(BaseEditableField[Sequence[TFieldValue]]):
     def serialize_change_entry(
         self,
         changedesc: ChangeDescription,
-    ) -> SerializableJSONDict:
+    ) -> SerializableDjangoJSONDict:
         """Serialize a change entry for public consumption.
 
         This will output a version of the change entry for use in the API.

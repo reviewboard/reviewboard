@@ -39,7 +39,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.utils.safestring import SafeText
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
     from reviewboard.reviews.models import (
         ReviewRequest,

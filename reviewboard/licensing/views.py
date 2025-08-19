@@ -20,7 +20,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.generic.base import ContextMixin, View
 from djblets.features.decorators import feature_required
 from djblets.util.serializers import DjbletsJSONEncoder
-from djblets.util.typing import SerializableJSONDict
+from typelets.django.json import SerializableDjangoJSONDict
 
 from reviewboard.licensing.errors import LicenseActionError
 from reviewboard.licensing.features import licensing_feature
@@ -271,7 +271,7 @@ class LicensesView(ContextMixin, View):
         license_info: LicenseInfo,
         license_provider: BaseLicenseProvider,
         request: HttpRequest,
-    ) -> SerializableJSONDict:
+    ) -> SerializableDjangoJSONDict:
         """Handle a license update check.
 
         This will request a license server URL and a payload from the License
@@ -322,7 +322,7 @@ class LicensesView(ContextMixin, View):
         license_info: LicenseInfo,
         license_provider: BaseLicenseProvider,
         request: HttpRequest,
-    ) -> SerializableJSONDict:
+    ) -> SerializableDjangoJSONDict:
         """Handle an automated license update payload.
 
         This will process the payload from a license server, passing the
@@ -471,7 +471,7 @@ class LicensesView(ContextMixin, View):
         logger.info('[%s] License update check complete: %s',
                     trace_id, status)
 
-        return cast(SerializableJSONDict, result)
+        return cast(SerializableDjangoJSONDict, result)
 
     def _upload_license(
         self,
@@ -479,7 +479,7 @@ class LicensesView(ContextMixin, View):
         license_info: LicenseInfo,
         license_provider: BaseLicenseProvider,
         request: HttpRequest,
-    ) -> SerializableJSONDict:
+    ) -> SerializableDjangoJSONDict:
         """Handle a manual license upload.
 
         This will take the provided license data and pass it to the License

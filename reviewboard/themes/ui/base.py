@@ -11,7 +11,7 @@ from typing import ClassVar, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
-    from djblets.util.typing import StrOrPromise
+    from typelets.django.strings import StrOrPromise
 
 
 class InkColorScheme(Enum):

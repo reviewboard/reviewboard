@@ -31,7 +31,8 @@ from reviewboard.webapi.testing.queries import (
 if TYPE_CHECKING:
     from djblets.features.testing import FeatureStates
     from djblets.testing.testcases import ExpectedQueries
-    from djblets.util.typing import JSONDict, KwargsDict
+    from typelets.json import JSONDict
+    from typelets.funcs import KwargsDict
     from djblets.webapi.errors import WebAPIError
 
     from reviewboard.reviews.models import ReviewRequest

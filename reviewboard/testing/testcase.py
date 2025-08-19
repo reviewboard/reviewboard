@@ -69,7 +69,7 @@ if TYPE_CHECKING:
 
     from django.http import HttpRequest
     from djblets.db.query_comparator import ExpectedQuery
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
     from reviewboard.changedescs.models import ChangeDescription
     from reviewboard.scmtools.core import FileLookupContext, RevisionID

@@ -9,15 +9,16 @@ from __future__ import annotations
 import logging
 from typing import Any, List, Mapping, Optional, TYPE_CHECKING, cast
 
-from django.http import HttpRequest
-from django.template import Context
 from django.template.loader import render_to_string
 from django.utils.safestring import SafeText, mark_safe
 
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
-    from djblets.util.typing import SerializableJSONDict, StrOrPromise
+    from django.http import HttpRequest
+    from django.template import Context
+    from typelets.django.json import SerializableDjangoJSONDict
+    from typelets.django.strings import StrOrPromise
 
 
 logger = logging.getLogger(__name__)
@@ -252,7 +253,7 @@ class BaseAction:
         self,
         *,
         context: Context,
-    ) -> SerializableJSONDict:
+    ) -> SerializableDjangoJSONDict:
         """Return data to be passed to the JavaScript model.
 
         Args:
@@ -269,7 +270,7 @@ class BaseAction:
         url = self.get_url(context=context)
         visible = self.get_visible(context=context)
 
-        data: SerializableJSONDict = {
+        data: SerializableDjangoJSONDict = {
             'actionId': self.action_id,
             'visible': visible,
         }
@@ -612,7 +613,7 @@ class QuickAccessActionMixin(BaseQuickAccessActionMixin):
         self,
         *,
         context: Context,
-    ) -> SerializableJSONDict:
+    ) -> SerializableDjangoJSONDict:
         """Return data to be passed to the JavaScript model.
 
         Args:

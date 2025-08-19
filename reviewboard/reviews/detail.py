@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.template.context import Context
     from django.utils.safestring import SafeString
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
     from reviewboard.attachments.models import FileAttachment
     from reviewboard.changedescs.models import ChangeDescription

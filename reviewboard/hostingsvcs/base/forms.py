@@ -21,7 +21,9 @@ from reviewboard.scmtools.forms import (BaseRepositoryAuthSubForm,
                                         BaseRepositoryInfoSubForm)
 
 if TYPE_CHECKING:
-    from djblets.util.typing import JSONDict, KwargsDict
+    from typelets.funcs import KwargsDict
+    from typelets.json import JSONDict
+
     from reviewboard.hostingsvcs.base import BaseHostingService
     from reviewboard.hostingsvcs.base.hosting_service import \
         HostingServiceCredentials

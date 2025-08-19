@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Any
 
-    from djblets.util.typing import StrOrPromise
+    from typelets.django.strings import StrOrPromise
 
     from reviewboard.scmtools.models import Repository
 

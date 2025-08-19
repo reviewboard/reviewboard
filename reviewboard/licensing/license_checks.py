@@ -14,7 +14,7 @@ from typing_extensions import NotRequired, TypedDict
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from djblets.util.typing import SerializableJSONDict
+    from typelets.django.json import SerializableDjangoJSONDict
 
 
 # TODO: Switch to StrEnum when we're on Python 3.11+.
@@ -84,4 +84,4 @@ class ProcessCheckLicenseResult(TypedDict):
     #: This is a map of license IDs to serialized license dictionaries. If
     #: the serialized dictionary is None, the license is considered to be
     #: removed.
-    license_infos: NotRequired[Mapping[str, SerializableJSONDict | None]]
+    license_info: NotRequired[Mapping[str, SerializableDjangoJSONDict | None]]

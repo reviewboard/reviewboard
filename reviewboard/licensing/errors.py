@@ -6,7 +6,10 @@ Version Added:
 
 from __future__ import annotations
 
-from djblets.util.typing import SerializableJSONDict
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typelets.django.json import SerializableDjangoJSONDict
 
 
 class LicenseActionError(Exception):
@@ -21,13 +24,13 @@ class LicenseActionError(Exception):
     ######################
 
     #: The payload to return in the result.
-    payload: SerializableJSONDict
+    payload: SerializableDjangoJSONDict
 
     def __init__(
         self,
-        message,
+        message: str,
         *,
-        payload: (SerializableJSONDict | None) = None,
+        payload: (SerializableDjangoJSONDict | None) = None,
     ) -> None:
         """Initialize the error.
 

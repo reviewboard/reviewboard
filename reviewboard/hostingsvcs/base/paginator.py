@@ -14,7 +14,8 @@ from typing import (Any, Callable, Generic, Iterator, Optional, Sequence,
 from typing_extensions import NotRequired, TypeAlias, TypedDict
 
 if TYPE_CHECKING:
-    from djblets.util.typing import KwargsDict
+    from typelets.funcs import KwargsDict
+
     from reviewboard.hostingsvcs.base import HostingServiceClient
     from reviewboard.hostingsvcs.base.http import HTTPHeaders, QueryArgs
 

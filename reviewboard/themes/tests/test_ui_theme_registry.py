@@ -13,7 +13,7 @@ from reviewboard.themes.ui.default import DarkUITheme, SystemUITheme
 from reviewboard.themes.ui.registry import UIThemeRegistry
 
 if TYPE_CHECKING:
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
 
 class UIThemeRegistryTests(TestCase):

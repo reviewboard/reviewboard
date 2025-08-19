@@ -40,7 +40,7 @@ from reviewboard.webapi.tests.urls import (get_repository_item_url,
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
 
 # Only generate these keys once.

@@ -30,7 +30,8 @@ from reviewboard.scmtools.crypto_utils import decrypt_password
 from reviewboard.scmtools.errors import UnverifiedCertificateError
 
 if TYPE_CHECKING:
-    from djblets.util.typing import JSONValue
+    from typelets.json import JSONValue
+
     from reviewboard.hostingsvcs.base.hosting_service import (
         BaseHostingService,
         HostingServiceCredentials,

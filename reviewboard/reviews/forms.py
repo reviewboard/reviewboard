@@ -27,7 +27,7 @@ from reviewboard.site.validation import (validate_repositories,
 
 if TYPE_CHECKING:
     from djblets.forms.fields import ConditionsFieldChoices
-    from djblets.util.typing import StrOrPromise
+    from typelets.django.strings import StrOrPromise
 
 
 def regex_validator(value):

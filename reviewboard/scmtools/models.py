@@ -40,7 +40,8 @@ from reviewboard.site.models import LocalSite
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser
     from django.http import HttpRequest
-    from djblets.util.typing import KwargsDict, StrPromise
+    from typelets.funcs import KwargsDict
+    from typelets.django.strings import StrPromise
 
     from reviewboard.scmtools.core import Branch, Commit, SCMTool
     from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService

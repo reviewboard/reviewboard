@@ -53,7 +53,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 if TYPE_CHECKING:
     from django.db.models import QuerySet
     from django.http import HttpRequest
-    from djblets.util.typing import StrOrPromise
+    from typelets.django.strings import StrOrPromise
 
     from reviewboard.accounts.models import Profile
 

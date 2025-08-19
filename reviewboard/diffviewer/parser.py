@@ -21,8 +21,8 @@ from reviewboard.diffviewer.errors import DiffParserError
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, Revision, UNKNOWN
 
 if TYPE_CHECKING:
-    from djblets.util.typing import JSONDict
     from pydiffx import BaseDiffXSection
+    from typelets.json import JSONDict
 
     from reviewboard.diffviewer.models import DiffCommit
     from reviewboard.diffviewer.models import DiffSet

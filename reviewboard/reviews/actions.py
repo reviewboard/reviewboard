@@ -23,7 +23,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.urls import reviewable_url_names, review_request_url_names
 
 if TYPE_CHECKING:
-    from djblets.util.typing import StrOrPromise
+    from typelets.django.strings import StrOrPromise
 
 
 all_review_request_url_names = reviewable_url_names + review_request_url_names

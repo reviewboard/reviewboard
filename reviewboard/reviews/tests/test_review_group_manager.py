@@ -16,7 +16,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
-    from djblets.util.typing import KwargsDict
+    from typelets.funcs import KwargsDict
 
     from reviewboard.site.models import AnyOrAllLocalSites
 

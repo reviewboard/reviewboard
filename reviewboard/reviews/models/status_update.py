@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from typing import ClassVar, Literal, Optional
 
     from django.contrib.auth.models import AnonymousUser
-    from djblets.util.typing import StrOrPromise
+    from typelets.django.strings import StrOrPromise
     from typing_extensions import TypeAlias
 
     _StateFlag: TypeAlias = Literal['C', 'E', 'F', 'P', 'R', 'S', 'T']

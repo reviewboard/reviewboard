@@ -22,8 +22,9 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.urls import _AnyURL
     from django.utils.safestring import SafeString
-    from djblets.util.typing import StrOrPromise
     from paramiko import PKey
+    from typelets.django.strings import StrOrPromise
+
     from reviewboard.hostingsvcs.base.forms import (
         BaseHostingServiceAuthForm,
         BaseHostingServiceRepositoryForm)

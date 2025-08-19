@@ -17,7 +17,7 @@ from reviewboard.reviews.ui.base import (ReviewUI,
 
 
 if TYPE_CHECKING:
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
 
 class SerializedRegionComment(SerializedComment):
