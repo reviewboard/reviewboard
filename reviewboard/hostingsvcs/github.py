@@ -21,9 +21,9 @@ from django.utils.translation import gettext, gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from reviewboard.admin.server import build_server_url, get_server_url
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
@@ -48,7 +48,9 @@ from reviewboard.site.urlresolvers import local_site_reverse
 if TYPE_CHECKING:
     from urllib.error import URLError
 
+    from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
     from reviewboard.hostingsvcs.base.http import HostingServiceHTTPRequest
+    from reviewboard.scmtools.models import Repository
 
 
 logger = logging.getLogger(__name__)
@@ -605,7 +607,7 @@ class GitHubHookViews(object):
         return review_request_id_to_commits_map
 
 
-class GitHub(BaseHostingService, BugTracker):
+class GitHub(BaseHostingService, BaseBugTracker):
     name = _('GitHub')
     hosting_service_id = 'github'
     plans = [
@@ -1082,9 +1084,25 @@ class GitHub(BaseHostingService, BugTracker):
                                 mirror_path=repo['mirror_url'],
                                 extra_data=repo)
 
-    def get_bug_info_uncached(self, repository, bug_id):
-        """Get the bug info from the server."""
-        result = {
+    def get_bug_info_uncached(
+        self,
+        repository: Repository,
+        bug_id: str,
+    ) -> BugInfo:
+        """Return the information for the specified bug.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object.
+
+            bug_id (str):
+                The ID of the bug to fetch.
+
+        Returns:
+            reviewboard.hostingsvcs.base.bug_tracker.BugInfo:
+            Information about the bug.
+        """
+        result: BugInfo = {
             'summary': '',
             'description': '',
             'status': '',

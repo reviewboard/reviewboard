@@ -1,46 +1,21 @@
-from typing import Optional
+"""Legacy imports for bug trackers."""
 
-from djblets.cache.backend import cache_memoize
+from __future__ import annotations
+
+from housekeeping import ClassMovedMixin
+
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.hostingsvcs.base import bug_tracker
 
 
-class BugTracker:
+class BugTracker(ClassMovedMixin,
+                 bug_tracker.BaseBugTracker,
+                 warning_cls=RemovedInReviewBoard90Warning):
     """An interface to a bug tracker.
 
-    BugTracker subclasses are used to enable interaction with different
-    bug trackers.
+    Deprecated:
+        7.1:
+        This has been moved to :py:class:`reviewboard.hostingsvcs.base.
+        bug_tracker.BaseBugTracker`. The legacy import will be removed in
+        Review Board 9.
     """
-
-    name: Optional[str] = None
-
-    def get_bug_info(self, repository, bug_id):
-        """Get the information for the specified bug.
-
-        This should return a dictionary with 'summary', 'description', and
-        'status' keys.
-
-        This is cached for 60 seconds to reduce the number of queries to the
-        bug trackers and make things seem fast after the first infobox load,
-        but is still a short enough time to give relatively fresh data.
-        """
-        return cache_memoize(self.make_bug_cache_key(repository, bug_id),
-                             lambda: self.get_bug_info_uncached(repository,
-                                                                bug_id),
-                             expiration=60)
-
-    def get_bug_info_uncached(self, repository, bug_id):
-        """Get the information for the specified bug (implementation).
-
-        This should be implemented by subclasses, and should return a
-        dictionary with 'summary', 'description', and 'status' keys.
-        If any of those are unsupported by the given bug tracker, the unknown
-        values should be given as an empty string.
-        """
-        return {
-            'summary': '',
-            'description': '',
-            'status': '',
-        }
-
-    def make_bug_cache_key(self, repository, bug_id):
-        """Returns a key to use when caching fetched bug information."""
-        return 'repository-%s-bug-%s' % (repository.pk, bug_id)
