@@ -149,3 +149,13 @@ For example:
    HEALTHCHECK_IPS = [
        '10.0.1.20',
    ]
+
+
+If your monitoring nodes are assigned automatically, you can also include CIDR
+subnets in this list:
+
+.. code-block:: python
+
+   HEALTHCHECK_IPS = [
+       '10.0.2.0/24',
+   ]
