@@ -1,11 +1,14 @@
 """Unit tests for the Assembla hosting service."""
 
+from __future__ import annotations
+
 from reviewboard.admin.server import get_hostname
+from reviewboard.hostingsvcs.assembla import Assembla
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.crypto_utils import encrypt_password
 
 
-class AssemblaTestCase(HostingServiceTestCase):
+class AssemblaTestCase(HostingServiceTestCase[Assembla]):
     """Base class for Assembla test suites."""
 
     service_name = 'assembla'
@@ -19,7 +22,7 @@ class AssemblaTestCase(HostingServiceTestCase):
 class AssemblaTests(AssemblaTestCase):
     """Unit tests for the Assembla hosting service."""
 
-    def test_service_support(self):
+    def test_service_support(self) -> None:
         """Testing Assembla service support capabilities"""
         self.assertTrue(self.service_class.needs_authorization)
         self.assertTrue(self.service_class.supports_bug_trackers)
@@ -27,7 +30,7 @@ class AssemblaTests(AssemblaTestCase):
         self.assertEqual(self.service_class.supported_scmtools,
                          ['Perforce', 'Subversion'])
 
-    def test_get_repository_fields_with_perforce(self):
+    def test_get_repository_fields_with_perforce(self) -> None:
         """Testing Assembla.get_repository_fields for Perforce"""
         self.assertEqual(
             self.get_repository_fields(
@@ -41,7 +44,7 @@ class AssemblaTests(AssemblaTestCase):
                 'encoding': 'utf8',
             })
 
-    def test_get_repository_fields_with_subversion(self):
+    def test_get_repository_fields_with_subversion(self) -> None:
         """Testing Assembla.get_repository_fields for Subversion"""
         self.assertEqual(
             self.get_repository_fields(
@@ -55,7 +58,7 @@ class AssemblaTests(AssemblaTestCase):
                 'path': 'https://subversion.assembla.com/svn/myproject/',
             })
 
-    def test_authorize(self):
+    def test_authorize(self) -> None:
         """Testing Assembla.authorize"""
         account = self.create_hosting_account(data={})
         service = account.service
@@ -68,7 +71,7 @@ class AssemblaTests(AssemblaTestCase):
         self.assertNotEqual(account.data['password'], 'abc123')
         self.assertTrue(service.is_authorized())
 
-    def test_check_repository_perforce(self):
+    def test_check_repository_perforce(self) -> None:
         """Testing Assembla.check_repository with Perforce"""
         try:
             account = self.create_hosting_account()
@@ -96,7 +99,7 @@ class AssemblaTests(AssemblaTestCase):
         except ImportError:
             self.skipTest('Perforce support is not installed')
 
-    def test_check_repository_subversion(self):
+    def test_check_repository_subversion(self) -> None:
         """Testing Assembla.check_repository with Subversion"""
         try:
             account = self.create_hosting_account()
@@ -127,12 +130,13 @@ class AssemblaTests(AssemblaTestCase):
 class AssemblaFormTests(AssemblaTestCase):
     """Unit tests for reviewboard.hostingsvcs.assembla.AssemblaForm."""
 
-    def setUp(self):
-        super(AssemblaFormTests, self).setUp()
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
 
         self.account = self.create_hosting_account()
 
-    def test_save_form_perforce(self):
+    def test_save_form_perforce(self) -> None:
         """Testing AssemblaForm with Perforce"""
         try:
             repository = self.create_repository(hosting_account=self.account,
@@ -154,7 +158,7 @@ class AssemblaFormTests(AssemblaTestCase):
         except ImportError:
             self.skipTest('Perforce support is not installed')
 
-    def test_save_form_perforce_with_portfolio(self):
+    def test_save_form_perforce_with_portfolio(self) -> None:
         """Testing AssemblaForm with Perforce and Assembla portfolio IDs"""
         try:
             repository = self.create_repository(hosting_account=self.account,
@@ -179,7 +183,7 @@ class AssemblaFormTests(AssemblaTestCase):
         except ImportError:
             self.skipTest('Perforce support is not installed')
 
-    def test_save_form_subversion(self):
+    def test_save_form_subversion(self) -> None:
         """Testing AssemblaForm with Subversion"""
         try:
             repository = self.create_repository(

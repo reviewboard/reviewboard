@@ -1,5 +1,8 @@
 """Unit tests for the Codebase HQ hosting service."""
 
+from __future__ import annotations
+
+from reviewboard.hostingsvcs.codebasehq import CodebaseHQ
 from reviewboard.hostingsvcs.errors import RepositoryError
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
@@ -7,7 +10,7 @@ from reviewboard.scmtools.crypto_utils import (decrypt_password,
 from reviewboard.scmtools.errors import FileNotFoundError
 
 
-class CodebaseHQTests(HostingServiceTestCase):
+class CodebaseHQTests(HostingServiceTestCase[CodebaseHQ]):
     """Unit tests for the Codebase HQ hosting service."""
 
     service_name = 'codebasehq'
@@ -24,13 +27,13 @@ class CodebaseHQTests(HostingServiceTestCase):
         'codebasehq_repo_name': 'myrepo',
     }
 
-    def test_service_support(self):
+    def test_service_support(self) -> None:
         """Testing CodebaseHQ service support capabilities"""
         self.assertFalse(self.service_class.supports_post_commit)
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
 
-    def test_get_repository_fields_for_git(self):
+    def test_get_repository_fields_for_git(self) -> None:
         """Testing CodebaseHQ.get_repository_fields for Git"""
         self.assertEqual(
             self.get_repository_fields(
@@ -44,7 +47,7 @@ class CodebaseHQTests(HostingServiceTestCase):
                 'path': 'git@codebasehq.com:mydomain/myproj/myrepo.git',
             })
 
-    def test_get_repository_fields_for_mercurial(self):
+    def test_get_repository_fields_for_mercurial(self) -> None:
         """Testing CodebaseHQ.get_repository_fields for Mercurial"""
         self.assertEqual(
             self.get_repository_fields(
@@ -59,7 +62,7 @@ class CodebaseHQTests(HostingServiceTestCase):
                          'myproj/repositories/myrepo/'),
             })
 
-    def test_get_repository_fields_for_subversion(self):
+    def test_get_repository_fields_for_subversion(self) -> None:
         """Testing CodebaseHQ.get_repository_fields for Subversion"""
         self.assertEqual(
             self.get_repository_fields(
@@ -73,7 +76,7 @@ class CodebaseHQTests(HostingServiceTestCase):
                 'path': 'https://mydomain.codebasehq.com/myproj/myrepo.svn',
             })
 
-    def test_get_bug_tracker_field(self):
+    def test_get_bug_tracker_field(self) -> None:
         """Testing CodebaseHQ.get_bug_tracker_field"""
         self.assertEqual(
             self.service_class.get_bug_tracker_field(
@@ -84,22 +87,22 @@ class CodebaseHQTests(HostingServiceTestCase):
                 }),
             'https://mydomain.codebasehq.com/projects/myproj/tickets/%s')
 
-    def test_check_repository_git(self):
+    def test_check_repository_git(self) -> None:
         """Testing CodebaseHQ.check_repository for Git"""
         self._test_check_repository(codebase_scm_type='git',
                                     tool_name='Git')
 
-    def test_check_repository_mercurial(self):
+    def test_check_repository_mercurial(self) -> None:
         """Testing CodebaseHQ.check_repository for Mercurial"""
         self._test_check_repository(codebase_scm_type='hg',
                                     tool_name='Mercurial')
 
-    def test_check_repository_subversion(self):
+    def test_check_repository_subversion(self) -> None:
         """Testing CodebaseHQ.check_repository for Subversion"""
         self._test_check_repository(codebase_scm_type='svn',
                                     tool_name='Subversion')
 
-    def test_check_repository_with_mismatching_type(self):
+    def test_check_repository_with_mismatching_type(self) -> None:
         """Testing CodebaseHQ.check_repository with mismatching repository type
         """
         self._test_check_repository(codebase_scm_type='svn',
@@ -107,7 +110,7 @@ class CodebaseHQTests(HostingServiceTestCase):
                                     expect_success=False,
                                     expected_name_for_error='Subversion')
 
-    def test_authorize(self):
+    def test_authorize(self) -> None:
         """Testing CodebaseHQ.authorize"""
         hosting_account = self.create_hosting_account(data={})
 
@@ -142,86 +145,89 @@ class CodebaseHQTests(HostingServiceTestCase):
                          'mypass')
         self.assertTrue(ctx.service.is_authorized())
 
-    def test_get_file_with_mercurial(self):
+    def test_get_file_with_mercurial(self) -> None:
         """Testing CodebaseHQ.get_file with Mercurial"""
         self._test_get_file(tool_name='Mercurial')
 
-    def test_get_file_with_mercurial_not_found(self):
+    def test_get_file_with_mercurial_not_found(self) -> None:
         """Testing CodebaseHQ.get_file with Mercurial with file not found"""
         self._test_get_file(tool_name='Mercurial', file_exists=False)
 
-    def test_get_file_with_git(self):
+    def test_get_file_with_git(self) -> None:
         """Testing CodebaseHQ.get_file with Git"""
         self._test_get_file(tool_name='Git', expect_git_blob_url=True)
 
-    def test_get_file_with_git_not_found(self):
+    def test_get_file_with_git_not_found(self) -> None:
         """Testing CodebaseHQ.get_file with Git with file not found"""
         self._test_get_file(tool_name='Git', expect_git_blob_url=True,
                             file_exists=False)
 
-    def test_get_file_with_subversion(self):
+    def test_get_file_with_subversion(self) -> None:
         """Testing CodebaseHQ.get_file with Subversion"""
         self._test_get_file(tool_name='Subversion')
 
-    def test_get_file_with_subversion_not_found(self):
+    def test_get_file_with_subversion_not_found(self) -> None:
         """Testing CodebaseHQ.get_file with Subversion with file not found"""
         self._test_get_file(tool_name='Subversion', file_exists=False)
 
-    def test_get_file_exists_with_mercurial(self):
+    def test_get_file_exists_with_mercurial(self) -> None:
         """Testing CodebaseHQ.get_file_exists with Mercurial"""
         self._test_get_file_exists(tool_name='Mercurial')
 
-    def test_get_file_exists_with_mercurial_not_found(self):
+    def test_get_file_exists_with_mercurial_not_found(self) -> None:
         """Testing CodebaseHQ.get_file_exists with Mercurial with file not
         found
         """
         self._test_get_file_exists(tool_name='Mercurial', file_exists=False)
 
-    def test_get_file_exists_with_git(self):
+    def test_get_file_exists_with_git(self) -> None:
         """Testing CodebaseHQ.get_file_exists with Git"""
         self._test_get_file_exists(tool_name='Git', expect_git_blob_url=True)
 
-    def test_get_file_exists_with_git_not_found(self):
+    def test_get_file_exists_with_git_not_found(self) -> None:
         """Testing CodebaseHQ.get_file_exists with Git with file not found"""
         self._test_get_file_exists(tool_name='Git', expect_git_blob_url=True,
                                    file_exists=False)
 
-    def test_get_file_exists_with_subversion(self):
+    def test_get_file_exists_with_subversion(self) -> None:
         """Testing CodebaseHQ.get_file_exists with Subversion"""
         self._test_get_file_exists(tool_name='Subversion')
 
-    def test_get_file_exists_with_subversion_not_found(self):
+    def test_get_file_exists_with_subversion_not_found(self) -> None:
         """Testing CodebaseHQ.get_file_exists with Subversion with file not
         found
         """
         self._test_get_file_exists(tool_name='Subversion', file_exists=False)
 
-    def _test_check_repository(self, codebase_scm_type, tool_name,
-                               expect_success=True,
-                               expected_name_for_error=None):
+    def _test_check_repository(
+        self,
+        codebase_scm_type: str,
+        tool_name: str,
+        expect_success: bool = True,
+        expected_name_for_error: (str | None) = None,
+    ) -> None:
         """Test repository checks.
 
         Args:
-            codebase_scm_type (unicode):
+            codebase_scm_type (str):
                 The name of the SCM type in the CodebaseHQ API to return in
                 payloads.
 
-            tool_name (unicode):
+            tool_name (str):
                 The name of the SCM Tool to test with.
 
             expect_success (bool, optional):
                 Whether to simulate a truthy response.
 
-            expected_name_for_error (unicode, optional):
+            expected_name_for_error (str, optional):
                 The name of the SCM Tool to expect in the error response,
                 if ``expect_success`` is ``False``.
         """
         payload = (
-            '<?xml version="1.0" encoding="UTF-8"?>\n'
-            '<repository>\n'
-            ' <scm>%s</scm>\n'
-            '</repository>\n'
-            % codebase_scm_type
+            f'<?xml version="1.0" encoding="UTF-8"?>\n'
+            f'<repository>\n'
+            f' <scm>{codebase_scm_type}</scm>\n'
+            f'</repository>\n'
         ).encode('utf-8')
 
         check_repository_kwargs = {
@@ -236,9 +242,8 @@ class CodebaseHQTests(HostingServiceTestCase):
                 ctx.service.check_repository(**check_repository_kwargs)
             else:
                 message = (
-                    "The repository type doesn't match what you selected. Did "
-                    "you mean %s?"
-                    % expected_name_for_error
+                    f"The repository type doesn't match what you selected. "
+                    f'Did you mean {expected_name_for_error}?'
                 )
 
                 with self.assertRaisesMessage(RepositoryError, message):
@@ -253,12 +258,16 @@ class CodebaseHQTests(HostingServiceTestCase):
                 'Accept': 'application/xml',
             })
 
-    def _test_get_file(self, tool_name, expect_git_blob_url=False,
-                       file_exists=True):
+    def _test_get_file(
+        self,
+        tool_name: str,
+        expect_git_blob_url: bool = False,
+        file_exists: bool = True,
+    ) -> None:
         """Test file fetching.
 
         Args:
-            tool_name (unicode):
+            tool_name (str):
                 The name of the SCM Tool to test with.
 
             expect_git_blob_url (bool, optional):
@@ -309,12 +318,16 @@ class CodebaseHQTests(HostingServiceTestCase):
                 'Accept': 'application/xml',
             })
 
-    def _test_get_file_exists(self, tool_name, expect_git_blob_url=False,
-                              file_exists=True):
+    def _test_get_file_exists(
+        self,
+        tool_name: str,
+        expect_git_blob_url: bool = False,
+        file_exists: bool = True,
+    ) -> None:
         """Test file existence checks.
 
         Args:
-            tool_name (unicode):
+            tool_name (str):
                 The name of the SCM Tool to test with.
 
             expect_git_blob_url (bool, optional):

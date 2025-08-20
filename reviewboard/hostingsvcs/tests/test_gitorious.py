@@ -1,20 +1,23 @@
 """Unit tests for the Gitorious hosting service."""
 
+from __future__ import annotations
+
+from reviewboard.hostingsvcs.gitorious import Gitorious
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 
-class GitoriousTests(HostingServiceTestCase):
+class GitoriousTests(HostingServiceTestCase[Gitorious]):
     """Unit tests for the Gitorious hosting service."""
 
     service_name = 'gitorious'
 
-    def test_service_support(self):
+    def test_service_support(self) -> None:
         """Testing Gitorious service support capabilities"""
         self.assertFalse(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
         self.assertTrue(self.service_class.self_hosted)
 
-    def test_get_repository_fields(self):
+    def test_get_repository_fields(self) -> None:
         """Testing Gitorious.get_repository_fields"""
         self.assertEqual(
             self.get_repository_fields(

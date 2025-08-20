@@ -5,22 +5,57 @@ from __future__ import annotations
 import io
 import json
 from contextlib import contextmanager
-from typing import Optional, TYPE_CHECKING
+from typing import Generic, TypeVar, TypedDict, TYPE_CHECKING, cast, overload
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 
-from kgb import SpyAgency
+import kgb
 
-from reviewboard.hostingsvcs.base import (HostingServiceHTTPResponse,
-                                          hosting_service_registry)
+from reviewboard.hostingsvcs.base import (
+    BaseHostingService,
+    hosting_service_registry,
+)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
-    from reviewboard.hostingsvcs.base.http import HTTPHeaders
+    from collections.abc import Callable, Generator, Mapping, Sequence
+    from typing import Any, Literal
+
+    from kgb.calls import SpyCall
+    from typelets.json import JSONValue
+    from typing_extensions import NotRequired, TypeAlias
+
+    from reviewboard.hostingsvcs.base.client import HostingServiceClient
+    from reviewboard.hostingsvcs.base.forms import (
+        BaseHostingServiceRepositoryForm,
+    )
+    from reviewboard.hostingsvcs.base.hosting_service import (
+        HostingServiceCredentials,
+        RepositoryFields,
+    )
+    from reviewboard.hostingsvcs.base.http import (
+        HostingServiceHTTPRequest,
+        HostingServiceHTTPResponse,
+        HTTPHeaders,
+    )
+    from reviewboard.scmtools.models import Repository
+    from reviewboard.site.models import LocalSite
+
+    HttpRequestMethod: TypeAlias = Callable[
+        [HostingServiceClient, HostingServiceHTTPRequest],
+        HostingServiceHTTPResponse
+    ]
 
 
-class HttpTestContext(object):
+#: Type variable for the hosting service.
+#:
+#: Version Added:
+#:     7.1
+_THostingService = TypeVar('_THostingService', bound=BaseHostingService)
+
+
+class HttpTestContext(Generic[_THostingService]):
     """State and functions for an HTTP test.
 
     This is provided when calling
@@ -44,7 +79,19 @@ class HttpTestContext(object):
             The hosting service instance used for the test.
     """
 
-    def __init__(self, test_case, hosting_account, http_request_func):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The hosting service instance.
+    service: _THostingService
+
+    def __init__(
+        self,
+        test_case: HostingServiceTestCase[_THostingService],
+        hosting_account: HostingServiceAccount,
+        http_request_func: HttpRequestMethod,
+    ) -> None:
         """Initialize the test context.
 
         Args:
@@ -59,7 +106,7 @@ class HttpTestContext(object):
                 The function used to handle HTTP requests.
         """
         self.hosting_account = hosting_account
-        self.service = hosting_account.service
+        self.service = cast(_THostingService, hosting_account.service)
         self.client = self.service.client
 
         self.http_requests = []
@@ -69,14 +116,17 @@ class HttpTestContext(object):
         self._http_request_func = http_request_func
 
     @property
-    def http_calls(self):
+    def http_calls(self) -> Sequence[SpyCall]:
         """The HTTP calls made by the service.
 
         This is a list of spy calls from KGB.
         """
-        return self._http_request_func.calls
+        return self._http_request_func.calls  # type:ignore
 
-    def create_repository(self, **kwargs):
+    def create_repository(
+        self,
+        **kwargs,
+    ) -> Repository:
         """Create a repository using the current hosting account.
 
         This wraps :py:meth:`HostingServiceTestCase.create_repository`,
@@ -100,8 +150,8 @@ class HttpTestContext(object):
         index: int = 0,
         url: str = '',
         method: str = 'GET',
-        body: Optional[str] = None,
-        headers: Optional[HTTPHeaders] = None,
+        body: (bytes | None) = None,
+        headers: (HTTPHeaders | None) = None,
         **kwargs,
     ) -> None:
         """Assert that an HTTP call was made.
@@ -129,7 +179,7 @@ class HttpTestContext(object):
             method (str, optional);
                 The HTTP method expected for the call.
 
-            body (str, optional):
+            body (bytes, optional):
                 The expected body for the call (used for POST/PUT requests).
 
             headers (dict, optional):
@@ -143,18 +193,20 @@ class HttpTestContext(object):
         # Check arguments against the request.
         request = self.http_requests[index]
 
-        if url:
-            if request.url != url:
-                raise failureException('HTTP call %s: URL: %r != %r'
-                                       % (index, request.url, url))
+        if url and request.url != url:
+            raise failureException(
+                f'HTTP call {index}: URL: {request.url!r} != {url!r}'
+            )
 
         if request.method != method:
-            raise failureException('HTTP call %s: method: %r != %r'
-                                   % (index, request.method, method))
+            raise failureException(
+                f'HTTP call {index}: method: {request.method!r} != {method!r}'
+            )
 
         if request.body != body:
-            raise failureException('HTTP call %s: body: %r != %r'
-                                   % (index, request.body, body))
+            raise failureException(
+                f'HTTP call {index}: body: {request.body!r} != {body!r}'
+            )
 
         # Check arguments against the generated credentials.
         if 'username' in kwargs and 'password' in kwargs:
@@ -175,25 +227,52 @@ class HttpTestContext(object):
                                      self._test_case.default_http_credentials)
 
         if self.http_credentials[index] != credentials:
-            raise failureException('HTTP call %s: credentials: %r != %r'
-                                   % (index, self.http_credentials[index],
-                                      credentials))
+            raise failureException(
+                f'HTTP call {index}: credentials: '
+                f'{self.http_credentials[index]!r} != {credentials!r}'
+            )
 
         # Check arguments against the call.
         call = self.http_calls[index]
 
         if call.kwargs['headers'] != headers:
-            raise failureException('HTTP call %s: headers: %r != %r'
-                                   % (index, call.kwargs['headers'], body))
+            raise failureException(
+                f'HTTP call {index}: headers: {call.kwargs["headers"]!r} != '
+                f'{headers!r}'
+            )
 
         for key, value in kwargs.items():
             if call.kwargs[key] != value:
-                raise failureException('HTTP call %s: %s: %r != %r'
-                                       % (index, key, call.kwargs[key], value))
+                raise failureException(
+                    f'HTTP call {index}: {key!r}: {call.kwargs[key]!r} != '
+                    f'{value!r}'
+                )
 
 
-class HostingServiceTestCase(SpyAgency, TestCase):
+class HttpTestPath(TypedDict):
+    """Data for a test path provided to the hosting service test case.
+
+    Version Added:
+        7.1
+    """
+
+    #: The headers to return with the response.
+    headers: NotRequired[HTTPHeaders | None]
+
+    #: The payload to return in the response.
+    payload: NotRequired[bytes | None]
+
+    #: The status code for the response.
+    status_code: NotRequired[int | None]
+
+
+class HostingServiceTestCase(kgb.SpyAgency,
+                             TestCase,
+                             Generic[_THostingService]):
     """Base class for unit tests for hosting services."""
+
+    #: The hosting service class.
+    service_class: type[_THostingService]
 
     #: The registered name of the service.
     service_name = None
@@ -225,7 +304,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
     fixtures = ['test_scmtools']
 
     @property
-    def default_http_credentials(self):
+    def default_http_credentials(self) -> HostingServiceCredentials:
         """The default credentials sent in HTTP requests."""
         return {
             'username': self.default_username,
@@ -233,24 +312,29 @@ class HostingServiceTestCase(SpyAgency, TestCase):
         }
 
     @classmethod
-    def setUpClass(cls):
-        super(HostingServiceTestCase, cls).setUpClass()
+    def setUpClass(cls) -> None:
+        """Set up the test case class."""
+        super().setUpClass()
 
-        if cls.service_name:
-            cls.service_class = \
-                hosting_service_registry.get_hosting_service(cls.service_name)
-        else:
-            cls.service_class = None
+        assert cls.service_name is not None
+        cls.service_class = cast(
+            type[_THostingService],
+            hosting_service_registry.get_hosting_service(cls.service_name))
 
-    def setUp(self):
-        super(HostingServiceTestCase, self).setUp()
-
-        self.assertIsNotNone(self.service_class)
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
 
     @contextmanager
-    def setup_http_test(self, http_request_func=None, payload=None,
-                        headers=None, status_code=None, hosting_account=None,
-                        expected_http_calls=None):
+    def setup_http_test(
+        self,
+        http_request_func: (HttpRequestMethod | None) = None,
+        payload: (bytes | None) = None,
+        headers: (HTTPHeaders | None) = None,
+        status_code: (int | None) = None,
+        hosting_account: (HostingServiceAccount | None) = None,
+        expected_http_calls: (int | None) = None,
+    ) -> Generator[HttpTestContext[_THostingService], Any, None]:
         """Set up state for HTTP-related tests.
 
         This takes the hard work out of testing hosting service functionality
@@ -306,7 +390,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
             if payload is not None:
                 raise ValueError(
                     'http_request_func and payload cannot both be provided')
-            elif payload is not None:
+            elif status_code is not None:
                 raise ValueError(
                     'http_request_func and status_code cannot both be '
                     'provided')
@@ -329,7 +413,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                      client_cls.http_request,
                      client_cls.open_http_request):
             if hasattr(func, 'unspy'):
-                func.unspy()
+                self.unspy(func)
 
         self.spy_on(client_cls.http_request,
                     owner=client_cls)
@@ -342,16 +426,24 @@ class HostingServiceTestCase(SpyAgency, TestCase):
             hosting_account=hosting_account,
             http_request_func=client_cls.http_request)
 
-        def _build_http_request(client, *args, **kwargs):
-            result = client.build_http_request.call_original(client, *args,
-                                                             **kwargs)
+        def _build_http_request(
+            client: HostingServiceClient,
+            *args,
+            **kwargs,
+        ) -> HostingServiceHTTPRequest:
+            spy = self.get_spy(client.build_http_request)
+            result = spy.call_original(client, *args, **kwargs)
             ctx.http_requests.append(result)
 
             return result
 
-        def _get_http_credentials(client, *args, **kwargs):
-            result = client.get_http_credentials.call_original(client, *args,
-                                                               **kwargs)
+        def _get_http_credentials(
+            client: HostingServiceClient,
+            *args,
+            **kwargs,
+        ) -> HostingServiceCredentials:
+            spy = self.get_spy(client.get_http_credentials)
+            result = spy.call_original(client, *args, **kwargs)
             ctx.http_credentials.append(result)
 
             return result
@@ -368,7 +460,10 @@ class HostingServiceTestCase(SpyAgency, TestCase):
         if expected_http_calls is not None:
             self.assertEqual(len(ctx.http_calls), expected_http_calls)
 
-    def make_handler_for_paths(self, paths):
+    def make_handler_for_paths(
+        self,
+        paths: Mapping[str | None, HttpTestPath],
+    ) -> HttpRequestMethod:
         """Return an HTTP handler function for serving the supplied paths.
 
         This is meant to be passed to :py:meth:`setup_http_test`.
@@ -409,17 +504,20 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                })
         """
         # Validate the paths to make sure payloads are in the right format.
-        for path, path_info in paths.items():
+        for _path, path_info in paths.items():
             payload = path_info.get('payload')
 
             if payload is not None and not isinstance(payload, bytes):
                 raise TypeError('payload must be a byte string or None')
 
-        def _handler(client, request):
+        def _handler(
+            client: HostingServiceClient,
+            request: HostingServiceHTTPRequest,
+        ) -> HostingServiceHTTPResponse:
             url = request.url
             parts = urlparse(url)
 
-            full_path = '%s?%s' % (parts.path, parts.query)
+            full_path = f'{parts.path}?{parts.query}'
             path_info = paths.get(full_path)
 
             if path_info is None:
@@ -429,21 +527,22 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                     path_info = paths.get(None)
 
                     if path_info is None:
-                        self.fail('Unexpected path "%s"' % full_path)
+                        self.fail(f'Unexpected path "{full_path}"')
 
             status_code = path_info.get('status_code') or 200
             payload = path_info.get('payload') or b''
             headers = path_info.get('headers') or {}
 
             if status_code >= 400:
-                raise HTTPError(url, status_code, '', headers,
-                                io.BytesIO(payload))
+                raise HTTPError(
+                    url=url,
+                    code=status_code,
+                    msg='',
+                    hdrs=headers,  # type:ignore
+                    fp=io.BytesIO(payload))
             else:
-                if self.service_class is not None:
-                    http_response_cls = \
-                        self.service_class.client_class.http_response_cls
-                else:
-                    http_response_cls = HostingServiceHTTPResponse
+                http_response_cls = \
+                    self.service_class.client_class.http_response_cls
 
                 return http_response_cls(
                     request=request,
@@ -454,7 +553,27 @@ class HostingServiceTestCase(SpyAgency, TestCase):
 
         return _handler
 
-    def dump_json(self, data, for_response=True):
+    @overload
+    def dump_json(
+        self,
+        data: JSONValue,
+        for_response: Literal[False],
+    ) -> str:
+        ...
+
+    @overload
+    def dump_json(
+        self,
+        data: JSONValue,
+        for_response: Literal[True] = True,
+    ) -> bytes:
+        ...
+
+    def dump_json(
+        self,
+        data: JSONValue,
+        for_response: bool = True,
+    ) -> bytes | str:
         """Dump JSON-compatible data to the proper string type.
 
         If ``for_response`` is ``True`` (the default), the resulting string
@@ -469,7 +588,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                 payload.
 
         Returns:
-            unicode or bytes:
+            str or bytes:
             The serialized string.
         """
         result = json.dumps(data)
@@ -479,11 +598,16 @@ class HostingServiceTestCase(SpyAgency, TestCase):
 
         return result
 
-    def get_form(self, plan=None, fields={}, repository=None):
+    def get_form(
+        self,
+        plan: (str | None) = None,
+        fields: (dict[str, Any] | None) = None,
+        repository: (Repository | None) = None,
+    ) -> BaseHostingServiceRepositoryForm:
         """Return the configuration form for the hosting service.
 
         Args:
-            plan (unicode, optional):
+            plan (str, optional):
                 The hosting plan that the configuration form is for.
 
             fields (dict, optional):
@@ -497,22 +621,28 @@ class HostingServiceTestCase(SpyAgency, TestCase):
             BaseHostingServiceRepositoryForm:
             The resulting hosting service form.
         """
+        assert self.service_class is not None
         form_cls = self.service_class.get_field(name='form', plan=plan)
+
         self.assertIsNotNone(form_cls)
 
-        form = form_cls(data=fields,
+        form = form_cls(data=fields or {},
                         repository=repository,
                         hosting_service_cls=self.service_class)
         self.assertTrue(form.is_valid())
 
         return form
 
-    def create_hosting_account(self, use_url=None, local_site=None,
-                               data=None):
+    def create_hosting_account(
+        self,
+        use_url: (bool | None) = None,
+        local_site: (LocalSite | None) = None,
+        data: (dict[str, Any] | None) = None,
+    ) -> HostingServiceAccount:
         """Create a hosting account to test with.
 
         Args:
-            use_url (unicode, optional):
+            use_url (bool, optional):
                 Whether the account should be attached to a given hosting URL,
                 for self-hosted services. If set, this will use
                 ``https://example.com``.
@@ -550,7 +680,10 @@ class HostingServiceTestCase(SpyAgency, TestCase):
 
         return account
 
-    def create_repository(self, **kwargs):
+    def create_repository(
+        self,
+        **kwargs,
+    ) -> Repository:
         """Create a repository for a test.
 
         This wraps :py:meth:`TestCase.create_repository()
@@ -572,23 +705,29 @@ class HostingServiceTestCase(SpyAgency, TestCase):
         if 'extra_data' not in kwargs:
             kwargs['extra_data'] = self.default_repository_extra_data.copy()
 
-        return super(HostingServiceTestCase, self).create_repository(**kwargs)
+        return super().create_repository(**kwargs)
 
-    def get_repository_fields(self, tool_name, fields, plan=None,
-                              with_url=None, hosting_account=None):
+    def get_repository_fields(
+        self,
+        tool_name: str,
+        fields: dict[str, Any],
+        plan: (str | None) = None,
+        with_url: (bool | None) = None,
+        hosting_account: (HostingServiceAccount | None) = None,
+    ) -> RepositoryFields:
         """Return populated fields for a repository.
 
         Args:
-            tool_name (unicode):
+            tool_name (str):
                 The name of the SCM Tool used for the repository.
 
             fields (dict):
                 A dictionary of fields for the hosting service form.
 
-            plan (unicode, optional):
+            plan (str, optional):
                 The optional hosting plan to use for the configuration.
 
-            with_url (unicode, optional):
+            with_url (bool, optional):
                 Whether the account should be attached to a given hosting URL,
                 for self-hosted services. If set, this will use
                 ``https://example.com``. This is ignored if ``hosting_account``
@@ -612,7 +751,10 @@ class HostingServiceTestCase(SpyAgency, TestCase):
         service = hosting_account.service
         self.assertIsNotNone(service)
 
-        field_vars = form.clean().copy()
+        cleaned_data = form.clean()
+        assert cleaned_data is not None
+
+        field_vars = cleaned_data.copy()
         field_vars.update(hosting_account.data)
 
         return service.get_repository_fields(
