@@ -50,6 +50,8 @@ from reviewboard.site.urlresolvers import local_site_reverse
 if TYPE_CHECKING:
     from urllib.error import URLError
 
+    from django.http import HttpRequest
+
     from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
     from reviewboard.hostingsvcs.base.http import HostingServiceHTTPRequest
     from reviewboard.scmtools.models import Repository
@@ -501,22 +503,25 @@ class GitHubHookViews(object):
 
     @staticmethod
     @require_POST
-    def post_receive_hook_close_submitted(request, local_site_name=None,
-                                          repository_id=None,
-                                          hosting_service_id=None):
+    def post_receive_hook_close_submitted(
+        request: HttpRequest,
+        local_site_name: (str | None) = None,
+        repository_id: (int | None) = None,
+        hosting_service_id: (str | None) = None,
+    ) -> HttpResponse:
         """Close review requests as submitted automatically after a push.
 
         Args:
             request (django.http.HttpRequest):
                 The request from the Bitbucket webhook.
 
-            local_site_name (unicode):
+            local_site_name (str, optional):
                 The local site name, if available.
 
-            repository_id (int):
+            repository_id (int, optional):
                 The pk of the repository, if available.
 
-            hosting_service_id (unicode):
+            hosting_service_id (str, optional):
                 The name of the hosting service.
 
         Returns:
@@ -533,8 +538,13 @@ class GitHubHookViews(object):
             return HttpResponseBadRequest(
                 'Only "ping" and "push" events are supported.')
 
-        repository = get_repository_for_hook(repository_id, hosting_service_id,
-                                             local_site_name)
+        assert repository_id is not None
+        assert hosting_service_id is not None
+
+        repository = get_repository_for_hook(
+            repository_id=repository_id,
+            hosting_service_id=hosting_service_id,
+            local_site_name=local_site_name)
 
         # Validate the hook against the stored UUID.
         m = hmac.new(repository.get_or_create_hooks_uuid().encode('utf-8'),
@@ -561,9 +571,11 @@ class GitHubHookViews(object):
                 payload, server_url, repository)
 
         if review_request_id_to_commits:
-            close_all_review_requests(review_request_id_to_commits,
-                                      local_site_name, repository,
-                                      hosting_service_id)
+            close_all_review_requests(
+                review_request_id_to_commits=review_request_id_to_commits,
+                local_site_name=local_site_name,
+                repository=repository,
+                hosting_service_id=hosting_service_id)
 
         return HttpResponse()
 
@@ -605,7 +617,10 @@ class GitHubHookViews(object):
             commit_hash = commit.get('id')
             commit_message = commit.get('message')
             review_request_id = get_review_request_id(
-                commit_message, server_url, commit_hash, repository)
+                commit_message=commit_message,
+                server_url=server_url,
+                commit_id=commit_hash,
+                repository=repository)
 
             review_request_id_to_commits_map[review_request_id].append(
                 '%s (%s)' % (branch_name, commit_hash[:7]))

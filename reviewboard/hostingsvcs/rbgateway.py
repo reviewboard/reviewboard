@@ -7,6 +7,7 @@ import hmac
 import json
 import logging
 from collections import defaultdict
+from typing import TYPE_CHECKING
 from urllib.error import HTTPError
 from urllib.parse import quote
 
@@ -35,26 +36,32 @@ from reviewboard.scmtools.errors import (FileNotFoundError,
                                          RepositoryNotFoundError)
 from reviewboard.site.urlresolvers import local_site_reverse
 
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+
 
 logger = logging.getLogger(__name__)
 
 
-def hook_close_submitted(request, local_site_name=None,
-                         repository_id=None,
-                         hosting_service_id=None):
+def hook_close_submitted(
+    request: HttpRequest,
+    local_site_name: (str | None) = None,
+    repository_id: (int | None) = None,
+    hosting_service_id: (str | None) = None,
+) -> HttpResponse:
     """Close review requests as submitted after a push.
 
     Args:
         request (django.http.HttpRequest):
             The request from the RB Gateway webhook.
 
-        local_site_name (unicode, optional):
+        local_site_name (str, optional):
             The local site name, if available.
 
         repository_id (int, optional):
             The ID of the repository, if available.
 
-        hosting_service_id (unicode, optional):
+        hosting_service_id (str, optional):
             The ID of the hosting service.
 
     Returns:
@@ -69,8 +76,13 @@ def hook_close_submitted(request, local_site_name=None,
         return HttpResponseBadRequest(
             'Only "ping" and "push" events are supported.')
 
-    repository = get_repository_for_hook(repository_id, hosting_service_id,
-                                         local_site_name)
+    assert repository_id is not None
+    assert hosting_service_id is not None
+
+    repository = get_repository_for_hook(
+        repository_id=repository_id,
+        hosting_service_id=hosting_service_id,
+        local_site_name=local_site_name)
 
     sig = request.META.get('HTTP_X_RBG_SIGNATURE', '')
     m = hmac.new(repository.get_or_create_hooks_uuid().encode('utf-8'),
@@ -97,7 +109,10 @@ def hook_close_submitted(request, local_site_name=None,
         commit_id = commit.get('id')
         commit_message = commit.get('message')
         review_request_id = get_review_request_id(
-            commit_message, server_url, commit_id, repository)
+            commit_message=commit_message,
+            server_url=server_url,
+            commit_id=commit_id,
+            repository=repository)
 
         targets = commit['target']
 
@@ -118,10 +133,11 @@ def hook_close_submitted(request, local_site_name=None,
         review_request_ids_to_commits[review_request_id].append(target_str)
 
     if review_request_ids_to_commits:
-        close_all_review_requests(review_request_ids_to_commits,
-                                  local_site_name,
-                                  repository,
-                                  hosting_service_id)
+        close_all_review_requests(
+            review_request_id_to_commits=review_request_ids_to_commits,
+            local_site_name=local_site_name,
+            repository=repository,
+            hosting_service_id=hosting_service_id)
 
     return HttpResponse()
 
