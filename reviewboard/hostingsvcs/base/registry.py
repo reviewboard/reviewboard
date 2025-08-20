@@ -94,6 +94,7 @@ class HostingServiceRegistry(EntryPointRegistry[type[BaseHostingService]]):
                 ('codebasehq', 'CodebaseHQ'),
                 ('fedorahosted', 'FedoraHosted'),
                 ('fogbugz', 'FogBugz'),
+                ('forgejo', 'Forgejo'),
                 ('gerrit', 'Gerrit'),
                 ('github', 'GitHub'),
                 ('gitlab', 'GitLab'),
