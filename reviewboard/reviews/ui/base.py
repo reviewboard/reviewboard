@@ -464,6 +464,8 @@ class ReviewUI(Generic[
             'caption': caption,
             'comments': self.get_comments(),
             'last_activity_time': last_activity_time,
+            'skip_static_media':
+                self.request.GET.get('skip-static-media') == '1',
             'review_ui': self,
             'review_ui_uuid': str(uuid4()),
             self.object_key: self.obj,

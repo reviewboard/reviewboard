@@ -11,7 +11,8 @@ from django.utils.translation import gettext
 from typing_extensions import NotRequired, TypeAlias, TypedDict
 
 from reviewboard.accounts.mixins import UserProfileRequiredViewMixin
-from reviewboard.attachments.models import get_latest_file_attachments
+from reviewboard.attachments.models import (FileAttachment,
+                                            get_latest_file_attachments)
 from reviewboard.diffviewer.commit_utils import get_base_and_tip_commits
 from reviewboard.diffviewer.diffutils import DiffFileExtraContext
 from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
@@ -31,7 +32,6 @@ if TYPE_CHECKING:
 
     from django.http import HttpRequest, HttpResponse
 
-    from reviewboard.attachments.models import FileAttachment
     from reviewboard.reviews.models import Comment, Screenshot
     from reviewboard.reviews.ui.base import SerializedCommentBlocks
     from reviewboard.reviews.ui.diff import SerializedDiffComment
@@ -204,6 +204,15 @@ class SerializedReviewsDiffFile(TypedDict):
     #: Whether the file is binary.
     binary: bool
 
+    #: A set of CSS bundle names used to render the file.
+    #:
+    #: This will only be set for binary files that are rendered through a
+    #: :py:class:`~reviewboard.reviews.ui.base.ReviewUI`.
+    #:
+    #: Version Added:
+    #:     7.1
+    css_media: NotRequired[set[str]]
+
     #: Whether the file was deleted in the change.
     deleted: bool
 
@@ -224,6 +233,15 @@ class SerializedReviewsDiffFile(TypedDict):
 
     #: Information about the interdiff FileDiff, when present.
     interfilediff: NotRequired[SerializedDiffFileFileDiff]
+
+    #: A set of JavaScript bundle names and URLs used to render the file.
+    #:
+    #: This will only be set for binary files that are rendered through a
+    #: :py:class:`~reviewboard.reviews.ui.base.ReviewUI`.
+    #:
+    #: Version Added:
+    #:     7.1
+    js_media: NotRequired[set[str]]
 
     #: Information about the FileDiff.
     filediff: SerializedDiffFileFileDiff
@@ -437,6 +455,14 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         social_page_image_url = self.get_social_page_image_url(
             latest_file_attachments)
 
+        # Since we have these attachments, we can use them to avoid database
+        # lookups when fetching review UIs for binary file diffs below.
+        attachments_by_filediff_id: dict[int, FileAttachment] = {}
+
+        for attachment in file_attachments:
+            if (f_id := attachment.added_in_filediff_id):
+                attachments_by_filediff_id[f_id] = attachment
+
         # Build the status information shown below the summary.
         close_info = review_request.get_close_info()
 
@@ -566,6 +592,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
             filediff = f['filediff']
             interfilediff = f['interfilediff']
             base_filediff = f['base_filediff']
+            binary = f['binary']
+            filediff_id = filediff.pk
 
             interfilediff_id: Optional[int] = None
             base_filediff_id: Optional[int] = None
@@ -576,7 +604,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
             if interfilediff:
                 interfilediff_id = interfilediff.pk
 
-            key = (filediff.pk, interfilediff_id, base_filediff_id)
+            key = (filediff_id, interfilediff_id, base_filediff_id)
 
             file_comments = comments.get(key, [])
 
@@ -589,13 +617,13 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
 
             data: SerializedReviewsDiffFile = {
                 'base_filediff_id': base_filediff_id,
-                'binary': f['binary'],
+                'binary': binary,
                 'deleted': f['deleted'],
                 'extra': f['extra'],
-                'id': filediff.pk,
+                'id': filediff_id,
                 'index': f['index'],
                 'filediff': {
-                    'id': filediff.pk,
+                    'id': filediff_id,
                     'revision': filediff.diffset.revision,
                 },
                 'modified_filename': f['modified_filename'],
@@ -617,6 +645,23 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
             if f['force_interdiff']:
                 data['force_interdiff'] = True
                 data['interdiff_revision'] = f['force_interdiff_revision']
+
+            if binary:
+                # Get the static media bundle names used in rendering the diff
+                # file. We use this to make sure that static media only gets
+                # added to the page once per review UI type in the diff viewer.
+                try:
+                    attachment = attachments_by_filediff_id[filediff_id]
+                except KeyError:
+                    # This file diff is from the cumulative diff. Need to hit
+                    # the database instead.
+                    attachment = FileAttachment.objects.get_for_filediff(
+                        filediff)
+
+                if attachment and (review_ui := attachment.review_ui):
+                    data['js_media'] = set(review_ui.js_bundle_names +
+                                           review_ui.js_files)
+                    data['css_media'] = set(review_ui.css_bundle_names)
 
             files.append(data)
 

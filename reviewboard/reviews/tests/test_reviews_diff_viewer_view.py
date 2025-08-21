@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import kgb
+
+from reviewboard.attachments.models import FileAttachment
+from reviewboard.reviews.ui.base import ReviewUI
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing.testcase import BaseFileDiffAncestorTests, TestCase
 
 
-class ReviewsDiffViewerViewTests(TestCase):
+class ReviewsDiffViewerViewTests(kgb.SpyAgency, TestCase):
     """Unit tests for reviewboard.reviews.views.ReviewsDiffViewerView."""
 
     fixtures = ['test_users', 'test_scmtools']
@@ -287,6 +291,59 @@ class ReviewsDiffViewerViewTests(TestCase):
         files = response.context['files']
         self.assertEqual({file_info['filediff'] for file_info in files},
                          {filediff1, filediff2, filediff3, filediff4})
+
+    def test_with_static_media(self) -> None:
+        """Testing ReviewsDiffViewerView with binary files that have static
+        media defined in their review UI
+        """
+        class DummyReviewUI(ReviewUI):
+            js_bundle_names = [
+                'js_bundle1',
+                'js_bundle2',
+            ]
+
+            css_bundle_names = [
+                'css_bundle1',
+            ]
+
+        self.spy_on(ReviewUI.for_object, op=kgb.SpyOpReturn(DummyReviewUI))
+
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.png',
+            source_revision='123',
+            dest_file='foo.png',
+            diff=b'diff1',
+            binary=True)
+        FileAttachment.objects.create_from_filediff(
+            filediff1,
+            orig_filename='foo.png',
+            mimetype='image/png')
+        filediff2 = self.create_filediff(diffset,
+                                         source_file='src/main/test.c',
+                                         dest_file='src/main/test.cpp')
+
+        response = self.client.get(
+            local_site_reverse(
+                'view-diff-revision',
+                kwargs={
+                    'review_request_id': review_request.display_id,
+                    'revision': diffset.revision,
+                }))
+        self.assertEqual(response.status_code, 200)
+
+        files = response.context['files']
+        self.assertEqual({file_info['filediff'] for file_info in files},
+                         {filediff1, filediff2})
+        file1 = files[0]
+        self.assertEqual(file1['js_media'], {'js_bundle1', 'js_bundle2'})
+        self.assertEqual(file1['css_media'], {'css_bundle1'})
+        file2 = files[1]
+        self.assertNotIn('js_media', file2)
+        self.assertNotIn('cs_media', file2)
 
 
 class CommitsTests(BaseFileDiffAncestorTests):
