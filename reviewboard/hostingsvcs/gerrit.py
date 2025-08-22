@@ -10,15 +10,15 @@ from django import forms
 from django.utils.translation import gettext, gettext_lazy as _
 from djblets.util.decorators import cached_property
 
+from reviewboard.hostingsvcs.base.client import HostingServiceClient
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
+from reviewboard.hostingsvcs.base.http import HostingServiceHTTPResponse
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             RepositoryError,
                                             HostingServiceAPIError)
 from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
                                            HostingServiceForm)
-from reviewboard.hostingsvcs.service import (HostingService,
-                                             HostingServiceClient,
-                                             HostingServiceHTTPResponse)
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
@@ -220,7 +220,7 @@ class GerritClient(HostingServiceClient):
         """Process an HTTP error, converting to a HostingServiceError.
 
         Args:
-            request (reviewboard.hostingsvcs.service.
+            request (reviewboard.hostingsvcs.base.http.
                      HostingServiceHTTPRequest):
                 The request that resulted in an error.
 
@@ -252,7 +252,7 @@ class GerritClient(HostingServiceClient):
             raise HostingServiceError(e.reason)
 
 
-class Gerrit(HostingService):
+class Gerrit(BaseHostingService):
     """Source code hosting support for Gerrit.
 
     Gerrit does not have an API that supports being a hosting service, so the

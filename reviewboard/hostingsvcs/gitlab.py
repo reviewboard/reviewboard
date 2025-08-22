@@ -12,13 +12,13 @@ from django.utils.translation import gettext, gettext_lazy as _
 from djblets.cache.backend import cache_memoize
 
 from reviewboard.admin.support import get_kb_url
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
                                             RepositoryError)
 from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
                                            HostingServiceForm)
-from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
@@ -234,7 +234,7 @@ class GitLabGroupForm(HostingServiceForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
 
-class GitLab(HostingService):
+class GitLab(BaseHostingService):
     """Hosting service support for GitLab.
 
     GitLab is a self-installed source hosting service that supports Git

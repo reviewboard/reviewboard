@@ -12,11 +12,11 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from reviewboard.admin.server import get_server_url
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
                                            HostingServiceForm)
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_review_request_id)
-from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
@@ -214,7 +214,7 @@ class BeanstalkHookViews(object):
                                   repository_id, hosting_service_id)
 
 
-class Beanstalk(HostingService):
+class Beanstalk(BaseHostingService):
     """Hosting service support for Beanstalk.
 
     Beanstalk is a source hosting service that supports Git and Subversion

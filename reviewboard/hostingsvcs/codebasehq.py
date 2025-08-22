@@ -5,13 +5,13 @@ from xml.dom.minidom import parseString
 from django import forms
 from django.utils.translation import gettext_lazy as _, gettext
 
+from reviewboard.hostingsvcs.base.client import HostingServiceClient
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,
                                             RepositoryError)
 from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
                                            HostingServiceForm)
-from reviewboard.hostingsvcs.service import (HostingService,
-                                             HostingServiceClient)
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
@@ -321,7 +321,7 @@ class CodebaseHQClient(HostingServiceClient):
         return result
 
 
-class CodebaseHQ(HostingService):
+class CodebaseHQ(BaseHostingService):
     """Repository hosting support for Codebase.
 
     Codebase is a repository hosting service that supports Subversion, Git,

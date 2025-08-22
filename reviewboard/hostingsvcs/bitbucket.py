@@ -15,6 +15,8 @@ from django.utils.translation import gettext_lazy as _, gettext
 from django.views.decorators.http import require_POST
 
 from reviewboard.admin.server import build_server_url, get_server_url
+from reviewboard.hostingsvcs.base.client import HostingServiceClient
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,
                                             HostingServiceError,
@@ -25,8 +27,6 @@ from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_repository_for_hook,
                                                 get_review_request_id)
-from reviewboard.hostingsvcs.service import (HostingService,
-                                             HostingServiceClient)
 from reviewboard.hostingsvcs.utils.paginator import APIPaginator
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
@@ -822,7 +822,7 @@ class BitbucketClient(HostingServiceClient):
                    quote(path)))
 
 
-class Bitbucket(HostingService):
+class Bitbucket(BaseHostingService):
     """Hosting service support for Bitbucket.
 
     Bitbucket is a hosting service that supports Git and Mercurial

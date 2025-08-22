@@ -13,6 +13,8 @@ from django.urls import path
 from django.utils.translation import gettext_lazy as _, gettext
 
 from reviewboard.admin.server import build_server_url, get_server_url
+from reviewboard.hostingsvcs.base.client import HostingServiceClient
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,
                                             HostingServiceError)
@@ -20,8 +22,6 @@ from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_repository_for_hook,
                                                 get_review_request_id)
-from reviewboard.hostingsvcs.service import (HostingService,
-                                             HostingServiceClient)
 from reviewboard.scmtools.core import Branch, Commit, UNKNOWN
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
@@ -451,8 +451,8 @@ class ReviewBoardGatewayClient(HostingServiceClient):
         in its place.
 
         Args:
-            request (reviewboard.hostingsvcs.service.HostingServiceHTTPRequest,
-                     unused):
+            request (reviewboard.hostingsvcs.base.http.
+                     HostingServiceHTTPRequest, unused):
                 The request that resulted in an error.
 
             e (urllib2.URLError):
@@ -599,7 +599,7 @@ class ReviewBoardGatewayClient(HostingServiceClient):
                        quote(path)))
 
 
-class ReviewBoardGateway(HostingService):
+class ReviewBoardGateway(BaseHostingService):
     """Hosting service support for Review Board Gateway.
 
     Review Board Gateway is a lightweight self-installed source hosting service

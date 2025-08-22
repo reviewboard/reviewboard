@@ -21,6 +21,8 @@ from django.utils.translation import gettext, gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from reviewboard.admin.server import build_server_url, get_server_url
+from reviewboard.hostingsvcs.base.client import HostingServiceClient
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
@@ -33,8 +35,6 @@ from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_repository_for_hook,
                                                 get_review_request_id)
 from reviewboard.hostingsvcs.repository import RemoteRepository
-from reviewboard.hostingsvcs.service import (HostingService,
-                                             HostingServiceClient)
 from reviewboard.hostingsvcs.utils.paginator import (APIPaginator,
                                                      ProxyPaginator)
 from reviewboard.scmtools.core import Branch, Commit
@@ -253,12 +253,12 @@ class GitHubClient(HostingServiceClient):
         """Process an HTTP response and return a result.
 
         Args:
-            response (reviewboard.hostingsvcs.service.
+            response (reviewboard.hostingsvcs.base.http.
                       HostingServiceHTTPResponse):
                 The response to process.
 
         Returns:
-            reviewboard.hostingsvcs.service.HostingServiceHTTPResponse:
+            reviewboard.hostingsvcs.base.http.HostingServiceHTTPResponse:
             The resulting response.
         """
         rate_limit_remaining = response.get_header('X-RateLimit-Remaining')
@@ -285,7 +285,7 @@ class GitHubClient(HostingServiceClient):
         and GitHub error payloads.
 
         Args:
-            request (reviewboard.hostingsvcs.service.
+            request (reviewboard.hostingsvcs.base.http.
                      HostingServiceHTTPRequest):
                 The request that resulted in an error.
 
@@ -603,7 +603,7 @@ class GitHubHookViews(object):
         return review_request_id_to_commits_map
 
 
-class GitHub(HostingService, BugTracker):
+class GitHub(BaseHostingService, BugTracker):
     name = _('GitHub')
     hosting_service_id = 'github'
     plans = [

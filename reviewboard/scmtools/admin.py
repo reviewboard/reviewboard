@@ -22,7 +22,8 @@ from reviewboard.scmtools.models import Repository, Tool
 
 if TYPE_CHECKING:
     from django.utils.safestring import SafeString
-    from reviewboard.hostingsvcs.service import HostingService
+
+    from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
     from reviewboard.scmtools.core import SCMTool
 
 
@@ -118,7 +119,7 @@ class RepositoryAdmin(ModelAdmin):
         hosting_account = repository.hosting_account
 
         if hosting_account:
-            service: Optional[HostingService]
+            service: BaseHostingService | None
 
             try:
                 service = hosting_account.service
@@ -170,7 +171,7 @@ class RepositoryAdmin(ModelAdmin):
                                css_class, url, name)
 
         if repository.hosting_account:
-            service: Optional[HostingService]
+            service: BaseHostingService | None
 
             try:
                 service = repository.hosting_account.service

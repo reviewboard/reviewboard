@@ -51,7 +51,7 @@ from reviewboard.ssh.errors import (BadHostKeyError,
                                     UnknownHostKeyError)
 
 if TYPE_CHECKING:
-    from reviewboard.hostingsvcs.service import HostingService
+    from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
 logger = logging.getLogger(__name__)
@@ -852,7 +852,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         # fields here that aren't dependent on any loaded hosting service or
         # SCMTool forms or state.
         instance = self.instance
-        cur_hosting_service_cls: Optional[Type[HostingService]] = None
+        cur_hosting_service_cls: (type[BaseHostingService] | None) = None
 
         if instance:
             cur_scmtool_cls = instance.scmtool_class
@@ -1427,7 +1427,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         hosting_account = self.instance.hosting_account
 
         if hosting_account:
-            hosting_service: Optional[HostingService]
+            hosting_service: BaseHostingService | None
 
             try:
                 hosting_service = hosting_account.service

@@ -1,9 +1,9 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from reviewboard.hostingsvcs.forms import HostingServiceForm
-from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
+from reviewboard.hostingsvcs.forms import HostingServiceForm
 
 
 class TracForm(HostingServiceForm):
@@ -18,7 +18,7 @@ class TracForm(HostingServiceForm):
         return self.cleaned_data['trac_url'].rstrip('/')
 
 
-class Trac(HostingService):
+class Trac(BaseHostingService):
     name = 'Trac'
     hosting_service_id = 'trac'
     form = TracForm

@@ -3,9 +3,9 @@ import logging
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.forms import HostingServiceForm
-from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
 
 
@@ -24,7 +24,7 @@ class BugzillaForm(HostingServiceForm):
         return self.cleaned_data['bugzilla_url'].rstrip('/')
 
 
-class Bugzilla(HostingService, BugTracker):
+class Bugzilla(BaseHostingService, BugTracker):
     name = 'Bugzilla'
     hosting_service_id = 'bugzilla'
     form = BugzillaForm

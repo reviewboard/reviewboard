@@ -5,9 +5,9 @@ import logging
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.forms import HostingServiceForm
-from reviewboard.hostingsvcs.service import HostingService
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class SplatForm(HostingServiceForm):
         widget=forms.TextInput(attrs={'size': 60}))
 
 
-class Splat(HostingService, BugTracker):
+class Splat(BaseHostingService, BugTracker):
     """The Splat bug tracker.
 
     Splat is a SaaS bugtracker hosted at https://hellosplat.com. It is owned

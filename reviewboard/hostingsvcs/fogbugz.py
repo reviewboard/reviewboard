@@ -1,8 +1,8 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.forms import HostingServiceForm
-from reviewboard.hostingsvcs.service import HostingService
 
 
 class FogBugzForm(HostingServiceForm):
@@ -15,7 +15,7 @@ class FogBugzForm(HostingServiceForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
 
-class FogBugz(HostingService):
+class FogBugz(BaseHostingService):
     """Bug tracker support for FogBugz.
 
     FogBugz is a bug tracker service provided by Fog Creek. This integration

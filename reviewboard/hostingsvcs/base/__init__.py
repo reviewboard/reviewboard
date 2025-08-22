@@ -27,8 +27,8 @@ __all__ = [
     'HostingServiceClient',
     'HostingServiceHTTPRequest',
     'HostingServiceHTTPResponse',
-    'hosting_service_registry',
     'RemoteRepository',
+    'hosting_service_registry',
 ]
 
 __autodoc_excludes__ = __all__
