@@ -102,7 +102,8 @@ class BaseRepositorySubForm(forms.Form):
     one of:
 
     * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceForm`
-    * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceAuthForm`
+    * :py:class:`~reviewboard.hostingsvcs.base.forms.
+      BaseHostingServiceAuthForm`
 
     Forms can provide a :py:class:`Meta` class that define
     :py:attr:`Meta.help_texts` and :py:attr:`Meta.labels` attributes. Each is
@@ -261,7 +262,8 @@ class BaseRepositoryAuthSubForm(BaseRepositorySubForm):
     Third-parties will never need to subclass this directly. Instead, subclass
     one of:
 
-    * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceAuthForm`
+    * :py:class:`~reviewboard.hostingsvcs.base.forms.
+      BaseHostingServiceAuthForm`
     * :py:class:`~reviewboard.scmtools.forms.BaseSCMToolAuthForm`
     """
 
@@ -785,7 +787,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             **kwargs (dict):
                 Keyword arguments to pass to the parent class.
         """
-        from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
+        from reviewboard.hostingsvcs.base.forms import \
+            BaseHostingServiceAuthForm
 
         # Django's admin UI will pass RepositoryForm an immutable QueryDict
         # as the POST data. This normally makes sense for 99.9% of forms, but
@@ -897,7 +900,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             hosting_service_id = hosting_service.hosting_service_id
             hosting_services.add(hosting_service_id)
 
-            auth_form_cls = hosting_service.auth_form or HostingServiceAuthForm
+            auth_form_cls = \
+                hosting_service.auth_form or BaseHostingServiceAuthForm
 
             if hosting_service.supports_repositories:
                 hosting_service_choices.append(

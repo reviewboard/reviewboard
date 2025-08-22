@@ -2,11 +2,11 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-from reviewboard.hostingsvcs.forms import HostingServiceForm
 
 
-class TracForm(HostingServiceForm):
+class TracForm(BaseHostingServiceRepositoryForm):
     trac_url = forms.CharField(
         label=_('Trac URL'),
         max_length=64,

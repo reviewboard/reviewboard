@@ -6,12 +6,14 @@ from django import forms
 from django.utils.translation import gettext_lazy as _, gettext
 
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
+from reviewboard.hostingsvcs.base.forms import (
+    BaseHostingServiceAuthForm,
+    BaseHostingServiceRepositoryForm,
+)
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
-                                           HostingServiceForm)
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
@@ -20,7 +22,7 @@ from reviewboard.scmtools.errors import FileNotFoundError
 logger = logging.getLogger(__name__)
 
 
-class CodebaseHQAuthForm(HostingServiceAuthForm):
+class CodebaseHQAuthForm(BaseHostingServiceAuthForm):
     api_key = forms.CharField(
         label=_('API key'),
         max_length=128,
@@ -60,7 +62,7 @@ class CodebaseHQAuthForm(HostingServiceAuthForm):
         }
 
 
-class CodebaseHQForm(HostingServiceForm):
+class CodebaseHQForm(BaseHostingServiceRepositoryForm):
     codebasehq_project_name = forms.CharField(
         label=_('Project name'),
         max_length=64,

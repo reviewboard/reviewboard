@@ -15,6 +15,10 @@ from django.utils.translation import gettext_lazy as _, gettext
 from django.views.decorators.http import require_POST
 
 from reviewboard.admin.server import build_server_url, get_server_url
+from reviewboard.hostingsvcs.base.forms import (
+    BaseHostingServiceAuthForm,
+    BaseHostingServiceRepositoryForm,
+)
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -22,8 +26,6 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
-                                           HostingServiceForm)
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_repository_for_hook,
                                                 get_review_request_id)
@@ -38,7 +40,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 logger = logging.getLogger(__name__)
 
 
-class BitbucketAuthForm(HostingServiceAuthForm):
+class BitbucketAuthForm(BaseHostingServiceAuthForm):
     """Authentication form for linking a Bitbucket account."""
 
     def clean_hosting_account_username(self):
@@ -84,7 +86,7 @@ class BitbucketAuthForm(HostingServiceAuthForm):
         }
 
 
-class BitbucketPersonalForm(HostingServiceForm):
+class BitbucketPersonalForm(BaseHostingServiceRepositoryForm):
     bitbucket_repo_name = forms.CharField(
         label=_('Repository name'),
         max_length=64,
@@ -95,7 +97,7 @@ class BitbucketPersonalForm(HostingServiceForm):
                     '&lt;username&gt;/&lt;repo_name&gt;/'))
 
 
-class BitbucketOtherUserForm(HostingServiceForm):
+class BitbucketOtherUserForm(BaseHostingServiceRepositoryForm):
     bitbucket_other_user_username = forms.CharField(
         label=_('Username'),
         max_length=64,
@@ -117,7 +119,7 @@ class BitbucketOtherUserForm(HostingServiceForm):
                     '&lt;repo_name&gt;/'))
 
 
-class BitbucketTeamForm(HostingServiceForm):
+class BitbucketTeamForm(BaseHostingServiceRepositoryForm):
     bitbucket_team_name = forms.CharField(
         label=_('Team name'),
         max_length=64,

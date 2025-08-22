@@ -493,7 +493,8 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                 A specific repository the form will load from and save to.
 
         Returns:
-            reviewboard.hostingsvcs.forms.HostingServiceForm:
+            reviewboard.hostingsvcs.base.forms.
+            BaseHostingServiceRepositoryForm:
             The resulting hosting service form.
         """
         form_cls = self.service_class.get_field(name='form', plan=plan)

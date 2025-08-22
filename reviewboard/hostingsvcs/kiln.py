@@ -6,15 +6,15 @@ from django import forms
 from django.utils.translation import gettext, gettext_lazy as _
 
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.scmtools.errors import FileNotFoundError
 
 
-class KilnForm(HostingServiceForm):
+class KilnForm(BaseHostingServiceRepositoryForm):
     kiln_account_domain = forms.CharField(
         label=_('Account domain'),
         max_length=64,

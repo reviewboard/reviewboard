@@ -12,9 +12,11 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from reviewboard.admin.server import get_server_url
+from reviewboard.hostingsvcs.base.forms import (
+    BaseHostingServiceAuthForm,
+    BaseHostingServiceRepositoryForm,
+)
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
-                                           HostingServiceForm)
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_review_request_id)
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
@@ -27,7 +29,7 @@ from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
 logger = logging.getLogger(__name__)
 
 
-class BeanstalkAuthForm(HostingServiceAuthForm):
+class BeanstalkAuthForm(BaseHostingServiceAuthForm):
     """Authentication form for the Beanstalk hosting service.
 
     This replaces some of the help text to make setup a bit easier.
@@ -52,7 +54,7 @@ class BeanstalkAuthForm(HostingServiceAuthForm):
         }
 
 
-class BeanstalkForm(HostingServiceForm):
+class BeanstalkForm(BaseHostingServiceRepositoryForm):
     beanstalk_account_domain = forms.CharField(
         label=_('Beanstalk account domain'),
         max_length=64,

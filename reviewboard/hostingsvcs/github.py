@@ -28,8 +28,10 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
-                                           HostingServiceForm)
+from reviewboard.hostingsvcs.base.forms import (
+    BaseHostingServiceAuthForm,
+    BaseHostingServiceRepositoryForm,
+)
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_git_branch_name,
                                                 get_repository_for_hook,
@@ -56,7 +58,7 @@ logger = logging.getLogger(__name__)
 _REQUIRED_SCOPES = ['admin:repo_hook', 'repo', 'user']
 
 
-class GitHubAuthForm(HostingServiceAuthForm):
+class GitHubAuthForm(BaseHostingServiceAuthForm):
     """Form for authenticating to GitHub."""
 
     class Meta:
@@ -86,7 +88,7 @@ class GitHubAuthForm(HostingServiceAuthForm):
         }
 
 
-class GitHubPublicForm(HostingServiceForm):
+class GitHubPublicForm(BaseHostingServiceRepositoryForm):
     """Sub-form for public repositories owned by a user."""
 
     github_public_repo_name = forms.CharField(
@@ -100,7 +102,7 @@ class GitHubPublicForm(HostingServiceForm):
                     '&lt;repo_name&gt;/</code>'))
 
 
-class GitHubPrivateForm(HostingServiceForm):
+class GitHubPrivateForm(BaseHostingServiceRepositoryForm):
     """Sub-form for private repositories owned by a user."""
 
     github_private_repo_name = forms.CharField(
@@ -114,7 +116,7 @@ class GitHubPrivateForm(HostingServiceForm):
                     '&lt;repo_name&gt;/</code>'))
 
 
-class GitHubPublicOrgForm(HostingServiceForm):
+class GitHubPublicOrgForm(BaseHostingServiceRepositoryForm):
     """Sub-form for public repositories owned by an organization."""
 
     github_public_org_name = forms.CharField(
@@ -138,7 +140,7 @@ class GitHubPublicOrgForm(HostingServiceForm):
                     '&lt;repo_name&gt;/</code>'))
 
 
-class GitHubPrivateOrgForm(HostingServiceForm):
+class GitHubPrivateOrgForm(BaseHostingServiceRepositoryForm):
     """Sub-form for private repositories owned by an organization."""
 
     github_private_org_name = forms.CharField(

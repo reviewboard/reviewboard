@@ -2,13 +2,13 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from reviewboard.admin.server import get_hostname
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 
 
-class AssemblaForm(HostingServiceForm):
+class AssemblaForm(BaseHostingServiceRepositoryForm):
     assembla_project_id = forms.CharField(
         label=_('Project ID'),
         max_length=64,

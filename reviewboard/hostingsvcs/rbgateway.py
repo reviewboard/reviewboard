@@ -14,11 +14,11 @@ from django.utils.translation import gettext_lazy as _, gettext
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,
                                             HostingServiceError)
-from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_repository_for_hook,
                                                 get_review_request_id)
@@ -120,7 +120,7 @@ def hook_close_submitted(request, local_site_name=None,
     return HttpResponse()
 
 
-class ReviewBoardGatewayForm(HostingServiceForm):
+class ReviewBoardGatewayForm(BaseHostingServiceRepositoryForm):
     """Hosting service form for Review Board Gateway.
 
     Provide an additional field on top of the base hosting service form to

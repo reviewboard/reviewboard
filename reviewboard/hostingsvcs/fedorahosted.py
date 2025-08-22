@@ -1,11 +1,11 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from reviewboard.hostingsvcs.forms import HostingServiceForm
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
-class FedoraHostedForm(HostingServiceForm):
+class FedoraHostedForm(BaseHostingServiceRepositoryForm):
     fedorahosted_repo_name = forms.CharField(
         label=_('Repository name'),
         max_length=64,

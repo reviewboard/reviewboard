@@ -4,16 +4,16 @@ from urllib.parse import quote
 from django import forms
 from django.utils.translation import gettext, gettext_lazy as _
 
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
 
 
-class UnfuddleForm(HostingServiceForm):
+class UnfuddleForm(BaseHostingServiceRepositoryForm):
     unfuddle_account_domain = forms.CharField(
         label=_('Unfuddle account domain'),
         max_length=64,

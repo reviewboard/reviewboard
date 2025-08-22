@@ -11,14 +11,16 @@ from django.utils.translation import gettext, gettext_lazy as _
 from djblets.util.decorators import cached_property
 
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
+from reviewboard.hostingsvcs.base.forms import (
+    BaseHostingServiceAuthForm,
+    BaseHostingServiceRepositoryForm,
+)
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.base.http import HostingServiceHTTPResponse
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             RepositoryError,
                                             HostingServiceAPIError)
-from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
-                                           HostingServiceForm)
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
@@ -30,7 +32,7 @@ logger = logging.getLogger(__name__)
 _PLUGIN_URL = 'https://github.com/reviewboard/gerrit-reviewboard-plugin/'
 
 
-class GerritAuthForm(HostingServiceAuthForm):
+class GerritAuthForm(BaseHostingServiceAuthForm):
     """The Gerrit authentication form.
 
     Gerrit requires an HTTP password to access the web API, so this form saves
@@ -42,9 +44,7 @@ class GerritAuthForm(HostingServiceAuthForm):
 
         Args:
             **kwargs (dict):
-                Keyword arguments to pass to
-                :py:meth`:HostingServiceAuthForm.save()
-                <reviewboard.hostingsvcs.forms.HostingServiceAuthForm.save>`.
+                Keyword arguments to pass through to the parent class.
 
         Returns:
             reviewboard.hostingsvcs.models.HostingServiceAccount:
@@ -80,7 +80,7 @@ class GerritAuthForm(HostingServiceAuthForm):
         }
 
 
-class GerritForm(HostingServiceForm):
+class GerritForm(BaseHostingServiceRepositoryForm):
     """The Gerrit hosting service form."""
 
     gerrit_url = forms.URLField(

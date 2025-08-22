@@ -1,11 +1,11 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-from reviewboard.hostingsvcs.forms import HostingServiceForm
 
 
-class GitoriousForm(HostingServiceForm):
+class GitoriousForm(BaseHostingServiceRepositoryForm):
     gitorious_project_name = forms.CharField(
         label=_('Project name'),
         max_length=64,

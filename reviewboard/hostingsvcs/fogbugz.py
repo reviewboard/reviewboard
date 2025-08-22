@@ -1,11 +1,11 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-from reviewboard.hostingsvcs.forms import HostingServiceForm
 
 
-class FogBugzForm(HostingServiceForm):
+class FogBugzForm(BaseHostingServiceRepositoryForm):
     fogbugz_account_domain = forms.CharField(
         label=_('Account domain'),
         max_length=64,
