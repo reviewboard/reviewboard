@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import json
 from itertools import chain
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING
 
 from django.utils.encoding import force_bytes
 from typing_extensions import NotRequired, TypedDict
@@ -13,19 +13,129 @@ from typing_extensions import NotRequired, TypedDict
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator, Sequence
+    from typing import Final, TypeAlias
+
+    from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
     from reviewboard.scmtools.core import FileLookupContext
     from reviewboard.scmtools.models import Repository
 
 
+class DiffCommitsValidationInfoFile(TypedDict):
+    """Information on a file in a diff commit validation.
+
+    The data contained is considered internal and should be treated by the
+    caller as fully opaque.
+
+    Version Added:
+        8.0
+    """
+
+    #: The file's name.
+    filename: str
+
+    #: The file's revision.
+    revision: str
+
+
+class DiffCommitsValidationInfoFilesByType(TypedDict):
+    """Information on files in a diff commit validation by operation type.
+
+    This will track all added, removed, and modified files.
+
+    The data contained is considered internal and should be treated by the
+    caller as fully opaque.
+
+    Version Added:
+        8.0
+    """
+
+    #: The list of added files.
+    added: list[DiffCommitsValidationInfoFile]
+
+    #: The list of removed files.
+    removed: list[DiffCommitsValidationInfoFile]
+
+    #: The list of modified files.
+    modified: list[DiffCommitsValidationInfoFile]
+
+
+class DiffCommitValidationInfo(TypedDict):
+    """Information on a commit in a diff commits validation tracking payload.
+
+    This tracks all the information needed for a single commit in a commit
+    series.
+
+    The data contained is considered internal and should be treated by the
+    caller as fully opaque.
+
+    Version Added:
+        8.0
+    """
+
+    #: The commit ID of the parent commit.
+    parent_id: str
+
+    #: A dictionary of the added, removed, and modified files.
+    tree: DiffCommitsValidationInfoFilesByType
+
+
+#: A type of entry for a commit in a commit history.
+#:
+#: These are all valid entry type IDs that may be included in the serialized
+#: payload.
+#:
+#: Version Added:
+#:     8.0
+SerializedCommitHistoryDiffEntryType: TypeAlias = Literal[
+    'added',
+    'modified',
+    'removed',
+    'unmodified',
+]
+
+
+class SerializedCommitHistoryDiffEntry(TypedDict):
+    """Serialized version of a CommitHistoryDiffEntry.
+
+    Version Added:
+        7.0
+    """
+
+    #: The type of change in the commit history diff.
+    #:
+    #: This will be one of "added", "removed", "modified", or "unmodified".
+    entry_type: SerializedCommitHistoryDiffEntryType
+
+    #: The new ID of the commit in the diff line.
+    new_commit_id: NotRequired[int]
+
+    #: The old ID of the commit in the diff line.
+    old_commit_id: NotRequired[int]
+
+
+#: A validation tracking payload for a series of uploaded commits.
+#:
+#: This is exchanged back-and-forth with API clients in order to track
+#: the validation status across the upload of multiple commits.
+#:
+#: The data contained is considered internal and should be treated by the
+#: caller as fully opaque.
+#:
+#: Version Added:
+#:     8.0
+DiffCommitsValidationInfo: TypeAlias = dict[str, DiffCommitValidationInfo]
+
+
 def get_file_exists_in_history(
-    validation_info: dict[str, Any],
+    validation_info: DiffCommitsValidationInfo,
     repository: Repository,
     parent_id: str,
     path: str,
     revision: str,
-    base_commit_id: Optional[str] = None,
+    base_commit_id: (str | None) = None,
     *,
-    context: Optional[FileLookupContext] = None,
+    context: (FileLookupContext | None) = None,
     **kwargs,
 ) -> bool:
     """Return whether or not the file exists, given the validation information.
@@ -77,6 +187,9 @@ def get_file_exists_in_history(
 
         revision (str):
             The revision of the file to retrieve.
+
+        base_commit_id (str, optional):
+            The commit ID to use for the base of the changes.
 
         context (reviewboard.scmtools.core.FileLookupContext, optional):
             The file lookup context used to validate this repository.
@@ -147,7 +260,10 @@ def get_file_exists_in_history(
                                       **kwargs)
 
 
-def exclude_ancestor_filediffs(to_filter, all_filediffs=None):
+def exclude_ancestor_filediffs(
+    to_filter: Sequence[FileDiff],
+    all_filediffs: (Sequence[FileDiff] | None) = None,
+) -> Sequence[FileDiff]:
     """Exclude all ancestor FileDiffs from the given list and return the rest.
 
     A :pyclass:`~reviewboard.diffviewer.models.filediff.FileDiff` is considered
@@ -191,15 +307,17 @@ def exclude_ancestor_filediffs(to_filter, all_filediffs=None):
     ]
 
 
-def deserialize_validation_info(raw):
+def deserialize_validation_info(
+    raw: str | bytes,
+) -> DiffCommitsValidationInfo:
     """Deserialize the raw validation info.
 
     Args:
-        raw (unicode or bytes):
+        raw (str or bytes):
             The raw validation info from the client.
 
     Returns:
-        dict:
+        DiffCommitsValidationInfo:
         The deserialized validation info.
 
     Raises:
@@ -218,15 +336,17 @@ def deserialize_validation_info(raw):
     return value
 
 
-def serialize_validation_info(info):
+def serialize_validation_info(
+    info: DiffCommitsValidationInfo,
+) -> str:
     """Serialize the given validation info into a raw format.
 
     Args:
-        info (dict):
+        info (DiffCommitsValidationInfo):
             The dictionary of validation info.
 
     Returns:
-        unicode:
+        str:
         The base64-encoded JSON of the validation info.
     """
     data = json.dumps(info).encode('utf-8')
@@ -234,11 +354,16 @@ def serialize_validation_info(info):
     return base64.b64encode(data).decode('utf-8')
 
 
-def update_validation_info(validation_info, commit_id, parent_id, filediffs):
+def update_validation_info(
+    validation_info: DiffCommitsValidationInfo,
+    commit_id: str,
+    parent_id: str,
+    filediffs: Sequence[FileDiff],
+) -> DiffCommitsValidationInfo:
     """Update the validation info with a new commit.
 
     Args:
-        validation_info (dict):
+        validation_info (DiffCommitsValidationInfo):
             The dictionary of validation info. This will be modified in-place.
 
             This is a mapping of commit IDs to their metadata. Each metadata
@@ -251,13 +376,13 @@ def update_validation_info(validation_info, commit_id, parent_id, filediffs):
                 A dictionary of the added, removed, and modified files in this
                 commit.
 
-        commit_id (unicode):
+        commit_id (str):
             The commit ID of the commit whose metadata is being added to the
             dictionary.
 
             This must not already be present in ``validation_info``.
 
-        parent_id (unicode):
+        parent_id (str):
             The commit ID of the parent commit.
 
             This must be present in ``validation_info`` *unless* this is the
@@ -268,7 +393,7 @@ def update_validation_info(validation_info, commit_id, parent_id, filediffs):
             filediff_creator.create_filediffs`.
 
     Returns:
-        dict:
+        DiffCommitsValidationInfo:
         The dictionary of validation info.
     """
     from reviewboard.diffviewer.models import FileDiff
@@ -276,18 +401,18 @@ def update_validation_info(validation_info, commit_id, parent_id, filediffs):
     assert validation_info == {} or parent_id in validation_info
     assert commit_id not in validation_info
 
-    added = []
-    removed = []
-    modified = []
+    added: list[DiffCommitsValidationInfoFile] = []
+    removed: list[DiffCommitsValidationInfoFile] = []
+    modified: list[DiffCommitsValidationInfoFile] = []
 
     for f in filediffs:
-        if f.status in (FileDiff.DELETED, FileDiff.MOVED):
+        if f.status in {FileDiff.DELETED, FileDiff.MOVED}:
             removed.append({
                 'filename': f.source_file,
                 'revision': f.source_revision,
             })
 
-        if (f.status in (FileDiff.COPIED, FileDiff.MOVED) or
+        if (f.status in {FileDiff.COPIED, FileDiff.MOVED} or
             (f.status == FileDiff.MODIFIED and
              f.source_revision == PRE_CREATION)):
             added.append({
@@ -312,45 +437,50 @@ def update_validation_info(validation_info, commit_id, parent_id, filediffs):
     return validation_info
 
 
-class SerializedCommitHistoryDiffEntry(TypedDict):
-    """Serialized version of a CommitHistoryDiffEntry.
-
-    Version Added:
-        7.0
-    """
-
-    #: The type of change in the commit history diff.
-    #:
-    #: This will be one of "added", "removed", "modified", or "unmodified".
-    entry_type: str
-
-    #: The new ID of the commit in the diff line.
-    new_commit_id: NotRequired[int]
-
-    #: The old ID of the commit in the diff line.
-    old_commit_id: NotRequired[int]
-
-
-class CommitHistoryDiffEntry(object):
+class CommitHistoryDiffEntry:
     """An entry in a commit history diff."""
 
-    COMMIT_ADDED = 'added'
-    COMMIT_REMOVED = 'removed'
-    COMMIT_MODIFIED = 'modified'
-    COMMIT_UNMODIFIED = 'unmodified'
+    COMMIT_ADDED: Final[SerializedCommitHistoryDiffEntryType] = 'added'
+    COMMIT_REMOVED: Final[SerializedCommitHistoryDiffEntryType] = 'removed'
+    COMMIT_MODIFIED: Final[SerializedCommitHistoryDiffEntryType] = 'modified'
+    COMMIT_UNMODIFIED: Final[SerializedCommitHistoryDiffEntryType] = \
+        'unmodified'
 
-    entry_types = (
+    #: The valid entry types.
+    #:
+    #: Version Changed:
+    #:     8.0:
+    #:     Renamed from ``entry_types`` and changed the type to a set.
+    ENTRY_TYPES: set[SerializedCommitHistoryDiffEntryType] = {
         COMMIT_ADDED,
         COMMIT_REMOVED,
         COMMIT_MODIFIED,
         COMMIT_UNMODIFIED,
-    )
+    }
 
-    def __init__(self, entry_type, old_commit=None, new_commit=None):
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The commit type.
+    entry_type: SerializedCommitHistoryDiffEntryType
+
+    #: The new commit.
+    new_commit: DiffCommit | None
+
+    #: The old commit.
+    old_commit: DiffCommit | None
+
+    def __init__(
+        self,
+        entry_type: SerializedCommitHistoryDiffEntryType,
+        old_commit: (DiffCommit | None) = None,
+        new_commit: (DiffCommit | None) = None,
+    ) -> None:
         """Initialize the CommitHistoryDiffEntry object.
 
         Args:
-            entry_type (unicode):
+            entry_type (str):
                 The commit type. This must be one of the values in
                 :py:attr:`entry_types`.
 
@@ -375,8 +505,8 @@ class CommitHistoryDiffEntry(object):
                 The value of ``entry_type`` was invalid or the wrong commits
                 were specified.
         """
-        if entry_type not in self.entry_types:
-            raise ValueError('Invalid entry_type: "%s"' % entry_type)
+        if entry_type not in self.ENTRY_TYPES:
+            raise ValueError(f'Invalid entry_type: "{entry_type}"')
 
         if not old_commit and entry_type != self.COMMIT_ADDED:
             raise ValueError('old_commit required for given commit type.')
@@ -392,7 +522,7 @@ class CommitHistoryDiffEntry(object):
         """Serialize the entry to a dictionary.
 
         Returns:
-            dict:
+            SerializedCommitHistoryDiffEntry:
             A dictionary of the serialized information.
         """
         result: SerializedCommitHistoryDiffEntry = {
@@ -407,32 +537,39 @@ class CommitHistoryDiffEntry(object):
 
         return result
 
-    def __eq__(self, other):
+    def __eq__(
+        self,
+        other: object,
+    ) -> bool:
         """Compare two entries for equality.
 
         Two entries are equal if and only if their attributes match.
 
         Args:
-            other (CommitHistoryDiffEntry):
-                The entry to compare against.
+            other (object):
+                The object to compare against.
 
         Returns:
             bool:
             Whether or not this entry and the other entry are equal.
         """
-        return (self.entry_type == other.entry_type,
-                self.old_commit == other.old_commit,
+        return (type(other) is CommitHistoryDiffEntry and
+                self.entry_type == other.entry_type and
+                self.old_commit == other.old_commit and
                 self.new_commit == other.new_commit)
 
-    def __ne__(self, other):
+    def __ne__(
+        self,
+        other: object,
+    ) -> bool:
         """Compare two entries for inequality.
 
         Two entries are not equal if and only if any of their attributes don't
         match.
 
         Args:
-            other (CommitHistoryDiffEntry):
-                The entry to compare against.
+            other (object):
+                The object to compare against.
 
         Returns:
             bool:
@@ -440,31 +577,31 @@ class CommitHistoryDiffEntry(object):
         """
         return not self == other
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return a string representation of the entry.
 
         Returns:
-            unicode:
+            str:
             A string representation of the entry.
         """
         return (
-            '<CommitHistoryDiffEntry(entry_type=%s, '
-            'old_commit=%s, new_commit=%s)>'
-            % (self.entry_type, self.old_commit, self.new_commit)
+            f'<CommitHistoryDiffEntry(entry_type={self.entry_type}, '
+            f'old_commit={self.old_commit}, new_commit={self.new_commit})>'
         )
 
 
-def diff_histories(old_history, new_history):
+def diff_histories(
+    old_history: Sequence[DiffCommit],
+    new_history: Sequence[DiffCommit],
+) -> Iterator[CommitHistoryDiffEntry]:
     """Yield the entries in the diff between the old and new histories.
 
     Args:
-        old_history (list of reviewboard.diffviewer.models.diffcommit.
-                     DiffCommit):
+        old_history (list of reviewboard.diffviewer.models.DiffCommit):
             The list of commits from a previous
             :py:class:`~reviewboard.diffviewer.models.diffset.DiffSet`.
 
-        new_history (list of reviewboard.diffviewer.models.diffcommit.
-                     DiffCommit):
+        new_history (list of reviewboard.diffviewer.models.DiffCommit):
             The list of commits from the new
             :py:class:`~reviewboard.diffviewer.models.diffset.DiffSet`.
 
@@ -499,8 +636,12 @@ def diff_histories(old_history, new_history):
             new_commit=new_commit)
 
 
-def get_base_and_tip_commits(base_commit_id, tip_commit_id, diffset=None,
-                             commits=None):
+def get_base_and_tip_commits(
+    base_commit_id: int | None,
+    tip_commit_id: int | None,
+    diffset: (DiffSet | None) = None,
+    commits: (Sequence[DiffCommit] | None) = None,
+) -> tuple[DiffCommit | None, DiffCommit | None]:
     """Return the base and tip commits specified.
 
     Args:
@@ -529,10 +670,12 @@ def get_base_and_tip_commits(base_commit_id, tip_commit_id, diffset=None,
         tuple:
         A 2-tuple of the following:
 
-        * The requested base commit (:py:class:`~reviewboard.diffviewer.models.
-          diffcommit.DiffCommit`).
-        * The requested tip commit (:py:class:`~reviewboard.diffviewer.models.
-          diffcommit.DiffCommit`).
+        Tuple:
+            0 (reviewboard.diffviewer.models.diffcommit.DiffCommit):
+                The requested based commit.
+
+            1 (reviewboard.diffviewer.models.diffcommit.DiffCommit):
+                The requested tip commit.
 
         If either the base or tip commit are not requested or they cannot be
         found, then their corresponding entry in the tuple will be ``None``.
@@ -543,7 +686,7 @@ def get_base_and_tip_commits(base_commit_id, tip_commit_id, diffset=None,
                 'get_base_and_tip_commits() requires either diffset or '
                 'commits to be provided.')
 
-        commit_ids = []
+        commit_ids: list[int] = []
 
         if base_commit_id is not None:
             commit_ids.append(base_commit_id)
@@ -557,8 +700,8 @@ def get_base_and_tip_commits(base_commit_id, tip_commit_id, diffset=None,
     if not commits:
         return None, None
 
-    base_commit = None
-    tip_commit = None
+    base_commit: (DiffCommit | None) = None
+    tip_commit: (DiffCommit | None) = None
 
     if base_commit_id is not None or tip_commit_id is not None:
         for commit in commits:
