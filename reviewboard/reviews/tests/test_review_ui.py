@@ -28,6 +28,12 @@ class MyReviewUI(ReviewUI):
     supports_file_attachments = True
     js_model_class: str = 'RB.Test.ReviewUI'
     js_view_class: str = 'RB.Test.ReviewUIView'
+    js_bundle_names = [
+        'admin',
+    ]
+    css_bundle_names = [
+        'js-tests',
+    ]
 
     def get_caption(self, draft=None) -> str:
         return 'Test Caption'
@@ -85,6 +91,7 @@ class ReviewUITests(SpyAgency, TestCase):
                          self.review_request)
         self.assertEqual(context['review'], self.review)
         self.assertFalse(context['review_ui_inline'])
+        self.assertFalse(context['skip_static_media'])
         self.assertFalse(context['draft'])
         self.assertIs(context['review_ui'], review_ui)
         self.assertIs(context['obj'], reviewable_obj2)
@@ -100,7 +107,7 @@ class ReviewUITests(SpyAgency, TestCase):
         self.assertEqual(context['comments'][1].text, 'Comment 2')
 
     def test_build_render_context_with_inline_true(self) -> None:
-        """Testing ReviewUI.build_render_context"""
+        """Testing ReviewUI.build_render_context with inline=1"""
         reviewable_obj1 = DummyReviewableObject()
         reviewable_obj2 = DummyReviewableObject()
 
@@ -122,6 +129,49 @@ class ReviewUITests(SpyAgency, TestCase):
         self.assertEqual(context['review_request_details'],
                          self.review_request)
         self.assertTrue(context['review_ui_inline'])
+        self.assertFalse(context['skip_static_media'])
+        self.assertFalse(context['draft'])
+        self.assertIs(context['review_ui'], review_ui)
+        self.assertIs(context['obj'], reviewable_obj2)
+        self.assertIs(context['diff_against_obj'], reviewable_obj1)
+        self.assertIn('close_description', context)
+        self.assertIn('close_description_rich_text', context)
+        self.assertIn('last_activity_time', context)
+        self.assertIn('social_page_image_url', context)
+        self.assertIn('review_ui_uuid', context)
+        self.assertNotIn('review', context)
+        self.assertEqual(context['custom_key'], '123')
+
+        self.assertEqual(len(context['comments']), 2)
+        self.assertEqual(context['comments'][0].text, 'Comment 1')
+        self.assertEqual(context['comments'][1].text, 'Comment 2')
+
+    def test_build_render_context_with_skip_static_media_true(self) -> None:
+        """Testing ReviewUI.build_render_context with skip_static_media=1"""
+        reviewable_obj1 = DummyReviewableObject()
+        reviewable_obj2 = DummyReviewableObject()
+
+        review_ui = MyReviewUI(review_request=self.review_request,
+                               obj=reviewable_obj2)
+        review_ui.set_diff_against(reviewable_obj1)
+
+        request = self.create_http_request(data={
+            'skip-static-media': '1',
+        })
+        context = review_ui.build_render_context(request=request,
+                                                 inline=True)
+
+        self.assertEqual(context['base_template'],
+                         'reviews/ui/base_inline.html')
+        self.assertEqual(context['caption'], 'Test Caption')
+        self.assertEqual(context['social_page_image_url'], '/cover-image.png')
+        self.assertEqual(context['social_page_title'],
+                         'Reviewable for Review Request #1: Test Caption')
+        self.assertEqual(context['review_request'], self.review_request)
+        self.assertEqual(context['review_request_details'],
+                         self.review_request)
+        self.assertTrue(context['review_ui_inline'])
+        self.assertTrue(context['skip_static_media'])
         self.assertFalse(context['draft'])
         self.assertIs(context['review_ui'], review_ui)
         self.assertIs(context['obj'], reviewable_obj2)
@@ -244,6 +294,76 @@ class ReviewUITests(SpyAgency, TestCase):
         self.assertIn('model: new RB.Test.ReviewUI(', content)
         self.assertIn('view = new RB.Test.ReviewUIView(', content)
         self.assertIn('renderedInline: true', content)
+
+    def test_render_to_response_with_skip_static_media_false(self) -> None:
+        """Testing ReviewUI.render_to_response with skip_static_media=0"""
+        review_ui = MyReviewUI(review_request=self.review_request,
+                               obj=DummyReviewableObject())
+        request = self.create_http_request(data={
+            'skip-static-media': '0',
+        })
+
+        response = review_ui.render_to_response(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            b'link href="/static/rb/css/js-tests.min.css" '
+            b'rel="stylesheet" type="text/css"',
+            response.content)
+        self.assertIn(
+            b'script type="text/javascript" src="/static/rb/js/admin.min.js"',
+            response.content)
+
+    def test_render_to_response_with_skip_static_media_true(self) -> None:
+        """Testing ReviewUI.render_to_response with skip_static_media=1"""
+        review_ui = MyReviewUI(review_request=self.review_request,
+                               obj=DummyReviewableObject())
+        request = self.create_http_request(data={
+            'skip-static-media': '1',
+        })
+
+        response = review_ui.render_to_response(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(
+            b'link href="/static/rb/css/js-tests.min.css" '
+            b'rel="stylesheet" type="text/css"',
+            response.content)
+        self.assertNotIn(
+            b'script type="text/javascript" src="/static/rb/js/admin.min.js"',
+            response.content)
+
+    def test_render_to_string_with_skip_static_media_false(self) -> None:
+        """Testing ReviewUI.render_to_response with skip_static_media=0"""
+        review_ui = MyReviewUI(review_request=self.review_request,
+                               obj=DummyReviewableObject())
+        request = self.create_http_request(data={
+            'skip-static-media': '0',
+        })
+
+        content = review_ui.render_to_string(request)
+        self.assertIn(
+            'link href="/static/rb/css/js-tests.min.css" '
+            'rel="stylesheet" type="text/css"',
+            content)
+        self.assertIn(
+            'script type="text/javascript" src="/static/rb/js/admin.min.js"',
+            content)
+
+    def test_render_to_string_with_skip_static_media_true(self) -> None:
+        """Testing ReviewUI.render_to_response with skip_static_media=1"""
+        review_ui = MyReviewUI(review_request=self.review_request,
+                               obj=DummyReviewableObject())
+        request = self.create_http_request(data={
+            'skip-static-media': '1',
+        })
+
+        content = review_ui.render_to_string(request)
+        self.assertNotIn(
+            'link href="/static/rb/css/js-tests.min.css" '
+            'rel="stylesheet" type="text/css"',
+            content)
+        self.assertNotIn(
+            'script type="text/javascript" src="/static/rb/js/admin.min.js"',
+            content)
 
     def test_serialize_comments(self) -> None:
         """Testing ReviewUI.serialize_comments"""

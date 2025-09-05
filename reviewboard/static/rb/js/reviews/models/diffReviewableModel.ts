@@ -130,6 +130,13 @@ export class DiffReviewable
      *         Determines whether or not we want to requeue the corresponding
      *         diff in order to show its deleted content.
      *
+     *     skipStaticMedia (boolean):
+     *         For files that are rendered through a review UI, whether to
+     *         exclude the review UI's static media in the rendered output.
+     *
+     *         Version Added:
+     *             7.1
+     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
@@ -137,6 +144,7 @@ export class DiffReviewable
     getRenderedDiff(
         options: {
             showDeleted?: boolean;
+            skipStaticMedia?: boolean;
         } = {},
     ): Promise<string> {
         return this._fetchFragment({
@@ -144,6 +152,7 @@ export class DiffReviewable
             url: this._buildRenderedDiffURL({
                 index: this.get('file').get('index'),
                 showDeleted: options.showDeleted,
+                skipStaticMedia: options.skipStaticMedia,
             }),
         });
     }
@@ -243,6 +252,13 @@ export class DiffReviewable
      *     showDeleted (boolean, optional):
      *         Whether to show deleted content.
      *
+     *     skipStaticMedia (boolean):
+     *         For files that are rendered through a review UI, whether to
+     *         exclude the review UI's static media in the rendered output.
+     *
+     *         Version Added:
+     *             7.1
+     *
      * Returns:
      *     string:
      *     The URL for fetching diff fragments.
@@ -253,6 +269,7 @@ export class DiffReviewable
             index?: number;
             linesOfContext?: number;
             showDeleted?: boolean;
+            skipStaticMedia?: boolean;
         } = {},
     ): string {
         const reviewURL = this.get('reviewRequest').get('reviewURL');
@@ -291,8 +308,12 @@ export class DiffReviewable
             queryParts.push(`lines-of-context=${options.linesOfContext}`);
         }
 
+        if (options.skipStaticMedia) {
+            queryParts.push('skip-static-media=1');
+        }
+
         if (options.showDeleted) {
-            queryParts.push(`show-deleted=1`);
+            queryParts.push('show-deleted=1');
         }
 
         queryParts.push(`_=${TEMPLATE_SERIAL}`);

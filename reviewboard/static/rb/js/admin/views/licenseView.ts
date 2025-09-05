@@ -115,6 +115,7 @@ export class LicenseView<
     static modelEvents = {
         'change:checkStatus': '_onCheckStatusChanged',
         'licenseUpdated': 'render',
+        'remove': 'remove',
     };
 
     /**********************

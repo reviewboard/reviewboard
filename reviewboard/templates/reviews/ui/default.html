@@ -2,8 +2,9 @@
 {% load djblets_extensions djblets_js pipeline %}
 
 {% block review_ui_css %}
-{%  for bundle_name in review_ui.css_bundle_names %}
-{%   comment %}
+{%  if not skip_static_media %}
+{%   for bundle_name in review_ui.css_bundle_names %}
+{%    comment %}
 NOTE: On Review Board local development servers, rendering review UI static
       media from installed extension packages is broken when running with
       Djblets <4.1 and <5.3. Using development setups of extension
@@ -14,32 +15,35 @@ NOTE: On Review Board local development servers, rendering review UI static
       being run with a lower Djblets version, then the `bundle_output` will
       be empty and we'll fall back on using the `javascript` template tag
       which will do the right thing on production servers.
-{%   endcomment %}
-{%   if review_ui.extension %}
-{%    ext_css_bundle review_ui.extension bundle_name as bundle_output %}
-{%   endif %}
-{%   if bundle_output %}
+{%    endcomment %}
+{%    if review_ui.extension %}
+{%     ext_css_bundle review_ui.extension bundle_name as bundle_output %}
+{%    endif %}
+{%    if bundle_output %}
 {{bundle_output}}
-{%   else %}
-{%    stylesheet bundle_name %}
-{%   endif %}
-{%  endfor %}
+{%    else %}
+{%     stylesheet bundle_name %}
+{%    endif %}
+{%   endfor %}
+{%  endif %}
 {% endblock %}
 
 {% block review_ui_scripts %}
-{%  for bundle_name in review_ui.js_bundle_names %}
-{%   if review_ui.extension %}
-{%    ext_js_bundle review_ui.extension bundle_name as bundle_output %}
-{%   endif %}
-{%   if bundle_output %}
+{%  if not skip_static_media %}
+{%   for bundle_name in review_ui.js_bundle_names %}
+{%    if review_ui.extension %}
+{%     ext_js_bundle review_ui.extension bundle_name as bundle_output %}
+{%    endif %}
+{%    if bundle_output %}
 {{bundle_output}}
-{%   else %}
-{%    javascript bundle_name %}
-{%   endif %}
-{%  endfor %}
-{%  for js_file in review_ui.js_files %}
+{%    else %}
+{%     javascript bundle_name %}
+{%    endif %}
+{%   endfor %}
+{%   for js_file in review_ui.js_files %}
 <script src="{{js_file}}"></script>
-{%  endfor %}
+{%   endfor %}
+{%  endif %}
 
 <script>
     $(document).ready(function() {

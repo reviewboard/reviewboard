@@ -1,3 +1,4 @@
+import '../admin/collections/tests';
 import '../admin/models/tests';
 import '../admin/views/tests';
 import '../common/models/tests';

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from typing_extensions import NotRequired, TypedDict
 
 if TYPE_CHECKING:
-    from typing import Mapping
+    from collections.abc import Mapping
 
     from djblets.util.typing import SerializableJSONDict
 
@@ -80,4 +80,8 @@ class ProcessCheckLicenseResult(TypedDict):
     status: ProcessCheckLicenseResultStatus
 
     #: Optional license information returned from the check.
-    license_info: NotRequired[SerializableJSONDict]
+    #:
+    #: This is a map of license IDs to serialized license dictionaries. If
+    #: the serialized dictionary is None, the license is considered to be
+    #: removed.
+    license_infos: NotRequired[Mapping[str, SerializableJSONDict | None]]

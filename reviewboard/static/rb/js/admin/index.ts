@@ -1,4 +1,8 @@
 export {
+    LicenseCollection,
+} from './collections/licenseCollection';
+
+export {
     type LicenseAttrs,
     License,
     LicenseCheckStatus,

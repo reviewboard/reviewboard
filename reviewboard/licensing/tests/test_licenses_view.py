@@ -148,8 +148,10 @@ class _MyLicenseProvider1(BaseLicenseProvider):
 
         return {
             'status': status,
-            'license_info': self.get_js_license_model_data(
-                license_info=license_info),
+            'license_infos': {
+                'license1': self.get_js_license_model_data(
+                    license_info=license_info),
+            },
         }
 
 
@@ -287,125 +289,132 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         self.assertEqual(response.context['license_entries'], [
             {
-                'attrs': {
-                    'actionTarget': 'my-provider-1:license1',
-                    'actions': [
-                        {
-                            'actionID': 'test',
-                            'label': 'Test',
-                            'url': 'https://example.com/license1/',
+                'license_infos': [
+                    {
+                        'attrs': {
+                            'actionTarget': 'my-provider-1:license1',
+                            'actions': [
+                                {
+                                    'actionID': 'test',
+                                    'label': 'Test',
+                                    'url': 'https://example.com/license1/',
+                                },
+                            ],
+                            'canUploadLicense': False,
+                            'expiresDate': datetime(2025, 7, 30, 0, 0,
+                                                    tzinfo=tz.utc),
+                            'expiresSoon': False,
+                            'gracePeriodDaysRemaining': 0,
+                            'hardExpiresDate': datetime(2025, 7, 30, 0, 0,
+                                                        tzinfo=tz.utc),
+                            'isTrial': False,
+                            'licenseID': 'license1',
+                            'licensedTo': 'Test User',
+                            'lineItems': [
+                                'Line 1',
+                                'Line 2',
+                            ],
+                            'manageURL': 'https://example.com/license1/',
+                            'noticeHTML': '',
+                            'planID': None,
+                            'planName': None,
+                            'productName': 'Test Product',
+                            'status': 'unlicensed',
+                            'summary': 'Test Product is not licensed!',
                         },
-                    ],
-                    'canUploadLicense': False,
-                    'expiresDate': datetime(2025, 7, 30, 0, 0, tzinfo=tz.utc),
-                    'expiresSoon': False,
-                    'gracePeriodDaysRemaining': 0,
-                    'hardExpiresDate': datetime(2025, 7, 30, 0, 0,
-                                                tzinfo=tz.utc),
-                    'isTrial': False,
-                    'licenseID': 'license1',
-                    'licensedTo': 'Test User',
-                    'lineItems': [
-                        'Line 1',
-                        'Line 2',
-                    ],
-                    'manageURL': 'https://example.com/license1/',
-                    'noticeHTML': '',
-                    'planID': None,
-                    'planName': None,
-                    'productName': 'Test Product',
-                    'status': 'unlicensed',
-                    'summary': 'Test Product is not licensed!',
-                },
-                'model': 'RB.License',
-                'view': 'RB.LicenseView',
-            },
-            {
-                'attrs': {
-                    'actionTarget': 'my-provider-1:license2',
-                    'actions': [
-                        {
-                            'actionID': 'test',
-                            'label': 'Test',
-                            'url': 'https://example.com/license2/',
+                    },
+                    {
+                        'attrs': {
+                            'actionTarget': 'my-provider-1:license2',
+                            'actions': [
+                                {
+                                    'actionID': 'test',
+                                    'label': 'Test',
+                                    'url': 'https://example.com/license2/',
+                                },
+                            ],
+                            'canUploadLicense': False,
+                            'expiresDate': datetime(2025, 4, 26, 0, 0,
+                                                    tzinfo=tz.utc),
+                            'expiresSoon': True,
+                            'gracePeriodDaysRemaining': 0,
+                            'hardExpiresDate': datetime(2025, 4, 26, 0, 0,
+                                                        tzinfo=tz.utc),
+                            'isTrial': False,
+                            'licenseID': 'license2',
+                            'licensedTo': 'Test User',
+                            'lineItems': [],
+                            'manageURL': None,
+                            'noticeHTML': '',
+                            'planID': 'plan1',
+                            'planName': 'Plan 1',
+                            'productName': 'Test Product',
+                            'status': 'licensed',
+                            'summary': 'License for Test Product (Plan 1)',
                         },
-                    ],
-                    'canUploadLicense': False,
-                    'expiresDate': datetime(2025, 4, 26, 0, 0,
-                                            tzinfo=tz.utc),
-                    'expiresSoon': True,
-                    'gracePeriodDaysRemaining': 0,
-                    'hardExpiresDate': datetime(2025, 4, 26, 0, 0,
-                                                tzinfo=tz.utc),
-                    'isTrial': False,
-                    'licenseID': 'license2',
-                    'licensedTo': 'Test User',
-                    'lineItems': [],
-                    'manageURL': None,
-                    'noticeHTML': '',
-                    'planID': 'plan1',
-                    'planName': 'Plan 1',
-                    'productName': 'Test Product',
-                    'status': 'licensed',
-                    'summary': 'License for Test Product (Plan 1)',
-                },
+                    },
+                ],
                 'model': 'RB.License',
                 'view': 'RB.LicenseView',
             },
             {
-                'attrs': {
-                    'actionTarget': 'my-provider-2:license1',
-                    'actions': [],
-                    'canUploadLicense': False,
-                    'expiresDate': datetime(2025, 3, 2, 0, 0,
-                                            tzinfo=tz.utc),
-                    'expiresSoon': False,
-                    'gracePeriodDaysRemaining': 0,
-                    'hardExpiresDate': datetime(2025, 3, 2, 0, 0,
-                                                tzinfo=tz.utc),
-                    'isTrial': True,
-                    'licenseID': 'license1',
-                    'licensedTo': 'Test User',
-                    'lineItems': [],
-                    'manageURL': None,
-                    'noticeHTML': '',
-                    'planID': None,
-                    'planName': None,
-                    'productName': 'Test Product',
-                    'status': 'hard-expired',
-                    'summary': 'Expired trial license for Test Product',
-                },
-                'model': 'RB.License',
-                'view': 'RB.LicenseView',
-            },
-            {
-                'attrs': {
-                    'actionTarget': 'my-provider-2:license2',
-                    'actions': [],
-                    'canUploadLicense': False,
-                    'expiresDate': datetime(2025, 4, 19, 0, 0,
-                                            tzinfo=tz.utc),
-                    'expiresSoon': False,
-                    'gracePeriodDaysRemaining': 0,
-                    'hardExpiresDate': datetime(2025, 4, 19, 0, 0,
-                                                tzinfo=tz.utc),
-                    'isTrial': False,
-                    'licenseID': 'license2',
-                    'licensedTo': 'Test User',
-                    'lineItems': [],
-                    'manageURL': None,
-                    'noticeHTML': (
-                        'Your grace period is now active. Unless renewed, '
-                        'Test Product will be disabled <time '
-                        'class="timesince" dateTime="2025-04-19 '
-                        '00:00:00+00:00"/>.'
-                    ),
-                    'planID': None,
-                    'planName': None,
-                    'productName': 'Test Product',
-                    'status': 'expired-grace-period',
-                    'summary': 'Expired license for Test Product',
-                },
+                'license_infos': [
+                    {
+                        'attrs': {
+                            'actionTarget': 'my-provider-2:license1',
+                            'actions': [],
+                            'canUploadLicense': False,
+                            'expiresDate': datetime(2025, 3, 2, 0, 0,
+                                                    tzinfo=tz.utc),
+                            'expiresSoon': False,
+                            'gracePeriodDaysRemaining': 0,
+                            'hardExpiresDate': datetime(2025, 3, 2, 0, 0,
+                                                        tzinfo=tz.utc),
+                            'isTrial': True,
+                            'licenseID': 'license1',
+                            'licensedTo': 'Test User',
+                            'lineItems': [],
+                            'manageURL': None,
+                            'noticeHTML': '',
+                            'planID': None,
+                            'planName': None,
+                            'productName': 'Test Product',
+                            'status': 'hard-expired',
+                            'summary': (
+                                'Expired trial license for Test Product'
+                            ),
+                        },
+                    },
+                    {
+                        'attrs': {
+                            'actionTarget': 'my-provider-2:license2',
+                            'actions': [],
+                            'canUploadLicense': False,
+                            'expiresDate': datetime(2025, 4, 19, 0, 0,
+                                                    tzinfo=tz.utc),
+                            'expiresSoon': False,
+                            'gracePeriodDaysRemaining': 0,
+                            'hardExpiresDate': datetime(2025, 4, 19, 0, 0,
+                                                        tzinfo=tz.utc),
+                            'isTrial': False,
+                            'licenseID': 'license2',
+                            'licensedTo': 'Test User',
+                            'lineItems': [],
+                            'manageURL': None,
+                            'noticeHTML': (
+                                'Your grace period is now active. Unless '
+                                'renewed, Test Product will be disabled <time '
+                                'class="timesince" dateTime="2025-04-19 '
+                                '00:00:00+00:00"/>.'
+                            ),
+                            'planID': None,
+                            'planName': None,
+                            'productName': 'Test Product',
+                            'status': 'expired-grace-period',
+                            'summary': 'Expired license for Test Product',
+                        },
+                    },
+                ],
                 'model': 'RB.License',
                 'view': 'RB.LicenseView',
             },
@@ -565,34 +574,36 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {
             'status': 'applied',
-            'license_info': {
-                'actionTarget': 'my-provider-1:license2',
-                'actions': [
-                    {
-                        'actionID': 'test',
-                        'label': 'Test',
-                        'url': 'https://example.com/license2/',
-                    },
-                ],
-                'canUploadLicense': False,
-                'expiresDate': '2026-04-21T00:00:00Z',
-                'expiresSoon': False,
-                'gracePeriodDaysRemaining': 0,
-                'hardExpiresDate': '2026-04-21T00:00:00Z',
-                'isTrial': False,
-                'licenseID': 'license2',
-                'licensedTo': 'Test User',
-                'lineItems': [],
-                'manageURL': None,
-                'noticeHTML': '',
-                'planID': 'smpbpe1',
-                'planName': 'Super Mega Power Bundle Pro Enterprise',
-                'productName': 'Test Product',
-                'status': 'licensed',
-                'summary': (
-                    'License for Test Product (Super Mega Power Bundle '
-                    'Pro Enterprise)'
-                ),
+            'license_infos': {
+                'license1': {
+                    'actionTarget': 'my-provider-1:license2',
+                    'actions': [
+                        {
+                            'actionID': 'test',
+                            'label': 'Test',
+                            'url': 'https://example.com/license2/',
+                        },
+                    ],
+                    'canUploadLicense': False,
+                    'expiresDate': '2026-04-21T00:00:00Z',
+                    'expiresSoon': False,
+                    'gracePeriodDaysRemaining': 0,
+                    'hardExpiresDate': '2026-04-21T00:00:00Z',
+                    'isTrial': False,
+                    'licenseID': 'license2',
+                    'licensedTo': 'Test User',
+                    'lineItems': [],
+                    'manageURL': None,
+                    'noticeHTML': '',
+                    'planID': 'smpbpe1',
+                    'planName': 'Super Mega Power Bundle Pro Enterprise',
+                    'productName': 'Test Product',
+                    'status': 'licensed',
+                    'summary': (
+                        'License for Test Product (Super Mega Power Bundle '
+                        'Pro Enterprise)'
+                    ),
+                },
             },
         })
 
@@ -623,31 +634,33 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {
             'status': 'has-latest',
-            'license_info': {
-                'actionTarget': 'my-provider-1:license2',
-                'actions': [
-                    {
-                        'actionID': 'test',
-                        'label': 'Test',
-                        'url': 'https://example.com/license2/',
-                    },
-                ],
-                'canUploadLicense': False,
-                'expiresDate': '2025-04-26T00:00:00Z',
-                'expiresSoon': True,
-                'gracePeriodDaysRemaining': 0,
-                'hardExpiresDate': '2025-04-26T00:00:00Z',
-                'isTrial': False,
-                'licenseID': 'license2',
-                'licensedTo': 'Test User',
-                'lineItems': [],
-                'manageURL': None,
-                'noticeHTML': '',
-                'planID': 'plan1',
-                'planName': 'Plan 1',
-                'productName': 'Test Product',
-                'status': 'licensed',
-                'summary': 'License for Test Product (Plan 1)',
+            'license_infos': {
+                'license1': {
+                    'actionTarget': 'my-provider-1:license2',
+                    'actions': [
+                        {
+                            'actionID': 'test',
+                            'label': 'Test',
+                            'url': 'https://example.com/license2/',
+                        },
+                    ],
+                    'canUploadLicense': False,
+                    'expiresDate': '2025-04-26T00:00:00Z',
+                    'expiresSoon': True,
+                    'gracePeriodDaysRemaining': 0,
+                    'hardExpiresDate': '2025-04-26T00:00:00Z',
+                    'isTrial': False,
+                    'licenseID': 'license2',
+                    'licensedTo': 'Test User',
+                    'lineItems': [],
+                    'manageURL': None,
+                    'noticeHTML': '',
+                    'planID': 'plan1',
+                    'planName': 'Plan 1',
+                    'productName': 'Test Product',
+                    'status': 'licensed',
+                    'summary': 'License for Test Product (Plan 1)',
+                },
             },
         })
 
