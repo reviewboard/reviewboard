@@ -8,54 +8,148 @@ from reviewboard.diffviewer.differ import Differ, DiffCompatVersion
 
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator, Sequence
 
     from reviewboard.diffviewer.differ import DiffOpcode, DiffOpcodeTag
 
 
+class _DiffData:
+    """Storage class for data used in the Myers diff algorithm.
+
+    Version Changed:
+        8.0:
+        Moved out of the MyersDiffer class.
+    """
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The data to operate on.
+    data: Sequence[int]
+
+    #: The length of the data.
+    length: int
+
+    #: A set of line numbers which have been modified.
+    #:
+    #: Version Changed:
+    #:     8.0:
+    #:     Changed from a dict[int, bool] to a set.
+    modified: set[int]
+
+    #: Lines which have not been discarded from the diff.
+    undiscarded: list[int]
+
+    #: The number of lines which have not been discarded.
+    undiscarded_lines: int
+
+    #: A list which maps undiscarded lines to line number.
+    real_indexes: list[int]
+
+    def __init__(
+        self,
+        data: Sequence[int],
+    ) -> None:
+        """Initialize the object.
+
+        Args:
+            data (list of int):
+                The data in the diff.
+        """
+        self.data = data
+        self.length = len(data)
+        self.modified = set()
+        self.undiscarded = []
+        self.undiscarded_lines = 0
+        self.real_indexes = []
+
+
 class MyersDiffer(Differ):
+    """Differ implementation that users the Myers diff algorithm.
+
+    This uses Eugene Myers's O(ND) Diff algorithm, with some additional
+    heuristics. This effectively turns the diff problem into a graph search.
+    It works by finding the "shortest middle snake," which
+
+    [ this area intentionally left in suspense ]
     """
-    An implementation of Eugene Myers's O(ND) Diff algorithm based on GNU diff.
-    """
+
     SNAKE_LIMIT = 20
 
     DISCARD_NONE = 0
     DISCARD_FOUND = 1
     DISCARD_CANCEL = 2
 
-    # The Myers diff algorithm effectively turns the diff problem into a graph
-    # search.  It works by finding the "shortest middle snake," which
+    ######################
+    # Instance variables #
+    ######################
 
-    class DiffData:
-        def __init__(self, data):
-            self.data = data
-            self.length = len(data)
-            self.modified = {}
-            self.undiscarded = []
-            self.undiscarded_lines = 0
-            self.real_indexes = []
+    #: The data for the original side of the diff.
+    a_data: _DiffData
 
-    def __init__(self, *args, **kwargs):
-        super(MyersDiffer, self).__init__(*args, **kwargs)
+    #: The data for the modified side of the diff.
+    b_data: _DiffData
+
+    #: Storage for computing the backward diagonal.
+    bdiag: list[int]
+
+    #: A mapping from line content to unique integers.
+    code_table: dict[str, int]
+
+    #: The current offset for the down search.
+    downoff: int
+
+    #: Storage for computing the forward diagonal.
+    fdiag: list[int]
+
+    #: The most recent code used.
+    last_code: int
+
+    #: The maximum number of changed lines that could be in the diff.
+    max_lines: int
+
+    #: The current offset for the up search.
+    upoff: int
+
+    #: Whether the data has been initialized.
+    _initialized: bool
+
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the differ.
+
+        Args:
+            *args (tuple):
+                Positional arguments to pass through to the parent class.
+
+            **kwargs (dict):
+                Keyword arguments to pass through to the parent class.
+        """
+        super().__init__(*args, **kwargs)
+
+        self._initialized = False
 
         self.code_table = {}
         self.last_code = 0
-        self.a_data = self.b_data = None
-        self.minimal_diff = False
         self.interesting_line_table = {}
 
-        # SMS State
-        self.max_lines = 0
-        self.fdiag = None
-        self.bdiag = None
+    def ratio(self) -> float:
+        """Return the diff ratio.
 
-    def ratio(self):
+        Returns:
+            float:
+            The ratio of unmodified lines to total lines.
+        """
         self._gen_diff_data()
-        a_equals = self.a_data.length - len(self.a_data.modified)
-        b_equals = self.b_data.length - len(self.b_data.modified)
 
-        return 1.0 * (a_equals + b_equals) / \
-                     (self.a_data.length + self.b_data.length)
+        a_data = self.a_data
+        b_data = self.b_data
+
+        a_equals = a_data.length - len(a_data.modified)
+        b_equals = b_data.length - len(b_data.modified)
+
+        return ((a_equals + b_equals) /
+                (a_data.length + b_data.length))
 
     def get_opcodes(self) -> Iterator[DiffOpcode]:
         """Yield the opcodes for the diff.
@@ -87,9 +181,9 @@ class MyersDiffer(Differ):
             tag: (DiffOpcodeTag | None) = None
 
             if (a_line < a_data.length and
-                not a_data.modified.get(a_line, False) and
+                a_line not in a_data.modified and
                 b_line < b_data.length and
-                not b_data.modified.get(b_line, False)):
+                b_line not in b_data.modified):
                 # Equal
                 a_changed = b_changed = 1
                 tag = 'equal'
@@ -103,7 +197,7 @@ class MyersDiffer(Differ):
                 # file.
                 while (a_line < a_data.length and
                        (b_line >= b_data.length or
-                        a_data.modified.get(a_line, False))):
+                        a_line in a_data.modified)):
                     a_line += 1
 
                 # Count every new line that's been modified, and the
@@ -111,7 +205,7 @@ class MyersDiffer(Differ):
                 # file.
                 while (b_line < b_data.length and
                        (a_line >= a_data.length or
-                        b_data.modified.get(b_line, False))):
+                        b_line in b_data.modified)):
                     b_line += 1
 
                 a_changed = a_line - a_start
@@ -168,94 +262,158 @@ class MyersDiffer(Differ):
 
         yield last_group
 
-    def _gen_diff_data(self):
-        """
-        Generate all the diff data needed to return opcodes or the diff ratio.
-        This is only called once during the lifetime of a MyersDiffer instance.
-        """
-        if self.a_data and self.b_data:
+    def _gen_diff_data(self) -> None:
+        """Generate all the data needed for the opcodes or the diff ratio."""
+        if self._initialized:
             return
 
-        self.a_data = self.DiffData(self._gen_diff_codes(self.a, False))
-        self.b_data = self.DiffData(self._gen_diff_codes(self.b, True))
+        a_data = _DiffData(self._gen_diff_codes(self.a, False))
+        b_data = _DiffData(self._gen_diff_codes(self.b, True))
+
+        self.a_data = a_data
+        self.b_data = b_data
 
         self._discard_confusing_lines()
 
-        self.max_lines = (self.a_data.undiscarded_lines +
-                          self.b_data.undiscarded_lines + 3)
+        self.max_lines = (a_data.undiscarded_lines +
+                          b_data.undiscarded_lines + 3)
 
-        vector_size = (self.a_data.undiscarded_lines +
-                       self.b_data.undiscarded_lines + 3)
+        vector_size = (a_data.undiscarded_lines +
+                       b_data.undiscarded_lines + 3)
         self.fdiag = [0] * vector_size
         self.bdiag = [0] * vector_size
-        self.downoff = self.upoff = self.b_data.undiscarded_lines + 1
+        self.downoff = self.upoff = b_data.undiscarded_lines + 1
 
-        self._lcs(0, self.a_data.undiscarded_lines,
-                  0, self.b_data.undiscarded_lines,
-                  self.minimal_diff)
-        self._shift_chunks(self.a_data, self.b_data)
-        self._shift_chunks(self.b_data, self.a_data)
+        self._lcs(0, a_data.undiscarded_lines,
+                  0, b_data.undiscarded_lines,
+                  find_minimal=False)
+        self._shift_chunks(a_data, b_data)
+        self._shift_chunks(b_data, a_data)
 
-    def _gen_diff_codes(self, lines, is_modified_file):
+        self._initialized = True
+
+    def _gen_diff_codes(
+        self,
+        lines: Sequence[str],
+        is_modified_file: bool,
+    ) -> list[int]:
+        """Convert all unique lines of text into unique numbers.
+
+        We do this because comparing lists of numbers is faster than comparing
+        lists of strings.
+
+        Args:
+            lines (list of str):
+                The lines in a file.
+
+            is_modified_file (bool):
+                Whether this is operating on the modified version of the file.
+
+        Returns:
+            list of int:
+            A list of unique numbers corresponding to the lines of text.
         """
-        Converts all unique lines of text into unique numbers. Comparing
-        lists of numbers is faster than comparing lists of strings.
-        """
-        codes = []
-
-        linenum = 0
+        codes: list[int] = []
 
         if is_modified_file:
             interesting_lines = self.interesting_lines[1]
         else:
             interesting_lines = self.interesting_lines[0]
 
-        for line in lines:
+        ignore_space = self.ignore_space
+        code_table = self.code_table
+        interesting_line_table = self.interesting_line_table
+        interesting_line_regexes = self.interesting_line_regexes
+        last_code = self.last_code
+
+        for linenum, line in enumerate(lines):
             # TODO: Handle ignoring/trimming spaces, ignoring casing, and
             #       special hooks
 
             raw_line = line
             stripped_line = line.lstrip()
 
-            if self.ignore_space:
-                # We still want to show lines that contain only whitespace.
-                if len(stripped_line) > 0:
-                    line = stripped_line
+            # We still want to show lines that contain only whitespace.
+            if ignore_space and len(stripped_line) > 0:
+                line = stripped_line
 
             interesting_line_name = None
 
             try:
-                code = self.code_table[line]
+                code = code_table[line]
                 interesting_line_name = \
-                    self.interesting_line_table.get(code, None)
+                    interesting_line_table.get(code, None)
             except KeyError:
                 # This is a new, unrecorded line, so mark it and store it.
-                self.last_code += 1
-                code = self.last_code
-                self.code_table[line] = code
+                last_code += 1
+                code = last_code
+                code_table[line] = code
 
                 # Check to see if this is an interesting line that the caller
                 # wants recorded.
                 if stripped_line:
-                    for name, regex in self.interesting_line_regexes:
+                    for name, regex in interesting_line_regexes:
                         if regex.match(raw_line):
                             interesting_line_name = name
-                            self.interesting_line_table[code] = name
+                            interesting_line_table[code] = name
                             break
 
             if interesting_line_name:
-                interesting_lines[interesting_line_name].append((linenum,
-                                                                 raw_line))
+                interesting_lines[interesting_line_name].append(
+                    (linenum, raw_line))
 
             codes.append(code)
 
-            linenum += 1
+        self.last_code = last_code
 
         return codes
 
-    def _find_sms(self, a_lower, a_upper, b_lower, b_upper, find_minimal):
-        """
-        Finds the Shortest Middle Snake.
+    def _find_sms(
+        self,
+        a_lower: int,
+        a_upper: int,
+        b_lower: int,
+        b_upper: int,
+        find_minimal: bool,
+    ) -> tuple[int, int, bool, bool]:
+        """Find the Shortest Middle Snake within given bounds.
+
+        Args:
+            a_lower (int):
+                The lower bound on the original data.
+
+            a_upper (int):
+                The upper bound on the original data.
+
+            b_lower (int):
+                The lower bound on the modified data.
+
+            b_upper (int):
+                The upper bound on the modified data.
+
+            find_minimal (bool):
+                Whether to iterate until a minimal diff is found.
+
+        Returns:
+            tuple:
+            A 4-tuple of:
+
+            Tuple:
+                0 (int):
+                    The best dividing point for the original data to use for
+                    the next step.
+
+                1 (int):
+                    The best dividing point for the modified data to use for
+                    the next step.
+
+                2 (bool):
+                    Whether to search for a minimal diff in the lower half for
+                    the next step.
+
+                3 (bool):
+                    Whether to search for a minimal diff in the upper half for
+                    the next step.
         """
         down_vector = self.fdiag  # The vector for the (0, 0) to (x, y) search
         up_vector = self.bdiag    # The vector for the (u, v) to (N, M) search
@@ -365,15 +523,14 @@ class MyersDiffer(Differ):
             if find_minimal:
                 continue
 
-            # Heuristics courtesy of GNU diff.
+            # Heuristics to improve diff results.
             #
             # We check occasionally for a diagonal that made lots of progress
             # compared with the edit distance. If we have one, find the one
             # that made the most progress and return it.
             #
             # This gives us better, more dense chunks, instead of lots of
-            # small ones often starting with replaces. It also makes the output
-            # closer to that of GNU diff, which more people would expect.
+            # small ones often starting with replaces.
 
             if cost > 200 and big_snake:
                 ret_x, ret_y, best = self._find_diagonal(
@@ -441,45 +598,144 @@ class MyersDiffer(Differ):
                 else:
                     return bx_best, bxy_best - bx_best, False, True
 
-        raise Exception("The function should not have reached here.")
+        raise Exception(
+            'The function should not have reached here.',
+        )
 
-    def _find_diagonal(self, minimum, maximum, k, best, diagoff, vector,
-                       vdiff_func, check_x_range, check_y_range,
-                       discard_index, k_offset, cost):
+    def _find_diagonal(
+        self,
+        minimum: int,
+        maximum: int,
+        k: int,
+        best: int,
+        diagoff: int,
+        vector: Sequence[int],
+        vdiff_func: Callable[[int], int],
+        check_x_range: Callable[[int], bool],
+        check_y_range: Callable[[int], bool],
+        discard_index: Callable[[int, int], int],
+        k_offset: int,
+        cost: int,
+    ) -> tuple[int, int, int]:
+        """Find the best diagonal in a region of the graph.
+
+        Args:
+            minimum (int):
+                The lower bound to search within the vector.
+
+            maximum (int):
+                The upper bound to search within the vector.
+
+            k (int):
+                The k-line to start the search.
+
+            best (int):
+                The best number of steps of progress discovered so far.
+
+            diagoff (int):
+                The offset of the diagonal found so far.
+
+            vector (list of int):
+                The vector to search.
+
+            vdiff_func (callable):
+                A callable to compute an offset within the vector. This is used
+                so we can search both forward and backward.
+
+            check_x_range (callable):
+                A callable to check if a value is within bounds.
+
+            check_y_range (callable):
+                A callable to check if a value is within bounds.
+
+            discard_index (callable):
+                A callable to determine the index into the discards list.
+
+            k_offset (int):
+                The offset to apply to the ``k`` parameter.
+
+            cost (int):
+                The current edit cost.
+
+        Returns:
+            tuple:
+            A 3-tuple of:
+
+            Tuple:
+                 0 (int):
+                    The number of steps in the X direction.
+
+                 1 (int):
+                    The number of steps in the Y direction.
+
+                 2 (int):
+                    The new best number of steps of progress.
+        """
+        a_data = self.a_data
+        b_data = self.b_data
+        snake_limit = self.SNAKE_LIMIT
+
         for d in range(maximum, minimum - 1, -2):
             dd = d - k
             x = vector[diagoff + d]
             y = x - d
             v = vdiff_func(x) * 2 + dd
 
-            if v > 12 * (cost + abs(dd)):
-                if v > best and \
-                   check_x_range(x) and check_y_range(y):
-                    # We found a sufficient diagonal.
-                    k = k_offset
-                    x_index = discard_index(x, k)
-                    y_index = discard_index(y, k)
+            if (v > best and
+                v > 12 * (cost + abs(dd)) and
+               check_x_range(x) and
+               check_y_range(y)):
+                # We found a sufficient diagonal.
+                k = k_offset
+                x_index = discard_index(x, k)
+                y_index = discard_index(y, k)
 
-                    while (self.a_data.undiscarded[x_index] ==
-                           self.b_data.undiscarded[y_index]):
-                        if k == self.SNAKE_LIMIT - 1 + k_offset:
-                            return x, y, v
+                while (a_data.undiscarded[x_index] ==
+                       b_data.undiscarded[y_index]):
+                    if k == snake_limit - 1 + k_offset:
+                        return x, y, v
 
-                        k += 1
+                    k += 1
+
         return 0, 0, 0
 
-    def _lcs(self, a_lower, a_upper, b_lower, b_upper, find_minimal):
+    def _lcs(
+        self,
+        a_lower: int,
+        a_upper: int,
+        b_lower: int,
+        b_upper: int,
+        find_minimal: bool,
+    ) -> None:
+        """Perform a step of finding the longest common subsequence (LCS).
+
+        This does a divide-and-conquer to find the longest subsequence within
+        the given ranges.
+
+        Args:
+            a_lower (int):
+                The lower bound on the original data.
+
+            a_upper (int):
+                The upper bound on the original data.
+
+            b_lower (int):
+                The lower bound on the modified data.
+
+            b_upper (int):
+                The upper bound on the modified data.
+
+            find_minimal (bool):
+                Whether to iterate until a minimal diff is found.
         """
-        The divide-and-conquer implementation of the Longest Common
-        Subsequence (LCS) algorithm.
-        """
-        # Fast walkthrough equal lines at the start
+        # Fast walkthrough equal lines at the start.
         while (a_lower < a_upper and b_lower < b_upper and
                (self.a_data.undiscarded[a_lower] ==
                 self.b_data.undiscarded[b_lower])):
             a_lower += 1
             b_lower += 1
 
+        # Fast walkthrough equal lines at the end.
         while (a_upper > a_lower and b_upper > b_lower and
                (self.a_data.undiscarded[a_upper - 1] ==
                 self.b_data.undiscarded[b_upper - 1])):
@@ -487,17 +743,17 @@ class MyersDiffer(Differ):
             b_upper -= 1
 
         if a_lower == a_upper:
-            # Inserted lines.
+            # Purely inserted lines.
             while b_lower < b_upper:
-                self.b_data.modified[self.b_data.real_indexes[b_lower]] = True
+                self.b_data.modified.add(self.b_data.real_indexes[b_lower])
                 b_lower += 1
         elif b_lower == b_upper:
-            # Deleted lines
+            # Purely deleted lines.
             while a_lower < a_upper:
-                self.a_data.modified[self.a_data.real_indexes[a_lower]] = True
+                self.a_data.modified.add(self.a_data.real_indexes[a_lower])
                 a_lower += 1
         else:
-            # Find the middle snake and length of an optimal path for A and B
+            # Find the middle snake and length of an optimal path for A and B.
             x, y, low_minimal, high_minimal = \
                 self._find_sms(a_lower, a_upper, b_lower, b_upper,
                                find_minimal)
@@ -505,11 +761,16 @@ class MyersDiffer(Differ):
             self._lcs(a_lower, x, b_lower, y, low_minimal)
             self._lcs(x, a_upper, y, b_upper, high_minimal)
 
-    def _shift_chunks(self, data, other_data):
-        """
-        Shifts the inserts/deletes of identical lines in order to join
-        the changes together a bit more. This has the effect of cleaning
-        up the diff.
+    def _shift_chunks(
+        self,
+        data: _DiffData,
+        other_data: _DiffData,
+    ) -> None:
+        """Shift chunks to improve alignment.
+
+        This shifts the inserts/deletes of identical lines in order to join the
+        changes together a bit more. This has the effect of cleaning up the
+        diff.
 
         Often times, a generated diff will have two identical lines before
         and after a chunk (say, a blank line). The default algorithm will
@@ -517,16 +778,23 @@ class MyersDiffer(Differ):
         end, but that does not always produce the best looking diff. Since
         the two lines are identical, we can shift the chunk so that the line
         appears both before and after the line, rather than only after.
+
+        Args:
+            data (_DiffData):
+                One side of the diff.
+
+            other_data (_DiffData):
+                The other side of the diff.
         """
         i = j = 0
         i_end = data.length
 
         while True:
             # Scan forward in order to find the start of a run of changes.
-            while i < i_end and not data.modified.get(i, False):
+            while i < i_end and i not in data.modified:
                 i += 1
 
-                while other_data.modified.get(j, False):
+                while j in other_data.modified:
                     j += 1
 
             if i == i_end:
@@ -536,10 +804,10 @@ class MyersDiffer(Differ):
 
             # Find the end of these changes
             i += 1
-            while data.modified.get(i, False):
+            while i in data.modified:
                 i += 1
 
-            while other_data.modified.get(j, False):
+            while j in other_data.modified:
                 j += 1
 
             while True:
@@ -552,21 +820,22 @@ class MyersDiffer(Differ):
                     start -= 1
                     i -= 1
 
-                    data.modified[start] = True
-                    data.modified[i] = False
+                    data.modified.add(start)
+                    data.modified.remove(i)
 
-                    while data.modified.get(start - 1, False):
+                    while (start - 1) in data.modified:
                         start -= 1
 
                     j -= 1
-                    while other_data.modified.get(j, False):
+
+                    while j in other_data.modified:
                         j -= 1
 
                 # The end of the changed run at the last point where it
                 # corresponds to the changed run in the other data set.
                 # If it's equal to i_end, then we didn't find a corresponding
                 # point.
-                if other_data.modified.get(j - 1, False):
+                if (j - 1) in other_data.modified:
                     corresponding = i
                 else:
                     corresponding = i_end
@@ -574,17 +843,18 @@ class MyersDiffer(Differ):
                 # Move the changed region forward as long as the first
                 # changed line is the same as the following unchanged line.
                 while i != i_end and data.data[start] == data.data[i]:
-                    data.modified[start] = False
-                    data.modified[i] = True
+                    data.modified.remove(start)
+                    data.modified.add(i)
 
                     start += 1
                     i += 1
 
-                    while data.modified.get(i, False):
+                    while i in data.modified:
                         i += 1
 
                     j += 1
-                    while other_data.modified.get(j, False):
+
+                    while j in other_data.modified:
                         j += 1
                         corresponding = i
 
@@ -597,16 +867,34 @@ class MyersDiffer(Differ):
                 start -= 1
                 i -= 1
 
-                data.modified[start] = True
-                data.modified[i] = False
+                data.modified.add(start)
+                data.modified.remove(i)
 
                 j -= 1
-                while other_data.modified.get(j, False):
+
+                while j in other_data.modified:
                     j -= 1
 
-    def _discard_confusing_lines(self):
-        def build_discard_list(data, discards, counts):
-            many = 5 * self._very_approx_sqrt(data.length / 64)
+    def _discard_confusing_lines(self) -> None:
+        """Discard lines that may make the diff confusing."""
+        def build_discard_list(
+            data: _DiffData,
+            discards: list[int],
+            counts: Sequence[int],
+        ) -> None:
+            """Populate the discard list.
+
+            Args:
+                data (_DiffData):
+                    The data to operate on.
+
+                discards (list of int):
+                    The discards. This will be modified.
+
+                counts (list of int):
+                    The number of times each unique line appears in the data.
+            """
+            many = 5 * self._very_approx_sqrt(data.length // 64)
 
             for i, item in enumerate(data.data):
                 if item != 0:
@@ -617,7 +905,27 @@ class MyersDiffer(Differ):
                     elif num_matches > many:
                         discards[i] = self.DISCARD_CANCEL
 
-        def scan_run(discards, i, length, index_func):
+        def scan_run(
+            discards: list[int],
+            i: int,
+            length: int,
+            index_func: Callable[[int, int], int],
+        ) -> None:
+            """Scan a run of discarded lines.
+
+            Args:
+                discards (list of int):
+                    The discards. This will be modified.
+
+                i (int):
+                    The index to start at.
+
+                length (int):
+                    The length of the run to scan.
+
+                index_func (callable):
+                    A function to create an index into the ``discards`` list.
+            """
             consec = 0
 
             for j in range(length):
@@ -638,7 +946,19 @@ class MyersDiffer(Differ):
                 if consec == 3:
                     break
 
-        def check_discard_runs(data, discards):
+        def check_discard_runs(
+            data: _DiffData,
+            discards: list[int],
+        ) -> None:
+            """Check runs of discarded lines.
+
+            Args:
+                data (_DiffData):
+                    The data to operate on.
+
+                discards (list of int):
+                    The discards. This will be modified.
+            """
             i = 0
             while i < data.length:
                 # Cancel the provisional discards that are not in the middle
@@ -676,7 +996,7 @@ class MyersDiffer(Differ):
                             if discards[j] == self.DISCARD_CANCEL:
                                 discards[j] = self.DISCARD_NONE
                     else:
-                        minimum = 1 + self._very_approx_sqrt(length / 4)
+                        minimum = 1 + self._very_approx_sqrt(length // 4)
                         j = 0
                         consec = 0
                         while j < length:
@@ -697,47 +1017,80 @@ class MyersDiffer(Differ):
 
                 i += 1
 
-        def discard_lines(data, discards):
+        def discard_lines(
+            data: _DiffData,
+            discards: Sequence[int],
+        ) -> None:
+            """Perform the actual discard.
+
+            Args:
+                data (_DiffData):
+                    The data for the file. This will be modified.
+
+                discards (list of int):
+                    The discard information.
+            """
             j = 0
+
             for i, item in enumerate(data.data):
-                if self.minimal_diff or discards[i] == self.DISCARD_NONE:
+                if discards[i] == self.DISCARD_NONE:
                     data.undiscarded[j] = item
                     data.real_indexes[j] = i
                     j += 1
                 else:
-                    data.modified[i] = True
+                    data.modified.add(i)
 
             data.undiscarded_lines = j
 
-        self.a_data.undiscarded = [0] * self.a_data.length
-        self.b_data.undiscarded = [0] * self.b_data.length
-        self.a_data.real_indexes = [0] * self.a_data.length
-        self.b_data.real_indexes = [0] * self.b_data.length
-        a_discarded = [0] * self.a_data.length
-        b_discarded = [0] * self.b_data.length
-        a_code_counts = [0] * (1 + self.last_code)
-        b_code_counts = [0] * (1 + self.last_code)
+        a_data = self.a_data
+        b_data = self.b_data
+        a_length = a_data.length
+        b_length = b_data.length
+        last_code = self.last_code
 
-        for item in self.a_data.data:
+        a_data.undiscarded = [0] * a_length
+        b_data.undiscarded = [0] * b_length
+        a_data.real_indexes = [0] * a_length
+        b_data.real_indexes = [0] * b_length
+        a_discarded = [0] * a_length
+        b_discarded = [0] * b_length
+        a_code_counts = [0] * (1 + last_code)
+        b_code_counts = [0] * (1 + last_code)
+
+        for item in a_data.data:
             a_code_counts[item] += 1
 
-        for item in self.b_data.data:
+        for item in b_data.data:
             b_code_counts[item] += 1
 
-        build_discard_list(self.a_data, a_discarded, b_code_counts)
-        build_discard_list(self.b_data, b_discarded, a_code_counts)
+        build_discard_list(a_data, a_discarded, b_code_counts)
+        build_discard_list(b_data, b_discarded, a_code_counts)
 
-        check_discard_runs(self.a_data, a_discarded)
-        check_discard_runs(self.b_data, b_discarded)
+        check_discard_runs(a_data, a_discarded)
+        check_discard_runs(b_data, b_discarded)
 
-        discard_lines(self.a_data, a_discarded)
-        discard_lines(self.b_data, b_discarded)
+        discard_lines(a_data, a_discarded)
+        discard_lines(b_data, b_discarded)
 
-    def _very_approx_sqrt(self, i):
+    def _very_approx_sqrt(
+        self,
+        i: int,
+    ) -> int:
+        """Perform an extremely inaccurate square root.
+
+        Args:
+            i (int):
+                The number to operate on.
+
+        Returns:
+            int:
+            Something vaguely square-root like.
+        """
         result = 1
-        i /= 4
+        i //= 4
+
         while i > 0:
-            i /= 4
+            i //= 4
             result *= 2
 
         return result
