@@ -68,8 +68,9 @@ from reviewboard.testing.scmtool import (TestTool,
 from reviewboard.webapi.models import WebAPIToken
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
+    from typing import TypeAlias
 
     from django.http import HttpRequest
     from django_assert_queries import ExpectedQuery
@@ -77,6 +78,29 @@ if TYPE_CHECKING:
 
     from reviewboard.changedescs.models import ChangeDescription
     from reviewboard.scmtools.core import FileLookupContext, RevisionID
+
+
+#: Details for a filediff.
+#:
+#: Tuple:
+#:     0 (int):
+#:          The pk of the associated commit.
+#:
+#:     1 (str):
+#:          The original name of the file.
+#:
+#:     2 (str):
+#:          The original revision of the file.
+#:
+#:     3 (str):
+#:          The modified name of the file.
+#:
+#:     4 (str):
+#:          The modified revision of the file.
+#:
+#: Version Added:
+#:     8.0
+FileDiffDetails: TypeAlias = tuple[int, str, str, str, str]
 
 
 _static_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
@@ -3397,7 +3421,9 @@ class BaseFileDiffAncestorTests(kgb.SpyAgency, TestCase):
         # during creation.
         Repository.get_file_exists.unspy()
 
-    def get_filediffs_by_details(self):
+    def get_filediffs_by_details(
+        self
+    ) -> Mapping[FileDiffDetails | None, FileDiff]:
         """Return a mapping of FileDiff details to the FileDiffs.
 
         Returns:

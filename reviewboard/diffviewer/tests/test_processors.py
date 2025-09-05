@@ -1,3 +1,9 @@
+"""Unit tests for diff processors."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from djblets.features.testing import override_feature_check
 
 from reviewboard.diffviewer.features import filter_interdiffs_v2_feature
@@ -5,13 +11,21 @@ from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                post_process_filtered_equals)
 from reviewboard.testing import TestCase
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from reviewboard.diffviewer.differ import (
+        DiffOpcode,
+        DiffOpcodeWithMetadata,
+    )
+
 
 class FilterInterdiffOpcodesTests(TestCase):
     """Unit tests for filter_interdiff_opcodes."""
 
-    def test_filter_interdiff_opcodes(self):
+    def test_filter_interdiff_opcodes(self) -> None:
         """Testing filter_interdiff_opcodes"""
-        opcodes = [
+        opcodes: list[DiffOpcode] = [
             ('insert', 0, 0, 0, 1),
             ('equal', 0, 5, 1, 6),
             ('delete', 5, 10, 6, 6),
@@ -43,9 +57,9 @@ class FilterInterdiffOpcodesTests(TestCase):
         ])
         self._sanity_check_opcodes(new_opcodes)
 
-    def test_filter_interdiff_v2_opcodes(self):
+    def test_filter_interdiff_v2_opcodes(self) -> None:
         """Testing filter_interdiff_opcodes (v2)"""
-        opcodes = [
+        opcodes: list[DiffOpcode] = [
             ('insert', 0, 0, 0, 1),
             ('equal', 0, 5, 1, 6),
             ('delete', 5, 10, 6, 6),
@@ -79,13 +93,13 @@ class FilterInterdiffOpcodesTests(TestCase):
         ])
         self._sanity_check_opcodes(new_opcodes)
 
-    def test_filter_interdiff_opcodes_replace_after_valid_ranges(self):
+    def test_filter_interdiff_opcodes_replace_after_valid_ranges(self) -> None:
         """Testing filter_interdiff_opcodes with replace after valid range"""
         # While developing the fix for replace lines in
         # https://reviews.reviewboard.org/r/6030/, an iteration of the fix
         # broke replace lines when one side exceeded its last range found in
         # the diff.
-        opcodes = [
+        opcodes: list[DiffOpcode] = [
             ('replace', 12, 13, 5, 6),
         ]
         self._sanity_check_opcodes(opcodes)
@@ -101,9 +115,9 @@ class FilterInterdiffOpcodesTests(TestCase):
         ])
         self._sanity_check_opcodes(new_opcodes)
 
-    def test_filter_interdiff_opcodes_1_line(self):
+    def test_filter_interdiff_opcodes_1_line(self) -> None:
         """Testing filter_interdiff_opcodes with a 1 line file"""
-        opcodes = [
+        opcodes: list[DiffOpcode] = [
             ('replace', 0, 1, 0, 1),
         ]
         self._sanity_check_opcodes(opcodes)
@@ -121,9 +135,9 @@ class FilterInterdiffOpcodesTests(TestCase):
         ])
         self._sanity_check_opcodes(new_opcodes)
 
-    def test_filter_interdiff_opcodes_early_change(self):
+    def test_filter_interdiff_opcodes_early_change(self) -> None:
         """Testing filter_interdiff_opcodes with a change early in the file"""
-        opcodes = [
+        opcodes: list[DiffOpcode] = [
             ('replace', 2, 3, 2, 3),
         ]
         self._sanity_check_opcodes(opcodes)
@@ -141,11 +155,11 @@ class FilterInterdiffOpcodesTests(TestCase):
         ])
         self._sanity_check_opcodes(new_opcodes)
 
-    def test_filter_interdiff_opcodes_with_inserts_right(self):
+    def test_filter_interdiff_opcodes_with_inserts_right(self) -> None:
         """Testing filter_interdiff_opcodes with inserts on the right"""
         # These opcodes were taken from the r1-r2 interdiff at
         # http://reviews.reviewboard.org/r/4221/
-        opcodes = [
+        opcodes: list[DiffOpcode] = [
             ('equal', 0, 141, 0, 141),
             ('replace', 141, 142, 141, 142),
             ('insert', 142, 142, 142, 144),
@@ -177,11 +191,11 @@ class FilterInterdiffOpcodesTests(TestCase):
         ])
         self._sanity_check_opcodes(new_opcodes)
 
-    def test_filter_interdiff_opcodes_with_many_ignorable_ranges(self):
+    def test_filter_interdiff_opcodes_with_many_ignorable_ranges(self) -> None:
         """Testing filter_interdiff_opcodes with many ignorable ranges"""
         # These opcodes were taken from the r1-r2 interdiff at
         # http://reviews.reviewboard.org/r/4257/
-        opcodes = [
+        opcodes: list[DiffOpcode] = [
             ('equal', 0, 631, 0, 631),
             ('replace', 631, 632, 631, 632),
             ('insert', 632, 632, 632, 633),
@@ -224,11 +238,13 @@ class FilterInterdiffOpcodesTests(TestCase):
         ])
         self._sanity_check_opcodes(new_opcodes)
 
-    def test_filter_interdiff_opcodes_v2_with_many_ignorable_ranges(self):
+    def test_filter_interdiff_opcodes_v2_with_many_ignorable_ranges(
+        self,
+    ) -> None:
         """Testing filter_interdiff_opcodes (v2) with many ignorable ranges"""
         # These opcodes were taken from the r1-r2 interdiff at
         # http://reviews.reviewboard.org/r/4257/
-        opcodes = [
+        opcodes: list[DiffOpcode] = [
             ('equal', 0, 631, 0, 631),
             ('replace', 631, 632, 631, 632),
             ('insert', 632, 632, 632, 633),
@@ -273,7 +289,9 @@ class FilterInterdiffOpcodesTests(TestCase):
         ])
         self._sanity_check_opcodes(new_opcodes)
 
-    def test_filter_interdiff_opcodes_with_replace_overflowing_range(self):
+    def test_filter_interdiff_opcodes_with_replace_overflowing_range(
+        self,
+    ) -> None:
         """Testing filter_interdiff_opcodes with replace overflowing range"""
         # In the case where there's a replace chunk with i2 or j2 larger than
         # the end position of the current range, the chunk would get chopped,
@@ -290,7 +308,7 @@ class FilterInterdiffOpcodesTests(TestCase):
         # This only really tends to happen in early ranges (since the range
         # numbers are small), but could also happen further into the diff
         # if a replace range is huge on one side.
-        opcodes = [
+        opcodes: list[DiffOpcode] = [
             ('equal', 0, 2, 0, 2),
             ('replace', 2, 100, 2, 100),
         ]
@@ -313,9 +331,9 @@ class FilterInterdiffOpcodesTests(TestCase):
         ])
         self._sanity_check_opcodes(new_opcodes)
 
-    def test_filter_interdiff_opcodes_with_trailing_context(self):
+    def test_filter_interdiff_opcodes_with_trailing_context(self) -> None:
         """Testing filter_interdiff_opcodes with trailing context"""
-        opcodes = [
+        opcodes: list[DiffOpcode] = [
             ('replace', 0, 13, 0, 13),
             ('insert', 13, 13, 13, 14),
             ('replace', 13, 20, 14, 21),
@@ -336,9 +354,9 @@ class FilterInterdiffOpcodesTests(TestCase):
         ])
         self._sanity_check_opcodes(new_opcodes)
 
-    def test_filter_interdiff_opcodes_v2_with_trailing_context(self):
+    def test_filter_interdiff_opcodes_v2_with_trailing_context(self) -> None:
         """Testing filter_interdiff_opcodes (v2) with trailing context"""
-        opcodes = [
+        opcodes: list[DiffOpcode] = [
             ('replace', 0, 13, 0, 13),
             ('insert', 13, 13, 13, 14),
             ('replace', 13, 20, 14, 21),
@@ -361,34 +379,46 @@ class FilterInterdiffOpcodesTests(TestCase):
         ])
         self._sanity_check_opcodes(new_opcodes)
 
-    def _sanity_check_opcodes(self, opcodes):
+    def _sanity_check_opcodes(
+        self,
+        opcodes: Iterable[DiffOpcode],
+    ) -> None:
+        """Sanity check test opcodes.
+
+        This will verify that the test data being used is well-formed.
+
+        Args:
+            opcodes (list of reviewboard.diffviewer.differ.DiffOpcode):
+                The test data to check.
+
+        Raises:
+            AssertionError:
+                A test expectation failed.
+        """
         prev_i2 = None
         prev_j2 = None
 
         for index, opcode in enumerate(opcodes):
             tag, i1, i2, j1, j2 = opcode
 
-            if tag in ('equal', 'replace'):
+            if tag in {'equal', 'replace'}:
                 i_range = i2 - i1
                 j_range = j2 - j1
 
                 self.assertEqual(
                     (i2 - i1), (j2 - j1),
-                    'Ranges are not equal for opcode index %s: %r. Got '
-                    'i_range=%s, j_range=%s'
-                    % (index, opcode, i_range, j_range))
+                    f'Ranges are not equal for opcode index {index}: '
+                    f'{opcode!r}. Got i_range={i_range}, j_range={j_range}')
             elif tag == 'insert':
                 self.assertEqual(
                     i1, i2,
-                    'i range should not change for opcode index %s: %r. Got '
-                    'i1=%s, i2=%s'
-                    % (index, opcode, i1, i2))
+                    f'i range should not change for opcode index {index}: '
+                    f'{opcode!r}. Got i1={i1}, i2={i2}')
             elif tag == 'delete':
                 self.assertEqual(
                     j1, j2,
-                    'j range should not change for opcode index %s: %r. Got '
-                    'j1=%s, j2=%s'
-                    % (index, opcode, j1, j2))
+                    f'j range should not change for opcode index {index}: '
+                    f'{opcode!r}. Got j1={j1}, j2={j2}')
 
             if prev_i2 is not None and prev_j2 is not None:
                 self.assertEqual(i1, prev_i2)
@@ -397,9 +427,15 @@ class FilterInterdiffOpcodesTests(TestCase):
             prev_i2 = i2
             prev_j2 = j2
 
-    def _build_dummy_diff_data(self, orig_start, orig_len, new_start, new_len,
-                               pre_lines_of_context=3,
-                               post_lines_of_context=None):
+    def _build_dummy_diff_data(
+        self,
+        orig_start: int,
+        orig_len: int,
+        new_start: int,
+        new_len: int,
+        pre_lines_of_context: int = 3,
+        post_lines_of_context: (int | None) = None,
+    ) -> bytes:
         """Build diff data that can be used for interdiff tests.
 
         This will create a diff for one hunk in a file covering the provided
@@ -419,8 +455,8 @@ class FilterInterdiffOpcodesTests(TestCase):
                 The 1-based index for the new range (as in
                 ``... +start,len @@``).
 
-            orig_len (int):
-                The length of the original range (as in ``... +start,len @@``),
+            new_len (int):
+                The length of the new range (as in ``... +start,len @@``),
                 factoring in context lines (equals) and inserts.
 
             pre_lines_of_context (int, optional):
@@ -464,9 +500,9 @@ class FilterInterdiffOpcodesTests(TestCase):
 class PostProcessFilteredEqualsTests(TestCase):
     """Unit tests for post_process_filtered_equals."""
 
-    def test_post_process_filtered_equals(self):
+    def test_post_process_filtered_equals(self) -> None:
         """Testing post_process_filtered_equals"""
-        opcodes = [
+        opcodes: list[DiffOpcodeWithMetadata] = [
             ('equal', 0, 10, 0, 10, {}),
             ('insert', 10, 20, 0, 10, {}),
             ('equal', 20, 30, 10, 20, {}),
@@ -484,15 +520,15 @@ class PostProcessFilteredEqualsTests(TestCase):
                 ('equal', 20, 50, 10, 40, {}),
             ])
 
-    def test_post_process_filtered_equals_with_indentation(self):
+    def test_post_process_filtered_equals_with_indentation(self) -> None:
         """Testing post_process_filtered_equals with indentation changes"""
-        opcodes = [
+        opcodes: list[DiffOpcodeWithMetadata] = [
             ('equal', 0, 10, 0, 10, {}),
             ('insert', 10, 20, 0, 10, {}),
             ('equal', 20, 30, 10, 20, {
                 'indentation_changes': {
                     '21-11': (True, 4),
-                }
+                },
             }),
             ('equal', 30, 40, 20, 30, {}),
             ('filtered-equal', 30, 50, 20, 40, {}),
@@ -513,11 +549,13 @@ class PostProcessFilteredEqualsTests(TestCase):
                 ('equal', 30, 50, 20, 40, {}),
             ])
 
-    def test_post_process_filtered_equals_with_adjacent_indentation(self):
+    def test_post_process_filtered_equals_with_adjacent_indentation(
+        self,
+    ) -> None:
         """Testing post_process_filtered_equals with
         adjacent indentation changes
         """
-        opcodes = [
+        opcodes: list[DiffOpcodeWithMetadata] = [
             ('equal', 0, 10, 0, 10, {}),
             ('insert', 10, 20, 0, 10, {}),
             ('equal', 20, 30, 10, 20, {

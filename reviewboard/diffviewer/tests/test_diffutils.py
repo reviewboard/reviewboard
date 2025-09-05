@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import kgb
 from itertools import zip_longest
+from typing import TYPE_CHECKING, NoReturn
 
 from django.contrib.auth.models import User
 from django.test.client import RequestFactory
@@ -37,11 +38,22 @@ from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.testing.testcase import BaseFileDiffAncestorTests, TestCase
 
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+    from typing import Any
+
+    from django.http import HttpRequest
+    from typelets.json import JSONDict
+
+    from reviewboard.diffviewer.chunk_generator import DiffChunk
+    from reviewboard.scmtools.models import Repository
+    from reviewboard.testing.testcase import FileDiffDetails
+
 
 class GetDiffDataChunksInfoTests(TestCase):
     """Unit tests for get_diff_data_chunks_info."""
 
-    def test_with_basic_diff(self):
+    def test_with_basic_diff(self) -> None:
         """Testing get_diff_data_chunks_info with a basic one-chunk diff"""
         self.assertEqual(
             get_diff_data_chunks_info(
@@ -78,7 +90,7 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
-    def test_with_multiple_chunks(self):
+    def test_with_multiple_chunks(self) -> None:
         """Testing get_diff_data_chunks_info with multiple chunks in a diff"""
         self.assertEqual(
             get_diff_data_chunks_info(
@@ -142,7 +154,7 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
-    def test_with_multiple_chunks_no_context(self):
+    def test_with_multiple_chunks_no_context(self) -> None:
         """Testing get_diff_data_chunks_info with multiple chunks and no
         context
         """
@@ -196,7 +208,7 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
-    def test_with_all_inserts(self):
+    def test_with_all_inserts(self) -> None:
         """Testing get_diff_data_chunks_info with all inserts"""
         self.assertEqual(
             get_diff_data_chunks_info(
@@ -232,7 +244,7 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
-    def test_with_all_deletes(self):
+    def test_with_all_deletes(self) -> None:
         """Testing get_diff_data_chunks_info with all deletes"""
         self.assertEqual(
             get_diff_data_chunks_info(
@@ -268,7 +280,7 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
-    def test_with_complex_chunk(self):
+    def test_with_complex_chunk(self) -> None:
         """Testing get_diff_data_chunks_info with complex chunk containing
         inserts, deletes, and equals
         """
@@ -309,7 +321,7 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
-    def test_with_change_on_first_line(self):
+    def test_with_change_on_first_line(self) -> None:
         """Testing get_diff_data_chunks_info with change on first line"""
         self.assertEqual(
             get_diff_data_chunks_info(
@@ -341,7 +353,7 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
-    def test_with_change_on_second_line(self):
+    def test_with_change_on_second_line(self) -> None:
         """Testing get_diff_data_chunks_info with change on second line"""
         self.assertEqual(
             get_diff_data_chunks_info(
@@ -374,7 +386,7 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
-    def test_with_change_on_third_line(self):
+    def test_with_change_on_third_line(self) -> None:
         """Testing get_diff_data_chunks_info with change on third line"""
         self.assertEqual(
             get_diff_data_chunks_info(
@@ -408,7 +420,7 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
-    def test_with_single_line_replace(self):
+    def test_with_single_line_replace(self) -> None:
         """Testing get_diff_data_chunks_info with single-line diff with
         replaced line
         """
@@ -438,7 +450,7 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
-    def test_with_insert_before_only_line(self):
+    def test_with_insert_before_only_line(self) -> None:
         """Testing get_diff_data_chunks_info with insert before only line
         in diff
         """
@@ -468,7 +480,7 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
-    def test_with_no_lengths(self):
+    def test_with_no_lengths(self) -> None:
         """Testing get_diff_data_chunks_info with no lengths specified"""
         self.assertEqual(
             get_diff_data_chunks_info(
@@ -496,7 +508,7 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
-    def test_with_header_context(self):
+    def test_with_header_context(self) -> None:
         """Testing get_diff_data_chunks_info with class/function context
         shown in the header
         """
@@ -541,9 +553,10 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
     fixtures = [
         'test_users',
-    ] + BaseFileDiffAncestorTests.fixtures
+        *BaseFileDiffAncestorTests.fixtures,
+    ]
 
-    def test_interdiff_when_renaming_twice(self):
+    def test_interdiff_when_renaming_twice(self) -> None:
         """Testing get_diff_files with interdiff when renaming twice"""
         repository = self.create_repository(tool_name='Git')
         review_request = self.create_review_request(repository=repository)
@@ -599,7 +612,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.assertEqual(two_to_three['orig_filename'], 'foo2.txt')
         self.assertEqual(two_to_three['modified_filename'], 'foo3.txt')
 
-    def test_get_diff_files_with_interdiff_and_files_same_source(self):
+    def test_get_diff_files_with_interdiff_and_files_same_source(self) -> None:
         """Testing get_diff_files with interdiff and multiple files using the
         same source_file
         """
@@ -756,7 +769,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.assertFalse(diff_file['is_new_file'])
         self.assertTrue(diff_file['force_interdiff'])
 
-    def test_get_diff_files_with_interdiff_using_filediff_only(self):
+    def test_get_diff_files_with_interdiff_using_filediff_only(self) -> None:
         """Testing get_diff_files with interdiff using filediff but no
         interfilediff
         """
@@ -817,7 +830,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.assertFalse(diff_file['is_new_file'])
         self.assertTrue(diff_file['force_interdiff'])
 
-    def test_get_diff_files_with_interdiff_using_both_filediffs(self):
+    def test_get_diff_files_with_interdiff_using_both_filediffs(self) -> None:
         """Testing get_diff_files with interdiff using filediff and
         interfilediff
         """
@@ -878,7 +891,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.assertFalse(diff_file['is_new_file'])
         self.assertTrue(diff_file['force_interdiff'])
 
-    def test_get_diff_files_history(self):
+    def test_get_diff_files_history(self) -> None:
         """Testing get_diff_files for a diffset with history"""
         self.set_up_filediffs()
 
@@ -905,7 +918,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
             self.assertIsNone(diff_file['base_filediff'])
 
-    def test_with_diff_files_history_query_count(self):
+    def test_with_diff_files_history_query_count(self) -> None:
         """Testing get_diff_files query count for a diffset with history"""
         self.set_up_filediffs()
 
@@ -920,7 +933,9 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
             get_diff_files(diffset=self.diffset,
                            diff_settings=DiffSettings.create())
 
-    def test_get_diff_files_history_query_count_ancestors_precomputed(self):
+    def test_get_diff_files_history_query_count_ancestors_precomputed(
+        self,
+    ) -> None:
         """Testing get_diff_files query count for a whole diffset with history
         when ancestors have been computed
         """
@@ -940,7 +955,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
             get_diff_files(diffset=self.diffset,
                            diff_settings=DiffSettings.create())
 
-    def test_get_diff_files_query_count_filediff(self):
+    def test_get_diff_files_query_count_filediff(self) -> None:
         """Testing get_diff_files for a single FileDiff with history"""
         self.set_up_filediffs()
 
@@ -949,9 +964,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         review_request.diffset_history.diffsets.add(self.diffset)
 
         by_details = self.get_filediffs_by_details()
-        filediff = by_details[(
-            3, 'foo', '257cc56', 'qux', '03b37a0',
-        )]
+        filediff = by_details[(3, 'foo', '257cc56', 'qux', '03b37a0')]
 
         with self.assertNumQueries(4):
             files = get_diff_files(diffset=self.diffset,
@@ -964,7 +977,9 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.assertEqual(f['filediff'], filediff)
         self.assertIsNone(f['base_filediff'])
 
-    def test_get_diff_files_query_count_filediff_ancestors_precomupted(self):
+    def test_get_diff_files_query_count_filediff_ancestors_precomupted(
+        self,
+    ) -> None:
         """Testing get_diff_files query count for a single FileDiff with
         history when ancestors are precomputed
         """
@@ -979,9 +994,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         for f in self.filediffs:
             f.get_ancestors(minimal=False, filediffs=self.filediffs)
 
-        filediff = by_details[(
-            3, 'foo', '257cc56', 'qux', '03b37a0',
-        )]
+        filediff = by_details[3, 'foo', '257cc56', 'qux', '03b37a0']
 
         with self.assertNumQueries(1):
             files = get_diff_files(diffset=self.diffset,
@@ -994,7 +1007,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.assertEqual(f['filediff'], filediff)
         self.assertIsNone(f['base_filediff'])
 
-    def test_get_diff_files_with_history_base_commit(self):
+    def test_get_diff_files_with_history_base_commit(self) -> None:
         """Testing get_diff_files for a whole diffset with history with a
         specified base commit ID
         """
@@ -1050,7 +1063,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         self.assertEqual(results, expected_results)
 
-    def test_get_diff_files_with_history_base_commit_as_latest(self):
+    def test_get_diff_files_with_history_base_commit_as_latest(self) -> None:
         """Testing get_diff_files for a whole diffset with history with a
         specified base commit as the latest commit
         """
@@ -1066,7 +1079,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         self.assertEqual(files, [])
 
-    def test_get_diff_files_with_history_tip_commit(self):
+    def test_get_diff_files_with_history_tip_commit(self) -> None:
         """Testing get_diff_files for a whole diffset with history with a
         specified tip commit
         """
@@ -1126,7 +1139,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         self.assertEqual(results, expected_results)
 
-    def test_get_diff_files_with_history_tip_commit_precomputed(self):
+    def test_get_diff_files_with_history_tip_commit_precomputed(self) -> None:
         """Testing get_diff_files for a whole diffset with history with a
         specified tip commit when ancestors have been precomputed
         """
@@ -1177,7 +1190,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         self.assertEqual(results, expected_results)
 
-    def test_get_diff_files_with_history_base_tip(self):
+    def test_get_diff_files_with_history_base_tip(self) -> None:
         """Testing get_diff_files for a whole diffset with history with a
         specified base and tip commit
         """
@@ -1235,7 +1248,9 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
 
         self.assertEqual(results, expected_results)
 
-    def test_get_diff_files_with_history_base_tip_ancestors_precomputed(self):
+    def test_get_diff_files_with_history_base_tip_ancestors_precomputed(
+        self,
+    ) -> None:
         """Testing get_diff_files for a whole diffset with history with a
         specified base and tip commit when ancestors are precomputed
         """
@@ -1317,7 +1332,11 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.assertFalse(files[1]['filediff'].is_new)
         self.assertFalse(files[1]['is_new_file'])
 
-    def _get_filediff_base_mapping_from_details(self, by_details, details):
+    def _get_filediff_base_mapping_from_details(
+        self,
+        by_details: Mapping[FileDiffDetails | None, FileDiff],
+        details: Sequence[tuple[FileDiffDetails, FileDiffDetails | None]],
+    ) -> Mapping[FileDiff, FileDiff | None]:
         """Return a mapping from FileDiffs to base FileDiffs from the details.
 
         Args:
@@ -1355,7 +1374,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         }
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_get_diff_files_filename_normalization_extra_data(self):
+    def test_get_diff_files_filename_normalization_extra_data(self) -> None:
         """Testing that filename normalization from get_diff_files receives
         FileDiff extra_data
         """
@@ -1374,6 +1393,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         filediff.extra_data['test'] = True
 
         tool_class = repository.scmtool_class
+        assert tool_class is not None
         self.spy_on(tool_class.normalize_path_for_display,
                     owner=tool_class)
 
@@ -1384,7 +1404,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.assertSpyCalledWith(tool_class.normalize_path_for_display,
                                  'foo.txt', extra_data={'test': True})
 
-    def test_get_diff_files_public_state(self):
+    def test_get_diff_files_public_state(self) -> None:
         """Testing get_diff_files public state"""
         doc = User.objects.get(username='doc')
         repository = self.create_repository(tool_name='Git')
@@ -1408,7 +1428,7 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
                                     diff_settings=DiffSettings.create())
         self.assertTrue(diff_files[0]['public'])
 
-    def test_get_diff_files_public_state_with_interdiff(self):
+    def test_get_diff_files_public_state_with_interdiff(self) -> None:
         """Testing get_diff_files public state with interdiff"""
         doc = User.objects.get(username='doc')
         repository = self.create_repository(tool_name='Git')
@@ -1481,13 +1501,14 @@ class GetFileDiffsMatchTests(TestCase):
 
     fixtures = ['test_scmtools', 'test_users']
 
-    def setUp(self):
-        super(GetFileDiffsMatchTests, self).setUp()
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
 
         review_request = self.create_review_request(create_repository=True)
         self.diffset = self.create_diffset(review_request)
 
-    def test_with_filediff_none(self):
+    def test_with_filediff_none(self) -> None:
         """Testing get_filediffs_match with either filediff as None"""
         filediff = self.create_filediff(self.diffset, save=False)
 
@@ -1499,7 +1520,7 @@ class GetFileDiffsMatchTests(TestCase):
         with self.assertRaisesMessage(ValueError, message):
             self.assertFalse(get_filediffs_match(None, None))
 
-    def test_with_diffs_equal(self):
+    def test_with_diffs_equal(self) -> None:
         """Testing get_filediffs_match with diffs equal"""
         filediff1 = self.create_filediff(self.diffset,
                                          diff=b'abc',
@@ -1510,7 +1531,7 @@ class GetFileDiffsMatchTests(TestCase):
 
         self.assertTrue(get_filediffs_match(filediff1, filediff2))
 
-    def test_with_deleted_true(self):
+    def test_with_deleted_true(self) -> None:
         """Testing get_filediffs_match with deleted flags both set"""
         self.assertTrue(get_filediffs_match(
             self.create_filediff(self.diffset,
@@ -1522,7 +1543,7 @@ class GetFileDiffsMatchTests(TestCase):
                                  status=FileDiff.DELETED,
                                  save=False)))
 
-    def test_with_sha256_equal(self):
+    def test_with_sha256_equal(self) -> None:
         """Testing get_filediffs_match with patched SHA256 hashes equal"""
         filediff1 = self.create_filediff(self.diffset,
                                          diff=b'abc',
@@ -1536,7 +1557,7 @@ class GetFileDiffsMatchTests(TestCase):
 
         self.assertTrue(get_filediffs_match(filediff1, filediff2))
 
-    def test_with_sha1_equal(self):
+    def test_with_sha1_equal(self) -> None:
         """Testing get_filediffs_match with patched SHA1 hashes equal"""
         filediff1 = self.create_filediff(self.diffset,
                                          diff=b'abc',
@@ -1550,7 +1571,7 @@ class GetFileDiffsMatchTests(TestCase):
 
         self.assertTrue(get_filediffs_match(filediff1, filediff2))
 
-    def test_with_sha1_not_equal(self):
+    def test_with_sha1_not_equal(self) -> None:
         """Testing get_filediffs_match with patched SHA1 hashes not equal"""
         filediff1 = self.create_filediff(self.diffset,
                                          diff=b'abc',
@@ -1564,7 +1585,7 @@ class GetFileDiffsMatchTests(TestCase):
 
         self.assertFalse(get_filediffs_match(filediff1, filediff2))
 
-    def test_with_sha256_not_equal_and_sha1_equal(self):
+    def test_with_sha256_not_equal_and_sha1_equal(self) -> None:
         """Testing get_filediffs_match with patched SHA256 hashes not equal
         and patched SHA1 hashes equal
         """
@@ -1591,7 +1612,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
     """Unit tests for get_matched_interdiff_files."""
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_simple_matches(self):
+    def test_with_simple_matches(self) -> None:
         """Testing get_matched_interdiff_files with simple source file matches
         """
         repository = self.create_repository(tool_name='Git')
@@ -1644,7 +1665,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_new_added_file_left(self):
+    def test_with_new_added_file_left(self) -> None:
         """Testing get_matched_interdiff_files with new added file on left
         side only
         """
@@ -1691,7 +1712,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_new_added_file_right(self):
+    def test_with_new_added_file_right(self) -> None:
         """Testing get_matched_interdiff_files with new added file on right
         side only
         """
@@ -1714,7 +1735,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
-            source_revision=123,
+            source_revision='123',
             dest_file='foo.txt',
             diff=b'interdiff1')
 
@@ -1738,7 +1759,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_new_added_file_both(self):
+    def test_with_new_added_file_both(self) -> None:
         """Testing get_matched_interdiff_files with new added file on both
         sides
         """
@@ -1792,7 +1813,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_new_deleted_file_left(self):
+    def test_with_new_deleted_file_left(self) -> None:
         """Testing get_matched_interdiff_files with new deleted file on left
         side only
         """
@@ -1840,7 +1861,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_new_deleted_file_right(self):
+    def test_with_new_deleted_file_right(self) -> None:
         """Testing get_matched_interdiff_files with new deleted file on right
         side only
         """
@@ -1888,7 +1909,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_new_deleted_file_both(self):
+    def test_with_new_deleted_file_both(self) -> None:
         """Testing get_matched_interdiff_files with new deleted file on both
         sides
         """
@@ -1944,7 +1965,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_new_modified_file_right(self):
+    def test_with_new_modified_file_right(self) -> None:
         """Testing get_matched_interdiff_files with new modified file on
         right side
         """
@@ -1991,7 +2012,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_reverted_file(self):
+    def test_with_reverted_file(self) -> None:
         """Testing get_matched_interdiff_files with reverted file"""
         repository = self.create_repository(tool_name='Git')
         review_request = self.create_review_request(repository=repository)
@@ -2036,7 +2057,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_both_renames(self):
+    def test_with_both_renames(self) -> None:
         """Testing get_matched_interdiff_files with matching renames on both
         sides
         """
@@ -2090,7 +2111,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_new_renames(self):
+    def test_with_new_renames(self) -> None:
         """Testing get_matched_interdiff_files with modified on left side,
         modified + renamed on right
         """
@@ -2144,7 +2165,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_multiple_copies(self):
+    def test_with_multiple_copies(self) -> None:
         """Testing get_matched_interdiff_files with multiple copies of file
         from left on right
         """
@@ -2206,7 +2227,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_added_left_only(self):
+    def test_with_added_left_only(self) -> None:
         """Testing get_matched_interdiff_files with file added in left only"""
         repository = self.create_repository(tool_name='Git')
         review_request = self.create_review_request(repository=repository)
@@ -2263,7 +2284,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_deleted_right_only(self):
+    def test_with_deleted_right_only(self) -> None:
         """Testing get_matched_interdiff_files with file deleted in right only
         """
         repository = self.create_repository(tool_name='Git')
@@ -2319,7 +2340,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_same_names_multiple_ops(self):
+    def test_with_same_names_multiple_ops(self) -> None:
         """Testing get_matched_interdiff_files with same names and multiple
         operation (pathological case)
         """
@@ -2414,7 +2435,7 @@ class GetMatchedInterdiffFilesTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_with_new_file_same_name(self):
+    def test_with_new_file_same_name(self) -> None:
         """Testing get_matched_interdiff_files with new file on right with
         same name from left
         """
@@ -2505,7 +2526,8 @@ class GetSortedFileDiffsTests(TestCase):
 
     fixtures = [
         'test_users',
-    ] + BaseFileDiffAncestorTests.fixtures
+        *BaseFileDiffAncestorTests.fixtures,
+    ]
 
     def test_get_sorted_filediffs(self) -> None:
         """Testing get_sorted_filediffs"""
@@ -2611,17 +2633,20 @@ class GetSortedFileDiffsTests(TestCase):
 class GetLineChangedRegionsTests(TestCase):
     """Unit tests for get_line_changed_regions."""
 
-    def test_get_line_changed_regions(self):
+    def test_get_line_changed_regions(self) -> None:
         """Testing get_line_changed_regions"""
-        def deep_equal(A, B):
-            typea, typeb = type(A), type(B)
+        def deep_equal(
+            a: tuple[Any, ...] | list[Any],
+            b: tuple[Any, ...] | list[Any],
+        ) -> None:
+            typea, typeb = type(a), type(b)
             self.assertEqual(typea, typeb)
 
             if typea is tuple or typea is list:
-                for a, b in zip_longest(A, B):
-                    deep_equal(a, b)
+                for ai, bi in zip_longest(a, b):
+                    deep_equal(ai, bi)
             else:
-                self.assertEqual(A, B)
+                self.assertEqual(a, b)
 
         deep_equal(get_line_changed_regions(None, None),
                    (None, None))
@@ -2646,18 +2671,22 @@ class GetLineChangedRegionsTests(TestCase):
 class GetDisplayedDiffLineRangesTests(TestCase):
     """Unit tests for get_displayed_diff_line_ranges."""
 
-    def test_with_delete_single_lines(self):
+    def test_with_delete_single_lines(self) -> None:
         """Testing get_displayed_diff_line_ranges with delete chunk and single
         virtual line
         """
-        chunks = [
+        chunks: list[DiffChunk] = [
             {
                 'change': 'delete',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (10, 20, 'deleted line', [], '', '', [], False),
+                    (10, 20, 'deleted line', [], None, '', [], False, None),
                     # ...
-                    (50, 60, 'deleted line', [], '', '', [], False),
+                    (50, 60, 'deleted line', [], None, '', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
         ]
 
@@ -2669,18 +2698,22 @@ class GetDisplayedDiffLineRangesTests(TestCase):
                 'chunk_range': (chunks[0], chunks[0]),
             }, None))
 
-    def test_with_delete_multiple_lines(self):
-        """Testing get_displayed_diff_line_ranges with delete chunk and multiple
-        virtual lines
+    def test_with_delete_multiple_lines(self) -> None:
+        """Testing get_displayed_diff_line_ranges with delete chunk and
+        multiple virtual lines
         """
-        chunks = [
+        chunks: list[DiffChunk] = [
             {
                 'change': 'delete',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (10, 20, 'deleted line', [], '', '', [], False),
+                    (10, 20, 'deleted line', [], None, '', [], False, None),
                     # ...
-                    (50, 60, 'deleted line', [], '', '', [], False),
+                    (50, 60, 'deleted line', [], None, '', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
         ]
 
@@ -2692,18 +2725,22 @@ class GetDisplayedDiffLineRangesTests(TestCase):
                 'chunk_range': (chunks[0], chunks[0]),
             }, None))
 
-    def test_with_replace_single_line(self):
+    def test_with_replace_single_line(self) -> None:
         """Testing get_displayed_diff_line_ranges with replace chunk and single
         virtual line
         """
-        chunks = [
+        chunks: list[DiffChunk] = [
             {
                 'change': 'replace',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (10, 20, 'foo', [], 30, 'replaced line', [], False),
+                    (10, 20, 'foo', [], 30, 'replaced line', [], False, None),
                     # ...
-                    (50, 60, 'foo', [], 70, 'replaced line', [], False),
+                    (50, 60, 'foo', [], 70, 'replaced line', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
         ]
 
@@ -2719,18 +2756,22 @@ class GetDisplayedDiffLineRangesTests(TestCase):
                 'chunk_range': (chunks[0], chunks[0]),
             }))
 
-    def test_with_replace_multiple_lines(self):
+    def test_with_replace_multiple_lines(self) -> None:
         """Testing get_displayed_diff_line_ranges with replace chunk and
         multiple virtual lines
         """
-        chunks = [
+        chunks: list[DiffChunk] = [
             {
                 'change': 'replace',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (10, 20, 'foo', [], 30, 'replaced line', [], False),
+                    (10, 20, 'foo', [], 30, 'replaced line', [], False, None),
                     # ...
-                    (50, 60, 'foo', [], 70, 'replaced line', [], False),
+                    (50, 60, 'foo', [], 70, 'replaced line', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
         ]
 
@@ -2746,18 +2787,22 @@ class GetDisplayedDiffLineRangesTests(TestCase):
                 'chunk_range': (chunks[0], chunks[0]),
             }))
 
-    def test_with_insert_single_line(self):
+    def test_with_insert_single_line(self) -> None:
         """Testing get_displayed_diff_line_ranges with insert chunk and single
         virtual line
         """
-        chunks = [
+        chunks: list[DiffChunk] = [
             {
                 'change': 'insert',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (10, '', '', [], 20, 'inserted line', [], False),
+                    (10, None, '', [], 20, 'inserted line', [], False, None),
                     # ...
-                    (50, '', '', [], 60, 'inserted line', [], False),
+                    (50, None, '', [], 60, 'inserted line', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
         ]
 
@@ -2769,18 +2814,22 @@ class GetDisplayedDiffLineRangesTests(TestCase):
                 'chunk_range': (chunks[0], chunks[0]),
             }))
 
-    def test_with_insert_multiple_lines(self):
-        """Testing get_displayed_diff_line_ranges with insert chunk and multiple
-        virtual lines
+    def test_with_insert_multiple_lines(self) -> None:
+        """Testing get_displayed_diff_line_ranges with insert chunk and
+        multiple virtual lines
         """
-        chunks = [
+        chunks: list[DiffChunk] = [
             {
                 'change': 'insert',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (10, '', '', [], 20, 'inserted line', [], False),
+                    (10, None, '', [], 20, 'inserted line', [], False, None),
                     # ...
-                    (50, '', '', [], 60, 'inserted line', [], False),
+                    (50, None, '', [], 60, 'inserted line', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
         ]
 
@@ -2792,18 +2841,22 @@ class GetDisplayedDiffLineRangesTests(TestCase):
                 'chunk_range': (chunks[0], chunks[0]),
             }))
 
-    def test_with_fake_equal_orig(self):
+    def test_with_fake_equal_orig(self) -> None:
         """Testing get_displayed_diff_line_ranges with fake equal from
         original side of interdiff
         """
-        chunks = [
+        chunks: list[DiffChunk] = [
             {
                 'change': 'equal',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (10, '', '', [], 20, 'inserted line', [], False),
+                    (10, None, '', [], 20, 'inserted line', [], False, None),
                     # ...
-                    (50, '', '', [], 60, 'inserted line', [], False),
+                    (50, None, '', [], 60, 'inserted line', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
         ]
 
@@ -2815,18 +2868,22 @@ class GetDisplayedDiffLineRangesTests(TestCase):
                 'chunk_range': (chunks[0], chunks[0]),
             }))
 
-    def test_with_fake_equal_patched(self):
+    def test_with_fake_equal_patched(self) -> None:
         """Testing get_displayed_diff_line_ranges with fake equal from
         patched side of interdiff
         """
-        chunks = [
+        chunks: list[DiffChunk] = [
             {
                 'change': 'equal',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (10, 20, 'deleted line', [], '', '', [], False),
+                    (10, 20, 'deleted line', [], None, '', [], False, None),
                     # ...
-                    (50, 60, 'deleted line', [], '', '', [], False),
+                    (50, 60, 'deleted line', [], None, '', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
         ]
 
@@ -2838,36 +2895,48 @@ class GetDisplayedDiffLineRangesTests(TestCase):
                 'chunk_range': (chunks[0], chunks[0]),
             }, None))
 
-    def test_with_spanning_insert_delete(self):
+    def test_with_spanning_insert_delete(self) -> None:
         """Testing get_displayed_diff_line_ranges with spanning delete and
         insert
         """
-        chunks = [
+        chunks: list[DiffChunk] = [
             {
                 'change': 'delete',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (10, 20, 'deleted line', [], '', '', [], False),
+                    (10, 20, 'deleted line', [], None, '', [], False, None),
                     # ...
-                    (50, 60, 'deleted line', [], '', '', [], False),
+                    (50, 60, 'deleted line', [], None, '', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
             {
                 'change': 'insert',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (51, '', '', [], 61, 'inserted line', [], False),
+                    (51, None, '', [], 61, 'inserted line', [], False, None),
                     # ...
-                    (100, '', '', [], 110, 'inserted line', [], False),
+                    (100, None, '', [], 110, 'inserted line', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
             {
                 'change': 'equal',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
                     (101, 61, 'equal line', [], 111, 'equal line', [],
-                     False),
+                     False, None),
                     # ...
                     (200, 160, 'equal line', [], 210, 'equal line', [],
-                     False),
+                     False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
         ]
 
@@ -2883,36 +2952,48 @@ class GetDisplayedDiffLineRangesTests(TestCase):
                 'chunk_range': (chunks[1], chunks[1]),
             }))
 
-    def test_with_spanning_delete_insert(self):
+    def test_with_spanning_delete_insert(self) -> None:
         """Testing get_displayed_diff_line_ranges with spanning insert and
         delete
         """
-        chunks = [
+        chunks: list[DiffChunk] = [
             {
                 'change': 'insert',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (10, '', '', [], 20, 'inserted line', [], False),
+                    (10, None, '', [], 20, 'inserted line', [], False, None),
                     # ...
-                    (50, '', '', [], 60, 'inserted line', [], False),
+                    (50, None, '', [], 60, 'inserted line', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
             {
                 'change': 'delete',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (51, 61, 'inserted line', [], '', '', [], False),
+                    (51, 61, 'inserted line', [], None, '', [], False, None),
                     # ...
-                    (100, 110, 'inserted line', [], '', '', [], False),
+                    (100, 110, 'inserted line', [], None, '', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
             {
                 'change': 'equal',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
                     (101, 111, 'equal line', [], 61, 'equal line', [],
-                     False),
+                     False, None),
                     # ...
                     (200, 210, 'equal line', [], 160, 'equal line', [],
-                     False),
+                     False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
         ]
 
@@ -2928,26 +3009,34 @@ class GetDisplayedDiffLineRangesTests(TestCase):
                 'chunk_range': (chunks[0], chunks[0]),
             }))
 
-    def test_with_spanning_last_chunk(self):
+    def test_with_spanning_last_chunk(self) -> None:
         """Testing get_displayed_diff_line_ranges with spanning chunks through
         last chunk
         """
-        chunks = [
+        chunks: list[DiffChunk] = [
             {
                 'change': 'delete',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (10, 20, 'deleted line', [], '', '', [], False),
+                    (10, 20, 'deleted line', [], None, '', [], False, None),
                     # ...
-                    (50, 60, 'deleted line', [], '', '', [], False),
+                    (50, 60, 'deleted line', [], None, '', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
             {
                 'change': 'insert',
+                'collapsable': False,
+                'index': 1,
                 'lines': [
-                    (51, '', '', [], 61, 'inserted line', [], False),
+                    (51, None, '', [], 61, 'inserted line', [], False, None),
                     # ...
-                    (100, '', '', [], 110, 'inserted line', [], False),
+                    (100, None, '', [], 110, 'inserted line', [], False, None),
                 ],
+                'meta': {},
+                'numlines': 1,
             },
         ]
 
@@ -2967,51 +3056,41 @@ class GetDisplayedDiffLineRangesTests(TestCase):
 class DiffExpansionHeaderTests(TestCase):
     """Testing generation of diff expansion headers."""
 
-    def test_find_header_with_filtered_equal(self):
+    def test_find_header_with_filtered_equal(self) -> None:
         """Testing finding a header in a file that has filtered equals
         chunks
         """
         # See diffviewer.diffutils.get_file_chunks_in_range for a description
         # of chunks and its elements. We fake the elements of lines here
         # because we only need elements 0, 1, and 4 (of what would be a list).
-        chunks = [
+        chunks: list[DiffChunk] = [
             {
                 'change': 'equal',
+                'collapsable': False,
+                'index': 1,
+                'lines': [
+                    (1, 1, '', [], 1, '', [], False, None),
+                    (2, 2, '', [], 1, '', [], False, None),
+                ],
                 'meta': {
                     'left_headers': [(1, 'foo')],
                     'right_headers': [],
                 },
-                'lines': [
-                    {
-                        0: 1,
-                        1: 1,
-                        4: '',
-                    },
-                    {
-                        0: 2,
-                        1: 2,
-                        4: 1,
-                    },
-                ]
+                'numlines': 1,
             },
             {
                 'change': 'equal',
+                'collapsable': False,
+                'index': 2,
+                'lines': [
+                    (3, None, '', [], 2, '', [], False, None),
+                    (4, 3, '', [], 3, '', [], False, None),
+                ],
                 'meta': {
                     'left_headers': [],
                     'right_headers': [(2, 'bar')],
                 },
-                'lines': [
-                    {
-                        0: 3,
-                        1: '',
-                        4: 2,
-                    },
-                    {
-                        0: 4,
-                        1: 3,
-                        4: 3,
-                    },
-                ]
+                'numlines': 1,
             }
         ]
 
@@ -3038,31 +3117,26 @@ class DiffExpansionHeaderTests(TestCase):
                 'right': right_header,
             })
 
-    def test_find_header_with_header_oustside_chunk(self):
+    def test_find_header_with_header_oustside_chunk(self) -> None:
         """Testing finding a header in a file where the header in a chunk does
         not belong to the chunk it is in
         """
-        chunks = [
+        chunks: list[DiffChunk] = [
             {
                 'change': 'equal',
+                'collapsable': False,
+                'index': 1,
+                'lines': [
+                    (1, 1, '', [], 1, '', [], False, None),
+                    (2, 2, '', [], 1, '', [], False, None),
+                ],
                 'meta': {
                     'left_headers': [
                         (1, 'foo'),
                         (100, 'bar'),
                     ],
                 },
-                'lines': [
-                    {
-                        0: 1,
-                        1: 1,
-                        4: 1,
-                    },
-                    {
-                        0: 2,
-                        1: 2,
-                        4: 1,
-                    },
-                ]
+                'numlines': 1,
             }
         ]
 
@@ -3077,7 +3151,7 @@ class DiffExpansionHeaderTests(TestCase):
             })
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_headers_use_correct_line_insert(self):
+    def test_headers_use_correct_line_insert(self) -> None:
         """Testing header generation for chunks with insert chunks above"""
         line_number = 27  # This is a header line below the chunk of inserts
 
@@ -3109,7 +3183,7 @@ class DiffExpansionHeaderTests(TestCase):
 
         context = {'user': review_request.submitter}
 
-        siteconfig_settings = {
+        siteconfig_settings: JSONDict = {
             'diffviewer_syntax_highlighting': False,
         }
 
@@ -3147,7 +3221,7 @@ class DiffExpansionHeaderTests(TestCase):
                          lines[header['right']['line'] - 1][5])
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_header_correct_line_delete(self):
+    def test_header_correct_line_delete(self) -> None:
         """Testing header generation for chunks with delete chunks above"""
         line_number = 53  # This is a header line below the chunk of deletes
 
@@ -3181,7 +3255,7 @@ class DiffExpansionHeaderTests(TestCase):
 
         context = {'user': review_request.submitter}
 
-        siteconfig_settings = {
+        siteconfig_settings: JSONDict = {
             'diffviewer_syntax_highlighting': False,
         }
 
@@ -3222,7 +3296,7 @@ class DiffExpansionHeaderTests(TestCase):
 class PatchTests(kgb.SpyAgency, TestCase):
     """Unit tests for patch."""
 
-    def test_patch(self):
+    def test_patch(self) -> None:
         """Testing patch"""
         old = (b'int\n'
                b'main()\n'
@@ -3262,7 +3336,7 @@ class PatchTests(kgb.SpyAgency, TestCase):
                 b'@@ -1,9 +1,10 @@\n'
                 b' Test data for a README file.\n'
                 b' \n'
-                b' There\'s a line here.\n'
+                b" There's a line here.\n"
                 b'-\n'
                 b' A line there.\n'
                 b' \n'
@@ -3273,20 +3347,20 @@ class PatchTests(kgb.SpyAgency, TestCase):
                   orig_file=old,
                   filename='foo.c')
 
-    def test_empty_patch(self):
+    def test_empty_patch(self) -> None:
         """Testing patch with an empty diff"""
-        old = 'This is a test'
-        diff = ''
+        old = b'This is a test'
+        diff = b''
         patched = patch(diff=diff,
                         orig_file=old,
                         filename='test.c')
         self.assertEqual(patched, old)
 
-    def test_patch_crlf_file_crlf_diff(self):
+    def test_patch_crlf_file_crlf_diff(self) -> None:
         """Testing patch with a CRLF file and a CRLF diff"""
         old = (b'Test data for a README file.\r\n'
                b'\r\n'
-               b'There\'s a line here.\r\n'
+               b"There's a line here.\r\n"
                b'\r\n'
                b'A line there.\r\n'
                b'\r\n'
@@ -3294,7 +3368,7 @@ class PatchTests(kgb.SpyAgency, TestCase):
 
         new = (b'Test data for a README file.\n'
                b'\n'
-               b'There\'s a line here.\n'
+               b"There's a line here.\n"
                b'A line there.\n'
                b'\n'
                b'And here.\n')
@@ -3304,7 +3378,7 @@ class PatchTests(kgb.SpyAgency, TestCase):
                 b'@@ -1,7 +1,6 @@\n'
                 b' Test data for a README file.\r\n'
                 b' \r\n'
-                b' There\'s a line here.\r\n'
+                b" There's a line here.\r\n"
                 b'-\r\n'
                 b' A line there.\r\n'
                 b' \r\n'
@@ -3315,11 +3389,11 @@ class PatchTests(kgb.SpyAgency, TestCase):
                         filename='README')
         self.assertEqual(patched, new)
 
-    def test_patch_cr_file_crlf_diff(self):
+    def test_patch_cr_file_crlf_diff(self) -> None:
         """Testing patch with a CR file and a CRLF diff"""
         old = (b'Test data for a README file.\n'
                b'\n'
-               b'There\'s a line here.\n'
+               b"There's a line here.\n"
                b'\n'
                b'A line there.\n'
                b'\n'
@@ -3327,7 +3401,7 @@ class PatchTests(kgb.SpyAgency, TestCase):
 
         new = (b'Test data for a README file.\n'
                b'\n'
-               b'There\'s a line here.\n'
+               b"There's a line here.\n"
                b'A line there.\n'
                b'\n'
                b'And here.\n')
@@ -3337,7 +3411,7 @@ class PatchTests(kgb.SpyAgency, TestCase):
                 b'@@ -1,7 +1,6 @@\n'
                 b' Test data for a README file.\r\n'
                 b' \r\n'
-                b' There\'s a line here.\r\n'
+                b" There's a line here.\r\n"
                 b'-\r\n'
                 b' A line there.\r\n'
                 b' \r\n'
@@ -3348,11 +3422,11 @@ class PatchTests(kgb.SpyAgency, TestCase):
                         filename='README')
         self.assertEqual(patched, new)
 
-    def test_patch_crlf_file_cr_diff(self):
+    def test_patch_crlf_file_cr_diff(self) -> None:
         """Testing patch with a CRLF file and a CR diff"""
         old = (b'Test data for a README file.\r\n'
                b'\r\n'
-               b'There\'s a line here.\r\n'
+               b"There's a line here.\r\n"
                b'\r\n'
                b'A line there.\r\n'
                b'\r\n'
@@ -3360,7 +3434,7 @@ class PatchTests(kgb.SpyAgency, TestCase):
 
         new = (b'Test data for a README file.\n'
                b'\n'
-               b'There\'s a line here.\n'
+               b"There's a line here.\n"
                b'A line there.\n'
                b'\n'
                b'And here.\n')
@@ -3370,7 +3444,7 @@ class PatchTests(kgb.SpyAgency, TestCase):
                 b'@@ -1,7 +1,6 @@\n'
                 b' Test data for a README file.\n'
                 b' \n'
-                b' There\'s a line here.\n'
+                b" There's a line here.\n"
                 b'-\n'
                 b' A line there.\n'
                 b' \n'
@@ -3381,14 +3455,14 @@ class PatchTests(kgb.SpyAgency, TestCase):
                         filename='README')
         self.assertEqual(patched, new)
 
-    def test_patch_file_with_fake_no_newline(self):
+    def test_patch_file_with_fake_no_newline(self) -> None:
         """Testing patch with a file indicating no newline
         with a trailing \\r
         """
         old = (
             b'Test data for a README file.\n'
             b'\n'
-            b'There\'s a line here.\n'
+            b"There's a line here.\n"
             b'\n'
             b'A line there.\n'
             b'\n'
@@ -3396,7 +3470,7 @@ class PatchTests(kgb.SpyAgency, TestCase):
             b'\n'
             b'We must have several lines to reproduce this problem.\n'
             b'\n'
-            b'So that there\'s enough hidden context.\n'
+            b"So that there's enough hidden context.\n"
             b'\n'
             b'And dividers so we can reproduce the bug.\n'
             b'\n'
@@ -3406,14 +3480,14 @@ class PatchTests(kgb.SpyAgency, TestCase):
             b'\n'
             b'And here.\n'
             b'Yes, this is a good README file. Like most README files, '
-            b'this doesn\'t tell youanything you really didn\'t already '
+            b"this doesn't tell youanything you really didn't already "
             b'know.\r')
 
         new = (
             b'Test data for a README file.\n'
             b'\n'
-            b'There\'s a line here.\n'
-            b'Here\'s a change!\n'
+            b"There's a line here.\n"
+            b"Here's a change!\n"
             b'\n'
             b'A line there.\n'
             b'\n'
@@ -3421,7 +3495,7 @@ class PatchTests(kgb.SpyAgency, TestCase):
             b'\n'
             b'We must have several lines to reproduce this problem.\n'
             b'\n'
-            b'So that there\'s enough hidden context.\n'
+            b"So that there's enough hidden context.\n"
             b'\n'
             b'And dividers so we can reproduce the bug.\n'
             b'\n'
@@ -3431,7 +3505,7 @@ class PatchTests(kgb.SpyAgency, TestCase):
             b'\n'
             b'And here.\n'
             b'Yes, this is a good README file. Like most README files, '
-            b'this doesn\'t tell youanything you really didn\'t '
+            b"this doesn't tell youanything you really didn't "
             b'already know.\n')
 
         diff = (
@@ -3440,8 +3514,8 @@ class PatchTests(kgb.SpyAgency, TestCase):
             b'@@ -1,6 +1,7 @@\n'
             b' Test data for a README file.\n'
             b' \n'
-            b' There\'s a line here.\n'
-            b'+Here\'s a change!\n'
+            b" There's a line here.\n"
+            b"+Here's a change!\n"
             b' \n'
             b' A line there.\n'
             b' \n'
@@ -3450,10 +3524,10 @@ class PatchTests(kgb.SpyAgency, TestCase):
             b' \n'
             b' And here.\n'
             b'-Yes, this is a good README file. Like most README files, this '
-            b'doesn\'t tell youanything you really didn\'t already know.\n'
+            b"doesn't tell youanything you really didn't already know.\n"
             b'\\ No newline at end of file\n'
             b'+Yes, this is a good README file. Like most README files, this '
-            b'doesn\'t tell youanything you really didn\'t already know.\n')
+            b"doesn't tell youanything you really didn't already know.\n")
 
         patched = patch(diff=diff,
                         orig_file=old,
@@ -3510,13 +3584,14 @@ class GetFileDiffEncodingsTests(TestCase):
 
     fixtures = ['test_scmtools']
 
-    def setUp(self):
-        super(GetFileDiffEncodingsTests, self).setUp()
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
 
         self.repository = self.create_repository(encoding='ascii,iso-8859-15')
         self.diffset = self.create_diffset(repository=self.repository)
 
-    def test_with_stored_encoding(self):
+    def test_with_stored_encoding(self) -> None:
         """Testing get_filediff_encodings with recorded FileDiff.encoding"""
         filediff = self.create_filediff(self.diffset,
                                         encoding='utf-16')
@@ -3524,7 +3599,7 @@ class GetFileDiffEncodingsTests(TestCase):
         self.assertEqual(get_filediff_encodings(filediff),
                          ['utf-16', 'ascii', 'iso-8859-15'])
 
-    def test_with_out_stored_encoding(self):
+    def test_with_out_stored_encoding(self) -> None:
         """Testing get_filediff_encodings without recorded FileDiff.encoding"""
         filediff = self.create_filediff(self.diffset)
 
@@ -3535,12 +3610,13 @@ class GetFileDiffEncodingsTests(TestCase):
 class GetOriginalFileTests(BaseFileDiffAncestorTests):
     """Unit tests for get_original_file."""
 
-    def setUp(self):
-        super(GetOriginalFileTests, self).setUp()
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
 
         self.spy_on(get_original_file_from_repo)
 
-    def test_created_in_first_parent(self):
+    def test_created_in_first_parent(self) -> None:
         """Test get_original_file with a file created in the parent diff of the
         first commit
         """
@@ -3550,11 +3626,11 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
                                         commit_id=1)
 
         self.assertEqual(get_original_file(filediff=filediff), b'bar\n')
-        self.assertTrue(get_original_file_from_repo.called_with(
-            filediff=filediff,
-            request=None))
+        self.assertSpyCalledWith(get_original_file_from_repo,
+                                 filediff=filediff,
+                                 request=None)
 
-    def test_created_in_subsequent_parent(self):
+    def test_created_in_subsequent_parent(self) -> None:
         """Test get_original_file with a file created in the parent diff of a
         subsequent commit
         """
@@ -3564,9 +3640,9 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
                                         commit_id=2)
 
         self.assertEqual(get_original_file(filediff=filediff), b'baz\n')
-        self.assertTrue(get_original_file_from_repo.called)
+        self.assertSpyCalled(get_original_file_from_repo)
 
-    def test_created_previously_deleted(self):
+    def test_created_previously_deleted(self) -> None:
         """Testing get_original_file with a file created and previously deleted
         """
         self.set_up_filediffs()
@@ -3575,9 +3651,9 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
                                         commit_id=3)
 
         self.assertEqual(get_original_file(filediff=filediff), b'')
-        self.assertFalse(get_original_file_from_repo.called)
+        self.assertSpyNotCalled(get_original_file_from_repo)
 
-    def test_renamed(self):
+    def test_renamed(self) -> None:
         """Test get_original_file with a renamed file"""
         self.set_up_filediffs()
 
@@ -3585,9 +3661,9 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
                                         commit_id=3)
 
         self.assertEqual(get_original_file(filediff=filediff), b'foo\n')
-        self.assertFalse(get_original_file_from_repo.called)
+        self.assertSpyNotCalled(get_original_file_from_repo)
 
-    def test_empty_parent_diff_old_patch(self):
+    def test_empty_parent_diff_old_patch(self) -> None:
         """Testing get_original_file with an empty parent diff with patch(1)
         that does not accept empty diffs
         """
@@ -3612,14 +3688,20 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         # input" error, but newer versions will handle it just fine. We stub
         # out patch here to always fail so we can test for the case of an older
         # version of patch without requiring it to be installed.
-        def _patch(diff, orig_file, filename, request=None, **kwargs):
+        def _patch(
+            diff: bytes,
+            orig_file: bytes,
+            filename: str,
+            request: (HttpRequest | None) = None,
+            **kwargs,
+        ) -> NoReturn:
             raise PatchError(
                 filename=filename,
                 error_output=_PATCH_GARBAGE_INPUT,
                 orig_file=orig_file,
-                new_file='tmp123-new',
+                new_file=b'tmp123-new',
                 diff=b'',
-                rejects=None)
+                rejects=b'')
 
         self.spy_on(patch, call_fake=_patch)
 
@@ -3643,7 +3725,7 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         with self.assertNumQueries(0):
             orig = get_original_file(filediff=filediff)
 
-    def test_empty_parent_diff_new_patch(self):
+    def test_empty_parent_diff_new_patch(self) -> None:
         """Testing get_original_file with an empty parent diff with patch(1)
         that does accept empty diffs
         """
@@ -3667,7 +3749,13 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         # Newer versions of patch will allow empty patches. We stub out patch
         # here to always fail so we can test for the case of a newer version
         # of patch without requiring it to be installed.
-        def _patch(diff, orig_file, filename, request=None, **kwargs):
+        def _patch(
+            diff: bytes,
+            orig_file: bytes,
+            filename: str,
+            request: (HttpRequest | None) = None,
+            **kwargs,
+        ) -> bytes:
             # This is the only call to patch() that should be made.
             self.assertEqual(diff,
                              b'diff --git a/corge b/corge\n'
@@ -3694,7 +3782,7 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         with self.assertNumQueries(0):
             orig = get_original_file(filediff=filediff)
 
-    def test_empty_parent_diff_precomputed(self):
+    def test_empty_parent_diff_precomputed(self) -> None:
         """Testing get_original_file with an empty parent diff for which the
         result has been pre-computed
         """
@@ -3716,7 +3804,7 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
 
         self.assertEqual(orig, b'')
 
-    def test_parent_diff_with_rename_and_modern_fields(self):
+    def test_parent_diff_with_rename_and_modern_fields(self) -> None:
         """Testing get_original_file with a file renamed in parent diff
         with modern parent_source_* keys in extra_data
         """
@@ -3761,7 +3849,13 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
 
         request_factory = RequestFactory()
 
-        def _get_file(_self, path, revision, *args, **kwargs):
+        def _get_file(
+            _self: Repository,
+            path: str,
+            revision: str,
+            *args,
+            **kwargs,
+        ) -> bytes:
             self.assertEqual(path, 'old-file')
             self.assertEqual(revision, 'b7a8c9f')
 
@@ -3788,7 +3882,7 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
             orig = get_original_file(filediff=filediff,
                                      request=request_factory.get('/'))
 
-    def test_with_filediff_with_encoding_set(self):
+    def test_with_filediff_with_encoding_set(self) -> None:
         """Testing get_original_file with FileDiff.encoding set"""
         content = 'hello world'.encode('utf-16')
 
@@ -3803,11 +3897,12 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
                                         encoding='utf-16')
 
         self.assertEqual(get_original_file(filediff=filediff), content)
-        self.assertTrue(convert_to_unicode.called_with(
-            content, ['utf-16', 'iso-8859-15']))
-        self.assertTrue(convert_line_endings.called_with('hello world'))
+        self.assertSpyCalledWith(convert_to_unicode,
+                                 content, ['utf-16', 'iso-8859-15'])
+        self.assertSpyCalledWith(convert_line_endings,
+                                 'hello world')
 
-    def test_with_filediff_with_repository_encoding_set(self):
+    def test_with_filediff_with_repository_encoding_set(self) -> None:
         """Testing get_original_file with Repository.encoding set"""
         content = 'hello world'.encode('utf-16')
 
@@ -3821,10 +3916,12 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
         filediff = self.create_filediff(diffset)
 
         self.assertEqual(get_original_file(filediff=filediff), content)
-        self.assertTrue(convert_to_unicode.called_with(content, ['utf-16']))
-        self.assertTrue(convert_line_endings.called_with('hello world'))
+        self.assertSpyCalledWith(convert_to_unicode,
+                                 content, ['utf-16'])
+        self.assertSpyCalledWith(convert_line_endings,
+                                 'hello world')
 
-    def test_with_file_lookup_context(self):
+    def test_with_file_lookup_context(self) -> None:
         """Testing get_original_file with FileLookupContext populated"""
         repository = self.create_repository()
 
@@ -3875,7 +3972,7 @@ class GetOriginalFileTests(BaseFileDiffAncestorTests):
 class SplitLineEndingsTests(TestCase):
     """Unit tests for reviewboard.diffviewer.diffutils.split_line_endings."""
 
-    def test_with_byte_string(self):
+    def test_with_byte_string(self) -> None:
         """Testing split_line_endings with byte string"""
         lines = split_line_endings(
             b'This is line 1\n'
@@ -3898,7 +3995,7 @@ class SplitLineEndingsTests(TestCase):
                 b'This is line 5',
             ])
 
-    def test_with_unicode_string(self):
+    def test_with_unicode_string(self) -> None:
         """Testing split_line_endings with unicode string"""
         lines = split_line_endings(
             'This is line 1\n'
