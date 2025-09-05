@@ -335,13 +335,21 @@ class ReviewsDiffViewerViewTests(kgb.SpyAgency, TestCase):
                 }))
         self.assertEqual(response.status_code, 200)
 
-        files = response.context['files']
-        self.assertEqual({file_info['filediff'] for file_info in files},
-                         {filediff1, filediff2})
+        files = response.context['diff_context']['files']
+
         file1 = files[0]
+        self.assertEqual(file1['filediff'], {
+            'id': filediff1.pk,
+            'revision': filediff1.diffset.revision,
+        })
         self.assertEqual(file1['js_media'], {'js_bundle1', 'js_bundle2'})
         self.assertEqual(file1['css_media'], {'css_bundle1'})
+
         file2 = files[1]
+        self.assertEqual(file2['filediff'], {
+            'id': filediff2.pk,
+            'revision': filediff2.diffset.revision,
+        })
         self.assertNotIn('js_media', file2)
         self.assertNotIn('cs_media', file2)
 
