@@ -175,7 +175,7 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo'
+            url=('https://api.bitbucket.org/2.0/repositories/myuser/myrepo'
                  '?fields=scm'))
 
     def test_check_repository_with_team_plan(self) -> None:
@@ -189,7 +189,7 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
+            url=('https://api.bitbucket.org/2.0/repositories/myteam/myrepo'
                  '?fields=scm'))
 
     def test_check_repository_with_other_user_plan(self) -> None:
@@ -204,7 +204,7 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/2.0/repositories/someuser/myrepo'
+            url=('https://api.bitbucket.org/2.0/repositories/someuser/myrepo'
                  '?fields=scm'))
 
     def test_check_repository_with_slash(self) -> None:
@@ -250,7 +250,7 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
+            url=('https://api.bitbucket.org/2.0/repositories/myteam/myrepo'
                  '?fields=scm'))
 
     def test_authorize(self) -> None:
@@ -272,7 +272,7 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url='https://bitbucket.org/api/2.0/user',
+            url='https://api.bitbucket.org/2.0/user',
             username='myuser',
             password='abc123')
 
@@ -300,7 +300,7 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url='https://bitbucket.org/api/2.0/user',
+            url='https://api.bitbucket.org/2.0/user',
             username='myuser',
             password='abc123')
 
@@ -351,7 +351,7 @@ class BitbucketTests(BitbucketTestCase):
     def test_get_branches(self) -> None:
         """Testing Bitbucket.get_branches"""
         branches_api_response_1 = self.dump_json({
-            'next': ('https://bitbucket.org/api/2.0/repositories/myuser/'
+            'next': ('https://api.bitbucket.org/2.0/repositories/myuser/'
                      'myrepo/refs/branches'
                      '?fields=values.name%2Cvalues.target.hash%2Cnext'
                      '&pagelen=100&page=2'),
@@ -395,14 +395,14 @@ class BitbucketTests(BitbucketTestCase):
         })
 
         paths = {
-            '/api/2.0/repositories/myuser/myrepo': {
+            '/2.0/repositories/myuser/myrepo': {
                 'payload': get_repository_api_response,
             },
-            ('/api/2.0/repositories/myuser/myrepo/refs/branches'
+            ('/2.0/repositories/myuser/myrepo/refs/branches'
              '?fields=values.name%2Cvalues.target.hash%2Cnext&pagelen=100'): {
                  'payload': branches_api_response_1,
             },
-            ('/api/2.0/repositories/myuser/myrepo/refs/branches'
+            ('/2.0/repositories/myuser/myrepo/refs/branches'
              '?fields=values.name%2Cvalues.target.hash%2Cnext&page=2'
              '&pagelen=100'): {
                  'payload': branches_api_response_2,
@@ -416,19 +416,19 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo'
+            url=('https://api.bitbucket.org/2.0/repositories/myuser/myrepo'
                  '?fields=mainbranch.name'))
 
         ctx.assertHTTPCall(
             1,
-            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+            url=('https://api.bitbucket.org/2.0/repositories/myuser/myrepo/'
                  'refs/branches'
                  '?fields=values.name%2Cvalues.target.hash%2Cnext'
                  '&pagelen=100'))
 
         ctx.assertHTTPCall(
             2,
-            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+            url=('https://api.bitbucket.org/2.0/repositories/myuser/myrepo/'
                  'refs/branches'
                  '?fields=values.name%2Cvalues.target.hash%2Cnext'
                  '&page=2&pagelen=100'))
@@ -488,7 +488,7 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+            url=('https://api.bitbucket.org/2.0/repositories/myuser/myrepo/'
                  'commits'
                  '?fields=values.author.raw%2Cvalues.hash%2Cvalues.date'
                  '%2Cvalues.message%2Cvalues.parents.hash'
@@ -555,7 +555,7 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+            url=('https://api.bitbucket.org/2.0/repositories/myuser/myrepo/'
                  'commits/1c44b461cebe5874a857c51a4a13a849a4d1e5'
                  '?fields=values.author.raw%2Cvalues.hash%2Cvalues.date'
                  '%2Cvalues.message%2Cvalues.parents.hash'
@@ -621,7 +621,7 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+            url=('https://api.bitbucket.org/2.0/repositories/myuser/myrepo/'
                  'commits/master'
                  '?fields=values.author.raw%2Cvalues.hash%2Cvalues.date'
                  '%2Cvalues.message%2Cvalues.parents.hash'
@@ -689,7 +689,7 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+            url=('https://api.bitbucket.org/2.0/repositories/myuser/myrepo/'
                  'commits/1c44b461cebe5874a857c51a4a13a849a4d1e52d'
                  '?fields=values.author.raw%2Cvalues.hash%2Cvalues.date'
                  '%2Cvalues.message%2Cvalues.parents.hash'
@@ -719,7 +719,7 @@ class BitbucketTests(BitbucketTestCase):
         parent_sha = '44568f7d33647d286691517e6325fea5c7a21d5e'
 
         paths = {
-            '/api/2.0/repositories/myuser/myrepo/commit/%s' % commit_sha: {
+            '/2.0/repositories/myuser/myrepo/commit/%s' % commit_sha: {
                 'payload': self.dump_json({
                     'hash': commit_sha,
                     'author': {
@@ -730,7 +730,7 @@ class BitbucketTests(BitbucketTestCase):
                     'parents': [{'hash': parent_sha}],
                 }),
             },
-            '/api/2.0/repositories/myuser/myrepo/diff/%s' % commit_sha: {
+            '/2.0/repositories/myuser/myrepo/diff/%s' % commit_sha: {
                 'payload': b'This is a test \xc7.',
             },
         }
@@ -742,13 +742,13 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+            url=('https://api.bitbucket.org/2.0/repositories/myuser/myrepo/'
                  'commit/1c44b461cebe5874a857c51a4a13a849a4d1e52d'
                  '?fields=author.raw%2Chash%2Cdate%2Cmessage%2Cparents.hash'))
 
         ctx.assertHTTPCall(
             1,
-            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+            url=('https://api.bitbucket.org/2.0/repositories/myuser/myrepo/'
                  'diff/1c44b461cebe5874a857c51a4a13a849a4d1e52d'))
 
         self.assertEqual(
@@ -792,7 +792,7 @@ class BitbucketTests(BitbucketTestCase):
 
         ctx.assertHTTPCall(
             0,
-            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+            url=('https://api.bitbucket.org/2.0/repositories/myuser/myrepo/'
                  'src/%s/path'
                  % expected_revision))
 
@@ -854,45 +854,11 @@ class BitbucketTests(BitbucketTestCase):
             ctx.assertHTTPCall(
                 0,
                 method='HEAD',
-                url=('https://bitbucket.org/api/2.0/repositories/myuser/'
+                url=('https://api.bitbucket.org/2.0/repositories/myuser/'
                      'myrepo/src/%s/path'
                      % expected_revision))
 
         self.assertEqual(result, expected_found)
-
-
-class BitbucketAuthFormTests(BitbucketTestCase):
-    """Unit tests for BitbucketAuthForm."""
-
-    def test_clean_hosting_account_username_with_username(self) -> None:
-        """Testing BitbucketAuthForm.clean_hosting_account_username with
-        username
-        """
-        form = BitbucketAuthForm(
-            hosting_service_cls=self.service_class,
-            data={
-                'hosting_account_username': 'myuser',
-                'hosting_account_password': 'mypass',
-            })
-
-        self.assertTrue(form.is_valid())
-
-    def test_clean_hosting_account_username_with_email(self) -> None:
-        """Testing BitbucketAuthForm.clean_hosting_account_username with
-        e-mail address
-        """
-        form = BitbucketAuthForm(
-            hosting_service_cls=self.service_class,
-            data={
-                'hosting_account_username': 'myuser@example.com',
-                'hosting_account_password': 'mypass',
-            })
-
-        self.assertFalse(form.is_valid())
-        self.assertEqual(form.errors['hosting_account_username'],
-                         ['This must be your Bitbucket username (the same one '
-                          'you would see in URLs for your own repositories), '
-                          'not your Atlassian e-mail address.'])
 
 
 class CloseSubmittedHookTests(BitbucketTestCase):

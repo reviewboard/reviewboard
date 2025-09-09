@@ -7,10 +7,22 @@ Bitbucket Repositories
 Review Board supports posting and reviewing code on :rbintegration:`Bitbucket
 <bitbucket>` repositories.
 
-The following types of Bitbucket repositories are supported:
 
-* Git
-* Mercurial
+.. important::
+
+   **Bitbucket has transitioned from app passwords to Atlassian API tokens.**
+
+   If you previously linked a Bitbucket account using a Bitbucket username and
+   app password, you will need to update your credentials. The
+   :guilabel:`Account username` field now requires your **Atlassian e-mail
+   address**, and the :guilabel:`Account password` field now requires an
+   **Atlassian API token**.
+
+   This requires Review Board 7.1 or newer.
+
+   See :ref:`Step 1 <bitbucket-link-account>` below for instructions on
+   creating an API token.
+
 
 To simplify posting changes to Review Board, we recommend using RBTools_. This
 ensures that the diffs are in the correct format, and makes managing review
@@ -27,6 +39,8 @@ To configure a Bitbucket repository, first proceed to :ref:`add the repository
 :guilabel:`Hosting type` field.
 
 
+.. _bitbucket-link-account:
+
 Step 1: Link Your Bitbucket Account
 -----------------------------------
 
@@ -36,34 +50,36 @@ account with sufficient access to the repository, you can use that instead.
 Otherwise, you will need to supply credentials in the :guilabel:`Account
 username` and :guilabel:`Account password` fields.
 
-For the :guilabel:`Account username` field, use your configured Bitbucket
-username (found in your `Bitbucket account settings`_) and *not* your
-Bitbucket/Atlassian e-mail address. The latter will not work.
+For the :guilabel:`Account username` field, use your Atlassian account e-mail
+address. This can be found in your `Atlassian e-mail settings`_.
 
-You can use your standard Bitbucket/Atlassian password for the
-:guilabel:`Account password` field, or you can use a Bitbucket app password
-password. We recommend using an app password for enhanced security. This is
-also **required** if you have two-factor authentication enabled for your
-Bitbucket account (which we also recommend).
+For the :guilabel:`Account password` field, you will need to create an
+Atlassian API token. To do this:
 
-To create an app password, visit your `Bitbucket app passwords`_ page and
-click :guilabel:`Create app password`.
+1. Visit the `Atlassian API tokens`_ page.
 
-.. image:: images/bitbucket/bitbucket-app-passwords.png
+2. Click :guilabel:`Create API token with scopes`.
 
-Configure your app password as follows:
+3. Set a long expiration time on the token (to avoid needing to rotate it
+   frequently).
 
-.. image:: images/bitbucket/bitbucket-app-password-settings.png
+4. Choose :guilabel:`Bitbucket` as the product.
 
-Click :guilabel:`Create`. You'll receive an app password. Supply this in the
-:guilabel:`Account password` field in Review Board.
+5. Add the following scopes:
+
+   * ``read:user:bitbucket``
+   * ``read:repository:bitbucket``
+
+6. Click :guilabel:`Create`. You'll receive an API token. Supply this in the
+   :guilabel:`Account password` field in Review Board.
 
 The account will be linked when the repository is saved. If there are errors
 authenticating the user or retrieving an access token, you will be prompted to
 fix them.
 
-.. _Bitbucket account settings: https://bitbucket.org/account/admin/
-.. _Bitbucket app passwords: https://bitbucket.org/account/admin/app-passwords
+.. _Atlassian e-mail settings: https://id.atlassian.com/manage-profile/email
+.. _Atlassian API tokens:
+   https://id.atlassian.com/manage-profile/security/api-tokens
 
 
 Step 2: Provide Repository Information

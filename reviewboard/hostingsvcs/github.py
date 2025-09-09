@@ -81,9 +81,9 @@ class GitHubAuthForm(BaseHostingServiceAuthForm):
                 'e-mail address!'
             ),
             'hosting_account_password': _(
-                'A new <a href="%(token_url)s">Personal Access Token</a> for '
-                'your GitHub account. This token must include the following '
-                'scopes: %(scopes)s'
+                'A new <a href="%(token_url)s" target="_blank">Personal '
+                'Access Token</a> for your GitHub account. This token must '
+                'include the following scopes: %(scopes)s'
             ) % {
                 'token_url': 'https://github.com/settings/tokens',
                 'scopes': ', '.join(

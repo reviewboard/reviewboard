@@ -50,49 +50,31 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+EMAIL_SETTINGS_URL = 'https://id.atlassian.com/manage-profile/email'
+TOKEN_SETTINGS_URL = \
+    'https://id.atlassian.com/manage-profile/security/api-tokens'
+
+
 class BitbucketAuthForm(BaseHostingServiceAuthForm):
     """Authentication form for linking a Bitbucket account."""
 
-    def clean_hosting_account_username(self):
-        """Clean the username field for the Bitbucket account.
+    class Meta:
+        """Metadata for the form."""
 
-        This will ensure that the user hasn't provided their Atlassian
-        e-mail address.
-
-        Returns:
-            unicode:
-            The account username.
-
-        Raises:
-            django.core.exceptions.ValidationError:
-                An e-mail address was provided instead of a username.
-        """
-        username = self.cleaned_data['hosting_account_username']
-
-        if '@' in username:
-            raise forms.ValidationError(
-                gettext('This must be your Bitbucket username (the same one '
-                        'you would see in URLs for your own repositories), '
-                        'not your Atlassian e-mail address.'))
-
-        return username.strip()
-
-    class Meta(object):
         help_texts = {
             'hosting_account_username': _(
-                'Your Bitbucket username. This must <em>not</em> be your '
-                'e-mail address! You can find your username in your '
-                '<a href="https://bitbucket.org/account/admin/">Bitbucket '
-                'Account Settings</a>.'
-            ),
+                'Your Bitbucket account e-mail address. This can be found in '
+                'your <a href="{email_settings_url}" target="_blank">'
+                'Atlassian Account Settings</a>.'
+            ).format(email_settings_url=EMAIL_SETTINGS_URL),
             'hosting_account_password': _(
-                'The password used for your account, or a '
-                '<a href="https://bitbucket.org/account/admin/app-passwords">'
-                'configured app password</a>. <strong>Important:</strong> If '
-                'using two-factor authentication, you <em>must</em> use an '
-                'app password configured with read access to repositories, '
-                'accounts, and projects.'
-            ),
+                'A new <a href="{token_settings_url}" target="_blank">'
+                'Atlassian API Token</a>. To create this, select "Create API '
+                'token with scopes", set a long expiration time on the token, '
+                'choose Bitbucket as the product, and then add scopes '
+                '<code>read:user:bitbucket</code> and '
+                '<code>read:repository:bitbucket</code>.'
+            ).format(token_settings_url=TOKEN_SETTINGS_URL),
         }
 
 
@@ -389,7 +371,7 @@ class BitbucketClient(HostingServiceClient):
         """
         super(BitbucketClient, self).__init__(*args, **kwargs)
 
-        self.api_url = 'https://bitbucket.org/api/2.0'
+        self.api_url = 'https://api.bitbucket.org/2.0'
 
     def api_get_user_session(self, **kwargs):
         """Return information on the user's session.
