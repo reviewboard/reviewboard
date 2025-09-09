@@ -14,8 +14,10 @@ from uuid import uuid4
 import kgb
 from django.urls import reverse
 from django.utils import timezone
+from djblets.features.testing import override_feature_check
 
 from reviewboard.licensing.errors import LicenseActionError
+from reviewboard.licensing.features import licensing_feature
 from reviewboard.licensing.license import LicenseInfo, LicenseStatus
 from reviewboard.licensing.license_checks import (
     ProcessCheckLicenseResult,
@@ -263,6 +265,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
         for license_provider in self._license_providers:
             license_provider_registry.unregister(license_provider)
 
+    @override_feature_check(licensing_feature, True)
     def test_get_as_anonymous(self) -> None:
         """Testing LicenseView.get as anonymous"""
         client = self.client
@@ -270,14 +273,18 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         self.assertEqual(response.status_code, 302)
 
+    @override_feature_check(licensing_feature, True)
     def test_get_as_non_admin(self) -> None:
         """Testing LicenseView.get as non-admin user"""
         client = self.client
-        self.assertTrue(self.client.login(username='dopey', password='dopey'))
+        self.assertTrue(
+            self.client.login(username='dopey', password='dopey'))
+
         response = client.get(reverse('admin-licenses'))
 
         self.assertEqual(response.status_code, 302)
 
+    @override_feature_check(licensing_feature, True)
     def test_get_as_admin(self) -> None:
         """Testing LicenseView.get as admin"""
         client = self.client
@@ -420,6 +427,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             },
         ])
 
+    @override_feature_check(licensing_feature, True)
     def test_post_as_anonymous(self) -> None:
         """Testing LicenseView.post as anonymous"""
         client = self.client
@@ -427,6 +435,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         self.assertEqual(response.status_code, 302)
 
+    @override_feature_check(licensing_feature, True)
     def test_post_as_non_admin(self) -> None:
         """Testing LicenseView.post as non-admin user"""
         client = self.client
@@ -435,6 +444,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         self.assertEqual(response.status_code, 302)
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_no_action(self) -> None:
         """Testing LicenseView.post as admin with no action"""
         client = self.client
@@ -447,6 +457,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             'error': 'Missing action data.',
         })
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_no_action_target(self) -> None:
         """Testing LicenseView.post as admin with no action_target"""
         client = self.client
@@ -461,6 +472,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             'error': 'Missing action target.',
         })
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_invalid_action_target(self) -> None:
         """Testing LicenseView.post as admin with invalid action_target"""
         client = self.client
@@ -476,6 +488,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             'error': 'Invalid action target.',
         })
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_license_not_found(self) -> None:
         """Testing LicenseView.post as admin with license not found"""
         client = self.client
@@ -491,6 +504,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             'error': 'The license entry could not be found.',
         })
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_invalid_action(self) -> None:
         """Testing LicenseView.post as admin with invalid action"""
         client = self.client
@@ -506,6 +520,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             'error': 'Unsupported license action "xxx".',
         })
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_license_update_check(self) -> None:
         """Testing LicenseView.post as admin with action="license-update-check"
         """
@@ -530,6 +545,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             'headers': None,
         })
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_license_update_check_not_supported(self) -> None:
         """Testing LicenseView.post as admin with action="license-update-check"
         not supported
@@ -547,6 +563,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             'canCheck': False,
         })
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_process_license_update_and_applied(self) -> None:
         """Testing LicenseView.post as admin with
         action="process-license-update" and new license data applied
@@ -607,6 +624,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             },
         })
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_process_license_update_and_has_latest(self) -> None:
         """Testing LicenseView.post as admin with
         action="process-license-update" and already has latest data
@@ -664,6 +682,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             },
         })
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_process_license_update_and_error(self) -> None:
         """Testing LicenseView.post as admin with
         action="process-license-update" and error
@@ -696,6 +715,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             ),
         })
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_process_license_update_no_check_data(self) -> None:
         """Testing LicenseView.post as admin with
         action="process-license-update" and missing check_request_data
@@ -721,6 +741,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             ),
         })
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_process_license_update_no_response_data(self) -> None:
         """Testing LicenseView.post as admin with
         action="process-license-update" and missing check_response_data
@@ -747,6 +768,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             ),
         })
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_process_license_update_invalid_check_data(self) -> None:
         """Testing LicenseView.post as admin with
         action="process-license-update" and non-JSON check_response_data
@@ -774,6 +796,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             ),
         })
 
+    @override_feature_check(licensing_feature, True)
     def test_post_with_process_license_update_invalid_response_data(
         self,
     ) -> None:
