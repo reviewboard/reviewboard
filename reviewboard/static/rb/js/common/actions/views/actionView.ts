@@ -180,7 +180,7 @@ export class ActionView<
      * Return the element responsible for the action's visibility.
      *
      * If the view is inside an action parent container (one using the
-     * ``rb-c-actions__action`` CSS class), that elment will be returned.
+     * ``rb-c-actions__action`` CSS class), that element will be returned.
      * If the view is inside another parent, then this view's element
      * will be returned.
      *
