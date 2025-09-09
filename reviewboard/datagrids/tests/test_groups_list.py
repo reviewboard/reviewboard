@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Optional, Sequence, TYPE_CHECKING
 
+from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from djblets.testing.decorators import add_fixtures
@@ -23,7 +24,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing.queries.http import get_http_request_start_equeries
 
 if TYPE_CHECKING:
-    from djblets.db.query_comparator import ExpectedQueries
+    from django_assert_queries.query_comparator import ExpectedQueries
 
 
 class GroupListViewTests(BaseViewTestCase):
@@ -105,7 +106,7 @@ class GroupListViewTests(BaseViewTestCase):
             local_sites_in_db=local_sites_in_db,
             review_groups=review_groups)
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Callable, Optional, Sequence, TYPE_CHECKING
 
+from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.template import RequestContext
@@ -32,7 +33,7 @@ from reviewboard.reviews.models import (BaseComment,
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
-    from djblets.db.query_comparator import ExpectedQuery
+    from django_assert_queries.query_comparator import ExpectedQuery
 
     from reviewboard.reviews.models import (Comment,
                                             FileAttachmentComment,
@@ -1533,7 +1534,7 @@ class ReviewRequestPageDataTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             entries = data.get_entries()
 
         initial_entries = entries['initial']
@@ -1590,7 +1591,7 @@ class ReviewRequestPageDataTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             for key in ('initial', 'main'):
                 for entry in entries[key]:
                     entry.render_to_string(request=request,
@@ -1672,7 +1673,7 @@ class ReviewRequestPageDataTests(TestCase):
         """
         data = self._build_data(entry_classes=entry_classes)
 
-        with self.assertQueries(expected_queries()):
+        with assert_queries(expected_queries()):
             data.query_data_pre_etag()
 
         if expect_reviews:
@@ -1766,7 +1767,7 @@ class ReviewRequestPageDataTests(TestCase):
 
         data.query_data_pre_etag()
 
-        with self.assertQueries(expected_queries()):
+        with assert_queries(expected_queries()):
             data.query_data_post_etag()
 
         if expect_reviews:

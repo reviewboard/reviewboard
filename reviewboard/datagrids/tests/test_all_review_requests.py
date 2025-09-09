@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
+from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from djblets.testing.decorators import add_fixtures
@@ -21,7 +22,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing.queries.http import get_http_request_start_equeries
 
 if TYPE_CHECKING:
-    from djblets.db.query_comparator import ExpectedQueries
+    from django_assert_queries.query_comparator import ExpectedQueries
 
 
 class AllReviewRequestViewTests(BaseViewTestCase):
@@ -164,7 +165,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 review_request_1.pk,
             ])
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -292,7 +293,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
             repositories_pks=[repository1.pk],
             target_groups_pks=[group1.pk])
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -374,7 +375,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
                 review_request_1.pk,
             ])
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import kgb
+from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.db.models import Max, Q, Value
 from django.utils import timezone
@@ -24,7 +25,7 @@ from reviewboard.scmtools.core import ChangeSet
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
-    from djblets.db.query_comparator import ExpectedQueries
+    from django_assert_queries.query_comparator import ExpectedQueries
 
 
 class ReviewRequestTests(kgb.SpyAgency, TestCase):
@@ -92,7 +93,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             }
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(review_request1.get_blocks(),
                              [review_request3, review_request2])
 
@@ -104,7 +105,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
         # A cache clear should reset that.
         review_request1.clear_local_caches()
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(review_request1.get_blocks(),
                              [review_request3, review_request2])
 
@@ -162,7 +163,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             diffsets = review_request.get_diffsets()
 
             self.assertEqual(diffsets, [diffset1, diffset2])
@@ -182,7 +183,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
         # A cache clear should reset that.
         review_request.clear_local_caches()
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             diffsets = review_request.get_diffsets()
 
             self.assertEqual(diffsets, [diffset1, diffset2])
@@ -217,7 +218,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             diffsets = review_request.get_diffsets(with_filediffs=False)
 
             self.assertEqual(diffsets, [diffset1, diffset2])
@@ -247,7 +248,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             diffsets = review_request.get_diffsets(with_filediffs=False)
 
             self.assertEqual(diffsets, [diffset1, diffset2])
@@ -259,7 +260,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             diffsets = review_request.get_diffsets(with_filediffs=True)
 
             self.assertEqual(diffsets, [diffset1, diffset2])
@@ -284,7 +285,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(review_request.get_latest_diffset(), diffset2)
 
         # A second query should use the cache.
@@ -294,7 +295,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
         # A cache clear should reset that.
         review_request.clear_local_caches()
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(review_request.get_latest_diffset(), diffset2)
 
     @add_fixtures(['test_scmtools'])
@@ -326,7 +327,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(review_request.get_latest_diffset(), diffset2)
 
     def test_public_with_discard_reopen_submitted(self):
@@ -881,7 +882,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertTrue(review_request.has_diffsets)
 
     @add_fixtures(['test_scmtools'])
@@ -950,7 +951,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             diffsets = review_request.get_diffsets()
             self.assertTrue(diffsets)
             self.assertNotEqual(list(diffsets[0].files.all()), [])
@@ -981,7 +982,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             diffsets = review_request.get_diffsets()
             self.assertTrue(diffsets)
             self.assertNotEqual(list(diffsets[0].files.all()), [])
@@ -1011,7 +1012,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertFalse(review_request.has_diffsets)
 
         review_request = self.create_review_request(create_repository=True)
@@ -1035,7 +1036,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertTrue(review_request.has_diffsets)
 
     @add_fixtures(['test_scmtools'])
@@ -1057,7 +1058,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertFalse(review_request.has_diffsets)
 
         review_request = self.create_review_request(create_repository=True)
@@ -1077,7 +1078,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertTrue(review_request.has_diffsets)
 
 
@@ -1735,7 +1736,7 @@ class GetFileAttachmentsDataTests(TestCase):
             },
         ]
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             self._assert_data_equals(
                 active_ids={
                     active.pk,
@@ -1779,7 +1780,7 @@ class GetFileAttachmentsDataTests(TestCase):
         # A cache clear should reset that.
         review_request.clear_local_caches()
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             self._assert_data_equals(
                 active_ids={
                     active.pk,
@@ -1846,7 +1847,7 @@ class GetFileAttachmentsDataTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self._assert_data_equals(
                 active_ids={
                     active.pk,
@@ -1954,7 +1955,7 @@ class GetFileAttachmentsDataTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self._assert_data_equals(
                 active_ids={
                     active.pk,
@@ -2116,7 +2117,7 @@ class GetFileAttachmentsDataTests(TestCase):
             },
         ]
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             self._assert_data_equals(
                 active_ids={
                     active.pk,
@@ -2213,7 +2214,7 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(
                 review_request.get_file_attachment_state(published),
                 FileAttachmentState.PUBLISHED)
@@ -2264,7 +2265,7 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(
                 review_request.get_file_attachment_state(published),
                 FileAttachmentState.PUBLISHED)
@@ -2318,7 +2319,7 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(review_request.get_file_attachment_state(draft),
                              FileAttachmentState.DRAFT)
 
@@ -2356,7 +2357,7 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(
                 review_request.get_file_attachment_state(deleted),
                 FileAttachmentState.DELETED)
@@ -2410,7 +2411,7 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(
                 review_request.get_file_attachment_state(deleted),
                 FileAttachmentState.DELETED)
@@ -2463,7 +2464,7 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(
                 review_request.get_file_attachment_state(pending_deletion),
                 FileAttachmentState.PENDING_DELETION)
@@ -2504,7 +2505,7 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(
                 review_request.get_file_attachment_state(new),
                 FileAttachmentState.NEW)
@@ -2560,7 +2561,7 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(
                 review_request.get_file_attachment_state(new_revision),
                 FileAttachmentState.NEW_REVISION)
@@ -2665,7 +2666,7 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertEqual(
                 review_request.get_file_attachment_state(published),
                 FileAttachmentState.PUBLISHED)

@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import kgb
+from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.db.models import Q, Value
 
@@ -30,7 +31,7 @@ from reviewboard.reviews.signal_handlers import (
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
-    from djblets.db.query_comparator import ExpectedQueries
+    from django_assert_queries.query_comparator import ExpectedQueries
 
 
 class OnReviewRequestDraftDeletedTests(kgb.SpyAgency, TestCase):
@@ -290,7 +291,7 @@ class OnReviewRequestDraftDeletedTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.draft.delete()
 
         all_attachments = list(FileAttachment.objects.all())
@@ -479,7 +480,7 @@ class OnReviewRequestDraftDeletedTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries, with_tracebacks=True):
+        with assert_queries(queries, with_tracebacks=True):
             draft.delete()
 
         all_attachments = list(FileAttachment.objects.all())
@@ -732,7 +733,7 @@ class OnReviewRequestDraftDeletedTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             draft.delete()
 
         self.assertNotIn(attachment, FileAttachment.objects.all())

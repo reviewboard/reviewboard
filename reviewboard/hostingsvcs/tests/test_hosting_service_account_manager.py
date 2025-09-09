@@ -1,5 +1,8 @@
 """Unit tests for reviewboard.hostingsvcs.managers."""
 
+from __future__ import annotations
+
+from django_assert_queries.testing import assert_queries
 from django.db.models import Q
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -40,7 +43,7 @@ class HostingServiceAccountManagerTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertQuerySetEqual(
                 HostingServiceAccount.objects.accessible().order_by('pk'),
                 [account1, account2])
@@ -76,7 +79,7 @@ class HostingServiceAccountManagerTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertQuerySetEqual(
                 (
                     HostingServiceAccount.objects
@@ -120,7 +123,7 @@ class HostingServiceAccountManagerTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertQuerySetEqual(
                 HostingServiceAccount.objects.accessible(),
                 [account1])
@@ -160,7 +163,7 @@ class HostingServiceAccountManagerTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertQuerySetEqual(
                 (
                     HostingServiceAccount.objects
@@ -206,7 +209,7 @@ class HostingServiceAccountManagerTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             self.assertQuerySetEqual(
                 (
                     HostingServiceAccount.objects

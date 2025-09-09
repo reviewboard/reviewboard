@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Sequence, TYPE_CHECKING
 
+from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from django.urls import reverse
@@ -28,7 +29,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing.queries.http import get_http_request_start_equeries
 
 if TYPE_CHECKING:
-    from djblets.db.query_comparator import ExpectedQueries
+    from django_assert_queries.query_comparator import ExpectedQueries
 
 
 class SubmitterViewTests(BaseViewTestCase):
@@ -185,7 +186,7 @@ class SubmitterViewTests(BaseViewTestCase):
             review_request_pks=review_request_pks,
             accessible_review_group_ids=[group1.pk])
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -262,7 +263,7 @@ class SubmitterViewTests(BaseViewTestCase):
             accessible_review_group_ids=[group1.pk])
 
         # Now load the page and get the sidebar items.
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -389,7 +390,7 @@ class SubmitterViewTests(BaseViewTestCase):
             local_sites_in_db=local_sites_in_db,
             review_pks=review_pks)
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 '%sreviews/' % self.get_datagrid_url(local_site=local_site))
 
