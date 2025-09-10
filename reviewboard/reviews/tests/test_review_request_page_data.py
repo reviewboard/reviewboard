@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone as tz
 from typing import Callable, Optional, Sequence, TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
@@ -1683,7 +1683,7 @@ class ReviewRequestPageDataTests(TestCase):
         else:
             self.assertEqual(data.reviews, [])
             self.assertEqual(data.latest_review_timestamp,
-                             datetime.fromtimestamp(0, timezone.utc))
+                             datetime.fromtimestamp(0, tz.utc))
 
         if expect_diffs:
             self.assertEqual(data.diffsets, self.diffsets)
