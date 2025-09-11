@@ -40,7 +40,7 @@ class ChecksTests(TestCase):
 
     def test_check_updates_required_with_bad_upload(self):
         """Testing check_updates_required with a bad upload directory"""
-        settings.MEDIA_ROOT = "/"
+        settings.MEDIA_ROOT = '/'
         checks.reset_check_cache()
 
         with self.siteconfig_settings({'site_media_root': '/'},

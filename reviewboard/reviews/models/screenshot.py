@@ -17,10 +17,10 @@ class Screenshot(models.Model):
     These comments are of type
     :py:class:`reviewboard.reviews.models.ScreenshotComment`.
     """
-    caption = models.CharField(_("caption"), max_length=256, blank=True)
-    draft_caption = models.CharField(_("draft caption"),
+    caption = models.CharField(_('caption'), max_length=256, blank=True)
+    draft_caption = models.CharField(_('draft caption'),
                                      max_length=256, blank=True)
-    image = models.ImageField(_("image"),
+    image = models.ImageField(_('image'),
                               upload_to=os.path.join('uploaded', 'images',
                                                      '%Y', '%m', '%d'))
 
@@ -64,7 +64,7 @@ class Screenshot(models.Model):
             return self.image.filename
 
     def __str__(self):
-        return "%s (%s)" % (self.caption, self.image)
+        return '%s (%s)' % (self.caption, self.image)
 
     def get_review_request(self):
         if hasattr(self, '_review_request'):

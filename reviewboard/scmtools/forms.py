@@ -645,16 +645,16 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
     # Host trust state
     reedit_repository = forms.BooleanField(
-        label=_("Re-edit repository"),
+        label=_('Re-edit repository'),
         required=False)
 
     trust_host = forms.BooleanField(
-        label=_("I trust this host"),
+        label=_('I trust this host'),
         required=False)
 
     # Repository Hosting fields
     hosting_type = forms.ChoiceField(
-        label=_("Hosting service"),
+        label=_('Hosting service'),
         required=True,
         initial=NO_HOSTING_SERVICE_ID)
 
@@ -662,10 +662,10 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         label=_('Account'),
         required=True,
         empty_label=_('<Link a new account>'),
-        help_text=_("Link this repository to an account on the hosting "
-                    "service. This username may be used as part of the "
-                    "repository URL, depending on the hosting service and "
-                    "plan."),
+        help_text=_('Link this repository to an account on the hosting '
+                    'service. This username may be used as part of the '
+                    'repository URL, depending on the hosting service and '
+                    'plan.'),
         queryset=(
             HostingServiceAccount.objects
             .accessible(local_site=LocalSite.ALL)
@@ -679,7 +679,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
     # Repository Information fields
     tool = forms.ChoiceField(
-        label=_("Repository type"),
+        label=_('Repository type'),
         required=True)
 
     repository_plan = forms.ChoiceField(
@@ -706,7 +706,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         required=False)
 
     bug_tracker_type = forms.ChoiceField(
-        label=_("Type"),
+        label=_('Type'),
         required=True,
         initial=NO_BUG_TRACKER_ID)
 
@@ -725,14 +725,14 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         widget=forms.TextInput(attrs={'size': 30, 'autocomplete': 'off'}))
 
     bug_tracker = forms.CharField(
-        label=_("Bug tracker URL"),
+        label=_('Bug tracker URL'),
         max_length=256,
         required=False,
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=(
-            _("The optional path to the bug tracker for this repository. The "
-              "path should resemble: http://www.example.com/issues?id=%%s, "
-              "where %%s will be the bug number.")
+            _('The optional path to the bug tracker for this repository. The '
+              'path should resemble: http://www.example.com/issues?id=%%s, '
+              'where %%s will be the bug number.')
             % ()),  # We do this wacky formatting trick because otherwise
                     # xgettext gets upset that it sees a format string with
                     # positional arguments and will abort when trying to

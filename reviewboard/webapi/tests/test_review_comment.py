@@ -218,7 +218,7 @@ class ResourceListTests(SpyAgency, CommentListMixin,
         """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/ API
         with interdiff
         """
-        comment_text = "Test diff comment"
+        comment_text = 'Test diff comment'
 
         comment, review_request, review, interdiff_revision = \
             self._common_post_interdiff_comments(comment_text)
@@ -295,7 +295,7 @@ class ResourceListTests(SpyAgency, CommentListMixin,
         POST review-requests/<id>/reviews/<id>/diff-comments/ API
         with interdiff
         """
-        comment_text = "Test diff comment"
+        comment_text = 'Test diff comment'
 
         review_request, filediff = self._create_diff_review_request()
 
@@ -969,7 +969,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         """Testing the
         DELETE review-requests/<id>/reviews/<id>/diff-comments/<id>/ API
         """
-        comment_text = "This is a test comment."
+        comment_text = 'This is a test comment.'
 
         comment, review_request, review, interdiff_revision = \
             self._common_post_interdiff_comments(comment_text)

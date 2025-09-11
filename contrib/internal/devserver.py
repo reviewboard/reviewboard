@@ -5,17 +5,17 @@ import os
 import sys
 
 
-DEFAULT_HOST = "0.0.0.0"
-DEFAULT_PORT = "8080"
+DEFAULT_HOST = '0.0.0.0'
+DEFAULT_PORT = '8080'
 
 
 def usage():
-    print("usage:  %s options" % sys.argv[0])
+    print('usage:  %s options' % sys.argv[0])
     print()
-    print("OPTIONS:")
-    print("   -h           Show this message")
-    print("   -H HOST      Set server host (defaults to %s)" % DEFAULT_HOST)
-    print("   -p PORT      Set server port (defaults to %s)" % DEFAULT_PORT)
+    print('OPTIONS:')
+    print('   -h           Show this message')
+    print('   -H HOST      Set server host (defaults to %s)' % DEFAULT_HOST)
+    print('   -p PORT      Set server port (defaults to %s)' % DEFAULT_PORT)
 
 
 def main():
@@ -62,5 +62,6 @@ def main():
     os.system('%s -Wd ./reviewboard/manage.py runserver %s:%s --nostatic'
               % (sys.executable, server_host, server_port))
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()

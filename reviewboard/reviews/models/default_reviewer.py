@@ -30,17 +30,17 @@ class DefaultReviewer(models.Model):
 
     Note that this is keyed off the same LocalSite as its "repository" member.
     """
-    name = models.CharField(_("name"), max_length=64)
+    name = models.CharField(_('name'), max_length=64)
     file_regex = models.CharField(
-        _("file regex"),
+        _('file regex'),
         max_length=256,
-        help_text=_("File paths are matched against this regular expression "
-                    "to determine if these reviewers should be added."))
+        help_text=_('File paths are matched against this regular expression '
+                    'to determine if these reviewers should be added.'))
     repository = models.ManyToManyField(Repository, blank=True)
-    groups = models.ManyToManyField(Group, verbose_name=_("default groups"),
+    groups = models.ManyToManyField(Group, verbose_name=_('default groups'),
                                     blank=True)
-    people = models.ManyToManyField(User, verbose_name=_("default users"),
-                                    related_name="default_review_paths",
+    people = models.ManyToManyField(User, verbose_name=_('default users'),
+                                    related_name='default_review_paths',
                                     blank=True)
     local_site = models.ForeignKey(LocalSite,
                                    on_delete=models.CASCADE,

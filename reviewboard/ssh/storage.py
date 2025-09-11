@@ -198,7 +198,7 @@ class FileSSHStorage(SSHStorage):
         try:
             with open(filename, 'w') as fp:
                 for line in lines:
-                    parts = line.strip().split(" ")
+                    parts = line.strip().split(' ')
 
                     if parts[-1] == old_key_base64:
                         parts[1] = new_key.get_name()

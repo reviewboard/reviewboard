@@ -15,6 +15,6 @@ from djblets.db.fields import Base64Field
 MUTATIONS = [
     FakeChangeFieldType('FileDiff', 'diff_base64', Base64Field),
     RenameField('FileDiff', 'diff_base64', 'diff', db_column='diff_base64'),
-    AddField('FileDiff', 'parent_diff', Base64Field, initial="",
+    AddField('FileDiff', 'parent_diff', Base64Field, initial='',
              db_column='parent_diff_base64'),
 ]

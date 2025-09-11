@@ -15,9 +15,9 @@ class WhooshConfigForm(SearchBackendForm):
     """A form for configuring the Whoosh search backend."""
 
     search_index_file = forms.CharField(
-        label=_("Search index directory"),
-        help_text=_("The directory that search index data should be stored "
-                    "in."),
+        label=_('Search index directory'),
+        help_text=_('The directory that search index data should be stored '
+                    'in.'),
         widget=forms.TextInput(attrs={'size': '80'}))
 
     def clean_search_index_file(self):
@@ -30,7 +30,7 @@ class WhooshConfigForm(SearchBackendForm):
         if index_file:
             if not os.path.isabs(index_file):
                 raise ValidationError(
-                    _("The search index path must be absolute."))
+                    _('The search index path must be absolute.'))
 
             if (os.path.exists(index_file) and
                     not os.access(index_file, os.W_OK)):

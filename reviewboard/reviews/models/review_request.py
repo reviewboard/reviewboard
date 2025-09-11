@@ -324,7 +324,7 @@ class ReviewRequest(BaseReviewRequestDetails):
     }
 
     summary = models.CharField(
-        _("summary"),
+        _('summary'),
         max_length=BaseReviewRequestDetails.MAX_SUMMARY_LENGTH)
 
     submitter = models.ForeignKey(User,
@@ -357,38 +357,38 @@ class ReviewRequest(BaseReviewRequestDetails):
                                         blank=True)
     target_groups = models.ManyToManyField(
         Group,
-        related_name="review_requests",
-        verbose_name=_("target groups"),
+        related_name='review_requests',
+        verbose_name=_('target groups'),
         blank=True)
     target_people = models.ManyToManyField(
         User,
-        verbose_name=_("target people"),
-        related_name="directed_review_requests",
+        verbose_name=_('target people'),
+        related_name='directed_review_requests',
         blank=True)
     screenshots = models.ManyToManyField(
         Screenshot,
-        related_name="review_request",
-        verbose_name=_("screenshots"),
+        related_name='review_request',
+        verbose_name=_('screenshots'),
         blank=True)
     inactive_screenshots = models.ManyToManyField(
         Screenshot,
-        verbose_name=_("inactive screenshots"),
-        help_text=_("A list of screenshots that used to be but are no "
-                    "longer associated with this review request."),
-        related_name="inactive_review_request",
+        verbose_name=_('inactive screenshots'),
+        help_text=_('A list of screenshots that used to be but are no '
+                    'longer associated with this review request.'),
+        related_name='inactive_review_request',
         blank=True)
 
     file_attachments = models.ManyToManyField(
         FileAttachment,
-        related_name="review_request",
-        verbose_name=_("file attachments"),
+        related_name='review_request',
+        verbose_name=_('file attachments'),
         blank=True)
     inactive_file_attachments = models.ManyToManyField(
         FileAttachment,
-        verbose_name=_("inactive file attachments"),
-        help_text=_("A list of file attachments that used to be but are no "
-                    "longer associated with this review request."),
-        related_name="inactive_review_request",
+        verbose_name=_('inactive file attachments'),
+        help_text=_('A list of file attachments that used to be but are no '
+                    'longer associated with this review request.'),
+        related_name='inactive_review_request',
         blank=True)
     file_attachment_histories = models.ManyToManyField(
         FileAttachmentHistory,
@@ -398,8 +398,8 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     changedescs = models.ManyToManyField(
         ChangeDescription,
-        verbose_name=_("change descriptions"),
-        related_name="review_request",
+        verbose_name=_('change descriptions'),
+        related_name='review_request',
         blank=True)
 
     depends_on = models.ManyToManyField('ReviewRequest',
@@ -412,12 +412,12 @@ class ReviewRequest(BaseReviewRequestDetails):
     # The timestamp representing the last public activity of a review.
     # This includes publishing reviews and manipulating issues.
     last_review_activity_timestamp = models.DateTimeField(
-        _("last review activity timestamp"),
+        _('last review activity timestamp'),
         db_column='last_review_timestamp',
         null=True,
         default=None,
         blank=True)
-    shipit_count = CounterField(_("ship-it count"), default=0)
+    shipit_count = CounterField(_('ship-it count'), default=0)
 
     issue_open_count = CounterField(
         _('open issue count'),
@@ -761,7 +761,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             # If this ReviewRequest was queried using with_counts=True,
             # then we should know the new review count and can use this to
             # decide whether we have anything at all to show.
-            if hasattr(self, "new_review_count") and self.new_review_count > 0:
+            if hasattr(self, 'new_review_count') and self.new_review_count > 0:
                 query = self.visits.filter(user=user)
 
                 try:
@@ -1755,7 +1755,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             ReviewRequestDraft
 
         if (user and not self.is_mutable_by(user) and
-            not user.has_perm("reviews.can_change_status", self.local_site)):
+            not user.has_perm('reviews.can_change_status', self.local_site)):
             raise PermissionError
 
         old_status = self.status
@@ -2308,9 +2308,9 @@ class ReviewRequest(BaseReviewRequestDetails):
                            ('changenum', 'repository'),
                            ('local_site', 'local_id'))
         permissions = (
-            ("can_change_status", "Can change status"),
-            ("can_submit_as_another_user", "Can submit as another user"),
-            ("can_edit_reviewrequest", "Can edit review request"),
+            ('can_change_status', 'Can change status'),
+            ('can_submit_as_another_user', 'Can submit as another user'),
+            ('can_edit_reviewrequest', 'Can edit review request'),
         )
         verbose_name = _('Review Request')
         verbose_name_plural = _('Review Requests')

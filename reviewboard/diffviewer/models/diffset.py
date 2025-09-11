@@ -320,7 +320,7 @@ class DiffSet(models.Model):
             unicode:
             A human-readable representation of the DiffSet.
         """
-        return "[%s] %s r%s" % (self.id, self.name, self.revision)
+        return '[%s] %s r%s' % (self.id, self.name, self.revision)
 
     class Meta:
         app_label = 'diffviewer'

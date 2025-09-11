@@ -188,8 +188,8 @@ htmlhelp_basename = 'ReviewBoardCodebasedoc'
 # (source start file, target name, title, author, document class
 # [howto/manual]).
 latex_documents = [
-  ('index', 'ReviewBoardCodebase.tex', ur'Review Board Codebase Documentation',
-   ur'Christian Hammond', 'manual'),
+  ('index', 'ReviewBoardCodebase.tex', 'Review Board Codebase Documentation',
+   'Christian Hammond', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

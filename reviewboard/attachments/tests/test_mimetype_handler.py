@@ -140,23 +140,23 @@ class MimetypeHandlerTests(TestCase):
     def test_handler_factory(self):
         """Testing matching of factory method for mimetype handlers"""
         # Exact Match
-        self.assertEqual(self._handler_for("test/abc"), TestAbcMimetype)
-        self.assertEqual(self._handler_for("test2/abc+xml"),
+        self.assertEqual(self._handler_for('test/abc'), TestAbcMimetype)
+        self.assertEqual(self._handler_for('test2/abc+xml'),
                          Test2AbcXmlMimetype)
         # Handle vendor-specific match
-        self.assertEqual(self._handler_for("test/abc+xml"), TestXmlMimetype)
-        self.assertEqual(self._handler_for("test2/xml"), Test2AbcXmlMimetype)
+        self.assertEqual(self._handler_for('test/abc+xml'), TestXmlMimetype)
+        self.assertEqual(self._handler_for('test2/xml'), Test2AbcXmlMimetype)
 
     def test_handler_factory_precedence(self):
         """Testing precedence of factory method for mimetype handlers"""
-        self.assertEqual(self._handler_for("test2/def"), StarDefMimetype)
-        self.assertEqual(self._handler_for("test3/abc+xml"),
+        self.assertEqual(self._handler_for('test2/def'), StarDefMimetype)
+        self.assertEqual(self._handler_for('test3/abc+xml'),
                          Test3AbcXmlMimetype)
-        self.assertEqual(self._handler_for("test3/xml"), Test3XmlMimetype)
-        self.assertEqual(self._handler_for("foo/abc+def"), StarAbcDefMimetype)
-        self.assertEqual(self._handler_for("foo/def"), StarDefMimetype)
+        self.assertEqual(self._handler_for('test3/xml'), Test3XmlMimetype)
+        self.assertEqual(self._handler_for('foo/abc+def'), StarAbcDefMimetype)
+        self.assertEqual(self._handler_for('foo/def'), StarDefMimetype)
         # Left match and Wildcard should trump Left Wildcard and match
-        self.assertEqual(self._handler_for("test/def"), MimetypeTest)
+        self.assertEqual(self._handler_for('test/def'), MimetypeTest)
 
     def test_mimetype_match_scoring(self):
         """Testing score_match for different mimetype patterns"""

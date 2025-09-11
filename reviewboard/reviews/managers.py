@@ -1633,16 +1633,16 @@ class ReviewManager(Manager['Review']):
         master_review = reviews[0]
 
         for review in reviews[1:]:
-            for attname in ["body_top", "body_bottom", "body_top_reply_to",
-                            "body_bottom_reply_to"]:
+            for attname in ['body_top', 'body_bottom', 'body_top_reply_to',
+                            'body_bottom_reply_to']:
                 review_value = getattr(review, attname)
 
                 if (review_value and not getattr(master_review, attname)):
                     setattr(master_review, attname, review_value)
 
-            for attname in ["comments", "screenshot_comments",
-                            "file_attachment_comments",
-                            "general_comments"]:
+            for attname in ['comments', 'screenshot_comments',
+                            'file_attachment_comments',
+                            'general_comments']:
                 master_m2m = getattr(master_review, attname)
                 review_m2m = getattr(review, attname)
 

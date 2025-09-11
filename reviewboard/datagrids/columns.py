@@ -952,12 +952,12 @@ class ShipItColumn(Column):
                  review_request.last_updated)):
                 container_css_classes.append('-is-stale')
                 aria_label = ngettext(
-                    "%(shipit_count)d Ship It! (New updates to review)",
+                    '%(shipit_count)d Ship It! (New updates to review)',
                     "%(shipit_count)d Ship It's! (New updates to review)",
                     review_request.shipit_count)
             else:
                 aria_label = ngettext(
-                    "%(shipit_count)d Ship It!",
+                    '%(shipit_count)d Ship It!',
                     "%(shipit_count)d Ship It's!",
                     review_request.shipit_count)
 

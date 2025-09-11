@@ -494,7 +494,7 @@ def account_register(request, next_url='dashboard'):
 
         return response
 
-    return HttpResponseRedirect(reverse("login"))
+    return HttpResponseRedirect(reverse('login'))
 
 
 class MyAccountView(ConfigPagesView):

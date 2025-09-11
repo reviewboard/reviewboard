@@ -99,17 +99,17 @@ class FileDiffResource(WebAPIResource):
         'source_attachment': {
             'type': ResourceFieldType,
             'resource': DiffFileAttachmentResource,
-            'description': "The file attachment for the contents of the "
-                           "original file for this file diff, if representing "
-                           "a binary file.",
+            'description': 'The file attachment for the contents of the '
+                           'original file for this file diff, if representing '
+                           'a binary file.',
             'added_in': '2.0',
         },
         'dest_attachment': {
             'type': ResourceFieldType,
             'resource': DiffFileAttachmentResource,
-            'description': "The file attachment for the contents of the "
-                           "patched file for this file diff, if representing "
-                           "a binary file.",
+            'description': 'The file attachment for the contents of the '
+                           'patched file for this file diff, if representing '
+                           'a binary file.',
             'added_in': '2.0',
         },
         'orig_sha256': {
@@ -552,7 +552,7 @@ class FileDiffResource(WebAPIResource):
 
         if mimetype == 'text/x-patch':
             return self._get_patch(request, *args, **kwargs)
-        elif mimetype.startswith(self.DIFF_DATA_MIMETYPE_BASE + "+"):
+        elif mimetype.startswith(self.DIFF_DATA_MIMETYPE_BASE + '+'):
             return self._get_diff_data(request, mimetype, *args, **kwargs)
         else:
             return super(FileDiffResource, self).get(request, *args, **kwargs)

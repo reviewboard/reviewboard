@@ -170,7 +170,7 @@ def initialize(
 
     if (setup_templates or load_extensions) and not is_running_test:
         if settings.DEBUG:
-            logging.debug("Log file for Review Board v%s (PID %s)" %
+            logging.debug('Log file for Review Board v%s (PID %s)' %
                           (get_version_string(), os.getpid()))
 
         # Generate the AJAX serial, used for AJAX request caching.

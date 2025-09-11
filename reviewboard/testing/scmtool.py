@@ -56,16 +56,16 @@ class TestTool(GitTool):
             date='2013-01-01T00:00:00.0000000',
             message='Commit summary\n\nCommit description.',
             diff=b'\n'.join([
-                b"diff --git a/FILE_FOUND b/FILE_FOUND",
-                b"index 712544e4343bf04967eb5ea80257f6c64d6f42c7.."
-                b"f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644",
-                b"--- a/FILE_FOUND",
-                b"+++ b/FILE_FOUND",
-                b"@ -1,1 +1,1 @@",
-                b"-blah blah",
-                b"+blah",
-                b"-",
-                b"1.7.1",
+                b'diff --git a/FILE_FOUND b/FILE_FOUND',
+                b'index 712544e4343bf04967eb5ea80257f6c64d6f42c7..'
+                b'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644',
+                b'--- a/FILE_FOUND',
+                b'+++ b/FILE_FOUND',
+                b'@ -1,1 +1,1 @@',
+                b'-blah blah',
+                b'+blah',
+                b'-',
+                b'1.7.1',
             ]))
 
     def get_file(self, path, revision, **kwargs):
@@ -160,7 +160,7 @@ class TestToolSupportsPendingChangeSets(TestTool):
             changeset.files = ['README.md']
         changeset.summary = 'Added a README markdown to help explain what the'\
             ' repository is used for. Hopefully, this takes off.'
-        changeset.testing_done = "None was performed"
+        changeset.testing_done = 'None was performed'
         return changeset
 
 

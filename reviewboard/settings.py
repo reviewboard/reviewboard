@@ -62,7 +62,7 @@ LANGUAGE_CODE = 'en-us'
 SITE_ID = 1
 
 # The prefix for e-mail subjects sent to administrators.
-EMAIL_SUBJECT_PREFIX = "[Review Board] "
+EMAIL_SUBJECT_PREFIX = '[Review Board] '
 
 # Default name of the service used in From e-mail when not spoofing.
 #
@@ -322,8 +322,8 @@ LOGGING = {
     }
 }
 
-LOGGING_NAME = "reviewboard"
-LOGGING_REQUEST_FORMAT = "%(_local_site_name)s - %(user)s - %(path)s"
+LOGGING_NAME = 'reviewboard'
+LOGGING_REQUEST_FORMAT = '%(_local_site_name)s - %(user)s - %(path)s'
 LOGGING_BLACKLIST = [
     'django.db.backends',
     'MARKDOWN',
@@ -332,7 +332,7 @@ LOGGING_BLACKLIST = [
 LOGGING_ENABLED = True
 LOGGING_DIRECTORY = None
 
-AUTH_PROFILE_MODULE = "accounts.Profile"
+AUTH_PROFILE_MODULE = 'accounts.Profile'
 
 # Default expiration time for the cache.  Note that this has no effect unless
 # CACHE_BACKEND is specified in settings_local.py
@@ -362,8 +362,8 @@ SILENCED_SYSTEM_CHECKS = [
 ]
 
 # Cookie settings
-LANGUAGE_COOKIE_NAME = "rblanguage"
-SESSION_COOKIE_NAME = "rbsessionid"
+LANGUAGE_COOKIE_NAME = 'rblanguage'
+SESSION_COOKIE_NAME = 'rbsessionid'
 SESSION_COOKIE_AGE = 365 * 24 * 60 * 60  # 1 year
 
 # Default support settings

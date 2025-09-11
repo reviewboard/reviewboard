@@ -363,11 +363,11 @@ class ResourceDirective(Directive):
         else:
             resource_name = resource.name
 
-        append_detail_row(tbody, "Name", nodes.literal(text=resource_name))
+        append_detail_row(tbody, 'Name', nodes.literal(text=resource_name))
 
         # URI
         uri_template = get_resource_uri_template(resource, not is_list)
-        append_detail_row(tbody, "URI", nodes.literal(text=uri_template))
+        append_detail_row(tbody, 'URI', nodes.literal(text=uri_template))
 
         # Required features
         if getattr(resource, 'required_features', False):
@@ -385,7 +385,7 @@ class ResourceDirective(Directive):
 
         # Token Policy ID
         if hasattr(resource, 'policy_id'):
-            append_detail_row(tbody, "Token Policy ID",
+            append_detail_row(tbody, 'Token Policy ID',
                               nodes.literal(text=resource.policy_id))
 
         # HTTP Methods
@@ -408,14 +408,14 @@ class ResourceDirective(Directive):
             if i != -1:
                 doc_summary = doc_summary[:i + 1]
 
-            paragraph += nodes.inline(text=" - ")
+            paragraph += nodes.inline(text=' - ')
             paragraph += parse_text(
                 self, doc_summary,
                 wrapper_node_type=nodes.inline,
                 where='HTTP %s handler summary for %s'
                       % (http_method, self.options['classname']))
 
-        append_detail_row(tbody, "HTTP Methods", bullet_list)
+        append_detail_row(tbody, 'HTTP Methods', bullet_list)
 
         # Parent Resource
         if is_list or resource.uri_object_key is None:
@@ -432,7 +432,7 @@ class ResourceDirective(Directive):
         else:
             paragraph = 'None.'
 
-        append_detail_row(tbody, "Parent Resource", paragraph)
+        append_detail_row(tbody, 'Parent Resource', paragraph)
 
         # Child Resources
         if is_list:
@@ -465,9 +465,9 @@ class ResourceDirective(Directive):
             tocnode['includefiles'] = docnames
             tocnode['entries'] = [(None, docname) for docname in docnames]
         else:
-            tocnode = nodes.paragraph(text="None")
+            tocnode = nodes.paragraph(text='None')
 
-        append_detail_row(tbody, "Child Resources", tocnode)
+        append_detail_row(tbody, 'Child Resources', tocnode)
 
         return table
 

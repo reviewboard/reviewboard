@@ -41,7 +41,7 @@ console = None
 class SiteOptions(object):
     """The site options."""
 
-    copy_media = platform.system() == "Windows"
+    copy_media = platform.system() == 'Windows'
 
 
 def create_settings(options):
@@ -528,22 +528,22 @@ def parse_options(args):
         '--database-type',
         dest='db_type',
         default='sqlite3',
-        help="Database type (postgresql, mysql, sqlite3)")
+        help='Database type (postgresql, mysql, sqlite3)')
     parser.add_argument(
         '--database-name',
         dest='db_name',
         default=None,
-        help="Database name (or path, for sqlite3)")
+        help='Database name (or path, for sqlite3)')
     parser.add_argument(
         '--database-user',
         dest='db_user',
         default='',
-        help="Database user")
+        help='Database user')
     parser.add_argument(
         '--database-password',
         dest='db_password',
         default='',
-        help="Database password")
+        help='Database password')
 
     options = parser.parse_args(args)
 
@@ -560,9 +560,9 @@ def main():
     """The entry point of the prepare-dev script."""
     global console
 
-    if not os.path.exists(os.path.join("reviewboard", "manage.py")):
-        sys.stderr.write("This must be run from the top-level Review Board "
-                         "directory\n")
+    if not os.path.exists(os.path.join('reviewboard', 'manage.py')):
+        sys.stderr.write('This must be run from the top-level Review Board '
+                         'directory\n')
         sys.exit(1)
 
     options = parse_options(sys.argv[1:])
@@ -644,5 +644,5 @@ def main():
     console.print()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

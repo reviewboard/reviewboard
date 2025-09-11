@@ -128,7 +128,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         POST review-requests/<id>/reviews/<id>/general-comments/ API
         with an issue
         """
-        comment_text = "Test general comment with an opened issue"
+        comment_text = 'Test general comment with an opened issue'
         comment, review, review_request = \
             self._create_general_review_with_issue(
                 publish=False, comment_text=comment_text)

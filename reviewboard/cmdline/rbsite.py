@@ -233,7 +233,7 @@ class Site(object):
         self.venv_dir = os.path.join(self.abs_install_dir, 'venv')
         self.bin_dir = os.path.join(self.abs_install_dir, 'bin')
         self.site_id = \
-            os.path.basename(install_dir).replace(" ", "_").replace(".", "_")
+            os.path.basename(install_dir).replace(' ', '_').replace('.', '_')
         self.options = options
 
         # State saved during installation
@@ -341,17 +341,17 @@ class Site(object):
         self.process_template('cmdline/conf/errordocs/500.html.in',
                               os.path.join(errordocs_dir, '500.html'))
 
-        self.link_pkg_dir("reviewboard",
-                          "htdocs/static/lib",
+        self.link_pkg_dir('reviewboard',
+                          'htdocs/static/lib',
                           os.path.join(static_dir, 'lib'))
-        self.link_pkg_dir("reviewboard",
-                          "htdocs/static/rb",
+        self.link_pkg_dir('reviewboard',
+                          'htdocs/static/rb',
                           os.path.join(static_dir, 'rb'))
-        self.link_pkg_dir("reviewboard",
-                          "htdocs/static/admin",
+        self.link_pkg_dir('reviewboard',
+                          'htdocs/static/admin',
                           os.path.join(static_dir, 'admin'))
-        self.link_pkg_dir("djblets",
-                          "htdocs/static/djblets",
+        self.link_pkg_dir('djblets',
+                          'htdocs/static/djblets',
                           os.path.join(static_dir, 'djblets'))
 
         # Remove any old media directories from old sites
@@ -405,7 +405,7 @@ class Site(object):
         """Set up the environment for running django management commands."""
         # Make sure that we have our settings_local.py in our path for when
         # we need to run manager commands.
-        sys.path.insert(0, os.path.join(self.abs_install_dir, "conf"))
+        sys.path.insert(0, os.path.join(self.abs_install_dir, 'conf'))
         os.environ[str('DJANGO_SETTINGS_MODULE')] = str('reviewboard.settings')
 
         # We need to override the CACHES setting before we do anything. Older
@@ -444,9 +444,9 @@ class Site(object):
 
     def generate_cron_files(self):
         """Generate sample crontab for this site."""
-        self.process_template("cmdline/conf/cron.conf.in",
-                              os.path.join(self.install_dir, "conf",
-                                           "cron.conf"))
+        self.process_template('cmdline/conf/cron.conf.in',
+                              os.path.join(self.install_dir, 'conf',
+                                           'cron.conf'))
 
     def generate_config_files(self):
         """Generate the configuration files for this site."""
@@ -854,8 +854,8 @@ class Site(object):
                     OLD_MEMCACHE):
                 return True
         except ImportError:
-            sys.stderr.write("Unable to import settings_local. "
-                             "Cannot determine if upgrade is needed.\n")
+            sys.stderr.write('Unable to import settings_local. '
+                             'Cannot determine if upgrade is needed.\n')
 
         return False
 
@@ -879,8 +879,8 @@ class Site(object):
 
     def upgrade_settings(self):
         """Perform a settings upgrade."""
-        settings_file = os.path.join(self.abs_install_dir, "conf",
-                                     "settings_local.py")
+        settings_file = os.path.join(self.abs_install_dir, 'conf',
+                                     'settings_local.py')
         buf = []
         database_info = OrderedDict()
         cache_info = OrderedDict()
@@ -970,7 +970,7 @@ class Site(object):
                     perform_upgrade = True
 
         except ImportError:
-            sys.stderr.write("Unable to import settings_local for upgrade.\n")
+            sys.stderr.write('Unable to import settings_local for upgrade.\n')
             return
 
         if not perform_upgrade:
@@ -1793,7 +1793,7 @@ class SiteList(object):
 
         with open(self.path, 'w') as f:
             for site in ordered_sites:
-                f.write("%s\n" % site)
+                f.write('%s\n' % site)
 
 
 class Command(object):
@@ -2118,20 +2118,20 @@ class InstallCommand(Command):
 
     def normalize_root_url_path(self, path):
         """Convert user-specified root URL paths to a normal format."""
-        if not path.endswith("/"):
-            path += "/"
+        if not path.endswith('/'):
+            path += '/'
 
-        if not path.startswith("/"):
-            path = "/" + path
+        if not path.startswith('/'):
+            path = '/' + path
 
         return path
 
     def normalize_media_url_path(self, path):
         """Convert user-specified media URLs to a normal format."""
-        if not path.endswith("/"):
-            path += "/"
+        if not path.endswith('/'):
+            path += '/'
 
-        if path.startswith("/"):
+        if path.startswith('/'):
             path = path[1:]
 
         return path
@@ -2261,7 +2261,7 @@ class InstallCommand(Command):
         console.print(
             'Typically, Review Board exists at the root of a URL. For '
             'example, https://reviews.example.com/. In this case, you would '
-            'specify \"/\".'
+            'specify "/".'
             '\n'
             'However, if you want to listen to, say, '
             'https://example.com/reviews/, you can specify "/reviews/".'
@@ -2674,30 +2674,30 @@ class InstallCommand(Command):
         cur_site.domain = site.domain_name
         cur_site.save()
 
-        if site.static_url.startswith("http"):
+        if site.static_url.startswith('http'):
             site_static_url = site.static_url
         else:
             site_static_url = site.site_root + site.static_url
 
-        if site.media_url.startswith("http"):
+        if site.media_url.startswith('http'):
             site_media_url = site.media_url
         else:
             site_media_url = site.site_root + site.media_url
 
         htdocs_path = os.path.join(site.abs_install_dir, 'htdocs')
-        site_media_root = os.path.join(htdocs_path, "media")
-        site_static_root = os.path.join(htdocs_path, "static")
+        site_media_root = os.path.join(htdocs_path, 'media')
+        site_static_root = os.path.join(htdocs_path, 'static')
 
         siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set("company", site.company)
-        siteconfig.set("send_support_usage_stats",
+        siteconfig.set('company', site.company)
+        siteconfig.set('send_support_usage_stats',
                        site.send_support_usage_stats)
-        siteconfig.set("site_static_url", site_static_url)
-        siteconfig.set("site_static_root", site_static_root)
-        siteconfig.set("site_media_url", site_media_url)
-        siteconfig.set("site_media_root", site_media_root)
-        siteconfig.set("site_admin_name", site.admin_user)
-        siteconfig.set("site_admin_email", site.admin_email)
+        siteconfig.set('site_static_url', site_static_url)
+        siteconfig.set('site_static_root', site_static_root)
+        siteconfig.set('site_media_url', site_media_url)
+        siteconfig.set('site_media_root', site_media_root)
+        siteconfig.set('site_admin_name', site.admin_user)
+        siteconfig.set('site_admin_email', site.admin_email)
         siteconfig.set('manual-updates', {
             'static-media': True,
         })
@@ -2842,7 +2842,7 @@ class UpgradeCommand(Command):
         diff_dedup_needed = site.get_diff_dedup_needed()
         static_media_upgrade_needed = site.get_static_media_upgrade_needed()
         data_dir_exists = os.path.exists(
-            os.path.join(site.install_dir, "data"))
+            os.path.join(site.install_dir, 'data'))
 
         def _rebuild_dir_structure():
             site.rebuild_site_directory()
@@ -2897,7 +2897,7 @@ class UpgradeCommand(Command):
             siteconfig.settings['manual-updates']['static-media'] = False
             siteconfig.save()
 
-            static_dir = "%s/htdocs/static" % \
+            static_dir = '%s/htdocs/static' % \
                          site.abs_install_dir.replace('\\', '/')
 
             console.print(
@@ -3159,9 +3159,9 @@ class ManageCommand(Command):
 
 # A list of all commands supported by rb-site.
 COMMANDS = {
-    "install": InstallCommand(),
-    "upgrade": UpgradeCommand(),
-    "manage": ManageCommand(),
+    'install': InstallCommand(),
+    'upgrade': UpgradeCommand(),
+    'manage': ManageCommand(),
 }
 
 
@@ -3348,5 +3348,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

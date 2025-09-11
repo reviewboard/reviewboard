@@ -32,7 +32,7 @@ class RawFileDiffData(models.Model):
         (COMPRESSION_BZIP2, _('BZip2-compressed')),
     )
 
-    binary_hash = models.CharField(_("hash"), max_length=40, unique=True)
+    binary_hash = models.CharField(_('hash'), max_length=40, unique=True)
     binary = models.BinaryField()
     compression = models.CharField(max_length=1, choices=COMPRESSION_CHOICES,
                                    null=True, blank=True)

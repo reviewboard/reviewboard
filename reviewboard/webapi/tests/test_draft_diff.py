@@ -175,7 +175,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
                 get_draft_diff_list_url(review_request),
                 {
                     'path': diff,
-                    'basedir': "/trunk",
+                    'basedir': '/trunk',
                 },
                 expected_status=400)
 

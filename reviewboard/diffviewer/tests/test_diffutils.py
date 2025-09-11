@@ -3358,31 +3358,31 @@ class PatchTests(kgb.SpyAgency, TestCase):
 
     def test_patch_crlf_file_crlf_diff(self) -> None:
         """Testing patch with a CRLF file and a CRLF diff"""
-        old = (b'Test data for a README file.\r\n'
-               b'\r\n'
+        old = (b"Test data for a README file.\r\n"
+               b"\r\n"
                b"There's a line here.\r\n"
-               b'\r\n'
-               b'A line there.\r\n'
-               b'\r\n'
-               b'And here.\r\n')
+               b"\r\n"
+               b"A line there.\r\n"
+               b"\r\n"
+               b"And here.\r\n")
 
-        new = (b'Test data for a README file.\n'
-               b'\n'
+        new = (b"Test data for a README file.\n"
+               b"\n"
                b"There's a line here.\n"
-               b'A line there.\n'
-               b'\n'
-               b'And here.\n')
+               b"A line there.\n"
+               b"\n"
+               b"And here.\n")
 
-        diff = (b'--- README\t2007-07-02 23:33:27.000000000 -0700\n'
-                b'+++ README\t2007-07-02 23:32:59.000000000 -0700\n'
-                b'@@ -1,7 +1,6 @@\n'
-                b' Test data for a README file.\r\n'
-                b' \r\n'
+        diff = (b"--- README\t2007-07-02 23:33:27.000000000 -0700\n"
+                b"+++ README\t2007-07-02 23:32:59.000000000 -0700\n"
+                b"@@ -1,7 +1,6 @@\n"
+                b" Test data for a README file.\r\n"
+                b" \r\n"
                 b" There's a line here.\r\n"
-                b'-\r\n'
-                b' A line there.\r\n'
-                b' \r\n'
-                b' And here.\r\n')
+                b"-\r\n"
+                b" A line there.\r\n"
+                b" \r\n"
+                b" And here.\r\n")
 
         patched = patch(diff=diff,
                         orig_file=old,
@@ -3391,31 +3391,31 @@ class PatchTests(kgb.SpyAgency, TestCase):
 
     def test_patch_cr_file_crlf_diff(self) -> None:
         """Testing patch with a CR file and a CRLF diff"""
-        old = (b'Test data for a README file.\n'
-               b'\n'
+        old = (b"Test data for a README file.\n"
+               b"\n"
                b"There's a line here.\n"
-               b'\n'
-               b'A line there.\n'
-               b'\n'
-               b'And here.\n')
+               b"\n"
+               b"A line there.\n"
+               b"\n"
+               b"And here.\n")
 
-        new = (b'Test data for a README file.\n'
-               b'\n'
+        new = (b"Test data for a README file.\n"
+               b"\n"
                b"There's a line here.\n"
-               b'A line there.\n'
-               b'\n'
-               b'And here.\n')
+               b"A line there.\n"
+               b"\n"
+               b"And here.\n")
 
-        diff = (b'--- README\t2007-07-02 23:33:27.000000000 -0700\n'
-                b'+++ README\t2007-07-02 23:32:59.000000000 -0700\n'
-                b'@@ -1,7 +1,6 @@\n'
-                b' Test data for a README file.\r\n'
-                b' \r\n'
+        diff = (b"--- README\t2007-07-02 23:33:27.000000000 -0700\n"
+                b"+++ README\t2007-07-02 23:32:59.000000000 -0700\n"
+                b"@@ -1,7 +1,6 @@\n"
+                b" Test data for a README file.\r\n"
+                b" \r\n"
                 b" There's a line here.\r\n"
-                b'-\r\n'
-                b' A line there.\r\n'
-                b' \r\n'
-                b' And here.\r\n')
+                b"-\r\n"
+                b" A line there.\r\n"
+                b" \r\n"
+                b" And here.\r\n")
 
         patched = patch(diff=diff,
                         orig_file=old,
@@ -3424,31 +3424,31 @@ class PatchTests(kgb.SpyAgency, TestCase):
 
     def test_patch_crlf_file_cr_diff(self) -> None:
         """Testing patch with a CRLF file and a CR diff"""
-        old = (b'Test data for a README file.\r\n'
-               b'\r\n'
+        old = (b"Test data for a README file.\r\n"
+               b"\r\n"
                b"There's a line here.\r\n"
-               b'\r\n'
-               b'A line there.\r\n'
-               b'\r\n'
-               b'And here.\r\n')
+               b"\r\n"
+               b"A line there.\r\n"
+               b"\r\n"
+               b"And here.\r\n")
 
-        new = (b'Test data for a README file.\n'
-               b'\n'
+        new = (b"Test data for a README file.\n"
+               b"\n"
                b"There's a line here.\n"
-               b'A line there.\n'
-               b'\n'
-               b'And here.\n')
+               b"A line there.\n"
+               b"\n"
+               b"And here.\n")
 
-        diff = (b'--- README\t2007-07-02 23:33:27.000000000 -0700\n'
-                b'+++ README\t2007-07-02 23:32:59.000000000 -0700\n'
-                b'@@ -1,7 +1,6 @@\n'
-                b' Test data for a README file.\n'
-                b' \n'
+        diff = (b"--- README\t2007-07-02 23:33:27.000000000 -0700\n"
+                b"+++ README\t2007-07-02 23:32:59.000000000 -0700\n"
+                b"@@ -1,7 +1,6 @@\n"
+                b" Test data for a README file.\n"
+                b" \n"
                 b" There's a line here.\n"
-                b'-\n'
-                b' A line there.\n'
-                b' \n'
-                b' And here.\n')
+                b"-\n"
+                b" A line there.\n"
+                b" \n"
+                b" And here.\n")
 
         patched = patch(diff=diff,
                         orig_file=old,
@@ -3460,73 +3460,73 @@ class PatchTests(kgb.SpyAgency, TestCase):
         with a trailing \\r
         """
         old = (
-            b'Test data for a README file.\n'
-            b'\n'
+            b"Test data for a README file.\n"
+            b"\n"
             b"There's a line here.\n"
-            b'\n'
-            b'A line there.\n'
-            b'\n'
-            b'And a new line here!\n'
-            b'\n'
-            b'We must have several lines to reproduce this problem.\n'
-            b'\n'
+            b"\n"
+            b"A line there.\n"
+            b"\n"
+            b"And a new line here!\n"
+            b"\n"
+            b"We must have several lines to reproduce this problem.\n"
+            b"\n"
             b"So that there's enough hidden context.\n"
-            b'\n'
-            b'And dividers so we can reproduce the bug.\n'
-            b'\n'
-            b'Which will a --- line at the end of one file due to the '
-            b'lack of newline,\n'
-            b'causing a parse error.\n'
-            b'\n'
-            b'And here.\n'
-            b'Yes, this is a good README file. Like most README files, '
+            b"\n"
+            b"And dividers so we can reproduce the bug.\n"
+            b"\n"
+            b"Which will a --- line at the end of one file due to the "
+            b"lack of newline,\n"
+            b"causing a parse error.\n"
+            b"\n"
+            b"And here.\n"
+            b"Yes, this is a good README file. Like most README files, "
             b"this doesn't tell youanything you really didn't already "
-            b'know.\r')
+            b"know.\r")
 
         new = (
-            b'Test data for a README file.\n'
-            b'\n'
+            b"Test data for a README file.\n"
+            b"\n"
             b"There's a line here.\n"
             b"Here's a change!\n"
-            b'\n'
-            b'A line there.\n'
-            b'\n'
-            b'And a new line here!\n'
-            b'\n'
-            b'We must have several lines to reproduce this problem.\n'
-            b'\n'
+            b"\n"
+            b"A line there.\n"
+            b"\n"
+            b"And a new line here!\n"
+            b"\n"
+            b"We must have several lines to reproduce this problem.\n"
+            b"\n"
             b"So that there's enough hidden context.\n"
-            b'\n'
-            b'And dividers so we can reproduce the bug.\n'
-            b'\n'
-            b'Which will a --- line at the end of one file due to the '
-            b'lack of newline,\n'
-            b'causing a parse error.\n'
-            b'\n'
-            b'And here.\n'
-            b'Yes, this is a good README file. Like most README files, '
+            b"\n"
+            b"And dividers so we can reproduce the bug.\n"
+            b"\n"
+            b"Which will a --- line at the end of one file due to the "
+            b"lack of newline,\n"
+            b"causing a parse error.\n"
+            b"\n"
+            b"And here.\n"
+            b"Yes, this is a good README file. Like most README files, "
             b"this doesn't tell youanything you really didn't "
-            b'already know.\n')
+            b"already know.\n")
 
         diff = (
-            b'--- README\t2008-02-25 03:40:42.000000000 -0800\n'
-            b'+++ README\t2008-02-25 03:40:55.000000000 -0800\n'
-            b'@@ -1,6 +1,7 @@\n'
-            b' Test data for a README file.\n'
-            b' \n'
+            b"--- README\t2008-02-25 03:40:42.000000000 -0800\n"
+            b"+++ README\t2008-02-25 03:40:55.000000000 -0800\n"
+            b"@@ -1,6 +1,7 @@\n"
+            b" Test data for a README file.\n"
+            b" \n"
             b" There's a line here.\n"
             b"+Here's a change!\n"
-            b' \n'
-            b' A line there.\n'
-            b' \n'
-            b'@@ -16,4 +17,4 @@\n'
-            b' causing a parse error.\n'
-            b' \n'
-            b' And here.\n'
-            b'-Yes, this is a good README file. Like most README files, this '
+            b" \n"
+            b" A line there.\n"
+            b" \n"
+            b"@@ -16,4 +17,4 @@\n"
+            b" causing a parse error.\n"
+            b" \n"
+            b" And here.\n"
+            b"-Yes, this is a good README file. Like most README files, this "
             b"doesn't tell youanything you really didn't already know.\n"
-            b'\\ No newline at end of file\n'
-            b'+Yes, this is a good README file. Like most README files, this '
+            b"\\ No newline at end of file\n"
+            b"+Yes, this is a good README file. Like most README files, this "
             b"doesn't tell youanything you really didn't already know.\n")
 
         patched = patch(diff=diff,

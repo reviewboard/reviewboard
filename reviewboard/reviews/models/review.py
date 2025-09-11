@@ -551,7 +551,7 @@ class Review(models.Model):
         super(Review, self).delete()
 
     def get_absolute_url(self):
-        return "%s#review%s" % (self.review_request.get_absolute_url(),
+        return '%s#review%s' % (self.review_request.get_absolute_url(),
                                 self.pk)
 
     def get_all_comments(self, **kwargs):

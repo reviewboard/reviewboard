@@ -23,7 +23,7 @@ except ImportError:
 
 
 # A list of known SSH URL schemes.
-ssh_uri_schemes = ["ssh", "sftp"]
+ssh_uri_schemes = ['ssh', 'sftp']
 uses_netloc.extend(ssh_uri_schemes)
 
 

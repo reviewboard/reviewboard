@@ -29,7 +29,7 @@ class BaseFileAttachmentResource(WebAPIResource):
         },
         'filename': {
             'type': StringFieldType,
-            'description': "The name of the file.",
+            'description': 'The name of the file.',
         },
         'icon_url': {
             'type': StringFieldType,

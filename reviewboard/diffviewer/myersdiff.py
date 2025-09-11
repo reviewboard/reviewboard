@@ -599,8 +599,7 @@ class MyersDiffer(Differ):
                     return bx_best, bxy_best - bx_best, False, True
 
         raise Exception(
-            'The function should not have reached here.',
-        )
+            'The function should not have reached here.')
 
     def _find_diagonal(
         self,

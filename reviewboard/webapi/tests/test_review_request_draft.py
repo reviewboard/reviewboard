@@ -1532,17 +1532,17 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(rsp['stat'], 'ok')
 
         review_request = ReviewRequest.objects.get(pk=review_request.id)
-        self.assertEqual(review_request.summary, "My Summary")
-        self.assertEqual(review_request.description, "My Description")
-        self.assertEqual(review_request.testing_done, "My Testing Done")
-        self.assertEqual(review_request.branch, "My Branch")
+        self.assertEqual(review_request.summary, 'My Summary')
+        self.assertEqual(review_request.description, 'My Description')
+        self.assertEqual(review_request.testing_done, 'My Testing Done')
+        self.assertEqual(review_request.branch, 'My Branch')
         self.assertTrue(review_request.public)
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(
             mail.outbox[0].subject,
-            "Re: Review Request %s: My Summary" % review_request.pk)
-        self.assertValidRecipients(["doc", "grumpy"])
+            'Re: Review Request %s: My Summary' % review_request.pk)
+        self.assertValidRecipients(['doc', 'grumpy'])
 
     def test_put_publish_with_new_submitter(self):
         """Testing the PUT review-requests/<id>/draft/?public=1 API
@@ -1563,7 +1563,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(rsp['stat'], 'ok')
 
         review_request = ReviewRequest.objects.get(pk=review_request.id)
-        self.assertEqual(review_request.submitter.username, "doc")
+        self.assertEqual(review_request.submitter.username, 'doc')
         self.assertTrue(review_request.public)
 
     def test_put_publish_with_new_review_request(self):
@@ -1588,16 +1588,16 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(rsp['stat'], 'ok')
 
         review_request = ReviewRequest.objects.get(pk=review_request.id)
-        self.assertEqual(review_request.summary, "My Summary")
-        self.assertEqual(review_request.description, "My Description")
-        self.assertEqual(review_request.testing_done, "My Testing Done")
-        self.assertEqual(review_request.branch, "My Branch")
+        self.assertEqual(review_request.summary, 'My Summary')
+        self.assertEqual(review_request.description, 'My Description')
+        self.assertEqual(review_request.testing_done, 'My Testing Done')
+        self.assertEqual(review_request.branch, 'My Branch')
         self.assertTrue(review_request.public)
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].subject,
-                         "Review Request %s: My Summary" % review_request.pk)
-        self.assertValidRecipients(["doc", "grumpy"], [])
+                         'Review Request %s: My Summary' % review_request.pk)
+        self.assertValidRecipients(['doc', 'grumpy'], [])
 
     def test_put_as_other_user_with_permission(self):
         """Testing the PUT review-requests/<id>/draft/ API
@@ -1704,10 +1704,10 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(rsp['stat'], 'ok')
 
         review_request = ReviewRequest.objects.get(pk=review_request.id)
-        self.assertEqual(review_request.summary, "My Summary")
-        self.assertEqual(review_request.description, "My Description")
-        self.assertEqual(review_request.testing_done, "My Testing Done")
-        self.assertEqual(review_request.branch, "My Branch")
+        self.assertEqual(review_request.summary, 'My Summary')
+        self.assertEqual(review_request.description, 'My Description')
+        self.assertEqual(review_request.testing_done, 'My Testing Done')
+        self.assertEqual(review_request.branch, 'My Branch')
         self.assertTrue(review_request.public)
 
         self.assertEqual(len(mail.outbox), 0)
@@ -2002,11 +2002,11 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
     def _create_update_review_request(self, api_func, expected_status,
                                       review_request=None,
                                       local_site_name=None):
-        summary = "My Summary"
-        description = "My Description"
-        testing_done = "My Testing Done"
-        branch = "My Branch"
-        bugs = "#123,456"
+        summary = 'My Summary'
+        description = 'My Description'
+        testing_done = 'My Testing Done'
+        branch = 'My Branch'
+        bugs = '#123,456'
 
         if review_request is None:
             review_request = self.create_review_request(submitter=self.user,
@@ -2153,7 +2153,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
             url, mimetype, draft = \
                 self.setup_basic_get_test(self.user, False, None)
 
-            source_text_type = "markdown" if rich_text else "plain"
+            source_text_type = 'markdown' if rich_text else 'plain'
 
             draft.description = source_text
             draft.description_rich_text = rich_text

@@ -176,47 +176,47 @@ class Profile(models.Model):
     # people to fix their real name and join groups.
     first_time_setup_done = models.BooleanField(
         default=False,
-        verbose_name=_("first time setup done"),
-        help_text=_("Indicates whether the user has already gone through "
-                    "the first time setup process by saving their user "
-                    "preferences."))
+        verbose_name=_('first time setup done'),
+        help_text=_('Indicates whether the user has already gone through '
+                    'the first time setup process by saving their user '
+                    'preferences.'))
 
     # Whether the user wants to receive emails
     should_send_email = models.BooleanField(
         default=True,
-        verbose_name=_("send email"),
-        help_text=_("Indicates whether the user wishes to receive emails."))
+        verbose_name=_('send email'),
+        help_text=_('Indicates whether the user wishes to receive emails.'))
 
     should_send_own_updates = models.BooleanField(
         default=True,
-        verbose_name=_("receive emails about own actions"),
-        help_text=_("Indicates whether the user wishes to receive emails "
-                    "about their own activity."))
+        verbose_name=_('receive emails about own actions'),
+        help_text=_('Indicates whether the user wishes to receive emails '
+                    'about their own activity.'))
 
     collapsed_diffs = models.BooleanField(
         default=True,
-        verbose_name=_("collapsed diffs"),
-        help_text=_("Indicates whether diffs should be shown in their "
-                    "collapsed state by default."))
+        verbose_name=_('collapsed diffs'),
+        help_text=_('Indicates whether diffs should be shown in their '
+                    'collapsed state by default.'))
     wordwrapped_diffs = models.BooleanField(
         default=True,
-        help_text=_("This field is unused and will be removed in a future "
-                    "version."))
+        help_text=_('This field is unused and will be removed in a future '
+                    'version.'))
     syntax_highlighting = models.BooleanField(
         default=True,
-        verbose_name=_("syntax highlighting"),
-        help_text=_("Indicates whether the user wishes to see "
-                    "syntax highlighting in the diffs."))
+        verbose_name=_('syntax highlighting'),
+        help_text=_('Indicates whether the user wishes to see '
+                    'syntax highlighting in the diffs.'))
     is_private = models.BooleanField(
         default=False,
-        verbose_name=_("profile private"),
-        help_text=_("Indicates whether the user wishes to keep his/her "
-                    "profile private."))
+        verbose_name=_('profile private'),
+        help_text=_('Indicates whether the user wishes to keep his/her '
+                    'profile private.'))
     open_an_issue = models.BooleanField(
         default=True,
-        verbose_name=_("opens an issue"),
-        help_text=_("Indicates whether the user wishes to default "
-                    "to opening an issue or not."))
+        verbose_name=_('opens an issue'),
+        help_text=_('Indicates whether the user wishes to default '
+                    'to opening an issue or not.'))
 
     default_use_rich_text = models.BooleanField(
         null=True,
@@ -244,13 +244,13 @@ class Profile(models.Model):
     # on the reviewer list or commenting on the review. This is similar to
     # adding yourself to a CC list.
     starred_review_requests = models.ManyToManyField(ReviewRequest, blank=True,
-                                                     related_name="starred_by")
+                                                     related_name='starred_by')
 
     # A list of watched groups. This is so that users can monitor groups
     # without actually joining them, preventing e-mails being sent to the
     # user and review requests from entering the Incoming Reviews list.
     starred_groups = models.ManyToManyField(Group, blank=True,
-                                            related_name="starred_by")
+                                            related_name='starred_by')
 
     # Allows per-user timezone settings
     timezone = models.CharField(choices=TIMEZONE_CHOICES, default='UTC',

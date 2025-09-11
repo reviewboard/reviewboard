@@ -143,7 +143,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         POST review-requests/<id>/reviews/<id>/screenshot-comments/ API
         with an issue
         """
-        comment_text = "Test screenshot comment with an opened issue"
+        comment_text = 'Test screenshot comment with an opened issue'
         comment, review, review_request = \
             self._create_screenshot_review_with_issue(
                 publish=False, comment_text=comment_text)
@@ -375,7 +375,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>
         API with an issue and a deleted screenshot
         """
-        comment_text = "Test screenshot comment with an opened issue"
+        comment_text = 'Test screenshot comment with an opened issue'
         x, y, w, h = (2, 2, 10, 10)
 
         review_request = self.create_review_request(publish=True,

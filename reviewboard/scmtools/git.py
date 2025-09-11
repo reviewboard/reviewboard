@@ -305,7 +305,7 @@ class GitDiffParser(DiffParser):
         Added storage of UNIX file modes and symlink targets.
     """
 
-    pre_creation_regexp = re.compile(b"^0+$")
+    pre_creation_regexp = re.compile(b'^0+$')
 
     FILE_MODE_RE = re.compile(
         br'^(?:(?P<type>new|old|deleted) (?:file )?mode|index \w+\.\.\w+) '
@@ -431,7 +431,7 @@ class GitDiffParser(DiffParser):
         (if any), and whether or not we've found a file (even if we decided
         not to record it).
         """
-        if self.lines[linenum].startswith(b"diff --git"):
+        if self.lines[linenum].startswith(b'diff --git'):
             line, info = self._parse_git_diff(linenum)
 
             return line, info, True
@@ -725,8 +725,8 @@ class GitDiffParser(DiffParser):
     def _is_binary_patch(self, linenum):
         line = self.lines[linenum]
 
-        return (line.startswith(b"Binary file") or
-                line.startswith(b"GIT binary patch"))
+        return (line.startswith(b'Binary file') or
+                line.startswith(b'GIT binary patch'))
 
     def _is_diff_fromfile_line(self, linenum):
         return (linenum + 1 < len(self.lines) and
@@ -770,7 +770,7 @@ class GitClient(SCMClient):
         url_parts = urlparse(self.path)
 
         if url_parts[0] == 'file':
-            if platform.system() == "Windows":
+            if platform.system() == 'Windows':
                 # Windows requires drive letter (e.g. C:/)
                 self.git_dir = url_parts[1] + url_parts[2]
             else:
@@ -831,7 +831,7 @@ class GitClient(SCMClient):
             return self.get_file_http(self._build_raw_url(path, revision),
                                       path, revision)
         else:
-            return self._cat_file(path, revision, "blob")
+            return self._cat_file(path, revision, 'blob')
 
     def get_file_exists(self, path, revision):
         if self.raw_file_url:
@@ -861,8 +861,8 @@ class GitClient(SCMClient):
 
     def _build_raw_url(self, path, revision):
         url = self.raw_file_url
-        url = url.replace("<revision>", revision)
-        url = url.replace("<filename>", urlquote(path))
+        url = url.replace('<revision>', revision)
+        url = url.replace('<filename>', urlquote(path))
         return url
 
     def _cat_file(self, path, revision, option):
@@ -895,10 +895,10 @@ class GitClient(SCMClient):
 
     def _resolve_head(self, revision, path):
         if revision == HEAD:
-            if path == "":
-                raise SCMError("path must be supplied if revision is %s"
+            if path == '':
+                raise SCMError('path must be supplied if revision is %s'
                                % HEAD)
-            return "HEAD:%s" % path
+            return 'HEAD:%s' % path
         else:
             return str(revision)
 
@@ -925,7 +925,7 @@ class GitClient(SCMClient):
                                      m.group('hostname'),
                                      path)
 
-        return "file://" + path
+        return 'file://' + path
 
 
 def strip_git_symlink_mode(patch_data):

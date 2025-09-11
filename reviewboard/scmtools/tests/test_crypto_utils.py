@@ -27,8 +27,8 @@ class CryptoUtilsTests(TestCase):
         # The encrypted value was made with PyCrypto, to help with
         # compatibility testing from older installs.
         encrypted = (
-            b'\xfb\xdc\xb5h\x15\xa1\xb2\xdc\xec\xf1\x14\xa9\xc6\xab\xb2J\x10'
-            b'\'\xd4\xf6&\xd4k9\x82\xf6\xb5\x8bmu\xc8E\x9c\xac\xc5\x04@B'
+            b"\xfb\xdc\xb5h\x15\xa1\xb2\xdc\xec\xf1\x14\xa9\xc6\xab\xb2J\x10"
+            b"'\xd4\xf6&\xd4k9\x82\xf6\xb5\x8bmu\xc8E\x9c\xac\xc5\x04@B"
         )
 
         decrypted = aes_decrypt(encrypted)

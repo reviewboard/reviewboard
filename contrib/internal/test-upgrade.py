@@ -27,9 +27,9 @@ def clone_git_tree(git_dir):
 
 def execute(cmdline, return_errcode=False, show_output=True):
     if isinstance(cmdline, list):
-        print(">>> %s" % subprocess.list2cmdline(cmdline))
+        print('>>> %s' % subprocess.list2cmdline(cmdline))
     else:
-        print(">>> %s" % cmdline)
+        print('>>> %s' % cmdline)
 
     p = subprocess.Popen(cmdline,
                          shell=False,
@@ -49,7 +49,7 @@ def execute(cmdline, return_errcode=False, show_output=True):
         return s, rc
 
     if rc != 0:
-        die("!!! Error invoking command.")
+        die('!!! Error invoking command.')
 
     return s
 
@@ -71,16 +71,16 @@ def parse_options(args):
     parser = OptionParser(usage='%prog [options]')
     parser.add_option('--database-type', dest='db_type',
                       default='sqlite3',
-                      help="Database type (postgresql, mysql, sqlite3)")
+                      help='Database type (postgresql, mysql, sqlite3)')
     parser.add_option('--database-name', dest='db_name',
                       default='reviewboard.db',
-                      help="Database name (or path, for sqlite3)")
+                      help='Database name (or path, for sqlite3)')
     parser.add_option('--database-user', dest='db_user',
                       default='',
-                      help="Database user")
+                      help='Database user')
     parser.add_option('--database-password', dest='db_password',
                       default='',
-                      help="Database password")
+                      help='Database password')
 
     options, args = parser.parse_args(args)
 
@@ -91,8 +91,8 @@ def main():
     if len(sys.argv) <= 2:
         die('Usage: test-upgrade.py branch1 branch2 [branchN...]\n')
 
-    if not os.path.exists("setup.py"):
-        die("This must be run from the root of the Review Board tree.\n")
+    if not os.path.exists('setup.py'):
+        die('This must be run from the root of the Review Board tree.\n')
 
     branches = parse_options(sys.argv[1:])
 
@@ -130,9 +130,9 @@ def main():
     shutil.rmtree(git_dir)
 
     print()
-    print("***")
-    print("*** Success!")
-    print("***")
+    print('***')
+    print('*** Success!')
+    print('***')
 
 
 if __name__ == '__main__':

@@ -805,11 +805,11 @@ def get_original_and_patched_files(
 
 def get_revision_str(revision):
     if revision == HEAD:
-        return "HEAD"
+        return 'HEAD'
     elif revision == PRE_CREATION:
-        return ""
+        return ''
     else:
-        return _("Revision %s") % revision
+        return _('Revision %s') % revision
 
 
 def get_filenames_match_patterns(patterns, filenames):

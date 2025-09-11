@@ -498,20 +498,20 @@ def dynamic_activity_data(request):
     # converts into a format suitable for QuerySet later on.
     if range_end:
         range_end = datetime.datetime.fromtimestamp(
-            time.mktime(time.strptime(range_end, "%Y-%m-%d")))
+            time.mktime(time.strptime(range_end, '%Y-%m-%d')))
 
     if range_start:
         range_start = datetime.datetime.fromtimestamp(
-            time.mktime(time.strptime(range_start, "%Y-%m-%d")))
+            time.mktime(time.strptime(range_start, '%Y-%m-%d')))
 
-    if direction == "next" and range_end:
+    if direction == 'next' and range_end:
         new_range_start = range_end
         new_range_end = \
             new_range_start + datetime.timedelta(days=days_total)
-    elif direction == "prev" and range_start:
+    elif direction == 'prev' and range_start:
         new_range_start = range_start - datetime.timedelta(days=days_total)
         new_range_end = range_start
-    elif direction == "same" and range_start and range_end:
+    elif direction == 'same' and range_start and range_end:
         new_range_start = range_start
         new_range_end = range_end
     else:
@@ -523,8 +523,8 @@ def dynamic_activity_data(request):
     new_range_end = timezone.make_aware(new_range_end, current_tz)
 
     response_data = {
-        "range_start": new_range_start.strftime("%Y-%m-%d"),
-        "range_end": new_range_end.strftime("%Y-%m-%d")
+        'range_start': new_range_start.strftime('%Y-%m-%d'),
+        'range_end': new_range_end.strftime('%Y-%m-%d')
     }
 
     def large_stats_data(range_start, range_end):
@@ -550,17 +550,17 @@ def dynamic_activity_data(request):
                 data.append([
                     time.mktime(time.strptime(
                         str(obj[timestamp_field]),
-                        "%Y-%m-%d")) * 1000,
+                        '%Y-%m-%d')) * 1000,
                     obj['created_count']
                 ])
 
             return data
 
-        comment_array = get_objects(Comment, "timestamp", "date(timestamp)")
-        change_desc_array = get_objects(ChangeDescription, "timestamp",
-                                        "date(timestamp)")
-        review_array = get_objects(Review, "timestamp", "date(timestamp)")
-        rr_array = get_objects(ReviewRequest, "time_added", "date(time_added)")
+        comment_array = get_objects(Comment, 'timestamp', 'date(timestamp)')
+        change_desc_array = get_objects(ChangeDescription, 'timestamp',
+                                        'date(timestamp)')
+        review_array = get_objects(Review, 'timestamp', 'date(timestamp)')
+        rr_array = get_objects(ReviewRequest, 'time_added', 'date(time_added)')
 
         return {
             'change_descriptions': change_desc_array,
@@ -572,8 +572,8 @@ def dynamic_activity_data(request):
     stats_data = large_stats_data(new_range_start, new_range_end)
 
     return {
-        "range": response_data,
-        "activity_data": stats_data
+        'range': response_data,
+        'activity_data': stats_data
     }
 
 

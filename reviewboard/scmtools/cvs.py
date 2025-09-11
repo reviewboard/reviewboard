@@ -28,7 +28,7 @@ sshutils.register_rbssh('CVS_RSH')
 
 class CVSTool(SCMTool):
     scmtool_id = 'cvs'
-    name = "CVS"
+    name = 'CVS'
     diffs_use_absolute_paths = True
     field_help_text = {
         'path': 'The CVSROOT used to access the repository.',
@@ -617,18 +617,18 @@ class CVSClient(object):
     def cat_file(self, filename, revision):
         # We strip the repo off of the fully qualified path as CVS does
         # not like to be given absolute paths.
-        repos_path = self.path.split(":")[-1]
+        repos_path = self.path.split(':')[-1]
 
         if '@' in repos_path:
             repos_path = '/' + repos_path.split('@')[-1].split('/', 1)[-1]
 
-        if filename.startswith(repos_path + "/"):
+        if filename.startswith(repos_path + '/'):
             filename = filename[len(repos_path) + 1:]
 
         # Strip off the ",v" we sometimes get for CVS paths. This is mostly
         # going to be an issue for older diffs, as newly-uploaded diffs should
         # strip these.
-        if filename.endswith(",v"):
+        if filename.endswith(',v'):
             filename = filename[:-2]
 
         # We want to try to fetch the files with different permutations of
@@ -644,10 +644,10 @@ class CVSClient(object):
             filename = '\\'.join(filename.rsplit('\\Attic\\', 1))
         elif '\\' in filename:
             pos = filename.rfind('\\')
-            filenameAttic = filename[0:pos] + "\\Attic" + filename[pos:]
+            filenameAttic = filename[0:pos] + '\\Attic' + filename[pos:]
         elif '/' in filename:
             pos = filename.rfind('/')
-            filenameAttic = filename[0:pos] + "/Attic" + filename[pos:]
+            filenameAttic = filename[0:pos] + '/Attic' + filename[pos:]
         else:
             # There isn't any path information, so we can't provide an
             # Attic path that makes any kind of sense.

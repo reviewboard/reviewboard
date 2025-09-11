@@ -145,17 +145,17 @@ class Command(BaseCommand):
         random.seed()
 
         if review_requests:
-            num_of_requests = self.parse_command("review_requests",
+            num_of_requests = self.parse_command('review_requests',
                                                  review_requests)
 
             # Setup repository.
             repo_dir = os.path.abspath(
-                os.path.join(sys.argv[0], "..", "scmtools", "testdata",
-                             "git_repo"))
+                os.path.join(sys.argv[0], '..', 'scmtools', 'testdata',
+                             'git_repo'))
 
             # Throw exception on error so transaction reverts.
             if not os.path.exists(repo_dir):
-                raise CommandError("No path to the repository")
+                raise CommandError('No path to the repository')
 
             scmtool = scmtools_registry.get_by_name('Git')
             self.repository = Repository.objects.create(
@@ -165,16 +165,16 @@ class Command(BaseCommand):
                 scmtool_id=scmtool.scmtool_id)
 
         if diffs:
-            num_of_diffs = self.parse_command("diffs", diffs)
+            num_of_diffs = self.parse_command('diffs', diffs)
 
             # Create the diff directory locations.
             diff_dir_tmp = os.path.abspath(
-                os.path.join(sys.argv[0], "..", "reviews", "management",
-                             "commands", "diffs"))
+                os.path.join(sys.argv[0], '..', 'reviews', 'management',
+                             'commands', 'diffs'))
 
             # Throw exception on error so transaction reverts.
             if not os.path.exists(diff_dir_tmp):
-                raise CommandError("Diff dir does not exist")
+                raise CommandError('Diff dir does not exist')
 
             diff_dir = diff_dir_tmp + '/'  # Add trailing slash.
 
@@ -184,18 +184,18 @@ class Command(BaseCommand):
 
             # Check for any diffs in the files.
             if len(files) == 0:
-                raise CommandError("No diff files in this directory")
+                raise CommandError('No diff files in this directory')
 
         if reviews:
-            num_of_reviews = self.parse_command("reviews", reviews)
+            num_of_reviews = self.parse_command('reviews', reviews)
 
         if diff_comments:
-            num_of_diff_comments = self.parse_command("diff-comments",
+            num_of_diff_comments = self.parse_command('diff-comments',
                                                       diff_comments)
 
         # Users is required for any other operation.
         if not users:
-            raise CommandError("At least one user must be added")
+            raise CommandError('At least one user must be added')
 
         # Start adding data to the database.
         for i in range(1, users + 1):
@@ -203,7 +203,7 @@ class Command(BaseCommand):
                 username=self.rand_username(),  # Avoids having to flush db.
                 first_name=random.choice(NAMES),
                 last_name=random.choice(NAMES),
-                email="test@example.com",
+                email='test@example.com',
                 is_staff=False,
                 is_active=True,
                 is_superuser=False)
@@ -212,7 +212,7 @@ class Command(BaseCommand):
                 new_user.set_password(password)
                 new_user.save()
             else:
-                new_user.set_password("test1")
+                new_user.set_password('test1')
                 new_user.save()
 
             Profile.objects.create(
@@ -227,17 +227,17 @@ class Command(BaseCommand):
             req_val = self.pick_random_value(num_of_requests)
 
             if int(verbosity) > NORMAL:
-                self.stdout.write("For user %s:%s" % (i, new_user.username))
-                self.stdout.write("=============================")
+                self.stdout.write('For user %s:%s' % (i, new_user.username))
+                self.stdout.write('=============================')
 
             for j in range(0, req_val):
                 if int(verbosity) > NORMAL:
-                    self.stdout.write("Request #%s:" % j)
+                    self.stdout.write('Request #%s:' % j)
 
                 review_request = ReviewRequest.objects.create(new_user, None)
                 review_request.public = True
-                review_request.summary = self.lorem_ipsum("summary")
-                review_request.description = self.lorem_ipsum("description")
+                review_request.summary = self.lorem_ipsum('summary')
+                review_request.description = self.lorem_ipsum('description')
                 review_request.shipit_count = 0
                 review_request.repository = self.repository
                 # Set the targeted reviewer to superuser or 1st defined.
@@ -257,13 +257,13 @@ class Command(BaseCommand):
                 # Won't execute if diff_val is 0, ie: no diffs requested.
                 for k in range(0, diff_val):
                     if int(verbosity) > NORMAL:
-                        self.stdout.write("%s:\tDiff #%s" % (i, k))
+                        self.stdout.write('%s:\tDiff #%s' % (i, k))
 
                     random_number = random.randint(0, len(files) - 1)
                     file_to_open = diff_dir + files[random_number]
                     f = open(file_to_open, 'r')
                     form = UploadDiffForm(review_request=review_request,
-                                          files={"path": File(f)})
+                                          files={'path': File(f)})
 
                     if form.is_valid():
                         cur_diff = form.create(f, None, diffset_history)
@@ -280,7 +280,7 @@ class Command(BaseCommand):
                     # 4-deep nested index loops are probably bad.
                     for l in range(review_val):  # noqa: E741
                         if int(verbosity) > NORMAL:
-                            self.stdout.write("%s:%s:\t\tReview #%s:" %
+                            self.stdout.write('%s:%s:\t\tReview #%s:' %
                                               (i, j, l))
 
                         reviews = Review.objects.create(
@@ -295,7 +295,7 @@ class Command(BaseCommand):
 
                         for m in range(0, comment_val):
                             if int(verbosity) > NORMAL:
-                                self.stdout.write("%s:%s:\t\t\tComments #%s" %
+                                self.stdout.write('%s:%s:\t\t\tComments #%s' %
                                                   (i, j, m))
 
                             if m == 0:
@@ -311,7 +311,7 @@ class Command(BaseCommand):
 
                             diff_comment = Comment.objects.create(
                                 filediff=file_diff,
-                                text="comment number %s" % (m + 1),
+                                text='comment number %s' % (m + 1),
                                 first_line=first_line,
                                 num_lines=num_lines)
 
@@ -338,10 +338,10 @@ class Command(BaseCommand):
 
             # Generate output as users & data is created.
             if req_val != 0:
-                self.stdout.write("user %s created with %s requests"
+                self.stdout.write('user %s created with %s requests'
                                   % (new_user.username, req_val))
             else:
-                self.stdout.write("user %s created successfully"
+                self.stdout.write('user %s created successfully'
                                   % new_user.username)
 
     def parse_command(self, com_arg, com_string):
@@ -375,7 +375,7 @@ class Command(BaseCommand):
 
     def lorem_ipsum(self, ipsum_type):
         """Create some random text for summary/description."""
-        if ipsum_type == "description":
+        if ipsum_type == 'description':
             max_size = DESCRIPTION_SIZE
         else:
             max_size = SUMMARY_SIZE

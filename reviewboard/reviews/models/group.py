@@ -37,14 +37,14 @@ class Group(models.Model):
     all review requests and replies to that address. If that e-mail address is
     blank, e-mails are sent individually to each member of that group.
     """
-    name = models.SlugField(_("name"), max_length=64, blank=False)
-    display_name = models.CharField(_("display name"), max_length=64)
+    name = models.SlugField(_('name'), max_length=64, blank=False)
+    display_name = models.CharField(_('display name'), max_length=64)
     mailing_list = models.CharField(
-        _("mailing list"),
+        _('mailing list'),
         blank=True,
         max_length=254,
-        help_text=_("The mailing list review requests and discussions "
-                    "are sent to."))
+        help_text=_('The mailing list review requests and discussions '
+                    'are sent to.'))
     email_list_only = models.BooleanField(
         _('send e-mail only to the mailing list'),
         default=True,
@@ -54,8 +54,8 @@ class Group(models.Model):
                     'will be used. This is highly recommended for '
                     'large groups.'))
     users = models.ManyToManyField(User, blank=True,
-                                   related_name="review_groups",
-                                   verbose_name=_("users"))
+                                   related_name='review_groups',
+                                   verbose_name=_('users'))
     local_site = models.ForeignKey(LocalSite,
                                    on_delete=models.CASCADE,
                                    blank=True,
