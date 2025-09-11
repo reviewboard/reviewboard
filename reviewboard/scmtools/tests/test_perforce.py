@@ -6,6 +6,7 @@ import subprocess
 import time
 import unittest
 from hashlib import md5
+from tempfile import mkdtemp
 from typing import TYPE_CHECKING, cast
 
 try:
@@ -79,8 +80,11 @@ class BasePerforceTestCase(SpyAgency, SCMTestCase):
         """
         super().setUpClass()
 
-        cls.local_repo_path = os.path.join(os.path.dirname(__file__),
-                                           '..', 'testdata', 'p4_repo')
+        p4_repo = os.path.join(os.path.dirname(__file__),
+                               '..', 'testdata', 'p4_repo')
+
+        cls.local_repo_path = mkdtemp(prefix='rb-tests-perforce-')
+        shutil.copytree(p4_repo, cls.local_repo_path, dirs_exist_ok=True)
 
         if has_p4d:
             cls.p4d_process = subprocess.Popen(
@@ -120,7 +124,11 @@ class BasePerforceTestCase(SpyAgency, SCMTestCase):
         super().tearDownClass()
 
         if has_p4d:
-            cls.p4d_process.terminate()
+            try:
+                cls.p4d_process.terminate()
+                cls.p4d_process.wait()
+            finally:
+                shutil.rmtree(cls.local_repo_path)
 
 
 class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
