@@ -27,7 +27,7 @@ from reviewboard.testing import online_only
 from reviewboard.testing.testcase import TestCase
 
 if TYPE_CHECKING:
-    from djblets.util.typing import SerializableJSONDict
+    from typelets.django.json import SerializableDjangoJSONDict
 
     from reviewboard.scmtools.core import RevisionID, SCMClient
 
@@ -1162,12 +1162,12 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
 
     def _dump_json(
         self,
-        obj: SerializableJSONDict,
+        obj: SerializableDjangoJSONDict,
     ) -> bytes:
         """Dump an object to a JSON byte string.
 
         Args:
-            obj (object):
+            obj (dict):
                 The object to dump.
 
         Returns:

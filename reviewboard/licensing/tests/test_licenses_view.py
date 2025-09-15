@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
     from django.http import HttpRequest
-    from djblets.util.typing import JSONValue
+    from typelets.json import JSONValue
 
     from reviewboard.licensing.license_checks import RequestCheckLicenseResult
     from reviewboard.licensing.provider import LicenseAction

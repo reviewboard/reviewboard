@@ -12,7 +12,7 @@ from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
 
 class DiffSettingsTests(TestCase):

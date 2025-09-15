@@ -4,16 +4,16 @@ from urllib.parse import quote
 from django import forms
 from django.utils.translation import gettext, gettext_lazy as _
 
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.forms import HostingServiceForm
-from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
 
 
-class UnfuddleForm(HostingServiceForm):
+class UnfuddleForm(BaseHostingServiceRepositoryForm):
     unfuddle_account_domain = forms.CharField(
         label=_('Unfuddle account domain'),
         max_length=64,
@@ -40,7 +40,7 @@ class UnfuddleForm(HostingServiceForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
 
-class Unfuddle(HostingService):
+class Unfuddle(BaseHostingService):
     """Hosting service support for Unfuddle.
 
     Unfuddle is a source hosting service that supports Git and Subversion

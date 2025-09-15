@@ -2,11 +2,11 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
-from reviewboard.hostingsvcs.forms import HostingServiceForm
-from reviewboard.hostingsvcs.service import HostingService
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
-class VersionOneForm(HostingServiceForm):
+class VersionOneForm(BaseHostingServiceRepositoryForm):
     versionone_url = forms.CharField(
         label=_('VersionOne URL'),
         max_length=64,
@@ -15,7 +15,7 @@ class VersionOneForm(HostingServiceForm):
         validators=[validate_bug_tracker_base_hosting_url])
 
 
-class VersionOne(HostingService):
+class VersionOne(BaseHostingService):
     name = 'VersionOne'
     hosting_service_id = 'versionone'
     form = VersionOneForm

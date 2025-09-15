@@ -3,18 +3,21 @@
 from __future__ import annotations
 
 import os
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.testing.testcases import WebAPITestCaseMixin
-from djblets.util.typing import JSONDict, KwargsDict
 
 from reviewboard.accounts.backends.standard import StandardAuthBackend
-from reviewboard.notifications.tests.test_email_sending import EmailTestHelper
+from reviewboard.notifications.tests.mixins import EmailTestHelper
 from reviewboard.testing import TestCase
 from reviewboard.webapi.tests.mimetypes import error_mimetype
+
+if TYPE_CHECKING:
+    from typelets.funcs import KwargsDict
+    from typelets.json import JSONDict
 
 
 _auth_backend_path = '%s.%s' % (StandardAuthBackend.__module__,

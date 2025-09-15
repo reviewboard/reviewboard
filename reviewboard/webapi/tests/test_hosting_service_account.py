@@ -28,7 +28,7 @@ from reviewboard.webapi.tests.urls import (
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
 
 class ResourceListTests(kgb.SpyAgency,

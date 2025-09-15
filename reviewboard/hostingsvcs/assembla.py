@@ -2,13 +2,13 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from reviewboard.admin.server import get_hostname
-from reviewboard.hostingsvcs.forms import HostingServiceForm
-from reviewboard.hostingsvcs.service import HostingService
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 
 
-class AssemblaForm(HostingServiceForm):
+class AssemblaForm(BaseHostingServiceRepositoryForm):
     assembla_project_id = forms.CharField(
         label=_('Project ID'),
         max_length=64,
@@ -42,7 +42,7 @@ class AssemblaForm(HostingServiceForm):
             })
 
 
-class Assembla(HostingService):
+class Assembla(BaseHostingService):
     """Hosting service support for Assembla.com.
 
     Assembla is a hosting service that offers, amongst other features,

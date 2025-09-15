@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from typing import Any
 
     from django.contrib.auth.models import User
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
     from reviewboard.webapi.tests.mixins import BasicPutTestSetupState
 

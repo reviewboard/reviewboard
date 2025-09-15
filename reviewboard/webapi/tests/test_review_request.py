@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import kgb
+from django_assert_queries.testing import assert_queries
 from django.contrib import auth
 from django.contrib.auth.models import User, Permission
 from django.db import IntegrityError
@@ -1032,7 +1033,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
             },
         ]
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             rsp = self.api_get(get_review_request_list_url(),
                                expected_mimetype=review_request_list_mimetype)
 

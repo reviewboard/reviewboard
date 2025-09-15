@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django_assert_queries.testing import assert_queries
 from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
@@ -575,7 +576,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         # The purpose of this test is to see what queries are being executed,
         # to compare against the queries executed during ``pending_deletion``
         # updates.
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             rsp = self.api_put(
                 get_draft_file_attachment_item_url(review_request,
                                                    file_attachment.pk),
@@ -792,7 +793,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             },
         ]
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             rsp = self.api_put(
                 get_draft_file_attachment_item_url(review_request,
                                                    file_attachment.pk),
@@ -1088,7 +1089,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             },
         ]
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             rsp = self.api_put(
                 get_draft_file_attachment_item_url(review_request,
                                                    file_attachment.pk),
@@ -1235,7 +1236,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             },
         ]
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             rsp = self.api_put(
                 get_draft_file_attachment_item_url(review_request,
                                                    file_attachment.pk),

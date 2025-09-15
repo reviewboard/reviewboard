@@ -31,9 +31,11 @@ from typing_extensions import TypeAlias, TypedDict
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 
 if TYPE_CHECKING:
-    from djblets.util.typing import JSONValue
-    from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
     from urllib.request import BaseHandler
+
+    from typelets.json import JSONValue
+
+    from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
 logger = logging.getLogger(__name__)

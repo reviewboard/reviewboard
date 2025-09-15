@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from django_assert_queries.testing import assert_queries
 from django.db.models import Q
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 
@@ -27,7 +28,7 @@ from reviewboard.webapi.tests.urls import (get_file_attachment_item_url,
                                            get_file_attachment_list_url)
 
 if TYPE_CHECKING:
-    from djblets.db.query_comparator import ExpectedQueries
+    from django_assert_queries.query_comparator import ExpectedQueries
 
 
 class ResourceListTests(ReviewRequestChildListMixin,
@@ -454,7 +455,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         # The purpose of this test is to see what queries are being executed,
         # to compare against the queries executed during ``pending_deletion``
         # updates.
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             rsp = self.api_put(
                 get_file_attachment_item_url(file_attachment),
                 {
@@ -667,7 +668,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
             },
         ]
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             rsp = self.api_put(
                 get_file_attachment_item_url(file_attachment),
                 {
@@ -894,7 +895,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
             },
         ]
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             rsp = self.api_put(
                 get_file_attachment_item_url(file_attachment),
                 {

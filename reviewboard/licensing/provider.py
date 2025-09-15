@@ -16,13 +16,14 @@ from typing_extensions import NotRequired, TypeVar, TypedDict
 from reviewboard.licensing.license import LicenseInfo, LicenseStatus
 
 if TYPE_CHECKING:
-    from typing import ClassVar, Sequence
+    from collections.abc import Sequence
+    from typing import ClassVar
 
     from django.http import HttpRequest
-    from djblets.util.typing import (JSONValue,
-                                     SerializableJSONDict,
-                                     SerializableJSONList,
-                                     StrOrPromise)
+    from typelets.json import JSONValue
+    from typelets.django.strings import StrOrPromise
+    from typelets.django.json import (SerializableDjangoJSONDict,
+                                      SerializableDjangoJSONList)
 
     from reviewboard.licensing.license_checks import (
         RequestCheckLicenseResult,
@@ -193,7 +194,7 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
         *,
         license_info: _TLicenseInfo,
         request: (HttpRequest | None) = None,
-    ) -> SerializableJSONDict:
+    ) -> SerializableDjangoJSONDict:
         """Return data for the JavaScript license model.
 
         This provides all the data needed by the JavaScript license model
@@ -207,7 +208,7 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
                 The HTTP request from the client.
 
         Returns:
-            djblets.util.typing.SerializableJSONDict:
+            typelets.django.json.SerializableDjangoJSONDict:
             The data for the JavaScript license model.
         """
         is_trial = license_info.is_trial
@@ -279,7 +280,7 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
                                      product=product)
 
         # Build actions for the license.
-        actions_data: SerializableJSONList = [
+        actions_data: SerializableDjangoJSONList = [
             {
                 'actionID': action['action_id'],
                 'label': action['label'],
@@ -334,10 +335,10 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
             license_info (reviewboard.licensing.license.LicenseInfo):
                 The license information to convert to model data.
 
-            check_request_data (djblets.util.typing.JSONValue):
+            check_request_data (typelets.json.JSONValue):
                 The original request data sent to the license check.
 
-            check_response_data (djblets.util.typing.JSONValue):
+            check_response_data (typelets.json.JSONValue):
                 The response data from the license check.
 
             request (django.http.HttpRequest, optional):

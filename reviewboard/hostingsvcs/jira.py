@@ -10,15 +10,15 @@ except ImportError:
     has_jira = False
 
 from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.bugtracker import BugTracker
-from reviewboard.hostingsvcs.forms import HostingServiceForm
-from reviewboard.hostingsvcs.service import HostingService
 
 
 logger = logging.getLogger(__name__)
 
 
-class JIRAForm(HostingServiceForm):
+class JIRAForm(BaseHostingServiceRepositoryForm):
     jira_url = forms.CharField(
         label=_('JIRA URL'),
         max_length=64,
@@ -30,7 +30,7 @@ class JIRAForm(HostingServiceForm):
         return self.cleaned_data['jira_url'].rstrip('/ ')
 
 
-class JIRA(HostingService, BugTracker):
+class JIRA(BaseHostingService, BugTracker):
     name = 'JIRA'
     hosting_service_id = 'jira'
     form = JIRAForm

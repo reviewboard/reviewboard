@@ -7,6 +7,7 @@ from datetime import timedelta
 from typing import (Any, Dict, Iterator, List, Optional, Sequence,
                     TYPE_CHECKING, Tuple, Union, cast)
 
+from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.utils import timezone
@@ -31,7 +32,8 @@ from reviewboard.webapi.testing.queries import (
 if TYPE_CHECKING:
     from djblets.features.testing import FeatureStates
     from djblets.testing.testcases import ExpectedQueries
-    from djblets.util.typing import JSONDict, KwargsDict
+    from typelets.json import JSONDict
+    from typelets.funcs import KwargsDict
     from djblets.webapi.errors import WebAPIError
 
     from reviewboard.reviews.models import ReviewRequest
@@ -401,8 +403,7 @@ class BasicTestsMixin(_MixinsParentClass):
             if expected_queries is None:
                 yield
             else:
-                with self.assertQueries(expected_queries,
-                                        traceback_size=30):
+                with assert_queries(expected_queries, traceback_size=30):
                     yield
 
     def _close_file_handles(

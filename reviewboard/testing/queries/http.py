@@ -9,7 +9,6 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
-from djblets.db.query_comparator import ExpectedQueries
 
 from reviewboard.accounts.testing.queries import (
     get_user_by_pk_equeries,
@@ -18,6 +17,8 @@ from reviewboard.site.testing.queries import \
     get_check_local_site_access_equeries
 
 if TYPE_CHECKING:
+    from django_assert_queries.query_comparator import ExpectedQueries
+
     from reviewboard.site.models import LocalSite
 
 

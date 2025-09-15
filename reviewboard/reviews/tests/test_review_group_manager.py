@@ -5,6 +5,7 @@ from __future__ import annotations
 from itertools import chain
 from typing import Dict, List, Optional, Sequence, TYPE_CHECKING, Tuple, Union
 
+from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
 from djblets.testing.decorators import add_fixtures
 
@@ -16,7 +17,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
-    from djblets.util.typing import KwargsDict
+    from typelets.funcs import KwargsDict
 
     from reviewboard.site.models import AnyOrAllLocalSites
 
@@ -540,7 +541,7 @@ class AccessibleTests(AccessibleTestsMixin, TestCase):
             has_view_invite_only_groups_perm=has_view_invite_only_groups_perm,
             local_site=local_site)
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             accessible = list(Group.objects.accessible(
                 user,
                 visible_only=visible_only,
@@ -967,7 +968,7 @@ class AccessibleIDsTests(AccessibleTestsMixin, TestCase):
             has_view_invite_only_groups_perm=has_view_invite_only_groups_perm,
             local_site=local_site)
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             accessible_ids = Group.objects.accessible_ids(
                 user,
                 visible_only=visible_only,

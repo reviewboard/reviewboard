@@ -5,16 +5,16 @@ from urllib.error import HTTPError, URLError
 from django import forms
 from django.utils.translation import gettext, gettext_lazy as _
 
+from reviewboard.hostingsvcs.base.client import HostingServiceClient
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.forms import HostingServiceForm
-from reviewboard.hostingsvcs.service import (HostingService,
-                                             HostingServiceClient)
 from reviewboard.scmtools.errors import FileNotFoundError
 
 
-class KilnForm(HostingServiceForm):
+class KilnForm(BaseHostingServiceRepositoryForm):
     kiln_account_domain = forms.CharField(
         label=_('Account domain'),
         max_length=64,
@@ -179,7 +179,7 @@ class KilnClient(HostingServiceClient):
             raise KilnAPIError(rsp['errors'])
 
 
-class Kiln(HostingService):
+class Kiln(BaseHostingService):
     """Hosting service support for Kiln On Demand.
 
     Kiln On Demand supports Git and Mercurial repositories, accessible

@@ -1,11 +1,11 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from reviewboard.hostingsvcs.forms import HostingServiceForm
-from reviewboard.hostingsvcs.service import HostingService
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
-class GitoriousForm(HostingServiceForm):
+class GitoriousForm(BaseHostingServiceRepositoryForm):
     gitorious_project_name = forms.CharField(
         label=_('Project name'),
         max_length=64,
@@ -19,7 +19,7 @@ class GitoriousForm(HostingServiceForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
 
-class Gitorious(HostingService):
+class Gitorious(BaseHostingService):
     name = 'Gitorious'
     hosting_service_id = 'gitorious'
     form = GitoriousForm

@@ -1,5 +1,8 @@
 """Unit tests for reviewboard.reviews.models.status_update.StatusUpdate."""
 
+from __future__ import annotations
+
+from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, Permission, User
 from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
@@ -180,7 +183,7 @@ class StatusUpdateTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             config2 = status_update.integration_config
 
         self.assertEqual(config, config2)
@@ -212,7 +215,7 @@ class StatusUpdateTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             config2 = status_update.integration_config
 
         self.assertEqual(config, config2)
@@ -245,7 +248,7 @@ class StatusUpdateTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             config2 = status_update.integration_config
 
         self.assertIsNone(config2)
@@ -275,7 +278,7 @@ class StatusUpdateTests(TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             config2 = status_update.integration_config
 
         self.assertIsNone(config2)

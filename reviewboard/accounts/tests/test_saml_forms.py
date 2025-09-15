@@ -18,7 +18,7 @@ from reviewboard.accounts.sso.backends.saml.settings import (
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
 
 VALID_CERT = """-----BEGIN CERTIFICATE-----

@@ -10,11 +10,11 @@ from typing import Optional, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from django.db.models import Q, Value
-from djblets.db.query_comparator import ExpectedQueries
 
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
+    from django_assert_queries.query_comparator import ExpectedQueries
     from django.contrib.auth.models import AnonymousUser
 
 

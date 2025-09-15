@@ -21,20 +21,22 @@ from django.utils.translation import gettext, gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from reviewboard.admin.server import build_server_url, get_server_url
+from reviewboard.hostingsvcs.base.client import HostingServiceClient
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
-                                           HostingServiceForm)
+from reviewboard.hostingsvcs.base.forms import (
+    BaseHostingServiceAuthForm,
+    BaseHostingServiceRepositoryForm,
+)
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_git_branch_name,
                                                 get_repository_for_hook,
                                                 get_review_request_id)
 from reviewboard.hostingsvcs.repository import RemoteRepository
-from reviewboard.hostingsvcs.service import (HostingService,
-                                             HostingServiceClient)
 from reviewboard.hostingsvcs.utils.paginator import (APIPaginator,
                                                      ProxyPaginator)
 from reviewboard.scmtools.core import Branch, Commit
@@ -56,7 +58,7 @@ logger = logging.getLogger(__name__)
 _REQUIRED_SCOPES = ['admin:repo_hook', 'repo', 'user']
 
 
-class GitHubAuthForm(HostingServiceAuthForm):
+class GitHubAuthForm(BaseHostingServiceAuthForm):
     """Form for authenticating to GitHub."""
 
     class Meta:
@@ -86,7 +88,7 @@ class GitHubAuthForm(HostingServiceAuthForm):
         }
 
 
-class GitHubPublicForm(HostingServiceForm):
+class GitHubPublicForm(BaseHostingServiceRepositoryForm):
     """Sub-form for public repositories owned by a user."""
 
     github_public_repo_name = forms.CharField(
@@ -100,7 +102,7 @@ class GitHubPublicForm(HostingServiceForm):
                     '&lt;repo_name&gt;/</code>'))
 
 
-class GitHubPrivateForm(HostingServiceForm):
+class GitHubPrivateForm(BaseHostingServiceRepositoryForm):
     """Sub-form for private repositories owned by a user."""
 
     github_private_repo_name = forms.CharField(
@@ -114,7 +116,7 @@ class GitHubPrivateForm(HostingServiceForm):
                     '&lt;repo_name&gt;/</code>'))
 
 
-class GitHubPublicOrgForm(HostingServiceForm):
+class GitHubPublicOrgForm(BaseHostingServiceRepositoryForm):
     """Sub-form for public repositories owned by an organization."""
 
     github_public_org_name = forms.CharField(
@@ -138,7 +140,7 @@ class GitHubPublicOrgForm(HostingServiceForm):
                     '&lt;repo_name&gt;/</code>'))
 
 
-class GitHubPrivateOrgForm(HostingServiceForm):
+class GitHubPrivateOrgForm(BaseHostingServiceRepositoryForm):
     """Sub-form for private repositories owned by an organization."""
 
     github_private_org_name = forms.CharField(
@@ -253,12 +255,12 @@ class GitHubClient(HostingServiceClient):
         """Process an HTTP response and return a result.
 
         Args:
-            response (reviewboard.hostingsvcs.service.
+            response (reviewboard.hostingsvcs.base.http.
                       HostingServiceHTTPResponse):
                 The response to process.
 
         Returns:
-            reviewboard.hostingsvcs.service.HostingServiceHTTPResponse:
+            reviewboard.hostingsvcs.base.http.HostingServiceHTTPResponse:
             The resulting response.
         """
         rate_limit_remaining = response.get_header('X-RateLimit-Remaining')
@@ -285,7 +287,7 @@ class GitHubClient(HostingServiceClient):
         and GitHub error payloads.
 
         Args:
-            request (reviewboard.hostingsvcs.service.
+            request (reviewboard.hostingsvcs.base.http.
                      HostingServiceHTTPRequest):
                 The request that resulted in an error.
 
@@ -603,7 +605,7 @@ class GitHubHookViews(object):
         return review_request_id_to_commits_map
 
 
-class GitHub(HostingService, BugTracker):
+class GitHub(BaseHostingService, BugTracker):
     name = _('GitHub')
     hosting_service_id = 'github'
     plans = [

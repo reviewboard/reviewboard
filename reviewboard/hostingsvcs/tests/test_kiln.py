@@ -1,7 +1,7 @@
 """Unit tests for the Kiln hosting service."""
 
+from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.errors import RepositoryError
-from reviewboard.hostingsvcs.service import HostingServiceClient
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 

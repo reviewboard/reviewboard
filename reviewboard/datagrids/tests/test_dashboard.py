@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING
 
 import kgb
+from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from djblets.testing.decorators import add_fixtures
@@ -36,7 +37,7 @@ from reviewboard.site.testing.queries import \
 from reviewboard.testing.queries.http import get_http_request_start_equeries
 
 if TYPE_CHECKING:
-    from djblets.db.query_comparator import ExpectedQueries
+    from django_assert_queries.query_comparator import ExpectedQueries
 
     from reviewboard.testing.queries.base import ExpectedQResult
 
@@ -350,7 +351,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 has_local_sites_in_db=local_sites_in_db,
                 status='P'))
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -437,7 +438,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 has_local_sites_in_db=local_sites_in_db,
                 status='P'))
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -532,7 +533,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 has_local_sites_in_db=local_sites_in_db,
                 status='P'))
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -625,7 +626,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 has_local_sites_in_db=local_sites_in_db,
                 status=None))
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -718,7 +719,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 status='P',
                 has_local_sites_in_db=local_sites_in_db))
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -842,7 +843,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 status='P',
                 has_local_sites_in_db=local_sites_in_db))
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -952,7 +953,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 status='P',
                 has_local_sites_in_db=local_sites_in_db))
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1029,7 +1030,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             },
         ]
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1176,7 +1177,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             for _column in DashboardDataGrid.get_columns()
         )
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1298,7 +1299,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 has_local_sites_in_db=local_sites_in_db,
                 status='P'))
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 dashboard_url,
                 {
@@ -1443,7 +1444,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 has_local_sites_in_db=local_sites_in_db,
                 status='P'))
 
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {
@@ -1592,7 +1593,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                 status='P'))
 
         # Now load the dashboard and get the sidebar items.
-        with self.assertQueries(equeries):
+        with assert_queries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site),
                 {

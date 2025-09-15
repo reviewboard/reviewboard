@@ -13,7 +13,7 @@ from djblets.webapi.errors import (INVALID_FORM_DATA, NOT_LOGGED_IN,
 from djblets.webapi.fields import IntFieldType, StringFieldType
 
 from reviewboard.hostingsvcs.base import hosting_service_registry
-from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
+from reviewboard.hostingsvcs.base.forms import BaseHostingServiceAuthForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
@@ -366,7 +366,7 @@ class HostingServiceAccountResource(WebAPIResource):
             }
 
         if service.needs_authorization:
-            form_cls = service.auth_form or HostingServiceAuthForm
+            form_cls = service.auth_form or BaseHostingServiceAuthForm
             form = form_cls(
                 {
                     'hosting_account_password': password,

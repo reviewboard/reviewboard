@@ -30,7 +30,7 @@ from reviewboard.webapi.tests.urls import (get_review_item_url,
                                            get_review_list_url)
 
 if TYPE_CHECKING:
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
 
 class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,

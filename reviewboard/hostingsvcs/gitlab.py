@@ -12,13 +12,15 @@ from django.utils.translation import gettext, gettext_lazy as _
 from djblets.cache.backend import cache_memoize
 
 from reviewboard.admin.support import get_kb_url
+from reviewboard.hostingsvcs.base.forms import (
+    BaseHostingServiceAuthForm,
+    BaseHostingServiceRepositoryForm,
+)
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
-                                           HostingServiceForm)
-from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
@@ -126,7 +128,7 @@ class GitLabHostingURLWidget(forms.Widget):
             })
 
 
-class GitLabAuthForm(HostingServiceAuthForm):
+class GitLabAuthForm(BaseHostingServiceAuthForm):
     """An authentication form for the GitLab hosting service.
 
     This form allows user to select between gitlab.com and self-hosted
@@ -212,7 +214,7 @@ class GitLabAuthForm(HostingServiceAuthForm):
         return credentials
 
 
-class GitLabPersonalForm(HostingServiceForm):
+class GitLabPersonalForm(BaseHostingServiceRepositoryForm):
     gitlab_personal_repo_name = forms.CharField(
         label=_('Repository name'),
         max_length=64,
@@ -220,7 +222,7 @@ class GitLabPersonalForm(HostingServiceForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
 
-class GitLabGroupForm(HostingServiceForm):
+class GitLabGroupForm(BaseHostingServiceRepositoryForm):
     gitlab_group_name = forms.CharField(
         label=_('GitLab group name'),
         max_length=64,
@@ -234,7 +236,7 @@ class GitLabGroupForm(HostingServiceForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
 
-class GitLab(HostingService):
+class GitLab(BaseHostingService):
     """Hosting service support for GitLab.
 
     GitLab is a self-installed source hosting service that supports Git

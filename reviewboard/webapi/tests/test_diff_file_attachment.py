@@ -22,7 +22,7 @@ from reviewboard.webapi.tests.urls import (get_diff_file_attachment_item_url,
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
     from reviewboard.diffviewer.models import FileDiff
     from reviewboard.reviews.models import ReviewRequest

@@ -30,7 +30,8 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
     from django.http import HttpRequest
     from django.utils.functional import _StrOrPromise
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
+
     from reviewboard.diffviewer.parser import BaseDiffParser
     from reviewboard.scmtools.certs import Certificate
     from reviewboard.scmtools.forms import (BaseSCMToolAuthForm,

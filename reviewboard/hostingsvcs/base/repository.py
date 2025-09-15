@@ -10,7 +10,8 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
+
     from reviewboard.hostingsvcs.base import BaseHostingService
     from reviewboard.hostingsvcs.models import HostingServiceAccount
 

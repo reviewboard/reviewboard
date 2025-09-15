@@ -6,6 +6,7 @@ import json
 from typing import List, TYPE_CHECKING
 
 import kgb
+from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.core import mail
 from django.db.models import Q
@@ -33,7 +34,7 @@ from reviewboard.webapi.testing.queries import (
 )
 
 if TYPE_CHECKING:
-    from djblets.db.query_comparator import ExpectedQueries
+    from django_assert_queries.query_comparator import ExpectedQueries
 
 
 class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
@@ -127,7 +128,7 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
             },
         ]
 
-        with self.assertQueries(queries, num_statements=19):
+        with assert_queries(queries, num_statements=19):
             response = self.client.post(self.url, data={
                 'batch': json.dumps({
                     'op': 'archive',
@@ -266,7 +267,7 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
             },
         ]
 
-        with self.assertQueries(queries, num_statements=19):
+        with assert_queries(queries, num_statements=19):
             response = self.client.post(self.url, data={
                 'batch': json.dumps({
                     'op': 'mute',
@@ -407,7 +408,7 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
             },
         ]
 
-        with self.assertQueries(queries, num_statements=15):
+        with assert_queries(queries, num_statements=15):
             response = self.client.post(self.url, data={
                 'batch': json.dumps({
                     'op': 'unarchive',
@@ -459,7 +460,7 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
 
         # We can't currently use this because QuerySet.update() is adding a
         # subquery that we can't test against.
-        # with self.assertQueries(queries, num_statements=39):
+        # with assert_queries(queries, num_statements=39):
         with self.assertNumQueries(39):
             response = self.client.post(self.url, data={
                 'batch': json.dumps({
@@ -608,7 +609,7 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
 
         # We can't currently use this because QuerySet.update() is adding a
         # subquery that we can't test against.
-        # with self.assertQueries(queries, num_statements=39):
+        # with assert_queries(queries, num_statements=39):
         with self.assertNumQueries(39):
             response = self.client.post(self.url, data={
                 'batch': json.dumps({
@@ -1251,7 +1252,7 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
 
         Returns:
             list:
-            A list of query info appropriate for assertQueries.
+            A list of query info appropriate for assert_queries.
         """
         equeries = get_webapi_request_start_equeries(user=user)
         equeries += get_review_requests_accessible_equeries(
@@ -1289,7 +1290,7 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
 
         Returns:
             list:
-            A list of query info appropriate for assertQueries.
+            A list of query info appropriate for assert_queries.
         """
         # 15 queries
         #

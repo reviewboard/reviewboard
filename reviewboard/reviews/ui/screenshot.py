@@ -12,7 +12,7 @@ from reviewboard.reviews.ui.base import ReviewUI, SerializedCommentBlocks
 from reviewboard.reviews.ui.image import SerializedRegionComment
 
 if TYPE_CHECKING:
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
     from reviewboard.reviews.models import ReviewRequestDraft
 

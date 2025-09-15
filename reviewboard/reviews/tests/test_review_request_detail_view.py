@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
+from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import Permission, User
 from django.db.models import Q, Value
 from django.test.html import parse_html
@@ -37,7 +38,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
-    from djblets.db.query_comparator import ExpectedQueries
+    from django_assert_queries.query_comparator import ExpectedQueries
 
 
 class ReviewRequestDetailViewTests(SpyAgency, TestCase):
@@ -247,7 +248,7 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             response = self.client.get('/r/%d/' % review_request.id)
 
         self.assertEqual(response.status_code, 200)
@@ -548,7 +549,7 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             response = self.client.get('/r/%s/' % review_request.pk)
 
         self.assertEqual(response.status_code, 200)
@@ -806,7 +807,7 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             response = self.client.get('/r/%d/' % review_request.pk)
 
         self.assertEqual(response.status_code, 200)
@@ -1340,7 +1341,7 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             response = self.client.get('/r/%d/' % review_request.pk)
 
         self.assertEqual(response.status_code, 200)
@@ -1732,7 +1733,7 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             },
         ]
 
-        with self.assertQueries(queries):
+        with assert_queries(queries):
             response = self.client.get('/r/%d/' % review_request.pk)
 
         self.assertEqual(response.status_code, 200)

@@ -10,11 +10,12 @@ from typing import Optional, TYPE_CHECKING
 
 from django.contrib.auth.models import Permission, User
 from django.db.models import Q
-from djblets.db.query_comparator import ExpectedQueries
 
 from reviewboard.accounts.models import LocalSiteProfile, Profile
 
 if TYPE_CHECKING:
+    from django_assert_queries.query_comparator import ExpectedQueries
+
     from reviewboard.site.models import LocalSite
 
 

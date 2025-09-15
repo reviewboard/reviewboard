@@ -18,7 +18,7 @@ from djblets.siteconfig.models import SiteConfiguration
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
-    from djblets.util.typing import JSONDict
+    from typelets.json import JSONDict
 
     from reviewboard.site.models import LocalSite
 
