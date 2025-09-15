@@ -6,15 +6,15 @@ Version Added:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional, Sequence, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.utils import timezone
 
 if TYPE_CHECKING:
-    from djblets.util.typing import JSONDict
+    from collections.abc import Sequence
+    from typing import Any
 
 
 class LicenseStatus(Enum):
@@ -37,7 +37,6 @@ class LicenseStatus(Enum):
     HARD_EXPIRED = 'hard-expired'
 
 
-@dataclass
 class LicenseInfo:
     """Information on a license.
 
@@ -52,63 +51,149 @@ class LicenseInfo:
         7.1
     """
 
+    ######################
+    # Instance variables #
+    ######################
+
+    #: Whether a new license file can be manually uploaded for this license.
+    can_upload_license: bool
+
+    #: The expiration date/time of the license.
+    expires: datetime | None
+
+    #: The number of grace period days remaining on the license.
+    #:
+    #: This is only considered when the license is expired.
+    grace_period_days_remaining: int
+
+    #: Whether this is a trial license.
+    is_trial: bool
+
     #: A backend-specific ID for this license.
     #:
     #: This may be used for communication with a license server,
     #: client-side.
     license_id: str
 
+    #: The backend-specific license instance.
+    #:
+    #: This is used purely for the convenience of a license provider.
+    #: It may be ``None``.
+    license_instance: Any
+
     #: Who the license is licensed to.
     #:
     #: This may be the company or a division of a company (cost center).
     licensed_to: str
 
+    #: Any displayable line items to show on license information.
+    line_items: Sequence[str]
+
+    #: A backend-specific plan ID for this license.
+    plan_id: str | None
+
+    #: A display name for the plan.
+    plan_name: str | None
+
     #: The name of the product being licensed.
     product_name: str
 
-    #: The expiration date/time of the license.
-    expires: (datetime | None) = None
-
-    #: A backend-specific plan ID for this license.
-    plan_id: (str | None) = None
-
-    #: A display name for the plan.
-    plan_name: (str | None) = None
-
     #: The active/expiration status of this license.
-    status: LicenseStatus = LicenseStatus.UNLICENSED
+    status: LicenseStatus
 
     #: A descriptive summary of the license.
     #:
     #: If not provided, one will be automatically generated based off the
     #: product name and status.
-    summary: str = ''
+    summary: str
 
-    #: Any displayable line items to show on license information.
-    line_items: Sequence[str] = field(default_factory=list)
+    def __init__(
+        self,
+        *,
+        license_id: str,
+        licensed_to: str,
+        product_name: str,
+        can_upload_license: bool = False,
+        expires: (datetime | None) = None,
+        grace_period_days_remaining: int = 0,
+        is_trial: bool = False,
+        license_instance: Any = None,
+        line_items: (Sequence[str] | None) = None,
+        plan_id: (str | None) = None,
+        plan_name: (str | None) = None,
+        status: LicenseStatus = LicenseStatus.UNLICENSED,
+        summary: str = '',
+    ) -> None:
+        """Initialize the license information.
 
-    #: Whether a new license file can be manually uploaded for this license.
-    can_upload_license: bool = False
+        Args:
+            licensed_id (str):
+                A backend-specific ID for this license.
 
-    #: The number of grace period days remaining on the license.
-    #:
-    #: This is only considered when the license is expired.
-    grace_period_days_remaining: int = 0
+                This may be used for communication with a license server,
+                client-side.
 
-    #: Whether this is a trial license.
-    is_trial: bool = False
+            licensed_to (str):
+                Who the license is licensed to.
 
-    #: The backend-specific license instance.
-    #:
-    #: This is used purely for the convenience of a license provider.
-    #: It may be ``None``.
-    license_instance: Any = None
+                This may be the company or a division of a company (cost
+                center).
 
-    #: Any private data needed by the LicenseProvider.
-    #:
-    #: This is only for private use by the LicenseProvider, and not for
-    #: the API or any public display.
-    private_data: (JSONDict | None) = None
+            product_name (str):
+                The name of the product being licensed.
+
+            can_upload_license (bool, optional):
+                Whether a new license file can be manually uploaded for
+                this license.
+
+            expires (datetime.datetime, optional):
+                The expiration date/time of the license.
+
+            grace_period_days_remaining (int, optional):
+                The number of grace period days remaining on the license.
+
+                This is only considered when the license is expired.
+
+            is_trial (bool, optional):
+                Whether this is a trial license.
+
+            license_instance (object, optional):
+                The backend-specific license instance.
+
+                This is used purely for the convenience of a license provider.
+                It may be ``None``.
+
+            line_items (Sequence[str], optional):
+                Any displayable line items to show on license information.
+
+            plan_id (str, optional):
+                A backend-specific plan ID for this license.
+
+            plan_name (str, optional):
+                A display name for the plan.
+
+            status (LicenseStatus, optional):
+                The active/expiration status of this license.
+
+            summary (str, optional):
+                A descriptive summary of the license.
+
+                If not provided, one will be automatically generated based
+                off the product name and status.
+        """
+        self.license_id = license_id
+        self.licensed_to = licensed_to
+        self.product_name = product_name
+        self.can_upload_license = can_upload_license
+        self.expires = expires
+        self.grace_period_days_remaining = grace_period_days_remaining
+        self.is_trial = is_trial
+        self.license_instance = license_instance
+        self.line_items = line_items or []
+        self.plan_id = plan_id
+        self.plan_name = plan_name
+        self.status = status
+        self.summary = summary
 
     def get_expires_soon(self) -> bool:
         """Return whether or not the license expires soon.
