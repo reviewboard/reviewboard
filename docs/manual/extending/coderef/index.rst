@@ -439,6 +439,7 @@ TreeSitter Support
 
    reviewboard.treesitter
    reviewboard.treesitter.debug
+   reviewboard.treesitter.language
 
 
 Web API
