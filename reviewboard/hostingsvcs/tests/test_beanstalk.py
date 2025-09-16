@@ -1,11 +1,14 @@
 """Unit tests for the Beanstalk hosting service."""
 
+from __future__ import annotations
+
+from reviewboard.hostingsvcs.beanstalk import Beanstalk
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 
 
-class BeanstalkTests(HostingServiceTestCase):
+class BeanstalkTests(HostingServiceTestCase[Beanstalk]):
     """Unit tests for the Beanstalk hosting service."""
 
     service_name = 'beanstalk'
@@ -20,12 +23,12 @@ class BeanstalkTests(HostingServiceTestCase):
         'beanstalk_repo_name': 'myrepo',
     }
 
-    def test_service_support(self):
+    def test_service_support(self) -> None:
         """Testing Beanstalk service support capabilities"""
         self.assertFalse(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
 
-    def test_get_repository_fields_for_git(self):
+    def test_get_repository_fields_for_git(self) -> None:
         """Testing Beanstalk.get_repository_fields for Git"""
         self.assertEqual(
             self.get_repository_fields(
@@ -41,7 +44,7 @@ class BeanstalkTests(HostingServiceTestCase):
                                 'myrepo.git'),
             })
 
-    def test_get_repository_fields_for_subversion(self):
+    def test_get_repository_fields_for_subversion(self) -> None:
         """Testing Beanstalk.get_repository_fields for Subversion"""
         self.assertEqual(
             self.get_repository_fields(
@@ -55,7 +58,7 @@ class BeanstalkTests(HostingServiceTestCase):
                 'path': 'https://mydomain.svn.beanstalkapp.com/myrepo/',
             })
 
-    def test_authorize(self):
+    def test_authorize(self) -> None:
         """Testing Beanstalk.authorize"""
         account = self.create_hosting_account(data={})
         service = account.service
@@ -69,7 +72,7 @@ class BeanstalkTests(HostingServiceTestCase):
         self.assertEqual(decrypt_password(account.data['password']), 'abc123')
         self.assertTrue(service.is_authorized())
 
-    def test_check_repository(self):
+    def test_check_repository(self) -> None:
         """Testing Beanstalk.check_repository"""
         with self.setup_http_test(payload=b'{}',
                                   expected_http_calls=1) as ctx:
@@ -81,7 +84,7 @@ class BeanstalkTests(HostingServiceTestCase):
             url=('https://mydomain.beanstalkapp.com/api/repositories/'
                  'myrepo.json'))
 
-    def test_get_file_with_svn_and_base_commit_id(self):
+    def test_get_file_with_svn_and_base_commit_id(self) -> None:
         """Testing Beanstalk.get_file with Subversion and base commit ID"""
         self._test_get_file(
             tool_name='Subversion',
@@ -89,7 +92,7 @@ class BeanstalkTests(HostingServiceTestCase):
             base_commit_id='456',
             expected_revision='123')
 
-    def test_get_file_with_svn_and_revision(self):
+    def test_get_file_with_svn_and_revision(self) -> None:
         """Testing Beanstalk.get_file with Subversion and revision"""
         self._test_get_file(
             tool_name='Subversion',
@@ -97,7 +100,7 @@ class BeanstalkTests(HostingServiceTestCase):
             base_commit_id=None,
             expected_revision='123')
 
-    def test_get_file_with_git_and_base_commit_id(self):
+    def test_get_file_with_git_and_base_commit_id(self) -> None:
         """Testing Beanstalk.get_file with Git and base commit ID"""
         self._test_get_file(
             tool_name='Git',
@@ -105,7 +108,7 @@ class BeanstalkTests(HostingServiceTestCase):
             base_commit_id='456',
             expected_revision='123')
 
-    def test_get_file_with_git_and_revision(self):
+    def test_get_file_with_git_and_revision(self) -> None:
         """Testing Beanstalk.get_file with Git and revision"""
         self._test_get_file(
             tool_name='Git',
@@ -113,7 +116,7 @@ class BeanstalkTests(HostingServiceTestCase):
             base_commit_id=None,
             expected_revision='123')
 
-    def test_get_file_with_svn_and_keywords_collapsed(self):
+    def test_get_file_with_svn_and_keywords_collapsed(self) -> None:
         """Testing Beanstalk.get_file with Subversion and keywords in file
         collapsed
         """
@@ -134,7 +137,7 @@ class BeanstalkTests(HostingServiceTestCase):
                 b'$Revision::       $\n'
             ))
 
-    def test_get_file_exists_with_svn_and_base_commit_id(self):
+    def test_get_file_exists_with_svn_and_base_commit_id(self) -> None:
         """Testing Beanstalk.get_file_exists with Subversion and base commit ID
         """
         self._test_get_file_exists(
@@ -144,7 +147,7 @@ class BeanstalkTests(HostingServiceTestCase):
             expected_revision='123',
             expected_found=True)
 
-    def test_get_file_exists_with_svn_and_revision(self):
+    def test_get_file_exists_with_svn_and_revision(self) -> None:
         """Testing Beanstalk.get_file_exists with Subversion and revision"""
         self._test_get_file_exists(
             tool_name='Subversion',
@@ -153,7 +156,7 @@ class BeanstalkTests(HostingServiceTestCase):
             expected_revision='123',
             expected_found=True)
 
-    def test_get_file_exists_with_git_and_base_commit_id(self):
+    def test_get_file_exists_with_git_and_base_commit_id(self) -> None:
         """Testing Beanstalk.get_file_exists with Git and base commit ID"""
         self._test_get_file_exists(
             tool_name='Git',
@@ -162,7 +165,7 @@ class BeanstalkTests(HostingServiceTestCase):
             expected_revision='456',
             expected_found=True)
 
-    def test_get_file_exists_with_git_and_revision(self):
+    def test_get_file_exists_with_git_and_revision(self) -> None:
         """Testing Beanstalk.get_file_exists with Git and revision"""
         self._test_get_file_exists(
             tool_name='Git',
@@ -171,7 +174,7 @@ class BeanstalkTests(HostingServiceTestCase):
             expected_revision='123',
             expected_found=True)
 
-    def test_normalize_patch_with_svn_and_expanded_keywords(self):
+    def test_normalize_patch_with_svn_and_expanded_keywords(self) -> None:
         """Testing Beanstalk.normalize_patch with Subversion and expanded
         keywords
         """
@@ -225,7 +228,7 @@ class BeanstalkTests(HostingServiceTestCase):
 
         self.assertTrue(repository.hosting_service.normalize_patch.called)
 
-    def test_normalize_patch_with_svn_and_no_expanded_keywords(self):
+    def test_normalize_patch_with_svn_and_no_expanded_keywords(self) -> None:
         """Testing Beanstalk.normalize_patch with Subversion and no expanded
         keywords
         """
@@ -279,24 +282,39 @@ class BeanstalkTests(HostingServiceTestCase):
 
         self.assertTrue(repository.hosting_service.normalize_patch.called)
 
-    def _test_get_file(self, tool_name, revision, base_commit_id,
-                       expected_revision, file_contents=b'My data',
-                       expected_file_contents=b'My data',
-                       expected_fetch_keywords=False):
+    def _test_get_file(
+        self,
+        tool_name: str,
+        revision: str,
+        base_commit_id: str,
+        expected_revision: str,
+        file_contents: bytes = b'My data',
+        expected_file_contents: bytes = b'My data',
+        expected_fetch_keywords: bool = False,
+    ) -> None:
         """Test file fetching.
 
         Args:
-            tool_name (unicode):
+            tool_name (str):
                 The name of the SCM Tool to test with.
 
-            revision (unicode, optional):
+            revision (str):
                 The revision to check.
 
-            base_commit_id (unicode, optional):
+            base_commit_id (str):
                 The base commit to fetch against.
 
-            expected_revision (unicode, optional):
+            expected_revision (str):
                 The revision expected in the payload.
+
+            file_contents (bytes, optional):
+                The file contents to return.
+
+            expected_file_contents (bytes, optional):
+                The expected result for the file contents.
+
+            expected_fetch_keywords (bool, optional):
+                Whether to expect keywords to be fetched.
         """
         url_prefix = 'https://mydomain.beanstalkapp.com'
 
@@ -351,24 +369,30 @@ class BeanstalkTests(HostingServiceTestCase):
         if expected_fetch_keywords:
             ctx.assertHTTPCall(1, url='%s%s' % (url_prefix, svn_props_url))
 
-    def _test_get_file_exists(self, tool_name, revision, base_commit_id,
-                              expected_revision, expected_found):
+    def _test_get_file_exists(
+        self,
+        tool_name: str,
+        revision: str,
+        base_commit_id: str,
+        expected_revision: str,
+        expected_found: bool,
+    ) -> None:
         """Test file existence checks.
 
         Args:
-            tool_name (unicode):
+            tool_name (str):
                 The name of the SCM Tool to test with.
 
-            revision (unicode, optional):
+            revision (str, optional):
                 The revision to check.
 
-            base_commit_id (unicode, optional):
+            base_commit_id (str):
                 The base commit to fetch against.
 
-            expected_revision (unicode, optional):
+            expected_revision (str):
                 The revision expected in the payload.
 
-            expected_found (bool, optional):
+            expected_found (bool):
                 Whether a truthy response should be expected.
         """
         if expected_found:

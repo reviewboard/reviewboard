@@ -1,20 +1,23 @@
 """Unit tests for the Redmine hosting service."""
 
+from __future__ import annotations
+
+from reviewboard.hostingsvcs.redmine import Redmine
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 
-class RedmineTests(HostingServiceTestCase):
+class RedmineTests(HostingServiceTestCase[Redmine]):
     """Unit tests for the Redmine hosting service."""
 
     service_name = 'redmine'
     fixtures = ['test_scmtools']
 
-    def test_service_support(self):
+    def test_service_support(self) -> None:
         """Testing Redmine service support capabilities"""
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertFalse(self.service_class.supports_repositories)
 
-    def test_get_bug_tracker_field(self):
+    def test_get_bug_tracker_field(self) -> None:
         """Testing Redmine.get_bug_tracker_field"""
         self.assertFalse(
             self.service_class.get_bug_tracker_requires_username())

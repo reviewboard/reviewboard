@@ -1,15 +1,18 @@
 """Unit tests for the Unfuddle hosting service."""
 
+from __future__ import annotations
+
 from urllib.error import HTTPError
 
 from reviewboard.hostingsvcs.errors import RepositoryError
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
+from reviewboard.hostingsvcs.unfuddle import Unfuddle
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
 
 
-class UnfuddleTests(HostingServiceTestCase):
+class UnfuddleTests(HostingServiceTestCase[Unfuddle]):
     """Unit tests for the Unfuddle hosting service."""
 
     service_name = 'unfuddle'
@@ -26,12 +29,12 @@ class UnfuddleTests(HostingServiceTestCase):
         'unfuddle_repo_name': 'myrepo',
     }
 
-    def test_service_support(self):
+    def test_service_support(self) -> None:
         """Testing Unfuddle service support capabilities"""
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
 
-    def test_get_repository_fields_with_git(self):
+    def test_get_repository_fields_with_git(self) -> None:
         """Testing Unfuddle.get_repository_fields for Git"""
         self.assertEqual(
             self.get_repository_fields(
@@ -48,7 +51,7 @@ class UnfuddleTests(HostingServiceTestCase):
                                 'mydomain_myrepo/'),
             })
 
-    def test_get_repository_fields_with_subversion(self):
+    def test_get_repository_fields_with_subversion(self) -> None:
         """Testing Unfuddle.get_repository_fields for Subversion"""
         self.assertEqual(
             self.get_repository_fields(
@@ -65,7 +68,7 @@ class UnfuddleTests(HostingServiceTestCase):
                                 'mydomain_myrepo'),
             })
 
-    def test_authorize(self):
+    def test_authorize(self) -> None:
         """Testing Unfuddle.authorize"""
         hosting_account = self.create_hosting_account(data={})
 
@@ -93,7 +96,7 @@ class UnfuddleTests(HostingServiceTestCase):
                          'abc123')
         self.assertTrue(ctx.service.is_authorized())
 
-    def test_check_repository(self):
+    def test_check_repository(self) -> None:
         """Testing Unfuddle.check_repository"""
         payload = self.dump_json([{
             'id': 2,
@@ -114,7 +117,7 @@ class UnfuddleTests(HostingServiceTestCase):
                 'Accept': 'application/json',
             })
 
-    def test_check_repository_with_wrong_repo_type(self):
+    def test_check_repository_with_wrong_repo_type(self) -> None:
         """Testing Unfuddle.check_repository with wrong repo type"""
         payload = self.dump_json([{
             'id': 2,
@@ -139,7 +142,7 @@ class UnfuddleTests(HostingServiceTestCase):
                 'Accept': 'application/json',
             })
 
-    def test_get_file_with_svn_and_base_commit_id(self):
+    def test_get_file_with_svn_and_base_commit_id(self) -> None:
         """Testing Unfuddle.get_file with Subversion and base commit ID"""
         self._test_get_file(
             tool_name='Subversion',
@@ -147,7 +150,7 @@ class UnfuddleTests(HostingServiceTestCase):
             base_commit_id='456',
             expected_revision='456')
 
-    def test_get_file_with_svn_and_revision(self):
+    def test_get_file_with_svn_and_revision(self) -> None:
         """Testing Unfuddle.get_file with Subversion and revision"""
         self._test_get_file(
             tool_name='Subversion',
@@ -155,7 +158,7 @@ class UnfuddleTests(HostingServiceTestCase):
             base_commit_id=None,
             expected_revision='123')
 
-    def test_get_file_with_git_and_base_commit_id(self):
+    def test_get_file_with_git_and_base_commit_id(self) -> None:
         """Testing Unfuddle.get_file with Git and revision with base commit ID
         """
         self._test_get_file(
@@ -164,7 +167,7 @@ class UnfuddleTests(HostingServiceTestCase):
             base_commit_id='456',
             expected_revision='456')
 
-    def test_get_file_with_git_and_revision(self):
+    def test_get_file_with_git_and_revision(self) -> None:
         """Testing Unfuddle.get_file with Git and revision without base commit
         ID
         """
@@ -175,7 +178,7 @@ class UnfuddleTests(HostingServiceTestCase):
             expected_revision=None,
             expected_error=True)
 
-    def test_get_file_exists_with_svn_and_base_commit_id(self):
+    def test_get_file_exists_with_svn_and_base_commit_id(self) -> None:
         """Testing Unfuddle.get_file_exists with Subversion and base commit ID
         """
         self._test_get_file_exists(
@@ -185,7 +188,7 @@ class UnfuddleTests(HostingServiceTestCase):
             expected_revision='456',
             expected_found=True)
 
-    def test_get_file_exists_with_svn_and_revision(self):
+    def test_get_file_exists_with_svn_and_revision(self) -> None:
         """Testing Unfuddle.get_file_exists with Subversion and revision"""
         self._test_get_file_exists(
             tool_name='Subversion',
@@ -194,7 +197,7 @@ class UnfuddleTests(HostingServiceTestCase):
             expected_revision='123',
             expected_found=True)
 
-    def test_get_file_exists_with_svn_and_revision_not_found(self):
+    def test_get_file_exists_with_svn_and_revision_not_found(self) -> None:
         """Testing Unfuddle.get_file_exists with Subversion and revision not
         found
         """
@@ -205,7 +208,7 @@ class UnfuddleTests(HostingServiceTestCase):
             expected_revision='123',
             expected_found=False)
 
-    def test_get_file_exists_with_git_and_base_commit_id(self):
+    def test_get_file_exists_with_git_and_base_commit_id(self) -> None:
         """Testing Unfuddle.get_file_exists with Git and revision with base
         commit ID
         """
@@ -216,7 +219,9 @@ class UnfuddleTests(HostingServiceTestCase):
             expected_revision='456',
             expected_found=True)
 
-    def test_get_file_exists_with_git_and_revision_no_base_commit_id(self):
+    def test_get_file_exists_with_git_and_revision_no_base_commit_id(
+        self,
+    ) -> None:
         """Testing Unfuddle.get_file_exists with Git and revision without
         base commit ID
         """
@@ -228,7 +233,7 @@ class UnfuddleTests(HostingServiceTestCase):
             expected_found=False,
             expected_error=True)
 
-    def test_get_file_exists_with_git_and_revision_not_found(self):
+    def test_get_file_exists_with_git_and_revision_not_found(self) -> None:
         """Testing Unfuddle.get_file_exists with Git and revision not found"""
         self._test_get_file_exists(
             tool_name='Git',
@@ -237,21 +242,27 @@ class UnfuddleTests(HostingServiceTestCase):
             expected_revision='456',
             expected_found=False)
 
-    def _test_get_file(self, tool_name, revision, base_commit_id,
-                       expected_revision, expected_error=False):
+    def _test_get_file(
+        self,
+        tool_name: str,
+        revision: str,
+        base_commit_id: str,
+        expected_revision: str,
+        expected_error: bool = False,
+    ) -> None:
         """Common function for testing file fetching.
 
         Args:
-            tool_name (unicode):
+            tool_name (str):
                 The registered name of the SCMTool.
 
-            revision (unicode):
+            revision (str):
                 The revision to fetch.
 
-            base_commit_id (unicode):
+            base_commit_id (str):
                 The ID the commit is based on.
 
-            expected_revision (unicode):
+            expected_revision (str):
                 The expected revision to find in the URL.
 
             expected_error (bool, optional):
@@ -294,22 +305,28 @@ class UnfuddleTests(HostingServiceTestCase):
             self.assertIsInstance(result, bytes)
             self.assertEqual(result, b'My data')
 
-    def _test_get_file_exists(self, tool_name, revision, base_commit_id,
-                              expected_revision, expected_found=True,
-                              expected_error=False):
+    def _test_get_file_exists(
+        self,
+        tool_name: str,
+        revision: str,
+        base_commit_id: str,
+        expected_revision: str,
+        expected_found: bool = True,
+        expected_error: bool = False,
+    ) -> None:
         """Common function for testing file existence checks.
 
         Args:
-            tool_name (unicode):
+            tool_name (str):
                 The registered name of the SCMTool.
 
-            revision (unicode):
+            revision (str):
                 The revision to fetch.
 
-            base_commit_id (unicode):
+            base_commit_id (str):
                 The ID the commit is based on.
 
-            expected_revision (unicode):
+            expected_revision (str):
                 The expected revision to find in the URL.
 
             expected_found (bool, optional):

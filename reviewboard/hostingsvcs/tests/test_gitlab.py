@@ -1,17 +1,25 @@
 """Unit tests for the GitLab hosting service."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.utils.safestring import SafeText
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.gitlab import (GitLabAPIVersionError,
+from reviewboard.hostingsvcs.gitlab import (GitLab,
+                                            GitLabAPIVersionError,
                                             GitLabHostingURLWidget)
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
 
+if TYPE_CHECKING:
+    from reviewboard.hostingsvcs.testing.testcases import HttpTestContext
 
-class GitLabTestCase(HostingServiceTestCase):
+
+class GitLabTestCase(HostingServiceTestCase[GitLab]):
     """Base class for GitLab test suites."""
 
     service_name = 'gitlab'
@@ -29,13 +37,13 @@ class GitLabTestCase(HostingServiceTestCase):
 class GitLabTests(GitLabTestCase):
     """Unit tests for the GitLab hosting service."""
 
-    def test_service_support(self):
+    def test_service_support(self) -> None:
         """Testing GitLab service support capabilities"""
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
         self.assertFalse(self.service_class.supports_ssh_key_association)
 
-    def test_get_repository_fields_with_personal_plan(self):
+    def test_get_repository_fields_with_personal_plan(self) -> None:
         """Testing GitLab.get_repository_fields with plan=personal"""
         self.assertEqual(
             self.get_repository_fields(
@@ -51,7 +59,7 @@ class GitLabTests(GitLabTestCase):
                 'mirror_path': 'https://example.com/myuser/myrepo.git',
             })
 
-    def test_get_repository_fields_with_group_plan(self):
+    def test_get_repository_fields_with_group_plan(self) -> None:
         """Testing GitLab.get_repository_fields with plan=group"""
         self.assertEqual(
             self.get_repository_fields(
@@ -68,7 +76,7 @@ class GitLabTests(GitLabTestCase):
                 'mirror_path': 'https://example.com/mygroup/myrepo.git',
             })
 
-    def test_get_bug_tracker_field_with_personal_plan(self):
+    def test_get_bug_tracker_field_with_personal_plan(self) -> None:
         """Testing GitLab.get_bug_tracker_field with plan=personal"""
         self.assertTrue(
             self.service_class.get_bug_tracker_requires_username('personal'))
@@ -80,7 +88,7 @@ class GitLabTests(GitLabTestCase):
             }),
             'https://example.com/myuser/myrepo/issues/%s')
 
-    def test_get_bug_tracker_field_with_group_plan(self):
+    def test_get_bug_tracker_field_with_group_plan(self) -> None:
         """Testing GitLab.get_bug_tracker_field with plan=group"""
         self.assertFalse(
             self.service_class.get_bug_tracker_requires_username('group'))
@@ -92,7 +100,7 @@ class GitLabTests(GitLabTestCase):
             }),
             'https://example.com/mygroup/myrepo/issues/%s')
 
-    def test_check_repository_personal_v3(self):
+    def test_check_repository_personal_v3(self) -> None:
         """Testing GitLab.check_repository with personal repository (API v3)"""
         ctx = self._test_check_repository_v3(
             plan='personal',
@@ -109,7 +117,7 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'abc123',
             })
 
-    def test_check_repository_personal_v4(self):
+    def test_check_repository_personal_v4(self) -> None:
         """Testing GitLab.check_repository with personal repository (API v4)"""
         ctx = self._test_check_repository_v4(
             plan='personal',
@@ -126,7 +134,7 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'abc123',
             })
 
-    def test_check_repository_group_v3(self):
+    def test_check_repository_group_v3(self) -> None:
         """Testing GitLab.check_repository with group repository (API v3)"""
         ctx = self._test_check_repository_v3(
             plan='group',
@@ -155,7 +163,7 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'abc123',
             })
 
-    def test_check_repository_group_v4(self):
+    def test_check_repository_group_v4(self) -> None:
         """Testing GitLab.check_repository with group repository (API v4)"""
         ctx = self._test_check_repository_v4(plan='group',
                                              gitlab_group_name='mygroup',
@@ -173,7 +181,7 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'abc123',
             })
 
-    def test_check_repository_personal_not_found_v4(self):
+    def test_check_repository_personal_not_found_v4(self) -> None:
         """Testing GitLab.check_repository with not found error and personal
         repository (API v4)
         """
@@ -194,7 +202,7 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'abc123',
             })
 
-    def test_check_repository_group_repo_not_found_v4(self):
+    def test_check_repository_group_repo_not_found_v4(self) -> None:
         """Testing GitLab.check_repository with not found error and
         group repository (API v4)
         """
@@ -216,7 +224,7 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'abc123',
             })
 
-    def test_check_repository_personal_not_found_v3(self):
+    def test_check_repository_personal_not_found_v3(self) -> None:
         """Testing GitLab.check_repository with not found error and personal
         repository (API v3)
         """
@@ -237,7 +245,7 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'abc123',
             })
 
-    def test_check_repository_group_repo_not_found_v3(self):
+    def test_check_repository_group_repo_not_found_v3(self) -> None:
         """Testing GitLab.check_repository with not found error and
         group repository (API v3)
         """
@@ -270,7 +278,7 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'abc123',
             })
 
-    def test_check_repository_group_not_found_v3(self):
+    def test_check_repository_group_not_found_v3(self) -> None:
         """Testing GitLab.check_repository with an incorrect group name (API
         v3)
         """
@@ -292,7 +300,7 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'abc123',
             })
 
-    def test_authorize_v4(self):
+    def test_authorize_v4(self) -> None:
         """Testing GitLab.authorize (API v4)"""
         ctx = self._test_check_authorize(payload=b'{}',
                                          expected_http_calls=1)
@@ -305,7 +313,7 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'foobarbaz',
             })
 
-    def test_authorize_v3(self):
+    def test_authorize_v3(self) -> None:
         """Testing GitLab.authorize (API v3)"""
         paths = {
             '/api/v4/projects': {
@@ -337,7 +345,7 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'foobarbaz',
             })
 
-    def test_authorize_with_api_version_not_found(self):
+    def test_authorize_with_api_version_not_found(self) -> None:
         """Testing GitLab.authorize (API version not found)"""
         hosting_account = self.create_hosting_account(data={})
         self.assertFalse(hosting_account.is_authorized)
@@ -380,7 +388,7 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'foobarbaz',
             })
 
-    def test_get_branches_v4(self):
+    def test_get_branches_v4(self) -> None:
         """Testing GitLab.get_branches (API v4)"""
         base_url = '/api/v4/projects/123456/repository/branches'
         paths = {
@@ -484,7 +492,7 @@ class GitLabTests(GitLabTestCase):
                        default=False),
             ])
 
-    def test_get_branches_v3(self):
+    def test_get_branches_v3(self) -> None:
         """Testing GitLab.get_branches (API v3)"""
         paths = {
             '/api/v3/projects/123456/repository/branches': {
@@ -549,15 +557,15 @@ class GitLabTests(GitLabTestCase):
                        default=False),
             ])
 
-    def test_get_commits_v4(self):
+    def test_get_commits_v4(self) -> None:
         """Testing GitLab.get_commits (API v4)"""
         self._test_get_commits(api_version='4')
 
-    def test_get_commits_v3(self):
+    def test_get_commits_v3(self) -> None:
         """Testing GitLab.get_commits (API v3)"""
         self._test_get_commits(api_version='3')
 
-    def test_get_change_v4(self):
+    def test_get_change_v4(self) -> None:
         """Testing GitLab.get_change (API v4)"""
         parent_sha = 'ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'
         commit_sha = 'ed899a2f4b50b4370feeea94676502b42383c746'
@@ -731,7 +739,7 @@ class GitLabTests(GitLabTestCase):
                    parent='ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'))
         self.assertEqual(commit.diff, diff_rsp)
 
-    def test_get_change_v4_files_lines(self):
+    def test_get_change_v4_files_lines(self) -> None:
         """Testing GitLab.get_change (API v4) in case they add files lines"""
         parent_sha = 'ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'
         commit_sha = 'ed899a2f4b50b4370feeea94676502b42383c746'
@@ -905,7 +913,7 @@ class GitLabTests(GitLabTestCase):
                    parent='ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'))
         self.assertEqual(commit.diff, diff_rsp)
 
-    def test_get_change_v4_index_line(self):
+    def test_get_change_v4_index_line(self) -> None:
         """Testing GitLab.get_change (API v4) in case they add index line"""
         parent_sha = 'ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'
         commit_sha = 'ed899a2f4b50b4370feeea94676502b42383c746'
@@ -1025,7 +1033,7 @@ class GitLabTests(GitLabTestCase):
                    parent='ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'))
         self.assertEqual(commit.diff, diff_rsp)
 
-    def test_get_change_v3(self):
+    def test_get_change_v3(self) -> None:
         """Testing GitLab.get_change (API v3)"""
         commit_sha = 'ed899a2f4b50b4370feeea94676502b42383c746'
         diff_rsp = (
@@ -1122,7 +1130,7 @@ class GitLabTests(GitLabTestCase):
                    parent='ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'))
         self.assertEqual(commit.diff, diff_rsp)
 
-    def test_get_file_v4(self):
+    def test_get_file_v4(self) -> None:
         """Testing GitLab.get_file (API v4)"""
         self._test_get_file(
             api_version='4',
@@ -1130,7 +1138,7 @@ class GitLabTests(GitLabTestCase):
                 'https://example.com/api/v4/projects/123456/repository/'
                 'blobs/676502b42383c746ed899a2f4b50b4370feeea94/raw'))
 
-    def test_get_file_with_base_commit_v3(self):
+    def test_get_file_with_base_commit_v3(self) -> None:
         """Testing GitLab.get_file with base commit ID (API v3)"""
         self._test_get_file(
             api_version='3',
@@ -1140,7 +1148,7 @@ class GitLabTests(GitLabTestCase):
                 'blobs/ed899a2f4b50b4370feeea94676502b42383c746'
                 '?filepath=path/to/file.txt'))
 
-    def test_get_file_without_base_commit_v3(self):
+    def test_get_file_without_base_commit_v3(self) -> None:
         """Testing GitLab.get_file without base commit ID (API v3)"""
         self._test_get_file(
             api_version='3',
@@ -1148,7 +1156,7 @@ class GitLabTests(GitLabTestCase):
                 'https://example.com/api/v3/projects/123456/repository/'
                 'raw_blobs/676502b42383c746ed899a2f4b50b4370feeea94'))
 
-    def test_get_file_exists_with_exists_v4(self):
+    def test_get_file_exists_with_exists_v4(self) -> None:
         """Testing GitLab.get_file_exists with exists (API v4)"""
         self._test_get_file_exists(
             api_version='4',
@@ -1157,7 +1165,7 @@ class GitLabTests(GitLabTestCase):
                 'https://example.com/api/v4/projects/123456/repository/'
                 'blobs/676502b42383c746ed899a2f4b50b4370feeea94/raw'))
 
-    def test_get_file_exists_with_not_exists_v4(self):
+    def test_get_file_exists_with_not_exists_v4(self) -> None:
         """Testing GitLab.get_file_exists with not exists (API v4)"""
         self._test_get_file_exists(
             api_version='4',
@@ -1166,7 +1174,7 @@ class GitLabTests(GitLabTestCase):
                 'https://example.com/api/v4/projects/123456/repository/'
                 'blobs/676502b42383c746ed899a2f4b50b4370feeea94/raw'))
 
-    def test_get_file_exists_with_base_commit_and_exists_v3(self):
+    def test_get_file_exists_with_base_commit_and_exists_v3(self) -> None:
         """Testing GitLab.get_file_exists with base commit ID and exists
         (API v3)
         """
@@ -1179,7 +1187,7 @@ class GitLabTests(GitLabTestCase):
                 'blobs/ed899a2f4b50b4370feeea94676502b42383c746'
                 '?filepath=path/to/file.txt'))
 
-    def test_get_file_exists_without_base_commit_and_exists_v3(self):
+    def test_get_file_exists_without_base_commit_and_exists_v3(self) -> None:
         """Testing GitLab.get_file_exists without base commit ID and with
         exists
         (API v3)
@@ -1191,7 +1199,7 @@ class GitLabTests(GitLabTestCase):
                 'https://example.com/api/v3/projects/123456/repository/'
                 'raw_blobs/676502b42383c746ed899a2f4b50b4370feeea94'))
 
-    def test_get_file_exists_with_not_exists_v3(self):
+    def test_get_file_exists_with_not_exists_v3(self) -> None:
         """Testing GitLab.get_file_exists with not exists (API v3)"""
         self._test_get_file_exists(
             api_version='3',
@@ -1200,7 +1208,7 @@ class GitLabTests(GitLabTestCase):
                 'https://example.com/api/v3/projects/123456/repository/'
                 'raw_blobs/676502b42383c746ed899a2f4b50b4370feeea94'))
 
-    def test_get_api_version_with_v3(self):
+    def test_get_api_version_with_v3(self) -> None:
         """Testing GitLab._get_api_version with v3 API"""
         paths = {
             '/api/v3/projects?per_page=1': {
@@ -1213,7 +1221,7 @@ class GitLabTests(GitLabTestCase):
                 ctx.service._get_api_version('https://gitlab.example.com'),
                 '3')
 
-    def test_get_api_version_with_v4(self):
+    def test_get_api_version_with_v4(self) -> None:
         """Testing GitLab._get_api_version with v4 API"""
         paths = {
             '/api/v3/projects?per_page=1': {
@@ -1229,7 +1237,7 @@ class GitLabTests(GitLabTestCase):
                 ctx.service._get_api_version('https://gitlab.example.com'),
                 '4')
 
-    def test_api_head_with_auth_error(self):
+    def test_api_head_with_auth_error(self) -> None:
         """Testing GitLab._api_head with AuthorizationError"""
         message = 'The login or password is incorrect.'
 
@@ -1241,7 +1249,41 @@ class GitLabTests(GitLabTestCase):
                     hosting_url='https://gitlab.example.com',
                     path='foo')
 
-    def _test_check_authorize(self, *args, **kwargs):
+    def test_check_repository_with_api_version_not_found(self) -> None:
+        """Testing GitLab.check_repository (API version not found)"""
+        hosting_account = self.create_hosting_account(data={})
+        self.assertFalse(hosting_account.is_authorized)
+
+        message = (
+            'Could not determine the GitLab API version for '
+            'https://example.com due to an unexpected error (Unexpected path '
+            '"/api/v4/projects?per_page=1"). Check to make sure the URL can '
+            'be resolved from this server and that any SSL certificates are '
+            'valid and trusted.'
+        )
+
+        with self.setup_http_test(self.make_handler_for_paths({}),
+                                  hosting_account=hosting_account) as ctx:
+            with self.assertRaisesMessage(GitLabAPIVersionError, message):
+                ctx.service.check_repository(
+                    plan='group',
+                    gitlab_group_name='mygroup',
+                    gitlab_group_repo_name='myrepo')
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v4/projects?per_page=1',
+            username=None,
+            password=None,
+            headers={})
+        ctx.assertHTTPCall(
+            1,
+            url='https://example.com/api/v3/projects?per_page=1',
+            username=None,
+            password=None,
+            headers={})
+
+    def _test_check_authorize(self, *args, **kwargs) -> None:
         """Test authorizing a new account.
 
         Args:
@@ -1272,11 +1314,15 @@ class GitLabTests(GitLabTestCase):
 
         return ctx
 
-    def _test_check_repository_v4(self, expected_owner='myuser', **kwargs):
+    def _test_check_repository_v4(
+        self,
+        expected_owner: str = 'myuser',
+        **kwargs,
+    ) -> HttpTestContext[GitLab]:
         """Test checking for a repository using API v4.
 
         Args:
-            expected_owner (unicode):
+            expected_owner (str):
                 The expected user/group name owning the repository.
 
             **kwargs (dict):
@@ -1294,11 +1340,15 @@ class GitLabTests(GitLabTestCase):
 
         return ctx
 
-    def _test_check_repository_v3(self, expected_owner='myuser', **kwargs):
+    def _test_check_repository_v3(
+        self,
+        expected_owner: str = 'myuser',
+        **kwargs,
+    ) -> HttpTestContext[GitLab]:
         """Test checking for a repository using API v3.
 
         Args:
-            expected_owner (unicode):
+            expected_owner (str):
                 The expected user/group name owning the repository.
 
             **kwargs (dict):
@@ -1348,12 +1398,16 @@ class GitLabTests(GitLabTestCase):
 
         return ctx
 
-    def _test_check_repository_error_v4(self, expected_error,
-                                        expected_http_calls, **kwargs):
+    def _test_check_repository_error_v4(
+        self,
+        expected_error: str,
+        expected_http_calls: int,
+        **kwargs,
+    ) -> HttpTestContext[GitLab]:
         """Test error conditions when checking for a repository using API v4.
 
         Args:
-            expected_error (unicode):
+            expected_error (str):
                 The expected error message from a raised exception.
 
             expected_http_calls (int):
@@ -1376,12 +1430,16 @@ class GitLabTests(GitLabTestCase):
 
         return ctx
 
-    def _test_check_repository_error_v3(self, expected_error,
-                                        expected_http_calls, **kwargs):
+    def _test_check_repository_error_v3(
+        self,
+        expected_error: str,
+        expected_http_calls: int,
+        **kwargs,
+    ) -> HttpTestContext[GitLab]:
         """Test error conditions when checking for a repository using API v3.
 
         Args:
-            expected_error (unicode):
+            expected_error (str):
                 The expected error message from a raised exception.
 
             expected_http_calls (int):
@@ -1430,51 +1488,22 @@ class GitLabTests(GitLabTestCase):
 
         return ctx
 
-    def test_check_repository_with_api_version_not_found(self):
-        """Testing GitLab.check_repository (API version not found)"""
-        hosting_account = self.create_hosting_account(data={})
-        self.assertFalse(hosting_account.is_authorized)
-
-        message = (
-            'Could not determine the GitLab API version for '
-            'https://example.com due to an unexpected error (Unexpected path '
-            '"/api/v4/projects?per_page=1"). Check to make sure the URL can '
-            'be resolved from this server and that any SSL certificates are '
-            'valid and trusted.'
-        )
-
-        with self.setup_http_test(self.make_handler_for_paths({}),
-                                  hosting_account=hosting_account) as ctx:
-            with self.assertRaisesMessage(GitLabAPIVersionError, message):
-                ctx.service.check_repository(
-                    plan='group',
-                    gitlab_group_name='mygroup',
-                    gitlab_group_repo_name='myrepo')
-
-        ctx.assertHTTPCall(
-            0,
-            url='https://example.com/api/v4/projects?per_page=1',
-            username=None,
-            password=None,
-            headers={})
-        ctx.assertHTTPCall(
-            1,
-            url='https://example.com/api/v3/projects?per_page=1',
-            username=None,
-            password=None,
-            headers={})
-
-    def _test_get_file(self, api_version, expected_url, base_commit_id=None):
+    def _test_get_file(
+        self,
+        api_version: str,
+        expected_url: str,
+        base_commit_id: (str | None) = None,
+    ) -> None:
         """Common test for file retrieval.
 
         Args:
-            api_version (unicode):
+            api_version (str):
                 The API version to test against.
 
-            expected_url (unicode):
+            expected_url (str):
                 The expected URL to fetch for the request.
 
-            base_commit_id (unicode, optional):
+            base_commit_id (str, optional):
                 An optional base commit ID to specify during file retrieval.
         """
         with self.setup_http_test(payload=b'test data',
@@ -1500,21 +1529,26 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'abc123',
             })
 
-    def _test_get_file_exists(self, api_version, should_exist, expected_url,
-                              base_commit_id=None):
+    def _test_get_file_exists(
+        self,
+        api_version: str,
+        should_exist: bool,
+        expected_url: str,
+        base_commit_id: (str | None) = None,
+    ) -> None:
         """Common test for file existence checks.
 
         Args:
-            api_version (unicode):
+            api_version (str):
                 The API version to test against.
 
             should_exist (bool):
                 Whether this should simulate that the file exists.
 
-            expected_url (unicode):
+            expected_url (str):
                 The expected URL to fetch for the request.
 
-            base_commit_id (unicode, optional):
+            base_commit_id (str, optional):
                 An optional base commit ID to specify during file existence
                 checks.
         """
@@ -1548,19 +1582,25 @@ class GitLabTests(GitLabTestCase):
                 'PRIVATE-TOKEN': 'abc123',
             })
 
-    def _test_get_branches(self, api_version):
+    def _test_get_branches(
+        self,
+        api_version: str,
+    ) -> None:
         """Common test for fetching branches.
 
         Args:
-            api_version (unicode):
+            api_version (str):
                 The API version to test against.
         """
 
-    def _test_get_commits(self, api_version):
+    def _test_get_commits(
+        self,
+        api_version: str,
+    ) -> None:
         """Common test for fetching lists of commits.
 
         Args:
-            api_version (unicode):
+            api_version (str):
                 The API version to test against.
         """
         payload = self.dump_json([
@@ -1629,14 +1669,18 @@ class GitLabTests(GitLabTestCase):
         for commit in commits:
             self.assertIsNone(commit.diff)
 
-    def _set_api_version(self, service, api_version):
+    def _set_api_version(
+        self,
+        service: GitLab,
+        api_version: str,
+    ) -> None:
         """Set the API version for a test.
 
         Args:
             service (reviewboard.hostingsvcs.gitlab.GitLab):
                 The GitLab hosting service instance.
 
-            api_version (unicode):
+            api_version (str):
                 The API version for the test.
         """
         self.spy_on(service._get_api_version,
@@ -1646,7 +1690,7 @@ class GitLabTests(GitLabTestCase):
 class GitLabHostingURLWidgetTests(GitLabTestCase):
     """Unit tests for reviewboard.hostingsvcs.gitlab.GitLabHostingURLWidget."""
 
-    def test_render(self):
+    def test_render(self) -> None:
         """Testing GitLabHostingURLWidget.render"""
         widget = GitLabHostingURLWidget()
         content = widget.render(

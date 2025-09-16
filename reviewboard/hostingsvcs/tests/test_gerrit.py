@@ -1,22 +1,32 @@
 """Unit tests for the Gerrit hosting service."""
 
+from __future__ import annotations
+
 import base64
 import re
 import sys
+from typing import TYPE_CHECKING, cast
 from urllib.request import HTTPDigestAuthHandler, OpenerDirector
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,
                                             HostingServiceError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.gerrit import Gerrit, GerritForm
+from reviewboard.hostingsvcs.gerrit import Gerrit, GerritClient, GerritForm
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
 from reviewboard.scmtools.errors import FileNotFoundError
 
+if TYPE_CHECKING:
+    from typing import NoReturn
 
-class GerritTestCase(HostingServiceTestCase):
+    from typelets.json import JSONValue
+
+    from reviewboard.hostingsvcs.testing.testcases import HttpTestPath
+
+
+class GerritTestCase(HostingServiceTestCase[Gerrit]):
     """Base class for Gerrit unit tests."""
 
     service_name = 'gerrit'
@@ -38,7 +48,7 @@ class GerritTestCase(HostingServiceTestCase):
 class GerritFormTests(GerritTestCase):
     """Unit tests for GerritForm."""
 
-    def test_clean_sets_gerrit_domain(self):
+    def test_clean_sets_gerrit_domain(self) -> None:
         """Testing GerritForm.clean sets gerrit_domain"""
         form = GerritForm(
             {
@@ -53,7 +63,7 @@ class GerritFormTests(GerritTestCase):
         self.assertEqual(form.cleaned_data['gerrit_domain'],
                          'gerrit.example.com')
 
-    def test_clean_with_errors(self):
+    def test_clean_with_errors(self) -> None:
         """Testing GerritForm.clean with errors"""
         form = GerritForm(
             {
@@ -77,32 +87,35 @@ class GerritFormTests(GerritTestCase):
 class GerritClientTests(GerritTestCase):
     """Unit tests for GerritClient."""
 
-    def setUp(self):
-        super(GerritClientTests, self).setUp()
+    client: GerritClient
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
 
         hosting_account = self.create_hosting_account()
-        self.client = hosting_account.service.client
+        self.client = cast(GerritClient, hosting_account.service.client)
 
-    def test_auth_headers(self):
+    def test_auth_headers(self) -> None:
         """Testing GerritClient.http_request sets auth headers"""
-        class DummyResponse(object):
+        class DummyResponse:
             headers = {}
 
-            def getcode(self):
+            def getcode(self) -> int:
                 return 200
 
-            def geturl(self):
+            def geturl(self) -> str:
                 return 'http://gerrit.example.com/'
 
-            def read(self):
+            def read(self) -> bytes:
                 return b''
 
-        def _open(*args, **kwargs):
-            _open_args.extend(args)
+        def _open(*args, **kwargs) -> DummyResponse:
+            open_args.extend(args)
 
             return DummyResponse()
 
-        _open_args = []
+        open_args = []
         self.spy_on(OpenerDirector.open,
                     owner=OpenerDirector,
                     call_fake=_open)
@@ -111,7 +124,7 @@ class GerritClientTests(GerritTestCase):
                                  username='test-user',
                                  password='test-pass')
 
-        opener, request = _open_args
+        opener, request = open_args
         handler = opener.handlers[0]
         self.assertIsInstance(handler, HTTPDigestAuthHandler)
         self.assertEqual(
@@ -144,14 +157,14 @@ class GerritTests(GerritTestCase):
         'gerrit_project_name': 'Project',
     }
 
-    def test_service_support(self):
+    def test_service_support(self) -> None:
         """Testing Gerrit service support capabilities"""
         self.assertFalse(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
         self.assertFalse(self.service_class.supports_ssh_key_association)
         self.assertTrue(self.service_class.supports_post_commit)
 
-    def test_authorize(self):
+    def test_authorize(self) -> None:
         """Testing Gerrit.authorize"""
         hosting_account = self.create_hosting_account(data={})
 
@@ -173,7 +186,7 @@ class GerritTests(GerritTestCase):
 
         ctx.assertHTTPCall(0, url='http://gerrit.example.com/a/projects/')
 
-    def test_authorize_with_error(self):
+    def test_authorize_with_error(self) -> None:
         """Testing Gerrit.authorize handles authentication failure"""
         expected_message = (
             'Unable to authenticate to Gerrit at '
@@ -181,7 +194,11 @@ class GerritTests(GerritTestCase):
             'used may be invalid.'
         )
 
-        def _http_request(client, *args, **kwargs):
+        def _http_request(
+            client: GerritClient,
+            *args,
+            **kwargs,
+        ) -> NoReturn:
             raise HostingServiceError('', http_code=401)
 
         with self.setup_http_test(_http_request, expected_http_calls=1) as ctx:
@@ -202,7 +219,7 @@ class GerritTests(GerritTestCase):
 
         self.assertFalse(ctx.hosting_account.data['authorized'])
 
-    def test_check_repository(self):
+    def test_check_repository(self) -> None:
         """Testing Gerrit.check_repository"""
         payload = self._make_json_rsp({
             'gerrit-reviewboard': {
@@ -221,9 +238,13 @@ class GerritTests(GerritTestCase):
                            url='http://gerrit.example.com/a/projects/Project')
         ctx.assertHTTPCall(1, url='http://gerrit.example.com/a/plugins/')
 
-    def test_check_repository_with_404(self):
+    def test_check_repository_with_404(self) -> None:
         """Testing Gerrit.check_repository with a non-existent repository"""
-        def _http_request(client, *args, **kwargs):
+        def _http_request(
+            client: GerritClient,
+            *args,
+            **kwargs,
+        ) -> NoReturn:
             raise HostingServiceAPIError('', 404)
 
         expected_message = (
@@ -241,7 +262,7 @@ class GerritTests(GerritTestCase):
         ctx.assertHTTPCall(0,
                            url='http://gerrit.example.com/a/projects/Project')
 
-    def test_check_repository_with_no_plugin(self):
+    def test_check_repository_with_no_plugin(self) -> None:
         """Testing Gerrit.check_repository with no plugin"""
         expected_message = (
             'The "gerrit-reviewboard" plugin is not installed on the server. '
@@ -260,7 +281,7 @@ class GerritTests(GerritTestCase):
                            url='http://gerrit.example.com/a/projects/Project')
         ctx.assertHTTPCall(1, url='http://gerrit.example.com/a/plugins/')
 
-    def test_check_repository_with_bad_plugin_version(self):
+    def test_check_repository_with_bad_plugin_version(self) -> None:
         """Testing Gerrit.check_repository with an outdated plugin"""
         payload = self._make_json_rsp({
             'gerrit-reviewboard': {
@@ -286,7 +307,7 @@ class GerritTests(GerritTestCase):
                            url='http://gerrit.example.com/a/projects/Project')
         ctx.assertHTTPCall(1, url='http://gerrit.example.com/a/plugins/')
 
-    def test_get_file_exists(self):
+    def test_get_file_exists(self) -> None:
         """Testing Gerrit.get_file_exists"""
         blob_id = 'a' * 40
 
@@ -306,9 +327,13 @@ class GerritTests(GerritTestCase):
             url=('http://gerrit.example.com/a/projects/Project/blobs/%s/'
                  % blob_id))
 
-    def test_get_file_exists_with_404(self):
+    def test_get_file_exists_with_404(self) -> None:
         """Testing Gerrit.get_file_exists with a non-existent file"""
-        def _http_request(client, *args, **kwargs):
+        def _http_request(
+            client: GerritClient,
+            *args,
+            **kwargs,
+        ) -> NoReturn:
             raise HostingServiceAPIError('', http_code=404)
 
         blob_id = 'a' * 40
@@ -324,7 +349,7 @@ class GerritTests(GerritTestCase):
             url=('http://gerrit.example.com/a/projects/Project/blobs/%s/'
                  % blob_id))
 
-    def test_get_file(self):
+    def test_get_file(self) -> None:
         """Testing Gerrit.get_file"""
         blob_id = 'a' * 40
 
@@ -343,9 +368,13 @@ class GerritTests(GerritTestCase):
                  'content/'
                  % blob_id))
 
-    def test_get_file_with_404(self):
+    def test_get_file_with_404(self) -> None:
         """Testing Gerrit.get_file with a non-existent blob ID"""
-        def _http_request(client, *args, **kwargs):
+        def _http_request(
+            client: GerritClient,
+            *args,
+            **kwargs,
+        ) -> NoReturn:
             raise HostingServiceAPIError('', http_code=404)
 
         blob_id = 'a' * 40
@@ -362,7 +391,7 @@ class GerritTests(GerritTestCase):
                  'content/'
                  % blob_id))
 
-    def test_get_file_with_undecodable_response(self):
+    def test_get_file_with_undecodable_response(self) -> None:
         """Testing Gerrit.get_file with an undecodable response"""
         blob_id = 'a' * 40
 
@@ -394,7 +423,7 @@ class GerritTests(GerritTestCase):
                  'content/'
                  % blob_id))
 
-    def test_get_branches(self):
+    def test_get_branches(self) -> None:
         """Testing Gerrit.get_branches"""
         payload = self._make_json_rsp([
             {
@@ -440,7 +469,7 @@ class GerritTests(GerritTestCase):
             ]
         )
 
-    def test_get_commits(self):
+    def test_get_commits(self) -> None:
         """Testing Gerrit.get_commits"""
         payload = self._make_json_rsp([
             {
@@ -504,10 +533,10 @@ class GerritTests(GerritTestCase):
         for commit in commits:
             self.assertIsNone(commit.diff)
 
-    def test_get_change(self):
+    def test_get_change(self) -> None:
         """Testing Gerrit.get_change"""
         revision = '77c174669b7018936f16b98547445624c6738e1e'
-        paths = {
+        paths: dict[str | None, HttpTestPath] = {
             '/a/projects/Project/commits/%s/diff/' % revision: {
                 'payload': b'fake diff',
             },
@@ -550,7 +579,10 @@ class GerritTests(GerritTestCase):
             url=('http://gerrit.example.com/a/projects/Project/commits/'
                  '77c174669b7018936f16b98547445624c6738e1e/diff/'))
 
-    def _make_json_rsp(self, data):
+    def _make_json_rsp(
+        self,
+        data: JSONValue,
+    ) -> bytes:
         """Return a Gerrit JSON response payload for the given data.
 
         Args:
