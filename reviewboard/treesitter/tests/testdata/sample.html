@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TreeSitter HTML Test</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        .highlight {
+            background-color: yellow;
+            padding: 2px 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to TreeSitter Testing</h1>
+        <p>This is a <span class="highlight">sample HTML file</span> for testing TreeSitter highlighting with injections.</p>
+
+        <div id="content">
+            <p>The content will be dynamically updated by JavaScript.</p>
+        </div>
+
+        <button onclick="updateContent()">Click me!</button>
+    </div>
+
+    <script>
+        // Configuration object
+        const config = {
+            apiUrl: 'https://api.example.com',
+            timeout: 5000,
+            retries: 3
+        };
+
+        /**
+         * Updates the content div with dynamic text
+         */
+        function updateContent() {
+            const contentDiv = document.getElementById('content');
+            const messages = [
+                'Hello from JavaScript!',
+                'TreeSitter is working great!',
+                'Syntax highlighting rocks!'
+            ];
+
+            const randomIndex = Math.floor(Math.random() * messages.length);
+            const message = messages[randomIndex];
+
+            contentDiv.innerHTML = `<p><strong>Updated:</strong> ${message}</p>`;
+
+            // Add some styling
+            contentDiv.style.backgroundColor = '#e8f4fd';
+            contentDiv.style.padding = '15px';
+            contentDiv.style.borderRadius = '5px';
+            contentDiv.style.border = '1px solid #bee5eb';
+        }
+
+        /**
+         * Fetches data from API
+         */
+        async function fetchData(url) {
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`
+                    },
+                    timeout: config.timeout
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch data:', error);
+                throw error;
+            }
+        }
+
+        function getToken() {
+            return localStorage.getItem('authToken') || 'default-token';
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded successfully!');
+
+            // Set up event listeners
+            const button = document.querySelector('button');
+            if (button) {
+                button.addEventListener('click', updateContent);
+            }
+        });
+    </script>
+</body>
+</html>

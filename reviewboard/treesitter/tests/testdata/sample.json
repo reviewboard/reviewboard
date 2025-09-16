@@ -1,0 +1,121 @@
+{
+  "name": "example-project",
+  "version": "1.0.0",
+  "description": "A sample JSON file demonstrating various JSON features",
+  "author": {
+    "name": "Example Team",
+    "email": "team@example.com",
+    "url": "https://www.example.com"
+  },
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "start": "node server.js",
+    "test": "jest",
+    "build": "webpack --mode production",
+    "dev": "webpack serve --mode development",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.4",
+    "axios": "^1.3.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "webpack": "^5.75.0",
+    "eslint": "^8.30.0",
+    "prettier": "^2.8.0",
+    "@types/node": "^18.11.0"
+  },
+  "keywords": [
+    "example",
+    "json",
+    "demo",
+    "reviewboard",
+    "treesitter"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/example/example-project.git"
+  },
+  "bugs": {
+    "url": "https://github.com/example/example-project/issues"
+  },
+  "homepage": "https://www.example.com",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "config": {
+    "database": {
+      "host": "localhost",
+      "port": 5432,
+      "name": "reviewboard",
+      "ssl": true,
+      "poolSize": 10,
+      "timeout": 30000
+    },
+    "api": {
+      "baseUrl": "https://api.example.com",
+      "version": "v1",
+      "rateLimits": {
+        "requests": 1000,
+        "window": 3600
+      }
+    },
+    "features": {
+      "enableCaching": true,
+      "enableLogging": true,
+      "debugMode": false,
+      "experimentalFeatures": [
+        "newUI",
+        "advancedSearch"
+      ]
+    }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ],
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverage": true,
+    "coverageDirectory": "coverage",
+    "testMatch": [
+      "**/__tests__/**/*.test.js"
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "eslint:recommended",
+      "@typescript-eslint/recommended"
+    ],
+    "rules": {
+      "no-console": "warn",
+      "prefer-const": "error"
+    }
+  },
+  "metadata": {
+    "buildNumber": 12345,
+    "buildDate": "2023-12-01T10:30:00Z",
+    "gitCommit": "a1b2c3d4e5f6",
+    "environment": "production",
+    "performance": {
+      "metrics": {
+        "loadTime": 1.25,
+        "bundleSize": "245KB",
+        "dependencies": 42
+      }
+    },
+    "localization": {
+      "supportedLanguages": ["en", "es", "fr", "de", "ja"],
+      "defaultLanguage": "en",
+      "fallbackLanguage": "en"
+    }
+  }
+}

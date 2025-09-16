@@ -1,0 +1,280 @@
+# YAML Configuration Example
+# Demonstrating various YAML features and syntax
+
+# Application configuration
+app:
+  name: "ReviewBoard Example"
+  version: "1.0.0"
+  description: |
+    A comprehensive YAML example file demonstrating
+    various YAML features including:
+    - Scalars, sequences, and mappings
+    - Multi-line strings
+    - Anchors and aliases
+    - Different data types
+
+  # Environment settings
+  environment: &default_env
+    debug: true
+    logging_level: "info"
+    max_connections: 100
+    timeout: 30
+
+  # Database configuration with anchor
+  database: &db_config
+    host: "localhost"
+    port: 5432
+    name: "reviewboard"
+    username: "dbuser"
+    password: "secretpass"
+    ssl:
+      enabled: true
+      cert_path: "/etc/ssl/certs/db.crt"
+      key_path: "/etc/ssl/private/db.key"
+    pool:
+      min_size: 5
+      max_size: 20
+      idle_timeout: 300
+
+# Server configuration
+server:
+  # Literal block scalar
+  bind_address: |
+    0.0.0.0
+  port: 8080
+
+  # Folded block scalar
+  welcome_message: >
+    Welcome to ReviewBoard!
+    This is a code review platform
+    that helps teams collaborate effectively.
+
+  # Security settings
+  security:
+    cors:
+      enabled: true
+      origins:
+        - "https://example.com"
+        - "https://app.example.com"
+        - "http://localhost:3000"
+    csrf:
+      enabled: true
+      secret_key: "random-secret-key-here"
+    rate_limiting:
+      enabled: true
+      requests_per_minute: 60
+      burst_limit: 10
+
+# Microservices configuration
+services:
+  auth_service:
+    # Reference to default environment
+    <<: *default_env
+    host: "auth.internal"
+    port: 9001
+
+  notification_service:
+    <<: *default_env
+    host: "notifications.internal"
+    port: 9002
+    config:
+      email:
+        smtp_host: "smtp.example.com"
+        smtp_port: 587
+        username: "notifications@example.com"
+        use_tls: true
+      slack:
+        webhook_url: "https://hooks.slack.com/services/..."
+        default_channel: "#code-reviews"
+
+# Development environment overrides
+development:
+  app:
+    # Merge with default environment and override specific values
+    environment:
+      <<: *default_env
+      debug: true
+      logging_level: "debug"
+
+  database:
+    # Reference to database config and override
+    <<: *db_config
+    host: "localhost"
+    name: "reviewboard_dev"
+
+# Production environment
+production:
+  app:
+    environment:
+      <<: *default_env
+      debug: false
+      logging_level: "warn"
+      max_connections: 500
+
+  database:
+    <<: *db_config
+    host: "prod-db.example.com"
+    port: 5432
+
+  # Load balancer configuration
+  load_balancer:
+    enabled: true
+    algorithm: "round_robin"
+    health_check:
+      path: "/health"
+      interval: 30
+      timeout: 5
+
+# Feature flags
+features:
+  new_ui: true
+  advanced_search: false
+  real_time_notifications: true
+  dark_mode: true
+  two_factor_auth: true
+
+# Scheduled tasks
+tasks:
+  - name: "cleanup_old_reviews"
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    command: "python manage.py cleanup_reviews"
+    enabled: true
+
+  - name: "send_digest_emails"
+    schedule: "0 9 * * 1"  # Monday at 9 AM
+    command: "python manage.py send_digest"
+    enabled: true
+    timeout: 600
+
+  - name: "backup_database"
+    schedule: "0 3 * * 0"  # Sunday at 3 AM
+    command: "pg_dump reviewboard > backup.sql"
+    enabled: true
+
+# User roles and permissions
+roles:
+  admin:
+    permissions:
+      - "create_repository"
+      - "delete_repository"
+      - "manage_users"
+      - "view_admin_panel"
+      - "manage_extensions"
+    description: "Full system administrator"
+
+  moderator:
+    permissions:
+      - "moderate_reviews"
+      - "close_review_requests"
+      - "edit_any_review"
+    description: "Review moderator"
+
+  user:
+    permissions:
+      - "create_review_request"
+      - "submit_review"
+      - "edit_own_review"
+    description: "Standard user"
+
+# API configuration
+api:
+  version: "v1"
+  base_url: "/api"
+
+  # Rate limiting per endpoint
+  endpoints:
+    "/reviews":
+      rate_limit: 100
+      methods: ["GET", "POST", "PUT"]
+
+    "/repositories":
+      rate_limit: 50
+      methods: ["GET", "POST"]
+      admin_only: true
+
+    "/users":
+      rate_limit: 200
+      methods: ["GET"]
+
+# Monitoring and metrics
+monitoring:
+  enabled: true
+
+  metrics:
+    - name: "request_duration"
+      type: "histogram"
+      buckets: [0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
+
+    - name: "active_users"
+      type: "gauge"
+
+    - name: "review_requests_total"
+      type: "counter"
+
+  alerts:
+    high_error_rate:
+      condition: "error_rate > 0.05"
+      duration: "5m"
+      notification: "slack"
+
+    high_response_time:
+      condition: "response_time_p95 > 2s"
+      duration: "3m"
+      notification: "email"
+
+# Integration settings
+integrations:
+  github:
+    enabled: true
+    app_id: 12345
+    webhook_secret: "github_webhook_secret"
+
+  gitlab:
+    enabled: false
+    url: "https://gitlab.example.com"
+    token: "gitlab_access_token"
+
+  jira:
+    enabled: true
+    url: "https://example.com"
+    username: "api@example.com"
+    api_token: "jira_api_token"
+
+# Complex data structures
+test_data:
+  users:
+    - name: "Alice Johnson"
+      email: "alice@example.com"
+      roles: ["admin", "user"]
+      preferences:
+        theme: "dark"
+        notifications: true
+        language: "en"
+
+    - name: "Bob Smith"
+      email: "bob@example.com"
+      roles: ["user"]
+      preferences:
+        theme: "light"
+        notifications: false
+        language: "es"
+
+  # Multi-dimensional data
+  performance_matrix:
+    - [1.2, 1.5, 1.8, 2.1]
+    - [1.1, 1.3, 1.6, 1.9]
+    - [1.0, 1.2, 1.4, 1.7]
+
+# Special YAML values
+special_values:
+  null_value: null
+  empty_string: ""
+  boolean_true: true
+  boolean_false: false
+  integer: 42
+  float: 3.14159
+  scientific: 1.2e-3
+  octal: 0o755
+  hexadecimal: 0xFF
+  infinity: .inf
+  not_a_number: .nan
