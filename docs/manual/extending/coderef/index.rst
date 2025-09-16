@@ -438,9 +438,11 @@ TreeSitter Support
    :toctree: python
 
    reviewboard.treesitter
+   reviewboard.treesitter.core
    reviewboard.treesitter.debug
    reviewboard.treesitter.language
    reviewboard.treesitter.lua_patterns
+   reviewboard.treesitter.query_utils
 
 
 Web API
