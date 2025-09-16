@@ -71,14 +71,14 @@ class ReviewGroupResource(WebAPIResource):
         },
         'url': {
             'type': StringFieldType,
-            'description': "The URL to the user's page on the site. "
+            'description': "The URL to the group's page on the site. "
                            "This is deprecated and will be removed in a "
                            "future version.",
             'deprecated_in': '2.0',
         },
         'absolute_url': {
             'type': StringFieldType,
-            'description': "The absolute URL to the user's page on the site.",
+            'description': "The absolute URL to the group's page on the site.",
             'added_in': '2.0',
         },
         'visible': {
