@@ -1,0 +1,1109 @@
+{
+  "files": {
+    "ada/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ada/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "agda/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "agda/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "apex/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "apex/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "arduino/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "arduino/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "asm/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "asm/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "astro/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "astro/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "bash/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "bash/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "beancount/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "beancount/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "bibtex/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "bibtex/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "bicep/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "bicep/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "bitbake/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "bitbake/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "c/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "c/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "cairo/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "cairo/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "capnp/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "capnp/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "chatito/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "chatito/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "clojure/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "clojure/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "cmake/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "comment/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "commonlisp/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "commonlisp/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "cpon/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "cpon/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "cpp/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "cpp/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "csharp/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "csharp/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "css/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "css/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "csv/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "cuda/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "cuda/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "d/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "d/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "dart/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "dart/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "dockerfile/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "dockerfile/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "doxygen/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "doxygen/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "dtd/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "dtd/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "elixir/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "elixir/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "elm/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "elm/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "embeddedtemplate/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "embeddedtemplate/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "erlang/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "erlang/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "firrtl/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "firrtl/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "fish/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "fish/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "fortran/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "fortran/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "func/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "func/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gdscript/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gdscript/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gitattributes/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gitattributes/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gitcommit/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gitcommit/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gitignore/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gitignore/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gleam/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gleam/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "glsl/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "glsl/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gn/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gn/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "go/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "go/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gomod/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gomod/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gosum/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "graphql/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "graphql/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "gstlaunch/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "hack/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "hack/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "hare/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "hare/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "haskell/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "haskell/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "hcl/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "hcl/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "heex/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "heex/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "hlsl/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "hlsl/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "hyprlang/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "hyprlang/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ini/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ini/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ispc/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ispc/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "java/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "java/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "javascript/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "javascript/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "jsdoc/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "json/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "jsonnet/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "jsonnet/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "julia/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "julia/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "kconfig/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "kconfig/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "kdl/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "kdl/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "kotlin/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "kotlin/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "latex/highlights.scm": {
+      "commit": "692b051b09935653befdb8f7ba8afdb640adf17b",
+      "source": "nvim-treesitter"
+    },
+    "latex/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "linkerscript/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "linkerscript/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "llvm/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "llvm/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "lua/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "lua/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "luadoc/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "luap/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "luau/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "luau/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "make/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "make/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "markdown/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "markdown/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "markdown_inline/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "markdown_inline/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "matlab/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "matlab/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "mermaid/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "mermaid/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "meson/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "meson/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "nim/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "nim/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ninja/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ninja/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "nix/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "nqc/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "nqc/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "objc/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "objc/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ocaml/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ocaml/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ocaml_interface/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ocaml_interface/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "odin/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "odin/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "pascal/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "pascal/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "pem/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "pem/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "perl/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "perl/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "php/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "php/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "po/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "po/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "pony/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "pony/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "powershell/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "powershell/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "printf/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "properties/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "properties/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "proto/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "proto/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "psv/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "puppet/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "puppet/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "purescript/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "purescript/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "pymanifest/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "pymanifest/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "python/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "python/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "qmldir/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "qmldir/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "qmljs/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "qmljs/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "query/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "query/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "r/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "r/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "racket/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "racket/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "re2c/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "re2c/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "readline/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "readline/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "rego/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "rego/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "requirements/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "requirements/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ron/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ron/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "rst/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "rst/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ruby/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ruby/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "rust/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "rust/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "scala/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "scala/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "scheme/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "scheme/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "smali/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "smali/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "smithy/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "smithy/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "solidity/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "solidity/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "sparql/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "sparql/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "sql/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "sql/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "starlark/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "starlark/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "swift/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "swift/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "tcl/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "tcl/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "terraform/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "terraform/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "thrift/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "thrift/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "toml/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "toml/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "tsv/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "tsx/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "tsx/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "twig/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "twig/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "typescript/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "typescript/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "typst/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "typst/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "udev/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "udev/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ungrammar/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "ungrammar/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "uxntal/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "uxntal/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "vim/highlights.scm": {
+      "commit": "692b051b09935653befdb8f7ba8afdb640adf17b",
+      "source": "nvim-treesitter"
+    },
+    "vim/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "vue/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "wgsl/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "wgsl/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "xcompose/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "xcompose/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "xml/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "xml/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "yaml/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "yaml/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "yuck/highlights.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    },
+    "yuck/injections.scm": {
+      "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+      "source": "nvim-treesitter"
+    }
+  },
+  "nvim_treesitter_revision": "61ec748ef7624b1962f392191aad61b91c0f9829"
+}
