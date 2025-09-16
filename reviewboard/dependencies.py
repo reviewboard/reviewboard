@@ -82,6 +82,16 @@ package_dependencies: Mapping[str, Dependency] = {
 
     'pymdown-extensions': '~=10.21',
     'pymemcache': '',
+
+    # tree-sitter's API is still in a bit of flux so we pin to an exact version
+    # to avoid breakages.
+    'tree-sitter': '==0.25.0',
+
+    # Queries for tree-sitter are tightly bound to grammar versions. When
+    # updating this, make sure to run reviewboard.treesitter.tests.test_queries
+    # to verify that all queries load properly.
+    'tree-sitter-language-pack': '==0.9.0',
+
     'tqdm': '~=4.66.2',
     'Whoosh': '>=2.6',
 }
