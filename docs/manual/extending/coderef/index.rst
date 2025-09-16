@@ -431,6 +431,16 @@ Themes
    reviewboard.themes.ui.registry
 
 
+TreeSitter Support
+==================
+
+.. autosummary::
+   :toctree: python
+
+   reviewboard.treesitter
+   reviewboard.treesitter.debug
+
+
 Web API
 =======
 
