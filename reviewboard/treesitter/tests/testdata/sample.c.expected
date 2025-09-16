@@ -1,0 +1,55 @@
+<span class="ts-keyword-import">#include</span> <span class="ts-string">&lt;stdio.h&gt;</span>
+<span class="ts-keyword-import">#include</span> <span class="ts-string">&lt;stdlib.h&gt;</span>
+<span class="ts-keyword-import">#include</span> <span class="ts-string">&lt;string.h&gt;</span>
+
+<span class="ts-comment">// Global constant</span>
+<span class="ts-keyword">const</span> <span class="ts-type-builtin">int</span> <span class="ts-constant"><span class="ts-variable">MAX_SIZE</span></span> <span class="ts-operator">=</span> <span class="ts-number">100</span>;
+
+<span class="ts-comment">/* Multi-line comment</span>
+<span class="ts-comment">   demonstrating C syntax */</span>
+<span class="ts-keyword">typedef</span> <span class="ts-keyword">struct</span> {
+    <span class="ts-type-builtin">int</span> id;
+    <span class="ts-type-builtin">char</span> <span class="ts-operator">*</span>name;
+    <span class="ts-type-builtin">float</span> value;
+} Record;
+
+<span class="ts-comment">// Function prototypes</span>
+<span class="ts-type-builtin">int</span> <span class="ts-function"><span class="ts-variable">factorial</span></span>(<span class="ts-type-builtin">int</span> <span class="ts-variable">n</span>);
+<span class="ts-type-builtin">char</span><span class="ts-operator">*</span> <span class="ts-function"><span class="ts-variable">create_string</span></span>(<span class="ts-keyword">const</span> <span class="ts-type-builtin">char</span><span class="ts-variable"><span class="ts-operator">*</span> <span class="ts-variable">input</span></span>);
+
+<span class="ts-type-builtin">int</span> <span class="ts-function"><span class="ts-variable">main</span></span>(<span class="ts-type-builtin">int</span> <span class="ts-variable">argc</span>, <span class="ts-type-builtin">char</span> <span class="ts-variable"><span class="ts-operator">*</span><span class="ts-operator">*</span><span class="ts-variable">argv</span></span>) {
+    <span class="ts-comment">// Local variables</span>
+    <span class="ts-type-builtin">int</span> <span class="ts-variable">numbers</span>[] <span class="ts-operator">=</span> {<span class="ts-number">1</span>, <span class="ts-number">2</span>, <span class="ts-number">3</span>, <span class="ts-number">4</span>, <span class="ts-number">5</span>};
+    Record <span class="ts-variable">record</span> <span class="ts-operator">=</span> {.id <span class="ts-operator">=</span> <span class="ts-number">42</span>, .name <span class="ts-operator">=</span> <span class="ts-string">&quot;test&quot;</span>, .value <span class="ts-operator">=</span> <span class="ts-number">3.14f</span>};
+
+    <span class="ts-function-call"><span class="ts-variable">printf</span></span>(<span class="ts-string">&quot;Hello, World!<span class="ts-string">\n</span>&quot;</span>);
+    <span class="ts-function-call"><span class="ts-variable">printf</span></span>(<span class="ts-string">&quot;Record: id=%d, name=%s, value=%.2f<span class="ts-string">\n</span>&quot;</span>, 
+           <span class="ts-variable">record</span>.id, <span class="ts-variable">record</span>.name, <span class="ts-variable">record</span>.value);
+
+    <span class="ts-comment">// Control structures</span>
+    <span class="ts-keyword">for</span> (<span class="ts-type-builtin">int</span> <span class="ts-variable">i</span> <span class="ts-operator">=</span> <span class="ts-number">0</span>; <span class="ts-variable">i</span> <span class="ts-operator">&lt;</span> <span class="ts-number">5</span>; <span class="ts-variable">i</span><span class="ts-operator">++</span>) {
+        <span class="ts-keyword">if</span> (<span class="ts-variable">numbers</span>[<span class="ts-variable">i</span>] <span class="ts-operator">%</span> <span class="ts-number">2</span> <span class="ts-operator">==</span> <span class="ts-number">0</span>) {
+            <span class="ts-function-call"><span class="ts-variable">printf</span></span>(<span class="ts-string">&quot;Even: %d<span class="ts-string">\n</span>&quot;</span>, <span class="ts-variable">numbers</span>[<span class="ts-variable">i</span>]);
+        } <span class="ts-keyword">else</span> {
+            <span class="ts-function-call"><span class="ts-variable">printf</span></span>(<span class="ts-string">&quot;Odd: %d<span class="ts-string">\n</span>&quot;</span>, <span class="ts-variable">numbers</span>[<span class="ts-variable">i</span>]);
+        }
+    }
+
+    <span class="ts-comment">// Function call</span>
+    <span class="ts-type-builtin">int</span> <span class="ts-variable">result</span> <span class="ts-operator">=</span> <span class="ts-function-call"><span class="ts-variable">factorial</span></span>(<span class="ts-number">5</span>);
+    <span class="ts-function-call"><span class="ts-variable">printf</span></span>(<span class="ts-string">&quot;Factorial of 5: %d<span class="ts-string">\n</span>&quot;</span>, <span class="ts-variable">result</span>);
+
+    <span class="ts-keyword">return</span> <span class="ts-constant"><span class="ts-variable">EXIT_SUCCESS</span></span>;
+}
+
+<span class="ts-type-builtin">int</span> <span class="ts-function"><span class="ts-variable">factorial</span></span>(<span class="ts-type-builtin">int</span> <span class="ts-variable">n</span>) {
+    <span class="ts-keyword">return</span> (<span class="ts-variable">n</span> <span class="ts-operator">&lt;=</span> <span class="ts-number">1</span>) <span class="ts-keyword">?</span> <span class="ts-number">1</span> <span class="ts-keyword">:</span> <span class="ts-variable">n</span> <span class="ts-operator">*</span> <span class="ts-function-call"><span class="ts-variable">factorial</span></span>(<span class="ts-variable">n</span> <span class="ts-operator">-</span> <span class="ts-number">1</span>);
+}
+
+<span class="ts-type-builtin">char</span><span class="ts-operator">*</span> <span class="ts-function"><span class="ts-variable">create_string</span></span>(<span class="ts-keyword">const</span> <span class="ts-type-builtin">char</span><span class="ts-variable"><span class="ts-operator">*</span> <span class="ts-variable">input</span></span>) {
+    <span class="ts-type-builtin">char</span><span class="ts-operator">*</span> <span class="ts-variable">result</span> <span class="ts-operator">=</span> <span class="ts-function-call"><span class="ts-variable">malloc</span></span>(<span class="ts-function-call"><span class="ts-variable">strlen</span></span>(<span class="ts-variable">input</span>) <span class="ts-operator">+</span> <span class="ts-number">1</span>);
+    <span class="ts-keyword">if</span> (<span class="ts-variable">result</span> <span class="ts-operator">!=</span> <span class="ts-constant-builtin">NULL</span>) {
+        <span class="ts-function-call"><span class="ts-variable">strcpy</span></span>(<span class="ts-variable">result</span>, <span class="ts-variable">input</span>);
+    }
+    <span class="ts-keyword">return</span> <span class="ts-variable">result</span>;
+}

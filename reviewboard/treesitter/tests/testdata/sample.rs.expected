@@ -1,0 +1,105 @@
+<span class="ts-keyword-import">use</span> <span class="ts-variable"><span class="ts-module">std</span></span>::<span class="ts-variable"><span class="ts-module">collections</span></span>::<span class="ts-variable">HashMap</span>;
+<span class="ts-keyword-import">use</span> <span class="ts-variable"><span class="ts-module">std</span></span>::<span class="ts-variable"><span class="ts-module">fmt</span></span>::<span class="ts-variable">Display</span>;
+
+<span class="ts-comment">//<span class="ts-operator"><span class="ts-comment">/</span></span> Documentation comment for Person struct</span>
+<span class="ts-comment"></span>#[<span class="ts-function"><span class="ts-variable">derive</span></span>(<span class="ts-variable">Debug</span>, <span class="ts-variable">Clone</span>)]
+<span class="ts-keyword">pub</span> <span class="ts-keyword">struct</span> Person {
+    <span class="ts-keyword">pub</span> <span class="ts-variable">name</span>: String,
+    <span class="ts-keyword">pub</span> <span class="ts-variable">age</span>: <span class="ts-type-builtin">u32</span>,
+    <span class="ts-variable">email</span>: Option<span class="ts-operator">&lt;</span>String<span class="ts-operator">&gt;</span>,
+}
+
+<span class="ts-comment">// Trait definition</span>
+<span class="ts-keyword">trait</span> Greet {
+    <span class="ts-keyword">fn</span> <span class="ts-function"><span class="ts-variable">greet</span></span>(<span class="ts-operator">&amp;</span><span class="ts-variable-builtin">self</span>) -&gt; String;
+}
+
+<span class="ts-keyword">impl</span> Greet <span class="ts-keyword">for</span> Person {
+    <span class="ts-keyword">fn</span> <span class="ts-function"><span class="ts-variable">greet</span></span>(<span class="ts-operator">&amp;</span><span class="ts-variable-builtin">self</span>) -&gt; String {
+        <span class="ts-function"><span class="ts-variable">format</span></span><span class="ts-function"><span class="ts-operator">!</span></span>(<span class="ts-string">&quot;Hello, my name is {}&quot;</span>, <span class="ts-variable-builtin">self</span>.<span class="ts-variable">name</span>)
+    }
+}
+
+<span class="ts-keyword">impl</span> Person {
+    <span class="ts-comment">//<span class="ts-operator"><span class="ts-comment">/</span></span> Creates a new Person</span>
+<span class="ts-comment"></span>    <span class="ts-keyword">pub</span> <span class="ts-keyword">fn</span> <span class="ts-function"><span class="ts-variable">new</span></span>(<span class="ts-variable">name</span>: String, <span class="ts-variable">age</span>: <span class="ts-type-builtin">u32</span>) -&gt; Self {
+        Person {
+            <span class="ts-variable">name</span>,
+            <span class="ts-variable">age</span>,
+            <span class="ts-variable">email</span>: <span class="ts-constant-builtin"><span class="ts-variable">None</span></span>,
+        }
+    }
+
+    <span class="ts-keyword">pub</span> <span class="ts-keyword">fn</span> <span class="ts-function"><span class="ts-variable">set_email</span></span>(<span class="ts-operator">&amp;</span><span class="ts-keyword">mut</span> <span class="ts-variable-builtin">self</span>, <span class="ts-variable">email</span>: String) {
+        <span class="ts-variable-builtin">self</span>.<span class="ts-variable">email</span> <span class="ts-operator">=</span> <span class="ts-constant-builtin"><span class="ts-function-call"><span class="ts-variable">Some</span></span></span>(<span class="ts-variable">email</span>);
+    }
+}
+
+<span class="ts-comment">// Generic function</span>
+<span class="ts-keyword">fn</span> <span class="ts-function"><span class="ts-variable">process_data</span></span><span class="ts-operator">&lt;</span>T: Display<span class="ts-operator">&gt;</span>(<span class="ts-variable">data</span>: Vec<span class="ts-operator">&lt;</span>T<span class="ts-operator">&gt;</span>) -&gt; String {
+    <span class="ts-variable">data</span>.<span class="ts-variable"><span class="ts-function-call">iter</span></span>()
+        .<span class="ts-variable"><span class="ts-function-call">map</span></span>(<span class="ts-operator">|</span><span class="ts-variable">item</span><span class="ts-operator">|</span> <span class="ts-variable">item</span>.<span class="ts-variable"><span class="ts-function-call">to_string</span></span>())
+        .<span class="ts-variable"><span class="ts-function-call">collect</span></span>::<span class="ts-operator">&lt;</span>Vec<span class="ts-operator">&lt;</span>_<span class="ts-operator">&gt;</span><span class="ts-operator">&gt;</span>()
+        .<span class="ts-variable"><span class="ts-function-call">join</span></span>(<span class="ts-string">&quot;, &quot;</span>)
+}
+
+<span class="ts-keyword">fn</span> <span class="ts-function"><span class="ts-variable">main</span></span>() {
+    <span class="ts-keyword">let</span> <span class="ts-keyword">mut</span> <span class="ts-variable">people</span>: HashMap<span class="ts-operator">&lt;</span><span class="ts-type-builtin">u32</span>, Person<span class="ts-operator">&gt;</span> <span class="ts-operator">=</span> <span class="ts-variable"><span class="ts-module">HashMap</span></span>::<span class="ts-function-call"><span class="ts-variable">new</span></span>();
+
+    <span class="ts-comment">// Creating instances</span>
+    <span class="ts-keyword">let</span> <span class="ts-keyword">mut</span> <span class="ts-variable">person1</span> <span class="ts-operator">=</span> <span class="ts-variable"><span class="ts-module">Person</span></span>::<span class="ts-function-call"><span class="ts-variable">new</span></span>(<span class="ts-string">&quot;Alice&quot;</span>.<span class="ts-variable"><span class="ts-function-call">to_string</span></span>(), <span class="ts-number">30</span>);
+    <span class="ts-variable">person1</span>.<span class="ts-variable"><span class="ts-function-call">set_email</span></span>(<span class="ts-string">&quot;alice@example.com&quot;</span>.<span class="ts-variable"><span class="ts-function-call">to_string</span></span>());
+
+    <span class="ts-keyword">let</span> <span class="ts-variable">person2</span> <span class="ts-operator">=</span> Person {
+        <span class="ts-variable">name</span>: <span class="ts-string">&quot;Bob&quot;</span>.<span class="ts-variable"><span class="ts-function-call">into</span></span>(),
+        <span class="ts-variable">age</span>: <span class="ts-number">25</span>,
+        <span class="ts-variable">email</span>: <span class="ts-constant-builtin"><span class="ts-function-call"><span class="ts-variable">Some</span></span></span>(<span class="ts-string">&quot;bob@test.com&quot;</span>.<span class="ts-variable"><span class="ts-function-call">to_string</span></span>()),
+    };
+
+    <span class="ts-variable">people</span>.<span class="ts-variable"><span class="ts-function-call">insert</span></span>(<span class="ts-number">1</span>, <span class="ts-variable">person1</span>);
+    <span class="ts-variable">people</span>.<span class="ts-variable"><span class="ts-function-call">insert</span></span>(<span class="ts-number">2</span>, <span class="ts-variable">person2</span>);
+
+    <span class="ts-comment">// Pattern matching</span>
+    <span class="ts-keyword">for</span> (<span class="ts-variable">id</span>, <span class="ts-variable">person</span>) <span class="ts-keyword">in</span> <span class="ts-operator">&amp;</span><span class="ts-variable">people</span> {
+        <span class="ts-keyword">match</span> <span class="ts-operator">&amp;</span><span class="ts-variable">person</span>.<span class="ts-variable">email</span> {
+            <span class="ts-constant-builtin"><span class="ts-variable">Some</span></span>(<span class="ts-variable">email</span>) =&gt; <span class="ts-function"><span class="ts-variable">println</span></span><span class="ts-function"><span class="ts-operator">!</span></span>(<span class="ts-string">&quot;ID {}: {} ({})&quot;</span>, <span class="ts-variable">id</span>, <span class="ts-variable">person</span>.<span class="ts-variable"><span class="ts-function-call">greet</span></span>(), <span class="ts-variable">email</span>),
+            <span class="ts-constant-builtin"><span class="ts-constant"><span class="ts-variable">None</span></span></span> =&gt; <span class="ts-function"><span class="ts-variable">println</span></span><span class="ts-function"><span class="ts-operator">!</span></span>(<span class="ts-string">&quot;ID {}: {} (no email)&quot;</span>, <span class="ts-variable">id</span>, <span class="ts-variable">person</span>.<span class="ts-variable"><span class="ts-function-call">greet</span></span>()),
+        }
+    }
+
+    <span class="ts-comment">// Closure and iterator</span>
+    <span class="ts-keyword">let</span> <span class="ts-variable">ages</span>: Vec<span class="ts-operator">&lt;</span><span class="ts-type-builtin">u32</span><span class="ts-operator">&gt;</span> <span class="ts-operator">=</span> <span class="ts-variable">people</span>
+        .<span class="ts-variable"><span class="ts-function-call">values</span></span>()
+        .<span class="ts-variable"><span class="ts-function-call">filter</span></span>(<span class="ts-operator">|</span><span class="ts-variable">p</span><span class="ts-operator">|</span> <span class="ts-variable">p</span>.<span class="ts-variable">age</span> <span class="ts-operator">&gt;</span> <span class="ts-number">25</span>)
+        .<span class="ts-variable"><span class="ts-function-call">map</span></span>(<span class="ts-operator">|</span><span class="ts-variable">p</span><span class="ts-operator">|</span> <span class="ts-variable">p</span>.<span class="ts-variable">age</span>)
+        .<span class="ts-variable"><span class="ts-function-call">collect</span></span>();
+
+    <span class="ts-function"><span class="ts-variable">println</span></span><span class="ts-function"><span class="ts-operator">!</span></span>(<span class="ts-string">&quot;Ages over 25: {}&quot;</span>, <span class="ts-variable"><span class="ts-function-call">process_data</span></span>(<span class="ts-variable">ages</span>));
+
+    <span class="ts-comment">// Error handling</span>
+    <span class="ts-keyword">let</span> <span class="ts-variable">result</span> <span class="ts-operator">=</span> <span class="ts-function-call"><span class="ts-variable">divide</span></span>(<span class="ts-number">10.0</span>, <span class="ts-number">2.0</span>);
+    <span class="ts-keyword">match</span> <span class="ts-variable">result</span> {
+        <span class="ts-constant-builtin"><span class="ts-variable">Ok</span></span>(<span class="ts-variable">value</span>) =&gt; <span class="ts-function"><span class="ts-variable">println</span></span><span class="ts-function"><span class="ts-operator">!</span></span>(<span class="ts-string">&quot;Result: {}&quot;</span>, <span class="ts-variable">value</span>),
+        <span class="ts-constant-builtin"><span class="ts-variable">Err</span></span>(<span class="ts-variable">e</span>) =&gt; <span class="ts-function"><span class="ts-variable">eprintln</span></span><span class="ts-function"><span class="ts-operator">!</span></span>(<span class="ts-string">&quot;Error: {}&quot;</span>, <span class="ts-variable">e</span>),
+    }
+}
+
+<span class="ts-keyword">fn</span> <span class="ts-function"><span class="ts-variable">divide</span></span>(<span class="ts-variable">a</span>: <span class="ts-type-builtin">f64</span>, <span class="ts-variable">b</span>: <span class="ts-type-builtin">f64</span>) -&gt; Result<span class="ts-operator">&lt;</span><span class="ts-type-builtin">f64</span>, <span class="ts-operator">&amp;</span><span class="ts-keyword">&#39;</span><span class="ts-attribute-builtin"><span class="ts-variable">static</span></span> <span class="ts-type-builtin">str</span><span class="ts-operator">&gt;</span> {
+    <span class="ts-keyword">if</span> <span class="ts-variable">b</span> <span class="ts-operator">==</span> <span class="ts-number">0.0</span> {
+        <span class="ts-constant-builtin"><span class="ts-function-call"><span class="ts-variable">Err</span></span></span>(<span class="ts-string">&quot;Division by zero&quot;</span>)
+    } <span class="ts-keyword">else</span> {
+        <span class="ts-constant-builtin"><span class="ts-function-call"><span class="ts-variable">Ok</span></span></span>(<span class="ts-variable">a</span> <span class="ts-operator">/</span> <span class="ts-variable">b</span>)
+    }
+}
+
+#[<span class="ts-function"><span class="ts-variable">cfg</span></span>(<span class="ts-variable">test</span>)]
+<span class="ts-keyword-import">mod</span> <span class="ts-variable"><span class="ts-module">tests</span></span> {
+    <span class="ts-keyword-import">use</span> <span class="ts-module">super</span>::<span class="ts-operator">*</span>;
+
+    #[<span class="ts-function"><span class="ts-variable">test</span></span>]
+    <span class="ts-keyword">fn</span> <span class="ts-function"><span class="ts-variable">test_person_creation</span></span>() {
+        <span class="ts-keyword">let</span> <span class="ts-variable">person</span> <span class="ts-operator">=</span> <span class="ts-variable"><span class="ts-module">Person</span></span>::<span class="ts-function-call"><span class="ts-variable">new</span></span>(<span class="ts-string">&quot;Test&quot;</span>.<span class="ts-variable"><span class="ts-function-call">to_string</span></span>(), <span class="ts-number">20</span>);
+        <span class="ts-keyword"><span class="ts-function"><span class="ts-variable">assert_eq</span></span></span><span class="ts-keyword"><span class="ts-function"><span class="ts-operator">!</span></span></span>(<span class="ts-variable">person</span>.<span class="ts-variable">name</span>, <span class="ts-string">&quot;Test&quot;</span>);
+        <span class="ts-keyword"><span class="ts-function"><span class="ts-variable">assert_eq</span></span></span><span class="ts-keyword"><span class="ts-function"><span class="ts-operator">!</span></span></span>(<span class="ts-variable">person</span>.<span class="ts-variable">age</span>, <span class="ts-number">20</span>);
+    }
+}

@@ -1,0 +1,121 @@
+{
+  &quot;name&quot;: <span class="ts-string">&quot;example-project&quot;</span>,
+  &quot;version&quot;: <span class="ts-string">&quot;1.0.0&quot;</span>,
+  &quot;description&quot;: <span class="ts-string">&quot;A sample JSON file demonstrating various JSON features&quot;</span>,
+  &quot;author&quot;: {
+    &quot;name&quot;: <span class="ts-string">&quot;Example Team&quot;</span>,
+    &quot;email&quot;: <span class="ts-string">&quot;team@example.com&quot;</span>,
+    &quot;url&quot;: <span class="ts-string">&quot;https://www.example.com&quot;</span>
+  },
+  &quot;license&quot;: <span class="ts-string">&quot;MIT&quot;</span>,
+  &quot;private&quot;: <span class="ts-boolean">false</span>,
+  &quot;scripts&quot;: {
+    &quot;start&quot;: <span class="ts-string">&quot;node server.js&quot;</span>,
+    &quot;test&quot;: <span class="ts-string">&quot;jest&quot;</span>,
+    &quot;build&quot;: <span class="ts-string">&quot;webpack --mode production&quot;</span>,
+    &quot;dev&quot;: <span class="ts-string">&quot;webpack serve --mode development&quot;</span>,
+    &quot;lint&quot;: <span class="ts-string">&quot;eslint .&quot;</span>,
+    &quot;format&quot;: <span class="ts-string">&quot;prettier --write .&quot;</span>
+  },
+  &quot;dependencies&quot;: {
+    &quot;express&quot;: <span class="ts-string">&quot;^4.18.0&quot;</span>,
+    &quot;lodash&quot;: <span class="ts-string">&quot;^4.17.21&quot;</span>,
+    &quot;moment&quot;: <span class="ts-string">&quot;^2.29.4&quot;</span>,
+    &quot;axios&quot;: <span class="ts-string">&quot;^1.3.0&quot;</span>
+  },
+  &quot;devDependencies&quot;: {
+    &quot;jest&quot;: <span class="ts-string">&quot;^29.0.0&quot;</span>,
+    &quot;webpack&quot;: <span class="ts-string">&quot;^5.75.0&quot;</span>,
+    &quot;eslint&quot;: <span class="ts-string">&quot;^8.30.0&quot;</span>,
+    &quot;prettier&quot;: <span class="ts-string">&quot;^2.8.0&quot;</span>,
+    &quot;@types/node&quot;: <span class="ts-string">&quot;^18.11.0&quot;</span>
+  },
+  &quot;keywords&quot;: [
+    <span class="ts-string">&quot;example&quot;</span>,
+    <span class="ts-string">&quot;json&quot;</span>,
+    <span class="ts-string">&quot;demo&quot;</span>,
+    <span class="ts-string">&quot;reviewboard&quot;</span>,
+    <span class="ts-string">&quot;treesitter&quot;</span>
+  ],
+  &quot;repository&quot;: {
+    &quot;type&quot;: <span class="ts-string">&quot;git&quot;</span>,
+    &quot;url&quot;: <span class="ts-string">&quot;git+https://github.com/example/example-project.git&quot;</span>
+  },
+  &quot;bugs&quot;: {
+    &quot;url&quot;: <span class="ts-string">&quot;https://github.com/example/example-project/issues&quot;</span>
+  },
+  &quot;homepage&quot;: <span class="ts-string">&quot;https://www.example.com&quot;</span>,
+  &quot;engines&quot;: {
+    &quot;node&quot;: <span class="ts-string">&quot;&gt;=16.0.0&quot;</span>,
+    &quot;npm&quot;: <span class="ts-string">&quot;&gt;=8.0.0&quot;</span>
+  },
+  &quot;config&quot;: {
+    &quot;database&quot;: {
+      &quot;host&quot;: <span class="ts-string">&quot;localhost&quot;</span>,
+      &quot;port&quot;: <span class="ts-number">5432</span>,
+      &quot;name&quot;: <span class="ts-string">&quot;reviewboard&quot;</span>,
+      &quot;ssl&quot;: <span class="ts-boolean">true</span>,
+      &quot;poolSize&quot;: <span class="ts-number">10</span>,
+      &quot;timeout&quot;: <span class="ts-number">30000</span>
+    },
+    &quot;api&quot;: {
+      &quot;baseUrl&quot;: <span class="ts-string">&quot;https://api.example.com&quot;</span>,
+      &quot;version&quot;: <span class="ts-string">&quot;v1&quot;</span>,
+      &quot;rateLimits&quot;: {
+        &quot;requests&quot;: <span class="ts-number">1000</span>,
+        &quot;window&quot;: <span class="ts-number">3600</span>
+      }
+    },
+    &quot;features&quot;: {
+      &quot;enableCaching&quot;: <span class="ts-boolean">true</span>,
+      &quot;enableLogging&quot;: <span class="ts-boolean">true</span>,
+      &quot;debugMode&quot;: <span class="ts-boolean">false</span>,
+      &quot;experimentalFeatures&quot;: [
+        <span class="ts-string">&quot;newUI&quot;</span>,
+        <span class="ts-string">&quot;advancedSearch&quot;</span>
+      ]
+    }
+  },
+  &quot;browserslist&quot;: [
+    <span class="ts-string">&quot;&gt; 1%&quot;</span>,
+    <span class="ts-string">&quot;last 2 versions&quot;</span>,
+    <span class="ts-string">&quot;not dead&quot;</span>,
+    <span class="ts-string">&quot;not ie 11&quot;</span>
+  ],
+  &quot;jest&quot;: {
+    &quot;testEnvironment&quot;: <span class="ts-string">&quot;node&quot;</span>,
+    &quot;collectCoverage&quot;: <span class="ts-boolean">true</span>,
+    &quot;coverageDirectory&quot;: <span class="ts-string">&quot;coverage&quot;</span>,
+    &quot;testMatch&quot;: [
+      <span class="ts-string">&quot;**/__tests__/**/*.test.js&quot;</span>
+    ]
+  },
+  &quot;eslintConfig&quot;: {
+    &quot;extends&quot;: [
+      <span class="ts-string">&quot;eslint:recommended&quot;</span>,
+      <span class="ts-string">&quot;@typescript-eslint/recommended&quot;</span>
+    ],
+    &quot;rules&quot;: {
+      &quot;no-console&quot;: <span class="ts-string">&quot;warn&quot;</span>,
+      &quot;prefer-const&quot;: <span class="ts-string">&quot;error&quot;</span>
+    }
+  },
+  &quot;metadata&quot;: {
+    &quot;buildNumber&quot;: <span class="ts-number">12345</span>,
+    &quot;buildDate&quot;: <span class="ts-string">&quot;2023-12-01T10:30:00Z&quot;</span>,
+    &quot;gitCommit&quot;: <span class="ts-string">&quot;a1b2c3d4e5f6&quot;</span>,
+    &quot;environment&quot;: <span class="ts-string">&quot;production&quot;</span>,
+    &quot;performance&quot;: {
+      &quot;metrics&quot;: {
+        &quot;loadTime&quot;: <span class="ts-number">1.25</span>,
+        &quot;bundleSize&quot;: <span class="ts-string">&quot;245KB&quot;</span>,
+        &quot;dependencies&quot;: <span class="ts-number">42</span>
+      }
+    },
+    &quot;localization&quot;: {
+      &quot;supportedLanguages&quot;: [<span class="ts-string">&quot;en&quot;</span>, <span class="ts-string">&quot;es&quot;</span>, <span class="ts-string">&quot;fr&quot;</span>, <span class="ts-string">&quot;de&quot;</span>, <span class="ts-string">&quot;ja&quot;</span>],
+      &quot;defaultLanguage&quot;: <span class="ts-string">&quot;en&quot;</span>,
+      &quot;fallbackLanguage&quot;: <span class="ts-string">&quot;en&quot;</span>
+    }
+  }
+}

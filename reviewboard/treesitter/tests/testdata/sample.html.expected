@@ -1,0 +1,120 @@
+<span class="ts-constant">&lt;!DOCTYPE html&gt;</span>
+&lt;<span class="ts-tag">html</span> lang=&quot;<span class="ts-string">en</span>&quot;&gt;
+&lt;<span class="ts-tag">head</span>&gt;
+    &lt;<span class="ts-tag">meta</span> charset=&quot;<span class="ts-string">UTF-8</span>&quot;&gt;
+    &lt;<span class="ts-tag">meta</span> name=&quot;<span class="ts-string">viewport</span>&quot; content=&quot;<span class="ts-string">width=device-width, initial-scale=1.0</span>&quot;&gt;
+    &lt;<span class="ts-tag">title</span>&gt;TreeSitter HTML Test&lt;/<span class="ts-tag">title</span>&gt;
+
+    &lt;<span class="ts-tag">style</span>&gt;
+        <span class="ts-tag">body</span> {
+            font-family: Arial, sans-serif;
+            margin: <span class="ts-number">0</span>;
+            padding: <span class="ts-number">20<span class="ts-string">px</span></span>;
+            background-color: <span class="ts-string">#f5f5f5</span>;
+        }
+
+        .container {
+            max-width: <span class="ts-number">800<span class="ts-string">px</span></span>;
+            margin: <span class="ts-number">0</span> auto;
+            background: white;
+            padding: <span class="ts-number">30<span class="ts-string">px</span></span>;
+            border-radius: <span class="ts-number">8<span class="ts-string">px</span></span>;
+            box-shadow: <span class="ts-number">0</span> <span class="ts-number">2<span class="ts-string">px</span></span> <span class="ts-number">10<span class="ts-string">px</span></span> <span class="ts-function">rgba</span>(<span class="ts-number">0</span>, <span class="ts-number">0</span>, <span class="ts-number">0</span>, <span class="ts-number">0.1</span>);
+        }
+
+        <span class="ts-tag">h1</span> {
+            color: <span class="ts-string">#333</span>;
+            text-align: center;
+        }
+
+        .highlight {
+            background-color: yellow;
+            padding: <span class="ts-number">2<span class="ts-string">px</span></span> <span class="ts-number">4<span class="ts-string">px</span></span>;
+        }
+    &lt;/<span class="ts-tag">style</span>&gt;
+&lt;/<span class="ts-tag">head</span>&gt;
+&lt;<span class="ts-tag">body</span>&gt;
+    &lt;<span class="ts-tag">div</span> class=&quot;<span class="ts-string">container</span>&quot;&gt;
+        &lt;<span class="ts-tag">h1</span>&gt;Welcome to TreeSitter Testing&lt;/<span class="ts-tag">h1</span>&gt;
+        &lt;<span class="ts-tag">p</span>&gt;This is a &lt;<span class="ts-tag">span</span> class=&quot;<span class="ts-string">highlight</span>&quot;&gt;sample HTML file&lt;/<span class="ts-tag">span</span>&gt; for testing TreeSitter highlighting with injections.&lt;/<span class="ts-tag">p</span>&gt;
+
+        &lt;<span class="ts-tag">div</span> id=&quot;<span class="ts-string">content</span>&quot;&gt;
+            &lt;<span class="ts-tag">p</span>&gt;The content will be dynamically updated by JavaScript.&lt;/<span class="ts-tag">p</span>&gt;
+        &lt;/<span class="ts-tag">div</span>&gt;
+
+        &lt;<span class="ts-tag">button</span> onclick=&quot;<span class="ts-string"><span class="ts-function-call"><span class="ts-variable">updateContent</span></span>()</span>&quot;&gt;Click me!&lt;/<span class="ts-tag">button</span>&gt;
+    &lt;/<span class="ts-tag">div</span>&gt;
+
+    &lt;<span class="ts-tag">script</span>&gt;
+        <span class="ts-comment">// Configuration object</span>
+        <span class="ts-keyword">const</span> <span class="ts-variable">config</span> <span class="ts-operator">=</span> {
+            <span class="ts-variable">apiUrl</span>: <span class="ts-string">&#39;https://api.example.com&#39;</span>,
+            <span class="ts-variable">timeout</span>: <span class="ts-number">5000</span>,
+            <span class="ts-variable">retries</span>: <span class="ts-number">3</span>
+        };
+
+        <span class="ts-comment">/**</span>
+<span class="ts-comment">         * Updates the content div with dynamic text</span>
+<span class="ts-comment">         */</span>
+        <span class="ts-keyword">function</span> <span class="ts-function"><span class="ts-variable">updateContent</span></span>() {
+            <span class="ts-keyword">const</span> <span class="ts-variable">contentDiv</span> <span class="ts-operator">=</span> <span class="ts-variable-builtin"><span class="ts-variable">document</span></span>.<span class="ts-function-method-call"><span class="ts-variable">getElementById</span></span>(<span class="ts-string">&#39;content&#39;</span>);
+            <span class="ts-keyword">const</span> <span class="ts-variable">messages</span> <span class="ts-operator">=</span> [
+                <span class="ts-string">&#39;Hello from JavaScript!&#39;</span>,
+                <span class="ts-string">&#39;TreeSitter is working great!&#39;</span>,
+                <span class="ts-string">&#39;Syntax highlighting rocks!&#39;</span>
+            ];
+
+            <span class="ts-keyword">const</span> <span class="ts-variable">randomIndex</span> <span class="ts-operator">=</span> <span class="ts-type-builtin"><span class="ts-variable">Math</span></span>.<span class="ts-function-method-call"><span class="ts-variable">floor</span></span>(<span class="ts-type-builtin"><span class="ts-variable">Math</span></span>.<span class="ts-function-method-call"><span class="ts-variable">random</span></span>() <span class="ts-operator">*</span> <span class="ts-variable">messages</span>.<span class="ts-variable">length</span>);
+            <span class="ts-keyword">const</span> <span class="ts-variable">message</span> <span class="ts-operator">=</span> <span class="ts-variable">messages</span>[<span class="ts-variable">randomIndex</span>];
+
+            <span class="ts-variable">contentDiv</span>.<span class="ts-variable">innerHTML</span> <span class="ts-operator">=</span> <span class="ts-string">`&lt;p&gt;&lt;strong&gt;Updated:&lt;/strong&gt; ${<span class="ts-variable">message</span>}&lt;/p&gt;`</span>;
+
+            <span class="ts-comment">// Add some styling</span>
+            <span class="ts-variable">contentDiv</span>.<span class="ts-variable">style</span>.<span class="ts-variable">backgroundColor</span> <span class="ts-operator">=</span> <span class="ts-string">&#39;#e8f4fd&#39;</span>;
+            <span class="ts-variable">contentDiv</span>.<span class="ts-variable">style</span>.<span class="ts-variable">padding</span> <span class="ts-operator">=</span> <span class="ts-string">&#39;15px&#39;</span>;
+            <span class="ts-variable">contentDiv</span>.<span class="ts-variable">style</span>.<span class="ts-variable">borderRadius</span> <span class="ts-operator">=</span> <span class="ts-string">&#39;5px&#39;</span>;
+            <span class="ts-variable">contentDiv</span>.<span class="ts-variable">style</span>.<span class="ts-variable">border</span> <span class="ts-operator">=</span> <span class="ts-string">&#39;1px solid #bee5eb&#39;</span>;
+        }
+
+        <span class="ts-comment">/**</span>
+<span class="ts-comment">         * Fetches data from API</span>
+<span class="ts-comment">         */</span>
+        <span class="ts-keyword">async</span> <span class="ts-keyword">function</span> <span class="ts-function"><span class="ts-variable">fetchData</span></span>(<span class="ts-variable">url</span>) {
+            <span class="ts-keyword">try</span> {
+                <span class="ts-keyword">const</span> <span class="ts-variable">response</span> <span class="ts-operator">=</span> <span class="ts-keyword">await</span> <span class="ts-function-call"><span class="ts-variable">fetch</span></span>(<span class="ts-variable">url</span>, {
+                    <span class="ts-variable">method</span>: <span class="ts-string">&#39;GET&#39;</span>,
+                    <span class="ts-variable">headers</span>: {
+                        <span class="ts-string">&#39;Content-Type&#39;</span>: <span class="ts-string">&#39;application/json&#39;</span>,
+                        <span class="ts-string">&#39;Authorization&#39;</span>: <span class="ts-string">`Bearer ${<span class="ts-function-call"><span class="ts-variable">getToken</span></span>()}`</span>
+                    },
+                    <span class="ts-variable">timeout</span>: <span class="ts-variable">config</span>.<span class="ts-variable">timeout</span>
+                });
+
+                <span class="ts-keyword">if</span> (<span class="ts-operator">!</span><span class="ts-variable">response</span>.<span class="ts-variable">ok</span>) {
+                    <span class="ts-keyword">throw</span> <span class="ts-keyword">new</span> <span class="ts-type-builtin"><span class="ts-constructor"><span class="ts-variable">Error</span></span></span>(<span class="ts-string">`HTTP error! status: ${<span class="ts-variable">response</span>.<span class="ts-variable">status</span>}`</span>);
+                }
+
+                <span class="ts-keyword">return</span> <span class="ts-keyword">await</span> <span class="ts-variable">response</span>.<span class="ts-function-method-call"><span class="ts-variable">json</span></span>();
+            } <span class="ts-keyword">catch</span> (<span class="ts-variable">error</span>) {
+                <span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-function-method-call"><span class="ts-variable">error</span></span>(<span class="ts-string">&#39;Failed to fetch data:&#39;</span>, <span class="ts-variable">error</span>);
+                <span class="ts-keyword">throw</span> <span class="ts-variable">error</span>;
+            }
+        }
+
+        <span class="ts-keyword">function</span> <span class="ts-function"><span class="ts-variable">getToken</span></span>() {
+            <span class="ts-keyword">return</span> <span class="ts-variable">localStorage</span>.<span class="ts-function-method-call"><span class="ts-variable">getItem</span></span>(<span class="ts-string">&#39;authToken&#39;</span>) <span class="ts-operator">||</span> <span class="ts-string">&#39;default-token&#39;</span>;
+        }
+
+        <span class="ts-comment">// Initialize when DOM is ready</span>
+        <span class="ts-variable-builtin"><span class="ts-variable">document</span></span>.<span class="ts-function-method-call"><span class="ts-variable">addEventListener</span></span>(<span class="ts-string">&#39;DOMContentLoaded&#39;</span>, <span class="ts-keyword">function</span>() {
+            <span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-function-method-call"><span class="ts-variable">log</span></span>(<span class="ts-string">&#39;Page loaded successfully!&#39;</span>);
+
+            <span class="ts-comment">// Set up event listeners</span>
+            <span class="ts-keyword">const</span> <span class="ts-variable">button</span> <span class="ts-operator">=</span> <span class="ts-variable-builtin"><span class="ts-variable">document</span></span>.<span class="ts-function-method-call"><span class="ts-variable">querySelector</span></span>(<span class="ts-string">&#39;button&#39;</span>);
+            <span class="ts-keyword">if</span> (<span class="ts-variable">button</span>) {
+                <span class="ts-variable">button</span>.<span class="ts-function-method-call"><span class="ts-variable">addEventListener</span></span>(<span class="ts-string">&#39;click&#39;</span>, <span class="ts-variable">updateContent</span>);
+            }
+        });
+    &lt;/<span class="ts-tag">script</span>&gt;
+&lt;/<span class="ts-tag">body</span>&gt;
+&lt;/<span class="ts-tag">html</span>&gt;

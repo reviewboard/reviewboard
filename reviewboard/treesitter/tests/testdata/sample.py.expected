@@ -1,0 +1,63 @@
+<span class="ts-string">&quot;&quot;&quot;Sample Python file for TreeSitter testing.&quot;&quot;&quot;</span>
+
+<span class="ts-keyword-import">import</span> <span class="ts-variable"><span class="ts-module">os</span></span>
+<span class="ts-keyword-import">import</span> <span class="ts-variable"><span class="ts-module">sys</span></span>
+<span class="ts-keyword-import">from</span> <span class="ts-variable"><span class="ts-module">typing</span></span> <span class="ts-keyword-import">import</span> <span class="ts-variable">Optional</span>
+
+
+<span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">calculate_fibonacci</span></span>(<span class="ts-variable">n</span>: <span class="ts-type-builtin"><span class="ts-variable">int</span></span>) <span class="ts-operator">-&gt;</span> <span class="ts-type-builtin"><span class="ts-variable">int</span></span>:
+    <span class="ts-string">&quot;&quot;&quot;Calculate the nth Fibonacci number.</span>
+<span class="ts-string"></span>
+<span class="ts-string">    Args:</span>
+<span class="ts-string">        n: The position in the Fibonacci sequence.</span>
+<span class="ts-string"></span>
+<span class="ts-string">    Returns:</span>
+<span class="ts-string">        The nth Fibonacci number.</span>
+<span class="ts-string">    &quot;&quot;&quot;</span>
+    <span class="ts-keyword">if</span> <span class="ts-variable">n</span> <span class="ts-operator">&lt;=</span> <span class="ts-number">0</span>:
+        <span class="ts-keyword">return</span> <span class="ts-number">0</span>
+    <span class="ts-keyword">elif</span> <span class="ts-variable">n</span> <span class="ts-operator">==</span> <span class="ts-number">1</span>:
+        <span class="ts-keyword">return</span> <span class="ts-number">1</span>
+    <span class="ts-keyword">else</span>:
+        <span class="ts-keyword">return</span> <span class="ts-function-call"><span class="ts-variable">calculate_fibonacci</span></span>(<span class="ts-variable">n</span> <span class="ts-operator">-</span> <span class="ts-number">1</span>) <span class="ts-operator">+</span> <span class="ts-function-call"><span class="ts-variable">calculate_fibonacci</span></span>(<span class="ts-variable">n</span> <span class="ts-operator">-</span> <span class="ts-number">2</span>)
+
+
+<span class="ts-keyword">class</span> <span class="ts-variable">DataProcessor</span>:
+    <span class="ts-string">&quot;&quot;&quot;A class for processing data.&quot;&quot;&quot;</span>
+
+    <span class="ts-keyword">def</span> <span class="ts-constant-builtin"><span class="ts-function"><span class="ts-constructor"><span class="ts-variable">__init__</span></span></span></span>(<span class="ts-variable"><span class="ts-variable-builtin">self</span></span>, <span class="ts-variable">data</span>: <span class="ts-variable">Optional</span>[<span class="ts-type-builtin"><span class="ts-variable">list</span></span>] <span class="ts-operator">=</span> <span class="ts-constant-builtin">None</span>):
+        <span class="ts-variable-builtin"><span class="ts-variable">self</span></span>.<span class="ts-variable">data</span> <span class="ts-operator">=</span> <span class="ts-variable">data</span> <span class="ts-keyword">or</span> []
+        <span class="ts-variable-builtin"><span class="ts-variable">self</span></span>.<span class="ts-variable">processed</span> <span class="ts-operator">=</span> <span class="ts-boolean">False</span>
+
+    <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">process</span></span>(<span class="ts-variable"><span class="ts-variable-builtin">self</span></span>) <span class="ts-operator">-&gt;</span> <span class="ts-type-builtin"><span class="ts-variable">bool</span></span>:
+        <span class="ts-string">&quot;&quot;&quot;Process the data.&quot;&quot;&quot;</span>
+        <span class="ts-keyword">if</span> <span class="ts-keyword">not</span> <span class="ts-variable-builtin"><span class="ts-variable">self</span></span>.<span class="ts-variable">data</span>:
+            <span class="ts-keyword">return</span> <span class="ts-boolean">False</span>
+
+        <span class="ts-comment"># Process each item</span>
+        <span class="ts-keyword">for</span> <span class="ts-variable">i</span>, <span class="ts-variable">item</span> <span class="ts-keyword">in</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">enumerate</span></span></span>(<span class="ts-variable-builtin"><span class="ts-variable">self</span></span>.<span class="ts-variable">data</span>):
+            <span class="ts-keyword">if</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">isinstance</span></span></span>(<span class="ts-variable">item</span>, <span class="ts-type-builtin"><span class="ts-variable">str</span></span>):
+                <span class="ts-variable-builtin"><span class="ts-variable">self</span></span>.<span class="ts-variable">data</span>[<span class="ts-variable">i</span>] <span class="ts-operator">=</span> <span class="ts-variable">item</span>.<span class="ts-function-method-call"><span class="ts-variable">upper</span></span>()
+            <span class="ts-keyword">elif</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">isinstance</span></span></span>(<span class="ts-variable">item</span>, (<span class="ts-type-builtin"><span class="ts-variable">int</span></span>, <span class="ts-type-builtin"><span class="ts-variable">float</span></span>)):
+                <span class="ts-variable-builtin"><span class="ts-variable">self</span></span>.<span class="ts-variable">data</span>[<span class="ts-variable">i</span>] <span class="ts-operator">=</span> <span class="ts-variable">item</span> <span class="ts-operator">*</span> <span class="ts-number">2</span>
+
+        <span class="ts-variable-builtin"><span class="ts-variable">self</span></span>.<span class="ts-variable">processed</span> <span class="ts-operator">=</span> <span class="ts-boolean">True</span>
+        <span class="ts-keyword">return</span> <span class="ts-boolean">True</span>
+
+    <span class="ts-operator">@</span><span class="ts-attribute-builtin"><span class="ts-variable">property</span></span>
+    <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">is_processed</span></span>(<span class="ts-variable"><span class="ts-variable-builtin">self</span></span>) <span class="ts-operator">-&gt;</span> <span class="ts-type-builtin"><span class="ts-variable">bool</span></span>:
+        <span class="ts-string">&quot;&quot;&quot;Check if data has been processed.&quot;&quot;&quot;</span>
+        <span class="ts-keyword">return</span> <span class="ts-variable-builtin"><span class="ts-variable">self</span></span>.<span class="ts-variable">processed</span>
+
+
+<span class="ts-keyword">if</span> <span class="ts-constant-builtin"><span class="ts-variable">__name__</span></span> <span class="ts-operator">==</span> <span class="ts-string">&quot;__main__&quot;</span>:
+    <span class="ts-comment"># Test the functionality</span>
+    <span class="ts-variable">processor</span> <span class="ts-operator">=</span> <span class="ts-function-call"><span class="ts-constructor"><span class="ts-variable">DataProcessor</span></span></span>([<span class="ts-number">1</span>, <span class="ts-number">2</span>, <span class="ts-string">&quot;hello&quot;</span>, <span class="ts-number">3.14</span>, <span class="ts-string">&quot;world&quot;</span>])
+
+    <span class="ts-keyword">if</span> <span class="ts-variable">processor</span>.<span class="ts-function-method-call"><span class="ts-variable">process</span></span>():
+        <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">print</span></span></span>(<span class="ts-string">&quot;Data processed successfully!&quot;</span>)
+        <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">print</span></span></span>(<span class="ts-string">f&quot;Result: {<span class="ts-variable">processor</span>.<span class="ts-variable">data</span>}&quot;</span>)
+        <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">print</span></span></span>(<span class="ts-string">f&quot;10th Fibonacci: {<span class="ts-function-call"><span class="ts-variable">calculate_fibonacci</span></span>(<span class="ts-number">10</span>)}&quot;</span>)
+    <span class="ts-keyword">else</span>:
+        <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">print</span></span></span>(<span class="ts-string">&quot;Failed to process data&quot;</span>)
+        <span class="ts-variable">sys</span>.<span class="ts-function-method-call"><span class="ts-constant-builtin"><span class="ts-variable">exit</span></span></span>(<span class="ts-number">1</span>)

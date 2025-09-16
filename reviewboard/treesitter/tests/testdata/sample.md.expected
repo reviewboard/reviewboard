@@ -1,0 +1,180 @@
+# TreeSitter Markdown Test
+
+This is a **sample Markdown file** for testing TreeSitter highlighting with code block injections.
+
+## Python Example
+
+Here&#39;s a simple Python function:
+
+```python
+<span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">fibonacci</span></span>(<span class="ts-variable">n</span>):
+    <span class="ts-string">&quot;&quot;&quot;Calculate the nth Fibonacci number.&quot;&quot;&quot;</span>
+    <span class="ts-keyword">if</span> <span class="ts-variable">n</span> <span class="ts-operator">&lt;=</span> <span class="ts-number">0</span>:
+        <span class="ts-keyword">return</span> <span class="ts-number">0</span>
+    <span class="ts-keyword">elif</span> <span class="ts-variable">n</span> <span class="ts-operator">==</span> <span class="ts-number">1</span>:
+        <span class="ts-keyword">return</span> <span class="ts-number">1</span>
+    <span class="ts-keyword">else</span>:
+        <span class="ts-keyword">return</span> <span class="ts-function-call"><span class="ts-variable">fibonacci</span></span>(<span class="ts-variable">n</span> <span class="ts-operator">-</span> <span class="ts-number">1</span>) <span class="ts-operator">+</span> <span class="ts-function-call"><span class="ts-variable">fibonacci</span></span>(<span class="ts-variable">n</span> <span class="ts-operator">-</span> <span class="ts-number">2</span>)
+
+<span class="ts-comment"># Test the function</span>
+<span class="ts-keyword">for</span> <span class="ts-variable">i</span> <span class="ts-keyword">in</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-type-builtin"><span class="ts-variable">range</span></span></span></span>(<span class="ts-number">10</span>):
+    <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">print</span></span></span>(<span class="ts-string">f&quot;fibonacci({<span class="ts-variable">i</span>}) = {<span class="ts-function-call"><span class="ts-variable">fibonacci</span></span>(<span class="ts-variable">i</span>)}&quot;</span>)
+```
+
+## JavaScript Example
+
+And here&#39;s some JavaScript code:
+
+```javascript
+<span class="ts-keyword">class</span> <span class="ts-variable">DataProcessor</span> {
+    <span class="ts-function"><span class="ts-variable"><span class="ts-constructor">constructor</span></span></span>(<span class="ts-variable">data</span> <span class="ts-operator">=</span> []) {
+        <span class="ts-variable-builtin">this</span>.<span class="ts-variable">data</span> <span class="ts-operator">=</span> <span class="ts-variable">data</span>;
+        <span class="ts-variable-builtin">this</span>.<span class="ts-variable">processed</span> <span class="ts-operator">=</span> <span class="ts-boolean">false</span>;
+    }
+
+    <span class="ts-keyword">async</span> <span class="ts-function"><span class="ts-variable">process</span></span>() {
+        <span class="ts-keyword">try</span> {
+            <span class="ts-keyword">const</span> <span class="ts-variable">results</span> <span class="ts-operator">=</span> <span class="ts-keyword">await</span> <span class="ts-type-builtin"><span class="ts-variable">Promise</span></span>.<span class="ts-function-method-call"><span class="ts-variable">all</span></span>(
+                <span class="ts-variable-builtin">this</span>.<span class="ts-variable">data</span>.<span class="ts-function-method-call"><span class="ts-variable">map</span></span>(<span class="ts-keyword">async</span> (<span class="ts-variable">item</span>) <span class="ts-operator">=&gt;</span> {
+                    <span class="ts-keyword">return</span> <span class="ts-keyword">await</span> <span class="ts-variable-builtin">this</span>.<span class="ts-function-method-call"><span class="ts-variable">processItem</span></span>(<span class="ts-variable">item</span>);
+                })
+            );
+
+            <span class="ts-variable-builtin">this</span>.<span class="ts-variable">processed</span> <span class="ts-operator">=</span> <span class="ts-boolean">true</span>;
+            <span class="ts-keyword">return</span> <span class="ts-variable">results</span>;
+        } <span class="ts-keyword">catch</span> (<span class="ts-variable">error</span>) {
+            <span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-function-method-call"><span class="ts-variable">error</span></span>(<span class="ts-string">&#39;Processing failed:&#39;</span>, <span class="ts-variable">error</span>);
+            <span class="ts-keyword">throw</span> <span class="ts-variable">error</span>;
+        }
+    }
+
+    <span class="ts-keyword">async</span> <span class="ts-function"><span class="ts-variable">processItem</span></span>(<span class="ts-variable">item</span>) {
+        <span class="ts-comment">// Simulate async processing</span>
+        <span class="ts-keyword">return</span> <span class="ts-keyword">new</span> <span class="ts-type-builtin"><span class="ts-constructor"><span class="ts-variable">Promise</span></span></span>((<span class="ts-variable">resolve</span>) <span class="ts-operator">=&gt;</span> {
+            <span class="ts-function-call"><span class="ts-variable">setTimeout</span></span>(() <span class="ts-operator">=&gt;</span> {
+                <span class="ts-function-call"><span class="ts-variable">resolve</span></span>(<span class="ts-variable">item</span>.<span class="ts-function-method-call"><span class="ts-variable">toString</span></span>().<span class="ts-function-method-call"><span class="ts-variable">toUpperCase</span></span>());
+            }, <span class="ts-number">100</span>);
+        });
+    }
+}
+```
+
+## Shell Script Example
+
+Here&#39;s a bash script:
+
+```bash
+<span class="ts-keyword"><span class="ts-comment">#!/bin/bash</span></span>
+
+<span class="ts-comment"># Function to check if a directory exists</span>
+<span class="ts-function">check_directory</span>() {
+    <span class="ts-keyword">local</span> <span class="ts-variable">dir_path</span><span class="ts-operator">=</span><span class="ts-string">&quot;$<span class="ts-variable">1</span>&quot;</span>
+
+    <span class="ts-keyword">if</span> [ <span class="ts-operator">-d</span> <span class="ts-string">&quot;$<span class="ts-variable">dir_path</span>&quot;</span> ]; <span class="ts-keyword">then</span>
+        <span class="ts-function-builtin"><span class="ts-function-call">echo</span></span> <span class="ts-string">&quot;Directory &#39;$<span class="ts-variable">dir_path</span>&#39; exists&quot;</span>
+        <span class="ts-function-builtin"><span class="ts-function-call">return</span></span> <span class="ts-number">0</span>
+    <span class="ts-keyword">else</span>
+        <span class="ts-function-builtin"><span class="ts-function-call">echo</span></span> <span class="ts-string">&quot;Directory &#39;$<span class="ts-variable">dir_path</span>&#39; does not exist&quot;</span>
+        <span class="ts-function-builtin"><span class="ts-function-call">return</span></span> <span class="ts-number">1</span>
+    <span class="ts-keyword">fi</span>
+}
+
+<span class="ts-comment"># Main script</span>
+<span class="ts-constant"><span class="ts-variable">PROJECT_DIR</span></span><span class="ts-operator">=</span><span class="ts-string">&quot;/home/user/projects&quot;</span>
+<span class="ts-constant"><span class="ts-variable">BACKUP_DIR</span></span><span class="ts-operator">=</span><span class="ts-string">&quot;/backup&quot;</span>
+
+<span class="ts-function-builtin"><span class="ts-function-call">echo</span></span> <span class="ts-string">&quot;Starting backup process...&quot;</span>
+
+<span class="ts-keyword">if</span> <span class="ts-function-call">check_directory</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">PROJECT_DIR</span></span>&quot;</span>; <span class="ts-keyword">then</span>
+    <span class="ts-function-builtin"><span class="ts-function-call">echo</span></span> <span class="ts-string">&quot;Creating backup...&quot;</span>
+    <span class="ts-function-call">tar</span> <span class="ts-variable">-czf</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">BACKUP_DIR</span></span>}/backup_$(<span class="ts-function-call">date</span> <span class="ts-variable">+%Y%m%d_%H%M%S</span>).tar.gz&quot;</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">PROJECT_DIR</span></span>&quot;</span>
+    <span class="ts-function-builtin"><span class="ts-function-call">echo</span></span> <span class="ts-string">&quot;Backup completed successfully!&quot;</span>
+<span class="ts-keyword">else</span>
+    <span class="ts-function-builtin"><span class="ts-function-call">echo</span></span> <span class="ts-string">&quot;Source directory not found. Backup aborted.&quot;</span>
+    <span class="ts-function-builtin"><span class="ts-function-call">exit</span></span> <span class="ts-number">1</span>
+<span class="ts-keyword">fi</span>
+```
+
+## SQL Example
+
+Some SQL queries:
+
+```sql
+<span class="ts-comment">-- Create a table for users</span>
+<span class="ts-keyword">CREATE</span> <span class="ts-keyword">TABLE</span> users (
+    <span class="ts-variable">id</span> <span class="ts-type-builtin">SERIAL</span> <span class="ts-keyword">PRIMARY</span> <span class="ts-keyword">KEY</span>,
+    <span class="ts-variable">username</span> <span class="ts-type-builtin">VARCHAR</span>(<span class="ts-number"><span class="ts-string">50</span></span>) <span class="ts-keyword">UNIQUE</span> <span class="ts-keyword">NOT</span> <span class="ts-type-builtin">NULL</span>,
+    <span class="ts-variable">email</span> <span class="ts-type-builtin">VARCHAR</span>(<span class="ts-number"><span class="ts-string">100</span></span>) <span class="ts-keyword">UNIQUE</span> <span class="ts-keyword">NOT</span> <span class="ts-type-builtin">NULL</span>,
+    <span class="ts-variable">created_at</span> <span class="ts-type-builtin">TIMESTAMP</span> DEFAULT CURRENT_TIMESTAMP,
+    <span class="ts-variable">is_active</span> <span class="ts-type-builtin">BOOLEAN</span> DEFAULT <span class="ts-boolean"><span class="ts-string">true</span></span>
+);
+
+<span class="ts-comment">-- Insert sample data</span>
+<span class="ts-keyword">INSERT</span> <span class="ts-keyword">INTO</span> users (username, email) <span class="ts-keyword">VALUES</span> 
+    (<span class="ts-string">&#39;john_doe&#39;</span>, <span class="ts-string">&#39;john@example.com&#39;</span>),
+    (<span class="ts-string">&#39;jane_smith&#39;</span>, <span class="ts-string">&#39;jane@example.com&#39;</span>),
+    (<span class="ts-string">&#39;bob_wilson&#39;</span>, <span class="ts-string">&#39;bob@example.com&#39;</span>);
+
+<span class="ts-comment">-- Query with joins and aggregations</span>
+<span class="ts-keyword">SELECT</span> 
+    u.<span class="ts-variable">username</span>,
+    u.<span class="ts-variable">email</span>,
+    <span class="ts-function-call">COUNT</span>(p.<span class="ts-variable">id</span>) <span class="ts-keyword">as</span> <span class="ts-variable">post_count</span>,
+    <span class="ts-function-call">MAX</span>(p.<span class="ts-variable">created_at</span>) <span class="ts-keyword">as</span> <span class="ts-variable">last_post_date</span>
+<span class="ts-keyword">FROM</span> users <span class="ts-variable">u</span>
+<span class="ts-keyword">LEFT</span> <span class="ts-keyword">JOIN</span> posts <span class="ts-variable">p</span> <span class="ts-keyword">ON</span> u.<span class="ts-variable">id</span> <span class="ts-operator">=</span> p.<span class="ts-variable">user_id</span>
+<span class="ts-keyword">WHERE</span> u.<span class="ts-variable">is_active</span> <span class="ts-operator">=</span> <span class="ts-boolean"><span class="ts-string">true</span></span>
+<span class="ts-keyword">GROUP</span> <span class="ts-keyword">BY</span> u.<span class="ts-variable">id</span>, u.<span class="ts-variable">username</span>, u.<span class="ts-variable">email</span>
+<span class="ts-keyword">HAVING</span> <span class="ts-function-call">COUNT</span>(p.<span class="ts-variable">id</span>) <span class="ts-operator">&gt;</span> <span class="ts-number"><span class="ts-string">0</span></span>
+<span class="ts-keyword">ORDER</span> <span class="ts-keyword">BY</span> <span class="ts-variable">post_count</span> DESC, u.<span class="ts-variable">username</span> ASC;
+```
+
+## JSON Example
+
+Configuration file:
+
+```json
+{
+  &quot;app&quot;: {
+    &quot;name&quot;: <span class="ts-string">&quot;TreeSitter Test App&quot;</span>,
+    &quot;version&quot;: <span class="ts-string">&quot;1.0.0&quot;</span>,
+    &quot;debug&quot;: <span class="ts-boolean">false</span>
+  },
+  &quot;database&quot;: {
+    &quot;host&quot;: <span class="ts-string">&quot;localhost&quot;</span>,
+    &quot;port&quot;: <span class="ts-number">5432</span>,
+    &quot;name&quot;: <span class="ts-string">&quot;testdb&quot;</span>,
+    &quot;credentials&quot;: {
+      &quot;username&quot;: <span class="ts-string">&quot;testuser&quot;</span>,
+      &quot;password&quot;: <span class="ts-string">&quot;secret123&quot;</span>
+    }
+  },
+  &quot;features&quot;: {
+    &quot;authentication&quot;: <span class="ts-boolean">true</span>,
+    &quot;caching&quot;: <span class="ts-boolean">true</span>,
+    &quot;logging&quot;: {
+      &quot;level&quot;: <span class="ts-string">&quot;info&quot;</span>,
+      &quot;file&quot;: <span class="ts-string">&quot;/var/log/app.log&quot;</span>
+    }
+  },
+  &quot;allowed_hosts&quot;: [
+    <span class="ts-string">&quot;localhost&quot;</span>,
+    <span class="ts-string">&quot;127.0.0.1&quot;</span>,
+    <span class="ts-string">&quot;example.com&quot;</span>
+  ]
+}
+```
+
+## Conclusion
+
+This document demonstrates various programming languages embedded in Markdown using fenced code blocks. TreeSitter should be able to highlight both the Markdown syntax and the injected code within each block.
+
+### Features tested:
+- **Markdown** basic syntax (headers, bold, lists)
+- **Python** code highlighting
+- **JavaScript** with classes and async/await
+- **Bash** shell scripting
+- **SQL** queries with comments
+- **JSON** configuration
+
+Each code block should maintain proper syntax highlighting for its respective language while being embedded within the Markdown document structure.

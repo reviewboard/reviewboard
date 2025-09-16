@@ -1,0 +1,180 @@
+<span class="ts-keyword-import">package</span> <span class="ts-module">main</span>
+
+<span class="ts-keyword-import">import</span> (
+	<span class="ts-string">&quot;encoding/json&quot;</span>
+	<span class="ts-string">&quot;fmt&quot;</span>
+	<span class="ts-string">&quot;log&quot;</span>
+	<span class="ts-string">&quot;net/http&quot;</span>
+	<span class="ts-string">&quot;strconv&quot;</span>
+	<span class="ts-string">&quot;sync&quot;</span>
+	<span class="ts-string">&quot;time&quot;</span>
+)
+
+<span class="ts-comment">// Constants</span>
+<span class="ts-keyword">const</span> (
+	<span class="ts-constant"><span class="ts-variable">MaxWorkers</span></span> <span class="ts-operator">=</span> <span class="ts-number">10</span>
+	<span class="ts-constant"><span class="ts-variable">APIVersion</span></span> <span class="ts-operator">=</span> <span class="ts-string">&quot;v1&quot;</span>
+)
+
+<span class="ts-comment">// Person represents a person with basic information</span>
+<span class="ts-keyword">type</span> Person <span class="ts-keyword">struct</span> {
+	<span class="ts-variable">ID</span>    <span class="ts-type-builtin">int</span>    <span class="ts-string">`json:&quot;id&quot;`</span>
+	<span class="ts-variable">Name</span>  <span class="ts-type-builtin">string</span> <span class="ts-string">`json:&quot;name&quot;`</span>
+	<span class="ts-variable">Email</span> <span class="ts-type-builtin">string</span> <span class="ts-string">`json:&quot;email,omitempty&quot;`</span>
+	<span class="ts-variable">Age</span>   <span class="ts-type-builtin">int</span>    <span class="ts-string">`json:&quot;age&quot;`</span>
+}
+
+<span class="ts-comment">// PersonService handles person-related operations</span>
+<span class="ts-keyword">type</span> PersonService <span class="ts-keyword">struct</span> {
+	<span class="ts-variable">mu</span>     <span class="ts-module">sync</span>.RWMutex
+	<span class="ts-variable">people</span> <span class="ts-type-builtin">map</span>[<span class="ts-type-builtin">int</span>]<span class="ts-operator">*</span>Person
+	<span class="ts-variable">nextID</span> <span class="ts-type-builtin">int</span>
+}
+
+<span class="ts-comment">// NewPersonService creates a new PersonService</span>
+<span class="ts-keyword">func</span> <span class="ts-function"><span class="ts-variable">NewPersonService</span></span>() <span class="ts-operator">*</span>PersonService {
+	<span class="ts-keyword">return</span> <span class="ts-operator">&amp;</span>PersonService{
+		<span class="ts-variable">people</span>: <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">make</span></span></span>(<span class="ts-type-builtin">map</span>[<span class="ts-type-builtin">int</span>]<span class="ts-operator">*</span>Person),
+		<span class="ts-variable">nextID</span>: <span class="ts-number">1</span>,
+	}
+}
+
+<span class="ts-comment">// AddPerson adds a new person and returns their ID</span>
+<span class="ts-keyword">func</span> (<span class="ts-variable">ps</span> <span class="ts-operator">*</span>PersonService) <span class="ts-function">AddPerson</span>(<span class="ts-variable">name</span>, <span class="ts-variable">email</span> <span class="ts-type-builtin">string</span>, <span class="ts-variable">age</span> <span class="ts-type-builtin">int</span>) <span class="ts-type-builtin">int</span> {
+	<span class="ts-variable">ps</span>.mu.<span class="ts-function-method-call">Lock</span>()
+	<span class="ts-keyword">defer</span> <span class="ts-variable">ps</span>.mu.<span class="ts-function-method-call">Unlock</span>()
+
+	<span class="ts-variable">id</span> <span class="ts-operator">:=</span> <span class="ts-variable">ps</span>.nextID
+	<span class="ts-variable">ps</span>.people[<span class="ts-variable">id</span>] <span class="ts-operator">=</span> <span class="ts-operator">&amp;</span>Person{
+		<span class="ts-variable">ID</span>:    <span class="ts-variable">id</span>,
+		<span class="ts-variable">Name</span>:  <span class="ts-variable">name</span>,
+		<span class="ts-variable">Email</span>: <span class="ts-variable">email</span>,
+		<span class="ts-variable">Age</span>:   <span class="ts-variable">age</span>,
+	}
+	<span class="ts-variable">ps</span>.nextID<span class="ts-operator">++</span>
+	<span class="ts-keyword">return</span> <span class="ts-variable">id</span>
+}
+
+<span class="ts-comment">// GetPerson retrieves a person by ID</span>
+<span class="ts-keyword">func</span> (<span class="ts-variable">ps</span> <span class="ts-operator">*</span>PersonService) <span class="ts-function">GetPerson</span>(<span class="ts-variable">id</span> <span class="ts-type-builtin">int</span>) (<span class="ts-operator">*</span>Person, <span class="ts-type-builtin">bool</span>) {
+	<span class="ts-variable">ps</span>.mu.<span class="ts-function-method-call">RLock</span>()
+	<span class="ts-keyword">defer</span> <span class="ts-variable">ps</span>.mu.<span class="ts-function-method-call">RUnlock</span>()
+
+	<span class="ts-variable">person</span>, <span class="ts-variable">exists</span> <span class="ts-operator">:=</span> <span class="ts-variable">ps</span>.people[<span class="ts-variable">id</span>]
+	<span class="ts-keyword">return</span> <span class="ts-variable">person</span>, <span class="ts-variable">exists</span>
+}
+
+<span class="ts-comment">// GetAllPeople returns all people</span>
+<span class="ts-keyword">func</span> (<span class="ts-variable">ps</span> <span class="ts-operator">*</span>PersonService) <span class="ts-function">GetAllPeople</span>() []<span class="ts-operator">*</span>Person {
+	<span class="ts-variable">ps</span>.mu.<span class="ts-function-method-call">RLock</span>()
+	<span class="ts-keyword">defer</span> <span class="ts-variable">ps</span>.mu.<span class="ts-function-method-call">RUnlock</span>()
+
+	<span class="ts-variable">people</span> <span class="ts-operator">:=</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">make</span></span></span>([]<span class="ts-operator">*</span>Person, <span class="ts-number">0</span>, <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">len</span></span></span>(<span class="ts-variable">ps</span>.people))
+	<span class="ts-keyword">for</span> <span class="ts-variable">_</span>, <span class="ts-variable">person</span> <span class="ts-operator">:=</span> <span class="ts-keyword">range</span> <span class="ts-variable">ps</span>.people {
+		<span class="ts-variable">people</span> <span class="ts-operator">=</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">append</span></span></span>(<span class="ts-variable">people</span>, <span class="ts-variable">person</span>)
+	}
+	<span class="ts-keyword">return</span> <span class="ts-variable">people</span>
+}
+
+<span class="ts-comment">// HTTP handlers</span>
+<span class="ts-keyword">func</span> (<span class="ts-variable">ps</span> <span class="ts-operator">*</span>PersonService) <span class="ts-function">handleGetPerson</span>(<span class="ts-variable">w</span> <span class="ts-module">http</span>.ResponseWriter, <span class="ts-variable">r</span> <span class="ts-operator">*</span><span class="ts-module">http</span>.Request) {
+	<span class="ts-variable">idStr</span> <span class="ts-operator">:=</span> <span class="ts-variable">r</span>.URL.<span class="ts-function-method-call">Query</span>().<span class="ts-function-method-call">Get</span>(<span class="ts-string">&quot;id&quot;</span>)
+	<span class="ts-keyword">if</span> <span class="ts-variable">idStr</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;&quot;</span> {
+		<span class="ts-variable">http</span>.<span class="ts-function-method-call">Error</span>(<span class="ts-variable">w</span>, <span class="ts-string">&quot;ID parameter required&quot;</span>, <span class="ts-variable">http</span>.StatusBadRequest)
+		<span class="ts-keyword">return</span>
+	}
+
+	<span class="ts-variable">id</span>, <span class="ts-variable">err</span> <span class="ts-operator">:=</span> <span class="ts-variable">strconv</span>.<span class="ts-function-method-call">Atoi</span>(<span class="ts-variable">idStr</span>)
+	<span class="ts-keyword">if</span> <span class="ts-variable">err</span> <span class="ts-operator">!=</span> <span class="ts-constant-builtin">nil</span> {
+		<span class="ts-variable">http</span>.<span class="ts-function-method-call">Error</span>(<span class="ts-variable">w</span>, <span class="ts-string">&quot;Invalid ID format&quot;</span>, <span class="ts-variable">http</span>.StatusBadRequest)
+		<span class="ts-keyword">return</span>
+	}
+
+	<span class="ts-variable">person</span>, <span class="ts-variable">exists</span> <span class="ts-operator">:=</span> <span class="ts-variable">ps</span>.<span class="ts-function-method-call">GetPerson</span>(<span class="ts-variable">id</span>)
+	<span class="ts-keyword">if</span> <span class="ts-operator">!</span><span class="ts-variable">exists</span> {
+		<span class="ts-variable">http</span>.<span class="ts-function-method-call">Error</span>(<span class="ts-variable">w</span>, <span class="ts-string">&quot;Person not found&quot;</span>, <span class="ts-variable">http</span>.StatusNotFound)
+		<span class="ts-keyword">return</span>
+	}
+
+	<span class="ts-variable">w</span>.<span class="ts-function-method-call">Header</span>().<span class="ts-function-method-call">Set</span>(<span class="ts-string">&quot;Content-Type&quot;</span>, <span class="ts-string">&quot;application/json&quot;</span>)
+	<span class="ts-keyword">if</span> <span class="ts-variable">err</span> <span class="ts-operator">:=</span> <span class="ts-variable">json</span>.<span class="ts-function-method-call">NewEncoder</span>(<span class="ts-variable">w</span>).<span class="ts-function-method-call">Encode</span>(<span class="ts-variable">person</span>); <span class="ts-variable">err</span> <span class="ts-operator">!=</span> <span class="ts-constant-builtin">nil</span> {
+		<span class="ts-variable">http</span>.<span class="ts-function-method-call">Error</span>(<span class="ts-variable">w</span>, <span class="ts-string">&quot;Failed to encode response&quot;</span>, <span class="ts-variable">http</span>.StatusInternalServerError)
+		<span class="ts-keyword">return</span>
+	}
+}
+
+<span class="ts-keyword">func</span> (<span class="ts-variable">ps</span> <span class="ts-operator">*</span>PersonService) <span class="ts-function">handleGetAllPeople</span>(<span class="ts-variable">w</span> <span class="ts-module">http</span>.ResponseWriter, <span class="ts-variable">r</span> <span class="ts-operator">*</span><span class="ts-module">http</span>.Request) {
+	<span class="ts-variable">people</span> <span class="ts-operator">:=</span> <span class="ts-variable">ps</span>.<span class="ts-function-method-call">GetAllPeople</span>()
+
+	<span class="ts-variable">w</span>.<span class="ts-function-method-call">Header</span>().<span class="ts-function-method-call">Set</span>(<span class="ts-string">&quot;Content-Type&quot;</span>, <span class="ts-string">&quot;application/json&quot;</span>)
+	<span class="ts-keyword">if</span> <span class="ts-variable">err</span> <span class="ts-operator">:=</span> <span class="ts-variable">json</span>.<span class="ts-function-method-call">NewEncoder</span>(<span class="ts-variable">w</span>).<span class="ts-function-method-call">Encode</span>(<span class="ts-variable">people</span>); <span class="ts-variable">err</span> <span class="ts-operator">!=</span> <span class="ts-constant-builtin">nil</span> {
+		<span class="ts-variable">http</span>.<span class="ts-function-method-call">Error</span>(<span class="ts-variable">w</span>, <span class="ts-string">&quot;Failed to encode response&quot;</span>, <span class="ts-variable">http</span>.StatusInternalServerError)
+		<span class="ts-keyword">return</span>
+	}
+}
+
+<span class="ts-comment">// Worker pool example</span>
+<span class="ts-keyword">func</span> <span class="ts-function"><span class="ts-variable">processData</span></span>(<span class="ts-variable">data</span> []<span class="ts-type-builtin">int</span>, <span class="ts-variable">workers</span> <span class="ts-type-builtin">int</span>) []<span class="ts-type-builtin">int</span> {
+	<span class="ts-variable">jobs</span> <span class="ts-operator">:=</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">make</span></span></span>(<span class="ts-type-builtin">chan</span> <span class="ts-type-builtin">int</span>, <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">len</span></span></span>(<span class="ts-variable">data</span>))
+	<span class="ts-variable">results</span> <span class="ts-operator">:=</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">make</span></span></span>(<span class="ts-type-builtin">chan</span> <span class="ts-type-builtin">int</span>, <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">len</span></span></span>(<span class="ts-variable">data</span>))
+
+	<span class="ts-comment">// Start workers</span>
+	<span class="ts-keyword">var</span> <span class="ts-variable">wg</span> <span class="ts-module">sync</span>.WaitGroup
+	<span class="ts-keyword">for</span> <span class="ts-variable">i</span> <span class="ts-operator">:=</span> <span class="ts-number">0</span>; <span class="ts-variable">i</span> <span class="ts-operator">&lt;</span> <span class="ts-variable">workers</span>; <span class="ts-variable">i</span><span class="ts-operator">++</span> {
+		<span class="ts-variable">wg</span>.<span class="ts-function-method-call">Add</span>(<span class="ts-number">1</span>)
+		<span class="ts-keyword">go</span> <span class="ts-keyword">func</span>() {
+			<span class="ts-keyword">defer</span> <span class="ts-variable">wg</span>.<span class="ts-function-method-call">Done</span>()
+			<span class="ts-keyword">for</span> <span class="ts-variable">num</span> <span class="ts-operator">:=</span> <span class="ts-keyword">range</span> <span class="ts-variable">jobs</span> {
+				<span class="ts-comment">// Simulate some processing</span>
+				<span class="ts-variable">time</span>.<span class="ts-function-method-call">Sleep</span>(<span class="ts-variable">time</span>.Millisecond <span class="ts-operator">*</span> <span class="ts-number">10</span>)
+				<span class="ts-variable">results</span> <span class="ts-operator">&lt;-</span> <span class="ts-variable">num</span> <span class="ts-operator">*</span> <span class="ts-variable">num</span>
+			}
+		}()
+	}
+
+	<span class="ts-comment">// Send jobs</span>
+	<span class="ts-keyword">go</span> <span class="ts-keyword">func</span>() {
+		<span class="ts-keyword">defer</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">close</span></span></span>(<span class="ts-variable">jobs</span>)
+		<span class="ts-keyword">for</span> <span class="ts-variable">_</span>, <span class="ts-variable">num</span> <span class="ts-operator">:=</span> <span class="ts-keyword">range</span> <span class="ts-variable">data</span> {
+			<span class="ts-variable">jobs</span> <span class="ts-operator">&lt;-</span> <span class="ts-variable">num</span>
+		}
+	}()
+
+	<span class="ts-comment">// Close results channel when workers are done</span>
+	<span class="ts-keyword">go</span> <span class="ts-keyword">func</span>() {
+		<span class="ts-variable">wg</span>.<span class="ts-function-method-call">Wait</span>()
+		<span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">close</span></span></span>(<span class="ts-variable">results</span>)
+	}()
+
+	<span class="ts-comment">// Collect results</span>
+	<span class="ts-keyword">var</span> <span class="ts-variable">processed</span> []<span class="ts-type-builtin">int</span>
+	<span class="ts-keyword">for</span> <span class="ts-variable">result</span> <span class="ts-operator">:=</span> <span class="ts-keyword">range</span> <span class="ts-variable">results</span> {
+		<span class="ts-variable">processed</span> <span class="ts-operator">=</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">append</span></span></span>(<span class="ts-variable">processed</span>, <span class="ts-variable">result</span>)
+	}
+
+	<span class="ts-keyword">return</span> <span class="ts-variable">processed</span>
+}
+
+<span class="ts-keyword">func</span> <span class="ts-function"><span class="ts-variable">main</span></span>() {
+	<span class="ts-variable">service</span> <span class="ts-operator">:=</span> <span class="ts-function-call"><span class="ts-constructor"><span class="ts-variable">NewPersonService</span></span></span>()
+
+	<span class="ts-comment">// Add some test data</span>
+	<span class="ts-variable">service</span>.<span class="ts-function-method-call">AddPerson</span>(<span class="ts-string">&quot;Alice Johnson&quot;</span>, <span class="ts-string">&quot;alice@example.com&quot;</span>, <span class="ts-number">30</span>)
+	<span class="ts-variable">service</span>.<span class="ts-function-method-call">AddPerson</span>(<span class="ts-string">&quot;Bob Smith&quot;</span>, <span class="ts-string">&quot;bob@test.com&quot;</span>, <span class="ts-number">25</span>)
+	<span class="ts-variable">service</span>.<span class="ts-function-method-call">AddPerson</span>(<span class="ts-string">&quot;Carol Davis&quot;</span>, <span class="ts-string">&quot;&quot;</span>, <span class="ts-number">35</span>)
+
+	<span class="ts-comment">// Set up HTTP routes</span>
+	<span class="ts-variable">http</span>.<span class="ts-function-method-call">HandleFunc</span>(<span class="ts-string">&quot;/person&quot;</span>, <span class="ts-variable">service</span>.handleGetPerson)
+	<span class="ts-variable">http</span>.<span class="ts-function-method-call">HandleFunc</span>(<span class="ts-string">&quot;/people&quot;</span>, <span class="ts-variable">service</span>.handleGetAllPeople)
+
+	<span class="ts-comment">// Example of processing data with goroutines</span>
+	<span class="ts-variable">testData</span> <span class="ts-operator">:=</span> []<span class="ts-type-builtin">int</span>{<span class="ts-number">1</span>, <span class="ts-number">2</span>, <span class="ts-number">3</span>, <span class="ts-number">4</span>, <span class="ts-number">5</span>, <span class="ts-number">6</span>, <span class="ts-number">7</span>, <span class="ts-number">8</span>, <span class="ts-number">9</span>, <span class="ts-number">10</span>}
+	<span class="ts-variable">processed</span> <span class="ts-operator">:=</span> <span class="ts-function-call"><span class="ts-variable">processData</span></span>(<span class="ts-variable">testData</span>, <span class="ts-number">3</span>)
+	<span class="ts-variable">fmt</span>.<span class="ts-function-method-call">Printf</span>(<span class="ts-string">&quot;Processed data: %v<span class="ts-string">\n</span>&quot;</span>, <span class="ts-variable">processed</span>)
+
+	<span class="ts-comment">// Start server</span>
+	<span class="ts-variable">fmt</span>.<span class="ts-function-method-call">Printf</span>(<span class="ts-string">&quot;Server starting on :8080 (API %s)<span class="ts-string">\n</span>&quot;</span>, <span class="ts-variable">APIVersion</span>)
+	<span class="ts-keyword">if</span> <span class="ts-variable">err</span> <span class="ts-operator">:=</span> <span class="ts-variable">http</span>.<span class="ts-function-method-call">ListenAndServe</span>(<span class="ts-string">&quot;:8080&quot;</span>, <span class="ts-constant-builtin">nil</span>); <span class="ts-variable">err</span> <span class="ts-operator">!=</span> <span class="ts-constant-builtin">nil</span> {
+		<span class="ts-variable">log</span>.<span class="ts-function-method-call">Fatal</span>(<span class="ts-string">&quot;Server failed to start:&quot;</span>, <span class="ts-variable">err</span>)
+	}
+}

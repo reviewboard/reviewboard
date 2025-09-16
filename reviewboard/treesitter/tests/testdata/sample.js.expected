@@ -1,0 +1,121 @@
+<span class="ts-comment">/**</span>
+<span class="ts-comment"> * Sample JavaScript file for TreeSitter testing.</span>
+<span class="ts-comment"> */</span>
+
+<span class="ts-keyword">const</span> <span class="ts-variable">fs</span> <span class="ts-operator">=</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">require</span></span></span>(<span class="ts-string">&#39;fs&#39;</span>);
+<span class="ts-keyword">const</span> <span class="ts-variable">path</span> <span class="ts-operator">=</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">require</span></span></span>(<span class="ts-string">&#39;path&#39;</span>);
+
+<span class="ts-comment">// Constants</span>
+<span class="ts-keyword">const</span> <span class="ts-constant"><span class="ts-variable">CONFIG_FILE</span></span> <span class="ts-operator">=</span> <span class="ts-string">&#39;config.json&#39;</span>;
+<span class="ts-keyword">const</span> <span class="ts-constant"><span class="ts-variable">DEFAULT_TIMEOUT</span></span> <span class="ts-operator">=</span> <span class="ts-number">5000</span>;
+
+<span class="ts-comment">/**</span>
+<span class="ts-comment"> * Utility class for file operations.</span>
+<span class="ts-comment"> */</span>
+<span class="ts-keyword">class</span> <span class="ts-variable">FileUtil</span> {
+    <span class="ts-function"><span class="ts-variable"><span class="ts-constructor">constructor</span></span></span>(<span class="ts-variable">basePath</span> <span class="ts-operator">=</span> <span class="ts-string">&#39;.&#39;</span>) {
+        <span class="ts-variable-builtin">this</span>.<span class="ts-variable">basePath</span> <span class="ts-operator">=</span> <span class="ts-variable">basePath</span>;
+        <span class="ts-variable-builtin">this</span>.<span class="ts-variable">cache</span> <span class="ts-operator">=</span> <span class="ts-keyword">new</span> <span class="ts-type-builtin"><span class="ts-constructor"><span class="ts-variable">Map</span></span></span>();
+    }
+
+    <span class="ts-comment">/**</span>
+<span class="ts-comment">     * Read a file asynchronously.</span>
+<span class="ts-comment">     * <span class="ts-keyword">@param</span> {string} <span class="ts-variable">filename</span> - The name of the file to read.</span>
+<span class="ts-comment">     * <span class="ts-keyword">@returns</span> {Promise&lt;string&gt;} The file contents.</span>
+<span class="ts-comment">     */</span>
+    <span class="ts-keyword">async</span> <span class="ts-function"><span class="ts-variable">readFile</span></span>(<span class="ts-variable">filename</span>) {
+        <span class="ts-keyword">const</span> <span class="ts-variable">fullPath</span> <span class="ts-operator">=</span> <span class="ts-variable">path</span>.<span class="ts-function-method-call"><span class="ts-variable">join</span></span>(<span class="ts-variable-builtin">this</span>.<span class="ts-variable">basePath</span>, <span class="ts-variable">filename</span>);
+
+        <span class="ts-keyword">if</span> (<span class="ts-variable-builtin">this</span>.<span class="ts-variable">cache</span>.<span class="ts-function-method-call"><span class="ts-variable">has</span></span>(<span class="ts-variable">fullPath</span>)) {
+            <span class="ts-keyword">return</span> <span class="ts-variable-builtin">this</span>.<span class="ts-variable">cache</span>.<span class="ts-function-method-call"><span class="ts-variable">get</span></span>(<span class="ts-variable">fullPath</span>);
+        }
+
+        <span class="ts-keyword">try</span> {
+            <span class="ts-keyword">const</span> <span class="ts-variable">content</span> <span class="ts-operator">=</span> <span class="ts-keyword">await</span> <span class="ts-variable">fs</span>.<span class="ts-variable">promises</span>.<span class="ts-function-method-call"><span class="ts-variable">readFile</span></span>(<span class="ts-variable">fullPath</span>, <span class="ts-string">&#39;utf8&#39;</span>);
+            <span class="ts-variable-builtin">this</span>.<span class="ts-variable">cache</span>.<span class="ts-function-method-call"><span class="ts-variable">set</span></span>(<span class="ts-variable">fullPath</span>, <span class="ts-variable">content</span>);
+            <span class="ts-keyword">return</span> <span class="ts-variable">content</span>;
+        } <span class="ts-keyword">catch</span> (<span class="ts-variable">error</span>) {
+            <span class="ts-keyword">throw</span> <span class="ts-keyword">new</span> <span class="ts-type-builtin"><span class="ts-constructor"><span class="ts-variable">Error</span></span></span>(<span class="ts-string">`Failed to read file ${<span class="ts-variable">filename</span>}: ${<span class="ts-variable">error</span>.<span class="ts-variable">message</span>}`</span>);
+        }
+    }
+
+    <span class="ts-comment">/**</span>
+<span class="ts-comment">     * Write a file asynchronously.</span>
+<span class="ts-comment">     * <span class="ts-keyword">@param</span> {string} <span class="ts-variable">filename</span> - The name of the file to write.</span>
+<span class="ts-comment">     * <span class="ts-keyword">@param</span> {string} <span class="ts-variable">content</span> - The content to write.</span>
+<span class="ts-comment">     */</span>
+    <span class="ts-keyword">async</span> <span class="ts-function"><span class="ts-variable">writeFile</span></span>(<span class="ts-variable">filename</span>, <span class="ts-variable">content</span>) {
+        <span class="ts-keyword">const</span> <span class="ts-variable">fullPath</span> <span class="ts-operator">=</span> <span class="ts-variable">path</span>.<span class="ts-function-method-call"><span class="ts-variable">join</span></span>(<span class="ts-variable-builtin">this</span>.<span class="ts-variable">basePath</span>, <span class="ts-variable">filename</span>);
+
+        <span class="ts-keyword">try</span> {
+            <span class="ts-keyword">await</span> <span class="ts-variable">fs</span>.<span class="ts-variable">promises</span>.<span class="ts-function-method-call"><span class="ts-variable">writeFile</span></span>(<span class="ts-variable">fullPath</span>, <span class="ts-variable">content</span>, <span class="ts-string">&#39;utf8&#39;</span>);
+            <span class="ts-variable-builtin">this</span>.<span class="ts-variable">cache</span>.<span class="ts-function-method-call"><span class="ts-variable">set</span></span>(<span class="ts-variable">fullPath</span>, <span class="ts-variable">content</span>);
+        } <span class="ts-keyword">catch</span> (<span class="ts-variable">error</span>) {
+            <span class="ts-keyword">throw</span> <span class="ts-keyword">new</span> <span class="ts-type-builtin"><span class="ts-constructor"><span class="ts-variable">Error</span></span></span>(<span class="ts-string">`Failed to write file ${<span class="ts-variable">filename</span>}: ${<span class="ts-variable">error</span>.<span class="ts-variable">message</span>}`</span>);
+        }
+    }
+
+    <span class="ts-comment">/**</span>
+<span class="ts-comment">     * <span class="ts-variable">Clear</span> <span class="ts-variable">the</span> <span class="ts-variable">cache</span>.</span>
+<span class="ts-comment">     */</span>
+    <span class="ts-function"><span class="ts-variable">clearCache</span></span>() {
+        <span class="ts-variable-builtin">this</span>.<span class="ts-variable">cache</span>.<span class="ts-function-method-call"><span class="ts-variable">clear</span></span>();
+    }
+}
+
+<span class="ts-comment">/**</span>
+<span class="ts-comment"> * Process an array of numbers.</span>
+<span class="ts-comment"> * <span class="ts-keyword">@param</span> {number[]} <span class="ts-variable">numbers</span> - Array of numbers to process.</span>
+<span class="ts-comment"> * <span class="ts-keyword">@returns</span> {object} Statistics about the numbers.</span>
+<span class="ts-comment"> */</span>
+<span class="ts-keyword">function</span> <span class="ts-function"><span class="ts-variable">processNumbers</span></span>(<span class="ts-variable">numbers</span>) {
+    <span class="ts-keyword">if</span> (<span class="ts-operator">!</span><span class="ts-type-builtin"><span class="ts-variable">Array</span></span>.<span class="ts-function-method-call"><span class="ts-variable">isArray</span></span>(<span class="ts-variable">numbers</span>) <span class="ts-operator">||</span> <span class="ts-variable">numbers</span>.<span class="ts-variable">length</span> <span class="ts-operator">===</span> <span class="ts-number">0</span>) {
+        <span class="ts-keyword">return</span> { <span class="ts-variable">sum</span>: <span class="ts-number">0</span>, <span class="ts-variable">average</span>: <span class="ts-number">0</span>, <span class="ts-variable">max</span>: <span class="ts-number">0</span>, <span class="ts-variable">min</span>: <span class="ts-number">0</span> };
+    }
+
+    <span class="ts-keyword">const</span> <span class="ts-variable">sum</span> <span class="ts-operator">=</span> <span class="ts-variable">numbers</span>.<span class="ts-function-method-call"><span class="ts-variable">reduce</span></span>((<span class="ts-variable">acc</span>, <span class="ts-variable">num</span>) <span class="ts-operator">=&gt;</span> <span class="ts-variable">acc</span> <span class="ts-operator">+</span> <span class="ts-variable">num</span>, <span class="ts-number">0</span>);
+    <span class="ts-keyword">const</span> <span class="ts-variable">average</span> <span class="ts-operator">=</span> <span class="ts-variable">sum</span> <span class="ts-operator">/</span> <span class="ts-variable">numbers</span>.<span class="ts-variable">length</span>;
+    <span class="ts-keyword">const</span> <span class="ts-variable">max</span> <span class="ts-operator">=</span> <span class="ts-type-builtin"><span class="ts-variable">Math</span></span>.<span class="ts-function-method-call"><span class="ts-variable">max</span></span>(<span class="ts-operator">...</span><span class="ts-variable">numbers</span>);
+    <span class="ts-keyword">const</span> <span class="ts-variable">min</span> <span class="ts-operator">=</span> <span class="ts-type-builtin"><span class="ts-variable">Math</span></span>.<span class="ts-function-method-call"><span class="ts-variable">min</span></span>(<span class="ts-operator">...</span><span class="ts-variable">numbers</span>);
+
+    <span class="ts-keyword">return</span> { <span class="ts-variable">sum</span>, <span class="ts-variable">average</span>, <span class="ts-variable">max</span>, <span class="ts-variable">min</span> };
+}
+
+<span class="ts-comment">/**</span>
+<span class="ts-comment"> * Main function to demonstrate functionality.</span>
+<span class="ts-comment"> */</span>
+<span class="ts-keyword">async</span> <span class="ts-keyword">function</span> <span class="ts-function"><span class="ts-variable">main</span></span>() {
+    <span class="ts-keyword">const</span> <span class="ts-variable">fileUtil</span> <span class="ts-operator">=</span> <span class="ts-keyword">new</span> <span class="ts-constructor"><span class="ts-variable">FileUtil</span></span>(<span class="ts-string">&#39;./data&#39;</span>);
+    <span class="ts-keyword">const</span> <span class="ts-variable">numbers</span> <span class="ts-operator">=</span> [<span class="ts-number">1</span>, <span class="ts-number">2</span>, <span class="ts-number">3</span>, <span class="ts-number">4</span>, <span class="ts-number">5</span>, <span class="ts-number">10</span>, <span class="ts-number">15</span>, <span class="ts-number">20</span>];
+
+    <span class="ts-keyword">try</span> {
+        <span class="ts-comment">// Process numbers</span>
+        <span class="ts-keyword">const</span> <span class="ts-variable">stats</span> <span class="ts-operator">=</span> <span class="ts-function-call"><span class="ts-variable">processNumbers</span></span>(<span class="ts-variable">numbers</span>);
+        <span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-function-method-call"><span class="ts-variable">log</span></span>(<span class="ts-string">&#39;Number statistics:&#39;</span>, <span class="ts-variable">stats</span>);
+
+        <span class="ts-comment">// Write results to file</span>
+        <span class="ts-keyword">const</span> <span class="ts-variable">output</span> <span class="ts-operator">=</span> <span class="ts-constant"><span class="ts-variable">JSON</span></span>.<span class="ts-function-method-call"><span class="ts-variable">stringify</span></span>(<span class="ts-variable">stats</span>, <span class="ts-constant-builtin">null</span>, <span class="ts-number">2</span>);
+        <span class="ts-keyword">await</span> <span class="ts-variable">fileUtil</span>.<span class="ts-function-method-call"><span class="ts-variable">writeFile</span></span>(<span class="ts-string">&#39;stats.json&#39;</span>, <span class="ts-variable">output</span>);
+        <span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-function-method-call"><span class="ts-variable">log</span></span>(<span class="ts-string">&#39;Results written to stats.json&#39;</span>);
+
+        <span class="ts-comment">// Read config if it exists</span>
+        <span class="ts-keyword">try</span> {
+            <span class="ts-keyword">const</span> <span class="ts-variable">config</span> <span class="ts-operator">=</span> <span class="ts-keyword">await</span> <span class="ts-variable">fileUtil</span>.<span class="ts-function-method-call"><span class="ts-variable">readFile</span></span>(<span class="ts-constant"><span class="ts-variable">CONFIG_FILE</span></span>);
+            <span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-function-method-call"><span class="ts-variable">log</span></span>(<span class="ts-string">&#39;Config loaded:&#39;</span>, <span class="ts-constant"><span class="ts-variable">JSON</span></span>.<span class="ts-function-method-call"><span class="ts-variable">parse</span></span>(<span class="ts-variable">config</span>));
+        } <span class="ts-keyword">catch</span> (<span class="ts-variable">error</span>) {
+            <span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-function-method-call"><span class="ts-variable">log</span></span>(<span class="ts-string">&#39;No config file found, using defaults&#39;</span>);
+        }
+
+    } <span class="ts-keyword">catch</span> (<span class="ts-variable">error</span>) {
+        <span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-function-method-call"><span class="ts-variable">error</span></span>(<span class="ts-string">&#39;Error:&#39;</span>, <span class="ts-variable">error</span>.<span class="ts-variable">message</span>);
+        <span class="ts-variable">process</span>.<span class="ts-function-method-call"><span class="ts-variable">exit</span></span>(<span class="ts-number">1</span>);
+    }
+}
+
+<span class="ts-comment">// Export for testing</span>
+<span class="ts-variable-builtin"><span class="ts-variable">module</span></span>.<span class="ts-variable">exports</span> <span class="ts-operator">=</span> { <span class="ts-variable">FileUtil</span>, <span class="ts-variable">processNumbers</span> };
+
+<span class="ts-comment">// Run if this is the main module</span>
+<span class="ts-keyword">if</span> (<span class="ts-function-builtin"><span class="ts-variable">require</span></span>.<span class="ts-variable">main</span> <span class="ts-operator">===</span> <span class="ts-variable-builtin"><span class="ts-variable">module</span></span>) {
+    <span class="ts-function-call"><span class="ts-variable">main</span></span>().<span class="ts-function-method-call"><span class="ts-variable">catch</span></span>(<span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-variable">error</span>);
+}

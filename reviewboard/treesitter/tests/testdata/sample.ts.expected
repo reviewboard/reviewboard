@@ -1,0 +1,204 @@
+<span class="ts-keyword-import">import</span> { <span class="ts-variable">EventEmitter</span> } <span class="ts-keyword-import">from</span> <span class="ts-string">&#39;events&#39;</span>;
+
+<span class="ts-comment">// Type definitions</span>
+<span class="ts-keyword">interface</span> User {
+  <span class="ts-keyword">readonly</span> <span class="ts-variable">id</span>: <span class="ts-type-builtin">number</span>;
+  <span class="ts-variable">name</span>: <span class="ts-type-builtin">string</span>;
+  <span class="ts-variable">email</span>?: <span class="ts-type-builtin">string</span>;
+  <span class="ts-variable">roles</span>: Role[];
+}
+
+<span class="ts-keyword">type</span> Role <span class="ts-operator">=</span> <span class="ts-string">&#39;admin&#39;</span> <span class="ts-operator">|</span> <span class="ts-string">&#39;user&#39;</span> <span class="ts-operator">|</span> <span class="ts-string">&#39;moderator&#39;</span>;
+
+<span class="ts-keyword">interface</span> ApiResponse<span class="ts-operator">&lt;</span>T<span class="ts-operator">&gt;</span> {
+  <span class="ts-variable">data</span>: T;
+  <span class="ts-variable">status</span>: <span class="ts-string">&#39;success&#39;</span> <span class="ts-operator">|</span> <span class="ts-string">&#39;error&#39;</span>;
+  <span class="ts-variable">message</span>?: <span class="ts-type-builtin">string</span>;
+}
+
+<span class="ts-comment">// Generic class</span>
+<span class="ts-keyword">class</span> DataStore<span class="ts-operator">&lt;</span>T <span class="ts-keyword">extends</span> { <span class="ts-variable">id</span>: <span class="ts-type-builtin">number</span> }<span class="ts-operator">&gt;</span> <span class="ts-keyword">extends</span> <span class="ts-variable">EventEmitter</span> {
+  <span class="ts-keyword">private</span> <span class="ts-variable">items</span>: Map<span class="ts-operator">&lt;</span><span class="ts-type-builtin">number</span>, T<span class="ts-operator">&gt;</span> <span class="ts-operator">=</span> <span class="ts-keyword">new</span> <span class="ts-type-builtin"><span class="ts-constructor"><span class="ts-variable">Map</span></span></span>();
+
+  <span class="ts-function"><span class="ts-variable"><span class="ts-constructor">constructor</span></span></span>(<span class="ts-keyword">private</span> <span class="ts-keyword">readonly</span> <span class="ts-variable">storeName</span>: <span class="ts-type-builtin">string</span>) {
+    <span class="ts-variable-builtin">super</span>();
+  }
+
+  <span class="ts-function"><span class="ts-variable">add</span></span>(<span class="ts-variable">item</span>: T): <span class="ts-type-builtin">void</span> {
+    <span class="ts-variable-builtin">this</span>.<span class="ts-variable">items</span>.<span class="ts-function-method-call"><span class="ts-variable">set</span></span>(<span class="ts-variable">item</span>.<span class="ts-variable">id</span>, <span class="ts-variable">item</span>);
+    <span class="ts-variable-builtin">this</span>.<span class="ts-function-method-call"><span class="ts-variable">emit</span></span>(<span class="ts-string">&#39;itemAdded&#39;</span>, <span class="ts-variable">item</span>);
+  }
+
+  <span class="ts-function"><span class="ts-variable">get</span></span>(<span class="ts-variable">id</span>: <span class="ts-type-builtin">number</span>): T <span class="ts-operator">|</span> <span class="ts-constant-builtin">undefined</span> {
+    <span class="ts-keyword">return</span> <span class="ts-variable-builtin">this</span>.<span class="ts-variable">items</span>.<span class="ts-function-method-call"><span class="ts-variable">get</span></span>(<span class="ts-variable">id</span>);
+  }
+
+  <span class="ts-function"><span class="ts-variable">getAll</span></span>(): T[] {
+    <span class="ts-keyword">return</span> <span class="ts-type-builtin"><span class="ts-variable">Array</span></span>.<span class="ts-function-method-call"><span class="ts-variable">from</span></span>(<span class="ts-variable-builtin">this</span>.<span class="ts-variable">items</span>.<span class="ts-function-method-call"><span class="ts-variable">values</span></span>());
+  }
+
+  <span class="ts-function"><span class="ts-variable">update</span></span>(<span class="ts-variable">id</span>: <span class="ts-type-builtin">number</span>, <span class="ts-variable">updates</span>: Partial<span class="ts-operator">&lt;</span>T<span class="ts-operator">&gt;</span>): <span class="ts-type-builtin">boolean</span> {
+    <span class="ts-keyword">const</span> <span class="ts-variable">item</span> <span class="ts-operator">=</span> <span class="ts-variable-builtin">this</span>.<span class="ts-variable">items</span>.<span class="ts-function-method-call"><span class="ts-variable">get</span></span>(<span class="ts-variable">id</span>);
+    <span class="ts-keyword">if</span> (<span class="ts-operator">!</span><span class="ts-variable">item</span>) <span class="ts-keyword">return</span> <span class="ts-boolean">false</span>;
+
+    <span class="ts-keyword">const</span> <span class="ts-variable">updatedItem</span> <span class="ts-operator">=</span> { <span class="ts-operator">...</span><span class="ts-variable">item</span>, <span class="ts-operator">...</span><span class="ts-variable">updates</span> };
+    <span class="ts-variable-builtin">this</span>.<span class="ts-variable">items</span>.<span class="ts-function-method-call"><span class="ts-variable">set</span></span>(<span class="ts-variable">id</span>, <span class="ts-variable">updatedItem</span>);
+    <span class="ts-variable-builtin">this</span>.<span class="ts-function-method-call"><span class="ts-variable">emit</span></span>(<span class="ts-string">&#39;itemUpdated&#39;</span>, <span class="ts-variable">updatedItem</span>);
+    <span class="ts-keyword">return</span> <span class="ts-boolean">true</span>;
+  }
+
+  <span class="ts-function"><span class="ts-variable">delete</span></span>(<span class="ts-variable">id</span>: <span class="ts-type-builtin">number</span>): <span class="ts-type-builtin">boolean</span> {
+    <span class="ts-keyword">const</span> <span class="ts-variable">deleted</span> <span class="ts-operator">=</span> <span class="ts-variable-builtin">this</span>.<span class="ts-variable">items</span>.<span class="ts-function-method-call"><span class="ts-variable">delete</span></span>(<span class="ts-variable">id</span>);
+    <span class="ts-keyword">if</span> (<span class="ts-variable">deleted</span>) {
+      <span class="ts-variable-builtin">this</span>.<span class="ts-function-method-call"><span class="ts-variable">emit</span></span>(<span class="ts-string">&#39;itemDeleted&#39;</span>, <span class="ts-variable">id</span>);
+    }
+    <span class="ts-keyword">return</span> <span class="ts-variable">deleted</span>;
+  }
+
+  <span class="ts-function"><span class="ts-variable">count</span></span>(): <span class="ts-type-builtin">number</span> {
+    <span class="ts-keyword">return</span> <span class="ts-variable-builtin">this</span>.<span class="ts-variable">items</span>.<span class="ts-variable">size</span>;
+  }
+}
+
+<span class="ts-comment">// User service with async operations</span>
+<span class="ts-keyword">class</span> UserService {
+  <span class="ts-keyword">private</span> <span class="ts-variable">userStore</span> <span class="ts-operator">=</span> <span class="ts-keyword">new</span> <span class="ts-constructor"><span class="ts-variable">DataStore</span></span><span class="ts-operator">&lt;</span>User<span class="ts-operator">&gt;</span>(<span class="ts-string">&#39;users&#39;</span>);
+  <span class="ts-keyword">private</span> <span class="ts-keyword">static</span> <span class="ts-variable">instance</span>: UserService;
+
+  <span class="ts-keyword">private</span> <span class="ts-function"><span class="ts-variable"><span class="ts-constructor">constructor</span></span></span>() {
+    <span class="ts-variable-builtin">this</span>.<span class="ts-variable">userStore</span>.<span class="ts-function-method-call"><span class="ts-variable">on</span></span>(<span class="ts-string">&#39;itemAdded&#39;</span>, (<span class="ts-variable">user</span>) <span class="ts-operator">=&gt;</span> {
+      <span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-function-method-call"><span class="ts-variable">log</span></span>(<span class="ts-string">`User added: ${<span class="ts-variable">user</span>.<span class="ts-variable">name</span>}`</span>);
+    });
+  }
+
+  <span class="ts-keyword">static</span> <span class="ts-function"><span class="ts-variable">getInstance</span></span>(): UserService {
+    <span class="ts-keyword">if</span> (<span class="ts-operator">!</span><span class="ts-variable">UserService</span>.<span class="ts-variable">instance</span>) {
+      <span class="ts-variable">UserService</span>.<span class="ts-variable">instance</span> <span class="ts-operator">=</span> <span class="ts-keyword">new</span> <span class="ts-constructor"><span class="ts-variable">UserService</span></span>();
+    }
+    <span class="ts-keyword">return</span> <span class="ts-variable">UserService</span>.<span class="ts-variable">instance</span>;
+  }
+
+  <span class="ts-keyword">async</span> <span class="ts-function"><span class="ts-variable">createUser</span></span>(<span class="ts-variable">name</span>: <span class="ts-type-builtin">string</span>, <span class="ts-variable">email</span>?: <span class="ts-type-builtin">string</span>, <span class="ts-variable">roles</span>: Role[] <span class="ts-operator">=</span> [<span class="ts-string">&#39;user&#39;</span>]): Promise<span class="ts-operator">&lt;</span>ApiResponse<span class="ts-operator">&lt;</span>User<span class="ts-operator">&gt;</span><span class="ts-operator">&gt;</span> {
+    <span class="ts-keyword">try</span> {
+      <span class="ts-keyword">const</span> <span class="ts-variable">user</span>: User <span class="ts-operator">=</span> {
+        <span class="ts-variable">id</span>: <span class="ts-type-builtin"><span class="ts-variable">Date</span></span>.<span class="ts-function-method-call"><span class="ts-variable">now</span></span>(), <span class="ts-comment">// Simple ID generation</span>
+        <span class="ts-variable">name</span>,
+        <span class="ts-variable">email</span>,
+        <span class="ts-variable">roles</span>,
+      };
+
+      <span class="ts-comment">// Simulate async validation</span>
+      <span class="ts-keyword">await</span> <span class="ts-variable-builtin">this</span>.<span class="ts-function-method-call"><span class="ts-variable">validateUser</span></span>(<span class="ts-variable">user</span>);
+
+      <span class="ts-variable-builtin">this</span>.<span class="ts-variable">userStore</span>.<span class="ts-function-method-call"><span class="ts-variable">add</span></span>(<span class="ts-variable">user</span>);
+
+      <span class="ts-keyword">return</span> {
+        <span class="ts-variable">data</span>: <span class="ts-variable">user</span>,
+        <span class="ts-variable">status</span>: <span class="ts-string">&#39;success&#39;</span>,
+        <span class="ts-variable">message</span>: <span class="ts-string">&#39;User created successfully&#39;</span>,
+      };
+    } <span class="ts-keyword">catch</span> (<span class="ts-variable">error</span>) {
+      <span class="ts-keyword">return</span> {
+        <span class="ts-variable">data</span>: {} <span class="ts-keyword"><span class="ts-keyword-import">as</span></span> User,
+        <span class="ts-variable">status</span>: <span class="ts-string">&#39;error&#39;</span>,
+        <span class="ts-variable">message</span>: <span class="ts-variable">error</span> <span class="ts-keyword">instanceof</span> <span class="ts-type-builtin"><span class="ts-variable">Error</span></span> <span class="ts-keyword">?</span> <span class="ts-variable">error</span>.<span class="ts-variable">message</span> <span class="ts-keyword">:</span> <span class="ts-string">&#39;Unknown error&#39;</span>,
+      };
+    }
+  }
+
+  <span class="ts-keyword">private</span> <span class="ts-keyword">async</span> <span class="ts-function"><span class="ts-variable">validateUser</span></span>(<span class="ts-variable">user</span>: User): Promise<span class="ts-operator">&lt;</span><span class="ts-type-builtin">void</span><span class="ts-operator">&gt;</span> {
+    <span class="ts-keyword">return</span> <span class="ts-keyword">new</span> <span class="ts-type-builtin"><span class="ts-constructor"><span class="ts-variable">Promise</span></span></span>((<span class="ts-variable">resolve</span>, <span class="ts-variable">reject</span>) <span class="ts-operator">=&gt;</span> {
+      <span class="ts-function-call"><span class="ts-variable">setTimeout</span></span>(() <span class="ts-operator">=&gt;</span> {
+        <span class="ts-keyword">if</span> (<span class="ts-operator">!</span><span class="ts-variable">user</span>.<span class="ts-variable">name</span>.<span class="ts-function-method-call"><span class="ts-variable">trim</span></span>()) {
+          <span class="ts-function-call"><span class="ts-variable">reject</span></span>(<span class="ts-keyword">new</span> <span class="ts-type-builtin"><span class="ts-constructor"><span class="ts-variable">Error</span></span></span>(<span class="ts-string">&#39;Name is required&#39;</span>));
+        } <span class="ts-keyword">else</span> <span class="ts-keyword">if</span> (<span class="ts-variable">user</span>.<span class="ts-variable">email</span> <span class="ts-operator">&amp;&amp;</span> <span class="ts-operator">!</span><span class="ts-variable-builtin">this</span>.<span class="ts-function-method-call"><span class="ts-variable">isValidEmail</span></span>(<span class="ts-variable">user</span>.<span class="ts-variable">email</span>)) {
+          <span class="ts-function-call"><span class="ts-variable">reject</span></span>(<span class="ts-keyword">new</span> <span class="ts-type-builtin"><span class="ts-constructor"><span class="ts-variable">Error</span></span></span>(<span class="ts-string">&#39;Invalid email format&#39;</span>));
+        } <span class="ts-keyword">else</span> {
+          <span class="ts-function-call"><span class="ts-variable">resolve</span></span>();
+        }
+      }, <span class="ts-number">100</span>);
+    });
+  }
+
+  <span class="ts-keyword">private</span> <span class="ts-function"><span class="ts-variable">isValidEmail</span></span>(<span class="ts-variable">email</span>: <span class="ts-type-builtin">string</span>): <span class="ts-type-builtin">boolean</span> {
+    <span class="ts-keyword">const</span> <span class="ts-variable">emailRegex</span> <span class="ts-operator">=</span> /<span class="ts-string-regexp">^[^\s@]+@[^\s@]+\.[^\s@]+$</span>/;
+    <span class="ts-keyword">return</span> <span class="ts-variable">emailRegex</span>.<span class="ts-function-method-call"><span class="ts-variable">test</span></span>(<span class="ts-variable">email</span>);
+  }
+
+  <span class="ts-function"><span class="ts-variable">getUsersByRole</span></span>(<span class="ts-variable">role</span>: Role): User[] {
+    <span class="ts-keyword">return</span> <span class="ts-variable-builtin">this</span>.<span class="ts-variable">userStore</span>.<span class="ts-function-method-call"><span class="ts-variable">getAll</span></span>().<span class="ts-function-method-call"><span class="ts-variable">filter</span></span>(<span class="ts-variable">user</span> <span class="ts-operator">=&gt;</span> <span class="ts-variable">user</span>.<span class="ts-variable">roles</span>.<span class="ts-function-method-call"><span class="ts-variable">includes</span></span>(<span class="ts-variable">role</span>));
+  }
+
+  <span class="ts-comment">// Arrow function with destructuring</span>
+  <span class="ts-variable">updateUserRoles</span> <span class="ts-operator">=</span> (<span class="ts-variable">userId</span>: <span class="ts-type-builtin">number</span>, <span class="ts-variable">newRoles</span>: Role[]): <span class="ts-type-builtin">boolean</span> <span class="ts-operator">=&gt;</span> {
+    <span class="ts-keyword">return</span> <span class="ts-variable-builtin">this</span>.<span class="ts-variable">userStore</span>.<span class="ts-function-method-call"><span class="ts-variable">update</span></span>(<span class="ts-variable">userId</span>, { <span class="ts-variable">roles</span>: <span class="ts-variable">newRoles</span> });
+  };
+}
+
+<span class="ts-comment">// Utility functions with various TypeScript features</span>
+<span class="ts-keyword">namespace</span> <span class="ts-variable">Utils</span> {
+  <span class="ts-keyword-import">export</span> <span class="ts-keyword">function</span> <span class="ts-function"><span class="ts-variable">debounce</span></span><span class="ts-operator">&lt;</span>T <span class="ts-keyword">extends</span> (<span class="ts-operator">...</span><span class="ts-variable">args</span>: <span class="ts-type-builtin">any</span>[]) <span class="ts-operator">=&gt;</span> <span class="ts-type-builtin">any</span><span class="ts-operator">&gt;</span>(
+    <span class="ts-variable">func</span>: T,
+    <span class="ts-variable">delay</span>: <span class="ts-type-builtin">number</span>
+  ): (<span class="ts-operator">...</span><span class="ts-variable">args</span>: Parameters<span class="ts-operator">&lt;</span>T<span class="ts-operator">&gt;</span>) <span class="ts-operator">=&gt;</span> <span class="ts-type-builtin">void</span> {
+    <span class="ts-keyword">let</span> <span class="ts-variable">timeoutId</span>: <span class="ts-variable">NodeJS</span>.Timeout;
+
+    <span class="ts-keyword">return</span> (<span class="ts-operator">...</span><span class="ts-variable">args</span>: Parameters<span class="ts-operator">&lt;</span>T<span class="ts-operator">&gt;</span>) <span class="ts-operator">=&gt;</span> {
+      <span class="ts-function-call"><span class="ts-variable">clearTimeout</span></span>(<span class="ts-variable">timeoutId</span>);
+      <span class="ts-variable">timeoutId</span> <span class="ts-operator">=</span> <span class="ts-function-call"><span class="ts-variable">setTimeout</span></span>(() <span class="ts-operator">=&gt;</span> <span class="ts-function-call"><span class="ts-variable">func</span></span>(<span class="ts-operator">...</span><span class="ts-variable">args</span>), <span class="ts-variable">delay</span>);
+    };
+  }
+
+  <span class="ts-keyword-import">export</span> <span class="ts-keyword">function</span> <span class="ts-function"><span class="ts-variable">groupBy</span></span><span class="ts-operator">&lt;</span>T, K <span class="ts-keyword">extends</span> <span class="ts-type-builtin">string</span> <span class="ts-operator">|</span> <span class="ts-type-builtin">number</span><span class="ts-operator">&gt;</span>(
+    <span class="ts-variable">array</span>: T[],
+    <span class="ts-variable">keyFn</span>: (<span class="ts-variable">item</span>: T) <span class="ts-operator">=&gt;</span> K
+  ): Record<span class="ts-operator">&lt;</span>K, T[]<span class="ts-operator">&gt;</span> {
+    <span class="ts-keyword">return</span> <span class="ts-variable">array</span>.<span class="ts-function-method-call"><span class="ts-variable">reduce</span></span>((<span class="ts-variable">groups</span>, <span class="ts-variable">item</span>) <span class="ts-operator">=&gt;</span> {
+      <span class="ts-keyword">const</span> <span class="ts-variable">key</span> <span class="ts-operator">=</span> <span class="ts-function-call"><span class="ts-variable">keyFn</span></span>(<span class="ts-variable">item</span>);
+      (<span class="ts-variable">groups</span>[<span class="ts-variable">key</span>] <span class="ts-operator">=</span> <span class="ts-variable">groups</span>[<span class="ts-variable">key</span>] <span class="ts-operator">||</span> []).<span class="ts-function-method-call"><span class="ts-variable">push</span></span>(<span class="ts-variable">item</span>);
+      <span class="ts-keyword">return</span> <span class="ts-variable">groups</span>;
+    }, {} <span class="ts-keyword"><span class="ts-keyword-import">as</span></span> Record<span class="ts-operator">&lt;</span>K, T[]<span class="ts-operator">&gt;</span>);
+  }
+}
+
+<span class="ts-comment">// Usage example</span>
+<span class="ts-keyword">async</span> <span class="ts-keyword">function</span> <span class="ts-function"><span class="ts-variable">main</span></span>(): Promise<span class="ts-operator">&lt;</span><span class="ts-type-builtin">void</span><span class="ts-operator">&gt;</span> {
+  <span class="ts-keyword">const</span> <span class="ts-variable">userService</span> <span class="ts-operator">=</span> <span class="ts-variable">UserService</span>.<span class="ts-function-method-call"><span class="ts-variable">getInstance</span></span>();
+
+  <span class="ts-comment">// Create some users</span>
+  <span class="ts-keyword">const</span> <span class="ts-variable">users</span> <span class="ts-operator">=</span> <span class="ts-keyword">await</span> <span class="ts-type-builtin"><span class="ts-variable">Promise</span></span>.<span class="ts-function-method-call"><span class="ts-variable">all</span></span>([
+    <span class="ts-variable">userService</span>.<span class="ts-function-method-call"><span class="ts-variable">createUser</span></span>(<span class="ts-string">&#39;Alice Johnson&#39;</span>, <span class="ts-string">&#39;alice@example.com&#39;</span>, [<span class="ts-string">&#39;admin&#39;</span>, <span class="ts-string">&#39;user&#39;</span>]),
+    <span class="ts-variable">userService</span>.<span class="ts-function-method-call"><span class="ts-variable">createUser</span></span>(<span class="ts-string">&#39;Bob Smith&#39;</span>, <span class="ts-string">&#39;bob@test.com&#39;</span>),
+    <span class="ts-variable">userService</span>.<span class="ts-function-method-call"><span class="ts-variable">createUser</span></span>(<span class="ts-string">&#39;Carol Davis&#39;</span>, <span class="ts-constant-builtin">undefined</span>, [<span class="ts-string">&#39;moderator&#39;</span>]),
+  ]);
+
+  <span class="ts-comment">// Filter and log successful creations</span>
+  <span class="ts-keyword">const</span> <span class="ts-variable">successfulUsers</span> <span class="ts-operator">=</span> <span class="ts-variable">users</span>
+    .<span class="ts-function-method-call"><span class="ts-variable">filter</span></span>((<span class="ts-variable">response</span>): <span class="ts-variable">response</span> <span class="ts-keyword">is</span> ApiResponse<span class="ts-operator">&lt;</span>User<span class="ts-operator">&gt;</span> <span class="ts-operator">&amp;</span> { <span class="ts-variable">status</span>: <span class="ts-string">&#39;success&#39;</span> } <span class="ts-operator">=&gt;</span> 
+      <span class="ts-variable">response</span>.<span class="ts-variable">status</span> <span class="ts-operator">===</span> <span class="ts-string">&#39;success&#39;</span>)
+    .<span class="ts-function-method-call"><span class="ts-variable">map</span></span>(<span class="ts-variable">response</span> <span class="ts-operator">=&gt;</span> <span class="ts-variable">response</span>.<span class="ts-variable">data</span>);
+
+  <span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-function-method-call"><span class="ts-variable">log</span></span>(<span class="ts-string">&#39;Created users:&#39;</span>, <span class="ts-variable">successfulUsers</span>);
+
+  <span class="ts-comment">// Group users by role</span>
+  <span class="ts-keyword">const</span> <span class="ts-variable">allUsers</span> <span class="ts-operator">=</span> <span class="ts-variable">successfulUsers</span>;
+  <span class="ts-keyword">const</span> <span class="ts-variable">usersByRole</span> <span class="ts-operator">=</span> <span class="ts-variable">Utils</span>.<span class="ts-function-method-call"><span class="ts-variable">groupBy</span></span>(<span class="ts-variable">allUsers</span>, <span class="ts-variable">user</span> <span class="ts-operator">=&gt;</span> <span class="ts-variable">user</span>.<span class="ts-variable">roles</span>[<span class="ts-number">0</span>]);
+  <span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-function-method-call"><span class="ts-variable">log</span></span>(<span class="ts-string">&#39;Users by primary role:&#39;</span>, <span class="ts-variable">usersByRole</span>);
+
+  <span class="ts-comment">// Debounced function example</span>
+  <span class="ts-keyword">const</span> <span class="ts-variable">debouncedLog</span> <span class="ts-operator">=</span> <span class="ts-variable">Utils</span>.<span class="ts-function-method-call"><span class="ts-variable">debounce</span></span>((<span class="ts-variable">message</span>: <span class="ts-type-builtin">string</span>) <span class="ts-operator">=&gt;</span> {
+    <span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-function-method-call"><span class="ts-variable">log</span></span>(<span class="ts-string">`Debounced: ${<span class="ts-variable">message</span>}`</span>);
+  }, <span class="ts-number">300</span>);
+
+  <span class="ts-comment">// This will only log once after 300ms</span>
+  <span class="ts-function-call"><span class="ts-variable">debouncedLog</span></span>(<span class="ts-string">&#39;Hello&#39;</span>);
+  <span class="ts-function-call"><span class="ts-variable">debouncedLog</span></span>(<span class="ts-string">&#39;World&#39;</span>);
+  <span class="ts-function-call"><span class="ts-variable">debouncedLog</span></span>(<span class="ts-string">&#39;!&#39;</span>);
+}
+
+<span class="ts-comment">// Conditional execution</span>
+<span class="ts-keyword">if</span> (<span class="ts-function-builtin"><span class="ts-variable">require</span></span>.<span class="ts-variable">main</span> <span class="ts-operator">===</span> <span class="ts-variable-builtin"><span class="ts-variable">module</span></span>) {
+  <span class="ts-function-call"><span class="ts-variable">main</span></span>().<span class="ts-function-method-call"><span class="ts-variable">catch</span></span>(<span class="ts-variable-builtin"><span class="ts-variable">console</span></span>.<span class="ts-variable">error</span>);
+}
+
+<span class="ts-keyword-import">export</span> { <span class="ts-variable">UserService</span>, <span class="ts-variable">User</span>, <span class="ts-variable">Role</span>, <span class="ts-variable">ApiResponse</span> };

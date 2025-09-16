@@ -1,0 +1,122 @@
+<span class="ts-keyword-import">#include</span> <span class="ts-string">&lt;iostream&gt;</span>
+<span class="ts-keyword-import">#include</span> <span class="ts-string">&lt;vector&gt;</span>
+<span class="ts-keyword-import">#include</span> <span class="ts-string">&lt;string&gt;</span>
+<span class="ts-keyword-import">#include</span> <span class="ts-string">&lt;memory&gt;</span>
+<span class="ts-keyword-import">#include</span> <span class="ts-string">&lt;algorithm&gt;</span>
+
+<span class="ts-comment">/**</span>
+<span class="ts-comment"> * Sample C++ file for TreeSitter testing.</span>
+<span class="ts-comment"> */</span>
+
+<span class="ts-keyword">namespace</span> <span class="ts-module">utils</span> {
+
+<span class="ts-keyword">template</span><span class="ts-operator">&lt;</span><span class="ts-keyword">typename</span> T<span class="ts-operator">&gt;</span>
+<span class="ts-keyword">class</span> Container {
+<span class="ts-keyword">private</span>:
+    <span class="ts-module">std</span>::vector<span class="ts-operator">&lt;</span>T<span class="ts-operator">&gt;</span> <span class="ts-variable">data_</span>;
+    <span class="ts-type-builtin">size_t</span> <span class="ts-variable">capacity_</span>;
+
+<span class="ts-keyword">public</span>:
+    <span class="ts-keyword">explicit</span> <span class="ts-function"><span class="ts-variable">Container</span></span>(<span class="ts-type-builtin">size_t</span> <span class="ts-variable">initial_capacity</span> <span class="ts-operator">=</span> <span class="ts-number">10</span>)
+        : capacity_(<span class="ts-variable">initial_capacity</span>) {
+        <span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">reserve</span></span>(<span class="ts-variable">initial_capacity</span>);
+    }
+
+    <span class="ts-operator">~</span><span class="ts-function"><span class="ts-variable">Container</span></span>() <span class="ts-operator">=</span> <span class="ts-keyword">default</span>;
+
+    <span class="ts-type-builtin">void</span> <span class="ts-function">add</span>(<span class="ts-keyword">const</span> T<span class="ts-variable"><span class="ts-operator">&amp;</span> <span class="ts-variable">item</span></span>) {
+        <span class="ts-keyword">if</span> (<span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">size</span></span>() <span class="ts-operator">&gt;=</span> <span class="ts-variable">capacity_</span>) {
+            <span class="ts-function-call"><span class="ts-variable">resize</span></span>();
+        }
+        <span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">push_back</span></span>(<span class="ts-variable">item</span>);
+    }
+
+    <span class="ts-type-builtin">void</span> <span class="ts-function">add</span>(T<span class="ts-variable"><span class="ts-operator">&amp;&amp;</span> <span class="ts-variable">item</span></span>) {
+        <span class="ts-keyword">if</span> (<span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">size</span></span>() <span class="ts-operator">&gt;=</span> <span class="ts-variable">capacity_</span>) {
+            <span class="ts-function-call"><span class="ts-variable">resize</span></span>();
+        }
+        <span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">push_back</span></span>(<span class="ts-module">std</span>::<span class="ts-function-call"><span class="ts-variable">move</span></span>(<span class="ts-variable">item</span>));
+    }
+
+    [[<span class="ts-variable">nodiscard</span>]] <span class="ts-type-builtin">size_t</span> <span class="ts-function">size</span>() <span class="ts-keyword">const</span> <span class="ts-keyword">noexcept</span> {
+        <span class="ts-keyword">return</span> <span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">size</span></span>();
+    }
+
+    [[<span class="ts-variable">nodiscard</span>]] <span class="ts-type-builtin">bool</span> <span class="ts-function">empty</span>() <span class="ts-keyword">const</span> <span class="ts-keyword">noexcept</span> {
+        <span class="ts-keyword">return</span> <span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">empty</span></span>();
+    }
+
+    T<span class="ts-operator">&amp;</span> <span class="ts-function">at</span>(<span class="ts-type-builtin">size_t</span> <span class="ts-variable">index</span>) {
+        <span class="ts-keyword">if</span> (<span class="ts-variable">index</span> <span class="ts-operator">&gt;=</span> <span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">size</span></span>()) {
+            <span class="ts-keyword">throw</span> <span class="ts-module">std</span>::<span class="ts-function-call"><span class="ts-variable">out_of_range</span></span>(<span class="ts-string">&quot;Index out of range&quot;</span>);
+        }
+        <span class="ts-keyword">return</span> <span class="ts-variable">data_</span>[<span class="ts-variable">index</span>];
+    }
+
+    <span class="ts-keyword">const</span> T<span class="ts-operator">&amp;</span> <span class="ts-function">at</span>(<span class="ts-type-builtin">size_t</span> <span class="ts-variable">index</span>) <span class="ts-keyword">const</span> {
+        <span class="ts-keyword">if</span> (<span class="ts-variable">index</span> <span class="ts-operator">&gt;=</span> <span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">size</span></span>()) {
+            <span class="ts-keyword">throw</span> <span class="ts-module">std</span>::<span class="ts-function-call"><span class="ts-variable">out_of_range</span></span>(<span class="ts-string">&quot;Index out of range&quot;</span>);
+        }
+        <span class="ts-keyword">return</span> <span class="ts-variable">data_</span>[<span class="ts-variable">index</span>];
+    }
+
+    <span class="ts-type-builtin">auto</span> <span class="ts-function">begin</span>() { <span class="ts-keyword">return</span> <span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">begin</span></span>(); }
+    <span class="ts-type-builtin">auto</span> <span class="ts-function">end</span>() { <span class="ts-keyword">return</span> <span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">end</span></span>(); }
+    <span class="ts-type-builtin">auto</span> <span class="ts-function">begin</span>() <span class="ts-keyword">const</span> { <span class="ts-keyword">return</span> <span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">begin</span></span>(); }
+    <span class="ts-type-builtin">auto</span> <span class="ts-function">end</span>() <span class="ts-keyword">const</span> { <span class="ts-keyword">return</span> <span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">end</span></span>(); }
+
+<span class="ts-keyword">private</span>:
+    <span class="ts-type-builtin">void</span> <span class="ts-function">resize</span>() {
+        <span class="ts-variable">capacity_</span> <span class="ts-operator">*=</span> <span class="ts-number">2</span>;
+        <span class="ts-variable">data_</span>.<span class="ts-function-method-call"><span class="ts-function-call">reserve</span></span>(<span class="ts-variable">capacity_</span>);
+    }
+};
+
+} <span class="ts-comment">// namespace utils</span>
+
+<span class="ts-comment">// Function to demonstrate various C++ features</span>
+<span class="ts-type-builtin">void</span> <span class="ts-function"><span class="ts-variable">demonstrateFeatures</span></span>() {
+    <span class="ts-comment">// Smart pointers</span>
+    <span class="ts-type-builtin">auto</span> <span class="ts-variable">container</span> <span class="ts-operator">=</span> <span class="ts-module">std</span>::<span class="ts-function-call"><span class="ts-variable">make_unique</span></span><span class="ts-operator">&lt;</span><span class="ts-module">utils</span>::Container<span class="ts-operator">&lt;</span><span class="ts-module">std</span>::string<span class="ts-operator">&gt;</span><span class="ts-operator">&gt;</span>();
+
+    <span class="ts-comment">// Lambda expressions</span>
+    <span class="ts-type-builtin">auto</span> <span class="ts-variable">print_item</span> <span class="ts-operator">=</span> [](<span class="ts-keyword">const</span> <span class="ts-module">std</span>::string<span class="ts-variable"><span class="ts-operator">&amp;</span> <span class="ts-variable">item</span></span>) {
+        <span class="ts-module">std</span>::<span class="ts-variable">cout</span> <span class="ts-operator">&lt;&lt;</span> <span class="ts-string">&quot;Item: &quot;</span> <span class="ts-operator">&lt;&lt;</span> <span class="ts-variable">item</span> <span class="ts-operator">&lt;&lt;</span> <span class="ts-module">std</span>::<span class="ts-variable">endl</span>;
+    };
+
+    <span class="ts-comment">// Range-based for loops</span>
+    <span class="ts-module">std</span>::vector<span class="ts-operator">&lt;</span><span class="ts-module">std</span>::string<span class="ts-operator">&gt;</span> <span class="ts-variable">items</span> <span class="ts-operator">=</span> {<span class="ts-string">&quot;hello&quot;</span>, <span class="ts-string">&quot;world&quot;</span>, <span class="ts-string">&quot;test&quot;</span>, <span class="ts-string">&quot;example&quot;</span>};
+    <span class="ts-keyword">for</span> (<span class="ts-keyword">const</span> <span class="ts-type-builtin">auto</span><span class="ts-operator">&amp;</span> <span class="ts-variable">item</span> : <span class="ts-variable">items</span>) {
+        <span class="ts-variable">container</span><span class="ts-operator">-&gt;</span><span class="ts-function-method-call"><span class="ts-function-call">add</span></span>(<span class="ts-variable">item</span>);
+    }
+
+    <span class="ts-comment">// STL algorithms</span>
+    <span class="ts-module">std</span>::<span class="ts-function-call"><span class="ts-variable">sort</span></span>(<span class="ts-variable">items</span>.<span class="ts-function-method-call"><span class="ts-function-call">begin</span></span>(), <span class="ts-variable">items</span>.<span class="ts-function-method-call"><span class="ts-function-call">end</span></span>());
+
+    <span class="ts-comment">// Auto type deduction</span>
+    <span class="ts-type-builtin">auto</span> <span class="ts-variable">found</span> <span class="ts-operator">=</span> <span class="ts-module">std</span>::<span class="ts-function-call"><span class="ts-variable">find</span></span>(<span class="ts-variable">items</span>.<span class="ts-function-method-call"><span class="ts-function-call">begin</span></span>(), <span class="ts-variable">items</span>.<span class="ts-function-method-call"><span class="ts-function-call">end</span></span>(), <span class="ts-string">&quot;test&quot;</span>);
+    <span class="ts-keyword">if</span> (<span class="ts-variable">found</span> <span class="ts-operator">!=</span> <span class="ts-variable">items</span>.<span class="ts-function-method-call"><span class="ts-function-call">end</span></span>()) {
+        <span class="ts-module">std</span>::<span class="ts-variable">cout</span> <span class="ts-operator">&lt;&lt;</span> <span class="ts-string">&quot;Found: &quot;</span> <span class="ts-operator">&lt;&lt;</span> <span class="ts-operator">*</span><span class="ts-variable">found</span> <span class="ts-operator">&lt;&lt;</span> <span class="ts-module">std</span>::<span class="ts-variable">endl</span>;
+    }
+
+    <span class="ts-comment">// Range-based for with container</span>
+    <span class="ts-module">std</span>::<span class="ts-variable">cout</span> <span class="ts-operator">&lt;&lt;</span> <span class="ts-string">&quot;Container contents:&quot;</span> <span class="ts-operator">&lt;&lt;</span> <span class="ts-module">std</span>::<span class="ts-variable">endl</span>;
+    <span class="ts-keyword">for</span> (<span class="ts-keyword">const</span> <span class="ts-type-builtin">auto</span><span class="ts-operator">&amp;</span> <span class="ts-variable">item</span> : <span class="ts-operator">*</span><span class="ts-variable">container</span>) {
+        <span class="ts-function-call"><span class="ts-variable">print_item</span></span>(<span class="ts-variable">item</span>);
+    }
+
+    <span class="ts-comment">// Exception handling</span>
+    <span class="ts-keyword">try</span> {
+        <span class="ts-type-builtin">auto</span> <span class="ts-variable">item</span> <span class="ts-operator">=</span> <span class="ts-variable">container</span><span class="ts-operator">-&gt;</span><span class="ts-function-method-call"><span class="ts-function-call">at</span></span>(<span class="ts-number">100</span>);  <span class="ts-comment">// This will throw</span>
+    } <span class="ts-keyword">catch</span> (<span class="ts-keyword">const</span> <span class="ts-module">std</span>::out_of_range<span class="ts-variable"><span class="ts-operator">&amp;</span> <span class="ts-variable">e</span></span>) {
+        <span class="ts-module">std</span>::<span class="ts-variable">cerr</span> <span class="ts-operator">&lt;&lt;</span> <span class="ts-string">&quot;Error: &quot;</span> <span class="ts-operator">&lt;&lt;</span> <span class="ts-variable">e</span>.<span class="ts-function-method-call"><span class="ts-function-call">what</span></span>() <span class="ts-operator">&lt;&lt;</span> <span class="ts-module">std</span>::<span class="ts-variable">endl</span>;
+    }
+}
+
+<span class="ts-type-builtin">int</span> <span class="ts-function"><span class="ts-variable">main</span></span>() {
+    <span class="ts-module">std</span>::<span class="ts-variable">cout</span> <span class="ts-operator">&lt;&lt;</span> <span class="ts-string">&quot;C++ TreeSitter Test&quot;</span> <span class="ts-operator">&lt;&lt;</span> <span class="ts-module">std</span>::<span class="ts-variable">endl</span>;
+
+    <span class="ts-function-call"><span class="ts-variable">demonstrateFeatures</span></span>();
+
+    <span class="ts-keyword">return</span> <span class="ts-number">0</span>;
+}

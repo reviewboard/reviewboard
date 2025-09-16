@@ -1,0 +1,324 @@
+<span class="ts-comment"><span class="ts-keyword">#!/usr/bin/env ruby</span></span>
+<span class="ts-comment"># frozen_string_literal: true</span>
+
+<span class="ts-keyword-import"><span class="ts-function-call"><span class="ts-variable">require</span></span></span> <span class="ts-string">&#39;</span><span class="ts-string">json</span><span class="ts-string">&#39;</span>
+<span class="ts-keyword-import"><span class="ts-function-call"><span class="ts-variable">require</span></span></span> <span class="ts-string">&#39;</span><span class="ts-string">net/http</span><span class="ts-string">&#39;</span>
+<span class="ts-keyword-import"><span class="ts-function-call"><span class="ts-variable">require</span></span></span> <span class="ts-string">&#39;</span><span class="ts-string">uri</span><span class="ts-string">&#39;</span>
+
+<span class="ts-comment"># Module for utility functions</span>
+<span class="ts-keyword">module</span> <span class="ts-constant">Utils</span>
+  <span class="ts-comment"># Class method example</span>
+  <span class="ts-keyword">def</span> <span class="ts-variable-builtin">self</span>.<span class="ts-function"><span class="ts-variable">format_currency</span></span>(<span class="ts-variable">amount</span>, <span class="ts-variable">currency</span> <span class="ts-operator">=</span> <span class="ts-string">&#39;</span><span class="ts-string">USD</span><span class="ts-string">&#39;</span>)
+    <span class="ts-keyword">case</span> <span class="ts-variable">currency</span>.<span class="ts-function-call"><span class="ts-variable">upcase</span></span>
+    <span class="ts-keyword">when</span> <span class="ts-string">&#39;</span><span class="ts-string">USD</span><span class="ts-string">&#39;</span>
+      <span class="ts-string">&quot;</span><span class="ts-string">$</span>#{<span class="ts-string">&#39;</span><span class="ts-string">%.2f</span><span class="ts-string">&#39;</span> <span class="ts-operator">%</span> <span class="ts-variable">amount</span>}<span class="ts-string">&quot;</span>
+    <span class="ts-keyword">when</span> <span class="ts-string">&#39;</span><span class="ts-string">EUR</span><span class="ts-string">&#39;</span>
+      <span class="ts-string">&quot;</span><span class="ts-string">€</span>#{<span class="ts-string">&#39;</span><span class="ts-string">%.2f</span><span class="ts-string">&#39;</span> <span class="ts-operator">%</span> <span class="ts-variable">amount</span>}<span class="ts-string">&quot;</span>
+    <span class="ts-keyword">else</span>
+      <span class="ts-string">&quot;</span>#{<span class="ts-variable">currency</span>}<span class="ts-string"> </span>#{<span class="ts-string">&#39;</span><span class="ts-string">%.2f</span><span class="ts-string">&#39;</span> <span class="ts-operator">%</span> <span class="ts-variable">amount</span>}<span class="ts-string">&quot;</span>
+    <span class="ts-keyword">end</span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-comment"># Module method that gets included</span>
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">titleize</span></span>(<span class="ts-variable">str</span>)
+    <span class="ts-variable">str</span>.<span class="ts-function-call"><span class="ts-variable">split</span></span>(<span class="ts-operator">/</span><span class="ts-string-regexp"><span class="ts-string">[</span></span><span class="ts-string">\s</span><span class="ts-string-regexp"><span class="ts-string">_-]+</span></span><span class="ts-operator">/</span>).<span class="ts-function-call"><span class="ts-variable">map</span></span>(<span class="ts-operator">&amp;</span><span class="ts-string">:capitalize</span>).<span class="ts-function-call"><span class="ts-variable">join</span></span>(<span class="ts-string">&#39;</span><span class="ts-string"> </span><span class="ts-string">&#39;</span>)
+  <span class="ts-keyword">end</span>
+<span class="ts-keyword">end</span>
+
+<span class="ts-comment"># Base class demonstrating inheritance</span>
+<span class="ts-keyword">class</span> <span class="ts-constant">Product</span>
+  <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">include</span></span></span> <span class="ts-constant">Utils</span>
+
+  <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">attr_reader</span></span></span> <span class="ts-string">:id</span>, <span class="ts-string">:name</span>, <span class="ts-string">:price</span>, <span class="ts-string">:created_at</span>
+  <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">attr_accessor</span></span></span> <span class="ts-string">:description</span>, <span class="ts-string">:category</span>
+
+  <span class="ts-comment"># Class variables and constants</span>
+  <span class="ts-variable">@@next_id</span> <span class="ts-operator">=</span> <span class="ts-number">1</span>
+  <span class="ts-constant">CATEGORIES</span> <span class="ts-operator">=</span> %w[<span class="ts-string">electronics</span> <span class="ts-string">clothing</span> <span class="ts-string">books</span> <span class="ts-string">home</span>].<span class="ts-function-call"><span class="ts-variable">freeze</span></span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">initialize</span></span>(<span class="ts-variable">name</span>, <span class="ts-variable">price</span>, <span class="ts-variable">description</span><span class="ts-operator">:</span> <span class="ts-constant-builtin">nil</span>, <span class="ts-variable">category</span><span class="ts-operator">:</span> <span class="ts-string">&#39;</span><span class="ts-string">general</span><span class="ts-string">&#39;</span>)
+    <span class="ts-variable">@id</span> <span class="ts-operator">=</span> <span class="ts-variable">@@next_id</span>
+    <span class="ts-variable">@@next_id</span> <span class="ts-operator">+=</span> <span class="ts-number">1</span>
+    <span class="ts-variable">@name</span> <span class="ts-operator">=</span> <span class="ts-variable">name</span>
+    <span class="ts-variable">@price</span> <span class="ts-operator">=</span> <span class="ts-variable">price</span>.<span class="ts-function-call"><span class="ts-variable">to_f</span></span>
+    <span class="ts-variable">@description</span> <span class="ts-operator">=</span> <span class="ts-variable">description</span>
+    <span class="ts-variable">@category</span> <span class="ts-operator">=</span> <span class="ts-variable">category</span>
+    <span class="ts-variable">@created_at</span> <span class="ts-operator">=</span> <span class="ts-constant">Time</span>.<span class="ts-function-call"><span class="ts-variable">now</span></span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-comment"># Instance method with different visibility levels</span>
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">formatted_price</span></span>(<span class="ts-variable">currency</span> <span class="ts-operator">=</span> <span class="ts-string">&#39;</span><span class="ts-string">USD</span><span class="ts-string">&#39;</span>)
+    <span class="ts-constant">Utils</span>.<span class="ts-function-call"><span class="ts-variable">format_currency</span></span>(<span class="ts-variable">@price</span>, <span class="ts-variable">currency</span>)
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">to_h</span></span>
+    {
+      <span class="ts-string">id</span><span class="ts-operator">:</span> <span class="ts-variable">@id</span>,
+      <span class="ts-string">name</span><span class="ts-operator">:</span> <span class="ts-variable">@name</span>,
+      <span class="ts-string">price</span><span class="ts-operator">:</span> <span class="ts-variable">@price</span>,
+      <span class="ts-string">description</span><span class="ts-operator">:</span> <span class="ts-variable">@description</span>,
+      <span class="ts-string">category</span><span class="ts-operator">:</span> <span class="ts-variable">@category</span>,
+      <span class="ts-string">created_at</span><span class="ts-operator">:</span> <span class="ts-variable">@created_at</span>.<span class="ts-function-call"><span class="ts-variable">iso8601</span></span>
+    }
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">to_json</span></span>(<span class="ts-operator">*</span><span class="ts-variable">args</span>)
+    <span class="ts-variable">to_h</span>.<span class="ts-function-call"><span class="ts-variable">to_json</span></span>(<span class="ts-operator">*</span><span class="ts-variable">args</span>)
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-comment"># Operator overloading</span>
+  <span class="ts-keyword">def</span> <span class="ts-operator">==</span>(<span class="ts-variable">other</span>)
+    <span class="ts-variable">other</span>.<span class="ts-function-call"><span class="ts-variable">is_a?</span></span>(<span class="ts-constant">Product</span>) <span class="ts-operator">&amp;&amp;</span> <span class="ts-variable">@id</span> <span class="ts-operator">==</span> <span class="ts-variable">other</span>.<span class="ts-function-call"><span class="ts-variable">id</span></span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-keyword">def</span> <span class="ts-operator">&lt;=&gt;</span>(<span class="ts-variable">other</span>)
+    <span class="ts-variable">@price</span> <span class="ts-operator">&lt;=&gt;</span> <span class="ts-variable">other</span>.<span class="ts-function-call"><span class="ts-variable">price</span></span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-keyword"><span class="ts-variable">protected</span></span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">validate!</span></span>
+    <span class="ts-keyword"><span class="ts-function-call"><span class="ts-variable">raise</span></span></span> <span class="ts-constant">ArgumentError</span>, <span class="ts-string">&#39;</span><span class="ts-string">Name cannot be empty</span><span class="ts-string">&#39;</span> <span class="ts-keyword">if</span> <span class="ts-variable">@name</span>.<span class="ts-function-call"><span class="ts-variable">nil?</span></span> <span class="ts-operator">||</span> <span class="ts-variable">@name</span>.<span class="ts-function-call"><span class="ts-variable">empty?</span></span>
+    <span class="ts-keyword"><span class="ts-function-call"><span class="ts-variable">raise</span></span></span> <span class="ts-constant">ArgumentError</span>, <span class="ts-string">&#39;</span><span class="ts-string">Price must be positive</span><span class="ts-string">&#39;</span> <span class="ts-keyword">if</span> <span class="ts-variable">@price</span> <span class="ts-operator">&lt;=</span> <span class="ts-number">0</span>
+    <span class="ts-keyword"><span class="ts-function-call"><span class="ts-variable">raise</span></span></span> <span class="ts-constant">ArgumentError</span>, <span class="ts-string">&#39;</span><span class="ts-string">Invalid category</span><span class="ts-string">&#39;</span> <span class="ts-keyword">unless</span> <span class="ts-constant">CATEGORIES</span>.<span class="ts-function-call"><span class="ts-variable">include?</span></span>(<span class="ts-variable">@category</span>)
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-keyword"><span class="ts-variable">private</span></span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">log_action</span></span>(<span class="ts-variable">action</span>)
+    <span class="ts-function-call"><span class="ts-variable">puts</span></span> <span class="ts-string">&quot;</span><span class="ts-string">[</span>#{<span class="ts-constant">Time</span>.<span class="ts-function-call"><span class="ts-variable">now</span></span>}<span class="ts-string">] </span>#{<span class="ts-variable">action</span>}<span class="ts-string"> for product </span>#{<span class="ts-variable">@id</span>}<span class="ts-string">&quot;</span>
+  <span class="ts-keyword">end</span>
+<span class="ts-keyword">end</span>
+
+<span class="ts-comment"># Child class with method overriding</span>
+<span class="ts-keyword">class</span> <span class="ts-constant">DigitalProduct</span> <span class="ts-operator">&lt;</span> <span class="ts-constant">Product</span>
+  <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">attr_reader</span></span></span> <span class="ts-string">:download_url</span>, <span class="ts-string">:file_size</span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">initialize</span></span>(<span class="ts-variable">name</span>, <span class="ts-variable">price</span>, <span class="ts-variable">download_url</span>, <span class="ts-variable">file_size</span><span class="ts-operator">:</span> <span class="ts-constant-builtin">nil</span>, <span class="ts-operator">**</span><span class="ts-variable">kwargs</span>)
+    <span class="ts-variable-builtin">super</span>(<span class="ts-variable">name</span>, <span class="ts-variable">price</span>, <span class="ts-operator">**</span><span class="ts-variable">kwargs</span>)
+    <span class="ts-variable">@download_url</span> <span class="ts-operator">=</span> <span class="ts-variable">download_url</span>
+    <span class="ts-variable">@file_size</span> <span class="ts-operator">=</span> <span class="ts-variable">file_size</span>
+    <span class="ts-function-call"><span class="ts-variable">validate!</span></span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-comment"># Override parent method</span>
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">to_h</span></span>
+    <span class="ts-variable-builtin">super</span>.<span class="ts-function-call"><span class="ts-variable">merge</span></span>(
+      <span class="ts-string">download_url</span><span class="ts-operator">:</span> <span class="ts-variable">@download_url</span>,
+      <span class="ts-string">file_size</span><span class="ts-operator">:</span> <span class="ts-variable">@file_size</span>,
+      <span class="ts-string">type</span><span class="ts-operator">:</span> <span class="ts-string">&#39;</span><span class="ts-string">digital</span><span class="ts-string">&#39;</span>
+    )
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-comment"># New method specific to digital products</span>
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">download_link_valid?</span></span>
+    <span class="ts-variable">uri</span> <span class="ts-operator">=</span> <span class="ts-constant">URI</span>.<span class="ts-function-call"><span class="ts-variable">parse</span></span>(<span class="ts-variable">@download_url</span>)
+    <span class="ts-variable">uri</span>.<span class="ts-function-call"><span class="ts-variable">is_a?</span></span>(<span class="ts-constant">URI</span>::<span class="ts-constant">HTTP</span>) <span class="ts-operator">||</span> <span class="ts-variable">uri</span>.<span class="ts-function-call"><span class="ts-variable">is_a?</span></span>(<span class="ts-constant">URI</span>::<span class="ts-constant">HTTPS</span>)
+  <span class="ts-keyword">rescue</span> <span class="ts-constant">URI</span>::<span class="ts-constant">InvalidURIError</span>
+    <span class="ts-boolean">false</span>
+  <span class="ts-keyword">end</span>
+<span class="ts-keyword">end</span>
+
+<span class="ts-comment"># Mixin module</span>
+<span class="ts-keyword">module</span> <span class="ts-constant">Discountable</span>
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">apply_discount</span></span>(<span class="ts-variable">percentage</span>)
+    <span class="ts-keyword"><span class="ts-function-call"><span class="ts-variable">raise</span></span></span> <span class="ts-constant">ArgumentError</span>, <span class="ts-string">&#39;</span><span class="ts-string">Discount must be between 0 and 100</span><span class="ts-string">&#39;</span> <span class="ts-keyword">unless</span> (<span class="ts-number">0</span><span class="ts-operator">..</span><span class="ts-number">100</span>).<span class="ts-function-call"><span class="ts-variable">cover?</span></span>(<span class="ts-variable">percentage</span>)
+
+    <span class="ts-variable">original_price</span> <span class="ts-operator">=</span> <span class="ts-variable">@price</span>
+    <span class="ts-variable">@price</span> <span class="ts-operator">=</span> <span class="ts-variable">@price</span> <span class="ts-operator">*</span> (<span class="ts-number">1</span> <span class="ts-operator">-</span> <span class="ts-variable">percentage</span> <span class="ts-operator">/</span> <span class="ts-number">100.0</span>)
+
+    <span class="ts-keyword">yield</span>(<span class="ts-variable">original_price</span>, <span class="ts-variable">@price</span>) <span class="ts-keyword">if</span> <span class="ts-function-call"><span class="ts-variable">block_given?</span></span>
+
+    <span class="ts-variable">@price</span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">discount_amount</span></span>(<span class="ts-variable">percentage</span>)
+    (<span class="ts-variable">@price</span> <span class="ts-operator">*</span> <span class="ts-variable">percentage</span> <span class="ts-operator">/</span> <span class="ts-number">100.0</span>).<span class="ts-function-call"><span class="ts-variable">round</span></span>(<span class="ts-number">2</span>)
+  <span class="ts-keyword">end</span>
+<span class="ts-keyword">end</span>
+
+<span class="ts-comment"># Class with mixins and metaprogramming</span>
+<span class="ts-keyword">class</span> <span class="ts-constant">ProductCatalog</span>
+  <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">include</span></span></span> <span class="ts-constant">Enumerable</span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">initialize</span></span>
+    <span class="ts-variable">@products</span> <span class="ts-operator">=</span> []
+    <span class="ts-variable">@callbacks</span> <span class="ts-operator">=</span> <span class="ts-constant">Hash</span>.<span class="ts-function-call"><span class="ts-variable">new</span></span> { <span class="ts-operator">|</span><span class="ts-variable">h</span>, <span class="ts-variable">k</span><span class="ts-operator">|</span> <span class="ts-variable">h</span>[<span class="ts-variable">k</span>] <span class="ts-operator">=</span> [] }
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-comment"># Metaprogramming: define callback methods</span>
+  %w[<span class="ts-string">before_add</span> <span class="ts-string">after_add</span> <span class="ts-string">before_remove</span> <span class="ts-string">after_remove</span>].<span class="ts-function-call"><span class="ts-variable">each</span></span> <span class="ts-keyword">do</span> <span class="ts-operator">|</span><span class="ts-variable">callback_name</span><span class="ts-operator">|</span>
+    <span class="ts-function-call"><span class="ts-variable">define_method</span></span>(<span class="ts-string">&quot;</span>#{<span class="ts-variable">callback_name</span>}<span class="ts-string">&quot;</span>) <span class="ts-keyword">do</span> <span class="ts-operator">|</span><span class="ts-operator">&amp;</span><span class="ts-variable">block</span><span class="ts-operator">|</span>
+      <span class="ts-variable">@callbacks</span>[<span class="ts-variable">callback_name</span>.<span class="ts-function-call"><span class="ts-variable">to_sym</span></span>] <span class="ts-operator">&lt;&lt;</span> <span class="ts-variable">block</span> <span class="ts-keyword">if</span> <span class="ts-function-call"><span class="ts-variable">block_given?</span></span>
+    <span class="ts-keyword">end</span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">add_product</span></span>(<span class="ts-variable">product</span>)
+    <span class="ts-function-call"><span class="ts-variable">execute_callbacks</span></span>(<span class="ts-string">:before_add</span>, <span class="ts-variable">product</span>)
+    <span class="ts-variable">@products</span> <span class="ts-operator">&lt;&lt;</span> <span class="ts-variable">product</span>
+    <span class="ts-function-call"><span class="ts-variable">execute_callbacks</span></span>(<span class="ts-string">:after_add</span>, <span class="ts-variable">product</span>)
+    <span class="ts-variable">product</span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">remove_product</span></span>(<span class="ts-variable">product</span>)
+    <span class="ts-function-call"><span class="ts-variable">execute_callbacks</span></span>(<span class="ts-string">:before_remove</span>, <span class="ts-variable">product</span>)
+    <span class="ts-variable">removed</span> <span class="ts-operator">=</span> <span class="ts-variable">@products</span>.<span class="ts-function-call"><span class="ts-variable">delete</span></span>(<span class="ts-variable">product</span>)
+    <span class="ts-function-call"><span class="ts-variable">execute_callbacks</span></span>(<span class="ts-string">:after_remove</span>, <span class="ts-variable">product</span>) <span class="ts-keyword">if</span> <span class="ts-variable">removed</span>
+    <span class="ts-variable">removed</span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-comment"># Enumerable implementation</span>
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">each</span></span>(<span class="ts-operator">&amp;</span><span class="ts-variable">block</span>)
+    <span class="ts-keyword">return</span> <span class="ts-function-call"><span class="ts-variable">enum_for</span></span>(<span class="ts-string">:each</span>) <span class="ts-keyword">unless</span> <span class="ts-function-call"><span class="ts-variable">block_given?</span></span>
+    <span class="ts-variable">@products</span>.<span class="ts-function-call"><span class="ts-variable">each</span></span>(<span class="ts-operator">&amp;</span><span class="ts-variable">block</span>)
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-comment"># Method with block handling</span>
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">find_products</span></span>(<span class="ts-operator">&amp;</span><span class="ts-variable">block</span>)
+    <span class="ts-keyword">return</span> <span class="ts-function-call"><span class="ts-variable">enum_for</span></span>(<span class="ts-string">:find_products</span>) <span class="ts-keyword">unless</span> <span class="ts-function-call"><span class="ts-variable">block_given?</span></span>
+    <span class="ts-variable">@products</span>.<span class="ts-function-call"><span class="ts-variable">select</span></span>(<span class="ts-operator">&amp;</span><span class="ts-variable">block</span>)
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-comment"># Ruby&#39;s powerful string interpolation and regex</span>
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">search</span></span>(<span class="ts-variable">query</span>)
+    <span class="ts-variable">pattern</span> <span class="ts-operator">=</span> <span class="ts-operator">/</span>#{<span class="ts-constant">Regexp</span>.<span class="ts-function-call"><span class="ts-variable">escape</span></span>(<span class="ts-variable">query</span>.<span class="ts-function-call"><span class="ts-variable">to_s</span></span>)}<span class="ts-operator">/i</span>
+    <span class="ts-function-call"><span class="ts-variable">find_products</span></span> <span class="ts-keyword">do</span> <span class="ts-operator">|</span><span class="ts-variable">product</span><span class="ts-operator">|</span>
+      <span class="ts-variable">product</span>.<span class="ts-function-call"><span class="ts-variable">name</span></span> <span class="ts-operator">=~</span> <span class="ts-variable">pattern</span> <span class="ts-operator">||</span>
+      (<span class="ts-variable">product</span>.<span class="ts-function-call"><span class="ts-variable">description</span></span> <span class="ts-operator">&amp;&amp;</span> <span class="ts-variable">product</span>.<span class="ts-function-call"><span class="ts-variable">description</span></span> <span class="ts-operator">=~</span> <span class="ts-variable">pattern</span>)
+    <span class="ts-keyword">end</span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-comment"># Hash-like access with method_missing</span>
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">method_missing</span></span>(<span class="ts-variable">method_name</span>, <span class="ts-operator">*</span><span class="ts-variable">args</span>, <span class="ts-operator">&amp;</span><span class="ts-variable">block</span>)
+    <span class="ts-keyword">if</span> <span class="ts-variable">method_name</span>.<span class="ts-function-call"><span class="ts-variable">to_s</span></span>.<span class="ts-function-call"><span class="ts-variable">start_with?</span></span>(<span class="ts-string">&#39;</span><span class="ts-string">find_by_</span><span class="ts-string">&#39;</span>)
+      <span class="ts-variable">attribute</span> <span class="ts-operator">=</span> <span class="ts-variable">method_name</span>.<span class="ts-function-call"><span class="ts-variable">to_s</span></span>.<span class="ts-function-call"><span class="ts-variable">sub</span></span>(<span class="ts-string">&#39;</span><span class="ts-string">find_by_</span><span class="ts-string">&#39;</span>, <span class="ts-string">&#39;</span><span class="ts-string">&#39;</span>)
+      <span class="ts-function-call"><span class="ts-variable">find_products</span></span> { <span class="ts-operator">|</span><span class="ts-variable">product</span><span class="ts-operator">|</span> <span class="ts-variable">product</span>.<span class="ts-function-call"><span class="ts-variable">respond_to?</span></span>(<span class="ts-variable">attribute</span>) <span class="ts-operator">&amp;&amp;</span> <span class="ts-variable">product</span>.<span class="ts-function-call"><span class="ts-variable">send</span></span>(<span class="ts-variable">attribute</span>) <span class="ts-operator">==</span> <span class="ts-variable">args</span>.<span class="ts-function-call"><span class="ts-variable">first</span></span> }
+    <span class="ts-keyword">else</span>
+      <span class="ts-variable-builtin">super</span>
+    <span class="ts-keyword">end</span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">respond_to_missing?</span></span>(<span class="ts-variable">method_name</span>, <span class="ts-variable">include_private</span> <span class="ts-operator">=</span> <span class="ts-boolean">false</span>)
+    <span class="ts-variable">method_name</span>.<span class="ts-function-call"><span class="ts-variable">to_s</span></span>.<span class="ts-function-call"><span class="ts-variable">start_with?</span></span>(<span class="ts-string">&#39;</span><span class="ts-string">find_by_</span><span class="ts-string">&#39;</span>) <span class="ts-operator">||</span> <span class="ts-variable-builtin">super</span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-keyword"><span class="ts-variable">private</span></span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">execute_callbacks</span></span>(<span class="ts-variable">event</span>, <span class="ts-variable">product</span>)
+    <span class="ts-variable">@callbacks</span>[<span class="ts-variable">event</span>].<span class="ts-function-call"><span class="ts-variable">each</span></span> { <span class="ts-operator">|</span><span class="ts-variable">callback</span><span class="ts-operator">|</span> <span class="ts-variable">callback</span>.<span class="ts-function-call"><span class="ts-variable">call</span></span>(<span class="ts-variable">product</span>) }
+  <span class="ts-keyword">end</span>
+<span class="ts-keyword">end</span>
+
+<span class="ts-comment"># Singleton pattern using class variables</span>
+<span class="ts-keyword">class</span> <span class="ts-constant">ProductManager</span>
+  <span class="ts-variable">@@instance</span> <span class="ts-operator">=</span> <span class="ts-constant-builtin">nil</span>
+
+  <span class="ts-keyword">def</span> <span class="ts-variable-builtin">self</span>.<span class="ts-function"><span class="ts-variable">instance</span></span>
+    <span class="ts-variable">@@instance</span> <span class="ts-operator">||=</span> <span class="ts-variable">new</span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-function-call"><span class="ts-variable">private_class_method</span></span> <span class="ts-string">:new</span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">initialize</span></span>
+    <span class="ts-variable">@catalog</span> <span class="ts-operator">=</span> <span class="ts-constant">ProductCatalog</span>.<span class="ts-function-call"><span class="ts-variable">new</span></span>
+    <span class="ts-variable">setup_callbacks</span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-comment"># Proc and lambda examples</span>
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">bulk_import</span></span>(<span class="ts-variable">products_data</span>)
+    <span class="ts-variable">success_count</span> <span class="ts-operator">=</span> <span class="ts-number">0</span>
+    <span class="ts-variable">error_handler</span> <span class="ts-operator">=</span> <span class="ts-function-call"><span class="ts-variable">proc</span></span> { <span class="ts-operator">|</span><span class="ts-variable">error</span><span class="ts-operator">|</span> <span class="ts-function-call"><span class="ts-variable">puts</span></span> <span class="ts-string">&quot;</span><span class="ts-string">Import error: </span>#{<span class="ts-variable">error</span>.<span class="ts-function-call"><span class="ts-variable">message</span></span>}<span class="ts-string">&quot;</span> }
+
+    <span class="ts-variable">products_data</span>.<span class="ts-function-call"><span class="ts-variable">each</span></span> <span class="ts-keyword">do</span> <span class="ts-operator">|</span><span class="ts-variable">data</span><span class="ts-operator">|</span>
+      <span class="ts-keyword">begin</span>
+        <span class="ts-variable">product</span> <span class="ts-operator">=</span> <span class="ts-keyword">case</span> <span class="ts-variable">data</span>[<span class="ts-string">:type</span>]
+                  <span class="ts-keyword">when</span> <span class="ts-string">&#39;</span><span class="ts-string">digital</span><span class="ts-string">&#39;</span>
+                    <span class="ts-constant">DigitalProduct</span>.<span class="ts-function-call"><span class="ts-variable">new</span></span>(<span class="ts-variable">data</span>[<span class="ts-string">:name</span>], <span class="ts-variable">data</span>[<span class="ts-string">:price</span>], <span class="ts-variable">data</span>[<span class="ts-string">:download_url</span>], <span class="ts-operator">**</span><span class="ts-variable">data</span>.<span class="ts-function-call"><span class="ts-variable">except</span></span>(<span class="ts-string">:type</span>, <span class="ts-string">:name</span>, <span class="ts-string">:price</span>, <span class="ts-string">:download_url</span>))
+                  <span class="ts-keyword">else</span>
+                    <span class="ts-constant">Product</span>.<span class="ts-function-call"><span class="ts-variable">new</span></span>(<span class="ts-variable">data</span>[<span class="ts-string">:name</span>], <span class="ts-variable">data</span>[<span class="ts-string">:price</span>], <span class="ts-operator">**</span><span class="ts-variable">data</span>.<span class="ts-function-call"><span class="ts-variable">except</span></span>(<span class="ts-string">:name</span>, <span class="ts-string">:price</span>))
+                  <span class="ts-keyword">end</span>
+
+        <span class="ts-variable">product</span>.<span class="ts-function-call"><span class="ts-variable">extend</span></span>(<span class="ts-constant">Discountable</span>) <span class="ts-keyword">if</span> <span class="ts-variable">data</span>[<span class="ts-string">:discountable</span>]
+        <span class="ts-variable">@catalog</span>.<span class="ts-function-call"><span class="ts-variable">add_product</span></span>(<span class="ts-variable">product</span>)
+        <span class="ts-variable">success_count</span> <span class="ts-operator">+=</span> <span class="ts-number">1</span>
+      <span class="ts-keyword">rescue</span> <span class="ts-operator">=&gt;</span> <span class="ts-variable">error</span>
+        <span class="ts-variable">error_handler</span>.<span class="ts-function-call"><span class="ts-variable">call</span></span>(<span class="ts-variable">error</span>)
+      <span class="ts-keyword">end</span>
+    <span class="ts-keyword">end</span>
+
+    <span class="ts-variable">success_count</span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-comment"># Method with keyword arguments and splat operators</span>
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">generate_report</span></span>(<span class="ts-variable">format</span><span class="ts-operator">:</span> <span class="ts-string">:json</span>, <span class="ts-variable">include_details</span><span class="ts-operator">:</span> <span class="ts-boolean">true</span>, <span class="ts-operator">**</span><span class="ts-variable">options</span>)
+    <span class="ts-variable">products</span> <span class="ts-operator">=</span> <span class="ts-variable">@catalog</span>.<span class="ts-function-call"><span class="ts-variable">to_a</span></span>
+
+    <span class="ts-keyword">case</span> <span class="ts-variable">format</span>
+    <span class="ts-keyword">when</span> <span class="ts-string">:json</span>
+      <span class="ts-constant">JSON</span>.<span class="ts-function-call"><span class="ts-variable">pretty_generate</span></span>(
+        <span class="ts-string">summary</span><span class="ts-operator">:</span> {
+          <span class="ts-string">total_products</span><span class="ts-operator">:</span> <span class="ts-variable">products</span>.<span class="ts-function-call"><span class="ts-variable">size</span></span>,
+          <span class="ts-string">total_value</span><span class="ts-operator">:</span> <span class="ts-variable">products</span>.<span class="ts-function-call"><span class="ts-variable">sum</span></span>(<span class="ts-operator">&amp;</span><span class="ts-string">:price</span>),
+          <span class="ts-string">categories</span><span class="ts-operator">:</span> <span class="ts-variable">products</span>.<span class="ts-function-call"><span class="ts-variable">group_by</span></span>(<span class="ts-operator">&amp;</span><span class="ts-string">:category</span>).<span class="ts-function-call"><span class="ts-variable">transform_values</span></span>(<span class="ts-operator">&amp;</span><span class="ts-string">:size</span>)
+        },
+        <span class="ts-string">products</span><span class="ts-operator">:</span> <span class="ts-variable">include_details</span> <span class="ts-operator">?</span> <span class="ts-variable">products</span>.<span class="ts-function-call"><span class="ts-variable">map</span></span>(<span class="ts-operator">&amp;</span><span class="ts-string">:to_h</span>) <span class="ts-operator">:</span> []
+      )
+    <span class="ts-keyword">when</span> <span class="ts-string">:csv</span>
+      <span class="ts-comment"># CSV generation would go here</span>
+      <span class="ts-string">&quot;</span><span class="ts-string">CSV format not implemented</span><span class="ts-string">&quot;</span>
+    <span class="ts-keyword">else</span>
+      <span class="ts-keyword"><span class="ts-function-call"><span class="ts-variable">raise</span></span></span> <span class="ts-constant">ArgumentError</span>, <span class="ts-string">&quot;</span><span class="ts-string">Unsupported format: </span>#{<span class="ts-variable">format</span>}<span class="ts-string">&quot;</span>
+    <span class="ts-keyword">end</span>
+  <span class="ts-keyword">end</span>
+
+  <span class="ts-keyword"><span class="ts-variable">private</span></span>
+
+  <span class="ts-keyword">def</span> <span class="ts-function"><span class="ts-variable">setup_callbacks</span></span>
+    <span class="ts-variable">@catalog</span>.<span class="ts-function-call"><span class="ts-variable">after_add</span></span> <span class="ts-keyword">do</span> <span class="ts-operator">|</span><span class="ts-variable">product</span><span class="ts-operator">|</span>
+      <span class="ts-function-call"><span class="ts-variable">puts</span></span> <span class="ts-string">&quot;</span><span class="ts-string">Added product: </span>#{<span class="ts-variable">product</span>.<span class="ts-function-call"><span class="ts-variable">name</span></span>}<span class="ts-string">&quot;</span>
+    <span class="ts-keyword">end</span>
+
+    <span class="ts-variable">@catalog</span>.<span class="ts-function-call"><span class="ts-variable">before_remove</span></span> <span class="ts-keyword">do</span> <span class="ts-operator">|</span><span class="ts-variable">product</span><span class="ts-operator">|</span>
+      <span class="ts-function-call"><span class="ts-variable">puts</span></span> <span class="ts-string">&quot;</span><span class="ts-string">Removing product: </span>#{<span class="ts-variable">product</span>.<span class="ts-function-call"><span class="ts-variable">name</span></span>}<span class="ts-string">&quot;</span>
+    <span class="ts-keyword">end</span>
+  <span class="ts-keyword">end</span>
+<span class="ts-keyword">end</span>
+
+<span class="ts-comment"># Usage example and demonstration</span>
+<span class="ts-keyword">if</span> <span class="ts-constant-builtin"><span class="ts-variable">__FILE__</span></span> <span class="ts-operator">==</span> <span class="ts-variable">$0</span>
+  <span class="ts-comment"># Create product manager</span>
+  <span class="ts-variable">manager</span> <span class="ts-operator">=</span> <span class="ts-constant">ProductManager</span>.<span class="ts-function-call"><span class="ts-variable">instance</span></span>
+
+  <span class="ts-comment"># Sample data for bulk import</span>
+  <span class="ts-variable">products_data</span> <span class="ts-operator">=</span> [
+    {
+      <span class="ts-string">name</span><span class="ts-operator">:</span> <span class="ts-string">&#39;</span><span class="ts-string">Ruby Programming Book</span><span class="ts-string">&#39;</span>,
+      <span class="ts-string">price</span><span class="ts-operator">:</span> <span class="ts-number">29.99</span>,
+      <span class="ts-string">description</span><span class="ts-operator">:</span> <span class="ts-string">&#39;</span><span class="ts-string">Learn Ruby programming</span><span class="ts-string">&#39;</span>,
+      <span class="ts-string">category</span><span class="ts-operator">:</span> <span class="ts-string">&#39;</span><span class="ts-string">books</span><span class="ts-string">&#39;</span>,
+      <span class="ts-string">discountable</span><span class="ts-operator">:</span> <span class="ts-boolean">true</span>
+    },
+    {
+      <span class="ts-string">name</span><span class="ts-operator">:</span> <span class="ts-string">&#39;</span><span class="ts-string">Digital Music Album</span><span class="ts-string">&#39;</span>,
+      <span class="ts-string">price</span><span class="ts-operator">:</span> <span class="ts-number">9.99</span>,
+      <span class="ts-string">type</span><span class="ts-operator">:</span> <span class="ts-string">&#39;</span><span class="ts-string">digital</span><span class="ts-string">&#39;</span>,
+      <span class="ts-string">download_url</span><span class="ts-operator">:</span> <span class="ts-string">&#39;</span><span class="ts-string">https://example.com/album.zip</span><span class="ts-string">&#39;</span>,
+      <span class="ts-string">file_size</span><span class="ts-operator">:</span> <span class="ts-string">&#39;</span><span class="ts-string">50MB</span><span class="ts-string">&#39;</span>,
+      <span class="ts-string">category</span><span class="ts-operator">:</span> <span class="ts-string">&#39;</span><span class="ts-string">electronics</span><span class="ts-string">&#39;</span>
+    },
+    {
+      <span class="ts-string">name</span><span class="ts-operator">:</span> <span class="ts-string">&#39;</span><span class="ts-string">Wireless Headphones</span><span class="ts-string">&#39;</span>,
+      <span class="ts-string">price</span><span class="ts-operator">:</span> <span class="ts-number">199.99</span>,
+      <span class="ts-string">description</span><span class="ts-operator">:</span> <span class="ts-string">&#39;</span><span class="ts-string">High-quality wireless headphones</span><span class="ts-string">&#39;</span>,
+      <span class="ts-string">category</span><span class="ts-operator">:</span> <span class="ts-string">&#39;</span><span class="ts-string">electronics</span><span class="ts-string">&#39;</span>
+    }
+  ]
+
+  <span class="ts-comment"># Import products</span>
+  <span class="ts-variable">imported</span> <span class="ts-operator">=</span> <span class="ts-variable">manager</span>.<span class="ts-function-call"><span class="ts-variable">bulk_import</span></span>(<span class="ts-variable">products_data</span>)
+  <span class="ts-function-call"><span class="ts-variable">puts</span></span> <span class="ts-string">&quot;</span><span class="ts-string">Successfully imported </span>#{<span class="ts-variable">imported</span>}<span class="ts-string"> products</span><span class="ts-string">&quot;</span>
+
+  <span class="ts-comment"># Generate and display report</span>
+  <span class="ts-function-call"><span class="ts-variable">puts</span></span> <span class="ts-string">&quot;</span><span class="ts-string">\n</span><span class="ts-string">--- CATALOG REPORT ---</span><span class="ts-string">&quot;</span>
+  <span class="ts-function-call"><span class="ts-variable">puts</span></span> <span class="ts-variable">manager</span>.<span class="ts-function-call"><span class="ts-variable">generate_report</span></span>(<span class="ts-string">format</span><span class="ts-operator">:</span> <span class="ts-string">:json</span>, <span class="ts-string">include_details</span><span class="ts-operator">:</span> <span class="ts-boolean">false</span>)
+<span class="ts-keyword">end</span>

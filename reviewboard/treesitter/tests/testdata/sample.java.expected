@@ -1,0 +1,246 @@
+<span class="ts-keyword-import">package</span> <span class="ts-variable">com</span>.<span class="ts-variable">example</span>.<span class="ts-variable">demo</span>;
+
+<span class="ts-keyword-import">import</span> <span class="ts-variable">java</span>.<span class="ts-variable">util</span>.<span class="ts-operator">*</span>;
+<span class="ts-keyword-import">import</span> <span class="ts-variable">java</span>.<span class="ts-variable">util</span>.<span class="ts-variable">concurrent</span>.<span class="ts-variable">CompletableFuture</span>;
+<span class="ts-keyword-import">import</span> <span class="ts-variable">java</span>.<span class="ts-variable">util</span>.<span class="ts-variable">concurrent</span>.<span class="ts-variable">ConcurrentHashMap</span>;
+<span class="ts-keyword-import">import</span> <span class="ts-variable">java</span>.<span class="ts-variable">util</span>.<span class="ts-variable">function</span>.<span class="ts-variable">Predicate</span>;
+<span class="ts-keyword-import">import</span> <span class="ts-variable">java</span>.<span class="ts-variable">util</span>.<span class="ts-variable">stream</span>.<span class="ts-variable">Collectors</span>;
+<span class="ts-keyword-import">import</span> <span class="ts-variable">java</span>.<span class="ts-variable">time</span>.<span class="ts-variable">LocalDateTime</span>;
+
+<span class="ts-comment">/**</span>
+<span class="ts-comment"> * Example Java class demonstrating various language features</span>
+<span class="ts-comment"> * @author ReviewBoard Team</span>
+<span class="ts-comment"> * @version 1.0</span>
+<span class="ts-comment"> */</span>
+<span class="ts-keyword">public</span> <span class="ts-keyword">class</span> <span class="ts-variable">UserManager</span> {
+
+    <span class="ts-comment">// Constants</span>
+    <span class="ts-keyword">private</span> <span class="ts-keyword">static</span> <span class="ts-keyword">final</span> <span class="ts-type-builtin">int</span> <span class="ts-variable"><span class="ts-constant">MAX_USERS</span></span> <span class="ts-operator">=</span> <span class="ts-number">1000</span>;
+    <span class="ts-keyword">private</span> <span class="ts-keyword">static</span> <span class="ts-keyword">final</span> String <span class="ts-variable"><span class="ts-constant">DEFAULT_ROLE</span></span> <span class="ts-operator">=</span> <span class="ts-string">&quot;USER&quot;</span>;
+
+    <span class="ts-comment">// Instance variables</span>
+    <span class="ts-keyword">private</span> <span class="ts-keyword">final</span> Map<span class="ts-operator">&lt;</span>Long, User<span class="ts-operator">&gt;</span> <span class="ts-variable">users</span>;
+    <span class="ts-keyword">private</span> <span class="ts-keyword">final</span> Set<span class="ts-operator">&lt;</span>String<span class="ts-operator">&gt;</span> <span class="ts-variable">validRoles</span>;
+    <span class="ts-keyword">private</span> <span class="ts-type-builtin">long</span> <span class="ts-variable">nextId</span>;
+
+    <span class="ts-comment">// Static initializer</span>
+    <span class="ts-keyword">static</span> {
+        <span class="ts-variable">System</span>.<span class="ts-variable">out</span>.<span class="ts-function-method-call"><span class="ts-variable">println</span></span>(<span class="ts-string">&quot;UserManager class loaded&quot;</span>);
+    }
+
+    <span class="ts-comment">// Constructor</span>
+    <span class="ts-keyword">public</span> <span class="ts-variable">UserManager</span>() {
+        <span class="ts-variable-builtin">this</span>.<span class="ts-variable">users</span> <span class="ts-operator">=</span> <span class="ts-keyword">new</span> ConcurrentHashMap<span class="ts-operator">&lt;</span><span class="ts-operator">&gt;</span>();
+        <span class="ts-variable-builtin">this</span>.<span class="ts-variable">validRoles</span> <span class="ts-operator">=</span> <span class="ts-variable">Set</span>.<span class="ts-function-method-call"><span class="ts-variable">of</span></span>(<span class="ts-string">&quot;USER&quot;</span>, <span class="ts-string">&quot;ADMIN&quot;</span>, <span class="ts-string">&quot;MODERATOR&quot;</span>);
+        <span class="ts-variable-builtin">this</span>.<span class="ts-variable">nextId</span> <span class="ts-operator">=</span> <span class="ts-number">1L</span>;
+    }
+
+    <span class="ts-comment">/**</span>
+<span class="ts-comment">     * Creates a new user with validation</span>
+<span class="ts-comment">     * @param name The user&#39;s name</span>
+<span class="ts-comment">     * @param email The user&#39;s email</span>
+<span class="ts-comment">     * @param role The user&#39;s role</span>
+<span class="ts-comment">     * @return The created user</span>
+<span class="ts-comment">     * @throws IllegalArgumentException if validation fails</span>
+<span class="ts-comment">     */</span>
+    <span class="ts-keyword">public</span> User <span class="ts-function"><span class="ts-variable">createUser</span></span>(String <span class="ts-variable">name</span>, String <span class="ts-variable">email</span>, String <span class="ts-variable">role</span>)
+            <span class="ts-keyword">throws</span> IllegalArgumentException {
+
+        <span class="ts-comment">// Input validation</span>
+        <span class="ts-variable">Objects</span>.<span class="ts-function-method-call"><span class="ts-variable">requireNonNull</span></span>(<span class="ts-variable">name</span>, <span class="ts-string">&quot;Name cannot be null&quot;</span>);
+        <span class="ts-variable">Objects</span>.<span class="ts-function-method-call"><span class="ts-variable">requireNonNull</span></span>(<span class="ts-variable">email</span>, <span class="ts-string">&quot;Email cannot be null&quot;</span>);
+
+        <span class="ts-keyword">if</span> (<span class="ts-variable">name</span>.<span class="ts-function-method-call"><span class="ts-variable">trim</span></span>().<span class="ts-function-method-call"><span class="ts-variable">isEmpty</span></span>()) {
+            <span class="ts-keyword">throw</span> <span class="ts-keyword">new</span> IllegalArgumentException(<span class="ts-string">&quot;Name cannot be empty&quot;</span>);
+        }
+
+        <span class="ts-keyword">if</span> (<span class="ts-operator">!</span><span class="ts-function-method-call"><span class="ts-variable">isValidEmail</span></span>(<span class="ts-variable">email</span>)) {
+            <span class="ts-keyword">throw</span> <span class="ts-keyword">new</span> IllegalArgumentException(<span class="ts-string">&quot;Invalid email format&quot;</span>);
+        }
+
+        <span class="ts-keyword">if</span> (<span class="ts-variable">role</span> <span class="ts-operator">==</span> <span class="ts-constant-builtin">null</span>) {
+            <span class="ts-variable">role</span> <span class="ts-operator">=</span> <span class="ts-constant"><span class="ts-variable">DEFAULT_ROLE</span></span>;
+        }
+
+        <span class="ts-keyword">if</span> (<span class="ts-operator">!</span><span class="ts-variable">validRoles</span>.<span class="ts-function-method-call"><span class="ts-variable">contains</span></span>(<span class="ts-variable">role</span>.<span class="ts-function-method-call"><span class="ts-variable">toUpperCase</span></span>())) {
+            <span class="ts-keyword">throw</span> <span class="ts-keyword">new</span> IllegalArgumentException(<span class="ts-string">&quot;Invalid role: &quot;</span> <span class="ts-operator">+</span> <span class="ts-variable">role</span>);
+        }
+
+        <span class="ts-comment">// Check user limit</span>
+        <span class="ts-keyword">if</span> (<span class="ts-variable">users</span>.<span class="ts-function-method-call"><span class="ts-variable">size</span></span>() <span class="ts-operator">&gt;=</span> <span class="ts-constant"><span class="ts-variable">MAX_USERS</span></span>) {
+            <span class="ts-keyword">throw</span> <span class="ts-keyword">new</span> IllegalStateException(<span class="ts-string">&quot;Maximum user limit reached&quot;</span>);
+        }
+
+        <span class="ts-comment">// Create and store user</span>
+        User <span class="ts-variable">user</span> <span class="ts-operator">=</span> <span class="ts-keyword">new</span> User(<span class="ts-variable">nextId</span><span class="ts-operator">++</span>, <span class="ts-variable">name</span>.<span class="ts-function-method-call"><span class="ts-variable">trim</span></span>(), <span class="ts-variable">email</span>.<span class="ts-function-method-call"><span class="ts-variable">toLowerCase</span></span>(),
+                           <span class="ts-variable">role</span>.<span class="ts-function-method-call"><span class="ts-variable">toUpperCase</span></span>(), <span class="ts-variable">LocalDateTime</span>.<span class="ts-function-method-call"><span class="ts-variable">now</span></span>());
+        <span class="ts-variable">users</span>.<span class="ts-function-method-call"><span class="ts-variable">put</span></span>(<span class="ts-variable">user</span>.<span class="ts-function-method-call"><span class="ts-variable">getId</span></span>(), <span class="ts-variable">user</span>);
+
+        <span class="ts-keyword">return</span> <span class="ts-variable">user</span>;
+    }
+
+    <span class="ts-comment">/**</span>
+<span class="ts-comment">     * Finds users matching the given predicate</span>
+<span class="ts-comment">     */</span>
+    <span class="ts-keyword">public</span> List<span class="ts-operator">&lt;</span>User<span class="ts-operator">&gt;</span> <span class="ts-function"><span class="ts-variable">findUsers</span></span>(Predicate<span class="ts-operator">&lt;</span>User<span class="ts-operator">&gt;</span> <span class="ts-variable">predicate</span>) {
+        <span class="ts-keyword">return</span> <span class="ts-variable">users</span>.<span class="ts-function-method-call"><span class="ts-variable">values</span></span>()
+                   .<span class="ts-function-method-call"><span class="ts-variable">stream</span></span>()
+                   .<span class="ts-function-method-call"><span class="ts-variable">filter</span></span>(<span class="ts-variable">predicate</span>)
+                   .<span class="ts-function-method-call"><span class="ts-variable">sorted</span></span>(<span class="ts-variable">Comparator</span>.<span class="ts-function-method-call"><span class="ts-variable">comparing</span></span>(<span class="ts-variable">User</span><span class="ts-operator">::</span><span class="ts-variable">getName</span>))
+                   .<span class="ts-function-method-call"><span class="ts-variable">collect</span></span>(<span class="ts-variable">Collectors</span>.<span class="ts-function-method-call"><span class="ts-variable">toList</span></span>());
+    }
+
+    <span class="ts-comment">// Method overloading</span>
+    <span class="ts-keyword">public</span> Optional<span class="ts-operator">&lt;</span>User<span class="ts-operator">&gt;</span> <span class="ts-function"><span class="ts-variable">getUser</span></span>(Long <span class="ts-variable">id</span>) {
+        <span class="ts-keyword">return</span> <span class="ts-variable">Optional</span>.<span class="ts-function-method-call"><span class="ts-variable">ofNullable</span></span>(<span class="ts-variable">users</span>.<span class="ts-function-method-call"><span class="ts-variable">get</span></span>(<span class="ts-variable">id</span>));
+    }
+
+    <span class="ts-keyword">public</span> Optional<span class="ts-operator">&lt;</span>User<span class="ts-operator">&gt;</span> <span class="ts-function"><span class="ts-variable">getUser</span></span>(String <span class="ts-variable">email</span>) {
+        <span class="ts-keyword">return</span> <span class="ts-variable">users</span>.<span class="ts-function-method-call"><span class="ts-variable">values</span></span>()
+                   .<span class="ts-function-method-call"><span class="ts-variable">stream</span></span>()
+                   .<span class="ts-function-method-call"><span class="ts-variable">filter</span></span>(<span class="ts-variable">user</span> <span class="ts-operator">-&gt;</span> <span class="ts-variable">user</span>.<span class="ts-function-method-call"><span class="ts-variable">getEmail</span></span>().<span class="ts-function-method-call"><span class="ts-variable">equals</span></span>(<span class="ts-variable">email</span>.<span class="ts-function-method-call"><span class="ts-variable">toLowerCase</span></span>()))
+                   .<span class="ts-function-method-call"><span class="ts-variable">findFirst</span></span>();
+    }
+
+    <span class="ts-comment">/**</span>
+<span class="ts-comment">     * Updates user information asynchronously</span>
+<span class="ts-comment">     */</span>
+    <span class="ts-keyword">public</span> CompletableFuture<span class="ts-operator">&lt;</span>Boolean<span class="ts-operator">&gt;</span> <span class="ts-function"><span class="ts-variable">updateUserAsync</span></span>(Long <span class="ts-variable">id</span>, String <span class="ts-variable">newName</span>, String <span class="ts-variable">newEmail</span>) {
+        <span class="ts-keyword">return</span> <span class="ts-variable">CompletableFuture</span>.<span class="ts-function-method-call"><span class="ts-variable">supplyAsync</span></span>(() <span class="ts-operator">-&gt;</span> {
+            User <span class="ts-variable">user</span> <span class="ts-operator">=</span> <span class="ts-variable">users</span>.<span class="ts-function-method-call"><span class="ts-variable">get</span></span>(<span class="ts-variable">id</span>);
+            <span class="ts-keyword">if</span> (<span class="ts-variable">user</span> <span class="ts-operator">==</span> <span class="ts-constant-builtin">null</span>) {
+                <span class="ts-keyword">return</span> <span class="ts-boolean">false</span>;
+            }
+
+            <span class="ts-comment">// Create updated user (immutable pattern)</span>
+            User <span class="ts-variable">updatedUser</span> <span class="ts-operator">=</span> <span class="ts-keyword">new</span> User(
+                <span class="ts-variable">user</span>.<span class="ts-function-method-call"><span class="ts-variable">getId</span></span>(),
+                <span class="ts-variable">newName</span> <span class="ts-operator">!=</span> <span class="ts-constant-builtin">null</span> <span class="ts-keyword">?</span> <span class="ts-variable">newName</span>.<span class="ts-function-method-call"><span class="ts-variable">trim</span></span>() <span class="ts-keyword"><span class="ts-operator">:</span></span> <span class="ts-variable">user</span>.<span class="ts-function-method-call"><span class="ts-variable">getName</span></span>(),
+                <span class="ts-variable">newEmail</span> <span class="ts-operator">!=</span> <span class="ts-constant-builtin">null</span> <span class="ts-keyword">?</span> <span class="ts-variable">newEmail</span>.<span class="ts-function-method-call"><span class="ts-variable">toLowerCase</span></span>() <span class="ts-keyword"><span class="ts-operator">:</span></span> <span class="ts-variable">user</span>.<span class="ts-function-method-call"><span class="ts-variable">getEmail</span></span>(),
+                <span class="ts-variable">user</span>.<span class="ts-function-method-call"><span class="ts-variable">getRole</span></span>(),
+                <span class="ts-variable">user</span>.<span class="ts-function-method-call"><span class="ts-variable">getCreatedAt</span></span>()
+            );
+
+            <span class="ts-variable">users</span>.<span class="ts-function-method-call"><span class="ts-variable">put</span></span>(<span class="ts-variable">id</span>, <span class="ts-variable">updatedUser</span>);
+            <span class="ts-keyword">return</span> <span class="ts-boolean">true</span>;
+        });
+    }
+
+    <span class="ts-comment">// Anonymous class example</span>
+    <span class="ts-keyword">public</span> <span class="ts-type-builtin">void</span> <span class="ts-function"><span class="ts-variable">processUsers</span></span>() {
+        Runnable <span class="ts-variable">processor</span> <span class="ts-operator">=</span> <span class="ts-keyword">new</span> Runnable() {
+            @<span class="ts-variable">Override</span>
+            <span class="ts-keyword">public</span> <span class="ts-type-builtin">void</span> <span class="ts-function"><span class="ts-variable">run</span></span>() {
+                <span class="ts-variable">System</span>.<span class="ts-variable">out</span>.<span class="ts-function-method-call"><span class="ts-variable">println</span></span>(<span class="ts-string">&quot;Processing &quot;</span> <span class="ts-operator">+</span> <span class="ts-variable">users</span>.<span class="ts-function-method-call"><span class="ts-variable">size</span></span>() <span class="ts-operator">+</span> <span class="ts-string">&quot; users&quot;</span>);
+                <span class="ts-variable">users</span>.<span class="ts-function-method-call"><span class="ts-variable">values</span></span>().<span class="ts-function-method-call"><span class="ts-variable">forEach</span></span>(<span class="ts-variable">user</span> <span class="ts-operator">-&gt;</span> {
+                    <span class="ts-variable">System</span>.<span class="ts-variable">out</span>.<span class="ts-function-method-call"><span class="ts-variable">printf</span></span>(<span class="ts-string">&quot;User: %s (%s) - %s%n&quot;</span>,
+                                    <span class="ts-variable">user</span>.<span class="ts-function-method-call"><span class="ts-variable">getName</span></span>(), <span class="ts-variable">user</span>.<span class="ts-function-method-call"><span class="ts-variable">getEmail</span></span>(), <span class="ts-variable">user</span>.<span class="ts-function-method-call"><span class="ts-variable">getRole</span></span>());
+                });
+            }
+        };
+
+        <span class="ts-variable">processor</span>.<span class="ts-function-method-call"><span class="ts-variable">run</span></span>();
+    }
+
+    <span class="ts-comment">// Lambda expressions and method references</span>
+    <span class="ts-keyword">public</span> Map<span class="ts-operator">&lt;</span>String, Long<span class="ts-operator">&gt;</span> <span class="ts-function"><span class="ts-variable">getRoleStatistics</span></span>() {
+        <span class="ts-keyword">return</span> <span class="ts-variable">users</span>.<span class="ts-function-method-call"><span class="ts-variable">values</span></span>()
+                   .<span class="ts-function-method-call"><span class="ts-variable">stream</span></span>()
+                   .<span class="ts-function-method-call"><span class="ts-variable">collect</span></span>(<span class="ts-variable">Collectors</span>.<span class="ts-function-method-call"><span class="ts-variable">groupingBy</span></span>(
+                       <span class="ts-variable">User</span><span class="ts-operator">::</span><span class="ts-variable">getRole</span>,
+                       <span class="ts-variable">Collectors</span>.<span class="ts-function-method-call"><span class="ts-variable">counting</span></span>()
+                   ));
+    }
+
+    <span class="ts-keyword">private</span> <span class="ts-type-builtin">boolean</span> <span class="ts-function"><span class="ts-variable">isValidEmail</span></span>(String <span class="ts-variable">email</span>) {
+        <span class="ts-keyword">return</span> <span class="ts-variable">email</span> <span class="ts-operator">!=</span> <span class="ts-constant-builtin">null</span> <span class="ts-operator">&amp;&amp;</span>
+               <span class="ts-variable">email</span>.<span class="ts-function-method-call"><span class="ts-variable">matches</span></span>(<span class="ts-string">&quot;^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+<span class="ts-string">\\</span>.[A-Za-z]{2,}$&quot;</span>);
+    }
+
+    <span class="ts-comment">// Nested static class</span>
+    <span class="ts-keyword">public</span> <span class="ts-keyword">static</span> <span class="ts-keyword">class</span> <span class="ts-variable">User</span> {
+        <span class="ts-keyword">private</span> <span class="ts-keyword">final</span> Long <span class="ts-variable">id</span>;
+        <span class="ts-keyword">private</span> <span class="ts-keyword">final</span> String <span class="ts-variable">name</span>;
+        <span class="ts-keyword">private</span> <span class="ts-keyword">final</span> String <span class="ts-variable">email</span>;
+        <span class="ts-keyword">private</span> <span class="ts-keyword">final</span> String <span class="ts-variable">role</span>;
+        <span class="ts-keyword">private</span> <span class="ts-keyword">final</span> LocalDateTime <span class="ts-variable">createdAt</span>;
+
+        <span class="ts-keyword">public</span> <span class="ts-variable">User</span>(Long <span class="ts-variable">id</span>, String <span class="ts-variable">name</span>, String <span class="ts-variable">email</span>, String <span class="ts-variable">role</span>, LocalDateTime <span class="ts-variable">createdAt</span>) {
+            <span class="ts-variable-builtin">this</span>.<span class="ts-variable">id</span> <span class="ts-operator">=</span> <span class="ts-variable">id</span>;
+            <span class="ts-variable-builtin">this</span>.<span class="ts-variable">name</span> <span class="ts-operator">=</span> <span class="ts-variable">name</span>;
+            <span class="ts-variable-builtin">this</span>.<span class="ts-variable">email</span> <span class="ts-operator">=</span> <span class="ts-variable">email</span>;
+            <span class="ts-variable-builtin">this</span>.<span class="ts-variable">role</span> <span class="ts-operator">=</span> <span class="ts-variable">role</span>;
+            <span class="ts-variable-builtin">this</span>.<span class="ts-variable">createdAt</span> <span class="ts-operator">=</span> <span class="ts-variable">createdAt</span>;
+        }
+
+        <span class="ts-comment">// Getters</span>
+        <span class="ts-keyword">public</span> Long <span class="ts-function"><span class="ts-variable">getId</span></span>() { <span class="ts-keyword">return</span> <span class="ts-variable">id</span>; }
+        <span class="ts-keyword">public</span> String <span class="ts-function"><span class="ts-variable">getName</span></span>() { <span class="ts-keyword">return</span> <span class="ts-variable">name</span>; }
+        <span class="ts-keyword">public</span> String <span class="ts-function"><span class="ts-variable">getEmail</span></span>() { <span class="ts-keyword">return</span> <span class="ts-variable">email</span>; }
+        <span class="ts-keyword">public</span> String <span class="ts-function"><span class="ts-variable">getRole</span></span>() { <span class="ts-keyword">return</span> <span class="ts-variable">role</span>; }
+        <span class="ts-keyword">public</span> LocalDateTime <span class="ts-function"><span class="ts-variable">getCreatedAt</span></span>() { <span class="ts-keyword">return</span> <span class="ts-variable">createdAt</span>; }
+
+        @<span class="ts-variable">Override</span>
+        <span class="ts-keyword">public</span> <span class="ts-type-builtin">boolean</span> <span class="ts-function"><span class="ts-variable">equals</span></span>(Object <span class="ts-variable">obj</span>) {
+            <span class="ts-keyword">if</span> (<span class="ts-variable-builtin">this</span> <span class="ts-operator">==</span> <span class="ts-variable">obj</span>) <span class="ts-keyword">return</span> <span class="ts-boolean">true</span>;
+            <span class="ts-keyword">if</span> (<span class="ts-variable">obj</span> <span class="ts-operator">==</span> <span class="ts-constant-builtin">null</span> <span class="ts-operator">||</span> <span class="ts-function-method-call"><span class="ts-variable">getClass</span></span>() <span class="ts-operator">!=</span> <span class="ts-variable">obj</span>.<span class="ts-function-method-call"><span class="ts-variable">getClass</span></span>()) <span class="ts-keyword">return</span> <span class="ts-boolean">false</span>;
+            User <span class="ts-variable">user</span> <span class="ts-operator">=</span> (User) <span class="ts-variable">obj</span>;
+            <span class="ts-keyword">return</span> <span class="ts-variable">Objects</span>.<span class="ts-function-method-call"><span class="ts-variable">equals</span></span>(<span class="ts-variable">id</span>, <span class="ts-variable">user</span>.<span class="ts-variable">id</span>);
+        }
+
+        @<span class="ts-variable">Override</span>
+        <span class="ts-keyword">public</span> <span class="ts-type-builtin">int</span> <span class="ts-function"><span class="ts-variable">hashCode</span></span>() {
+            <span class="ts-keyword">return</span> <span class="ts-variable">Objects</span>.<span class="ts-function-method-call"><span class="ts-variable">hash</span></span>(<span class="ts-variable">id</span>);
+        }
+
+        @<span class="ts-variable">Override</span>
+        <span class="ts-keyword">public</span> String <span class="ts-function"><span class="ts-variable">toString</span></span>() {
+            <span class="ts-keyword">return</span> <span class="ts-variable">String</span>.<span class="ts-function-method-call"><span class="ts-variable">format</span></span>(<span class="ts-string">&quot;User{id=%d, name=&#39;%s&#39;, email=&#39;%s&#39;, role=&#39;%s&#39;}&quot;</span>,
+                               <span class="ts-variable">id</span>, <span class="ts-variable">name</span>, <span class="ts-variable">email</span>, <span class="ts-variable">role</span>);
+        }
+    }
+
+    <span class="ts-comment">// Enum example</span>
+    <span class="ts-keyword">public</span> <span class="ts-keyword">enum</span> <span class="ts-variable">UserStatus</span> {
+        <span class="ts-constant"><span class="ts-variable">ACTIVE</span></span>(<span class="ts-string">&quot;Active&quot;</span>),
+        <span class="ts-constant"><span class="ts-variable">INACTIVE</span></span>(<span class="ts-string">&quot;Inactive&quot;</span>),
+        <span class="ts-constant"><span class="ts-variable">SUSPENDED</span></span>(<span class="ts-string">&quot;Suspended&quot;</span>),
+        <span class="ts-constant"><span class="ts-variable">PENDING</span></span>(<span class="ts-string">&quot;Pending Verification&quot;</span>);
+
+        <span class="ts-keyword">private</span> <span class="ts-keyword">final</span> String <span class="ts-variable">description</span>;
+
+        <span class="ts-variable">UserStatus</span>(String <span class="ts-variable">description</span>) {
+            <span class="ts-variable-builtin">this</span>.<span class="ts-variable">description</span> <span class="ts-operator">=</span> <span class="ts-variable">description</span>;
+        }
+
+        <span class="ts-keyword">public</span> String <span class="ts-function"><span class="ts-variable">getDescription</span></span>() {
+            <span class="ts-keyword">return</span> <span class="ts-variable">description</span>;
+        }
+    }
+
+    <span class="ts-comment">// Main method for testing</span>
+    <span class="ts-keyword">public</span> <span class="ts-keyword">static</span> <span class="ts-type-builtin">void</span> <span class="ts-function"><span class="ts-variable">main</span></span>(String[] <span class="ts-variable">args</span>) {
+        UserManager <span class="ts-variable">manager</span> <span class="ts-operator">=</span> <span class="ts-keyword">new</span> UserManager();
+
+        <span class="ts-keyword">try</span> {
+            <span class="ts-comment">// Create some test users</span>
+            User <span class="ts-variable">alice</span> <span class="ts-operator">=</span> <span class="ts-variable">manager</span>.<span class="ts-function-method-call"><span class="ts-variable">createUser</span></span>(<span class="ts-string">&quot;Alice Johnson&quot;</span>, <span class="ts-string">&quot;alice@example.com&quot;</span>, <span class="ts-string">&quot;ADMIN&quot;</span>);
+            User <span class="ts-variable">bob</span> <span class="ts-operator">=</span> <span class="ts-variable">manager</span>.<span class="ts-function-method-call"><span class="ts-variable">createUser</span></span>(<span class="ts-string">&quot;Bob Smith&quot;</span>, <span class="ts-string">&quot;bob@test.com&quot;</span>, <span class="ts-constant-builtin">null</span>);
+            User <span class="ts-variable">carol</span> <span class="ts-operator">=</span> <span class="ts-variable">manager</span>.<span class="ts-function-method-call"><span class="ts-variable">createUser</span></span>(<span class="ts-string">&quot;Carol Davis&quot;</span>, <span class="ts-string">&quot;carol@company.org&quot;</span>, <span class="ts-string">&quot;MODERATOR&quot;</span>);
+
+            <span class="ts-variable">System</span>.<span class="ts-variable">out</span>.<span class="ts-function-method-call"><span class="ts-variable">println</span></span>(<span class="ts-string">&quot;Created users:&quot;</span>);
+            <span class="ts-variable">manager</span>.<span class="ts-function-method-call"><span class="ts-variable">processUsers</span></span>();
+
+            <span class="ts-comment">// Find admin users</span>
+            List<span class="ts-operator">&lt;</span>User<span class="ts-operator">&gt;</span> <span class="ts-variable">admins</span> <span class="ts-operator">=</span> <span class="ts-variable">manager</span>.<span class="ts-function-method-call"><span class="ts-variable">findUsers</span></span>(<span class="ts-variable">user</span> <span class="ts-operator">-&gt;</span> <span class="ts-string">&quot;ADMIN&quot;</span>.<span class="ts-function-method-call"><span class="ts-variable">equals</span></span>(<span class="ts-variable">user</span>.<span class="ts-function-method-call"><span class="ts-variable">getRole</span></span>()));
+            <span class="ts-variable">System</span>.<span class="ts-variable">out</span>.<span class="ts-function-method-call"><span class="ts-variable">println</span></span>(<span class="ts-string">&quot;<span class="ts-string">\n</span>Admin users: &quot;</span> <span class="ts-operator">+</span> <span class="ts-variable">admins</span>);
+
+            <span class="ts-comment">// Get role statistics</span>
+            Map<span class="ts-operator">&lt;</span>String, Long<span class="ts-operator">&gt;</span> <span class="ts-variable">stats</span> <span class="ts-operator">=</span> <span class="ts-variable">manager</span>.<span class="ts-function-method-call"><span class="ts-variable">getRoleStatistics</span></span>();
+            <span class="ts-variable">System</span>.<span class="ts-variable">out</span>.<span class="ts-function-method-call"><span class="ts-variable">println</span></span>(<span class="ts-string">&quot;<span class="ts-string">\n</span>Role statistics: &quot;</span> <span class="ts-operator">+</span> <span class="ts-variable">stats</span>);
+
+        } <span class="ts-keyword">catch</span> (Exception <span class="ts-variable">e</span>) {
+            <span class="ts-variable">System</span>.<span class="ts-variable">err</span>.<span class="ts-function-method-call"><span class="ts-variable">println</span></span>(<span class="ts-string">&quot;Error: &quot;</span> <span class="ts-operator">+</span> <span class="ts-variable">e</span>.<span class="ts-function-method-call"><span class="ts-variable">getMessage</span></span>());
+        }
+    }
+}
