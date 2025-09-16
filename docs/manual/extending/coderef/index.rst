@@ -442,6 +442,7 @@ TreeSitter Support
    reviewboard.treesitter.debug
    reviewboard.treesitter.language
    reviewboard.treesitter.lua_patterns
+   reviewboard.treesitter.predicates
    reviewboard.treesitter.query_utils
 
 
