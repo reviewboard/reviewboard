@@ -139,11 +139,13 @@
  * Pygments: Comment.Multiline
  * Pygments: Comment.Single
  * CodeMirror: Comment
+ * Tree sitter: comment
  */
 .c, .com,
 .cm,
 .c1,
-.cm-s-rb .cm-comment {
+.cm-s-rb .cm-comment,
+.ts-comment {
   color:
     var(--if-light, #0000C0)
     var(--if-dark, #05f3f2);
@@ -165,9 +167,11 @@
 /*
  * Pygments: Operator
  * CodeMirror: Operator
+ * Tree sitter: operator
  */
 .o,
-.cm-s-rb .cm-operator {
+.cm-s-rb .cm-operator,
+.ts-operator {
   color: inherit;
 }
 
@@ -240,8 +244,14 @@
   font-weight: bold;
 }
 
-/* Pygments: Generic.Traceback */
-.gt {
+/*
+ * Pygments: Generic.Traceback
+ * Tree sitter: function.call
+ * Tree sitter: function.method.call
+ */
+.gt,
+.ts-function-call,
+.ts-function-method-call {
   color:
     var(--if-light, #0040D0)
     var(--if-dark, #aeccfe);
@@ -256,6 +266,9 @@
  * CodeMirror: Atom
  * CodeMirror: Keyword (var, function)
  * CodeMirror: Property on an object
+ * Tree sitter: constructor
+ * Tree sitter: keyword
+ * Tree sitter: keyword-import
  */
 .k,
 .kc,
@@ -263,7 +276,10 @@
 .kn,
 .cm-s-rb .cm-atom,
 .cm-s-rb .cm-keyword,
-.cm-s-rb .cm-property {
+.cm-s-rb .cm-property,
+.ts-constructor,
+.ts-keyword,
+.ts-keyword-import {
   color:
     var(--if-light, #770088)
     var(--if-dark, #f0bbf8);
@@ -297,6 +313,9 @@
  * Pygments: Literal.Number.Oct
  * CodeMirror: Number
  * CodeMirror: Variable 2 (self, this, etc.)
+ * Tree sitter: boolean
+ * Tree sitter: number
+ * Tree sitter: variable.builtin
  */
 .bp,
 .m,
@@ -306,7 +325,10 @@
 .il,
 .mo,
 .cm-s-rb .cm-number,
-.cm-s-rb .cm-variable-2 {
+.cm-s-rb .cm-variable-2,
+.ts-boolean,
+.ts-number,
+.ts-variable-builtin {
   color:
     var(--if-light, darkred)
     var(--if-dark, #fe9c9c);
@@ -319,21 +341,25 @@
  * CodeMirror: Type
  * CodeMirror: Variable (case constants, ...)
  * CodeMirror: Variable 3 (CSS pseudo-elements, ...)
+ * Tree sitter: constant
  */
 .no,
 .nx,
 .cm-s-rb .cm-type,
 .cm-s-rb .cm-variable,
-.cm-s-rb .cm-variable-3 {
+.cm-s-rb .cm-variable-3,
+.ts-constant {
   color: inherit;
 }
 
 /*
  * Pygments: Name.Attribute
  * CodeMirror: Attribute
+ * Tree sitter: tag.attribute
  */
 .na,
-.cm-s-rb .cm-attribute {
+.cm-s-rb .cm-attribute,
+.ts-tag-attribute {
   color:
     var(--if-light, #000080)
     var(--if-dark, #cfcfff);
@@ -342,9 +368,17 @@
 /*
  * Pygments: Name.Builtin
  * CodeMirror: Builtin Keyword
+ * Tree sitter: attribute.builtin
+ * Tree sitter: constant.builtin
+ * Tree sitter: function.builtin
+ * Tree sitter: type.builtin
  */
 .nb,
-.cm-s-rb .cm-builtin {
+.cm-s-rb .cm-builtin,
+.ts-attribute-builtin,
+.ts-constant-builtin,
+.ts-function-builtin,
+.ts-type-builtin {
   color: inherit;
   font-weight: bold;
 }
@@ -378,9 +412,13 @@
   font-weight: bold;
 }
 
-/* Pygments: Name.Function */
+/*
+ * Pygments: Name.Function
+ * Tree sitter: function
+ */
 .nf,
-.cm-s-rb .cm-def {
+.cm-s-rb .cm-def,
+.ts-function {
   color: inherit;
 }
 
@@ -389,26 +427,42 @@
   color: inherit;
 }
 
-/* Pygments: Name.Namespace */
-.nn {
+/*
+ * Pygments: Name.Namespace
+ * Tree sitter: module
+ */
+.nn,
+.ts-module {
   color: inherit;
+  font-weight: normal;
 }
 
 /*
  * Pygments: Name.Tag
  * CodeMirror: Tag
+ * Tree sitter: tag
  */
 .nt,
-.cm-s-rb .cm-tag {
+.cm-s-rb .cm-tag,
+.ts-tag {
   color:
     var(--if-light, #000080)
     var(--if-dark, #a3a3f8);
   font-weight: bold;
 }
 
-/* Pygments: Name.Variable */
-.nv {
+/*
+ * Pygments: Name.Variable
+ * Tree sitter: variable
+ * Tree sitter: variable-member
+ * Tree sitter: variable-parameter
+ */
+.nv,
+.ts-variable,
+.ts-variable-member,
+.ts-variable-parameter {
   color: inherit;
+  font-weight: normal;
 }
 
 /* Pygments: Operator.Word */
@@ -426,6 +480,7 @@
  * Pygments: Literal.String.Heredoc
  * CodeMirror: String
  * CodeMirror: String 2
+ * Tree sitter: string
  */
 .s,
 .s1,
@@ -435,7 +490,8 @@
 .sd,
 .sh,
 .cm-s-rb .cm-string,
-.cm-s-rb .cm-string-2 {
+.cm-s-rb .cm-string-2,
+.ts-string {
   color:
     var(--if-light, #BB4444)
     var(--if-dark, #ffc1a6);
@@ -467,9 +523,11 @@
 /*
  * Pygments: Literal.String.Regex
  * CodeMirror: Meta
+ * Tree sitter: string.regexp
  */
 .sr,
-.cm-s-rb .cm-meta {
+.cm-s-rb .cm-meta,
+.ts-string-regexp {
   color:
     var(--if-light, #bb6688)
     var(--if-dark, #feb9d5);
