@@ -22,7 +22,7 @@ Example
 
 
     class SampleExtension(Extension):
-        def initialize(self):
+        def initialize(self) -> None:
             urlpatterns = [
                 path('sample_extension/', include('sample_extension.urls')),
             ]

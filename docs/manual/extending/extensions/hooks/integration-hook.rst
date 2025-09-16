@@ -29,6 +29,7 @@ Example
 
     import json
     import logging
+    from typing import TYPE_CHECKING
     from urllib.request import Request, urlopen
 
     from django import forms
@@ -38,6 +39,13 @@ Example
     from reviewboard.integrations.base import Integration
     from reviewboard.integrations.forms import IntegrationConfigForm
     from reviewboard.reviews.conditions import ReviewRequestConditionChoices
+
+    if TYPE_CHECKING:
+        from collections.abc import Mapping
+
+        from django.contrib.auth.models import User
+        from reviewboard.changedescs.models import ChangeDescription
+        from reviewboard.reviews.models import ReviewRequest
 
 
     class SampleIntegrationConfigForm(IntegrationConfigForm):
@@ -59,7 +67,7 @@ Example
         config_form_cls = SampleIntegrationConfigForm
 
         @cached_property
-        def icon_static_urls(self):
+        def icon_static_urls(self) -> Mapping[str, str]:
             extension = SampleExtension.instance
 
             return {
@@ -67,12 +75,17 @@ Example
                 '2x': extension.get_static_url('images/icon@2x.png'),
             }
 
-        def initialize(self):
+        def initialize(self) -> None:
             SignalHook(self, review_request_published,
                        self._on_review_request_published)
 
-        def _on_review_request_published(self, user, review_request,
-                                         changedesc, **kwargs):
+        def _on_review_request_published(
+            self,
+            user: User,
+            review_request: ReviewRequest,
+            changedesc: ChangeDescription,
+            **kwargs,
+        ) -> None:
             for config in self.get_configs(review_request.local_site):
                 if not config.match_conditions(form_cls=self.config_form_cls,
                                                review_request=review_request):
@@ -88,5 +101,5 @@ Example
 
 
     class SampleExtension(Extension):
-        def initialize(self):
+        def initialize(self) -> None:
             IntegrationHook(self, SampleIntegration)

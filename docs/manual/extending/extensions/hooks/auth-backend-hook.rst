@@ -21,22 +21,37 @@ Example
 
 .. code-block:: python
 
+    from typing import TYPE_CHECKING
+
+    from django.contrib.auth.models import User
     from reviewboard.accounts.backends import AuthBackend
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import AuthBackendHook
+
+    if TYPE_CHECKING:
+        from django.http import HttpRequest
 
 
     class SampleAuthBackend(AuthBackend):
         backend_id = 'myvendor_sample_auth'
         name = 'Sample Authentication'
 
-        def authenticate(self, username, password):
+        def authenticate(
+            self,
+            username: str,
+            password: str,
+        ) -> User | None:
             if username == 'superuser' and password == 's3cr3t':
                 return self.get_or_create_user(username, password=password)
 
             return None
 
-        def get_or_create_user(self, username, request=None, password=None):
+        def get_or_create_user(
+            self,
+            username: str,
+            request: (HttpRequest | None) = None,
+            password: (str | None) = None,
+        ) -> User:
             user, is_new = User.objects.get_or_create(username=username)
 
             if is_new:
@@ -47,5 +62,5 @@ Example
 
 
     class SampleExtension(Extension):
-        def initialize(self):
+        def initialize(self) -> None:
             AuthBackendHook(self, SampleAuthBackend)

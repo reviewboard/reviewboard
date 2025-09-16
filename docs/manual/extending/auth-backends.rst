@@ -308,14 +308,14 @@ For example::
             self.fields['auth_myauth_list'].initial = \
                 ','.join(self.siteconfig.get('auth_myauth_list'))
 
-            super(MySettingsForm, self).load()
+            super().load()
 
         def save(self):
             self.siteconfig.set(
                 'auth_myauth_list',
                 re.split(r',\*', self.cleaned_data['auth_myauth_list']))
 
-            super(MySettingsForm, self).save()
+            super().save()
 
 
 Disabling Fields
@@ -341,7 +341,7 @@ For example::
                 'You must do a handstand before you can enable this ' \
                 'authentication backend.'
 
-        super(MySettingsForm, self).load()
+        super().load()
 
 
 

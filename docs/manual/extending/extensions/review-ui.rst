@@ -1,7 +1,8 @@
 .. _extension-review-ui-integration:
 
-Review UI Integration
-=====================
+==========================================
+Adding UIs for New File Types (Review UIs)
+==========================================
 
 Review UIs are used in reviewing file attachments of particular mimetypes. For
 example, an Image Review UI is used to render image files and allow comments to
@@ -22,7 +23,7 @@ extensions.
 .. _extension-subclassing-review-ui-hook:
 
 Subclassing ReviewUIHook
-------------------------
+========================
 
 :file:`extension.py` must use a Review UI Hook to register its list of Review
 UIs.  This can be using :py:class:`reviewboard.extensions.hooks.ReviewUIHook`
@@ -64,7 +65,7 @@ Example: **XMLReviewUIExtension**:
 .. _extension-review-ui-class:
 
 ReviewUI Class
---------------
+==============
 
 Each Review UI must be defined by its own ReviewUI class that subclasses
 :py:class:`reviewboard.reviews.ui.base.ReviewUI`. It must also
@@ -121,7 +122,7 @@ Example: **XMLReviewUI**:
         js_view_class = 'MyVendor.XMLReviewableView'
 
         def __init__(self, review_request, obj):
-            super(XMLReviewUI, self).__init__(review_request, obj)
+            super().__init__(review_request, obj)
 
             from xmlreview.reviewui import XMLReviewUIExtension
             self.extension = XMLReviewUIExtension.instance
@@ -146,7 +147,7 @@ For example:
 .. code-block:: python
 
     def get_js_model_data(self):
-        data = super(XMLReviewUI, self).get_js_model_data()
+        data = super().get_js_model_data()
 
         data_string = ""
 
@@ -172,7 +173,7 @@ There are a number of functions you may want to override, all documented in
 
 
 ReviewUI JavaScript
--------------------
+===================
 
 Here are the corresponding JavaScript used in the above extension.
 
@@ -185,7 +186,7 @@ Here are the corresponding JavaScript used in the above extension.
      */
     MyVendor.XMLReviewable = RB.FileAttachmentReviewable.extend({
         defaults: _.defaults({
-            xmlContent: ''
+            xmlContent: '',
         }, RB.FileAttachmentReviewable.prototype.defaults)
     });
 
@@ -203,16 +204,16 @@ Here are the corresponding JavaScript used in the above extension.
         /*
          * Renders the view.
          */
-        renderContent: function() {
+        renderContent() {
             this.$el.html(this.model.get('xmlContent'));
 
             return this;
-        }
+        },
     });
 
 
 File Attachment Thumbnails
---------------------------
+==========================
 
 Most extensions that add Review UIs will also want to render custom thumbnails
 for the attachments on the review request page. See

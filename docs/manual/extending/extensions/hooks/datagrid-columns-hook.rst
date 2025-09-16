@@ -31,25 +31,35 @@ Example
 
 .. code-block:: python
 
+    from typing import TYPE_CHECKING
+
     from django.utils.html import escape
+    from django.utils.safestring import mark_safe
     from djblets.datagrid.grids import Column
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import DataGridColumnsHook
     from reviewboard.datagrids.grids import UsersDataGrid
 
+    if TYPE_CHECKING:
+        from django.contrib.auth.models import User
+        from django.utils.safestring import SafeString
+
 
     class TeamColumn(Column):
-        def render_data(self, user):
+        def render_data(
+            self,
+            user: User,
+        ) -> SafeString:
             profile = user.get_profile()
 
             if 'myvendor_team' in profile.extra_data:
                 return escape(profile.extra_data['myvendor_team'])
 
-            return ''
+            return mark_safe('')
 
 
     class SampleExtension(Extension):
-        def initialize(self):
+        def initialize(self) -> None:
             DataGridColumnsHook(self, UsersDataGrid, [
                 TeamColumn(id='myvendor_teams',
                            label='Team'),

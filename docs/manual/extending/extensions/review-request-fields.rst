@@ -17,14 +17,12 @@ Creating new review request fields involves a few steps:
   :py:class:`~reviewboard.reviews.fields.BaseReviewRequestField`. There are
   several different superclass types available which provide different types
   of fields.
-* Optionally, creating a JavaScript subclass of
-  :js:class:`RB.ReviewRequestFields.BaseFieldView`.
-* Use :ref:`review-request-fields-hook` and
-  :ref:`review-request-fieldsets-hook` in your extension initialization.
+* Using :ref:`review-request-fields-hook` and
+  :ref:`review-request-fieldsets-hook` to register the fields.
 
 
-Creating a Field Subclass
-=========================
+Built-in Field Types
+====================
 
 Each field is first defined in Python using a subclass of
 :py:class:`~reviewboard.reviews.fields.BaseReviewRequestField`. There are
@@ -59,17 +57,24 @@ on the type, there may be additional attributes which can be overridden to
 manipulate the behavior.
 
 
-Examples
---------
+Example
+-------
 
 .. code-block:: python
 
-    from reviewboard.reviews.fields import (BaseCommaEditableField,
-                                            BaseCheckboxField,
-                                            BaseDateField,
-                                            BaseDropdownField,
-                                            BaseEditableField,
-                                            BaseTextAreaField)
+    from reviewboard.extensions.base import Extension
+    from reviewboard.extensions.hooks import (
+        ReviewRequestFieldsHook,
+        ReviewRequestFieldSetsHook,
+    )
+    from reviewboard.reviews.fields import (
+        BaseCommaEditableField,
+        BaseCheckboxField,
+        BaseDateField,
+        BaseDropdownField,
+        BaseEditableField,
+        BaseTextAreaField,
+    )
 
 
     class MilestoneField(BaseEditableField):
@@ -102,9 +107,25 @@ Examples
         ]
 
 
-    class DueDateField(BaseCommaEditableField):
+    class DueDateField(BaseDateField):
         field_id = 'myvendor_due'
         label = 'Due Date'
+
+
+    class SampleFieldSet(BaseReviewRequestFieldSet):
+        fieldset_id = 'sample_fields'
+        label = 'My Fields'
+        field_classes = [SecurityRelatedField, PriorityField]
+
+
+    class SampleExtension(Extension):
+        def initialize(self) -> None:
+            ReviewRequestFieldSetsHook(self, [SampleFieldSet])
+
+            ReviewRequestFieldsHook(self, 'info',
+                                    [MilestoneField, DueDateField])
+            ReviewRequestFieldsHook(self, 'main',
+                                    [NotesField, TagsField])
 
 
 Creating a JavaScript FieldView Subclass
@@ -115,6 +136,9 @@ interaction and value serialization. If you subclass one of the builtin field
 types, you do not need to create an override for these, but doing so can allow
 you to implement more advanced UIs such as autocomplete or custom editor
 widgets.
+
+You will need to define :ref:`static media bundles <extension-static-files>`
+for your JavaScript (and CSS, if necessary).
 
 
 Example
@@ -155,15 +179,6 @@ attribute.
         field_id = 'myvendor_milestone'
         label = 'Milestone'
         js_view_class = 'MyExtension.SelectizeField'
-
-
-Extension Hooks
-===============
-
-Review Board provides two hooks to add your custom fields.
-:ref:`review-request-fields-hook` can be used to add fields to one of the
-builtin sections. :ref:`review-request-fieldsets-hook` can add entirely new
-sections. The documentation for each of these hooks shows example usage.
 
 
 .. _Selectize: https://selectize.github.io/selectize.js/

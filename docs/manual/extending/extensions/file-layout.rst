@@ -1,6 +1,8 @@
-==============================
-Extension Files/Package Layout
-==============================
+.. _extensions-package-layout:
+
+==================================
+Extension Files and Package Layout
+==================================
 
 When building a Review Board extension, you'll want to adopt a certain file
 layout. If you're a seasoned Python developer, you're probably already
@@ -37,8 +39,8 @@ Let's go into each of these files and show some examples.
 
 **pyproject.toml**
    This file defines your Python package, its metadata, and the
-   :ref:`Entry Point <extension-entry-point>` used to allow Review Board to
-   find the extension. This is covered in detail in
+   :ref:`Entry Point <extension-entry-point>`, which allows Review Board to
+   discover your extension. This is covered in detail in
    :ref:`extension-distribution`.
 
    You can learn more about :file:`pyproject.toml` by reading:
@@ -141,17 +143,25 @@ sample_extension/**extension.py**
 Optional Files
 ==============
 
-You can put anything you want in your extension's top-level module directory
-(and even create nested subdirectories of modules). There's a few filenames
-that are special, though.
+You can put anything you want in your extension module (and even create nested
+subdirectories of modules). There's a few filenames that are special, though.
 
-**models.py**
+**conftest.py**
+   A Pytest_ config file which sets up the necessary plugins for writing unit
+   tests for your extension. This will be automatically added if you're using
+   :ref:`rbext-create`.
+
+**MANIFEST.in**
+   A file manifest which declares which files will get included when you build
+   an installable package.
+
+**sample_extension/models.py**
    An extension can provide custom Django models (which become tables in the
    database) in this file. The corresponding tables will be created in the
    database when the extension is loaded. See :ref:`extension-models` for more
    information.
 
-**admin_urls.py**
+**sample_extension/admin_urls.py**
    This file is used to define custom URLs in the administration UI. These
    are often used to create configuration pages for your extension, but they
    can really be used for any purpose.
@@ -162,7 +172,7 @@ that are special, though.
 
    For more information, see :ref:`extension-configuration-urls`.
 
-**admin.py**
+**sample_extension/admin.py**
    This file allows an extension to register its models (from
    :file:`models.py`) in its own section of the administration UI. This allows
    administrators to browse through the content of the models owned by your
@@ -173,3 +183,9 @@ that are special, though.
    ``True``.
 
    For more information, see :ref:`extension-admin-site`.
+
+**sample_extension/static**
+  A directory for static media such as CSS, JavaScript, and image files.
+
+
+.. _Pytest: https://pytest.org/

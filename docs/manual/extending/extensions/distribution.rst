@@ -1,8 +1,8 @@
 .. _extension-distribution:
 
-======================
-Extension Distribution
-======================
+=====================================
+Packaging and Distributing Extensions
+=====================================
 
 
 .. _extension-packages:
@@ -13,7 +13,6 @@ Python Packages
 Extensions are packaged and distributed as Python packages (:term:`Python
 Wheels`). This allows for automatic detection of installed extensions,
 packaging of static files, and dependency checking.
-
 
 Extension packages are pretty much like any other Python package. It uses
 a :ref:`pyproject.toml` file to define your package contents, along with

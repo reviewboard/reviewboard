@@ -54,5 +54,5 @@ Example
 
 
     class SampleExtension(Extension):
-        def initialize(self):
+        def initialize(self) -> None:
             AccountPagesHook(self, [SamplePage])

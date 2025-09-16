@@ -30,15 +30,27 @@ Example
 
 .. code-block:: python
 
+    from typing import TYPE_CHECKING
+
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import CommentDetailDisplayHook
 
+    if TYPE_CHECKING:
+        from reviewboard.reviews.models import BaseComment
+
 
     class SampleCommentDetailDisplay(CommentDetailDisplayHook):
-        def render_review_comment_detail(self, comment):
+        def render_review_comment_detail(
+            self,
+            comment: BaseComment,
+        ) -> str:
             return '<p>Severity: %s</p>' % comment.extra_data['severity']
 
-        def render_email_comment_detail(self, comment, is_html):
+        def render_email_comment_detail(
+            self,
+            comment: BaseComment,
+            is_html: bool,
+        ) -> str:
             if is_html:
                 return '<p>Severity: %s</p>' % comment.extra_data['severity']
             else:

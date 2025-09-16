@@ -40,25 +40,35 @@ Example
 
 .. code-block:: python
 
+    from typing import TYPE_CHECKING
+
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import ReviewRequestApprovalHook
 
+    if TYPE_CHECKING:
+        from reviewboard.reviews.models import ReviewRequest
+
 
     class SampleApprovalHook(ReviewRequestApprovalHook):
-        def is_approved(self, review_request, prev_approved, prev_failure):
+        def is_approved(
+            self,
+            review_request: ReviewRequest,
+            prev_approved: bool,
+            prev_failure: str,
+        ) -> bool | tuple[bool, str]:
             # Require at least 2 Ship It!'s from everyone but Bob. Bob needs
             # at least 3.
             if not prev_approved:
                 return prev_approved, prev_failure
             elif (review_request.submitter.username == 'bob' and
                   review_request.shipit_count < 3):
-                return False, 'Bob, you need at least 3 "Ship It!\'s."'
+                return False, 'Bob, you need at least 3 "Ship It!s."'
             elif review_request.shipit_count < 2:
-                return False, 'You need at least 2 "Ship It!\'s."'
+                return False, 'You need at least 2 "Ship It!s."'
             else:
                 return True
 
 
     class SampleExtension(Extension):
-        def initialize(self):
+        def initialize(self) -> None:
             SampleApprovalHook(self)
