@@ -71,8 +71,7 @@ class UserLocalSiteStats(TypedDict):
 
 
 class ReviewRequestVisit(models.Model):
-    """
-    A recording of the last time a review request was visited by a user.
+    """A recording of the last time a review request was visited by a user.
 
     Users have one ReviewRequestVisit entry in the database per review
     request they've visited. This is used to keep track of any updates
@@ -109,9 +108,13 @@ class ReviewRequestVisit(models.Model):
         return 'Review request visit'
 
     class Meta:
+        """Metadata for the model."""
+
         db_table = 'accounts_reviewrequestvisit'
+        indexes = [
+            models.Index(fields=['user', 'visibility']),
+        ]
         unique_together = ('user', 'review_request')
-        index_together = [('user', 'visibility')]
         verbose_name = _('Review Request Visit')
         verbose_name_plural = _('Review Request Visits')
 

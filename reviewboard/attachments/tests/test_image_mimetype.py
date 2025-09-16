@@ -27,6 +27,8 @@ class ImageMimetypeTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
 
     def setUp(self) -> None:
         """Set up the test case."""
+        super().setUp()
+
         image_file = self.make_uploaded_file()
 
         review_request = self.create_review_request(publish=True)
