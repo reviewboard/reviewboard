@@ -440,6 +440,7 @@ TreeSitter Support
    reviewboard.treesitter
    reviewboard.treesitter.debug
    reviewboard.treesitter.language
+   reviewboard.treesitter.lua_patterns
 
 
 Web API
