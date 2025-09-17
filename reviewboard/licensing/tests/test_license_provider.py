@@ -172,8 +172,8 @@ class BaseLicenseProviderTests(kgb.SpyAgency, TestCase):
                     'productName': 'Test Product',
                     'status': 'licensed',
                     'summary': (
-                        'License for Test Product (Super Mega Power Bundle '
-                        'Pro Enterprise)'
+                        'License for Test Product Super Mega Power Bundle '
+                        'Pro Enterprise is active'
                     ),
                 },
             },
@@ -233,7 +233,9 @@ class BaseLicenseProviderTests(kgb.SpyAgency, TestCase):
                     'planName': 'Plan 1',
                     'productName': 'Test Product',
                     'status': 'licensed',
-                    'summary': 'License for Test Product (Plan 1)',
+                    'summary': (
+                        'License for Test Product Plan 1 expires in 5 days'
+                    ),
                 },
             },
         })

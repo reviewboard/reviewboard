@@ -109,3 +109,332 @@ class LicenseInfoTests(kgb.SpyAgency, TestCase):
             status=LicenseStatus.LICENSED)
 
         self.assertFalse(license_info.get_expires_soon())
+
+    def test_get_summary_with_custom_summary(self) -> None:
+        """Testing LicenseInfo.get_summary with custom summary"""
+        license_info = LicenseInfo(
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            summary='This is my custom summary')
+
+        self.assertEqual(license_info.get_summary(),
+                         'This is my custom summary')
+
+    def test_get_summary_with_unlicensed(self) -> None:
+        """Testing LicenseInfo.get_summary with unlicensed state"""
+        license_info = LicenseInfo(
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            status=LicenseStatus.UNLICENSED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'Test Product is not licensed!')
+
+    def test_get_summary_with_licensed(self) -> None:
+        """Testing LicenseInfo.get_summary with purchased license"""
+        license_info = LicenseInfo(
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            status=LicenseStatus.LICENSED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'License for Test Product is active')
+
+    def test_get_summary_with_licensed_plan(self) -> None:
+        """Testing LicenseInfo.get_summary with purchased license with plan"""
+        license_info = LicenseInfo(
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            plan_name='Super Plan',
+            status=LicenseStatus.LICENSED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'License for Test Product Super Plan is active')
+
+    def test_get_summary_with_licensed_expires_soon(self) -> None:
+        """Testing LicenseInfo.get_summary with purchased license expires
+        soon
+        """
+        license_info = LicenseInfo(
+            expires=timezone.now() + timedelta(days=10),
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            status=LicenseStatus.LICENSED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'License for Test Product expires in 10 days')
+
+    def test_get_summary_with_licensed_plan_expires_soon(self) -> None:
+        """Testing LicenseInfo.get_summary with purchased license with plan
+        expires soon
+        """
+        license_info = LicenseInfo(
+            expires=timezone.now() + timedelta(days=10),
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            plan_name='Super Plan',
+            status=LicenseStatus.LICENSED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'License for Test Product Super Plan expires in '
+                         '10 days')
+
+    def test_get_summary_with_trial(self) -> None:
+        """Testing LicenseInfo.get_summary with trial license"""
+        license_info = LicenseInfo(
+            expires=timezone.now() + timedelta(days=10),
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            is_trial=True,
+            status=LicenseStatus.LICENSED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'Trial license for Test Product ends in 10 days')
+
+    def test_get_summary_with_trial_1_day_remaining(self) -> None:
+        """Testing LicenseInfo.get_summary with trial license with 1 day
+        remaining
+        """
+        license_info = LicenseInfo(
+            expires=timezone.now() + timedelta(days=1),
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            is_trial=True,
+            status=LicenseStatus.LICENSED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'Trial license for Test Product ends in 1 day')
+
+    def test_get_summary_with_trial_plan(self) -> None:
+        """Testing LicenseInfo.get_summary with trial license with plan"""
+        license_info = LicenseInfo(
+            expires=timezone.now() + timedelta(days=10),
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            plan_name='Super Plan',
+            is_trial=True,
+            status=LicenseStatus.LICENSED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'Trial license for Test Product Super Plan ends '
+                         'in 10 days')
+
+    def test_get_summary_with_trial_plan_1_day_remaining(self) -> None:
+        """Testing LicenseInfo.get_summary with trial license with plan with
+        1 day remaining
+        """
+        license_info = LicenseInfo(
+            expires=timezone.now() + timedelta(days=1),
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            plan_name='Super Plan',
+            is_trial=True,
+            status=LicenseStatus.LICENSED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'Trial license for Test Product Super Plan ends '
+                         'in 1 day')
+
+    def test_get_summary_with_expired_license(self) -> None:
+        """Testing LicenseInfo.get_summary with expired license"""
+        license_info = LicenseInfo(
+            expires=timezone.now() - timedelta(days=10),
+            grace_period_days_remaining=5,
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            status=LicenseStatus.EXPIRED_GRACE_PERIOD)
+
+        self.assertEqual(license_info.get_summary(),
+                         'License for Test Product expired and will stop '
+                         'working in 5 days')
+
+    def test_get_summary_with_expired_license_1_day_remaining(self) -> None:
+        """Testing LicenseInfo.get_summary with expired license and 1 day
+        remaining
+        """
+        license_info = LicenseInfo(
+            expires=timezone.now() - timedelta(days=10),
+            grace_period_days_remaining=1,
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            status=LicenseStatus.EXPIRED_GRACE_PERIOD)
+
+        self.assertEqual(license_info.get_summary(),
+                         'License for Test Product expired and will stop '
+                         'working in 1 day')
+
+    def test_get_summary_with_expired_license_plan(self) -> None:
+        """Testing LicenseInfo.get_summary with expired license with plan"""
+        license_info = LicenseInfo(
+            expires=timezone.now() - timedelta(days=10),
+            grace_period_days_remaining=5,
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            plan_name='Super Plan',
+            status=LicenseStatus.EXPIRED_GRACE_PERIOD)
+
+        self.assertEqual(license_info.get_summary(),
+                         'License for Test Product Super Plan expired '
+                         'and will stop working in 5 days')
+
+    def test_get_summary_with_expired_license_plan_1_day_remaining(
+        self,
+    ) -> None:
+        """Testing LicenseInfo.get_summary with expired license with plan"""
+        license_info = LicenseInfo(
+            expires=timezone.now() - timedelta(days=10),
+            grace_period_days_remaining=1,
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            plan_name='Super Plan',
+            status=LicenseStatus.EXPIRED_GRACE_PERIOD)
+
+        self.assertEqual(license_info.get_summary(),
+                         'License for Test Product Super Plan expired '
+                         'and will stop working in 1 day')
+
+    def test_get_summary_with_expired_trial(self) -> None:
+        """Testing LicenseInfo.get_summary with expired trial license"""
+        license_info = LicenseInfo(
+            expires=timezone.now() - timedelta(days=10),
+            grace_period_days_remaining=5,
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            is_trial=True,
+            status=LicenseStatus.EXPIRED_GRACE_PERIOD)
+
+        self.assertEqual(license_info.get_summary(),
+                         'Trial license for Test Product expired and will '
+                         'stop working in 5 days')
+
+    def test_get_summary_with_expired_trial_1_day_remaining(self) -> None:
+        """Testing LicenseInfo.get_summary with expired trial license with
+        1 day remaining
+        """
+        license_info = LicenseInfo(
+            expires=timezone.now() - timedelta(days=10),
+            grace_period_days_remaining=1,
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            is_trial=True,
+            status=LicenseStatus.EXPIRED_GRACE_PERIOD)
+
+        self.assertEqual(license_info.get_summary(),
+                         'Trial license for Test Product expired and will '
+                         'stop working in 1 day')
+
+    def test_get_summary_with_expired_trial_plan(self) -> None:
+        """Testing LicenseInfo.get_summary with expired trial license with
+        plan
+        """
+        license_info = LicenseInfo(
+            expires=timezone.now() - timedelta(days=10),
+            grace_period_days_remaining=5,
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            plan_name='Super Plan',
+            is_trial=True,
+            status=LicenseStatus.EXPIRED_GRACE_PERIOD)
+
+        self.assertEqual(license_info.get_summary(),
+                         'Trial license for Test Product Super Plan '
+                         'expired and will stop working in 5 days')
+
+    def test_get_summary_with_expired_trial_plan_1_day_remaining(
+        self,
+    ) -> None:
+        """Testing LicenseInfo.get_summary with expired trial license with
+        plan and 1 day remaining
+        """
+        license_info = LicenseInfo(
+            expires=timezone.now() - timedelta(days=10),
+            grace_period_days_remaining=1,
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            plan_name='Super Plan',
+            is_trial=True,
+            status=LicenseStatus.EXPIRED_GRACE_PERIOD)
+
+        self.assertEqual(license_info.get_summary(),
+                         'Trial license for Test Product Super Plan '
+                         'expired and will stop working in 1 day')
+
+    def test_get_summary_with_hard_expired_license(self) -> None:
+        """Testing LicenseInfo.get_summary with hard-expired license"""
+        license_info = LicenseInfo(
+            expires=timezone.now() - timedelta(days=10),
+            grace_period_days_remaining=5,
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            status=LicenseStatus.HARD_EXPIRED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'License for Test Product expired and needs to be '
+                         'renewed')
+
+    def test_get_summary_with_hard_expired_license_plan(self) -> None:
+        """Testing LicenseInfo.get_summary with hard-expired license with plan
+        """
+        license_info = LicenseInfo(
+            expires=timezone.now() - timedelta(days=10),
+            grace_period_days_remaining=5,
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            plan_name='Super Plan',
+            status=LicenseStatus.HARD_EXPIRED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'License for Test Product Super Plan expired '
+                         'and needs to be renewed')
+
+    def test_get_summary_with_hard_expired_trial(self) -> None:
+        """Testing LicenseInfo.get_summary with hard-expired trial license"""
+        license_info = LicenseInfo(
+            expires=timezone.now() - timedelta(days=10),
+            grace_period_days_remaining=5,
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            is_trial=True,
+            status=LicenseStatus.HARD_EXPIRED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'Trial license for Test Product expired')
+
+    def test_get_summary_with_hard_expired_trial_plan(self) -> None:
+        """Testing LicenseInfo.get_summary with hard-expired trial license
+        with plan
+        """
+        license_info = LicenseInfo(
+            expires=timezone.now() - timedelta(days=10),
+            grace_period_days_remaining=5,
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            plan_name='Super Plan',
+            is_trial=True,
+            status=LicenseStatus.HARD_EXPIRED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'Trial license for Test Product Super Plan '
+                         'expired')

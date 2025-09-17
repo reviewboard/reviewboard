@@ -226,7 +226,6 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
         plan_name = license_info.plan_name
         product = license_info.product_name
         status = license_info.status
-        summary = license_info.summary
 
         # Calculate expiration information.
         expires = license_info.expires
@@ -252,43 +251,6 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
                   '{product} will be disabled {datetime_ink}.'),
                 datetime_ink=datetime_ink,
                 product=product)
-
-        # Generate a default summary.
-        if not summary:
-            if status == LicenseStatus.LICENSED:
-                if is_trial:
-                    if plan_name:
-                        summary = _(
-                            'Trial license for {product} ({plan_name})'
-                        )
-                    else:
-                        summary = _('Trial license for {product}')
-                else:
-                    if plan_name:
-                        summary = _('License for {product} ({plan_name})')
-                    else:
-                        summary = _('License for {product}')
-            elif status == LicenseStatus.UNLICENSED:
-                summary = _('{product} is not licensed!')
-            elif status in (LicenseStatus.HARD_EXPIRED,
-                            LicenseStatus.EXPIRED_GRACE_PERIOD):
-                if is_trial:
-                    if plan_name:
-                        summary = _(
-                            'Expired trial license for {product} ({plan_name})'
-                        )
-                    else:
-                        summary = _('Expired trial license for {product}')
-                else:
-                    if plan_name:
-                        summary = _(
-                            'Expired license for {product} ({plan_name})'
-                        )
-                    else:
-                        summary = _('Expired license for {product}')
-
-            summary = summary.format(plan_name=plan_name,
-                                     product=product)
 
         # Build actions for the license.
         actions_data: SerializableDjangoJSONList = [
@@ -321,13 +283,13 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
             'planName': plan_name,
             'productName': product,
             'status': status.value,
-            'summary': summary,
+            'summary': license_info.get_summary(),
         }
 
     def process_check_license_result(
         self,
         *,
-        action_data: JSONDictImmutable,
+        action_data: LicenseActionData,
         license_info: _TLicenseInfo,
         check_request_data: JSONValue,
         check_response_data: JSONValue,
@@ -344,7 +306,7 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
         attributes.
 
         Args:
-            action_data (dict):
+            action_data (reviewboard.licensing.actions.LicenseActionData):
                 Data provided in the request to the action.
 
                 This will correspond to HTTP POST data if processing via an

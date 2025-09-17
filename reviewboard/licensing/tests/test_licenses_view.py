@@ -184,7 +184,10 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                             'planName': 'Plan 1',
                             'productName': 'Test Product',
                             'status': 'licensed',
-                            'summary': 'License for Test Product (Plan 1)',
+                            'summary': (
+                                'License for Test Product Plan 1 '
+                                'expires in 5 days'
+                            ),
                         },
                     },
                 ],
@@ -215,7 +218,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                             'productName': 'Test Product',
                             'status': 'hard-expired',
                             'summary': (
-                                'Expired trial license for Test Product'
+                                'Trial license for Test Product expired'
                             ),
                         },
                     },
@@ -227,8 +230,8 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                             'expiresDate': datetime(2025, 4, 19, 0, 0,
                                                     tzinfo=tz.utc),
                             'expiresSoon': False,
-                            'gracePeriodDaysRemaining': 0,
-                            'hardExpiresDate': datetime(2025, 4, 19, 0, 0,
+                            'gracePeriodDaysRemaining': 3,
+                            'hardExpiresDate': datetime(2025, 4, 22, 0, 0,
                                                         tzinfo=tz.utc),
                             'isTrial': False,
                             'licenseID': 'license2',
@@ -238,14 +241,17 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                             'noticeHTML': (
                                 'Your grace period is now active. Unless '
                                 'renewed, Test Product will be disabled <time '
-                                'class="timesince" dateTime="2025-04-19 '
+                                'class="timesince" dateTime="2025-04-22 '
                                 '00:00:00+00:00"/>.'
                             ),
                             'planID': None,
                             'planName': None,
                             'productName': 'Test Product',
                             'status': 'expired-grace-period',
-                            'summary': 'Expired license for Test Product',
+                            'summary': (
+                                'License for Test Product expired and will '
+                                'stop working in 3 days'
+                            ),
                         },
                     },
                 ],
@@ -476,8 +482,8 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                     'productName': 'Test Product',
                     'status': 'licensed',
                     'summary': (
-                        'License for Test Product (Super Mega Power Bundle '
-                        'Pro Enterprise)'
+                        'License for Test Product Super Mega Power Bundle '
+                        'Pro Enterprise is active'
                     ),
                 },
             },
@@ -538,7 +544,10 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                     'planName': 'Plan 1',
                     'productName': 'Test Product',
                     'status': 'licensed',
-                    'summary': 'License for Test Product (Plan 1)',
+                    'summary': (
+                        'License for Test Product Plan 1 expires in '
+                        '5 days'
+                    ),
                 },
             },
         })

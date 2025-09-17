@@ -365,6 +365,7 @@ class ExpiredTestsLicenseProvider(BaseLicenseProvider):
         elif license_id == 'license2':
             return LicenseInfo(
                 expires=timezone.now() - timedelta(days=2),
+                grace_period_days_remaining=3,
                 license_id=license_id,
                 licensed_to='Test User',
                 product_name='Test Product',
