@@ -14,11 +14,14 @@ from django.utils import timezone
 from django.utils.translation import (gettext_lazy as _,
                                       ngettext_lazy as N_)
 from djblets.util.typing import StrOrPromise
+from typing_extensions import TypedDict
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
     from datetime import datetime
     from typing import Any
+
+    from typing_extensions import NotRequired
 
 
 logger = logging.getLogger(__name__)
@@ -42,6 +45,27 @@ class LicenseStatus(Enum):
 
     #: The license has expired and is past its grace period.
     HARD_EXPIRED = 'hard-expired'
+
+
+class LicenseLineItem(TypedDict):
+    """A line item to show for a license.
+
+    Version Added:
+        7.1
+    """
+
+    #: The content for the line item.
+    #:
+    #: This may be a plain text string (which will be escaped) or a safe
+    #: HTML-formatted string, depending on the :py:attr:`content_is_html`
+    #: flag.
+    content: str
+
+    #: Whether the content should be rendered as HTML.
+    content_is_html: NotRequired[bool]
+
+    #: The optional icon CSS class name to display alongside the content.
+    icon: NotRequired[str]
 
 
 class LicenseInfo:
@@ -94,7 +118,7 @@ class LicenseInfo:
     licensed_to: str
 
     #: Any displayable line items to show on license information.
-    line_items: Sequence[str]
+    line_items: Sequence[LicenseLineItem]
 
     #: A backend-specific plan ID for this license.
     plan_id: str | None
@@ -125,7 +149,7 @@ class LicenseInfo:
         grace_period_days_remaining: int = 0,
         is_trial: bool = False,
         license_instance: Any = None,
-        line_items: (Sequence[str] | None) = None,
+        line_items: (Sequence[LicenseLineItem] | None) = None,
         plan_id: (str | None) = None,
         plan_name: (str | None) = None,
         status: LicenseStatus = LicenseStatus.UNLICENSED,
@@ -170,7 +194,7 @@ class LicenseInfo:
                 This is used purely for the convenience of a license provider.
                 It may be ``None``.
 
-            line_items (Sequence[str], optional):
+            line_items (Sequence[LicenseLineItem], optional):
                 Any displayable line items to show on license information.
 
             plan_id (str, optional):

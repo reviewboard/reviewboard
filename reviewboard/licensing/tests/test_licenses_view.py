@@ -145,8 +145,14 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                             'licenseID': 'license1',
                             'licensedTo': 'Test User',
                             'lineItems': [
-                                'Line 1',
-                                'Line 2',
+                                {
+                                    'content': 'Line 1',
+                                    'icon': 'ink-i-info',
+                                },
+                                {
+                                    'content': '<strong>Line 2</strong>',
+                                    'contentIsHTML': True,
+                                },
                             ],
                             'manageURL': 'https://example.com/license1/',
                             'noticeHTML': '',

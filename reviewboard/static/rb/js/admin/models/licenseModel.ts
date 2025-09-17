@@ -136,6 +136,29 @@ export interface LicenseAction {
 
 
 /**
+ * A displayed line item for the license.
+ *
+ * Version Added:
+ *     7.1
+ */
+export interface LicenseLineItem {
+    /**
+     * The content for the line item.
+     *
+     * This may be a plain text string (which will be escaped) or a safe
+     * HTML-formatted string, depending on the :js:attr:`contentIsHTML` flag.
+     */
+    content: string;
+
+    /** Whether the content should be rendered as HTML. */
+    contentIsHTML?: boolean;
+
+    /** THe optional icon CSS class name to display alongside the content. */
+    icon?: string;
+}
+
+
+/**
  * Attributes for a license.
  *
  * Version Added:
@@ -180,7 +203,7 @@ export interface LicenseAttrs {
     licensedTo?: string | null;
 
     /** A list of line items to display in the license. */
-    lineItems?: string[] | null;
+    lineItems?: LicenseLineItem[] | null;
 
     /** The URL for managing the license on a license portal. */
     manageURL?: string | null;

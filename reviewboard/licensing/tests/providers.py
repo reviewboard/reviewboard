@@ -121,8 +121,14 @@ class BasicTestsLicenseProvider(BaseLicenseProvider):
                 license_id=license_id,
                 licensed_to='Test User',
                 line_items=[
-                    'Line 1',
-                    'Line 2',
+                    {
+                        'content': 'Line 1',
+                        'icon': 'ink-i-info',
+                    },
+                    {
+                        'content': '<strong>Line 2</strong>',
+                        'content_is_html': True,
+                    },
                 ],
                 product_name='Test Product',
                 status=LicenseStatus.UNLICENSED)

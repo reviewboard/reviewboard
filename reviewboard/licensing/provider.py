@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from reviewboard.licensing.actions import (LicenseAction,
                                                LicenseActionData,
                                                LicenseActionHandler)
+    from reviewboard.licensing.license import LicenseLineItem
     from reviewboard.licensing.license_checks import (
         RequestCheckLicenseResult,
         ProcessCheckLicenseResult,
@@ -179,6 +180,33 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
 
         return actions
 
+    def get_license_line_items(
+        self,
+        *,
+        license_info: _TLicenseInfo,
+        request: (HttpRequest | None) = None,
+    ) -> Sequence[LicenseLineItem]:
+        """Return line items to display when viewing a license.
+
+        Line items may contain information or even custom HTML describing
+        an important aspect of a license.
+
+        By default, this will contain any line items assigned to the license.
+        Subclasses may override this to provide additional information.
+
+        Args:
+            license_info (reviewboard.licensing.license.LicenseInfo):
+                The license information that will be displayed.
+
+            request (django.http.HttpRequest, optional):
+                The HTTP request from the client.
+
+        Returns:
+            list of reviewboard.licensing.license.LicenseLineItem:
+            The list of line items to display for the license.
+        """
+        return license_info.line_items
+
     def get_check_license_request(
         self,
         *,
@@ -287,6 +315,23 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
             for action in self.get_license_actions(license_info=license_info)
         ]
 
+        # Build line items for the license.
+        line_items_data: SerializableJSONList = [
+            {
+                'content': line_item['content'],
+                **{
+                    result_key: cast(JSONValue, line_item.get(line_item_key))
+                    for result_key, line_item_key in (
+                        ('contentIsHTML', 'content_is_html'),
+                        ('icon', 'icon'),
+                    )
+                    if line_item.get(line_item_key)
+                },
+            }
+            for line_item in self.get_license_line_items(
+                license_info=license_info)
+        ]
+
         return {
             'actionTarget': (
                 f'{self.license_provider_id}:{license_info.license_id}'
@@ -300,7 +345,7 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
             'isTrial': is_trial,
             'licenseID': license_info.license_id,
             'licensedTo': license_info.licensed_to,
-            'lineItems': license_info.line_items,
+            'lineItems': line_items_data,
             'manageURL': self.get_manage_license_url(
                 license_info=license_info),
             'noticeHTML': notice_html,

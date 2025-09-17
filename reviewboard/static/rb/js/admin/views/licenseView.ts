@@ -73,6 +73,9 @@ export interface AddLicenseDetailOptions {
 
     /** Extra class names for the item's container element. */
     className?: string;
+
+    /** CSS class name for an icon to show alongside the content. */
+    iconName?: string;
 }
 
 
@@ -152,7 +155,7 @@ export class LicenseView<
      *
      * Args:
      *     item (string or Node or Ink.CraftedComponent or Array):
-     *         The item or items to use for the details row.
+     *         The item or items to use for the contents of the details row.
      *
      *     options (AddLicenseDetailOptions, optional):
      *         Options for the item.
@@ -163,6 +166,7 @@ export class LicenseView<
     ) {
         const attrs = options.attrs || {};
         const className = options.className;
+        const iconName = options.iconName || '';
 
         attrs.class = 'rb-c-license__detail';
 
@@ -171,7 +175,12 @@ export class LicenseView<
         }
 
         renderInto(this.#detailsEl, paint`
-            <li ...${attrs}>${item}</li>
+            <li ...${attrs}>
+             <span class="rb-c-license__detail-icon ${iconName}"/>
+             <div class="rb-c-license__detail-content">
+              ${item}
+             </div>
+            </li>
         `);
     }
 
@@ -235,16 +244,19 @@ export class LicenseView<
                 `;
             }
 
-            this.addLicenseDetail(paint`
-                <span class="rb-c-license__detail-icon ${expiresIcon}"/>
-                <div class="rb-c-license__detail-content">
-                 ${paint([expiresHTML])}
-                </div>
-            `);
+            this.addLicenseDetail(paint([expiresHTML]), {
+                iconName: expiresIcon,
+            });
         }
 
         for (const lineItem of lineItems) {
-            this.addLicenseDetail(lineItem);
+            this.addLicenseDetail(
+                (lineItem.contentIsHTML
+                 ? paint([lineItem.content])
+                 : lineItem.content),
+                {
+                    iconName: lineItem.icon,
+                });
         }
 
         /* Begin rendering the view. */
