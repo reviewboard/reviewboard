@@ -60,28 +60,14 @@ HIGHLIGHT_TEST_PARAMS = [
 if not DEBUG_TREESITTER:
     # These query files are currently known to be broken or missing.
     BROKEN_HIGHLIGHT_LANGUAGES: set[SupportedLanguage] = {
-        'clarity',
-        'cmake',
-        'elisp',
         'fennel',
         'groovy',
         'haxe',
-        'janet',
-        'magik',
         'netlinx',
-        'org',
-        'pgn',
-        'prisma',
-        'scss',
-        'squirrel',
-        'svelte',
-        'tablegen',
         'test',
-        'v',
         'verilog',
         'vhdl',
         'vue',
-        'zig',
     }
     SKIPPED_HIGHLIGHT_LANGUAGES |= BROKEN_HIGHLIGHT_LANGUAGES
 
@@ -120,8 +106,6 @@ if not DEBUG_TREESITTER:
     BROKEN_INJECTION_LANGUAGES: set[SupportedLanguage] = {
         'fennel',
         'groovy',
-        'prisma',
-        'squirrel',
     }
     SKIPPED_INJECTION_LANGUAGES |= BROKEN_INJECTION_LANGUAGES
 

@@ -1,0 +1,1174 @@
+{
+  "ada/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ada/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "agda/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "agda/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "apex/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "apex/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "arduino/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "arduino/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "asm/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "asm/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "astro/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "astro/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "bash/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "bash/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "beancount/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "beancount/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "bibtex/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "bibtex/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "bicep/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "bicep/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "bitbake/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "bitbake/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "c/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "c/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "cairo/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "cairo/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "capnp/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "capnp/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "chatito/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "chatito/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "clarity/highlights.scm": {
+    "commit": "7fa54825fdd971a1a676f885384f024fe2b7384a",
+    "remote": "https://github.com/xlittlerag/tree-sitter-clarity"
+  },
+  "clojure/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "clojure/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "cmake/highlights.scm": {
+    "commit": "c2fdefaf7ae3b7c5cf11705fe63c516b1c490590",
+    "remote": "https://github.com/uyha/tree-sitter-cmake"
+  },
+  "cmake/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "comment/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "commonlisp/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "commonlisp/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "cpon/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "cpon/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "cpp/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "cpp/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "csharp/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "csharp/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "css/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "css/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "csv/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "cuda/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "cuda/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "d/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "d/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "dart/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "dart/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "dockerfile/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "dockerfile/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "doxygen/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "doxygen/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "dtd/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "dtd/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "elisp/highlights.scm": {
+    "commit": "12b547b470a4213dc63a20c7bd2db988d85c7693",
+    "remote": "https://github.com/Wilfred/tree-sitter-elisp"
+  },
+  "elixir/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "elixir/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "elm/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "elm/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "embeddedtemplate/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "embeddedtemplate/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "erlang/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "erlang/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "firrtl/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "firrtl/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "fish/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "fish/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "fortran/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "fortran/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "func/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "func/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gdscript/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gdscript/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gitattributes/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gitattributes/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gitcommit/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gitcommit/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gitignore/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gitignore/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gleam/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gleam/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "glsl/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "glsl/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gn/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gn/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "go/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "go/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gomod/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gomod/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gosum/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "graphql/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "graphql/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gstlaunch/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "hack/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "hack/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "hare/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "hare/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "haskell/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "haskell/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "hcl/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "hcl/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "heex/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "heex/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "hlsl/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "hlsl/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "hyprlang/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "hyprlang/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ini/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ini/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ispc/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ispc/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "janet/highlights.scm": {
+    "commit": "1d002c23d4e952ce24a2e472d0f81ab0471ceb1b",
+    "remote": "https://github.com/GrayJack/tree-sitter-janet"
+  },
+  "java/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "java/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "javascript/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "javascript/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "jsdoc/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "json/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "jsonnet/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "jsonnet/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "julia/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "julia/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "kconfig/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "kconfig/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "kdl/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "kdl/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "kotlin/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "kotlin/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "latex/highlights.scm": {
+    "commit": "692b051b09935653befdb8f7ba8afdb640adf17b",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "latex/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "linkerscript/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "linkerscript/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "llvm/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "llvm/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "lua/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "lua/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "luadoc/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "luap/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "luau/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "luau/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "magik/highlights.scm": {
+    "commit": "1842e770b8f4ee757a4fa669301279873970cc8c",
+    "remote": "https://github.com/krn-robin/tree-sitter-magik"
+  },
+  "make/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "make/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "markdown/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "markdown/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "markdown_inline/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "markdown_inline/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "matlab/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "matlab/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "mermaid/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "mermaid/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "meson/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "meson/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "nim/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "nim/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ninja/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ninja/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "nix/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "nqc/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "nqc/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "objc/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "objc/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ocaml/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ocaml/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ocaml_interface/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ocaml_interface/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "odin/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "odin/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "org/highlights.scm": {
+    "commit": "64cfbc213f5a83da17632c95382a5a0a2f3357c1",
+    "remote": "https://github.com/milisims/tree-sitter-org"
+  },
+  "pascal/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "pascal/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "pem/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "pem/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "perl/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "perl/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "pgn/highlights.scm": {
+    "commit": "38b20cead0ec1ab787cd36292a9160a2145df574",
+    "remote": "https://github.com/rolandwalker/tree-sitter-pgn"
+  },
+  "php/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "php/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "po/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "po/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "pony/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "pony/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "powershell/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "powershell/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "printf/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "prisma/highlights.scm": {
+    "commit": "f1c30d82a5bf0b70ce33ef431f4acd7fd69968a3",
+    "remote": "https://github.com/LumaKernel/tree-sitter-prisma"
+  },
+  "properties/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "properties/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "proto/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "proto/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "psv/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "puppet/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "puppet/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "purescript/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "purescript/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "pymanifest/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "pymanifest/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "python/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "python/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "qmldir/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "qmldir/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "qmljs/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "qmljs/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "query/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "query/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "r/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "r/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "racket/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "racket/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "re2c/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "re2c/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "readline/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "readline/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "rego/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "rego/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "requirements/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "requirements/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ron/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ron/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "rst/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "rst/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ruby/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ruby/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "rust/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "rust/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "scala/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "scala/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "scheme/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "scheme/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "scss/highlights.scm": {
+    "commit": "00a4cd98d5fc71aa5a55174e7ed5e34c9cc85a87",
+    "remote": "https://github.com/tree-sitter-grammars/tree-sitter-scss"
+  },
+  "smali/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "smali/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "smithy/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "smithy/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "solidity/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "solidity/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "sparql/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "sparql/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "sql/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "sql/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "squirrel/highlights.scm": {
+    "commit": "072c969749e66f000dba35a33c387650e203e96e",
+    "remote": "https://github.com/tree-sitter-grammars/tree-sitter-squirrel"
+  },
+  "squirrel/injections.scm": {
+    "commit": "072c969749e66f000dba35a33c387650e203e96e",
+    "remote": "https://github.com/tree-sitter-grammars/tree-sitter-squirrel"
+  },
+  "starlark/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "starlark/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "svelte/highlights.scm": {
+    "commit": "60ea1d673a1a3eeeb597e098d9ada9ed0c79ef4b",
+    "remote": "https://github.com/Himujjal/tree-sitter-svelte"
+  },
+  "svelte/injections.scm": {
+    "commit": "60ea1d673a1a3eeeb597e098d9ada9ed0c79ef4b",
+    "remote": "https://github.com/Himujjal/tree-sitter-svelte"
+  },
+  "swift/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "swift/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "tablegen/highlights.scm": {
+    "commit": "3e9c4822ab5cdcccf4f8aa9dcd42117f736d51d9",
+    "remote": "https://github.com/Flakebi/tree-sitter-tablegen"
+  },
+  "tcl/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "tcl/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "terraform/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "terraform/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "thrift/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "thrift/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "toml/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "toml/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "tsv/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "tsx/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "tsx/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "twig/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "twig/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "typescript/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "typescript/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "typst/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "typst/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "udev/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "udev/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ungrammar/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ungrammar/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "uxntal/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "uxntal/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "v/highlights.scm": {
+    "commit": "fee18d64a51127b32a221a56509f77c942d9923f",
+    "remote": "https://github.com/nedpals/tree-sitter-v"
+  },
+  "vim/highlights.scm": {
+    "commit": "692b051b09935653befdb8f7ba8afdb640adf17b",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "vim/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "vue/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "wgsl/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "wgsl/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "xcompose/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "xcompose/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "xml/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "xml/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "yaml/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "yaml/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "yuck/highlights.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "yuck/injections.scm": {
+    "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "zig/highlights.scm": {
+    "commit": "a80a6e9be81b33b182ce6305ae4ea28e29211bd5",
+    "remote": "https://github.com/maxxnino/tree-sitter-zig"
+  },
+  "zig/injections.scm": {
+    "commit": "a80a6e9be81b33b182ce6305ae4ea28e29211bd5",
+    "remote": "https://github.com/maxxnino/tree-sitter-zig"
+  }
+}

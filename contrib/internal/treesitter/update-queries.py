@@ -28,7 +28,7 @@ from reviewboard.treesitter.query_utils import (
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
-    from typelets.django.json import SerializableDjangoJSONDict
+    from typelets.json import JSONDict
 
     from reviewboard.treesitter.language import SupportedLanguage
 
@@ -109,7 +109,7 @@ def get_git_revision(
 
 
 def write_lock_file(
-    lock_data: SerializableDjangoJSONDict,
+    lock_data: JSONDict,
 ) -> None:
     """Write the lock file.
 
@@ -121,10 +121,10 @@ def write_lock_file(
         lock_data (dict):
             The data to write to the lock file.
     """
-    lock_file_path = queries_dir / 'nvim-treesitter.lock'
+    lock_file_path = queries_dir / 'queries.lock'
 
     # Load existing lock file if it exists
-    existing_data: SerializableDjangoJSONDict = {}
+    existing_data: JSONDict = {}
 
     if lock_file_path.exists():
         try:
@@ -135,16 +135,7 @@ def write_lock_file(
 
     # Update top-level keys.
     for key, value in lock_data.items():
-        if (key == 'files' and isinstance(value, dict) and
-            'files' in existing_data):
-            # For the 'files' key, merge the dictionaries.
-            if not isinstance(existing_data['files'], dict):
-                existing_data['files'] = {}
-
-            existing_data['files'].update(value)
-        else:
-            # For other keys, overwrite.
-            existing_data[key] = value
+        existing_data[key] = value
 
     with lock_file_path.open('w', encoding='utf-8') as f:
         json.dump(existing_data, f, indent=2, sort_keys=True)
@@ -554,7 +545,8 @@ def process_language(
             # Record file info with package and commit
             file_key = f'{language}/{filename}'
             file_info[file_key] = {
-                'source': 'nvim-treesitter',
+                'source':
+                    'https://github.com/nvim-treesitter/nvim-treesitter.git',
                 'commit': commit_hash if commit_hash else main_revision
             }
         elif verbose:
@@ -626,7 +618,7 @@ def main() -> None:
         sys.exit(1)
 
     # Track all processed files with their package and commit info
-    all_file_info = {}
+    lock_data: JSONDict = {}
 
     print('Processing query files from nvim-treesitter...')
 
@@ -653,7 +645,7 @@ def main() -> None:
             verbose=verbose,
         )
 
-        all_file_info.update(file_info)
+        lock_data.update(file_info)
 
     known_predicates = {
         'any-contains',
@@ -694,7 +686,7 @@ def main() -> None:
     # Report fallback commit usage
     fallback_files = {
         file_path: info
-        for file_path, info in all_file_info.items()
+        for file_path, info in lock_data.items()
         if info['commit'] != main_revision
     }
 
@@ -707,11 +699,6 @@ def main() -> None:
             ],
             '',
         ]))
-
-    lock_data: SerializableDjangoJSONDict = {
-        'nvim_treesitter_revision': main_revision,
-        'files': all_file_info,
-    }
 
     write_lock_file(lock_data)
 

@@ -10,12 +10,14 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import subprocess
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import reduce
 from inspect import cleandoc
 from pathlib import Path
+from shutil import copy2
 from typing import TYPE_CHECKING, get_args
 
 from tree_sitter_language_pack import SupportedLanguage
@@ -364,6 +366,36 @@ LANGUAGE_MIME_TYPES: Mapping[str, list[str]] = {
 }
 
 
+#: A list of languages that we use the upstream queries files for.
+#:
+#: For these languages, we pull highlights.scm and injections.scm files out of
+#: the grammar implementation, instead of using queries from nvim-treesitter.
+UPSTREAM_GRAMMAR_QUERIES: set[tuple[str, str]] = {
+    ('clarity', 'highlights.scm'),
+    ('cmake', 'highlights.scm'),
+    ('elisp', 'highlights.scm'),
+    ('janet', 'highlights.scm'),
+    ('org', 'highlights.scm'),
+    ('magik', 'highlights.scm'),
+    ('pgn', 'highlights.scm'),
+    ('prisma', 'highlights.scm'),
+    ('scss', 'highlights.scm'),
+    ('squirrel', 'highlights.scm'),
+    ('squirrel', 'injections.scm'),
+    ('svelte', 'highlights.scm'),
+    ('svelte', 'injections.scm'),
+    ('tablegen', 'highlights.scm'),
+    ('v', 'highlights.scm'),
+    ('zig', 'highlights.scm'),
+    ('zig', 'injections.scm'),
+
+    # These are broken even in the vendor queries.
+    # 'haxe',
+    # 'netlinx',
+    # 'vhdl',
+}
+
+
 #: reviewboard.treesitter module directory.
 #: Version Added:
 #:     9.0
@@ -485,8 +517,7 @@ def load_grammars(
             The path to the vendor directory.
 
         languages (set of str):
-            The set of languages to limit to (for debugging purposes). If this
-            is empty, all languages in the vendor directory will be loaded.
+            The set of languages to load grammars for.
 
     Returns:
         dict:
@@ -542,6 +573,122 @@ def load_grammars(
     }
 
 
+def get_git_revision(
+    repo_path: Path,
+) -> str:
+    """Get the current git revision from the given repository.
+
+    Args:
+        repo_path (pathlib.Path):
+            The path to the git repository.
+
+    Returns:
+        str:
+        The current git revision hash.
+    """
+    result = subprocess.run(
+        ['git', 'rev-parse', 'HEAD'],
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout.strip()
+
+
+def get_git_remote(
+    repo_path: Path,
+) -> str:
+    """Get the git remote URL from the given repository.
+
+    Args:
+        repo_path (pathlib.Path):
+            The path to the git repository.
+
+    Returns:
+        str:
+        The git remote URL.
+    """
+    result = subprocess.run(
+        ['git', 'remote', 'get-url', 'origin'],
+        cwd=repo_path,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout.strip()
+
+
+def write_lock_file(
+    lock_data: JSONDict,
+) -> None:
+    """Write the lock file.
+
+    This function loads the existing lock file (if it exists) and merges
+    the new data into it, only overwriting keys that are present in the
+    new lock_data. This allows queries from other packages to be preserved.
+
+    Args:
+        lock_data (dict):
+            The data to write to the lock file.
+    """
+    lock_file_path = module_dir / 'queries' / 'queries.lock'
+
+    # Load existing lock file if it exists
+    existing_data: JSONDict = {}
+
+    if lock_file_path.exists():
+        try:
+            with lock_file_path.open('r', encoding='utf-8') as f:
+                existing_data = json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning('Failed to load existing lock file: %s', e)
+
+    # Update top-level keys.
+    for key, value in lock_data.items():
+        existing_data[key] = value
+
+    with lock_file_path.open('w', encoding='utf-8') as f:
+        json.dump(existing_data, f, indent=2, sort_keys=True)
+        f.write('\n')
+
+
+def copy_queries(
+    vendor_path: Path,
+) -> None:
+    """Copy queries files from vendor directories.
+
+    Args:
+        vendor_path (pathlib.Path):
+            Th path to the vendor directory.
+    """
+    lock_data: JSONDict = {}
+
+    for language, filename in UPSTREAM_GRAMMAR_QUERIES:
+        repo_path = vendor_path / language
+        queries_path = repo_path / 'queries' / filename
+        target_dir = module_dir / 'queries' / language
+
+        if not queries_path.exists():
+            logger.warning('Queries file %s does not exist',
+                           queries_path)
+
+        if not target_dir.exists():
+            target_dir.mkdir()
+
+        git_remote = get_git_remote(repo_path)
+        git_revision = get_git_revision(repo_path)
+
+        copy2(queries_path, target_dir)
+
+        lock_data[f'{language}/{filename}'] = {
+            'commit': git_revision,
+            'remote': git_remote,
+        }
+
+    write_lock_file(lock_data)
+
+
 def parse_arguments(
     args: Sequence[str],
 ) -> argparse.Namespace:
@@ -582,9 +729,9 @@ def main() -> None:
         )
         sys.exit(1)
 
-    languages = args.language or get_args(SupportedLanguage)
+    languages = set(args.language or get_args(SupportedLanguage))
 
-    grammars = load_grammars(vendor_path, set(languages))
+    grammars = load_grammars(vendor_path, languages)
 
     with open(module_dir / '_languages.py', 'w', encoding='utf-8') as f:
         f.write(cleandoc('''
@@ -655,6 +802,8 @@ def main() -> None:
             f.write(f'    {suffix!r}: {langs!r},\n')
 
         f.write('})\n')
+
+    copy_queries(vendor_path)
 
 
 if __name__ == '__main__':
