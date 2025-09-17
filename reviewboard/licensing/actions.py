@@ -14,6 +14,7 @@ from typing_extensions import TypedDict
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from djblets.util.typing import SerializableJSONDict, StrOrPromise
+    from typelets.json import JSONDict
     from typing_extensions import NotRequired, TypeAlias
 
     from reviewboard.licensing.license import LicenseInfo
@@ -42,6 +43,15 @@ class LicenseAction(TypedDict):
 
     #: The localized label for the action.
     label: StrOrPromise
+
+    #: Arguments to pass in a call to the License Provider's action handler.
+    call_args: NotRequired[JSONDict]
+
+    #: Extra data to include in the action for client-side handling.
+    extra_data: NotRequired[JSONDict]
+
+    #: Whether this is a primary button.
+    primary: NotRequired[bool]
 
     #: The URL to navigate to when clicking the action.
     #:

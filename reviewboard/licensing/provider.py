@@ -142,13 +142,11 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
         *,
         license_info: _TLicenseInfo,
         request: (HttpRequest | None) = None,
-    ) -> Sequence[LicenseAction]:
+    ) -> list[LicenseAction]:
         """Return actions to display when viewing a license.
 
-        By default, this will be empty, though the UI may include built-in
-        actions based on the license's information.
-
-        Subclasses may override this to provide custom actions.
+        By default, this may contain Manage License and Update License
+        actions. Subclasses may override this to provide custom actions.
 
         Args:
             license_info (reviewboard.licensing.license.LicenseInfo):
@@ -158,10 +156,28 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
                 The HTTP request from the client.
 
         Returns:
-            list of LicenseAction:
+            list of reviewboard.licensing.actions.LicenseAction:
             The list of actions to display for the license.
         """
-        return []
+        actions: list[LicenseAction] = []
+
+        manage_url = self.get_manage_license_url(license_info=license_info)
+
+        if manage_url:
+            actions.append({
+                'action_id': 'manage-license',
+                'label': _('Manage your license'),
+                'primary': True,
+                'url': manage_url,
+            })
+
+        if license_info.can_upload_license:
+            actions.append({
+                'action_id': 'upload-license',
+                'label': _('Upload a new license file'),
+            })
+
+        return actions
 
     def get_check_license_request(
         self,
@@ -257,7 +273,16 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
             {
                 'actionID': action['action_id'],
                 'label': action['label'],
-                'url': action.get('url'),
+                **{
+                    result_key: cast(JSONValue, action.get(action_key))
+                    for result_key, action_key in (
+                        ('callArgs', 'call_args'),
+                        ('extraData', 'extra_data'),
+                        ('primary', 'primary'),
+                        ('url', 'url')
+                    )
+                    if action.get(action_key)
+                },
             }
             for action in self.get_license_actions(license_info=license_info)
         ]
@@ -382,6 +407,18 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
 
         This is used to perform license action requests from the UI or within
         the server for purposes such as license update checks and activation.
+
+        Custom handlers can include the following standard fields in a JSON
+        response:
+
+        Keys:
+            license_infos (list of dict, optional):
+                A mapping of license IDs to attributes. Any new licenses will
+                be added to the display. Any licenses set to ``None`` will
+                be removed from the display. Anything else will be updated.
+
+            redirect_url (str, optional):
+                A URL to redirect on the client.
 
         Args:
             action_data (dict):

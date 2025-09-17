@@ -274,6 +274,16 @@ suite('rb/admin/views/LicenseView', () => {
                     actionTarget: 'provider1:license1',
                     actions: [
                         {
+                            actionID: 'manage-license',
+                            label: 'Manage your license',
+                            primary: true,
+                            url: 'https://example.com/manage/',
+                        },
+                        {
+                            actionID: 'upload-license',
+                            label: 'Upload a new license file',
+                        },
+                        {
                             actionID: 'action1',
                             label: 'Action 1',
                         },

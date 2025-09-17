@@ -9,6 +9,7 @@ import {
     type ButtonView,
     type CraftedComponent,
     BaseComponentView,
+    ButtonType,
     craft,
     paint,
     renderInto,
@@ -16,6 +17,9 @@ import {
 import { spina } from '@beanbag/spina';
 import { dedent } from 'babel-plugin-dedent';
 
+import {
+    type LicenseCollection,
+} from '../collections/licenseCollection';
 import {
     type License,
     type LicenseAction,
@@ -106,7 +110,9 @@ export interface LicenseActionHandlerOptions {
  * Version Added:
  *     7.1
  */
-@spina
+@spina({
+    prototypeAttrs: ['actionBuilders'],
+})
 export class LicenseView<
     TModel extends License = License,
 > extends BaseComponentView<TModel> {
@@ -117,6 +123,17 @@ export class LicenseView<
         'licenseUpdated': 'render',
         'remove': 'remove',
     };
+
+    /**
+     * A mapping of action IDs to builder functions for action rendering.
+     *
+     * Subclasses can override this to provide special rendering and
+     * handling for actions.
+     */
+    static actionBuilders: Record<string, string> = {
+        'upload-license': '_buildUploadLicenseActionButton',
+    };
+    actionBuilders: Record<string, string>;
 
     /**********************
      * Instance variables *
@@ -171,7 +188,6 @@ export class LicenseView<
         const expiresDate = model.get('expiresDate');
         const licenseStatus = model.get('status');
         const lineItems = model.get('lineItems') || [];
-        const manageURL = model.get('manageURL');
         const noticeHTML = model.get('noticeHTML');
         const summary = model.get('summary');
         const warningHTML = model.get('warningHTML');
@@ -247,6 +263,16 @@ export class LicenseView<
         this._onCheckStatusChanged();
 
         const buildActionButton = this.#buildActionButton.bind(this);
+        const actionBuilders = this.actionBuilders;
+
+        const actionEls = actions.map(actionInfo => {
+            const builderFuncName = actionBuilders[actionInfo.actionID];
+            const builderFunc = (builderFuncName
+                                 ? this[builderFuncName]
+                                 : buildActionButton);
+
+            return builderFunc.call(this, actionInfo);
+        });
 
         renderInto(
             el,
@@ -265,14 +291,7 @@ export class LicenseView<
                  `}
                  ${stateEl}
                  <div class="rb-c-license__actions">
-                  ${manageURL && paint`
-                   <Ink.Button type="primary" tagName="a" href="${manageURL}">
-                    ${_`Manage your license`}
-                   </Ink.Button>
-                  `}
-                  ${model.get('canUploadLicense') &&
-                    this.#buildUploadLicenseActionButton()}
-                  ${actions.map(actionInfo => buildActionButton(actionInfo))}
+                  ${actionEls}
                  </div>
                  ${detailsNodes}
                 </div>
@@ -288,12 +307,40 @@ export class LicenseView<
      *
      * Subclasses can override it to provide handling of any custom actions.
      *
+     * By default, actions will result in action calls to the License
+     * Provider. These can return a ``license_infos`` with a list of license
+     * changes, and can return a ``redirect_url`` with a URL to navigate to.
+     *
      * Args:
      *     options (LicenseActionHandlerOptions):
      *         Options for the action invocation.
      */
-    protected onAction(options: LicenseActionHandlerOptions) {
-        /* This function intentionally left blank. */
+    protected async onAction(options: LicenseActionHandlerOptions) {
+        try {
+            const rsp = await this.model.callAction({
+                action: options.actionID,
+                args: options.actionInfo.callArgs,
+            }) as Record<string, unknown>;
+        } catch (err) {
+            console.error('Unexpected error performing license action: %s',
+                          err);
+
+            /* Show the error to the user. */
+            alert(`There was an error performing this action: ${err.message}`);
+
+            return;
+        }
+
+        if (rsp.license_infos) {
+            const collection = this.collection as unknown as LicenseCollection;
+
+            collection.updateLicenses(
+                rsp.license_infos as Record<string, unknown>);
+        }
+
+        if (rsp.redirect_url) {
+            RB.navigateTo(rsp.redirect_url);
+        }
     }
 
     /**
@@ -324,6 +371,10 @@ export class LicenseView<
             }));
         }
 
+        if (actionInfo.primary) {
+            attrs.type = ButtonType.PRIMARY;
+        }
+
         const actionButton = craft<ButtonView>`
             <Ink.Button ...${attrs}>
              ${actionInfo.label}
@@ -339,12 +390,18 @@ export class LicenseView<
      * This will build the action and upload field, and handle all
      * interactions and UI updates for the upload process.
      *
+     * Args:
+     *     actionInfo (LicenseAction):
+     *         Information for the action.
+     *
      * Returns:
      *     HTMLElement[]:
      *     The resulting action elements.
      */
-    #buildUploadLicenseActionButton(): HTMLElement[] {
-        const buttonLabel = _`Upload a new license file`;
+    private _buildUploadLicenseActionButton(
+        actionInfo: LicenseAction,
+    ): HTMLElement[] {
+        const buttonLabel = actionInfo.label;
         const fileFieldID = `license-upload-form-field-${this.cid}`;
 
         function resetButton() {

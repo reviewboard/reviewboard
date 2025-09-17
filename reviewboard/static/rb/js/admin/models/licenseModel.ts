@@ -121,8 +121,14 @@ export interface LicenseAction {
     /** The display label for this action. */
     label: string;
 
-    /** Extra data provided for the action handler. */
+    /** Arguments to pass in a call. */
+    callArgs?: Record<string, unknown>;
+
+    /** Extra data provided for the client-side action handler. */
     extraData?: Record<string, unknown>;
+
+    /** Whether this is a primary button. */
+    primary?: boolean;
 
     /** The URL to perform this action. */
     url?: string;
@@ -223,7 +229,9 @@ export interface LicenseOptions {
  * Version Added:
  *     7.1
  */
-@spina
+@spina({
+    prototypeAttrs: ['actionBuilders'],
+})
 export class License<
     TAttrs extends LicenseAttrs = LicenseAttrs,
     TExtraOptions extends LicenseOptions = LicenseOptions,
