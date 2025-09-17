@@ -101,7 +101,10 @@ export interface CallActionOptions {
     action: string;
 
     /** Encoded arguments for the action. */
-    args?: Record<string, Blob | string>;
+    args?: Record<string, unknown>;
+
+    /** Uploaded content for the action. */
+    uploads?: Record<string, Blob>;
 }
 
 
@@ -292,7 +295,7 @@ export class License<
     async uploadLicenseFile(contents: Blob) {
         await this.callAction({
             action: 'upload-license',
-            args: {
+            uploads: {
                 license_data: contents,
             },
         });
@@ -329,7 +332,11 @@ export class License<
         formData.append('csrfmiddlewaretoken', this.actionCSRFToken);
 
         if (options.args) {
-            for (const [key, value] of Object.entries(options.args)) {
+            formData.append('action_data', JSON.stringify(options.args));
+        }
+
+        if (options.uploads) {
+            for (const [key, value] of Object.entries(options.uploads)) {
                 formData.append(key, value);
             }
         }
@@ -411,7 +418,7 @@ export class License<
         }
 
         /* Send it to the configured endpoint. */
-        let response: Response;
+        let response: Response = null;
         let licenseRsp;
 
         try {
@@ -465,7 +472,7 @@ export class License<
     onCheckForUpdatesHTTPError(response: Response) {
         if (response.status === 403) {
             /*
-             * A 403 resposne from a license server indicates that there's
+             * A 403 response from a license server indicates that there's
              * no accessible license.
              */
             this.set('checkStatus', LicenseCheckStatus.NO_LICENSE);
@@ -503,8 +510,8 @@ export class License<
             rsp = await this.callAction({
                 action: 'process-license-update',
                 args: {
-                    check_request_data: JSON.stringify(requestData),
-                    check_response_data: JSON.stringify(checkLicenseData),
+                    check_request_data: requestData,
+                    check_response_data: checkLicenseData,
                 },
             }) as CheckUpdatesProcessResponsePayload;
         } catch (xhr) {

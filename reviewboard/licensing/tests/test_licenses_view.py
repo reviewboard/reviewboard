@@ -348,6 +348,36 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
         })
 
     @override_feature_check(licensing_feature, True)
+    def test_post_with_invalid_action_data(
+        self,
+    ) -> None:
+        """Testing LicenseView.post as admin with invalid action_data"""
+        trace_id = '00000000-0000-0000-0000-000000000001'
+        self.spy_on(uuid4, op=kgb.SpyOpReturn(trace_id))
+
+        client = self.client
+        self.assertTrue(client.login(username='admin', password='admin'))
+
+        response = client.post(reverse('admin-licenses'), {
+            'action': 'process-license-update',
+            'action_target': 'basic-tests-provider:license2',
+            'action_data': (
+                '{'
+                '"check_request_data": "abc123",'
+                '"check_response_data": xxx'
+                '}'
+            ),
+        })
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {
+            'error': (
+                'Invalid action data: Expecting value: line 1 column 56 '
+                '(char 55).'
+            ),
+        })
+
+    @override_feature_check(licensing_feature, True)
     def test_post_with_license_update_check(self) -> None:
         """Testing LicenseView.post as admin with action="license-update-check"
         """
@@ -404,14 +434,16 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
         response = client.post(reverse('admin-licenses'), {
             'action': 'process-license-update',
             'action_target': 'basic-tests-provider:license2',
-            'check_request_data': json.dumps({
-                'license_id': 'license1',
-                'something': 'special',
-                'version': '1.0',
-            }),
-            'check_response_data': json.dumps({
-                'updated': True,
-                'version': '1.0',
+            'action_data': json.dumps({
+                'check_request_data': {
+                    'license_id': 'license1',
+                    'something': 'special',
+                    'version': '1.0',
+                },
+                'check_response_data': {
+                    'updated': True,
+                    'version': '1.0',
+                },
             }),
         })
 
@@ -465,14 +497,16 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
         response = client.post(reverse('admin-licenses'), {
             'action': 'process-license-update',
             'action_target': 'basic-tests-provider:license2',
-            'check_request_data': json.dumps({
-                'license_id': 'license1',
-                'something': 'special',
-                'version': '1.0',
-            }),
-            'check_response_data': json.dumps({
-                'latest': True,
-                'version': '1.0',
+            'action_data': json.dumps({
+                'check_request_data': {
+                    'license_id': 'license1',
+                    'something': 'special',
+                    'version': '1.0',
+                },
+                'check_response_data': {
+                    'latest': True,
+                    'version': '1.0',
+                },
             }),
         })
 
@@ -523,14 +557,16 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
         response = client.post(reverse('admin-licenses'), {
             'action': 'process-license-update',
             'action_target': 'basic-tests-provider:license2',
-            'check_request_data': json.dumps({
-                'license_id': 'license1',
-                'something': 'special',
-                'version': '1.0',
-            }),
-            'check_response_data': json.dumps({
-                'latest': True,
-                'version': '2.0',
+            'action_data': json.dumps({
+                'check_request_data': {
+                    'license_id': 'license1',
+                    'something': 'special',
+                    'version': '1.0',
+                },
+                'check_response_data': {
+                    'latest': True,
+                    'version': '2.0',
+                },
             }),
         })
 
@@ -582,71 +618,15 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
         response = client.post(reverse('admin-licenses'), {
             'action': 'process-license-update',
             'action_target': 'basic-tests-provider:license2',
-            'check_request_data': '"abc123"',
+            'action_data': json.dumps({
+                'check_request_data': 'abc123',
+            }),
         })
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {
             'error': (
                 f'Missing check_response_data value for license check. This '
-                f'may be an internal error or an issue with the licensing '
-                f'server. Check the Review Board server logs for more '
-                f'information (error ID {trace_id}).'
-            ),
-        })
-
-    @override_feature_check(licensing_feature, True)
-    def test_post_with_process_license_update_invalid_check_data(self) -> None:
-        """Testing LicenseView.post as admin with
-        action="process-license-update" and non-JSON check_response_data
-        """
-        trace_id = '00000000-0000-0000-0000-000000000001'
-        self.spy_on(uuid4, op=kgb.SpyOpReturn(trace_id))
-
-        client = self.client
-        self.assertTrue(client.login(username='admin', password='admin'))
-
-        response = client.post(reverse('admin-licenses'), {
-            'action': 'process-license-update',
-            'action_target': 'basic-tests-provider:license2',
-            'check_request_data': 'xxx',
-            'check_response_data': '"def456"',
-        })
-
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {
-            'error': (
-                f'Invalid check_request_data value for license check. This '
-                f'may be an internal error or an issue with the licensing '
-                f'server. Check the Review Board server logs for more '
-                f'information (error ID {trace_id}).'
-            ),
-        })
-
-    @override_feature_check(licensing_feature, True)
-    def test_post_with_process_license_update_invalid_response_data(
-        self,
-    ) -> None:
-        """Testing LicenseView.post as admin with
-        action="process-license-update" and non-JSON check_response_data
-        """
-        trace_id = '00000000-0000-0000-0000-000000000001'
-        self.spy_on(uuid4, op=kgb.SpyOpReturn(trace_id))
-
-        client = self.client
-        self.assertTrue(client.login(username='admin', password='admin'))
-
-        response = client.post(reverse('admin-licenses'), {
-            'action': 'process-license-update',
-            'action_target': 'basic-tests-provider:license2',
-            'check_request_data': '"abc123"',
-            'check_response_data': 'xxx',
-        })
-
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {
-            'error': (
-                f'Invalid check_response_data value for license check. This '
                 f'may be an internal error or an issue with the licensing '
                 f'server. Check the Review Board server logs for more '
                 f'information (error ID {trace_id}).'

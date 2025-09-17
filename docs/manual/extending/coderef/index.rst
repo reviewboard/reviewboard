@@ -255,11 +255,14 @@ Licensing
    :toctree: python
 
    reviewboard.licensing
+   reviewboard.licensing.actions
    reviewboard.licensing.errors
    reviewboard.licensing.features
    reviewboard.licensing.license
+   reviewboard.licensing.license_checks
    reviewboard.licensing.provider
    reviewboard.licensing.registry
+   reviewboard.licensing.views
 
 
 E-mail and WebHooks
