@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import kgb
+from tree_sitter import QueryError
+
 from reviewboard.diffviewer.chunk_generator import RawDiffChunkGenerator
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.testing import TestCase
+from reviewboard.treesitter.highlight import highlight
+from reviewboard.treesitter.language import get_language_name_for_file
 
 
-class RawDiffChunkGeneratorTests(TestCase):
+class RawDiffChunkGeneratorTests(kgb.SpyAgency, TestCase):
     """Unit tests for RawDiffChunkGenerator."""
 
     @property
@@ -462,21 +467,20 @@ class RawDiffChunkGeneratorTests(TestCase):
                     (
                         1,
                         1,
-                        ('<span class="cm">/* Say hello; newline\u2067 /*/'
-                         '</span><span class="w"> </span>'
-                         '<span class="k">return</span>'
-                         '<span class="w"> </span>'
-                         '<span class="mi">0</span>'
-                         '<span class="w"> </span>'
-                         '<span class="p">;</span>'),
+                        (
+                            '<span class="ts-comment">/* Say hello; '
+                            'newline\u2067 /*/</span> <span '
+                            'class="ts-keyword">return</span> <span '
+                            'class="ts-number">0</span> ;'
+                        ),
                         None,
                         1,
-                        ('<span class="k">def</span>'
-                         '<span class="w"> </span>'
-                         '<span class="nf">is</span>'
-                         '<span class="err">\u200b</span>'
-                         '<span class="n">Admin</span>'
-                         '<span class="p">():</span>'),
+                        (
+                            '<span class="ts-keyword">def</span> '
+                            '<span class="ts-variable">is</span>\u200b'
+                            '<span class="ts-function"><span '
+                            'class="ts-variable">Admin</span></span>():'
+                        ),
                         None,
                         False,
                         {
@@ -906,3 +910,473 @@ class RawDiffChunkGeneratorTests(TestCase):
                     'warnings': {'bidi', 'zws'},
                 }),
             ])
+
+    def test_get_chunks_syntax_highlighting_treesitter(self) -> None:
+        """Testing RawDiffChunkGenerator.get_chunks with syntax highlighting
+        from Tree Sitter
+        """
+        old = b'int main() {\n    return 0;\n}'
+        new = b'int main() {\n    return 1;\n}'
+
+        diff_settings = DiffSettings.create(syntax_highlighting=True)
+
+        generator = RawDiffChunkGenerator(old=old,
+                                          new=new,
+                                          orig_filename='main.c',
+                                          modified_filename='main.c',
+                                          diff_settings=diff_settings)
+        self.assertTrue(generator.enable_syntax_highlighting)
+
+        chunks = list(generator.get_chunks())
+
+        self.assertEqual(len(chunks), 3)
+
+        # First chunk: equal line "int main() {"
+        self.assertEqual(
+            chunks[0],
+            {
+                'change': 'equal',
+                'collapsable': False,
+                'index': 0,
+                'lines': [
+                    (
+                        1,
+                        1,
+                        '<span class="ts-type-builtin">int</span> <span '
+                        'class="ts-function"><span class="ts-variable">main'
+                        '</span></span>() {',
+                        None,
+                        1,
+                        '<span class="ts-type-builtin">int</span> <span '
+                        'class="ts-function"><span class="ts-variable">main'
+                        '</span></span>() {',
+                        None,
+                        False,
+                        None,
+                    ),
+                ],
+                'meta': {
+                    'left_headers': [(1, 'int main() {')],
+                    'right_headers': [(1, 'int main() {')],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+
+        # Second chunk: replaced line with return statement
+        self.assertEqual(
+            chunks[1],
+            {
+                'change': 'replace',
+                'collapsable': False,
+                'index': 1,
+                'lines': [
+                    (
+                        2,
+                        2,
+                        '    <span class="ts-keyword">return</span> <span '
+                        'class="ts-number">0</span>;',
+                        [(11, 12)],
+                        2,
+                        '    <span class="ts-keyword">return</span> <span '
+                        'class="ts-number">1</span>;',
+                        [(11, 12)],
+                        False,
+                        None,
+                    ),
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+
+        # Third chunk: equal line "}"
+        self.assertEqual(
+            chunks[2],
+            {
+                'change': 'equal',
+                'collapsable': False,
+                'index': 2,
+                'lines': [
+                    (
+                        3,
+                        3,
+                        '}',
+                        None,
+                        3,
+                        '}',
+                        None,
+                        False,
+                        None,
+                    ),
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+
+    def test_get_chunks_syntax_highlighting_no_ts_language(self) -> None:
+        """Testing RawDiffChunkGenerator.get_chunks with syntax highlighting
+        with no Tree Sitter language detected (fall back to Pygemnts)
+        """
+        old = b'int main() {\n    return 0;\n}'
+        new = b'int main() {\n    return 1;\n}'
+
+        diff_settings = DiffSettings.create(syntax_highlighting=True)
+
+        self.spy_on(get_language_name_for_file,
+                    op=kgb.SpyOpReturn(None))
+
+        generator = RawDiffChunkGenerator(old=old,
+                                          new=new,
+                                          orig_filename='main.c',
+                                          modified_filename='main.c',
+                                          diff_settings=diff_settings)
+        self.assertTrue(generator.enable_syntax_highlighting)
+
+        chunks = list(generator.get_chunks())
+
+        self.assertSpyCalled(get_language_name_for_file)
+        self.assertEqual(len(chunks), 3)
+
+        # First chunk: equal line "int main() {"
+        self.assertEqual(
+            chunks[0],
+            {
+                'change': 'equal',
+                'collapsable': False,
+                'index': 0,
+                'lines': [
+                    (
+                        1,
+                        1,
+                        '<span class="kt">int</span><span class="w"> </span>'
+                        '<span class="nf">main</span><span class="p">()</span>'
+                        '<span class="w"> </span><span class="p">{</span>',
+                        None,
+                        1,
+                        '<span class="kt">int</span><span class="w"> </span>'
+                        '<span class="nf">main</span><span class="p">()</span>'
+                        '<span class="w"> </span><span class="p">{</span>',
+                        None,
+                        False,
+                        None,
+                    ),
+                ],
+                'meta': {
+                    'left_headers': [(1, 'int main() {')],
+                    'right_headers': [(1, 'int main() {')],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+
+        # Second chunk: replaced line with return statement
+        self.assertEqual(
+            chunks[1],
+            {
+                'change': 'replace',
+                'collapsable': False,
+                'index': 1,
+                'lines': [
+                    (
+                        2,
+                        2,
+                        '<span class="w">    </span><span class="k">return'
+                        '</span><span class="w"> </span><span class="mi">0'
+                        '</span><span class="p">;</span>',
+                        [(11, 12)],
+                        2,
+                        '<span class="w">    </span><span class="k">return'
+                        '</span><span class="w"> </span><span class="mi">1'
+                        '</span><span class="p">;</span>',
+                        [(11, 12)],
+                        False,
+                        None,
+                    ),
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+
+        # Third chunk: equal line "}"
+        self.assertEqual(
+            chunks[2],
+            {
+                'change': 'equal',
+                'collapsable': False,
+                'index': 2,
+                'lines': [
+                    (
+                        3,
+                        3,
+                        '<span class="p">}</span>',
+                        None,
+                        3,
+                        '<span class="p">}</span>',
+                        None,
+                        False,
+                        None,
+                    ),
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+
+    def test_get_chunks_syntax_highlighting_ts_fails(self) -> None:
+        """Testing RawDiffChunkGenerator.get_chunks with syntax highlighting
+        when Tree Sitter highlighting returns None (fall back to Pygemnts)
+        """
+        old = b'int main() {\n    return 0;\n}'
+        new = b'int main() {\n    return 1;\n}'
+
+        diff_settings = DiffSettings.create(syntax_highlighting=True)
+
+        self.spy_on(highlight,
+                    op=kgb.SpyOpReturn(None))
+
+        generator = RawDiffChunkGenerator(old=old,
+                                          new=new,
+                                          orig_filename='main.c',
+                                          modified_filename='main.c',
+                                          diff_settings=diff_settings)
+        self.assertTrue(generator.enable_syntax_highlighting)
+
+        chunks = list(generator.get_chunks())
+
+        self.assertSpyCalled(highlight)
+        self.assertEqual(len(chunks), 3)
+
+        # First chunk: equal line "int main() {"
+        self.assertEqual(
+            chunks[0],
+            {
+                'change': 'equal',
+                'collapsable': False,
+                'index': 0,
+                'lines': [
+                    (
+                        1,
+                        1,
+                        '<span class="kt">int</span><span class="w"> </span>'
+                        '<span class="nf">main</span><span class="p">()</span>'
+                        '<span class="w"> </span><span class="p">{</span>',
+                        None,
+                        1,
+                        '<span class="kt">int</span><span class="w"> </span>'
+                        '<span class="nf">main</span><span class="p">()</span>'
+                        '<span class="w"> </span><span class="p">{</span>',
+                        None,
+                        False,
+                        None,
+                    ),
+                ],
+                'meta': {
+                    'left_headers': [(1, 'int main() {')],
+                    'right_headers': [(1, 'int main() {')],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+
+        # Second chunk: replaced line with return statement
+        self.assertEqual(
+            chunks[1],
+            {
+                'change': 'replace',
+                'collapsable': False,
+                'index': 1,
+                'lines': [
+                    (
+                        2,
+                        2,
+                        '<span class="w">    </span><span class="k">return'
+                        '</span><span class="w"> </span><span class="mi">0'
+                        '</span><span class="p">;</span>',
+                        [(11, 12)],
+                        2,
+                        '<span class="w">    </span><span class="k">return'
+                        '</span><span class="w"> </span><span class="mi">1'
+                        '</span><span class="p">;</span>',
+                        [(11, 12)],
+                        False,
+                        None,
+                    ),
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+
+        # Third chunk: equal line "}"
+        self.assertEqual(
+            chunks[2],
+            {
+                'change': 'equal',
+                'collapsable': False,
+                'index': 2,
+                'lines': [
+                    (
+                        3,
+                        3,
+                        '<span class="p">}</span>',
+                        None,
+                        3,
+                        '<span class="p">}</span>',
+                        None,
+                        False,
+                        None,
+                    ),
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+
+    def test_get_chunks_syntax_highlighting_ts_exception(self) -> None:
+        """Testing RawDiffChunkGenerator.get_chunks with syntax highlighting
+        when Tree Sitter highlighting has an exception (fall back to Pygemnts)
+        """
+        old = b'int main() {\n    return 0;\n}'
+        new = b'int main() {\n    return 1;\n}'
+
+        diff_settings = DiffSettings.create(syntax_highlighting=True)
+
+        self.spy_on(highlight,
+                    op=kgb.SpyOpRaise(QueryError('query failed')))
+
+        generator = RawDiffChunkGenerator(old=old,
+                                          new=new,
+                                          orig_filename='main.c',
+                                          modified_filename='main.c',
+                                          diff_settings=diff_settings)
+        self.assertTrue(generator.enable_syntax_highlighting)
+
+        chunks = list(generator.get_chunks())
+
+        self.assertSpyCalled(highlight)
+        self.assertEqual(len(chunks), 3)
+
+        # First chunk: equal line "int main() {"
+        self.assertEqual(
+            chunks[0],
+            {
+                'change': 'equal',
+                'collapsable': False,
+                'index': 0,
+                'lines': [
+                    (
+                        1,
+                        1,
+                        '<span class="kt">int</span><span class="w"> </span>'
+                        '<span class="nf">main</span><span class="p">()</span>'
+                        '<span class="w"> </span><span class="p">{</span>',
+                        None,
+                        1,
+                        '<span class="kt">int</span><span class="w"> </span>'
+                        '<span class="nf">main</span><span class="p">()</span>'
+                        '<span class="w"> </span><span class="p">{</span>',
+                        None,
+                        False,
+                        None,
+                    ),
+                ],
+                'meta': {
+                    'left_headers': [(1, 'int main() {')],
+                    'right_headers': [(1, 'int main() {')],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+
+        # Second chunk: replaced line with return statement
+        self.assertEqual(
+            chunks[1],
+            {
+                'change': 'replace',
+                'collapsable': False,
+                'index': 1,
+                'lines': [
+                    (
+                        2,
+                        2,
+                        '<span class="w">    </span><span class="k">return'
+                        '</span><span class="w"> </span><span class="mi">0'
+                        '</span><span class="p">;</span>',
+                        [(11, 12)],
+                        2,
+                        '<span class="w">    </span><span class="k">return'
+                        '</span><span class="w"> </span><span class="mi">1'
+                        '</span><span class="p">;</span>',
+                        [(11, 12)],
+                        False,
+                        None,
+                    ),
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })
+
+        # Third chunk: equal line "}"
+        self.assertEqual(
+            chunks[2],
+            {
+                'change': 'equal',
+                'collapsable': False,
+                'index': 2,
+                'lines': [
+                    (
+                        3,
+                        3,
+                        '<span class="p">}</span>',
+                        None,
+                        3,
+                        '<span class="p">}</span>',
+                        None,
+                        False,
+                        None,
+                    ),
+                ],
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [],
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                },
+                'numlines': 1,
+            })

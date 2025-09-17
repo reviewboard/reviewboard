@@ -21,6 +21,7 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import (find_lexer_class,
                              guess_lexer_for_filename)
+from tree_sitter_language_pack import get_parser
 
 from reviewboard.codesafety import code_safety_checker_registry
 from reviewboard.deprecation import (
@@ -41,16 +42,20 @@ from reviewboard.diffviewer.diffutils import (
 )
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 from reviewboard.diffviewer.settings import DiffSettings
+from reviewboard.treesitter.highlight import highlight as ts_highlight
+from reviewboard.treesitter.language import get_language_name_for_file
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Sequence
 
+    import tree_sitter
     from django.http import HttpRequest
     from typing_extensions import TypeAlias
 
     from reviewboard.diffviewer.differ import Differ, DiffOpcodeTag
     from reviewboard.diffviewer.models.filediff import FileDiff
     from reviewboard.diffviewer.opcode_generator import DiffOpcodeGenerator
+    from reviewboard.treesitter.language import SupportedLanguage
 
     _HtmlFormatter = HtmlFormatter[str]
 else:
@@ -255,6 +260,15 @@ class RawDiffChunkGenerator:
     #: The old version of the file.
     old: bytes | Sequence[bytes]
 
+    #: The tree-sitter language for the old file.
+    old_language_name: SupportedLanguage | None
+
+    #: The MIME type for the old file.
+    old_mimetype: str | None
+
+    #: The old file as a tree-sitter tree.
+    old_tree: tree_sitter.Tree | None
+
     #: The filename for the old version of the file.
     orig_filename: str
 
@@ -263,6 +277,15 @@ class RawDiffChunkGenerator:
 
     #: The new version of the file.
     new: bytes | Sequence[bytes]
+
+    #: The tree-sitter language for the new file.
+    new_language_name: SupportedLanguage | None
+
+    #: The MIME type for the new file.
+    new_mimetype: str | None
+
+    #: The new file as a tree-sitter tree.
+    new_tree: tree_sitter.Tree | None
 
     #: The current chunk being processed.
     _chunk_index: int
@@ -372,6 +395,13 @@ class RawDiffChunkGenerator:
         self.diff_compat = diff_compat
         self.differ = None
 
+        self.old_language_name = None
+        self.old_mimetype = None
+        self.old_tree = None
+        self.new_language_name = None
+        self.new_mimetype = None
+        self.new_tree = None
+
         self.all_code_safety_results = {}
 
         # Chunk processing state.
@@ -470,6 +500,9 @@ class RawDiffChunkGenerator:
         is_lists = isinstance(old, list)
         assert is_lists == isinstance(new, list)
 
+        old_filename = self.normalize_path_for_display(self.orig_filename)
+        new_filename = self.normalize_path_for_display(self.modified_filename)
+
         if old_encoding_list is None:
             old_encoding_list = self.encoding_list
 
@@ -497,14 +530,37 @@ class RawDiffChunkGenerator:
             old_markup = None
             new_markup = None
 
+            old_language_name = get_language_name_for_file(old_filename)
+            new_language_name = get_language_name_for_file(new_filename)
+
+            self.old_language_name = old_language_name
+            self.new_language_name = new_language_name
+
+            if old_language_name:
+                parser = get_parser(old_language_name)
+                self.old_tree = parser.parse(old_str.encode())
+
+            if new_language_name:
+                parser = get_parser(new_language_name)
+                self.new_tree = parser.parse(new_str.encode())
+
             if self._get_enable_syntax_highlighting(
                 old, new, old_lines, new_lines):
-                old_markup = self._apply_pygments(
-                    old_str,
-                    self.normalize_path_for_display(self.orig_filename))
-                new_markup = self._apply_pygments(
-                    new_str,
-                    self.normalize_path_for_display(self.modified_filename))
+
+                old_markup = self._highlight(
+                    data_str=old_str,
+                    data_lines=old_lines,
+                    filename=old_filename,
+                    tree=self.old_tree,
+                    language=old_language_name,
+                    mimetype=self.old_mimetype)
+                new_markup = self._highlight(
+                    data_str=new_str,
+                    data_lines=new_lines,
+                    filename=new_filename,
+                    tree=self.new_tree,
+                    language=new_language_name,
+                    mimetype=self.new_mimetype)
 
             if not old_markup:
                 old_markup = self.NEWLINES_RE.split(escape(old_str))
@@ -523,7 +579,7 @@ class RawDiffChunkGenerator:
         self.differ = get_differ(old_lines, new_lines,
                                  ignore_space=ignore_space,
                                  compat_version=self.diff_compat)
-        self.differ.add_interesting_lines_for_headers(self.orig_filename)
+        self.differ.add_interesting_lines_for_headers(old_filename)
 
         context_num_lines = self.diff_settings.context_num_lines
         collapse_threshold = 2 * context_num_lines + 3
@@ -1494,12 +1550,65 @@ class RawDiffChunkGenerator:
         else:
             self._last_header_index[0] = last_index
 
+    def _highlight(
+        self,
+        *,
+        data_str: str,
+        data_lines: Sequence[str],
+        filename: str,
+        tree: tree_sitter.Tree | None,
+        language: SupportedLanguage | None,
+        mimetype: str | None,
+    ) -> Sequence[str] | None:
+        """Apply syntax highlighting to a file's context.
+
+        Args:
+            data_str (str):
+                The file's content, as a string.
+
+            data_lines (list of str):
+                The file's content, split into lines.
+
+            filename (str):
+                The name of the file.
+
+            tree (tree_sitter.Tree):
+                The parsed tree-sitter tree for the file, if available.
+
+            language (reviewboard.treesitter.language.SupportedLanguage):
+                The name of the language used for tree-sitter parsing, if
+                available.
+
+            mimetype (str):
+                The MIME type of the file, if available,
+
+        Returns:
+            list of str:
+            A list of lines, all syntax-highlighted, if highlighting is
+            possible. If neither tree-sitter or Pygments can highlight the
+            file, this will return ``None``.
+        """
+        if tree and language:
+            try:
+                highlighted = ts_highlight(
+                    data_str.encode(),
+                    data_lines,
+                    tree,
+                    language)
+
+                if highlighted:
+                    return highlighted
+            except Exception as e:
+                logger.exception('Tree sitter highlighting failed: %s', e)
+
+        return self._apply_pygments(data_str, filename)
+
     def _apply_pygments(
         self,
         data: str,
         filename: str,
     ) -> Sequence[str] | None:
-        """Apply Pygments syntax-highlighting to a file's contents.
+        """Use Pygments to syntax highlight a file's contents.
 
         This will only apply syntax highlighting if a lexer is available and
         the file extension is not blacklisted.
@@ -1763,6 +1872,9 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
 
         old_encoding_list = get_filediff_encodings(filediff)
         new_encoding_list = old_encoding_list
+
+        self.old_mimetype = filediff.extra_data.get('source_mimetype')
+        self.new_mimetype = filediff.extra_data.get('dest_mimetype')
 
         if base_filediff is not None:
             # The diff is against a commit that:
