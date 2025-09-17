@@ -7,8 +7,7 @@ Version Added:
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone as tz
-from typing import TYPE_CHECKING
+from datetime import datetime, timezone as tz
 from uuid import uuid4
 
 import kgb
@@ -16,186 +15,14 @@ from django.urls import reverse
 from django.utils import timezone
 from djblets.features.testing import override_feature_check
 
-from reviewboard.licensing.errors import LicenseActionError
 from reviewboard.licensing.features import licensing_feature
-from reviewboard.licensing.license import LicenseInfo, LicenseStatus
-from reviewboard.licensing.license_checks import (
-    ProcessCheckLicenseResult,
-    ProcessCheckLicenseResultStatus,
-)
 from reviewboard.licensing.provider import BaseLicenseProvider
-from reviewboard.licensing.registry import (LicenseProviderRegistry,
-                                            license_provider_registry)
+from reviewboard.licensing.registry import license_provider_registry
+from reviewboard.licensing.tests.providers import (
+    BasicTestsLicenseProvider,
+    ExpiredTestsLicenseProvider,
+)
 from reviewboard.testing import TestCase
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
-
-    from django.http import HttpRequest
-    from typelets.json import JSONValue
-
-    from reviewboard.licensing.license_checks import RequestCheckLicenseResult
-    from reviewboard.licensing.provider import LicenseAction
-
-
-class _MyLicenseProvider1(BaseLicenseProvider):
-    license_provider_id = 'my-provider-1'
-
-    def get_license_actions(
-        self,
-        *,
-        license_info: LicenseInfo,
-        request: (HttpRequest | None) = None,
-    ) -> Sequence[LicenseAction]:
-        return [{
-            'action_id': 'test',
-            'label': 'Test',
-            'url': f'https://example.com/{license_info.license_id}/',
-        }]
-
-    def get_licenses(self) -> Sequence[LicenseInfo]:
-        license1 = self.get_license_by_id('license1')
-        license2 = self.get_license_by_id('license2')
-
-        assert license1
-        assert license2
-
-        return [license1, license2]
-
-    def get_license_by_id(
-        self,
-        license_id: str,
-    ) -> LicenseInfo | None:
-        if license_id == 'license1':
-            return LicenseInfo(
-                expires=timezone.now() + timedelta(days=100),
-                license_id=license_id,
-                licensed_to='Test User',
-                line_items=[
-                    'Line 1',
-                    'Line 2',
-                ],
-                product_name='Test Product',
-                status=LicenseStatus.UNLICENSED)
-        elif license_id == 'license2':
-            return LicenseInfo(
-                expires=timezone.now() + timedelta(days=5),
-                license_id=license_id,
-                licensed_to='Test User',
-                plan_id='plan1',
-                plan_name='Plan 1',
-                product_name='Test Product',
-                status=LicenseStatus.LICENSED)
-        else:
-            return None
-
-    def get_manage_license_url(
-        self,
-        *,
-        license_info: LicenseInfo,
-    ) -> str | None:
-        if license_info.license_id == 'license1':
-            return f'https://example.com/{license_info.license_id}/'
-
-        return None
-
-    def get_check_license_status_url(
-        self,
-        *,
-        license_info: LicenseInfo,
-    ) -> str | None:
-        return f'https://example.com/{license_info.license_id}/check/'
-
-    def get_check_license_request(
-        self,
-        *,
-        license_info: LicenseInfo,
-        request: (HttpRequest | None) = None,
-    ) -> RequestCheckLicenseResult | None:
-        return {
-            'data': {
-                'license_id': license_info.license_id,
-                'something': 'special',
-                'version': '1.0',
-            },
-            'url': f'https://example.com/{license_info.license_id}/check/'
-        }
-
-    def process_check_license_result(
-        self,
-        *,
-        license_info: LicenseInfo,
-        check_request_data: JSONValue,
-        check_response_data: JSONValue,
-        request: (HttpRequest | None) = None,
-    ) -> ProcessCheckLicenseResult:
-        assert isinstance(check_response_data, dict)
-
-        if check_response_data.get('version') != '1.0':
-            raise LicenseActionError(
-                'Invalid version from the licensing server! Oh no!'
-            )
-
-        status: ProcessCheckLicenseResultStatus
-
-        if check_response_data.get('updated'):
-            status = ProcessCheckLicenseResultStatus.APPLIED
-            license_info.expires = timezone.now() + timedelta(days=365)
-            license_info.plan_id = 'smpbpe1'
-            license_info.plan_name = 'Super Mega Power Bundle Pro Enterprise'
-        elif check_response_data.get('latest'):
-            status = ProcessCheckLicenseResultStatus.HAS_LATEST
-        else:
-            status = ProcessCheckLicenseResultStatus.ERROR_APPLYING
-
-        return {
-            'status': status,
-            'license_infos': {
-                'license1': self.get_js_license_model_data(
-                    license_info=license_info),
-            },
-        }
-
-
-class _MyLicenseProvider2(BaseLicenseProvider):
-    license_provider_id = 'my-provider-2'
-
-    def get_licenses(self) -> Sequence[LicenseInfo]:
-        license1 = self.get_license_by_id('license1')
-        license2 = self.get_license_by_id('license2')
-
-        assert license1
-        assert license2
-
-        return [license1, license2]
-
-    def get_license_by_id(
-        self,
-        license_id: str,
-    ) -> LicenseInfo | None:
-        if license_id == 'license1':
-            return LicenseInfo(
-                expires=timezone.now() - timedelta(days=50),
-                is_trial=True,
-                license_id=license_id,
-                licensed_to='Test User',
-                product_name='Test Product',
-                status=LicenseStatus.HARD_EXPIRED)
-        elif license_id == 'license2':
-            return LicenseInfo(
-                expires=timezone.now() - timedelta(days=2),
-                license_id=license_id,
-                licensed_to='Test User',
-                product_name='Test Product',
-                status=LicenseStatus.EXPIRED_GRACE_PERIOD)
-        else:
-            return None
-
-
-class _MyLicenseProviderRegistry(LicenseProviderRegistry):
-    def get_defaults(self) -> Iterable[BaseLicenseProvider]:
-        yield _MyLicenseProvider1()
-        yield _MyLicenseProvider2()
 
 
 class LicenseViewTests(kgb.SpyAgency, TestCase):
@@ -227,8 +54,8 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
         super().setUpClass()
 
         license_providers = [
-            _MyLicenseProvider1(),
-            _MyLicenseProvider2(),
+            BasicTestsLicenseProvider(),
+            ExpiredTestsLicenseProvider(),
         ]
 
         cls._license_providers = license_providers
@@ -299,7 +126,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                 'license_infos': [
                     {
                         'attrs': {
-                            'actionTarget': 'my-provider-1:license1',
+                            'actionTarget': 'basic-tests-provider:license1',
                             'actions': [
                                 {
                                     'actionID': 'test',
@@ -332,7 +159,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                     },
                     {
                         'attrs': {
-                            'actionTarget': 'my-provider-1:license2',
+                            'actionTarget': 'basic-tests-provider:license2',
                             'actions': [
                                 {
                                     'actionID': 'test',
@@ -368,7 +195,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                 'license_infos': [
                     {
                         'attrs': {
-                            'actionTarget': 'my-provider-2:license1',
+                            'actionTarget': 'expired-tests-provider:license1',
                             'actions': [],
                             'canUploadLicense': False,
                             'expiresDate': datetime(2025, 3, 2, 0, 0,
@@ -394,7 +221,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                     },
                     {
                         'attrs': {
-                            'actionTarget': 'my-provider-2:license2',
+                            'actionTarget': 'expired-tests-provider:license2',
                             'actions': [],
                             'canUploadLicense': False,
                             'expiresDate': datetime(2025, 4, 19, 0, 0,
@@ -496,7 +323,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         response = client.post(reverse('admin-licenses'), {
             'action': 'xxx',
-            'action_target': 'my-provider-2:xxx',
+            'action_target': 'expired-tests-provider:xxx',
         })
 
         self.assertEqual(response.status_code, 400)
@@ -512,7 +339,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         response = client.post(reverse('admin-licenses'), {
             'action': 'xxx',
-            'action_target': 'my-provider-2:license1',
+            'action_target': 'expired-tests-provider:license1',
         })
 
         self.assertEqual(response.status_code, 400)
@@ -529,7 +356,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         response = client.post(reverse('admin-licenses'), {
             'action': 'license-update-check',
-            'action_target': 'my-provider-1:license1',
+            'action_target': 'basic-tests-provider:license1',
         })
 
         self.assertEqual(response.status_code, 200)
@@ -555,7 +382,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         response = client.post(reverse('admin-licenses'), {
             'action': 'license-update-check',
-            'action_target': 'my-provider-2:license1',
+            'action_target': 'expired-tests-provider:license1',
         })
 
         self.assertEqual(response.status_code, 200)
@@ -576,7 +403,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         response = client.post(reverse('admin-licenses'), {
             'action': 'process-license-update',
-            'action_target': 'my-provider-1:license2',
+            'action_target': 'basic-tests-provider:license2',
             'check_request_data': json.dumps({
                 'license_id': 'license1',
                 'something': 'special',
@@ -593,7 +420,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             'status': 'applied',
             'license_infos': {
                 'license1': {
-                    'actionTarget': 'my-provider-1:license2',
+                    'actionTarget': 'basic-tests-provider:license2',
                     'actions': [
                         {
                             'actionID': 'test',
@@ -637,7 +464,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         response = client.post(reverse('admin-licenses'), {
             'action': 'process-license-update',
-            'action_target': 'my-provider-1:license2',
+            'action_target': 'basic-tests-provider:license2',
             'check_request_data': json.dumps({
                 'license_id': 'license1',
                 'something': 'special',
@@ -654,7 +481,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
             'status': 'has-latest',
             'license_infos': {
                 'license1': {
-                    'actionTarget': 'my-provider-1:license2',
+                    'actionTarget': 'basic-tests-provider:license2',
                     'actions': [
                         {
                             'actionID': 'test',
@@ -695,7 +522,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         response = client.post(reverse('admin-licenses'), {
             'action': 'process-license-update',
-            'action_target': 'my-provider-1:license2',
+            'action_target': 'basic-tests-provider:license2',
             'check_request_data': json.dumps({
                 'license_id': 'license1',
                 'something': 'special',
@@ -728,7 +555,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         response = client.post(reverse('admin-licenses'), {
             'action': 'process-license-update',
-            'action_target': 'my-provider-1:license2',
+            'action_target': 'basic-tests-provider:license2',
         })
 
         self.assertEqual(response.status_code, 400)
@@ -754,7 +581,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         response = client.post(reverse('admin-licenses'), {
             'action': 'process-license-update',
-            'action_target': 'my-provider-1:license2',
+            'action_target': 'basic-tests-provider:license2',
             'check_request_data': '"abc123"',
         })
 
@@ -781,7 +608,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         response = client.post(reverse('admin-licenses'), {
             'action': 'process-license-update',
-            'action_target': 'my-provider-1:license2',
+            'action_target': 'basic-tests-provider:license2',
             'check_request_data': 'xxx',
             'check_response_data': '"def456"',
         })
@@ -811,7 +638,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
 
         response = client.post(reverse('admin-licenses'), {
             'action': 'process-license-update',
-            'action_target': 'my-provider-1:license2',
+            'action_target': 'basic-tests-provider:license2',
             'check_request_data': '"abc123"',
             'check_response_data': 'xxx',
         })
