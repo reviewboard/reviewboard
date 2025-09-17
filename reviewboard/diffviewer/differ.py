@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
-import os
 from typing import Any, Literal, TYPE_CHECKING
 
 from django.utils.translation import gettext as _
+from housekeeping import func_deprecated
 
+from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
 from reviewboard.diffviewer.errors import DiffCompatError
-from reviewboard.diffviewer.filetypes import (HEADER_REGEXES,
-                                              HEADER_REGEX_ALIASES)
+from reviewboard.diffviewer.interesting_lines import (
+    InterestingLine,
+    get_interesting_lines,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
@@ -111,9 +114,19 @@ class Differ:
     #:     9.0:
     #:     Changed from a 2-element list to a 2-tuple.
     interesting_lines: tuple[
-        dict[str, list[tuple[int, str]]],
-        dict[str, list[tuple[int, str]]],
+        dict[str, Sequence[InterestingLine]],
+        dict[str, Sequence[InterestingLine]],
     ]
+
+    #: The filename to use for finding interesting lines.
+    #:
+    #: This is just used for backwards compatibility in the
+    #: :py:meth:`get_interesting_lines` method, and will go away in Review
+    #: Board 11.0.
+    #:
+    #: Version Added:
+    #:     9.0
+    _interesting_lines_filename: str | None
 
     def __init__(
         self,
@@ -146,7 +159,9 @@ class Differ:
         self.compat_version = compat_version
         self.interesting_line_regexes = []
         self.interesting_lines = ({}, {})
+        self._interesting_lines_filename = None
 
+    @func_deprecated(RemovedInReviewBoard11_0Warning)
     def add_interesting_line_regex(
         self,
         name: str,
@@ -157,6 +172,10 @@ class Differ:
         All interesting lines found that match the regular expression will
         be stored and tagged with the given name. Callers can use
         get_interesting_lines to get the results.
+
+        Deprecated:
+            9.0:
+            This is deprecated and will be removed in Review Board 11.0.
 
         Args:
             name (str):
@@ -183,27 +202,20 @@ class Differ:
             filename (str):
                 The filename of the file being diffed.
         """
-        regexes = []
-
-        if filename in HEADER_REGEX_ALIASES:
-            regexes = HEADER_REGEXES[HEADER_REGEX_ALIASES[filename]]
-        else:
-            ext = os.path.splitext(filename)[1]
-
-            if ext in HEADER_REGEXES:
-                regexes = HEADER_REGEXES[ext]
-            elif ext in HEADER_REGEX_ALIASES:
-                regexes = HEADER_REGEXES[HEADER_REGEX_ALIASES[ext]]
-
-        for regex in regexes:
-            self.add_interesting_line_regex('header', regex)
+        self._interesting_lines_filename = filename
 
     def get_interesting_lines(
         self,
         name: str,
         is_modified_file: bool,
-    ) -> list[tuple[int, str]]:
+    ) -> Sequence[InterestingLine]:
         """Return the interesting lines tagged with the given name.
+
+        This is a legacy API kept for third parties. It only runs the
+        regex-based scanner, as no parsed tree is available at this layer.
+        :py:class:`~reviewboard.diffviewer.chunk_generator.
+        DiffChunkGenerator` is the supported path, and can use tree-sitter
+        results.
 
         Args:
             name (str):
@@ -221,10 +233,36 @@ class Differ:
         """
         if is_modified_file:
             index = 1
+            file_content = self.b
         else:
             index = 0
+            file_content = self.a
 
-        return self.interesting_lines[index].get(name, [])
+        lines: list[InterestingLine] = []
+
+        # This branch exists only to support the legacy API, and can be
+        # removed in Review Board 11.0 along with
+        # _interesting_lines_filename.
+        if name == 'header':
+            assert self._interesting_lines_filename is not None
+
+            interesting_lines = get_interesting_lines(
+                filename=self._interesting_lines_filename,
+                language_name=None,
+                file_content=file_content,
+                tree=None)
+
+            lines.extend(interesting_lines)
+
+        # We no longer actually use add_interesting_line_regex ourselves. It's
+        # possible that some third party has changed things and is still using
+        # this, so we still call it just in case.
+        legacy_lines = self.interesting_lines[index].get(name, [])
+
+        if legacy_lines:
+            lines.extend(legacy_lines)
+
+        return lines
 
     def get_opcodes(self) -> Iterator[DiffOpcode]:
         """Yield the opcodes for the diff.

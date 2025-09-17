@@ -21,7 +21,6 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import (find_lexer_class,
                              guess_lexer_for_filename)
-from tree_sitter_language_pack import get_parser
 
 from reviewboard.codesafety import code_safety_checker_registry
 from reviewboard.deprecation import (
@@ -40,8 +39,13 @@ from reviewboard.diffviewer.diffutils import (
     get_sha256,
     split_line_endings,
 )
+from reviewboard.diffviewer.interesting_lines import (
+    InterestingLine,
+    get_interesting_lines,
+)
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 from reviewboard.diffviewer.settings import DiffSettings
+from reviewboard.treesitter.core import get_parser
 from reviewboard.treesitter.highlight import highlight as ts_highlight
 from reviewboard.treesitter.language import get_language_name_for_file
 
@@ -260,6 +264,9 @@ class RawDiffChunkGenerator:
     #: The old version of the file.
     old: bytes | Sequence[bytes]
 
+    #: Interesting lines in the old file.
+    old_interesting_lines: Sequence[InterestingLine]
+
     #: The tree-sitter language for the old file.
     old_language_name: SupportedLanguage | None
 
@@ -277,6 +284,9 @@ class RawDiffChunkGenerator:
 
     #: The new version of the file.
     new: bytes | Sequence[bytes]
+
+    #: Interesting lines in the new file.
+    new_interesting_lines: Sequence[InterestingLine]
 
     #: The tree-sitter language for the new file.
     new_language_name: SupportedLanguage | None
@@ -395,9 +405,11 @@ class RawDiffChunkGenerator:
         self.diff_compat = diff_compat
         self.differ = None
 
+        self.old_interesting_lines = []
         self.old_language_name = None
         self.old_mimetype = None
         self.old_tree = None
+        self.new_interesting_lines = []
         self.new_language_name = None
         self.new_mimetype = None
         self.new_tree = None
@@ -544,6 +556,17 @@ class RawDiffChunkGenerator:
                 parser = get_parser(new_language_name)
                 self.new_tree = parser.parse(new_str.encode())
 
+            self.old_interesting_lines = get_interesting_lines(
+                filename=old_filename,
+                language_name=self.old_language_name,
+                file_content=old_lines,
+                tree=self.old_tree)
+            self.new_interesting_lines = get_interesting_lines(
+                filename=new_filename,
+                language_name=self.new_language_name,
+                file_content=new_lines,
+                tree=self.new_tree)
+
             if self._get_enable_syntax_highlighting(
                 old, new, old_lines, new_lines):
 
@@ -579,6 +602,10 @@ class RawDiffChunkGenerator:
         self.differ = get_differ(old_lines, new_lines,
                                  ignore_space=ignore_space,
                                  compat_version=self.diff_compat)
+
+        # This exists only to support the legacy
+        # Differ.get_interesting_lines() API for third parties, and can be
+        # removed in Review Board 11.0.
         self.differ.add_interesting_lines_for_headers(old_filename)
 
         context_num_lines = self.diff_settings.context_num_lines
@@ -1515,9 +1542,10 @@ class RawDiffChunkGenerator:
                 1 (str):
                     The contents of the line with the header.
         """
-        assert self.differ is not None
-        possible_functions = \
-            self.differ.get_interesting_lines('header', is_modified_file)
+        if is_modified_file:
+            possible_functions = self.new_interesting_lines
+        else:
+            possible_functions = self.old_interesting_lines
 
         if not possible_functions:
             return
