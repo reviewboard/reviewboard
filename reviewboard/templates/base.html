@@ -60,20 +60,6 @@
 {%  endblock %}
      </nav>
 {%  template_hook_point "base-after-navbar" %}
-{%  block read_only_banner %}
-{%   if siteconfig_settings.site_read_only %}
-     <div id="read-only-banner">
-      <h2 id="read-only-banner-header">
-{%    blocktrans %}
-       {{PRODUCT_NAME}} is in read-only mode.
-{%    endblocktrans %}
-      </h2>
-{%    if read_only_message %}
-      <span id="read-only-banner-message">{{read_only_message}}</span>
-{%    endif %}
-     </div>
-{%   endif %}
-{%  endblock read_only_banner %}
 {%  block navbar_post %}{% endblock %}
      <noscript>
       <div class="rb-c-alert -is-error">
@@ -95,6 +81,11 @@
      </noscript>
     </div>
     <div class="rb-c-topbar__banners">
+{%  block read_only_banner %}
+{%   if siteconfig_settings.site_read_only %}
+{%    include "base/read-only-banner.html" %}
+{%   endif %}
+{%  endblock read_only_banner %}
 {%  template_hook_point "page-banners" %}
     </div>
 {% endblock %}
