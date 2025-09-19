@@ -12,6 +12,7 @@ import {
     EnabledFeatures,
     UserSession,
 } from 'reviewboard/common';
+import { CommentDialogHook } from 'reviewboard/extensions';
 import { TextEditorView } from 'reviewboard/ui';
 
 import { type SerializedComment } from '../models/commentData';
@@ -682,7 +683,7 @@ export class CommentDialogView extends BaseView<
         this.#onPublishedCommentsChanged();
 
         /* Add any hooks. */
-        RB.CommentDialogHook.each(hook => {
+        CommentDialogHook.each(hook => {
             const HookViewType = hook.get('viewType');
             const hookView = new HookViewType({
                 commentDialog: this,

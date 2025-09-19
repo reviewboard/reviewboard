@@ -12,6 +12,7 @@ import {
     ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
+import { ReviewRequestActionHook } from 'reviewboard/extensions';
 import { DnDUploader } from 'reviewboard/ui';
 
 import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
@@ -847,7 +848,7 @@ export class ReviewRequestEditorView extends BaseView<
      * Set up all review request actions and listens for events.
      */
     _setupActions() {
-        RB.ReviewRequestActionHook.each(hook => {
+        ReviewRequestActionHook.each(hook => {
             _.each(hook.get('callbacks'),
                    (handler, selector) => this.$(selector).click(handler));
         });
