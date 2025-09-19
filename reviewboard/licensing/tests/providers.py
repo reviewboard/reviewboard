@@ -202,6 +202,7 @@ class BasicTestsLicenseProvider(BaseLicenseProvider):
                 'something': 'special',
                 'version': '1.0',
             },
+            'session_token': 'abc123',
             'url': f'https://example.com/{license_info.license_id}/check/'
         }
 
@@ -212,6 +213,7 @@ class BasicTestsLicenseProvider(BaseLicenseProvider):
         license_info: LicenseInfo,
         check_request_data: JSONValue,
         check_response_data: JSONValue,
+        session_token: str | None,
         request: (HttpRequest | None) = None,
     ) -> ProcessCheckLicenseResult:
         """Process the result of a license check.
@@ -231,6 +233,12 @@ class BasicTestsLicenseProvider(BaseLicenseProvider):
 
             check_response_data (djblets.util.typing.JSONValue):
                 The response data from the license check.
+
+            session_token (str):
+                The session token provided by
+                :py:meth:`get_check_license_request`.
+
+                This will be ``None`` if a session token was not provided.
 
             request (django.http.HttpRequest, optional):
                 The HTTP request from the client.

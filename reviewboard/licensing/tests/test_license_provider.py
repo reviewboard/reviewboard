@@ -99,6 +99,7 @@ class BaseLicenseProviderTests(kgb.SpyAgency, TestCase):
                 'version': '1.0',
             },
             'headers': None,
+            'sessionToken': 'abc123',
         })
 
     def test_action_license_update_check_not_supported(self) -> None:

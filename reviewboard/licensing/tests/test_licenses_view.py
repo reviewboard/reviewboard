@@ -412,6 +412,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
                 'version': '1.0',
             },
             'headers': None,
+            'sessionToken': 'abc123',
         })
 
     @override_feature_check(licensing_feature, True)

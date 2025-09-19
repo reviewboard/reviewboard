@@ -65,6 +65,9 @@ class RequestCheckLicenseResult(TypedDict):
     #: HTTP headers to pass in the request to the server.
     headers: NotRequired[Mapping[str, str]]
 
+    #: An optional session token sent back along with a license response.
+    session_token: NotRequired[str]
+
 
 class ProcessCheckLicenseResult(TypedDict):
     """Result of processing a license check.

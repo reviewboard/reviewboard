@@ -435,6 +435,7 @@ export class License<
 
         const checkStatusURL = checkRsp.checkStatusURL;
         const requestData = checkRsp.data;
+        const sessionToken = checkRsp.sessionToken || null;
 
         let data: (FormData | string) = null;
 
@@ -468,9 +469,17 @@ export class License<
 
             response = await fetch(checkStatusURL, request);
 
-            licenseRsp = await response.json();
+            const contentType = response.headers['content-type'].toLowerCase();
+
+            if (contentType.startsWith('application/json') ||
+                contentType.endsWith('+json')) {
+                licenseRsp = await response.json();
+            } else {
+                licenseRsp = await response.text();
+            }
         } catch (err) {
             /* Fall through and handle this below. */
+            console.error('Error performing license check: %s', err);
             licenseRsp = null;
         }
 
@@ -480,7 +489,10 @@ export class License<
             return;
         }
 
-        this.#processCheckForUpdatesResponse(licenseRsp, requestData);
+        this.#processCheckForUpdatesResponse(
+            licenseRsp,
+            requestData,
+            sessionToken);
     }
 
     /**
@@ -530,8 +542,9 @@ export class License<
      *         The options used for checking for updates.
      */
     async #processCheckForUpdatesResponse(
-        checkLicenseData: object,
+        checkLicenseData: object | string,
         requestData: object,
+        sessionToken: string | null,
     ) {
         this.set('checkStatus', LicenseCheckStatus.APPLYING);
 
@@ -543,6 +556,7 @@ export class License<
                 args: {
                     check_request_data: requestData,
                     check_response_data: checkLicenseData,
+                    session_token: sessionToken,
                 },
             }) as CheckUpdatesProcessResponsePayload;
         } catch (xhr) {

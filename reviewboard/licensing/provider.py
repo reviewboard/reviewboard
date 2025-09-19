@@ -363,6 +363,7 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
         license_info: _TLicenseInfo,
         check_request_data: JSONValue,
         check_response_data: JSONValue,
+        session_token: str | None,
         request: (HttpRequest | None) = None,
     ) -> ProcessCheckLicenseResult:
         """Process the result of a license check.
@@ -390,6 +391,12 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
 
             check_response_data (typelets.json.JSONValue):
                 The response data from the license check.
+
+            session_token (str):
+                The session token provided by
+                :py:meth:`get_check_license_request`.
+
+                This will be ``None`` if a session token was not provided.
 
             request (django.http.HttpRequest, optional):
                 The HTTP request from the client.
@@ -561,6 +568,7 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
             'credentials': check_request.get('credentials'),
             'data': check_request['data'],
             'headers': check_request.get('headers'),
+            'sessionToken': check_request.get('session_token'),
         }
 
     def handle_process_license_update_action(
@@ -605,6 +613,22 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
         logger.info('[%s] Checking license update response for License '
                     'Provider %r',
                     trace_id, self.license_provider_id)
+
+        # Check the session token, if provided.
+        session_token = action_data.get('session_token')
+
+        if session_token is not None:
+            logger.debug('[%s] Session token = %r',
+                         trace_id, session_token)
+
+            if not isinstance(session_token, str):
+                raise LicenseActionError(
+                    _(
+                        'Unsupported session_token type for license check. '
+                        'This may be an internal error or an issue with the '
+                        'licensing server. Check the Review Board server logs '
+                        'for more information (error ID {trace_id}).'
+                    ).format(trace_id=trace_id))
 
         # Pull out the request and response data to verify.
         try:
@@ -660,6 +684,7 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
                 license_info=license_info,
                 check_request_data=check_request_data,
                 check_response_data=check_response_data,
+                session_token=session_token,
                 request=request)
             status = result['status']
         except NotImplementedError as e:
