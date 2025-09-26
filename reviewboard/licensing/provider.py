@@ -14,6 +14,7 @@ from uuid import uuid4
 from django.utils.html import format_html
 from django.utils.translation import gettext as _
 from typelets.django.json import SerializableDjangoJSONDict
+from typelets.json import JSONValue
 from typing_extensions import TypeVar
 
 from reviewboard.licensing.errors import LicenseActionError
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from typing import ClassVar
 
     from django.http import HttpRequest
-    from typelets.json import JSONDictImmutable, JSONValue
+    from typelets.json import JSONDictImmutable
     from typelets.django.json import SerializableDjangoJSONList
 
     from reviewboard.licensing.actions import (LicenseAction,
