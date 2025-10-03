@@ -25,17 +25,27 @@ a given user based on a hash of their e-mail address and a desired pixel size.
 .. code-block:: python
 
     import hashlib
+    from typing import TYPE_CHECKING
 
     from djblets.avatars.services import AvatarService
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import AvatarServiceHook
+
+    if TYPE_CHECKING:
+        from collections.abc import Mapping, Sequence
+
+        from django.contrib.auth.models import User
 
 
     class SampleAvatarService(AvatarService):
         avatar_service_id = 'myvendor_sample_avatar_service'
         name = 'Sample Avatar Service'
 
-        def get_avatar_urls_uncached(self, user, size):
+        def get_avatar_urls_uncached(
+            self,
+            user: User,
+            size: int,
+        ) -> Mapping[str, str]:
             url = 'https://pictures.example.com/?user=%s&size=%d'
             user_hash = hashlib.md5(user.email)
 
@@ -44,10 +54,13 @@ a given user based on a hash of their e-mail address and a desired pixel size.
                 for resolution in (1, 2, 3)
             }
 
-        def get_etag_data(self, user):
+        def get_etag_data(
+            self,
+            user: User,
+        ) -> Sequence[str]:
             return [self.avatar_service_id, user.email]
 
 
     class SampleExtension(Extension):
-        def initialize(self):
+        def initialize(self) -> None:
             AvatarServiceHook(self, SampleAvatarService)

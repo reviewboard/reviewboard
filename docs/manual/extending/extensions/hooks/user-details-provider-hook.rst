@@ -41,23 +41,40 @@ Example
 
 .. code-block:: python
 
-   from reviewboard.accounts.user_details import (BaseUserDetailsProvider,
-                                                  UserBadge)
-   from reviewboard.extensions.base import Extension
-   from reviewboard.extensions.hooks import UserDetailsProviderHook
+    from typing import TYPE_CHECKING
 
-   class MyUserDetailsProvider(BaseUserDetailsProvider):
-       user_details_provider_id = 'my-user-details-provider'
+    from reviewboard.accounts.user_details import (BaseUserDetailsProvider,
+                                                   UserBadge)
+    from reviewboard.extensions.base import Extension
+    from reviewboard.extensions.hooks import UserDetailsProviderHook
 
-       def get_user_badges(self, user, *, local_site, request, **kwargs):
-           yield UserBadge(user=user,
-                           label='Developer')
+    if TYPE_CHECKING:
+        from collections.abc import Iterator
 
-           if user.is_superuser:
-               yield UserBadge(user=user,
-                               label='Administrator')
+        from django.contrib.auth.models import User
+        from django.http import HttpRequest
+        from reviewboard.site.models import LocalSite
 
 
-   class SampleExtension(Extension):
-       def initialize(self):
-           UserDetailsProviderHook(self, MyUserDetailsProvider())
+    class MyUserDetailsProvider(BaseUserDetailsProvider):
+        user_details_provider_id = 'my-user-details-provider'
+
+        def get_user_badges(
+            self,
+            user: User,
+            *,
+            local_site: LocalSite,
+            request: HttpRequest,
+            **kwargs,
+        ) -> Iterator[UserBadge]:
+            yield UserBadge(user=user,
+                            label='Developer')
+
+            if user.is_superuser:
+                yield UserBadge(user=user,
+                                label='Administrator')
+
+
+    class SampleExtension(Extension):
+        def initialize(self) -> None:
+            UserDetailsProviderHook(self, MyUserDetailsProvider())

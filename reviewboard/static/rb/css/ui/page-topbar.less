@@ -19,6 +19,7 @@
  *     <div class="rb-c-topbar" role="banner">
  *      <div class="rb-c-topbar__header">...</div>
  *      <div class="rb-c-topbar__nav-container">...</div>
+ *      <div class="rb-c-topbar__banners">...</div>
  *     </div>
  */
 .rb-c-topbar {
@@ -27,8 +28,59 @@
   color: var(--ink-p-header-fg);
   margin: 0 0 @page-container-padding 0;
 
+  /**
+   * The main actions shown in the top-right of the navigation bar.
+   *
+   * This is only shown on desktop.
+   *
+   * See ``.rb-c-actions`` for the content and DOM attributes of this
+   * element.
+   *
+   * Structure:
+   *     <nav class="rb-c-topbar__actions rb-c-actions"
+   *          aria-label="..."
+   *          role="presentation">
+   *      ...
+   *     </nav>
+   */
   &__actions {
     grid-area: actions;
+  }
+
+  /**
+   * Banners shown below the navigation area, before page content.
+   *
+   * This can be used for important notifications or messages. The banners
+   * are meant to be attention-grabbing.
+   *
+   * Version Added:
+   *     7.1
+   *
+   * DOM Attributes:
+   *     aria-label (string):
+   *         A label describing the banners area.
+   *
+   *     role (string):
+   *         "region", always.
+   *
+   * Structure:
+   *     <div class="rb-c-topbar__banners"
+   *          aria-label="..."
+   *          role="region">
+   *      <div class="rb-c-page-banner" ...>...</div>  [0+]
+   *     </div>
+   */
+  &__banners {
+    display: flex;
+    flex-direction: column;
+
+    &:empty {
+      display: none;
+    }
+
+    .rb-c-page-banner {
+      border-bottom: 0;
+    }
   }
 
   /**
@@ -67,7 +119,7 @@
   }
 
   /**
-   * The container for the navigation bar shown on desktop.
+   * The container for the main navigation items.
    *
    * This is not shown on mobile.
    *
@@ -80,6 +132,17 @@
    *          aria-label="...">
    *      <ul class="rb-c-topbar__nav-items">...</ul>
    *     </nav>
+   */
+  &__main-nav {
+  }
+
+  /**
+   * The container for the main navigation area.
+   *
+   * Structure:
+   *     <div class="rb-c-topbar__nav-container"
+   *      <nav class="rb-c-topbar__main-nav" ...>...</nav>
+   *     </div>
    */
   &__nav-container {
     border-color: var(--ink-p-header-border-color);

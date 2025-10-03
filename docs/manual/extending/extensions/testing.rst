@@ -1,8 +1,8 @@
 .. _testing-extensions:
 
-==================
-Testing Extensions
-==================
+============================
+Writing Extension Unit Tests
+============================
 
 Before you deploy your extension in production or release it to the public,
 you'll want to ensure it's properly tested and works as expected. A great way
@@ -90,7 +90,7 @@ two ways:
            def setUp(self):
                # Your pre-initialization setup goes here.
 
-               super(MyExtensionTests, self).setUp()
+               super().setUp()
 
 2. Disable the extension in your test, set up some state, and then
    re-initialize it:

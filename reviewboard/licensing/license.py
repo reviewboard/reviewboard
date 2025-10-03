@@ -6,15 +6,25 @@ Version Added:
 
 from __future__ import annotations
 
+import logging
 from enum import Enum
 from typing import TYPE_CHECKING
 
 from django.utils import timezone
+from django.utils.translation import (gettext_lazy as _,
+                                      ngettext_lazy as N_)
+from djblets.util.typing import StrOrPromise
+from typing_extensions import TypedDict
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
     from datetime import datetime
     from typing import Any
+
+    from typing_extensions import NotRequired
+
+
+logger = logging.getLogger(__name__)
 
 
 class LicenseStatus(Enum):
@@ -35,6 +45,27 @@ class LicenseStatus(Enum):
 
     #: The license has expired and is past its grace period.
     HARD_EXPIRED = 'hard-expired'
+
+
+class LicenseLineItem(TypedDict):
+    """A line item to show for a license.
+
+    Version Added:
+        7.1
+    """
+
+    #: The content for the line item.
+    #:
+    #: This may be a plain text string (which will be escaped) or a safe
+    #: HTML-formatted string, depending on the :py:attr:`content_is_html`
+    #: flag.
+    content: str
+
+    #: Whether the content should be rendered as HTML.
+    content_is_html: NotRequired[bool]
+
+    #: The optional icon CSS class name to display alongside the content.
+    icon: NotRequired[str]
 
 
 class LicenseInfo:
@@ -87,7 +118,7 @@ class LicenseInfo:
     licensed_to: str
 
     #: Any displayable line items to show on license information.
-    line_items: Sequence[str]
+    line_items: Sequence[LicenseLineItem]
 
     #: A backend-specific plan ID for this license.
     plan_id: str | None
@@ -118,7 +149,7 @@ class LicenseInfo:
         grace_period_days_remaining: int = 0,
         is_trial: bool = False,
         license_instance: Any = None,
-        line_items: (Sequence[str] | None) = None,
+        line_items: (Sequence[LicenseLineItem] | None) = None,
         plan_id: (str | None) = None,
         plan_name: (str | None) = None,
         status: LicenseStatus = LicenseStatus.UNLICENSED,
@@ -163,7 +194,7 @@ class LicenseInfo:
                 This is used purely for the convenience of a license provider.
                 It may be ``None``.
 
-            line_items (Sequence[str], optional):
+            line_items (Sequence[LicenseLineItem], optional):
                 Any displayable line items to show on license information.
 
             plan_id (str, optional):
@@ -194,6 +225,86 @@ class LicenseInfo:
         self.plan_name = plan_name
         self.status = status
         self.summary = summary
+
+    def get_summary(self) -> str:
+        """Return a summary for the license.
+
+        This will return :py:attr:`summary` if provided. Otherwise, it
+        will generate a suitable summary based on the state of the license.
+
+        Subclasses can override this to provide custom summaries.
+
+        Returns:
+            str:
+            The summary of the license.
+        """
+        summary: StrOrPromise = self.summary
+
+        if summary:
+            assert isinstance(summary, str)
+
+            return summary
+
+        status = self.status
+
+        key: list[str] = []
+        fmt_args: dict[str, object] = {
+            'product': self.product_name,
+        }
+
+        if status != LicenseStatus.UNLICENSED:
+            is_trial = self.is_trial
+            plan_name = self.plan_name
+            expires = self.expires
+
+            if is_trial:
+                key.append('trial')
+
+            if plan_name:
+                key.append('plan')
+                fmt_args['plan'] = self.format_plan_name()
+
+            if status == LicenseStatus.LICENSED:
+                if expires is not None:
+                    fmt_args['days_remaining'] = \
+                        (expires - timezone.now()).days
+
+                    if not is_trial and self.get_expires_soon():
+                        key.append('expires_soon')
+                else:
+                    assert not is_trial
+            elif status == LicenseStatus.EXPIRED_GRACE_PERIOD:
+                fmt_args['days_remaining'] = self.grace_period_days_remaining
+
+        try:
+            summary = _DEFAULT_SUMMARY_FORMATS[status][tuple(key)]
+        except KeyError:
+            logger.error('Hit a bad license summary state for license %r: '
+                         'Missing string for status=%r, key %r',
+                         self, status, tuple(key))
+
+            summary = _("{product}'s license status is unknown")
+
+        return summary.format(**fmt_args)
+
+    def format_plan_name(self) -> str:
+        """Return a formatted version of the plan name.
+
+        This allows a license implementation to provide a custom way of
+        formatting the plan name for use in the summary.
+
+        By default, this returns the plan name as-is.
+
+        This may not be used if a plan name is not set.
+
+        Returns:
+            str:
+            The formatted plan name.
+        """
+        plan_name = self.plan_name
+        assert plan_name
+
+        return plan_name
 
     def get_expires_soon(self) -> bool:
         """Return whether or not the license expires soon.
@@ -238,3 +349,141 @@ class LicenseInfo:
             return 10
         else:
             return 30
+
+    def __repr__(self) -> str:
+        """Return a representation of this license.
+
+        Returns:
+            str:
+            The representation.
+        """
+        cls_name = type(self).__name__
+
+        return (
+            f'<{cls_name}'
+            f'(license_id={self.license_id!r},'
+            f' status={self.status!r},'
+            f' product_name={self.product_name!r},'
+            f' plan_id={self.plan_id!r},'
+            f' plan_name={self.plan_name!r},'
+            f' licensed_to={self.licensed_to!r},'
+            f' is_trial={self.is_trial},'
+            f' expires={self.expires!r},'
+            f' grace_period_days_remaining={self.grace_period_days_remaining},'
+            f' line_items={self.line_items!r}>'
+        )
+
+
+if TYPE_CHECKING:
+    _DefaultSummaryFormats = Mapping[
+        LicenseStatus,
+        Mapping[tuple[str, ...], StrOrPromise],
+    ]
+
+
+#: Strings for the default license summaries, based on state.
+#:
+#: This provides a single place to look up the default summaries for a
+#: license based on the trial/purchased state, presence of a plan, and
+#: whether there are optional days remaining to display for the license
+#: term.
+#:
+#: Version Added:
+#:     7.1
+_DEFAULT_SUMMARY_FORMATS: _DefaultSummaryFormats = {
+    LicenseStatus.UNLICENSED: {
+        (): _('{product} is not licensed!'),
+    },
+
+    LicenseStatus.LICENSED: {
+        # Purchased license is active
+        (): _('License for {product} is active'),
+
+        # Purchased license with plan is active
+        ('plan',): _('License for {product} {plan} is active'),
+
+        # Purchased license expires soon
+        ('expires_soon',): N_(
+            ('License for {product} expires in {days_remaining} day'),
+            ('License for {product} expires in {days_remaining} days'),
+            'days_remaining'
+        ),
+
+        # Purchased license with plan expires soon
+        ('plan', 'expires_soon'): N_(
+            ('License for {product} {plan} expires in {days_remaining} '
+             'day'),
+            ('License for {product} {plan} expires in {days_remaining} '
+             'days'),
+            'days_remaining'
+        ),
+
+        # Trial license is active
+        ('trial',): N_(
+            'Trial license for {product} ends in {days_remaining} day',
+            'Trial license for {product} ends in {days_remaining} days',
+            'days_remaining',
+        ),
+
+        # Trial license with plan is active
+        ('trial', 'plan'): N_(
+            'Trial license for {product} {plan} ends in {days_remaining} day',
+            'Trial license for {product} {plan} ends in {days_remaining} days',
+            'days_remaining',
+        ),
+    },
+
+    LicenseStatus.EXPIRED_GRACE_PERIOD: {
+        # Purchased license expired with grace period
+        (): N_(
+            ('License for {product} expired and will stop working in '
+             '{days_remaining} day'),
+            ('License for {product} expired and will stop working in '
+             '{days_remaining} days'),
+            'days_remaining'
+        ),
+
+        # Purchased license with plan expired with grace period
+        ('plan',): N_(
+            ('License for {product} {plan} expired and will stop working '
+             'in {days_remaining} day'),
+            ('License for {product} {plan} expired and will stop working '
+             'in {days_remaining} days'),
+            'days_remaining'
+        ),
+
+        # Trial license expired with grace period
+        ('trial',): N_(
+            ('Trial license for {product} expired and will stop working in '
+             '{days_remaining} day'),
+            ('Trial license for {product} expired and will stop working in '
+             '{days_remaining} days'),
+            'days_remaining'
+        ),
+
+        # Trial license with plan expired with grace period
+        ('trial', 'plan'): N_(
+            ('Trial license for {product} {plan} expired and will stop '
+             'working in {days_remaining} day'),
+            ('Trial license for {product} {plan} expired and will stop '
+             'working in {days_remaining} days'),
+            'days_remaining'
+        ),
+    },
+
+    LicenseStatus.HARD_EXPIRED: {
+        # Purchased license hard-expired
+        (): _('License for {product} expired and needs to be renewed'),
+
+        # Purchased license with plan hard-expired
+        ('plan',): _(
+            'License for {product} {plan} expired and needs to be renewed'
+        ),
+
+        # Trial license hard-expired
+        ('trial',): _('Trial license for {product} expired'),
+
+        # Trial license with plan hard-expired
+        ('trial', 'plan'): _('Trial license for {product} {plan} expired'),
+    },
+}

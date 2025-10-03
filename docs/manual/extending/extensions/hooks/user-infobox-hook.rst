@@ -72,19 +72,40 @@ Examples
 
 .. code-block:: python
 
+    from typing import TYPE_CHECKING
+
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import UserInfoboxHook
 
+    if TYPE_CHECKING:
+        from collections.abc import Mapping
+
+        from django.contrib.auth.models import User
+        from django.http import HttpRequest
+        from reviewboard.site.models import LocalSite
+
 
     class SampleUserInfoboxHook(UserInfoboxHook):
-        def initialize(self):
-            super(SampleUserInfoboxHook, self).initialize(
+        def initialize(self) -> None:
+            super().initialize(
                 'myextension/advanced-user-infobox.html')
 
-        def get_etag_data(self, user, request, local_site, **kwargs):
+        def get_etag_data(
+            self,
+            user: User,
+            request: HttpRequest,
+            local_site: LocalSite,
+            **kwargs,
+        ) -> str:
             return self.extension.get_user_quote_of_the_day(user)
 
-        def get_extra_context(self, user, request, local_site, **kwargs):
+        def get_extra_context(
+            self,
+            user: User,
+            request: HttpRequest,
+            local_site: LocalSite,
+            **kwargs,
+        ) -> Mapping[str, Any]:
             return {
                 'is_bob': user.username == 'bob',
                 'quote': self.extension.get_user_quote_of_the_day(),
@@ -92,7 +113,7 @@ Examples
 
 
     class SampleExtension(Extension):
-        def initialize(self):
+        def initialize(self) -> None:
             # Add a simple hook that just renders a basic template.
             UserInfoboxHook(self, 'myextension/basic-user-infobox.html')
 
@@ -100,5 +121,8 @@ Examples
             # rendering.
             SampleUserInfoboxHook(self)
 
-        def get_user_quote_of_the_day(self, user):
+        def get_user_quote_of_the_day(
+            self,
+            user: User,
+        ) -> str:
             return 'something fancy would go here'

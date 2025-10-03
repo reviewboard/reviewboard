@@ -40,29 +40,49 @@ Example
 
 .. code-block:: python
 
+    from typing import TYPE_CHECKING
+
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import EmailHook
     from reviewboard.reviews.signals import (review_request_published,
-                                             review_published, reply_published,
+                                             review_published,
+                                             reply_published,
                                              review_request_closed)
 
-    class SampleEmailHook(EmailHook):
-        def __init__(self, extension):
-            super(EmailHook).__init__(extension,
-                                      signals=[
-                                          review_request_published,
-                                          review_request_closed,
-                                          review_published,
-                                          reply_published,
-                                      ])
+    if TYPE_CHECKING:
+        from reviewboard.notifications.email.utils import RecipientList
 
-        def get_to_field(self, to_field, **kwargs):
+    class SampleEmailHook(EmailHook):
+        def __init__(
+            self,
+            extension: Extension,
+        ) -> None:
+            super().__init__(
+                extension,
+                signals=[
+                    review_request_published,
+                    review_request_closed,
+                    review_published,
+                    reply_published,
+                ])
+
+        def get_to_field(
+            self,
+            to_field: RecipientList,
+            **kwargs,
+        ) -> RecipientList:
             if 'user' in kwargs:
                 to_field.add(kwargs['user'])
 
-        def get_cc_field(self, cc_field, **kwargs):
-            return set([])
+            return to_field
+
+        def get_cc_field(
+            self,
+            cc_field: RecipientList,
+            **kwargs,
+        ) -> RecipientList:
+            return set()
 
     class SampleExtension(Extension):
-        def initialize(self):
+        def initialize(self) -> None:
             SampleEmailHook(self)

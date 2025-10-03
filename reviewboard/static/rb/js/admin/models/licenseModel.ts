@@ -101,7 +101,10 @@ export interface CallActionOptions {
     action: string;
 
     /** Encoded arguments for the action. */
-    args?: Record<string, Blob | string>;
+    args?: Record<string, unknown>;
+
+    /** Uploaded content for the action. */
+    uploads?: Record<string, Blob>;
 }
 
 
@@ -118,11 +121,40 @@ export interface LicenseAction {
     /** The display label for this action. */
     label: string;
 
-    /** Extra data provided for the action handler. */
+    /** Arguments to pass in a call. */
+    callArgs?: Record<string, unknown>;
+
+    /** Extra data provided for the client-side action handler. */
     extraData?: Record<string, unknown>;
+
+    /** Whether this is a primary button. */
+    primary?: boolean;
 
     /** The URL to perform this action. */
     url?: string;
+}
+
+
+/**
+ * A displayed line item for the license.
+ *
+ * Version Added:
+ *     7.1
+ */
+export interface LicenseLineItem {
+    /**
+     * The content for the line item.
+     *
+     * This may be a plain text string (which will be escaped) or a safe
+     * HTML-formatted string, depending on the :js:attr:`contentIsHTML` flag.
+     */
+    content: string;
+
+    /** Whether the content should be rendered as HTML. */
+    contentIsHTML?: boolean;
+
+    /** THe optional icon CSS class name to display alongside the content. */
+    icon?: string;
 }
 
 
@@ -171,7 +203,7 @@ export interface LicenseAttrs {
     licensedTo?: string | null;
 
     /** A list of line items to display in the license. */
-    lineItems?: string[] | null;
+    lineItems?: LicenseLineItem[] | null;
 
     /** The URL for managing the license on a license portal. */
     manageURL?: string | null;
@@ -220,7 +252,9 @@ export interface LicenseOptions {
  * Version Added:
  *     7.1
  */
-@spina
+@spina({
+    prototypeAttrs: ['actionBuilders'],
+})
 export class License<
     TAttrs extends LicenseAttrs = LicenseAttrs,
     TExtraOptions extends LicenseOptions = LicenseOptions,
@@ -292,7 +326,7 @@ export class License<
     async uploadLicenseFile(contents: Blob) {
         await this.callAction({
             action: 'upload-license',
-            args: {
+            uploads: {
                 license_data: contents,
             },
         });
@@ -329,7 +363,11 @@ export class License<
         formData.append('csrfmiddlewaretoken', this.actionCSRFToken);
 
         if (options.args) {
-            for (const [key, value] of Object.entries(options.args)) {
+            formData.append('action_data', JSON.stringify(options.args));
+        }
+
+        if (options.uploads) {
+            for (const [key, value] of Object.entries(options.uploads)) {
                 formData.append(key, value);
             }
         }
@@ -397,6 +435,7 @@ export class License<
 
         const checkStatusURL = checkRsp.checkStatusURL;
         const requestData = checkRsp.data;
+        const sessionToken = checkRsp.sessionToken || null;
 
         let data: (FormData | string) = null;
 
@@ -411,7 +450,7 @@ export class License<
         }
 
         /* Send it to the configured endpoint. */
-        let response: Response;
+        let response: Response = null;
         let licenseRsp;
 
         try {
@@ -430,9 +469,17 @@ export class License<
 
             response = await fetch(checkStatusURL, request);
 
-            licenseRsp = await response.json();
+            const contentType = response.headers['content-type'].toLowerCase();
+
+            if (contentType.startsWith('application/json') ||
+                contentType.endsWith('+json')) {
+                licenseRsp = await response.json();
+            } else {
+                licenseRsp = await response.text();
+            }
         } catch (err) {
             /* Fall through and handle this below. */
+            console.error('Error performing license check: %s', err);
             licenseRsp = null;
         }
 
@@ -442,7 +489,10 @@ export class License<
             return;
         }
 
-        this.#processCheckForUpdatesResponse(licenseRsp, requestData);
+        this.#processCheckForUpdatesResponse(
+            licenseRsp,
+            requestData,
+            sessionToken);
     }
 
     /**
@@ -465,7 +515,7 @@ export class License<
     onCheckForUpdatesHTTPError(response: Response) {
         if (response.status === 403) {
             /*
-             * A 403 resposne from a license server indicates that there's
+             * A 403 response from a license server indicates that there's
              * no accessible license.
              */
             this.set('checkStatus', LicenseCheckStatus.NO_LICENSE);
@@ -492,8 +542,9 @@ export class License<
      *         The options used for checking for updates.
      */
     async #processCheckForUpdatesResponse(
-        checkLicenseData: object,
+        checkLicenseData: object | string,
         requestData: object,
+        sessionToken: string | null,
     ) {
         this.set('checkStatus', LicenseCheckStatus.APPLYING);
 
@@ -503,8 +554,9 @@ export class License<
             rsp = await this.callAction({
                 action: 'process-license-update',
                 args: {
-                    check_request_data: JSON.stringify(requestData),
-                    check_response_data: JSON.stringify(checkLicenseData),
+                    check_request_data: requestData,
+                    check_response_data: checkLicenseData,
+                    session_token: sessionToken,
                 },
             }) as CheckUpdatesProcessResponsePayload;
         } catch (xhr) {

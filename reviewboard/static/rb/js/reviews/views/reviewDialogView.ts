@@ -22,6 +22,10 @@ import {
     UserSession,
 } from 'reviewboard/common';
 import {
+    ReviewDialogCommentHook,
+    ReviewDialogHook,
+} from 'reviewboard/extensions';
+import {
     type TextEditorView,
     RichTextInlineEditorView,
     SlideshowView,
@@ -294,7 +298,7 @@ class BaseCommentView<
         this.listenTo(this.model, 'destroying',
                       () => this.stopListening(this.model));
 
-        RB.ReviewDialogCommentHook.each(hook => {
+        ReviewDialogCommentHook.each(hook => {
             const HookView = hook.get('viewType');
             const hookView = new HookView({
                 extension: hook.get('extension'),
@@ -1413,7 +1417,7 @@ export class ReviewDialogView extends BaseView<
         this.#updateTipsVisibility(
             userSession.get('showReviewDialogTips'));
 
-        RB.ReviewDialogHook.each(hook => {
+        ReviewDialogHook.each(hook => {
             const HookView = hook.get('viewType');
             const hookView = new HookView({
                 extension: hook.get('extension'),

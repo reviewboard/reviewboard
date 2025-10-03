@@ -33,5 +33,5 @@ Example
 
 
     class SampleExtension(Extension):
-        def initialize(self):
+        def initialize(self) -> None:
             HostingServiceHook(self, SampleHostingService)

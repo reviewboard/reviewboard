@@ -80,7 +80,12 @@ PIPELINE_JAVASCRIPT = {
     },
     'common': {
         'source_filenames': (
+            # Include the common ESM bundle and the extensions bundle. This
+            # will ensure they're both exposed as "RB", but allow
+            # `reviewboard/extensions` to be a separate ESM bundle that
+            # extension code can target.
             'rb/js/common/index.ts',
+            'rb/js/extensions/index.ts',
 
             # Legacy JavaScript
             'rb/js/utils/underscoreUtils.es6.js',
@@ -91,12 +96,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/utils/keyBindingUtils.es6.js',
             'rb/js/utils/urlUtils.es6.js',
             'rb/js/collections/filteredCollection.es6.js',
-            'rb/js/extensions/models/aliases.es6.js',
-            'rb/js/extensions/models/commentDialogHookModel.es6.js',
-            'rb/js/extensions/models/fileAttachmentThumbnailContainerHookModel.es6.js',
-            'rb/js/extensions/models/reviewDialogCommentHookModel.es6.js',
-            'rb/js/extensions/models/reviewDialogHookModel.es6.js',
-            'rb/js/extensions/models/reviewRequestActionHookModel.es6.js',
             'rb/js/ui/views/baseInfoboxView.es6.js',
             'rb/js/ui/views/infoboxManagerView.es6.js',
             'rb/js/ui/views/bugInfoboxView.es6.js',

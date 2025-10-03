@@ -136,6 +136,8 @@ an extension or an API, or provided by a custom field.
 
 .. code-block:: python
 
+    from typing import TYPE_CHECKING
+
     from django.utils.translation import gettext_lazy as _
     from djblets.conditions.choices import (BaseConditionIntegerChoice,
                                             BaseConditionStringChoice
@@ -147,6 +149,11 @@ an extension or an API, or provided by a custom field.
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import ReviewRequestConditionChoicesHook
     from reviewboard.reviews.conditions import ReviewRequestConditionChoiceMixin
+
+    if TYPE_CHECKING:
+        from typing import Any
+
+        from reviewboard.reviews.models import ReviewRequest
 
 
     class MyCategoryChoice(ReviewRequestConditionChoiceMixin,
@@ -168,7 +175,11 @@ an extension or an API, or provided by a custom field.
             ('security', _('Security')),
         ])
 
-        def get_match_value(self, review_request, **kwargs):
+        def get_match_value(
+            self,
+            review_request: ReviewRequest,
+            **kwargs,
+        ) -> Any:
             # This would return a string.
             return review_request.extra_data.get('my_category')
 
@@ -178,13 +189,17 @@ an extension or an API, or provided by a custom field.
         choice_id = 'sample-extension_my-task-id'
         name = _('Task ID')
 
-        def get_match_value(self, review_request, **kwargs):
+        def get_match_value(
+            self,
+            review_request: ReviewRequest,
+            **kwargs,
+        ) -> Any:
             # This would return an integer.
             return review_request.extra_data.get('my_task_id')
 
 
     class SampleExtension(Extension):
-        def initialize(self):
+        def initialize(self) -> None:
             ReviewRequestConditionChoicesHook(self, [
                 MyCategoryChoice,
                 MyTaskIDChoice,

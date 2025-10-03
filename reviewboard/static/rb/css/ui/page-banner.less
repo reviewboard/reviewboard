@@ -1,0 +1,146 @@
+@import (reference) "@beanbag/ink/lib/ink.less";
+
+@import (reference) "rb/css/defs.less";
+
+
+/**
+ * A banner shown at the top of the page.
+ *
+ * This is a standard banner that can be used for important notifications.
+ * It can optionally be dismissed by users via a Close/Dismiss button.
+ *
+ * Version Added:
+ *     7.1
+ *
+ * DOM Attributes:
+ *     role (string):
+ *         This should be one of the following:
+ *
+ *         * ``alert`` for time-sensitive information.
+ *         * ``status`` for important (but not urgent) information.
+ *         * ``region`` for all others.
+ *
+ *     aria-label (string, optional):
+ *         A label for the banner. This should be used if ``aria-labelledby``
+ *         can't be used.
+ *
+ *     aria-labelledby (string, optional):
+ *         The ID of the header element, if present. This will provide the
+ *         label for the banner.
+ *
+ *     hidden (bool, optional):
+ *         Whether the banner is hidden.
+ *
+ * Structure:
+ *     <div class="rb-c-page-banner"
+ *          role="region"
+ *          [hidden]
+ *          [aria-label="..."]
+ *          [aria-labelledby="..."]>
+ *      <div class="rb-c-page-banner__content">...</div>
+ *      [<a class="rb-c-page-banner__close ..." ...>...</a>]
+ *     </div>
+ */
+.rb-c-page-banner {
+  background: var(--ink-p-accent-warning-bg);
+  border-bottom: 1px var(--ink-p-accent-warning-border-color) solid;
+  border-top: 1px var(--ink-p-accent-warning-border-color) solid;
+  display: flex;
+  padding: var(--ink-u-spacing-sm);
+  text-align: left;
+
+  &:hidden {
+    display: none;
+  }
+
+  a:link:not('.ink-c-button') {
+    color: var(--ink-p-link-fg-on-light);
+    font-weight: bold;
+  }
+
+  /**
+   * The close/dismiss button for the banner.
+   *
+   * It's up to the implementation to handle interaction with this button.
+   * In this case, it should probably have an ID.
+   *
+   * DOM Attributes:
+   *     aria-label (string):
+   *         A label describing the button.
+   *
+   *     href (string):
+   *         A URL to invoke when clicking the button. This may be ``#``.
+   *
+   *     role (string):
+   *         This must be ``button``.
+   *
+   *     tabindex (number):
+   *         This must be ``0``.
+   *
+   *     title (string):
+   *         A label to show when hovering over the button.
+   *
+   * Structure:
+   *     <a class="rb-c-page-banner__close ink-i-close"
+   *        aria-label="..."
+   *        href="..."
+   *        role="button"
+   *        tabindex="0"
+   *        title="..."></a>
+   */
+  &__close {
+    color: var(--ink-p-accent-warning-fg);
+
+    &:hover {
+      color: black;
+    }
+  }
+
+  /**
+   * The content of the banner.
+   *
+   * This will generally contain a header, and may contain other content.
+   * Styling will largely be the responsibility of the consumer.
+   *
+   * Structure:
+   *     <div class="rb-c-page-banner__content">
+   *      [<div class="rb-c-page-banner__header" ...>...</div>]
+   *      html...
+   *     </div>
+   */
+  &__content {
+    color: var(--ink-p-accent-warning-fg);
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: var(--ink-u-spacing-std);
+    margin: 0;
+    padding: 0;
+  }
+
+  /**
+   * The header text for the banner.
+   *
+   * This is the primary text shown for the banner. Most banners will have
+   * this.
+   *
+   * If present, this should have an ``id`` attribute referenced by the
+   * banner's ``aria-labelledby`` attribute.
+   *
+   * Structure:
+   *     <h2 class="rb-c-page-banner__header"
+   *         id="...">
+   *      html...
+   *     </h2>
+   */
+  &__header {
+    font-size: var(--ink-u-font-ml);
+    font-weight: normal;
+    margin: 0;
+    padding: 0;
+  }
+
+  #rb-ns-pages.base.on-shell-desktop-mode({
+    padding-left: @headerbar-padding-left;
+  });
+}

@@ -30,14 +30,22 @@ Example
 
 .. code-block:: python
 
+    from typing import TYPE_CHECKING
+
     from django.utils.html import escape
     from djblets.datagrid.grids import Column
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import DashboardColumnsHook
 
+    if TYPE_CHECKING:
+        from reviewboard.reviews.models import ReviewRequest
+
 
     class MilestoneColumn(Column):
-        def render_data(self, review_request):
+        def render_data(
+            self,
+            review_request,
+        ) -> str:
             if 'myvendor_milestone' in review_request.extra_data:
                 return (
                     '<span class="myvendor-milestone">%s</span>'
@@ -48,7 +56,7 @@ Example
 
 
     class SampleExtension(Extension):
-        def initialize(self):
+        def initialize(self) -> None:
             DashboardColumnsHook(self, [
                 MilestoneColumn(id='myvendor_milestone',
                                 label='Milestone'),

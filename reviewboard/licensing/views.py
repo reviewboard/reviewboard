@@ -8,8 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, cast
-from uuid import uuid4
+from typing import TYPE_CHECKING
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.http import HttpResponseBadRequest, JsonResponse
@@ -29,8 +28,7 @@ from reviewboard.licensing.registry import license_provider_registry
 if TYPE_CHECKING:
     from django.http import HttpRequest, HttpResponse
 
-    from reviewboard.licensing.license import LicenseInfo
-    from reviewboard.licensing.provider import BaseLicenseProvider
+    from reviewboard.licensing.provider import LicenseActionData
 
 
 logger = logging.getLogger(__name__)
@@ -167,6 +165,8 @@ class LicensesView(ContextMixin, View):
             django.http.HttpResponse:
             The HTTP response for the page.
         """
+        action_data: LicenseActionData = {}
+
         # Pull out the details of the request.
         action = request.POST.get('action')
 
@@ -198,6 +198,21 @@ class LicensesView(ContextMixin, View):
                 raise LicenseActionError(_(
                     'The license entry could not be found.'
                 ))
+
+            action_data_json = request.POST.get('action_data')
+
+            if action_data_json:
+                try:
+                    action_data = json.loads(action_data_json)
+
+                    if not isinstance(action_data, dict):
+                        raise ValueError(_(
+                            'Must be a mapping of key/value arguments.'
+                        ))
+                except Exception as e:
+                    raise LicenseActionError(_(
+                        'Invalid action data: {error}.'
+                    ).format(error=e))
         except LicenseActionError as e:
             return HttpResponseBadRequest(
                 json.dumps({
@@ -220,27 +235,13 @@ class LicensesView(ContextMixin, View):
                 }),
                 content_type='application/json')
 
-        # Check which action we're performing and invoke it.
+        # Invoke the action on the license provider.
         try:
-            if action == 'upload-license':
-                result = self._upload_license(
-                    license_info=license_info,
-                    license_provider=license_provider,
-                    request=request)
-            elif action == 'license-update-check':
-                result = self._license_update_check(
-                    license_info=license_info,
-                    license_provider=license_provider,
-                    request=request)
-            elif action == 'process-license-update':
-                result = self._process_license_update_data(
-                    license_info=license_info,
-                    license_provider=license_provider,
-                    request=request)
-            else:
-                raise LicenseActionError(
-                    _('Unsupported license action "{action}".')
-                    .format(action=action))
+            result = license_provider.call_action(
+                action_id=action,
+                license_info=license_info,
+                action_data=action_data,
+                request=request)
 
             return JsonResponse(result, encoder=DjbletsJSONEncoder)
         except LicenseActionError as e:
@@ -264,291 +265,3 @@ class LicensesView(ContextMixin, View):
                              message=e)
                 }),
                 content_type='application/json')
-
-    def _license_update_check(
-        self,
-        *,
-        license_info: LicenseInfo,
-        license_provider: BaseLicenseProvider,
-        request: HttpRequest,
-    ) -> SerializableDjangoJSONDict:
-        """Handle a license update check.
-
-        This will request a license server URL and a payload from the License
-        Provider. The client can send the payload to the license server URL to
-        request a new license, or check status for a license.
-
-        Args:
-            license_info (reviewboard.licensing.license.LicenseInfo):
-                Information on the license to check for updates.
-
-            license_provider (reviewboard.licensing.provider.
-                              BaseLicenseProvider):
-                The License Provider managing this license.
-
-            request (django.http.HttpRequest):
-                The HTTP request from the client.
-
-        Returns:
-            dict:
-            The JSON-serializable dictionary of results to send back to the
-            client.
-
-        Raises:
-            reviewboard.licensing.errors.LicenseActionError:
-                An error invoking an action in the License Provider. This
-                will result in a suitable error message for the client.
-        """
-        check_request = license_provider.get_check_license_request(
-            license_info=license_info,
-            request=request)
-
-        if not check_request:
-            return {
-                'canCheck': False,
-            }
-
-        return {
-            'canCheck': True,
-            'checkStatusURL': check_request['url'],
-            'credentials': check_request.get('credentials'),
-            'data': check_request['data'],
-            'headers': check_request.get('headers'),
-        }
-
-    def _process_license_update_data(
-        self,
-        *,
-        license_info: LicenseInfo,
-        license_provider: BaseLicenseProvider,
-        request: HttpRequest,
-    ) -> SerializableDjangoJSONDict:
-        """Handle an automated license update payload.
-
-        This will process the payload from a license server, passing the
-        result to the License Provider. That may install a new license or
-        update information about a license in the backend.
-
-        Args:
-            license_info (reviewboard.licensing.license.LicenseInfo):
-                Information on the license to check for updates.
-
-            license_provider (reviewboard.licensing.provider.
-                              BaseLicenseProvider):
-                The License Provider managing this license.
-
-            request (django.http.HttpRequest):
-                The HTTP request from the client.
-
-        Returns:
-            dict:
-            The JSON-serializable dictionary of results to send back to the
-            client.
-
-        Raises:
-            reviewboard.licensing.errors.LicenseActionError:
-                An error with the data or with invoking the actions in the
-                License Provider. This will result in a suitable error
-                message for the client.
-        """
-        trace_id = str(uuid4())
-
-        logger.info('[%s] Checking license update response for License '
-                    'Provider %r',
-                    trace_id, license_provider.license_provider_id)
-
-        # Pull out the request and response data to verify.
-        try:
-            check_request_data = request.POST['check_request_data']
-        except KeyError:
-            logger.error('[%s] Missing check_request_data for license check',
-                         trace_id)
-
-            raise LicenseActionError(
-                _('Missing check_request_data value for license check. '
-                  'This may be an internal error or an issue with the '
-                  'licensing server. Check the Review Board server logs for '
-                  'more information (error ID {trace_id}).')
-                .format(trace_id=trace_id))
-
-        logger.debug('[%s] Check request data = %r',
-                     trace_id, check_request_data)
-
-        try:
-            check_response_data = request.POST['check_response_data']
-        except KeyError:
-            logger.error('[%s] Missing check_response_data for license check',
-                         trace_id)
-
-            raise LicenseActionError(
-                _('Missing check_response_data value for license check. '
-                  'This may be an internal error or an issue with the '
-                  'licensing server. Check the Review Board server logs for '
-                  'more information (error ID {trace_id}).')
-                .format(trace_id=trace_id))
-
-        logger.debug('[%s] Check response data = %r',
-                     trace_id, check_response_data)
-
-        if not check_response_data:
-            logger.error('[%s] Empty check_response_data for license check',
-                         trace_id)
-
-            raise LicenseActionError(
-                _('Empty check_response_data value for license check. '
-                  'This may be an internal error or an issue with the '
-                  'licensing server. Check the Review Board server logs for '
-                  'more information (error ID {trace_id}).')
-                .format(trace_id=trace_id))
-
-        # Deserialize the payloads.
-        try:
-            check_request_payload = json.loads(check_request_data)
-        except ValueError:
-            logger.error('[%s] check_request_data was not valid JSON',
-                         trace_id)
-
-            raise LicenseActionError(
-                _('Invalid check_request_data value for license check. '
-                  'This may be an internal error or an issue with the '
-                  'licensing server. Check the Review Board server logs for '
-                  'more information (error ID {trace_id}).')
-                .format(trace_id=trace_id))
-
-        try:
-            check_response_payload = json.loads(check_response_data)
-        except ValueError:
-            logger.error('[%s] check_response_data was not valid JSON',
-                         trace_id)
-
-            raise LicenseActionError(
-                _('Invalid check_response_data value for license check. '
-                  'This may be an internal error or an issue with the '
-                  'licensing server. Check the Review Board server logs for '
-                  'more information (error ID {trace_id}).')
-                .format(trace_id=trace_id))
-
-        # Pass to the License Provider and check the result.
-        try:
-            result = license_provider.process_check_license_result(
-                license_info=license_info,
-                check_request_data=check_request_payload,
-                check_response_data=check_response_payload,
-                request=request)
-            status = result['status']
-        except NotImplementedError as e:
-            logger.exception('[%s] Automated license checks are enabled '
-                             'for this license provider but not implemented. '
-                             'This is an internal error.',
-                             trace_id)
-
-            raise LicenseActionError(
-                _('The license provider implementation enables support for '
-                  'automated license checks but does not provide an '
-                  'implementation. This is an internal error. See the '
-                  'Review Board server logs for more information (error ID '
-                  '{trace_id}).')
-                .format(trace_id=trace_id)
-            ) from e
-        except LicenseActionError as e:
-            raise LicenseActionError(
-                _('Error processing license update: {message}')
-                .format(message=str(e)),
-                payload=e.payload
-            ) from e
-        except Exception as e:
-            logger.exception('[%s] Unexpected error checking license '
-                             'result: %s',
-                             trace_id, e)
-
-            raise LicenseActionError(
-                _('Unexpected error processing license update. Check the '
-                  'Review Board server logs for more information (error ID '
-                  '{trace_id}).')
-                .format(trace_id=trace_id)
-            ) from e
-
-        logger.info('[%s] License update check complete: %s',
-                    trace_id, status)
-
-        return cast(SerializableDjangoJSONDict, result)
-
-    def _upload_license(
-        self,
-        *,
-        license_info: LicenseInfo,
-        license_provider: BaseLicenseProvider,
-        request: HttpRequest,
-    ) -> SerializableDjangoJSONDict:
-        """Handle a manual license upload.
-
-        This will take the provided license data and pass it to the License
-        Provider for license replacement. This is dependent on the
-        capabilities of the License Provider.
-
-        Args:
-            license_info (reviewboard.licensing.license.LicenseInfo):
-                Information on the license to check for updates.
-
-            license_provider (reviewboard.licensing.provider.
-                              BaseLicenseProvider):
-                The License Provider managing this license.
-
-            request (django.http.HttpRequest):
-                The HTTP request from the client.
-
-        Returns:
-            dict:
-            The JSON-serializable dictionary of results to send back to the
-            client.
-
-        Raises:
-            reviewboard.licensing.errors.LicenseActionError:
-                An error with the data or with invoking the upload in the
-                License Provider. This will result in a suitable error
-                message for the client.
-        """
-        license_data_fp = request.FILES.get('license_data')
-
-        if not license_data_fp:
-            raise LicenseActionError(_('No license data was found'))
-
-        license_data = license_data_fp.read()
-
-        # Allow any errors to bubble up.
-        try:
-            license_provider.set_license_data(
-                license_info=license_info,
-                license_data=license_data,
-                request=request)
-        except NotImplementedError:
-            raise LicenseActionError(_(
-                'Licenses for this product cannot be uploaded manually.'
-            ))
-        except LicenseActionError:
-            # Let this error bubble up.
-            raise
-        except Exception as e:
-            logger.exception('Unexpected error setting license data %r for '
-                             'license %r on provider %r: %s',
-                             license_data, license_info, license_provider, e)
-
-            raise LicenseActionError(_(
-                'Unexpected error setting license data for this product. '
-                'Check the Review Board server logs for more information.'
-            ))
-
-        # Reload the license.
-        new_license_info = license_provider.get_license_by_id(
-            license_info.license_id)
-
-        if new_license_info:
-            license_info_data = license_provider.get_js_license_model_data(
-                license_info=new_license_info,
-                request=request)
-        else:
-            license_info_data = None
-
-        return {
-            'license_info': license_info_data,
-        }

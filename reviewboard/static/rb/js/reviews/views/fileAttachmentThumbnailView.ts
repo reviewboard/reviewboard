@@ -16,6 +16,9 @@ import {
     FileAttachmentStates,
 } from 'reviewboard/common';
 import {
+    FileAttachmentThumbnailContainerHook,
+} from 'reviewboard/extensions';
+import {
     FieldStateLabelThemes,
     FieldStateLabelView,
     InlineEditorView,
@@ -360,7 +363,7 @@ export class FileAttachmentThumbnailView extends BaseView<
              * Add any hooks. If renderThumbnail is true then the hooks will
              * have already been added.
             */
-            RB.FileAttachmentThumbnailContainerHook.each(hook => {
+            FileAttachmentThumbnailContainerHook.each(hook => {
                 const HookViewType = hook.get('viewType');
                 const hookView = new HookViewType({
                     el: this.el,
@@ -746,7 +749,7 @@ export class FileAttachmentThumbnailView extends BaseView<
         * Some hooks may depend on the elements being added above, so
         * render the hooks here too.
         */
-        RB.FileAttachmentThumbnailContainerHook.each(hook => {
+        FileAttachmentThumbnailContainerHook.each(hook => {
             const HookViewType = hook.get('viewType');
             const hookView = new HookViewType({
                 el: this.el,

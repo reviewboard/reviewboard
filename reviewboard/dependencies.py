@@ -77,7 +77,7 @@ package_dependencies = {
     'packaging': '>=23.1',
     'paramiko': '~=3.4.1',
     'pydiffx': '~=1.1',
-    'Pygments': '~=2.14.0',
+    'Pygments': '~=2.19.0',
 
     # While we don't directly use pyOpenSSL, we do use cryptography, and
     # older versions of pyOpenSSL can break a system badly with newer
