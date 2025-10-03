@@ -2,20 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from kgb import SpyAgency
 
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.hostingsvcs.base import (HostingServiceClient,
                                           HostingServiceHTTPRequest,
                                           HostingServiceHTTPResponse)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.testing.hosting_services import TestService
 from reviewboard.testing.testcase import TestCase
-
-if TYPE_CHECKING:
-    from djblets.testing.testcases import ExpectedWarning
 
 
 class _DummyHTTPRequest(HostingServiceHTTPRequest):
@@ -257,26 +251,6 @@ class HostingServiceClientTests(SpyAgency, TestCase):
                 'Test-header': 'Value',
             })
 
-        # One for each item in the tuple, + 1 to detect the bounds.
-        expected_warnings: list[ExpectedWarning] = [
-            {
-                'cls': RemovedInReviewBoard80Warning,
-                'message': (
-                    'Accessing HostingServiceHTTPResponse by index is '
-                    'deprecated. Please use HostingServiceHTTPResponse.data '
-                    'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
-                ),
-            }
-            for _i in range(3)
-        ]
-
-        with self.assertWarnings(expected_warnings):
-            data, headers = response
-
-        self.assertEqual(data, response.data)
-        self.assertEqual(headers, response.headers)
-
         self.assertSpyCalledWith(
             self.client.build_http_request,
             url='http://example.com',
@@ -324,26 +298,6 @@ class HostingServiceClientTests(SpyAgency, TestCase):
                 'Test-header': 'Value',
             })
 
-        # One for each item in the tuple, + 1 to detect the bounds.
-        expected_warnings: list[ExpectedWarning] = [
-            {
-                'cls': RemovedInReviewBoard80Warning,
-                'message': (
-                    'Accessing HostingServiceHTTPResponse by index is '
-                    'deprecated. Please use HostingServiceHTTPResponse.data '
-                    'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
-                ),
-            }
-            for _i in range(3)
-        ]
-
-        with self.assertWarnings(expected_warnings):
-            data, headers = response
-
-        self.assertEqual(data, response.data)
-        self.assertEqual(headers, response.headers)
-
         self.assertSpyCalledWith(
             self.client.build_http_request,
             url='http://example.com',
@@ -389,26 +343,6 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             {
                 'Test-header': 'Value',
             })
-
-        # One for each item in the tuple, + 1 to detect the bounds.
-        expected_warnings: list[ExpectedWarning] = [
-            {
-                'cls': RemovedInReviewBoard80Warning,
-                'message': (
-                    'Accessing HostingServiceHTTPResponse by index is '
-                    'deprecated. Please use HostingServiceHTTPResponse.data '
-                    'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
-                ),
-            }
-            for _i in range(3)
-        ]
-
-        with self.assertWarnings(expected_warnings):
-            data, headers = response
-
-        self.assertEqual(data, response.data)
-        self.assertEqual(headers, response.headers)
 
         self.assertSpyCalledWith(
             self.client.build_http_request,
@@ -456,26 +390,6 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             {
                 'Test-header': 'Value',
             })
-
-        # One for each item in the tuple, + 1 to detect the bounds.
-        expected_warnings: list[ExpectedWarning] = [
-            {
-                'cls': RemovedInReviewBoard80Warning,
-                'message': (
-                    'Accessing HostingServiceHTTPResponse by index is '
-                    'deprecated. Please use HostingServiceHTTPResponse.data '
-                    'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
-                ),
-            }
-            for _i in range(3)
-        ]
-
-        with self.assertWarnings(expected_warnings):
-            data, headers = response
-
-        self.assertEqual(data, response.data)
-        self.assertEqual(headers, response.headers)
 
         self.assertSpyCalledWith(
             self.client.build_http_request,
@@ -526,26 +440,6 @@ class HostingServiceClientTests(SpyAgency, TestCase):
                 'Test-header': 'Value',
             })
 
-        # One for each item in the tuple, + 1 to detect the bounds.
-        expected_warnings: list[ExpectedWarning] = [
-            {
-                'cls': RemovedInReviewBoard80Warning,
-                'message': (
-                    'Accessing HostingServiceHTTPResponse by index is '
-                    'deprecated. Please use HostingServiceHTTPResponse.data '
-                    'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
-                ),
-            }
-            for _i in range(3)
-        ]
-
-        with self.assertWarnings(expected_warnings):
-            data, headers = response
-
-        self.assertEqual(data, response.data)
-        self.assertEqual(headers, response.headers)
-
         self.assertSpyCalledWith(
             self.client.build_http_request,
             url='http://example.com',
@@ -595,38 +489,6 @@ class HostingServiceClientTests(SpyAgency, TestCase):
                 'Test-header': 'Value',
             })
 
-        # One for each item in the tuple, + 1 to detect the bounds.
-        expected_warnings: list[ExpectedWarning] = [
-            {
-                'cls': RemovedInReviewBoard80Warning,
-                'message': (
-                    'Accessing HostingServiceHTTPResponse by index is '
-                    'deprecated. Please use HostingServiceHTTPResponse.data '
-                    'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
-                ),
-            }
-            for _i in range(3)
-        ]
-
-        with self.assertWarnings(expected_warnings):
-            data, headers = response
-
-        self.assertEqual(data, response.data)
-        self.assertEqual(headers, response.headers)
-
-        self.assertSpyCalledWith(
-            self.client.build_http_request,
-            url='http://example.com',
-            body=b'test body\xf0\x9f\x98\x8b',
-            headers={
-                'Content-Length': '13',
-                'Foo': 'bar',
-            },
-            method='PUT',
-            username='username',
-            password='password')
-
         request = self.client.build_http_request.last_call.return_value
         self.assertEqual(request.url, 'http://example.com')
         self.assertEqual(request.method, 'PUT')
@@ -663,26 +525,6 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             {
                 'Test-header': 'Value',
             })
-
-        # One for each item in the tuple, + 1 to detect the bounds.
-        expected_warnings: list[ExpectedWarning] = [
-            {
-                'cls': RemovedInReviewBoard80Warning,
-                'message': (
-                    'Accessing HostingServiceHTTPResponse by index is '
-                    'deprecated. Please use HostingServiceHTTPResponse.data '
-                    'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
-                ),
-            }
-            for _i in range(3)
-        ]
-
-        with self.assertWarnings(expected_warnings):
-            data, headers = response
-
-        self.assertEqual(data, response.data)
-        self.assertEqual(headers, response.headers)
 
         self.assertSpyCalledWith(
             self.client.build_http_request,
@@ -733,26 +575,6 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             {
                 'Test-header': 'Value',
             })
-
-        # One for each item in the tuple, + 1 to detect the bounds.
-        expected_warnings: list[ExpectedWarning] = [
-            {
-                'cls': RemovedInReviewBoard80Warning,
-                'message': (
-                    'Accessing HostingServiceHTTPResponse by index is '
-                    'deprecated. Please use HostingServiceHTTPResponse.data '
-                    'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
-                ),
-            }
-            for _i in range(3)
-        ]
-
-        with self.assertWarnings(expected_warnings):
-            data, headers = response
-
-        self.assertEqual(data, response.data)
-        self.assertEqual(headers, response.headers)
 
         self.assertSpyCalledWith(
             self.client.build_http_request,
@@ -820,224 +642,5 @@ class HostingServiceClientTests(SpyAgency, TestCase):
             request.headers,
             {
                 'Authorization': 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
-                'Foo': 'bar',
-            })
-
-    def test_json_delete(self) -> None:
-        """Testing HostingServiceClient.json_delete"""
-        self.spy_on(self.client.build_http_request)
-
-        message = (
-            'HostingServiceClient.json_delete is deprecated. Please use '
-            'HostingServiceClient.http_delete instead. This will be removed '
-            'in Review Board 8.'
-        )
-
-        with self.assertWarns(RemovedInReviewBoard80Warning, message):
-            rsp, headers = self.client.json_delete(
-                url='http://example.com',
-                headers={
-                    'Foo': 'bar',
-                },
-                username='username',
-                password='password')
-
-        self.assertEqual(rsp, b'')
-        self.assertIsInstance(headers, dict)
-        self.assertEqual(
-            headers,
-            {
-                'Test-header': 'Value',
-            })
-
-        self.assertSpyCalledWith(
-            self.client.build_http_request,
-            url='http://example.com',
-            body=None,
-            headers={
-                'Foo': 'bar',
-            },
-            credentials={
-                'username': 'username',
-                'password': 'password',
-            })
-
-        request = self.client.build_http_request.last_call.return_value
-        self.assertIsNone(request.body)
-        self.assertEqual(request.url, 'http://example.com')
-        self.assertEqual(request.method, 'DELETE')
-        self.assertIsInstance(request.headers, dict)
-        self.assertEqual(
-            request.headers,
-            {
-                'Authorization': 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
-                'Foo': 'bar',
-            })
-
-    def test_json_get(self) -> None:
-        """Testing HostingServiceClient.json_get"""
-        self.spy_on(self.client.build_http_request)
-
-        message = (
-            'HostingServiceClient.json_get is deprecated. Please use '
-            'HostingServiceClient.http_get instead. This will be removed '
-            'in Review Board 8.'
-        )
-
-        with self.assertWarns(RemovedInReviewBoard80Warning, message):
-            rsp, headers = self.client.json_get(
-                url='http://example.com',
-                headers={
-                    'Foo': 'bar',
-                },
-                username='username',
-                password='password')
-
-        self.assertEqual(
-            rsp,
-            {
-                'key': 'test response',
-            })
-        self.assertIsInstance(headers, dict)
-        self.assertEqual(
-            headers,
-            {
-                'Test-header': 'Value',
-            })
-
-        self.assertSpyCalledWith(
-            self.client.build_http_request,
-            url='http://example.com',
-            body=None,
-            headers={
-                'Foo': 'bar',
-            },
-            method='GET',
-            username='username',
-            password='password')
-
-        request = self.client.build_http_request.last_call.return_value
-        self.assertIsNone(request.body)
-        self.assertEqual(request.url, 'http://example.com')
-        self.assertEqual(request.method, 'GET')
-        self.assertIsInstance(request.headers, dict)
-        self.assertEqual(
-            request.headers,
-            {
-                'Authorization': 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
-                'Foo': 'bar',
-            })
-
-    def test_json_post_with_body_unicode(self) -> None:
-        """Testing HostingServiceClient.json_post with body as Unicode"""
-        self.spy_on(self.client.build_http_request)
-
-        message = (
-            'HostingServiceClient.json_post is deprecated. Please use '
-            'HostingServiceClient.http_post instead. This will be removed '
-            'in Review Board 8.'
-        )
-
-        with self.assertWarns(RemovedInReviewBoard80Warning, message):
-            rsp, headers = self.client.json_post(
-                url='http://example.com',
-                body='test body\U0001f60b',
-                headers={
-                    'Foo': 'bar',
-                },
-                username='username',
-                password='password')
-
-        self.assertEqual(
-            rsp,
-            {
-                'key': 'test response',
-            })
-        self.assertIsInstance(headers, dict)
-        self.assertEqual(
-            headers,
-            {
-                'Test-header': 'Value',
-            })
-
-        self.assertSpyCalledWith(
-            self.client.build_http_request,
-            url='http://example.com',
-            body=b'test body\xf0\x9f\x98\x8b',
-            headers={
-                'Content-Length': '13',
-                'Foo': 'bar',
-            },
-            method='POST',
-            username='username',
-            password='password')
-
-        request = self.client.build_http_request.last_call.return_value
-        self.assertEqual(request.url, 'http://example.com')
-        self.assertEqual(request.method, 'POST')
-        self.assertEqual(request.body, b'test body\xf0\x9f\x98\x8b')
-        self.assertIsInstance(request.headers, dict)
-        self.assertEqual(
-            request.headers,
-            {
-                'Authorization': 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
-                'Content-length': '13',
-                'Foo': 'bar',
-            })
-
-    def test_json_post_with_body_bytes(self) -> None:
-        """Testing HostingServiceClient.json_post with body as bytes"""
-        self.spy_on(self.client.build_http_request)
-
-        message = (
-            'HostingServiceClient.json_post is deprecated. Please use '
-            'HostingServiceClient.http_post instead. This will be removed '
-            'in Review Board 8.'
-        )
-
-        with self.assertWarns(RemovedInReviewBoard80Warning, message):
-            rsp, headers = self.client.json_post(
-                url='http://example.com',
-                body=b'test body\x01\x02\x03',
-                headers={
-                    'Foo': 'bar',
-                },
-                username='username',
-                password='password')
-
-        self.assertEqual(
-            rsp,
-            {
-                'key': 'test response',
-            })
-        self.assertIsInstance(headers, dict)
-        self.assertEqual(
-            headers,
-            {
-                'Test-header': 'Value',
-            })
-
-        self.assertSpyCalledWith(
-            self.client.build_http_request,
-            url='http://example.com',
-            body=b'test body\x01\x02\x03',
-            headers={
-                'Content-Length': '12',
-                'Foo': 'bar',
-            },
-            method='POST',
-            username='username',
-            password='password')
-
-        request = self.client.build_http_request.last_call.return_value
-        self.assertEqual(request.url, 'http://example.com')
-        self.assertEqual(request.method, 'POST')
-        self.assertEqual(request.body, b'test body\x01\x02\x03')
-        self.assertIsInstance(request.headers, dict)
-        self.assertEqual(
-            request.headers,
-            {
-                'Authorization': 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
-                'Content-length': '12',
                 'Foo': 'bar',
             })

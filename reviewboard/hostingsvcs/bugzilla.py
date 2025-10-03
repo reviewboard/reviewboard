@@ -29,7 +29,13 @@ class BugzillaForm(BaseHostingServiceRepositoryForm):
         widget=forms.TextInput(attrs={'size': '60'}),
         validators=[validate_bug_tracker_base_hosting_url])
 
-    def clean_bugzilla_url(self):
+    def clean_bugzilla_url(self) -> str:
+        """Clean the bugzilla URL field.
+
+        Returns:
+            str:
+            The cleaned data.
+        """
         return self.cleaned_data['bugzilla_url'].rstrip('/')
 
 
@@ -74,18 +80,21 @@ class Bugzilla(BaseHostingService, BaseBugTracker):
         url = f'{bugzilla_url}/rest/bug/{bug_id}'
 
         try:
-            rsp = self.client.json_get(
-                f'{url}?include_fields=summary,status')[0]
-            result['summary'] = rsp['bugs'][0]['summary']
-            result['status'] = rsp['bugs'][0]['status']
+            rsp = self.client.http_get(
+                f'{url}?include_fields=summary,status')
+            data = rsp.json
+
+            result['summary'] = data['bugs'][0]['summary']
+            result['status'] = data['bugs'][0]['status']
         except Exception as e:
             logger.warning('Unable to fetch bugzilla data from %s: %s',
                            url, e, exc_info=True)
 
         try:
-            url += '/comment'
-            rsp = self.client.json_get(url)[0]
-            result['description'] = rsp['bugs'][bug_id]['comments'][0]['text']
+            rsp = self.client.http_get(f'{url}/comment')
+
+            data = rsp.json
+            result['description'] = data['bugs'][bug_id]['comments'][0]['text']
         except Exception as e:
             logger.warning('Unable to fetch bugzilla data from %s: %s',
                            url, e, exc_info=True)
