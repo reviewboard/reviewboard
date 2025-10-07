@@ -1,4 +1,22 @@
-PIPELINE_JAVASCRIPT = {
+"""Static bundles for Review Board."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from djblets.pipeline import StaticBundle
+
+
+PIPELINE_JAVASCRIPT: Mapping[str, StaticBundle] = {
+    '3rdparty-admin': {
+        'source_filenames': (
+            'lib/js/3rdparty-admin/index.ts',
+        ),
+        'output_filename': 'lib/js/3rdparty-admin.min.js',
+    },
     '3rdparty-base': {
         'source_filenames': (
             'lib/js/3rdparty-base/index.ts',
@@ -19,14 +37,6 @@ PIPELINE_JAVASCRIPT = {
     },
     'js-test-libs': {
         'source_filenames': (
-            # The order matters for the Jasmine modules.
-            'lib/js/js-test-libs/jasmine-5.1.0.js',
-            'lib/js/js-test-libs/jasmine-html-5.1.0.js',
-            'lib/js/js-test-libs/jasmine-boot0-5.1.0.js',
-            'lib/js/js-test-libs/jasmine-boot1-5.1.0.js',
-            'lib/js/js-test-libs/jasmine.hide-filtered-1.0.js',
-            'lib/js/js-test-libs/jasmine.sourcemaps-1.0.js',
-            'lib/js/js-test-libs/sourcemapped-stacktrace.js',
             'lib/js/js-test-libs/index.ts',
         ),
         'output_filename': 'rb/js/js-test-libs.min.js',
@@ -296,7 +306,6 @@ PIPELINE_JAVASCRIPT = {
             'rb/js/admin/index.ts',
 
             # Legacy JavaScript
-            'lib/js/masonry-4.2.2.js',
             'rb/js/admin/models/changeListPageModel.es6.js',
             'rb/js/admin/models/dashboardPageModel.es6.js',
             'rb/js/admin/models/inlineFormGroupModel.es6.js',
@@ -343,24 +352,20 @@ PIPELINE_JAVASCRIPT = {
 }
 
 
-PIPELINE_STYLESHEETS = {
+PIPELINE_STYLESHEETS: Mapping[str, StaticBundle] = {
     'common': {
         'source_filenames': (
             'lib/css/3rdparty.less',
-            'lib/css/jquery-ui-1.8.24.min.css',
             'lib/css/fontawesome.less',
             'rb/css/bundles/common.less',
         ),
         'output_filename': 'rb/css/common.min.css',
-        'absolute_paths': False,
     },
     'js-tests': {
         'source_filenames': (
-            'lib/css/jasmine-5.1.0.css',
             'rb/css/pages/js-tests.less',
         ),
         'output_filename': 'rb/css/js-tests.min.css',
-        'absolute_paths': False,
     },
     'account-page': {
         'source_filenames': (
@@ -373,27 +378,23 @@ PIPELINE_STYLESHEETS = {
             'rb/css/bundles/reviews.less',
         ),
         'output_filename': 'rb/css/reviews.min.css',
-        'absolute_paths': False,
     },
     'newReviewRequest': {
         'source_filenames': (
             'rb/css/pages/newReviewRequest.less',
         ),
         'output_filename': 'rb/css/newReviewRequest.min.css',
-        'absolute_paths': False,
     },
     'oauth': {
         'source_filenames': (
             'rb/css/pages/oauth.less',
         ),
         'output_filename': 'rb/css/oauth.min.css',
-        'absolute_paths': False,
     },
     'admin': {
         'source_filenames': (
             'rb/css/bundles/admin.less',
         ),
         'output_filename': 'rb/css/admin.min.css',
-        'absolute_paths': False,
     },
 }

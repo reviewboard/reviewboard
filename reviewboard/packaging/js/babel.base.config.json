@@ -2,7 +2,13 @@
     "env": {
         "development": {
             "presets": [
-                "@babel/preset-env",
+                [
+                    "@babel/preset-env",
+                    {
+                        "corejs": "3.46",
+                        "useBuiltIns": "entry"
+                    }
+                ],
                 "@babel/preset-typescript",
                 "@beanbag/ink/babel-preset"
             ]
@@ -10,33 +16,17 @@
     },
     "plugins": [
         "@babel/plugin-external-helpers",
-        ["@babel/plugin-proposal-decorators", {
-            "version": "legacy"
-        }],
+        [
+            "@babel/plugin-proposal-decorators",
+            {
+                "version": "legacy"
+            }
+        ],
         "babel-plugin-dedent",
         "babel-plugin-django-gettext"
     ],
     "sourceMaps": true,
     "targets": [
-        "> 1%",
-        "last 2 versions",
-        "not dead",
-        "not and_chr < 92",
-        "not and_ff < 90",
-        "not and_qq < 10.4",
-        "not and_uc < 12.12",
-        "not android < 92",
-        "not baidu > 0",
-        "not chrome < 55",
-        "not edge < 15",
-        "not firefox < 52",
-        "not ie > 0",
-        "not ios_saf < 11",
-        "not kaios > 0",
-        "not op_mini all",
-        "not op_mob < 64",
-        "not opera < 42",
-        "not safari < 11",
-        "not samsung < 6.2"
+        "baseline widely available"
     ]
 }

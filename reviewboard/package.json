@@ -1,50 +1,37 @@
 {
-  "name": "@beanbag/reviewboard",
-  "private": "true",
-  "files": [],
-  "scripts": {
-    "build-storybook": "storybook build",
-    "dependencies": "./contrib/internal/build-npm-deps.py",
-    "storybook": "storybook dev -p 6007 --no-open"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "dependencies": {
-    "@babel/plugin-external-helpers": "^7.18.6",
-    "@beanbag/jasmine-suites": "~2.0.0",
-    "@prantlf/jsonlint": "^11.7.0",
-    "@rollup/plugin-commonjs": "^24.0.1",
-    "babel-polyfill": "^6.26.0",
-    "codemirror": "^5.65.11",
-    "jasmine-core": "~5.1.0",
-    "jquery": "^3.7.1",
-    "jquery-flot": "^0.8.3",
-    "jquery-form": "^4.2.2",
-    "jquery-ui": "~1.13.3",
-    "jquery.cookie": "^1.4.1",
-    "moment": "^2.29.4",
-    "moment-timezone": "^0.5.40",
-    "sourcemapped-stacktrace": "^1.1.11"
-  },
-  "workspaces": [
-    ".npm-workspaces/*"
-  ],
-  "devDependencies": {
-    "@chromatic-com/storybook": "^1.3.3",
-    "@storybook/addon-essentials": "^8.0.8",
-    "@storybook/addon-interactions": "^8.0.8",
-    "@storybook/addon-links": "^8.0.8",
-    "@storybook/addon-themes": "^8.2.9",
-    "@storybook/blocks": "^8.0.8",
-    "@storybook/html": "^8.0.8",
-    "@storybook/html-vite": "^8.0.8",
-    "@storybook/test": "^8.0.8",
-    "@tabler/icons": "^3.5.0",
-    "@types/codemirror": "^5.60.15",
-    "@types/jqueryui": "^1.12.21",
-    "@vitejs/plugin-react": "^4.3.1",
-    "axe-playwright": "^2.0.2",
-    "storybook": "^8.0.8"
-  }
+    "name": "@beanbag/reviewboard",
+    "private": true,
+    "dependencies": {
+        "@beanbag/djblets": "*",
+        "@prantlf/jsonlint": "^16.0.0",
+        "@tabler/icons": "^3.35.0",
+        "codemirror": "^5.65.20",
+        "core-js": "^3.46.0",
+        "jquery-flot": "^0.8.3",
+        "jquery-form": "^4.3.0",
+        "jquery.cookie": "^1.4.1",
+        "masonry-layout": "^4.2.2",
+        "moment": "^2.30.1",
+        "moment-timezone": "^0.6.0"
+    },
+    "devDependencies": {
+        "@babel/plugin-external-helpers": "^7.27.1",
+        "@beanbag/frontend-buildkit": "^2.0.0",
+        "@beanbag/jasmine-suites": "^3.0.0",
+        "@beanbag/js-buildkit": "^1.0.3",
+        "@rollup/plugin-commonjs": "^29.0.0",
+        "@storybook/addon-a11y": "^10.0.2",
+        "@storybook/addon-docs": "^10.0.2",
+        "@storybook/addon-links": "^10.0.2",
+        "@storybook/addon-themes": "^10.0.2",
+        "@storybook/html-vite": "^10.0.2",
+        "@types/codemirror": "^5.60.16",
+        "@types/jqueryui": "^1.12.24",
+        "@vitejs/plugin-react": "^5.0.4",
+        "eslint-plugin-storybook": "10.0.2",
+        "jasmine-core": "~5.13.0",
+        "rollup-plugin-external-globals": "^0.13.0",
+        "sourcemapped-stacktrace": "^1.1.11",
+        "storybook": "^10.0.2"
+    }
 }

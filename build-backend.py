@@ -332,7 +332,7 @@ def _rebuild_npm_workspaces() -> None:
 
     from importlib import import_module
 
-    for mod_name in ('djblets', 'reviewboard'):
+    for mod_name in ['djblets']:
         try:
             mod = import_module(mod_name)
         except ImportError:

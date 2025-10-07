@@ -41,31 +41,31 @@ def _write_deps(
         deps (dict):
             The dependencies to write.
     """
+    dependencies = '\n'.join(
+        f"    '{dep_name}': '{dep_ver}',"
+        for dep_name, dep_ver in deps.items()
+        if not dep_ver.startswith('file:')
+    )
+
     fp.write(
-        '#: %(doc)s\n'
-        '%(name)s: dict[str, str] = {\n'
-        '%(deps)s\n'
-        '}\n'
-        '\n'
-        % {
-            'doc': doc,
-            'name': name,
-            'deps': '\n'.join(
-                f"    '{dep_name}': '{dep_ver}',"
-                for dep_name, dep_ver in deps.items()
-                if not dep_ver.startswith('file:')
-            ),
-        })
+        f'#: {doc}\n'
+        f'{name}: Mapping[str, str] = {{\n'
+        f'{dependencies}\n'
+        f'}}\n'
+        f'\n'
+    )
 
 
 def main() -> None:
     """Embed package.json into reviewboard/dependencies.py."""
     scripts_dir = os.path.abspath(os.path.dirname(__file__))
     top_dir = os.path.abspath(os.path.join(scripts_dir, '..', '..'))
-    deps_py_path = os.path.join(top_dir, 'reviewboard', 'dependencies.py')
+    reviewboard_dir = os.path.join(top_dir, 'reviewboard')
+    package_json_path = os.path.join(reviewboard_dir, 'package.json')
+    deps_py_path = os.path.join(reviewboard_dir, 'dependencies.py')
 
     # Load the dependencies and organize them.
-    with open(os.path.join(top_dir, 'package.json'), 'r') as fp:
+    with open(package_json_path, mode='r', encoding='utf-8') as fp:
         package_json = json.load(fp)
 
     deps: dict[str, str] = package_json['dependencies']
@@ -75,7 +75,7 @@ def main() -> None:
     new_lines_pre: str = ''
     new_lines_post: str = ''
 
-    with open(deps_py_path, 'r') as fp:
+    with open(deps_py_path, mode='r', encoding='utf-8') as fp:
         data = fp.read()
 
         i = data.find(MARKER_START)
@@ -88,7 +88,7 @@ def main() -> None:
         new_lines_post = data[j + len(MARKER_END) + 1:]
 
     # Write out the new dependencies.py.
-    with open(deps_py_path, 'w') as fp:
+    with open(deps_py_path, mode='w', encoding='utf-8') as fp:
         fp.write(new_lines_pre)
         fp.write(f'{MARKER_START}\n\n')
 
