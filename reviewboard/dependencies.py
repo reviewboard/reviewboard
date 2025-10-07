@@ -13,17 +13,10 @@ import sys
 import textwrap
 from typing import TYPE_CHECKING
 
-try:
-    from djblets.dependencies import (
-        npm_dependencies as djblets_npm_dependencies,
-    )
-except ImportError:
-    # We're probably being called as part of the build backend process.
-    # Don't worry too much about this dependency.
-    djblets_npm_dependencies = []
-
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+
+    from djblets.dependencies import Dependency
 
 
 ###########################################################################
@@ -61,7 +54,7 @@ djblets_version = '~=6.0a0.dev0'
 ###########################################################################
 
 #: All dependencies required to install Review Board.
-package_dependencies = {
+package_dependencies: Mapping[str, Dependency] = {
     'bleach': '~=6.0.0',
     'cryptography': '~=41.0.7',
     'Django': django_version,
@@ -109,46 +102,9 @@ package_dependencies = {
 #: These dependencies are not used when simply developing Review Board.
 #: The dependencies here are generally intended to be those that themselves
 #: require Review Board.
-package_only_dependencies = {
+package_only_dependencies: Mapping[str, Dependency] = {
     'rbintegrations': '~=4.0.2',
 }
-
-
-###########################################################################
-# JavaScript dependencies
-#
-# These are auto-generated when running `npm install --save ...` (if the
-# package is not already in node_modules).
-#
-# To re-generate manually, run: `./contrib/internal/build-npm-deps.py`.
-###########################################################################
-
-# Auto-generated Node.js dependencies {
-
-
-#: Dependencies required for runtime or static media building.
-runtime_npm_dependencies: Mapping[str, str] = {
-    '@beanbag/djblets': '*',
-    '@prantlf/jsonlint': '^16.0.0',
-    '@tabler/icons': '^3.35.0',
-    'codemirror': '^5.65.20',
-    'core-js': '^3.46.0',
-    'jquery-flot': '^0.8.3',
-    'jquery-form': '^4.3.0',
-    'jquery.cookie': '^1.4.1',
-    'masonry-layout': '^4.2.2',
-    'moment': '^2.30.1',
-    'moment-timezone': '^0.6.0',
-}
-
-
-# } Auto-generated Node.js dependencies
-
-
-#: Node dependencies required to package/develop/test Djblets.
-npm_dependencies: dict[str, str] = {}
-npm_dependencies.update(djblets_npm_dependencies)
-npm_dependencies.update(runtime_npm_dependencies)
 
 
 ###########################################################################
@@ -159,17 +115,16 @@ _dependency_warning_count = 0
 
 
 def build_dependency_list(
-    deps: Mapping[str, (str | Sequence[Mapping[str, str]])],
+    deps: Mapping[str, Dependency],
     version_prefix: str = '',
     *,
     local_packages: Mapping[str, str] = {},
 ) -> Sequence[str]:
     """Build a list of dependency specifiers from a dependency map.
 
-    This can be used along with :py:data:`package_dependencies`,
-    :py:data:`npm_dependencies`, or other dependency dictionaries to build a
-    list of dependency specifiers for use on the command line or in the
-    package build backend.
+    This can be used along with :py:data:`package_dependencies`
+    or other dependency dictionaries to build a list of dependency specifiers
+    for use on the command line or in the package build backend.
 
     Version Changed:
         7.1:
@@ -203,12 +158,14 @@ def build_dependency_list(
             new_deps.append(f'{dep_name} @ file://{package_path}')
         elif isinstance(dep_details, list):
             new_deps += [
-                '%s%s%s; python_version%s'
+                f'{dep_name}{version_prefix}{entry["version"]}; '
+                f'python_version{entry["python"]}'
                 % (dep_name, version_prefix, entry['version'], entry['python'])
                 for entry in dep_details
             ]
         else:
-            new_deps.append('%s%s%s' % (dep_name, version_prefix, dep_details))
+            new_deps.append(
+                f'{dep_name}{version_prefix}{dep_details}')
 
     return sorted(new_deps, key=lambda s: s.lower())
 
