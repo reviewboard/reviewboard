@@ -1,0 +1,49 @@
+{% load i18n %}
+
+<p>
+{% blocktrans %}
+ {{PRODUCT_NAME}} supports closing review requests that are referenced in
+ commit messages for any changes pushed to this repository. These references
+ are in the form of:
+{% endblocktrans %}
+</p>
+<pre>Reviewed at {{example_url}}</pre>
+<p>{% trans "Or:" %}</p>
+<pre>Review Request #{{example_id}}</pre>
+<p>
+{% blocktrans %}
+ To configure this,
+ <a href="{{add_webhook_url}}" target="_blank">add a new WebHook</a>
+ for your Forgejo repository and set:
+{% endblocktrans %}
+</p>
+<table class="sample-fields">
+ <tr>
+  <th>Payload URL:</th>
+  <td><code>{{webhook_endpoint_url}}</code></td>
+ </tr>
+ <tr>
+  <th>POST content type:</th>
+  <td><code>application/json</code></td>
+ </tr>
+ <tr>
+  <th>Secret:</th>
+  <td><code>{{hook_uuid}}</code></td>
+ </tr>
+ <tr>
+  <th>Trigger on:</th>
+  <td>Push events</td>
+ </tr>
+</table>
+<p>
+{% blocktrans %}
+ Then click <strong>Add webhook</strong>. You're done!
+{% endblocktrans %}
+</p>
+
+<p>
+ By default, Forgejo limits outgoing WebHooks. You may need to edit the
+ <a href="https://forgejo.org/docs/latest/admin/config-cheat-sheet/#webhook-webhook">
+ webhook.ALLOWED_HOST_LIST</a> setting to allow delivery to your Review Board
+ server.
+</p>

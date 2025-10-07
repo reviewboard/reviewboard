@@ -7,7 +7,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typelets.json import JSONDict
@@ -61,7 +61,7 @@ class RemoteRepository:
     #:
     #: Type:
     #:     str
-    mirror_path: Optional[str]
+    mirror_path: str | None
 
     #: The displayed name of the repository.
     #:
@@ -95,8 +95,8 @@ class RemoteRepository:
         owner: str,
         scm_type: str,
         path: str,
-        mirror_path: Optional[str] = None,
-        extra_data: JSONDict = {},
+        mirror_path: (str | None) = None,
+        extra_data: (JSONDict | None) = None,
     ) -> None:
         """Initialize the remote repository representation.
 
@@ -134,7 +134,7 @@ class RemoteRepository:
         self.scm_type = scm_type
         self.path = path
         self.mirror_path = mirror_path
-        self.extra_data = extra_data
+        self.extra_data = extra_data or {}
 
     def __repr__(self) -> str:
         """Return a representation of the remote repository information.
@@ -143,5 +143,7 @@ class RemoteRepository:
             str:
             The string representation.
         """
-        return ('<RemoteRepository: "%s" (owner=%s, scm_type=%s)>'
-                % (self.name, self.owner, self.scm_type))
+        return (
+            f'<RemoteRepository: "{self.name}" (owner={self.owner}, '
+            f'scm_type={self.scm_type})>'
+        )

@@ -65,7 +65,7 @@ class AssemblaTests(AssemblaTestCase):
 
         self.assertFalse(service.is_authorized())
 
-        service.authorize('myuser', 'abc123', None)
+        service.authorize(username='myuser', password='abc123')
 
         self.assertIn('password', account.data)
         self.assertNotEqual(account.data['password'], 'abc123')
@@ -77,7 +77,7 @@ class AssemblaTests(AssemblaTestCase):
             account = self.create_hosting_account()
             service = account.service
 
-            service.authorize('myuser', 'abc123', None)
+            service.authorize(username='myuser', password='abc123')
 
             repository = self.create_repository(hosting_account=account,
                                                 tool_name='Perforce')
@@ -105,7 +105,7 @@ class AssemblaTests(AssemblaTestCase):
             account = self.create_hosting_account()
             service = account.service
 
-            service.authorize('myuser', 'abc123', None)
+            service.authorize(username='myuser', password='abc123')
 
             repository = self.create_repository(
                 path='https://svn.example.com/',

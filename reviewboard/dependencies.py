@@ -76,6 +76,7 @@ package_dependencies = {
     'mimeparse': '~=0.1.3',
     'packaging': '>=23.1',
     'paramiko': '~=3.4.1',
+    'pydantic': '~=2.5',
     'pydiffx': '~=1.1',
     'Pygments': '~=2.19.0',
 

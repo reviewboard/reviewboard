@@ -1,13 +1,20 @@
 """Support for Splat as a bug tracker."""
 
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-from reviewboard.hostingsvcs.bugtracker import BugTracker
+
+if TYPE_CHECKING:
+    from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
+    from reviewboard.scmtools.models import Repository
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +30,7 @@ class SplatForm(BaseHostingServiceRepositoryForm):
         widget=forms.TextInput(attrs={'size': 60}))
 
 
-class Splat(BaseHostingService, BugTracker):
+class Splat(BaseHostingService, BaseBugTracker):
     """The Splat bug tracker.
 
     Splat is a SaaS bugtracker hosted at https://hellosplat.com. It is owned
@@ -38,31 +45,35 @@ class Splat(BaseHostingService, BugTracker):
         'https://hellosplat.com/s/%(splat_org_name)s/tickets/%%s/'
     supports_bug_trackers = True
 
-    def get_bug_info_uncached(self, repository, bug_id):
-        """Return the bug info from the server.
+    def get_bug_info_uncached(
+        self,
+        repository: Repository,
+        bug_id: str,
+    ) -> BugInfo:
+        """Return the information for the specified bug.
 
         Args:
-            repository (reviewboard.scmtools.model.Repository):
-                The repository that is using Splat as a bug tracker.
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object.
 
-            bug_id (unicode):
-                The bug identifier.
+            bug_id (str):
+                The ID of the bug to fetch.
 
         Returns:
-            dict:
-            A dictionary of the bug information.
+            reviewboard.hostingsvcs.base.bug_tracker.BugInfo:
+            Information about the bug.
         """
-        result = {
+        result: BugInfo = {
             'summary': '',
             'description': '',
             'description_text_format': '',
             'status': '',
         }
 
+        org_name = repository.extra_data['bug_tracker-splat_org_name']
         url = (
-            'https://hellosplat.com/api/orgs/%s/tickets/%s/?only-fields=status'
-            ',summary,text,text_format'
-            % (repository.extra_data['bug_tracker-splat_org_name'], bug_id)
+            f'https://hellosplat.com/api/orgs/{org_name}/tickets/{bug_id}/'
+            f'?only-fields=status,summary,text,text_format'
         )
 
         try:

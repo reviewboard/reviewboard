@@ -1,11 +1,22 @@
+"""Hosting service for Assembla."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django import forms
 from django.utils.translation import gettext_lazy as _
+from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import get_hostname
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
+
+if TYPE_CHECKING:
+    from reviewboard.scmtools.core import SCMTool
 
 
 class AssemblaForm(BaseHostingServiceRepositoryForm):
@@ -95,44 +106,61 @@ class Assembla(BaseHostingService):
         """
         return '%s-%s' % (get_hostname(), project_id.replace('/', '-'))
 
-    def check_repository(self, path, username, password, scmtool_class,
-                         local_site_name, assembla_project_id=None,
-                         *args, **kwargs):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def check_repository(
+        self,
+        *,
+        path: str | None,
+        username: str | None,
+        password: str | None,
+        scmtool_class: type[SCMTool],
+        local_site_name: str | None,
+        assembla_project_id: str,
+        **kwargs,
+    ) -> None:
         """Check the validity of a repository hosted on Assembla.
 
         Perforce repositories are handled specially. The Assembla project ID
         will be used as the Perforce host, which is needed to tell Assembla
         which repository on the server to use.
 
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
         Args:
-            path (unicode):
+            path (str):
                 The repository path.
 
-            username (unicode):
+            username (str):
                 The username used for authenticating.
 
-            password (unicode):
+            password (str):
                 The password used for authenticating.
 
             scmtool_class (type):
                 The SCMTool for the repository.
 
-            local_site_name (unicode):
+            local_site_name (str):
                 The name of the Local Site, if any.
 
-            assembla_project_id (unicode):
+            assembla_project_id (str):
                 The project ID for the Assembla team.
 
-            *args (tuple):
-                Additional arguments to pass to the superclass.
-
             **kwargs (dict):
-                Additional keyword arguments to pass to the superclass.
+                Additional keyword arguments passed by the repository form.
+
+        Raises:
+            ValueError:
+                The value of a field was incorrect.
         """
         # We want to use the configured username and other information from
         # the account.
         username = self.account.username
         password = self.get_password()
+
+        if path is None:
+            raise ValueError('path cannot be None')
 
         if scmtool_class.name == 'Perforce':
             scmtool_class.check_repository(
@@ -143,7 +171,7 @@ class Assembla(BaseHostingService):
                 p4_host=assembla_project_id,
                 p4_client=self.make_p4_client_name(assembla_project_id))
         else:
-            super(Assembla, self).check_repository(
+            super().check_repository(
                 path=path,
                 username=username,
                 password=password,
@@ -151,24 +179,32 @@ class Assembla(BaseHostingService):
                 scmtool_class=scmtool_class,
                 **kwargs)
 
-    def authorize(self, username, password, *args, **kwargs):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def authorize(
+        self,
+        *,
+        username: str | None,
+        password: str | None,
+        **kwargs,
+    ) -> None:
         """Authorize the Assembla account.
 
         For Assembla, we simply use the native SCMTool support, as there's
         no useful API available. We just store the password encrypted, which
         will be used by the SCMTool.
 
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
         Args:
-            username (unicode):
+            username (str):
                 The username for authentication.
 
-            password (unicode):
+            password (str):
                 The password for authentication.
 
-            *args (tuple):
-                Additional arguments.
-
-            **kwargs (dict):
+            **kwargs (dict, unused):
                 Additional keyword arguments.
         """
         self.account.data['password'] = encrypt_password(password)

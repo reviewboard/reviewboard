@@ -1,5 +1,10 @@
+"""Hosting service for GitLab."""
+
+from __future__ import annotations
+
 import logging
 import re
+from typing import TYPE_CHECKING
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, quote_plus, urlparse
 
@@ -10,8 +15,10 @@ from django.template.loader import render_to_string
 from django.utils.encoding import force_str
 from django.utils.translation import gettext, gettext_lazy as _
 from djblets.cache.backend import cache_memoize
+from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.support import get_kb_url
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base.forms import (
     BaseHostingServiceAuthForm,
     BaseHostingServiceRepositoryForm,
@@ -25,6 +32,10 @@ from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.scmtools.core import Branch, Commit
+
+if TYPE_CHECKING:
+    from reviewboard.hostingsvcs.base.hosting_service import \
+        HostingServiceCredentials
 
 
 logger = logging.getLogger(__name__)
@@ -296,36 +307,66 @@ class GitLab(BaseHostingService):
         }),
     ]
 
-    def check_repository(self, plan=None, *args, **kwargs):
-        """Checks the validity of a repository.
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def check_repository(
+        self,
+        *,
+        plan: str,
+        **kwargs,
+    ) -> None:
+        """Check the validity of a repository.
 
         This will perform an API request against GitLab to get
         information on the repository. This will throw an exception if
         the repository was not found, and return cleanly if it was found.
+
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
+        Args:
+            plan (str):
+                The ID of the plan that the repository is on.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments passed by the repository form.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.RepositoryError:
+                The repository is not valid.
         """
         self._find_repository_id(
             plan,
             self._get_repository_owner(plan, kwargs),
             self._get_repository_name(plan, kwargs))
 
-    def authorize(self, username, credentials, hosting_url, *args, **kwargs):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def authorize(
+        self,
+        *,
+        username: str | None,
+        credentials: HostingServiceCredentials,
+        hosting_url: str | None,
+        **kwargs,
+    ) -> None:
         """Authorize the GitLab repository.
 
         GitLab uses HTTP Basic Auth for the API, so this will store the
         provided password, encrypted, for use in later API requests.
 
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
         Args:
-            username (unicode):
+            username (str):
                 The username of the account being linked.
 
             credentials (dict):
                 Authentication credentials.
 
-            hosting_url (unicode):
+            hosting_url (str):
                 The URL of the GitLab server.
-
-            *args (tuple, unused):
-                Ignored positional arguments.
 
             **kwargs (dict, unused):
                 Ignored keyword arguments.

@@ -1,6 +1,11 @@
+"""Hosting service for Bitbucket."""
+
+from __future__ import annotations
+
 import json
 import logging
 from collections import defaultdict
+from typing import TYPE_CHECKING
 from urllib.error import HTTPError
 from urllib.parse import quote
 
@@ -13,8 +18,10 @@ from django.template.loader import render_to_string
 from django.urls import path
 from django.utils.translation import gettext_lazy as _, gettext
 from django.views.decorators.http import require_POST
+from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import build_server_url, get_server_url
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base.forms import (
     BaseHostingServiceAuthForm,
     BaseHostingServiceRepositoryForm,
@@ -35,6 +42,9 @@ from reviewboard.scmtools.crypto_utils import encrypt_password
 from reviewboard.scmtools.errors import (FileNotFoundError,
                                          RepositoryNotFoundError)
 from reviewboard.site.urlresolvers import local_site_reverse
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
 
 
 logger = logging.getLogger(__name__)
@@ -145,32 +155,38 @@ class BitbucketHookViews(object):
 
     @staticmethod
     @require_POST
-    def post_receive_hook_close_submitted(request, local_site_name=None,
-                                          repository_id=None,
-                                          hosting_service_id=None,
-                                          hooks_uuid=None):
+    def post_receive_hook_close_submitted(
+        request: HttpRequest,
+        local_site_name: (str | None) = None,
+        repository_id: (int | None) = None,
+        hosting_service_id: (str | None) = None,
+        hooks_uuid: (str | None) = None,
+    ) -> HttpResponse:
         """Close review requests as submitted automatically after a push.
 
         Args:
             request (django.http.HttpRequest):
                 The request from the Bitbucket webhook.
 
-            local_site_name (unicode, optional):
+            local_site_name (str, optional):
                 The local site name, if available.
 
             repository_id (int, optional):
                 The pk of the repository, if available.
 
-            hosting_service_id (unicode, optional):
+            hosting_service_id (str, optional):
                 The name of the hosting service.
 
-            hooks_uuid (unicode, optional):
+            hooks_uuid (str, optional):
                 The UUID of the configured webhook.
 
         Returns:
             django.http.HttpResponse:
             A response for the request.
         """
+        assert repository_id is not None
+        assert hosting_service_id is not None
+
         repository = get_repository_for_hook(
             repository_id=repository_id,
             hosting_service_id=hosting_service_id,
@@ -198,9 +214,11 @@ class BitbucketHookViews(object):
                 'repository on Review Board.')
 
         if review_request_id_to_commits:
-            close_all_review_requests(review_request_id_to_commits,
-                                      local_site_name, repository,
-                                      hosting_service_id)
+            close_all_review_requests(
+                review_request_id_to_commits=review_request_id_to_commits,
+                local_site_name=local_site_name,
+                repository=repository,
+                hosting_service_id=hosting_service_id)
 
         return HttpResponse()
 
@@ -936,8 +954,14 @@ class Bitbucket(BaseHostingService):
 
     DEFAULT_PLAN = 'personal'
 
-    def check_repository(self, plan=DEFAULT_PLAN, tool_name=None,
-                         *args, **kwargs):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def check_repository(
+        self,
+        *,
+        plan: str = DEFAULT_PLAN,
+        tool_name: (str | None) = None,
+        **kwargs,
+    ) -> None:
         """Check the validity of a repository configuration.
 
         This will ensure that the configuration data being provided by the
@@ -949,16 +973,17 @@ class Bitbucket(BaseHostingService):
         the repository was not found, or does not match the expected
         repository type, and return cleanly if it was found.
 
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
         Args:
-            plan (unicode, optional):
+            plan (str, optional):
                 The configured repository plan.
 
-            tool_name (unicode, optional):
+            tool_name (str, optional):
                 The name of the tool selected to communicate with the
                 repository.
-
-            *args (tuple, unused):
-                Unused positional arguments.
 
             **kwargs (dict, unused):
                 Additional information passed by the repository form.
@@ -1001,7 +1026,14 @@ class Bitbucket(BaseHostingService):
                 gettext('The Bitbucket repository being configured does not '
                         'match the type of repository you have selected.'))
 
-    def authorize(self, username, password, *args, **kwargs):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def authorize(
+        self,
+        *,
+        username: str | None,
+        password: str | None,
+        **kwargs,
+    ) -> None:
         """Authorize an account on Bitbucket.
 
         This will attempt to access the user session resource using the
@@ -1014,15 +1046,16 @@ class Bitbucket(BaseHostingService):
 
         If successful, the password is stored in an encrypted form.
 
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
         Args:
-            username (unicode):
+            username (str):
                 The username for the account.
 
-            password (unicode):
+            password (str):
                 The user's password or app password.
-
-            *args (tuple, unused):
-                Unused positional arguments.
 
             **kwargs (dict, unused):
                 Unused keyword arguments.

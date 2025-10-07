@@ -211,6 +211,7 @@ Hosting Service Integration
    :toctree: python
 
    reviewboard.hostingsvcs.base
+   reviewboard.hostingsvcs.base.bug_tracker
    reviewboard.hostingsvcs.base.client
    reviewboard.hostingsvcs.base.forms
    reviewboard.hostingsvcs.base.hosting_service

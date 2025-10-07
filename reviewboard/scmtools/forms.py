@@ -2286,6 +2286,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             return
 
         subforms_cleaned_data = self.subforms_cleaned_data
+        assert subforms_cleaned_data is not None
         path = subforms_cleaned_data.get('path')
         username = subforms_cleaned_data.get('username')
         password = subforms_cleaned_data.get('password')

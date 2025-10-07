@@ -1,12 +1,21 @@
+"""Hosting service for Bugzilla."""
+
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
+
+if TYPE_CHECKING:
+    from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
+    from reviewboard.scmtools.models import Repository
 
 
 logger = logging.getLogger(__name__)
@@ -24,33 +33,49 @@ class BugzillaForm(BaseHostingServiceRepositoryForm):
         return self.cleaned_data['bugzilla_url'].rstrip('/')
 
 
-class Bugzilla(BaseHostingService, BugTracker):
+class Bugzilla(BaseHostingService, BaseBugTracker):
+    """Hosting service for Bugzilla."""
+
     name = 'Bugzilla'
     hosting_service_id = 'bugzilla'
     form = BugzillaForm
     bug_tracker_field = '%(bugzilla_url)s/show_bug.cgi?id=%%s'
     supports_bug_trackers = True
 
-    def get_bug_info_uncached(self, repository, bug_id):
-        """Get the bug info from the server."""
+    def get_bug_info_uncached(
+        self,
+        repository: Repository,
+        bug_id: str,
+    ) -> BugInfo:
+        """Return the information for the specified bug.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object.
+
+            bug_id (str):
+                The ID of the bug to fetch.
+
+        Returns:
+            reviewboard.hostingsvcs.base.bug_tracker.BugInfo:
+            Information about the bug.
+        """
         # This requires making two HTTP requests: one for the summary and
         # status, and one to get the "first comment" (description).
         bug_id = str(bug_id)
 
-        result = {
+        result: BugInfo = {
             'summary': '',
             'description': '',
             'status': '',
         }
 
-        url = '%s/rest/bug/%s' % (
-            repository.extra_data['bug_tracker-bugzilla_url'],
-            bug_id)
+        bugzilla_url = repository.extra_data['bug_tracker-bugzilla_url']
+        url = f'{bugzilla_url}/rest/bug/{bug_id}'
 
         try:
-            rsp, headers = self.client.json_get(
-                '%s?include_fields=summary,status'
-                % url)
+            rsp = self.client.json_get(
+                f'{url}?include_fields=summary,status')[0]
             result['summary'] = rsp['bugs'][0]['summary']
             result['status'] = rsp['bugs'][0]['status']
         except Exception as e:
@@ -59,7 +84,7 @@ class Bugzilla(BaseHostingService, BugTracker):
 
         try:
             url += '/comment'
-            rsp, headers = self.client.json_get(url)
+            rsp = self.client.json_get(url)[0]
             result['description'] = rsp['bugs'][bug_id]['comments'][0]['text']
         except Exception as e:
             logger.warning('Unable to fetch bugzilla data from %s: %s',

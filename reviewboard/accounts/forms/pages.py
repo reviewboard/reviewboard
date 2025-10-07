@@ -1,4 +1,4 @@
-"""My Account configuration pages."""
+"""Forms for user accounts."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from urllib.parse import unquote
 
 from django import forms
 from django.contrib import messages
+from django.contrib.auth.views import RedirectURLMixin
 from django.forms import widgets
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -32,6 +33,7 @@ from reviewboard.themes.ui.registry import ui_theme_registry
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from typing import Any
 
 
 logger = logging.getLogger(__name__)
@@ -715,12 +717,18 @@ class OAuthTokensForm(AccountPageForm):
         }
 
 
-class PrivacyForm(ConsentConfigPageFormMixin, AccountPageForm):
+class PrivacyForm(ConsentConfigPageFormMixin, RedirectURLMixin,
+                  AccountPageForm):
     """A form for displaying privacy information and gathering consent.
 
     This will display a user's privacy rights, link to any configured
     Privacy Policy document, and display a form for gathering consent for
     features that make use of the user's personally identifying information.
+
+    Version Changed:
+        7.0.5:
+        Added :py:class:`django.contrib.auth.views.RedirectURLMixin` as a mixin
+        to the class, to verify that we're using safe URL redirects.
     """
 
     next_url = forms.CharField(required=False,
@@ -728,8 +736,9 @@ class PrivacyForm(ConsentConfigPageFormMixin, AccountPageForm):
 
     form_title = _('My Privacy Rights')
     template_name = 'accounts/privacy_form.html'
+    redirect_field_name = 'next_url'
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         """Initialize the form.
 
         Args:
@@ -739,7 +748,7 @@ class PrivacyForm(ConsentConfigPageFormMixin, AccountPageForm):
             **kwargs (dict):
                 Keyword arguments to pass to the parent form.
         """
-        super(PrivacyForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         siteconfig = SiteConfiguration.objects.get_current()
 
@@ -747,28 +756,28 @@ class PrivacyForm(ConsentConfigPageFormMixin, AccountPageForm):
             del self.fields[self.consent_field_name]
             self.save_label = None
 
-    def load(self):
+    def load(self) -> None:
         """Load the form data.
 
         If a ``?next`` query argument is provided, it will be loaded into the
         initial value for the ``next_url`` so that it will persist through
         page submission.
         """
-        super(PrivacyForm, self).load()
+        super().load()
 
         next_url = self.request.GET.get('next')
 
         if next_url:
             self.set_initial({'next_url': unquote(next_url)})
 
-    def is_visible(self):
+    def is_visible(self) -> bool:
         """Return whether or not the form should be rendered.
 
         This will check if there's any information to display in this form.
         It's only displayed if consent requirements are enabled or there's
         any privacy information configured in Admin Settings.
 
-        Returns
+        Returns:
             bool:
             Whether or not the form should be rendered.
         """
@@ -777,7 +786,7 @@ class PrivacyForm(ConsentConfigPageFormMixin, AccountPageForm):
         return (siteconfig.get('privacy_enable_user_consent') or
                 bool(siteconfig.get('privacy_info_html')))
 
-    def get_extra_context(self):
+    def get_extra_context(self) -> dict[str, Any]:
         """Return extra context for the template.
 
         Returns:
@@ -790,16 +799,16 @@ class PrivacyForm(ConsentConfigPageFormMixin, AccountPageForm):
             'privacy_info_html': siteconfig.get('privacy_info_html'),
         }
 
-    def clean_next_url(self):
+    def clean_next_url(self) -> str | None:
         """Clean the next_url field.
 
         Returns:
-            unicode:
+            str:
             The URL to redirect to, if any.
         """
         return self.cleaned_data.get('next_url', '').strip() or None
 
-    def save(self):
+    def save(self) -> HttpResponseRedirect | None:
         """Save the privacy form.
 
         This may redirect the user to the next URL if it is specified.
@@ -808,10 +817,10 @@ class PrivacyForm(ConsentConfigPageFormMixin, AccountPageForm):
             django.http.HttpResponseRedirect:
             A redirect to the next URL if given and ``None`` otherwise.
         """
-        next_url = self.cleaned_data.get('next_url')
+        redirect_to = self.get_redirect_url()
 
-        if next_url:
+        if redirect_to:
             self.save_consent(self.request.user)
-            return HttpResponseRedirect(next_url)
+            return HttpResponseRedirect(redirect_to)
         else:
-            return super(PrivacyForm, self).save()
+            return super().save()

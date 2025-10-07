@@ -13,7 +13,7 @@ from django.utils.safestring import SafeString, mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import TemplateView, View
 
-from reviewboard.hostingsvcs.bugtracker import BugTracker
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.reviews.markdown_utils import render_markdown
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -81,7 +81,7 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
             return HttpResponseNotFound(
                 _('Unable to find bug tracker service'))
 
-        if not isinstance(bug_tracker, BugTracker):
+        if not isinstance(bug_tracker, BaseBugTracker):
             return HttpResponseNotFound(
                 _('Bug tracker %s does not support metadata')
                 % bug_tracker.name)

@@ -3,6 +3,7 @@
 .. autosummary::
    :nosignatures:
 
+   ~reviewboard.hostingsvcs.base.bug_tracker.BaseBugTracker
    ~reviewboard.hostingsvcs.base.client.HostingServiceClient
    ~reviewboard.hostingsvcs.base.hosting_service.BaseHostingService
    ~reviewboard.hostingsvcs.base.http.HostingServiceHTTPRequest
@@ -14,6 +15,7 @@ Version Added:
     6.0
 """
 
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.base.http import (HostingServiceHTTPRequest,
@@ -23,6 +25,7 @@ from reviewboard.hostingsvcs.base.repository import RemoteRepository
 
 
 __all__ = [
+    'BaseBugTracker',
     'BaseHostingService',
     'HostingServiceClient',
     'HostingServiceHTTPRequest',

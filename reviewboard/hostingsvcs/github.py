@@ -19,11 +19,13 @@ from django.template.loader import render_to_string
 from django.urls import path
 from django.utils.translation import gettext, gettext_lazy as _
 from django.views.decorators.http import require_POST
+from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import build_server_url, get_server_url
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
@@ -48,7 +50,11 @@ from reviewboard.site.urlresolvers import local_site_reverse
 if TYPE_CHECKING:
     from urllib.error import URLError
 
+    from django.http import HttpRequest
+
+    from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
     from reviewboard.hostingsvcs.base.http import HostingServiceHTTPRequest
+    from reviewboard.scmtools.models import Repository
 
 
 logger = logging.getLogger(__name__)
@@ -344,7 +350,11 @@ class GitHubClient(HostingServiceClient):
             # GitHub uses 1-based indexing, so add one.
             start += 1
 
-        return GitHubAPIPaginator(self, url, start=start, per_page=per_page)
+        return GitHubAPIPaginator(
+            client=self,
+            url=url,
+            start=start,
+            per_page=per_page)
 
     def api_get_blob(self, repo_api_url, path, sha):
         """Return the contents of a file using the GitHub API.
@@ -493,22 +503,25 @@ class GitHubHookViews(object):
 
     @staticmethod
     @require_POST
-    def post_receive_hook_close_submitted(request, local_site_name=None,
-                                          repository_id=None,
-                                          hosting_service_id=None):
+    def post_receive_hook_close_submitted(
+        request: HttpRequest,
+        local_site_name: (str | None) = None,
+        repository_id: (int | None) = None,
+        hosting_service_id: (str | None) = None,
+    ) -> HttpResponse:
         """Close review requests as submitted automatically after a push.
 
         Args:
             request (django.http.HttpRequest):
                 The request from the Bitbucket webhook.
 
-            local_site_name (unicode):
+            local_site_name (str, optional):
                 The local site name, if available.
 
-            repository_id (int):
+            repository_id (int, optional):
                 The pk of the repository, if available.
 
-            hosting_service_id (unicode):
+            hosting_service_id (str, optional):
                 The name of the hosting service.
 
         Returns:
@@ -525,8 +538,13 @@ class GitHubHookViews(object):
             return HttpResponseBadRequest(
                 'Only "ping" and "push" events are supported.')
 
-        repository = get_repository_for_hook(repository_id, hosting_service_id,
-                                             local_site_name)
+        assert repository_id is not None
+        assert hosting_service_id is not None
+
+        repository = get_repository_for_hook(
+            repository_id=repository_id,
+            hosting_service_id=hosting_service_id,
+            local_site_name=local_site_name)
 
         # Validate the hook against the stored UUID.
         m = hmac.new(repository.get_or_create_hooks_uuid().encode('utf-8'),
@@ -553,9 +571,11 @@ class GitHubHookViews(object):
                 payload, server_url, repository)
 
         if review_request_id_to_commits:
-            close_all_review_requests(review_request_id_to_commits,
-                                      local_site_name, repository,
-                                      hosting_service_id)
+            close_all_review_requests(
+                review_request_id_to_commits=review_request_id_to_commits,
+                local_site_name=local_site_name,
+                repository=repository,
+                hosting_service_id=hosting_service_id)
 
         return HttpResponse()
 
@@ -597,7 +617,10 @@ class GitHubHookViews(object):
             commit_hash = commit.get('id')
             commit_message = commit.get('message')
             review_request_id = get_review_request_id(
-                commit_message, server_url, commit_hash, repository)
+                commit_message=commit_message,
+                server_url=server_url,
+                commit_id=commit_hash,
+                repository=repository)
 
             review_request_id_to_commits_map[review_request_id].append(
                 '%s (%s)' % (branch_name, commit_hash[:7]))
@@ -605,7 +628,7 @@ class GitHubHookViews(object):
         return review_request_id_to_commits_map
 
 
-class GitHub(BaseHostingService, BugTracker):
+class GitHub(BaseHostingService, BaseBugTracker):
     name = _('GitHub')
     hosting_service_id = 'github'
     plans = [
@@ -722,12 +745,33 @@ class GitHub(BaseHostingService, BugTracker):
                             name)
         return plan_data[key]
 
-    def check_repository(self, plan=None, *args, **kwargs):
-        """Checks the validity of a repository.
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def check_repository(
+        self,
+        *,
+        plan: str,
+        **kwargs,
+    ) -> None:
+        """Check the validity of a repository.
 
         This will perform an API request against GitHub to get
         information on the repository. This will throw an exception if
         the repository was not found, and return cleanly if it was found.
+
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
+        Args:
+            plan (str):
+                The ID of the plan that the repository is on.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments passed by the repository form.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.RepositoryError:
+                The repository is not valid.
         """
         try:
             rsp = self.client.http_get(
@@ -737,7 +781,7 @@ class GitHub(BaseHostingService, BugTracker):
             repo_info = rsp.json
         except HostingServiceError as e:
             if e.http_code == 404:
-                if plan in ('public', 'private'):
+                if plan in {'public', 'private'}:
                     raise RepositoryError(
                         gettext('A repository with this name was not found, '
                                 'or your user may not own it.'))
@@ -759,37 +803,46 @@ class GitHub(BaseHostingService, BugTracker):
         if 'private' in repo_info:
             is_private = repo_info['private']
 
-            if is_private and plan in ('public', 'public-org'):
+            if is_private and plan in {'public', 'public-org'}:
                 raise RepositoryError(
                     gettext('This is a private repository, but you have '
                             'selected a public plan.'))
-            elif not is_private and plan in ('private', 'private-org'):
+            elif not is_private and plan in {'private', 'private-org'}:
                 raise RepositoryError(
                     gettext('This is a public repository, but you have '
                             'selected a private plan.'))
 
-    def authorize(self, username, password, hosting_url=None,
-                  local_site_name=None, *args, **kwargs):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def authorize(
+        self,
+        *,
+        username: str | None,
+        password: str | None,
+        hosting_url: (str | None) = None,
+        local_site_name: (str | None) = None,
+        **kwargs,
+    ) -> None:
         """Authorize an account for the hosting service.
 
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
         Args:
-            username (unicode):
+            username (str):
                 The username for the account.
 
-            password (unicode):
+            password (str):
                 The Personal Access Token for the account.
 
-            hosting_url (unicode):
+            hosting_url (str, optional):
                 The hosting URL for the service, if self-hosted.
 
-            local_site_name (unicode, optional):
+            local_site_name (str, optional):
                 The Local Site name, if any, that the account should be
                 bound to.
 
-            *args (tuple):
-                Extra unused positional arguments.
-
-            **kwargs (dict):
+            **kwargs (dict, unused):
                 Extra keyword arguments containing values from the
                 repository's configuration.
 
@@ -1082,9 +1135,25 @@ class GitHub(BaseHostingService, BugTracker):
                                 mirror_path=repo['mirror_url'],
                                 extra_data=repo)
 
-    def get_bug_info_uncached(self, repository, bug_id):
-        """Get the bug info from the server."""
-        result = {
+    def get_bug_info_uncached(
+        self,
+        repository: Repository,
+        bug_id: str,
+    ) -> BugInfo:
+        """Return the information for the specified bug.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object.
+
+            bug_id (str):
+                The ID of the bug to fetch.
+
+        Returns:
+            reviewboard.hostingsvcs.base.bug_tracker.BugInfo:
+            Information about the bug.
+        """
+        result: BugInfo = {
             'summary': '',
             'description': '',
             'status': '',

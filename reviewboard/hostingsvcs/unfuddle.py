@@ -1,9 +1,15 @@
+"""Hosting service for Unfuddle."""
+
+from __future__ import annotations
+
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 
 from django import forms
 from django.utils.translation import gettext, gettext_lazy as _
+from housekeeping import deprecate_non_keyword_only_args
 
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -83,24 +89,75 @@ class Unfuddle(BaseHostingService):
         'svn': 'Subversion',
     }
 
-    def check_repository(self, unfuddle_account_domain=None,
-                         unfuddle_repo_name=None, tool_name=None,
-                         *args, **kwargs):
-        """Checks the validity of a repository.
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def check_repository(
+        self,
+        *,
+        unfuddle_account_domain: str,
+        unfuddle_repo_name: str,
+        tool_name: (str | None) = None,
+        **kwargs,
+    ) -> None:
+        """Check the validity of a repository.
 
         This will perform an API request against Unfuddle to get
         information on the repository. This will throw an exception if
         the repository was not found, and return cleanly if it was found.
+
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
+        Args:
+            unfuddle_account_domain (str):
+                The domain for the user's Unfuddle account.
+
+            unfuddle_repo_name (str):
+                The name of the repository.
+
+            tool_name (str, optional):
+                The name of the tool to use.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments provided by the repository form.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.RepositoryError:
+                The repository is not valid.
         """
         self._api_get_repository(unfuddle_account_domain, unfuddle_repo_name,
                                  tool_name)
 
-    def authorize(self, username, password, unfuddle_account_domain=None,
-                  *args, **kwargs):
-        """Authorizes the Unfuddle repository.
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    def authorize(
+        self,
+        *,
+        username: str | None,
+        password: str | None,
+        unfuddle_account_domain: str,
+        **kwargs,
+    ) -> None:
+        """Authorize the Unfuddle repository.
 
         Unfuddle uses HTTP Basic Auth for the API, so this will store the
         provided password, encrypted, for use in later API requests.
+
+        Version Changed:
+            7.1:
+            Made arguments keyword-only.
+
+        Args:
+            username (str):
+                The username for the account.
+
+            password (str):
+                The password for the account.
+
+            unfuddle_account_domain (str):
+                The domain for the user's Unfuddle account.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
         """
         # This will raise an exception if it fails, which the form will
         # catch.
