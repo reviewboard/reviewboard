@@ -2,6 +2,7 @@
  * A widget to select related users using search and autocomplete.
  */
 RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
+    className: 'related-object-selector related-user-selector',
     searchPlaceholderText: gettext('Search for users...'),
 
     optionTagName: 'tr',
@@ -39,7 +40,7 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
     `),
 
     template: _.template(dedent`
-        <select placeholder=""
+        <select placeholder="<%- searchPlaceholderText %>"
                 class="related-object-options"></select>
         <% if (multivalued) { %>
         <table class="related-object-selected"></table>
