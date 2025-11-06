@@ -36,7 +36,10 @@ def get_git_branch_name(
         str:
         The isolated branch name.
     """
-    return ref_name.removeprefix('refs/heads/')
+    if ref_name.startswith('refs/heads/'):
+        return ref_name[len('refs/heads/'):]
+    else:
+        return ref_name
 
 
 @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)

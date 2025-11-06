@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from html import unescape
 from typing import (Any, Iterable, Iterator, Generic, Optional, Sequence,
-                    TYPE_CHECKING, Union)
+                    Type, TYPE_CHECKING, Union)
 
 from django.template.loader import render_to_string
 from django.utils.functional import cached_property
@@ -73,7 +73,7 @@ class ReviewRequestFieldChangeEntrySection(TypedDict):
     title: StrOrPromise
 
 
-class FieldSetRegistry(OrderedRegistry[type['BaseReviewRequestFieldSet']]):
+class FieldSetRegistry(OrderedRegistry[Type['BaseReviewRequestFieldSet']]):
     """A registry for field sets.
 
     This keeps the fieldsets in the registered order, so iterating through them
@@ -154,7 +154,7 @@ class FieldSetRegistry(OrderedRegistry[type['BaseReviewRequestFieldSet']]):
         return builtin_fieldsets
 
 
-class FieldRegistry(Registry[type['BaseReviewRequestField']]):
+class FieldRegistry(Registry[Type['BaseReviewRequestField']]):
     """A registry for review request fields."""
 
     lookup_attrs = ['field_id']

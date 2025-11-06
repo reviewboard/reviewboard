@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    'setuptools>=77',
+    'setuptools>=75',
 ]
 build-backend = 'build-backend'
 backend-path = ['.']
@@ -11,8 +11,7 @@ description = 'Extensible code review and document review built for Git, Perforc
 authors = [
     {name = 'Beanbag, Inc.', email = 'questions@beanbaginc.com'},
 ]
-license = 'MIT'
-license-files = [ 'COPYING', 'AUTHORS' ]
+license = { text = 'MIT' }
 readme = 'README.rst'
 dynamic = ['dependencies', 'version']
 requires-python = '>=3.8'
