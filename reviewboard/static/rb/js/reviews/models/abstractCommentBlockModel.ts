@@ -88,6 +88,7 @@ export class AbstractCommentBlock<
      * These will be stored on the server in the comment's extra_data field.
      */
     static serializedFields: string[] = [];
+    declare serializedFields: string[];
 
     /**
      * Initialize the AbstractCommentBlock.

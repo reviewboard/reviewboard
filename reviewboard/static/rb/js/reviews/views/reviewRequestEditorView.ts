@@ -3,15 +3,15 @@
  */
 
 import {
-    type DialogView,
-    ButtonType,
-    DialogActionType,
-    craft,
     paint,
     showConfirmDialog,
     showErrorDialog,
 } from '@beanbag/ink';
-import { BaseView, spina } from '@beanbag/spina';
+import {
+    BaseView,
+    Class,
+    spina,
+} from '@beanbag/spina';
 
 import {
     type FileAttachment,
@@ -69,16 +69,34 @@ class BannerView extends BaseView<
     HTMLDivElement,
     BannerViewOptions
 > {
-    static DescriptionFieldViewType = ChangeDescriptionFieldView;
+    static DescriptionFieldViewType: Class<BaseFieldView> =
+        ChangeDescriptionFieldView;
+    declare DescriptionFieldViewType: Class<BaseFieldView>;
+
     static actions = [];
     static className = 'banner';
-    static describeText = '';
-    static descriptionFieldClasses = '';
-    static descriptionFieldHTML = '';
-    static descriptionFieldID = 'change_description';
-    static descriptionFieldName = null;
-    static showChangesField = true;
-    static subtitle = '';
+
+    static describeText: string = '';
+    declare describeText: string;
+
+    static descriptionFieldClasses: string = '';
+    declare descriptionFieldClasses: string;
+
+    static descriptionFieldHTML: string = '';
+    declare descriptionFieldHTML: string;
+
+    static descriptionFieldID: string = 'change_description';
+    declare descriptionFieldID: string;
+
+    static descriptionFieldName: string | null = null;
+    declare descriptionFieldName: string | null;
+
+    static showChangesField: boolean = true;
+    declare showChangesField: boolean;
+
+    static subtitle: string = '';
+    declare subtitle: string;
+
     static template = _.template(dedent`
         <h1><%- title %></h1>
         <% if (subtitle) { %>
@@ -105,7 +123,10 @@ class BannerView extends BaseView<
               ><%= descriptionFieldHTML %></pre>
         <% } %>
         `);
-    static title = '';
+    declare template: _.CompiledTemplate;
+
+    static title: string = '';
+    declare title: string;
 
     /**********************
      * Instance variables *

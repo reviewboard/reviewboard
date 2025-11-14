@@ -81,11 +81,11 @@ export class BaseFieldView extends BaseView<
      * The name of the property in the model for if this field is editable.
      */
     static editableProp = 'editable';
-    editableProp: string;
+    declare editableProp: string;
 
     /** Whether the contents of the field should be stored in extraData. */
     static useExtraData = true;
-    useExtraData: boolean;
+    declare useExtraData: boolean;
 
     /**********************
      * Instance variables *
@@ -246,11 +246,11 @@ export class TextFieldView extends BaseFieldView {
      * This should be overridden by subclasses.
      */
     static autocomplete = null;
-    autocomplete: unknown;
+    declare autocomplete: unknown;
 
     /** Whether the view is multi-line or single line. */
     static multiline = false;
-    multiline: boolean;
+    declare multiline: boolean;
 
     /**
      * Whether edits should be triggered only by clicking on the icon.
@@ -259,7 +259,7 @@ export class TextFieldView extends BaseFieldView {
      * If this is false, clicks on the field itself will also trigger an edit.
      */
     static useEditIconOnly = false;
-    useEditIconOnly: boolean;
+    declare useEditIconOnly: boolean;
 
     /**********************
      * Instance variables *

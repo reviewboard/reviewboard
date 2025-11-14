@@ -53,7 +53,7 @@ export class ResourceListItem<
 
     /** A list of attributes synced between the ListItem and the Resource. */
     static syncAttrs: string[] = [];
-    syncAttrs: string[];
+    declare syncAttrs: string[];
 
     /**********************
      * Instance variables *

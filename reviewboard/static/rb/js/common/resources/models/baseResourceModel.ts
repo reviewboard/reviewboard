@@ -188,19 +188,19 @@ export class BaseResource<
             'extraData.{key} must be null, a number, boolean, or string',
         UNSET_PARENT_OBJECT: 'parentObject must be set',
     };
-    strings: { [key: string]: string };
+    declare strings: { [key: string]: string };
 
     /** The key for the namespace for the object's payload in a response. */
     static rspNamespace = '';
-    rspNamespace: string;
+    declare rspNamespace: string;
 
     /** The attribute used for the ID in the URL. */
     static urlIDAttr = 'id';
-    urlIDAttr: string;
+    declare urlIDAttr: string;
 
     /** The list of fields to expand in resource payloads. */
     static expandedFields: string[] = [];
-    expandedFields: string[];
+    declare expandedFields: string[];
 
     /**
      * Extra query arguments for GET requests.
@@ -211,11 +211,11 @@ export class BaseResource<
      * They function as defaults for the queries.
      */
     static extraQueryArgs: Result<{ [key: string]: unknown }> = {};
-    extraQueryArgs: Result<{ [key: string]: unknown }>;
+    declare extraQueryArgs: Result<{ [key: string]: unknown }>;
 
     /** Whether or not extra data can be associated on the resource. */
     static supportsExtraData = false;
-    supportsExtraData: boolean;
+    declare supportsExtraData: boolean;
 
     /**
      * A map of attribute names to resulting JSON field names.
@@ -227,27 +227,27 @@ export class BaseResource<
      * calls.
      */
     static attrToJsonMap: { [key: string]: string } = {};
-    attrToJsonMap: { [key: string]: string };
+    declare attrToJsonMap: { [key: string]: string };
 
     /** A list of attributes to serialize in toJSON(). */
     static serializedAttrs: string[] = [];
-    serializedAttrs: string[];
+    declare serializedAttrs: string[];
 
     /** A list of attributes to deserialize in parseResourceData(). */
     static deserializedAttrs: string[] = [];
-    deserializedAttrs: string[];
+    declare deserializedAttrs: string[];
 
     /** Special serializer functions called in toJSON(). */
     static serializers: SerializerMap = {};
-    serializers: SerializerMap;
+    declare serializers: SerializerMap;
 
     /** Special deserializer functions called in parseResourceData(). */
     static deserializers: DeserializerMap = {};
-    deserializers: DeserializerMap;
+    declare deserializers: DeserializerMap;
 
     /** Files to send along with the API payload. */
     static payloadFileKeys: string[] = [];
-    payloadFileKeys: string[];
+    declare payloadFileKeys: string[];
 
     /**
      * Return default values for the model attributes.
@@ -275,7 +275,7 @@ export class BaseResource<
     static listKey(): Result<string> {
         return this.rspNamespace + 's';
     }
-    listKey: Result<string>;
+    declare listKey: Result<string>;
 
     /**********************
      * Instance variables *

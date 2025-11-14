@@ -237,6 +237,7 @@ class DnDDropOverlayView extends BaseView<DnDDropTarget> {
 })
 export class DnDUploader extends BaseView {
     static instance: DnDUploader = null;
+    declare instance: DnDUploader;
 
     /**
      * Create the DnDUploader instance.

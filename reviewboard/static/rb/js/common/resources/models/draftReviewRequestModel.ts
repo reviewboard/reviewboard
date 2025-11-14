@@ -123,7 +123,6 @@ export interface PublishOptions extends SaveOptions {
  */
 @spina({
     mixins: [DraftResourceModelMixin],
-    prototypeAttrs: ['url'],
 })
 export class DraftReviewRequest extends BaseResource<
     DraftReviewRequestAttrs,

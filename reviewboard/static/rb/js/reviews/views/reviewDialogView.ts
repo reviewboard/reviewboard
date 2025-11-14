@@ -85,9 +85,11 @@ class BaseCommentView<
          </div>
         </div>
     `);
+    declare editorTemplate: _.CompiledTemplate;
 
     /** The template to use for rendering comment thumbnails. */
     static thumbnailTemplate = null;
+    declare thumbnailTemplate: _.CompiledTemplate | null;
 
     /**********************
      * Instance variables *
@@ -400,9 +402,7 @@ interface DiffCommentViewOptions {
 /**
  * Displays a view for diff comments.
  */
-@spina({
-    prototypeAttrs: ['thumbnailTemplate'],
-})
+@spina
 export class DiffCommentView extends BaseCommentView<
     DiffComment,
     HTMLDivElement,
@@ -506,9 +506,7 @@ export class DiffCommentView extends BaseCommentView<
 /**
  * Displays a view for file attachment comments.
  */
-@spina({
-    prototypeAttrs: ['thumbnailTemplate'],
-})
+@spina
 class FileAttachmentCommentView extends BaseCommentView<
     FileAttachmentComment
 > {
@@ -565,9 +563,7 @@ class FileAttachmentCommentView extends BaseCommentView<
 /**
  * Displays a view for general comments.
  */
-@spina({
-    prototypeAttrs: ['thumbnailTemplate'],
-})
+@spina
 class GeneralCommentView extends BaseCommentView {
     static thumbnailTemplate = null;
 }
@@ -576,9 +572,7 @@ class GeneralCommentView extends BaseCommentView {
 /**
  * Displays a view for screenshot comments.
  */
-@spina({
-    prototypeAttrs: ['thumbnailTemplate'],
-})
+@spina
 class ScreenshotCommentView extends BaseCommentView<
     ScreenshotComment
 > {
@@ -640,7 +634,9 @@ interface HeaderFooterCommentViewOptions {
  * The header or footer for a review.
  */
 @spina({
-    prototypeAttrs: ['editorTemplate'],
+    prototypeAttrs: [
+        'editorTemplate',
+    ],
 })
 class HeaderFooterCommentView extends BaseView<
     Review,
@@ -668,6 +664,7 @@ class HeaderFooterCommentView extends BaseView<
          </div>
         </div>
     `);
+    declare editorTemplate: _.CompiledTemplate;
 
     /**********************
      * Instance variables *
@@ -1097,7 +1094,7 @@ export class ReviewDialogView extends BaseView<
         <div class="spinner"><span class="ink-c-spinner"></span></div>
         <div class="edit-field body-bottom"></div>
     `);
-    template: _.CompiledTemplate;
+    declare template: _.CompiledTemplate;
 
     /** The review dialog instance. */
     static instance: ReviewDialogView = null;

@@ -144,7 +144,7 @@ export class FileAttachmentThumbnailView extends BaseView<
          </div>
         </div>
     `);
-    template: _.CompiledTemplate;
+    declare template: _.CompiledTemplate;
 
     static actionsTemplate = _.template(dedent`
         <% if (loaded) { %>
@@ -197,7 +197,7 @@ export class FileAttachmentThumbnailView extends BaseView<
         <%  } %>
         <% } %>
     `);
-    actionsTemplate: _.CompiledTemplate;
+    declare actionsTemplate: _.CompiledTemplate;
 
     static thumbnailContainerTemplate = _.template(dedent`
         <% if (!loaded) { %>
@@ -209,11 +209,11 @@ export class FileAttachmentThumbnailView extends BaseView<
         <%=  thumbnailHTML %>
         <% } %>
     `);
-    thumbnailContainerTemplate: _.CompiledTemplate;
+    declare thumbnailContainerTemplate: _.CompiledTemplate;
 
     /** The possible states for the file attachment. */
     static states = FileAttachmentStates;
-    states: typeof FileAttachmentStates;
+    declare states: typeof FileAttachmentStates;
 
     /**********************
      * Instance variables *

@@ -99,19 +99,19 @@ export class DialogView<
 > extends BaseView<TModel, TElement, TExtraViewOptions> {
     /** The default title to show for the dialog. */
     static title: Result<string> | null = null;
-    title: Result<string> | null;
+    declare title: Result<string> | null;
 
     /** The default body to show in the dialog. */
     static body: Result<string> | null = null;
-    body: Result<string> | null;
+    declare body: Result<string> | null;
 
     /** The default list of buttons to show for the dialog. */
     static buttons: DialogButtonInfo[] = [];
-    buttons: DialogButtonInfo[];
+    declare buttons: DialogButtonInfo[];
 
     /** Default options to pass to $.modalBox(). */
     static defaultOptions: unknown = {};
-    defaultOptions: unknown;
+    declare defaultOptions: unknown;
 
     /** Events handled by the view. */
     static events: EventsHash = {

@@ -6,6 +6,7 @@ import {
     type ModelAttributes,
     type Result,
     BaseModel,
+    Class,
     Collection,
     spina,
 } from '@beanbag/spina';
@@ -16,6 +17,7 @@ import {
 } from 'reviewboard/common';
 import { type AbstractCommentBlock } from './abstractCommentBlockModel';
 import { type SerializedComment } from './commentData';
+import { TextCommentBlock } from './textCommentBlockModel';
 
 
 /**
@@ -86,6 +88,7 @@ export class AbstractReviewable<
      * This can also be a function, if anything more custom is required.
      */
     static defaultCommentBlockFields: string[] = [];
+    declare defaultCommentBlockFields: string[];
 
     /**********************
      * Instance variables *
@@ -95,7 +98,8 @@ export class AbstractReviewable<
      * The AbstractCommentBlock subclass for this content type's comment
      * blocks.
      */
-    static commentBlockModel = null;
+    static commentBlockModel: Class<AbstractCommentBlock> = null;
+    declare commentBlockModel: Class<TCommentBlockType>;
 
     /**
      * The collection of comment blocks.

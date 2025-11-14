@@ -236,7 +236,7 @@ export class InlineEditorView<
         showRequiredFlag: false,
         startOpen: false,
     };
-    defaultOptions: Partial<InlineEditorViewOptions>;
+    declare defaultOptions: Partial<InlineEditorViewOptions>;
 
     /**********************
      * Instance variables *

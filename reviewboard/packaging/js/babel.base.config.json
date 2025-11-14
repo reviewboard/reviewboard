@@ -9,7 +9,12 @@
                         "useBuiltIns": "entry"
                     }
                 ],
-                "@babel/preset-typescript",
+                [
+                    "@babel/preset-typescript",
+                    {
+                        "allowDeclareFields": true
+                    }
+                ],
                 "@beanbag/ink/babel-preset"
             ]
         }

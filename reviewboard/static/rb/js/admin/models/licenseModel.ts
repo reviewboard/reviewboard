@@ -260,9 +260,7 @@ export interface LicenseOptions {
  * Version Added:
  *     8.0
  */
-@spina({
-    prototypeAttrs: ['actionBuilders'],
-})
+@spina
 export class License<
     TAttrs extends LicenseAttrs = LicenseAttrs,
     TExtraOptions extends LicenseOptions = LicenseOptions,

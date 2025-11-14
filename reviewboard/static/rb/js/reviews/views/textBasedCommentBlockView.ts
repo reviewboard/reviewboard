@@ -37,6 +37,7 @@ export class TextBasedCommentBlockView<
         </span>
         <a name="<%= anchorName %>" class="commentflag-anchor"></a>
     `);
+    declare template: _.CompiledTemplate;
 
     /**********************
      * Instance variables *

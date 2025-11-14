@@ -105,7 +105,6 @@ interface ReviewReplyPublishOptions extends Backbone.PersistenceOptions {
     mixins: [DraftResourceModelMixin],
     prototypeAttrs: [
         'COMMENT_LINK_NAMES',
-        'extraQueryArgs',
     ],
 })
 export class ReviewReply extends BaseResource<
@@ -176,12 +175,13 @@ export class ReviewReply extends BaseResource<
         'public': value => { return value ? true : undefined; },
     };
 
-    static COMMENT_LINK_NAMES = [
+    static COMMENT_LINK_NAMES: string[] = [
         'diff_comments',
         'file_attachment_comments',
         'general_comments',
         'screenshot_comments',
     ];
+    declare COMMENT_LINK_NAMES: string[];
 
     /**
      * Parse the response from the server.

@@ -62,6 +62,7 @@ export class PageView<
      * resizes at a faster or slower rate.
      */
     static windowResizeThrottleMS = 100;
+    declare windowResizeThrottleMS: number;
 
     /**********************
      * Instance variables *

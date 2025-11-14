@@ -136,7 +136,7 @@ export class LicenseView<
     static actionBuilders: Record<string, string> = {
         'upload-license': '_buildUploadLicenseActionButton',
     };
-    actionBuilders: Record<string, string>;
+    declare actionBuilders: Record<string, string>;
 
     /**********************
      * Instance variables *

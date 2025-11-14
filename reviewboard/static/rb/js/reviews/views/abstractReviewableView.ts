@@ -2,7 +2,11 @@
  * Abstract base for review UIs.
  */
 
-import { BaseView, spina } from '@beanbag/spina';
+import {
+    BaseView,
+    Class,
+    spina,
+} from '@beanbag/spina';
 
 import {
     type AbstractCommentBlock,
@@ -44,12 +48,18 @@ export class AbstractReviewableView<
      *
      * This is the type that will be instantiated for rendering comment blocks.
      */
-    static commentBlockView = null;
+    static commentBlockView: Class<
+        AbstractCommentBlockView<AbstractCommentBlock>
+    > = null;
+    declare commentBlockView: Class<
+        AbstractCommentBlockView<AbstractCommentBlock>
+    >;
 
     /**
      * The list type (as a string) for passing to CommentDlg.
      */
     static commentsListName: string = null;
+    declare commentsListName: string;
 
     /**********************
      * Instance variables *

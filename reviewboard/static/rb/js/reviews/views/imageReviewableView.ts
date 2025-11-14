@@ -65,6 +65,7 @@ class BaseImageView extends BaseView<ImageReviewable> {
      * This should be overridden by subclasses.
      */
     static mode: string = null;
+    declare mode: string;
 
     /**
      * The user-visible name of the diff mode.
@@ -72,6 +73,7 @@ class BaseImageView extends BaseView<ImageReviewable> {
      * This should be overridden by subclasses.
      */
     static modeName: string = null;
+    declare modeName: string;
 
     /**********************
      * Instance variables *
