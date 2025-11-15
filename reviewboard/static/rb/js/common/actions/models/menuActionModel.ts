@@ -1,12 +1,11 @@
 import {
-    type Result,
     spina,
 } from '@beanbag/spina';
 
 import {
-    type ActionAttrs,
-    Action,
-} from './actionModel';
+    type GroupActionAttrs,
+    GroupAction,
+} from './groupActionModel';
 
 
 /**
@@ -15,12 +14,7 @@ import {
  * Version Added:
  *     6.0
  */
-interface MenuActionAttrs extends ActionAttrs {
-    /**
-     * The IDs of the child actions.
-     */
-    children: string[];
-}
+export interface MenuActionAttrs extends GroupActionAttrs {}
 
 
 /**
@@ -30,10 +24,7 @@ interface MenuActionAttrs extends ActionAttrs {
  *     6.0
  */
 @spina
-export class MenuAction extends Action<MenuActionAttrs> {
-    static defaults(): Result<Partial<MenuActionAttrs>> {
-        return {
-            children: [],
-        };
-    }
+export class MenuAction<
+    TAttrs extends MenuActionAttrs
+> extends GroupAction<TAttrs> {
 }

@@ -212,6 +212,8 @@ class ActionsRegistry(OrderedRegistry):
 
         super().register(action)
 
+        action.parent_registry = self
+
         # Store this by attachment point, for quick lookup.
         if (attachment := action.attachment):
             self._by_attachment_point[attachment][action_id] = action
@@ -270,6 +272,8 @@ class ActionsRegistry(OrderedRegistry):
 
         super().unregister(action)
 
+        action.parent_registry = None
+
     def get_for_attachment(
         self,
         attachment: str,
@@ -314,6 +318,9 @@ class ActionsRegistry(OrderedRegistry):
             The actions that are contained within the menu.
         """
         parent = self.get('action_id', parent_id)
-        assert parent is not None
+        assert parent is not None, (
+            f'Action {parent_id!r} was not registered when calling '
+            f'get_children().'
+        )
 
         yield from parent.child_actions

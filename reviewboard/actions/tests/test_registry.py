@@ -6,70 +6,22 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from djblets.registries.errors import AlreadyRegisteredError
 
 from reviewboard.actions import (AttachmentPoint,
-                                 BaseAction,
-                                 BaseMenuAction,
                                  actions_registry)
 from reviewboard.actions.errors import DepthLimitExceededError
-from reviewboard.actions.registry import ActionsRegistry
+from reviewboard.actions.tests.base import (
+    TestAction,
+    TestActionsRegistry,
+    TestHeaderAction,
+    TestMenuAction,
+    TestMenuItemAction,
+    TestNested2MenuAction,
+    TestNestedMenuAction,
+    TooDeeplyNestedAction,
+)
 from reviewboard.testing import TestCase
-
-if TYPE_CHECKING:
-    from collections.abc import Iterator
-
-
-class TestAction(BaseAction):
-    action_id = 'test'
-
-
-class TestHeaderAction(BaseAction):
-    action_id = 'header-action'
-    attachment = AttachmentPoint.HEADER
-
-
-class TestMenuAction(BaseMenuAction):
-    action_id = 'menu-action'
-
-
-class TestMenuItemAction(BaseAction):
-    action_id = 'menu-item-action'
-    parent_id = 'menu-action'
-
-
-class TestNestedMenuAction(BaseMenuAction):
-    action_id = 'nested-menu-action'
-    parent_id = 'menu-action'
-
-
-class TestNested2MenuAction(BaseMenuAction):
-    action_id = 'nested-2-menu-action'
-    parent_id = 'nested-menu-action'
-
-
-class TooDeeplyNestedAction(BaseAction):
-    action_id = 'nested-3-action'
-    parent_id = 'nested-2-menu-action'
-
-
-class _TestActionsRegistry(ActionsRegistry):
-    """Empty actions registry for testing purposes.
-
-    Version Added:
-        7.1
-    """
-
-    def get_defaults(self) -> Iterator[BaseAction]:
-        """Return an empty set of defaults.
-
-        Yields:
-            reviewboard.actions.base.BaseAction:
-            Each action (but none, really).
-        """
-        yield from []
 
 
 class ActionsRegistryTests(TestCase):
@@ -97,7 +49,7 @@ class ActionsRegistryTests(TestCase):
         """Testing ActionsRegistry.register"""
         test_action = self.test_action
 
-        actions_registry = _TestActionsRegistry()
+        actions_registry = TestActionsRegistry()
         actions_registry.register(test_action)
 
         with self.assertRaises(AlreadyRegisteredError):
@@ -115,7 +67,7 @@ class ActionsRegistryTests(TestCase):
         """Testing ActionsRegistry.unregister"""
         test_action = self.test_action
 
-        actions_registry = _TestActionsRegistry()
+        actions_registry = TestActionsRegistry()
         actions_registry.register(test_action)
 
         self.assertEqual(
@@ -132,7 +84,7 @@ class ActionsRegistryTests(TestCase):
 
     def test_get_for_attachment(self) -> None:
         """Testing ActionsRegistry.get_for_attachment"""
-        actions_registry = _TestActionsRegistry()
+        actions_registry = TestActionsRegistry()
 
         test_action = self.test_action
         test_header_action = self.test_header_action

@@ -12,13 +12,18 @@ from typing import Any, List, Mapping, Optional, TYPE_CHECKING, cast
 from django.template.loader import render_to_string
 from django.utils.safestring import SafeText, mark_safe
 
+from reviewboard.actions.errors import ActionError
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django.http import HttpRequest
     from django.template import Context
     from typelets.django.json import SerializableDjangoJSONDict
     from typelets.django.strings import StrOrPromise
+
+    from reviewboard.actions.registry import ActionsRegistry
 
 
 logger = logging.getLogger(__name__)
@@ -168,22 +173,23 @@ class BaseAction:
     # Instance variables #
     ######################
 
-    #: The list of child actions, if this is a menu.
-    #:
-    #: Type:
-    #:     list of BaseAction
-    child_actions: List[BaseAction]
+    #: The list of child actions, if this is a grouped action.
+    child_actions: list[BaseAction]
 
-    #: The parent of this action, if this is a menu item.
+    #: The parent of this action, if this is an item in a group.
+    parent_action: BaseGroupAction | None
+
+    #: The parent registry managing this action.
     #:
-    #: Type:
-    #:     BaseMenuAction
-    parent_action: Optional[BaseMenuAction]
+    #: Version Added:
+    #:     7.1
+    parent_registry: ActionsRegistry | None
 
     def __init__(self) -> None:
         """Initialize the action."""
         self.parent_action = None
         self.child_actions = []
+        self.parent_registry = None
 
     @property
     def depth(self) -> int:
@@ -507,41 +513,26 @@ class BaseAction:
             return mark_safe('')
 
 
-class BaseMenuAction(BaseAction):
-    """Base class for menu actions.
+class BaseGroupAction(BaseAction):
+    """Base class for a group of actions.
+
+    This can be used to group together actions in some form. Subclasses
+    can implement this as menus, lists of actions, or in other
+    presentational styles.
 
     Version Added:
-        6.0
+        7.1
     """
 
-    template_name = 'actions/menu_action.html'
-    js_model_class = 'RB.Actions.MenuAction'
-    js_view_class = 'RB.Actions.MenuActionView'
+    js_model_class = 'RB.Actions.GroupAction'
 
-    #: An ordered list of child menu IDs.
+    #: An ordered list of child action IDs.
     #:
     #: This can be used to specify a specific order for children to appear in.
     #: The special string '--' can be used to add separators. Any children that
-    #: are registered with this menu as their parent but do not appear in this
-    #: list will be added at the end of the menu.
-    children: List[str] = []
-
-    def is_custom_rendered(self) -> bool:
-        """Whether this menu action uses custom rendering.
-
-        By default, this will return ``True`` if a custom template name is
-        used. If the JavaScript side needs to override rendering, the subclass
-        should explicitly return ``True``.
-
-        Version Added:
-            7.0
-
-        Returns:
-            bool:
-            ``True`` if this action uses custom rendering. ``False`` if it
-            does not.
-        """
-        return self.template_name != BaseMenuAction.template_name
+    #: are registered with this group as their parent but do not appear in this
+    #: list will be added at the end of the group.
+    children: Sequence[str] = []
 
     def get_extra_context(
         self,
@@ -551,9 +542,9 @@ class BaseMenuAction(BaseAction):
     ) -> dict:
         """Return extra template context for the action.
 
-        Subclasses can override this to provide additional context needed by
-        the template for the action. By default, this returns an empty
-        dictionary.
+        This provides all the children that can be rendered in the group.
+
+        Subclasses can override this to provide additional context.
 
         Args:
             request (django.http.HttpRequest):
@@ -565,16 +556,32 @@ class BaseMenuAction(BaseAction):
         Returns:
             dict:
             Extra context to use when rendering the action's template.
+
+        Raises:
+            reviewboard.actions.errors.ActionError:
+                There was an error retrieving data for the action.
+
+                Details will be in the error message.
         """
-        from reviewboard.actions import actions_registry
+        registry = self.parent_registry
+
+        if not registry:
+            raise ActionError(
+                f'Attempted to call get_extra_context on {self!r} without '
+                f'first being registered.'
+            )
 
         extra_context = super().get_extra_context(request=request,
                                                   context=context)
-        extra_context['children'] = ([
+
+        action_id = self.action_id
+        assert action_id
+
+        extra_context['children'] = [
             child
-            for child in actions_registry.get_children(self.action_id)
+            for child in registry.get_children(action_id)
             if child.should_render(context=context)
-        ])
+        ]
 
         return extra_context
 
@@ -592,16 +599,31 @@ class BaseMenuAction(BaseAction):
         Returns:
             dict:
             A dictionary of attributes to pass to the model instance.
+
+        Raises:
+            reviewboard.actions.errors.ActionError:
+                There was an error retrieving data for the action.
+
+                Details will be in the error message.
         """
-        from reviewboard.actions import actions_registry
+        registry = self.parent_registry
 
-        rendered_child_ids = [
-            child.action_id
-            for child in actions_registry.get_children(self.action_id)
-            if child.should_render(context=context)
-        ]
+        if not registry:
+            raise ActionError(
+                f'Attempted to call get_js_model_data on {self!r} without '
+                f'first being registered.'
+            )
 
-        children = []
+        action_id = self.action_id
+        assert action_id is not None
+
+        rendered_child_ids: dict[str, bool] = {
+            child.action_id: True
+            for child in registry.get_children(action_id)
+            if child.action_id and child.should_render(context=context)
+        }
+
+        children: list[str] = []
 
         # Add in any children with explicit ordering first.
         for child_id in self.children:
@@ -609,16 +631,44 @@ class BaseMenuAction(BaseAction):
                 children.append(child_id)
             elif child_id in rendered_child_ids:
                 children.append(child_id)
-                rendered_child_ids.remove(child_id)
+                del rendered_child_ids[child_id]
 
         # Now add any other actions that weren't in self.children.
-        for child_id in rendered_child_ids:
-            children.append(child_id)
+        children += rendered_child_ids.keys()
 
         data = super().get_js_model_data(context=context)
         data['children'] = children
 
         return data
+
+
+class BaseMenuAction(BaseGroupAction):
+    """Base class for menu actions.
+
+    Version Added:
+        6.0
+    """
+
+    template_name = 'actions/menu_action.html'
+    js_model_class = 'RB.Actions.MenuAction'
+    js_view_class = 'RB.Actions.MenuActionView'
+
+    def is_custom_rendered(self) -> bool:
+        """Whether this menu action uses custom rendering.
+
+        By default, this will return ``True`` if a custom template name is
+        used. If the JavaScript side needs to override rendering, the subclass
+        should explicitly return ``True``.
+
+        Version Added:
+            7.0
+
+        Returns:
+            bool:
+            ``True`` if this action uses custom rendering. ``False`` if it
+            does not.
+        """
+        return self.template_name != BaseMenuAction.template_name
 
 
 if TYPE_CHECKING:
