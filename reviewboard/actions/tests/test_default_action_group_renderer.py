@@ -112,7 +112,7 @@ class DefaultActionGroupRendererTests(TestCase):
             page.addActionView(new RB.Actions.ActionView({
                 el: $('#action-group-action'),
                 model: page.addAction(new RB.Actions.GroupAction(
-                    {"actionId": "group-action",
+                    {"id": "group-action",
                      "visible": true,
                      "domID": "action-group-action",
                      "label": "Test Group",

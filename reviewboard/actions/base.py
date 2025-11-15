@@ -349,7 +349,7 @@ class BaseAction:
         visible = self.get_visible(context=context)
 
         data: SerializableDjangoJSONDict = {
-            'actionId': self.action_id,
+            'id': self.action_id,
             'visible': visible,
         }
 

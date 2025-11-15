@@ -125,7 +125,7 @@ class DetailedMenuItemActionRendererTests(TestCase):
             page.addActionView(new RB.Actions.MenuItemActionView({
                 el: $('#action-menu-item-action'),
                 model: page.addAction(new RB.Actions.Action(
-                    {"actionId": "menu-item-action",
+                    {"id": "menu-item-action",
                      "visible": true,
                      "domID": "action-menu-item-action",
                      "iconClass": "my-icon",

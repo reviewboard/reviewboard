@@ -801,7 +801,7 @@ export class UnifiedBannerView extends FloatingBannerView<
                 optionsDirty = true;
             });
 
-            menuItemsByActionID[action.get('actionId')] = menuItem;
+            menuItemsByActionID[action.id] = menuItem;
 
             return menuItem;
         }));
@@ -817,7 +817,7 @@ export class UnifiedBannerView extends FloatingBannerView<
                 const newActionIDs: string[] = [];
 
                 for (const actionView of actionViews) {
-                    const actionID = actionView.model.get('actionId');
+                    const actionID = actionView.model.id;
                     const action = menuItemsByActionID[actionID];
 
                     if (action.get('checked')) {

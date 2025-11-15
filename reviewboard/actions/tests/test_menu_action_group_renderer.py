@@ -119,7 +119,7 @@ class MenuActionGroupRendererTests(TestCase):
             page.addActionView(new RB.Actions.MenuActionView({
                 el:  $('#action-menu-action'),
                 model: page.addAction(new RB.Actions.MenuAction(
-                    {"actionId": "menu-action",
+                    {"id": "menu-action",
                      "visible": true,
                      "domID": "action-menu-action",
                      "label": "Test Menu",

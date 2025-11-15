@@ -123,7 +123,7 @@ class DefaultActionRendererTests(TestCase):
             page.addActionView(new RB.Actions.ActionView({
                 el: $('#action-test'),
                 model: page.addAction(new RB.Actions.Action(
-                    {"actionId": "test",
+                    {"id": "test",
                      "visible": true,
                      "domID": "action-test",
                      "label": "Test Action 1",

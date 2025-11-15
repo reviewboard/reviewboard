@@ -111,7 +111,7 @@ class BaseGroupActionTests(TestCase):
         self.assertEqual(
             self.group_action.get_js_model_data(context=context),
             {
-                'actionId': 'group-action',
+                'id': 'group-action',
                 'children': [
                     'group-item-2-action',
                     'group-item-1-action',
@@ -181,7 +181,7 @@ class BaseGroupActionTests(TestCase):
             page.addActionView(new RB.Actions.ActionView({
                 el: $('#action-group-action'),
                 model: page.addAction(new RB.Actions.GroupAction(
-                    {"actionId": "group-action",
+                    {"id": "group-action",
                      "visible": true,
                      "domID": "action-group-action",
                      "label": "Test Group",

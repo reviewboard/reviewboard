@@ -235,7 +235,7 @@ class BaseActionTests(TestCase):
             page.addActionView(new RB.Actions.ActionView({
                 el: $('#action-test-action'),
                 model: page.addAction(new RB.Actions.Action(
-                    {"actionId": "test-action",
+                    {"id": "test-action",
                      "visible": true,
                      "domID": "action-test-action",
                      "label": "My Label",
@@ -267,7 +267,7 @@ class BaseActionTests(TestCase):
             page.addActionView(new RB.Actions.ActionView({
                 el: $('#action-test-action'),
                 model: page.addAction(new RB.Actions.Action(
-                    {"actionId": "test-action",
+                    {"id": "test-action",
                      "visible": true,
                      "domID": "action-test-action",
                      "label": "My Label",
@@ -301,7 +301,7 @@ class BaseActionTests(TestCase):
                 "specialKey": [123, 456],
                 el: $('#action-test-action'),
                 model: page.addAction(new RB.Actions.Action(
-                    {"actionId": "test-action",
+                    {"id": "test-action",
                      "visible": true,
                      "domID": "action-test-action",
                      "label": "My Label",

@@ -18,11 +18,6 @@ import {
  */
 export interface ActionAttrs {
     /**
-     * The ID of the action.
-     */
-    actionId: string;
-
-    /**
      * The explicit ID to use for a DOM element.
      *
      * Version Added:
@@ -132,7 +127,6 @@ export class Action<
     TAttrs extends ActionAttrs = ActionAttrs,
 > extends BaseModel<TAttrs> {
     static defaults: Result<Partial<ActionAttrs>> = {
-        actionId: '',
         domID: null,
         iconClass: null,
         isCustomRendered: false,

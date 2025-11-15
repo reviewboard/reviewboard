@@ -400,7 +400,7 @@ export class PageView<
      * Return the action view for the given action ID.
      *
      * Args:
-     *     actionId (string):
+     *     actionID (string):
      *         The ID of the action.
      *
      * Returns:
@@ -408,10 +408,10 @@ export class PageView<
      *     The view for the given action.
      */
     getActionView(
-        actionId: string,
+        actionID: string,
     ): ActionView {
         for (const view of this._actionViews) {
-            if (view.model.get('actionId') === actionId) {
+            if (view.model.id === actionID) {
                 return view;
             }
         }
