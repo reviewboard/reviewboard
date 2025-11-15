@@ -327,7 +327,8 @@ class CreateReviewAction(BaseAction):
     parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
-    label = _('Create a new review')
+    label = _('Create Review')
+    verbose_label = _('Create a new review')
     description = [
         _('Your review will start off blank, but you can add text and '
           'general comments to it.'),
@@ -377,7 +378,8 @@ class EditReviewAction(BaseAction):
     parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
-    label = _('Edit your review')
+    label = _('Edit Review')
+    verbose_label = _('Edit your review')
     description = [
         _('Edit your comments and publish your review.'),
     ]
@@ -424,7 +426,8 @@ class AddGeneralCommentAction(BaseAction):
     parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
-    label = _('Add a general comment')
+    label = _('Add General Comment')
+    verbose_label = _('Add a general comment')
     description = [
         _('Add a new general comment about the change, not attached to '
           'any code or file attachments.'),
@@ -471,7 +474,8 @@ class ShipItAction(BaseAction):
     parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
-    label = _('Ship it!')
+    label = _('Ship It!')
+    verbose_label = _('Ship it!')
     description = [
         _("You're happy with what you're seeing, and would like to "
           'approve it.'),
@@ -512,7 +516,7 @@ class ShipItAction(BaseAction):
             not is_site_read_only_for(user) and
             review_request is not None and
             (user.pk != review_request.submitter_id or
-             siteconfig.get('reviews_allow_self_shipit'))
+             bool(siteconfig.get('reviews_allow_self_shipit')))
         )
 
 
@@ -527,7 +531,6 @@ class QuickAccessShipItAction(QuickAccessActionMixin, ShipItAction):
     """
 
     action_id = 'quickaccess-ship-it'
-    label = _('Ship It!')
 
 
 class QuickAccessCreateReviewAction(QuickAccessActionMixin,
@@ -542,7 +545,6 @@ class QuickAccessCreateReviewAction(QuickAccessActionMixin,
     """
 
     action_id = 'quickaccess-create-review'
-    label = _('Create Review')
 
 
 class QuickAccessEditReviewAction(QuickAccessActionMixin, EditReviewAction):
@@ -556,7 +558,6 @@ class QuickAccessEditReviewAction(QuickAccessActionMixin, EditReviewAction):
     """
 
     action_id = 'quickaccess-edit-review'
-    label = _('Edit Review')
 
 
 class QuickAccessAddGeneralCommentAction(QuickAccessActionMixin,
@@ -571,7 +572,6 @@ class QuickAccessAddGeneralCommentAction(QuickAccessActionMixin,
     """
 
     action_id = 'quickaccess-add-general-comment'
-    label = _('Add General Comment')
 
 
 class LegacyAddGeneralCommentAction(BaseAction):

@@ -9,7 +9,7 @@
 
 {% block action_content %}
 <a href="#" role="presentation"
-   aria-label="{{label}}">
+   aria-label="{{verbose_label|default:label}}">
  <label class="rb-c-actions__action-label">
 {%  if action.icon_class %}
   <span class="{{action.icon_class}}"></span>

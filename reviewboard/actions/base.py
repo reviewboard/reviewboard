@@ -146,6 +146,18 @@ class BaseAction:
     #:     str
     url_name: Optional[str] = None
 
+    #: The user-visible verbose label.
+    #:
+    #: This can be used to provide a longer label for wider UIs that would
+    #: benefit from a more descriptive label. It's also intended for ARIA
+    #: labels.
+    #:
+    #: This is always optional.
+    #:
+    #: Version Added:
+    #:     7.1
+    verbose_label: (StrOrPromise | None) = None
+
     #: Whether this action is visible.
     #:
     #: Type:
@@ -266,7 +278,6 @@ class BaseAction:
         """
         dom_id = self.get_dom_element_id()
         icon_class = self.icon_class
-        label = self.get_label(context=context)
         url = self.get_url(context=context)
         visible = self.get_visible(context=context)
 
@@ -284,8 +295,11 @@ class BaseAction:
         if self.is_custom_rendered():
             data['isCustomRendered'] = True
 
-        if label:
+        if (label := self.get_label(context=context)):
             data['label'] = str(label)
+
+        if (verbose_label := self.get_verbose_label(context=context)):
+            data['verboseLabel'] = str(verbose_label)
 
         if url:
             data['url'] = url
@@ -313,7 +327,7 @@ class BaseAction:
         self,
         *,
         context: Context,
-    ) -> StrOrPromise:
+    ) -> StrOrPromise | None:
         """Return the label for the action.
 
         Args:
@@ -324,8 +338,30 @@ class BaseAction:
             str:
             The label to use for the action.
         """
-        assert self.label is not None
         return self.label
+
+    def get_verbose_label(
+        self,
+        *,
+        context: Context,
+    ) -> StrOrPromise | None:
+        """Return the verbose label for the action.
+
+         This can be used to provide a longer label for wider UIs that would
+         benefit from a more descriptive label. It's always optional.
+
+         Version Added:
+             7.1
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            str:
+            The verbose label to use for the action.
+        """
+        return self.verbose_label
 
     def get_url(
         self,
@@ -395,6 +431,7 @@ class BaseAction:
             'id': self.action_id,
             'label': self.get_label(context=context),
             'url': self.get_url(context=context),
+            'verbose_label': self.get_verbose_label(context=context),
             'visible': self.get_visible(context=context),
         }
 

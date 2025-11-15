@@ -6,6 +6,7 @@
 {%  definevar "action_attrs" spaceless %}
  class="ink-c-button"
  {{action_attrs}}
+ aria-label="{{verbose_label|default:label}}"
 {%  if action.description %}
  title="{{action.description|join:'&#10;&#10;'}}"
 {%  endif %}

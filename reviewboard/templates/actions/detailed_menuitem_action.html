@@ -6,7 +6,7 @@
    role="menuitem">
  <h4>
   <span class="{{action.icon_class}}"></span>
-  {{label}}
+  {{verbose_label|default:label}}
  </h4>
 {%  for description_part in action.description %}
  <p>

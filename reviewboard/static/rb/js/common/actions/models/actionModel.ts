@@ -82,6 +82,20 @@ export interface ActionAttrs {
     url: string | null;
 
     /**
+     * The verbose label for the action.
+     *
+     * This can be used to provide a longer label for wider UIs that would
+     * benefit from a more descriptive label. It's also intended for ARIA
+     * labels.
+     *
+     * It's always optional.
+     *
+     * Version Added:
+     *     7.1
+     */
+    verboseLabel: string | null;
+
+    /**
      * Whether the action should be visible or hidden.
      */
     visible: boolean;
@@ -115,6 +129,7 @@ export class Action<
         isQuickAccessEnabled: false,
         label: null,
         url: null,
+        verboseLabel: null,
         visible: false,
     };
 
