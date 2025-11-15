@@ -14,6 +14,9 @@ from reviewboard.actions import (AttachmentPoint,
                                  BaseMenuAction,
                                  QuickAccessActionMixin,
                                  actions_registry)
+from reviewboard.actions.renderers import (BaseActionRenderer,
+                                           DetailedMenuActionGroupRenderer,
+                                           MenuActionGroupRenderer)
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.reviews.features import (general_comments_feature,
@@ -86,7 +89,6 @@ class CloseCompletedAction(BaseAction):
     label = _('Completed')
     apply_to = all_review_request_url_names
     js_model_class = 'RB.CloseCompletedAction'
-    js_view_class = 'RB.Actions.MenuItemActionView'
 
     def should_render(
         self,
@@ -127,7 +129,6 @@ class CloseDiscardedAction(BaseAction):
     label = _('Discarded')
     apply_to = all_review_request_url_names
     js_model_class = 'RB.CloseDiscardedAction'
-    js_view_class = 'RB.Actions.MenuItemActionView'
 
 
 class DeleteAction(BaseAction):
@@ -142,7 +143,6 @@ class DeleteAction(BaseAction):
     label = _('Delete Permanently')
     apply_to = all_review_request_url_names
     js_model_class = 'RB.DeleteAction'
-    js_view_class = 'RB.Actions.MenuItemActionView'
 
     def should_render(
         self,
@@ -275,6 +275,19 @@ class DownloadDiffAction(BaseAction):
                 review_request.has_diffsets)
 
 
+class ReviewMenuActionRenderer(DetailedMenuActionGroupRenderer):
+    """Action renderer for the Review menu.
+
+    This renders as a detailed menu, but using a custom JavaScript view for
+    managing the menu.
+
+    Version Added:
+        7.1
+    """
+
+    js_view_class = 'RB.ReviewMenuActionView'
+
+
 class ReviewMenuAction(BaseMenuAction):
     """The "Review" menu on the unified banner.
 
@@ -285,9 +298,9 @@ class ReviewMenuAction(BaseMenuAction):
     action_id = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
-    label = _('Review')
+    default_renderer_cls = ReviewMenuActionRenderer
     icon_class = 'rb-icon rb-icon-compose-review'
-    js_view_class = 'RB.ReviewMenuActionView'
+    label = _('Review')
 
     def should_render(
         self,
@@ -337,8 +350,6 @@ class CreateReviewAction(BaseAction):
     ]
     icon_class = 'rb-icon rb-icon-create-review'
     js_model_class = 'RB.CreateReviewAction'
-    js_view_class = 'RB.Actions.MenuItemActionView'
-    template_name = 'actions/detailed_menuitem_action.html'
 
     def should_render(
         self,
@@ -385,8 +396,6 @@ class EditReviewAction(BaseAction):
     ]
     icon_class = 'rb-icon rb-icon-compose-review'
     js_model_class = 'RB.EditReviewAction'
-    js_view_class = 'RB.Actions.MenuItemActionView'
-    template_name = 'actions/detailed_menuitem_action.html'
 
     def should_render(
         self,
@@ -434,8 +443,6 @@ class AddGeneralCommentAction(BaseAction):
     ]
     icon_class = 'rb-icon rb-icon-edit'
     js_model_class = 'RB.AddGeneralCommentAction'
-    js_view_class = 'RB.Actions.MenuItemActionView'
-    template_name = 'actions/detailed_menuitem_action.html'
 
     def should_render(
         self,
@@ -484,8 +491,6 @@ class ShipItAction(BaseAction):
     ]
     icon_class = 'rb-icon rb-icon-shipit'
     js_model_class = 'RB.ShipItAction'
-    js_view_class = 'RB.Actions.MenuItemActionView'
-    template_name = 'actions/detailed_menuitem_action.html'
 
     def should_render(
         self,
@@ -764,7 +769,6 @@ class UploadDiffAction(BaseAction):
     parent_id = UpdateMenuAction.action_id
     apply_to = all_review_request_url_names
     js_model_class = 'RB.UpdateDiffAction'
-    js_view_class = 'RB.Actions.MenuItemActionView'
 
     def get_label(
         self,
@@ -834,7 +838,6 @@ class UploadFileAction(BaseAction):
     label = _('Add File')
     apply_to = all_review_request_url_names
     js_model_class = 'RB.AddFileAction'
-    js_view_class = 'RB.Actions.MenuItemActionView'
 
     def should_render(
         self,
@@ -869,6 +872,19 @@ class UploadFileAction(BaseAction):
                   perms['reviews']['can_edit_reviewrequest'])))
 
 
+class StarActionRenderer(BaseActionRenderer):
+    """Action renderer for the starred action.
+
+    This provides a custom template used to render the action as a star,
+    which can be pressed to star or unstar the review request.
+
+    Version Added:
+        7.1
+    """
+
+    template_name = 'reviews/star_action.html'
+
+
 class StarAction(BaseAction):
     """The action to star a review request.
 
@@ -877,10 +893,10 @@ class StarAction(BaseAction):
     """
 
     action_id = 'star-review-request'
-    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
-    label = ''
-    template_name = 'reviews/star_action.html'
     apply_to = all_review_request_url_names
+    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
+    default_renderer_cls = StarActionRenderer
+    label = ''
 
     def should_render(
         self,
@@ -912,6 +928,19 @@ class StarAction(BaseAction):
                 super().should_render(context=context))
 
 
+class ArchiveMenuActionRenderer(MenuActionGroupRenderer):
+    """Action renderer for the archive menu.
+
+    This provides a custom template used to render the menu as an archive
+    icon, which can be pressed to archive the review request.
+
+    Version Added:
+        7.1
+    """
+
+    template_name = 'reviews/archive_menu_action.html'
+
+
 class ArchiveMenuAction(BaseMenuAction):
     """A menu for managing the visibility state of the review request.
 
@@ -922,8 +951,7 @@ class ArchiveMenuAction(BaseMenuAction):
     action_id = 'archive-menu'
     attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     label = ''
-    template_name = 'reviews/archive_menu_action.html'
-    js_view_class = 'RB.ArchiveMenuActionView'
+    default_renderer_cls = ArchiveMenuActionRenderer
     apply_to = all_review_request_url_names
 
     def should_render(
@@ -968,7 +996,6 @@ class ArchiveAction(BaseAction):
     attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
     js_model_class = 'RB.ArchiveAction'
-    js_view_class = 'RB.Actions.MenuItemActionView'
 
     # This is only shown on page load. It will be overridden at runtime.
     label = _('Toggle Archived')
@@ -986,7 +1013,6 @@ class MuteAction(BaseAction):
     attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
     js_model_class = 'RB.MuteAction'
-    js_view_class = 'RB.Actions.MenuItemActionView'
 
     # This is only shown on page load. It will be overridden at runtime.
     label = _('Toggle Muted')

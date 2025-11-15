@@ -44,6 +44,13 @@ export interface ActionAttrs {
      * This may impact the native rendering of the action and should be
      * used carefully.
      *
+     * Deprecated:
+     *     7.1:
+     *     This is scheduled for removal in Review Board 9. This was only
+     *     ever used for menu items. It's no longer set. Custom menu items
+     *     should instead set the ``data-custom-rendered="true"`` attribute
+     *     on the custom element.
+     *
      * Version Added:
      *     7.0
      */
@@ -110,8 +117,12 @@ export interface ActionAttrs {
  *
  * Version Changed:
  *     7.1:
- *     This is now the preferred place to put any action activation code.
- *     Multiple views could wrap a single action.
+ *     * This is now the preferred place to put any action activation code.
+ *       Multiple views could wrap a single action.
+ *
+ *     * Rendering state (the ``domID`` and ``isCustomRendered`` attributes)
+ *       are now governed by the views. These attributes have been
+ *       deprecated and are no longer set.
  *
  * Version Added:
  *     6.0

@@ -262,6 +262,13 @@ class BaseAction:
         used. If the JavaScript side needs to override rendering, the subclass
         should explicitly return ``True``.
 
+        Deprecated:
+            7.1:
+            This is scheduled for removal in Review Board 9. This was only
+            ever used for menu items. Custom menu items should instead set
+            the ``data-custom-rendered="true"`` attribute on the custom
+            element.
+
         Version Added:
             7.0
 
@@ -776,6 +783,13 @@ class BaseMenuAction(BaseGroupAction):
         By default, this will return ``True`` if a custom template name is
         used. If the JavaScript side needs to override rendering, the subclass
         should explicitly return ``True``.
+
+        Deprecated:
+            7.1:
+            This is scheduled for removal in Review Board 9. This was only
+            ever used for menu items. Custom menu items should instead set
+            the ``data-custom-rendered="true"`` attribute on the custom
+            element.
 
         Version Added:
             7.0

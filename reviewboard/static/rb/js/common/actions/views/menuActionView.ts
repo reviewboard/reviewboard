@@ -66,7 +66,7 @@ export class MenuActionView<
                         ? () => childActionView.activate()
                         : null;
 
-                    if (childAction.get('isCustomRendered')) {
+                    if (childActionView.el.dataset.customRendered === 'true') {
                         menuItems.add({
                             childEl: childActionView.el,
                             id: domID,

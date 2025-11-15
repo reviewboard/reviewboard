@@ -15,6 +15,7 @@ from reviewboard import get_manual_url
 from reviewboard.actions import (AttachmentPoint,
                                  BaseAction,
                                  BaseMenuAction)
+from reviewboard.actions.renderers import MenuActionGroupRenderer
 
 
 if TYPE_CHECKING:
@@ -50,6 +51,19 @@ class LoggedInUserMixin(MixinParent):
                 request.user.is_authenticated)
 
 
+class AccountMenuActionRenderer(MenuActionGroupRenderer):
+    """Action renderer for the My Account menu.
+
+    This provides a custom template used to render the menu for display
+    in the page header, using the username and avatar.
+
+    Version Added:
+        7.1
+    """
+
+    template_name = 'accounts/account_menu_action.html'
+
+
 class AccountMenuAction(LoggedInUserMixin, BaseMenuAction):
     """A menu for account-related actions.
 
@@ -59,8 +73,8 @@ class AccountMenuAction(LoggedInUserMixin, BaseMenuAction):
 
     action_id = 'account-menu'
     attachment = AttachmentPoint.HEADER
+    default_renderer_cls = AccountMenuActionRenderer
     label = ''
-    template_name = 'accounts/account_menu_action.html'
 
 
 class LoginAction(BaseAction):

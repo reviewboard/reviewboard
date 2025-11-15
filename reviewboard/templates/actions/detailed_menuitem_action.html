@@ -3,7 +3,8 @@
 {% block action_content %}
 <a {{action_attrs}}
    href="{{url}}"
-   role="menuitem">
+   role="menuitem"
+   data-custom-rendered="true">
  <h4>
   <span class="{{action.icon_class}}"></span>
   {{verbose_label|default:label}}

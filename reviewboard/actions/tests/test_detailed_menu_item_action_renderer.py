@@ -46,6 +46,7 @@ class DetailedMenuItemActionRendererTests(TestCase):
             <a
                id="action-menu-item-action"
                role="menuitem"
+               data-custom-rendered="true"
                href="#"
                hidden
                style="display: none;">
