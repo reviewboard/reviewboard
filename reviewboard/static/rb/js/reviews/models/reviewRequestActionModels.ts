@@ -457,24 +457,17 @@ export class UpdateDiffAction extends Actions.Action {
 export class CloseDiscardedAction extends Actions.Action {
     /**
      * Handle the action activation.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the close operation.
      */
-    activate() {
+    async activate() {
         const page = RB.PageManager.getPage();
         const reviewRequestEditorView = page.reviewRequestEditorView as
             ReviewRequestEditorView;
-        const reviewRequestEditor = reviewRequestEditorView.model;
-        const reviewRequest = reviewRequestEditor.get('reviewRequest');
 
-        const confirmText =
-            _`Are you sure you want to discard this review request?`;
-
-        if (confirm(confirmText)) {
-            reviewRequest
-                .close({
-                    type: ReviewRequest.CLOSE_DISCARDED,
-                })
-                .catch(err => this.trigger('closeError', err.message));
-        }
+        await reviewRequestEditorView.closeDiscarded();
     }
 }
 
@@ -491,35 +484,17 @@ export class CloseDiscardedAction extends Actions.Action {
 export class CloseCompletedAction extends Actions.Action {
     /**
      * Handle the action activation.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the close operation.
      */
-    activate() {
+    async activate() {
         const page = RB.PageManager.getPage();
         const reviewRequestEditorView = page.reviewRequestEditorView as
             ReviewRequestEditorView;
-        const reviewRequestEditor = reviewRequestEditorView.model;
-        const reviewRequest = reviewRequestEditor.get('reviewRequest');
 
-        /*
-         * This is a non-destructive event, so don't confirm unless there's
-         * a draft.
-         */
-        let submit = true;
-
-        if (reviewRequestEditor.get('hasDraft')) {
-            submit = confirm(_`
-                You have an unpublished draft. If you close this review
-                request, the draft will be discarded. Are you sure you want
-                to close the review request?
-            `);
-        }
-
-        if (submit) {
-            reviewRequest
-                .close({
-                    type: ReviewRequest.CLOSE_SUBMITTED,
-                })
-                .catch(err => this.trigger('closeError', err.message));
-        }
+        await reviewRequestEditorView.closeCompleted();
     }
 }
 
@@ -536,45 +511,16 @@ export class CloseCompletedAction extends Actions.Action {
 export class DeleteAction extends Actions.Action {
     /**
      * Handle the action activation.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the delete operation.
      */
-    activate() {
+    async activate() {
         const page = RB.PageManager.getPage();
         const reviewRequestEditorView = page.reviewRequestEditorView as
             ReviewRequestEditorView;
-        const reviewRequestEditor = reviewRequestEditorView.model;
-        const reviewRequest = reviewRequestEditor.get('reviewRequest');
 
-        const onDeleteConfirmed = () => {
-            deleteButtonView.busy = true;
-            reviewRequest
-                .destroy({
-                    buttons: buttonEls,
-                })
-            .then(() => RB.navigateTo(SITE_ROOT));
-        };
-
-        const deleteButtonView = craft<ButtonView>`
-            <Ink.Button type="danger" onClick=${onDeleteConfirmed}>
-             ${_`Delete`}
-            </Ink.Button>
-        `;
-
-        const buttonEls = paint<HTMLButtonElement[]>`
-            <Ink.Button>
-             ${_`Cancel`}
-            </Ink.Button>
-            ${deleteButtonView.el}
-        `;
-
-        const $dlg = $('<p>')
-            .text(_`
-                This deletion cannot be undone. All diffs and reviews will be
-                deleted as well.
-            `)
-            .modalBox({
-                buttons: buttonEls,
-                title: _`Are you sure you want to delete this review request?`,
-            })
-            .on('close', () => $dlg.modalBox('destroy'));
+        await reviewRequestEditorView.deleteReviewRequest();
     }
 }
