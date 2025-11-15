@@ -195,7 +195,7 @@ class ActionsRegistry(OrderedRegistry):
         parent: Optional[BaseAction]
 
         if action.parent_id:
-            parent = self.get('action_id', action.parent_id)
+            parent = self.get_action(action.parent_id)
 
             if parent is None:
                 logger.warning('Deferring registration of action %s because '
@@ -274,6 +274,25 @@ class ActionsRegistry(OrderedRegistry):
 
         action.parent_registry = None
 
+    def get_action(
+        self,
+        action_id: str,
+    ) -> BaseAction | None:
+        """Return the action with the given ID.
+
+        Version Added:
+            7.1
+
+        Args:
+            action_id (str):
+                The action ID to look up.
+
+        Returns:
+            reviewboard.actions.base.BaseAction:
+            The resulting action instance, or ``None`` if not found.
+        """
+        return self.get('action_id', action_id)
+
     def get_for_attachment(
         self,
         attachment: str,
@@ -317,7 +336,8 @@ class ActionsRegistry(OrderedRegistry):
             reviewboard.actions.base.BaseAction:
             The actions that are contained within the menu.
         """
-        parent = self.get('action_id', parent_id)
+        parent = self.get_action(parent_id)
+
         assert parent is not None, (
             f'Action {parent_id!r} was not registered when calling '
             f'get_children().'

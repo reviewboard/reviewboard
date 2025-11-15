@@ -1361,7 +1361,7 @@ def register_actions(
         'reviewboard.actions.actions_registry.')
 
     if parent_id:
-        parent = actions_registry.get('action_id', parent_id)
+        parent = actions_registry.get_action(parent_id)
     else:
         parent = None
 
@@ -1395,7 +1395,7 @@ def unregister_actions(
         'reviewboard.actions.actions_registry.')
 
     for action_id in action_ids:
-        action = actions_registry.get('action_id', action_id)
+        action = actions_registry.get_action(action_id)
         action.unregister()
 
 

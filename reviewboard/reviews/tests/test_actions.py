@@ -187,12 +187,12 @@ class ActionRegistrationTests(ActionsTestCase):
             foo_action = FooAction()
             foo_action.register()
 
-        self.assertEqual(actions_registry.get('action_id', 'foo-action'),
+        self.assertEqual(actions_registry.get_action('foo-action'),
                          foo_action)
 
         foo_action.unregister()
 
-        self.assertIsNone(actions_registry.get('action_id', 'foo-action'))
+        self.assertIsNone(actions_registry.get_action('foo-action'))
 
     def test_action_register_methods_with_parent(self) -> None:
         """Testing BaseReviewRequestAction.register and unregister with
@@ -206,14 +206,14 @@ class ActionRegistrationTests(ActionsTestCase):
         bar_action.register()
         foo_action.register(bar_action)
 
-        self.assertEqual(actions_registry.get('action_id', 'foo-action'),
+        self.assertEqual(actions_registry.get_action('foo-action'),
                          foo_action)
         self.assertEqual(foo_action.parent_action, bar_action)
         self.assertEqual(bar_action.child_actions, [foo_action])
 
         foo_action.unregister()
 
-        self.assertIsNone(actions_registry.get('action_id', 'foo-action'))
+        self.assertIsNone(actions_registry.get_action('foo-action'))
         self.assertIsNone(foo_action.parent_action)
         self.assertEqual(bar_action.child_actions, [])
 
@@ -226,17 +226,17 @@ class ActionRegistrationTests(ActionsTestCase):
 
         bar_action.register()
 
-        self.assertEqual(actions_registry.get('action_id', 'foo-action'),
+        self.assertEqual(actions_registry.get_action('foo-action'),
                          foo_action)
-        self.assertEqual(actions_registry.get('action_id', 'bar-action-1'),
+        self.assertEqual(actions_registry.get_action('bar-action-1'),
                          bar_action)
         self.assertEqual(foo_action.parent_action, bar_action)
         self.assertEqual(bar_action.child_actions, [foo_action])
 
         bar_action.unregister()
 
-        self.assertIsNone(actions_registry.get('action_id', 'foo-action'))
-        self.assertIsNone(actions_registry.get('action_id', 'bar-action-1'))
+        self.assertIsNone(actions_registry.get_action('foo-action'))
+        self.assertIsNone(actions_registry.get_action('bar-action-1'))
         self.assertIsNone(foo_action.parent_action)
         self.assertEqual(bar_action.child_actions, [])
 
@@ -254,9 +254,9 @@ class ActionRegistrationTests(ActionsTestCase):
 
         bar_action.register(toplevel_action)
 
-        self.assertEqual(actions_registry.get('action_id', 'foo-action'),
+        self.assertEqual(actions_registry.get_action('foo-action'),
                          foo_action)
-        self.assertEqual(actions_registry.get('action_id', 'bar-action-1'),
+        self.assertEqual(actions_registry.get_action('bar-action-1'),
                          bar_action)
         self.assertEqual(toplevel_action.child_actions, [bar_action])
         self.assertEqual(bar_action.parent_action, toplevel_action)
@@ -265,8 +265,8 @@ class ActionRegistrationTests(ActionsTestCase):
 
         bar_action.unregister()
 
-        self.assertIsNone(actions_registry.get('action_id', 'foo-action'))
-        self.assertIsNone(actions_registry.get('action_id', 'bar-action-1'))
+        self.assertIsNone(actions_registry.get_action('foo-action'))
+        self.assertIsNone(actions_registry.get_action('bar-action-1'))
         self.assertIsNone(foo_action.parent_action)
         self.assertEqual(bar_action.child_actions, [])
         self.assertEqual(toplevel_action.child_actions, [])

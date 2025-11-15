@@ -56,13 +56,13 @@ class ActionHookTests(BaseExtensionHookTestCase):
 
         try:
             self.assertEqual(
-                actions_registry.get('action_id', 'test'),
+                actions_registry.get_action('test'),
                 test_action)
             self.assertEqual(
-                actions_registry.get('action_id', 'test-menu'),
+                actions_registry.get_action('test-menu'),
                 test_menu_action)
             self.assertEqual(
-                actions_registry.get('action_id', 'test-menu-item'),
+                actions_registry.get_action('test-menu-item'),
                 test_menu_instance)
 
             self.assertEqual(test_menu_instance.parent_action,
@@ -72,9 +72,9 @@ class ActionHookTests(BaseExtensionHookTestCase):
         finally:
             hook.disable_hook()
 
-        self.assertIsNone(actions_registry.get('action_id', 'test'))
-        self.assertIsNone(actions_registry.get('action_id', 'test-menu'))
-        self.assertIsNone(actions_registry.get('action_id', 'test-menu-item'))
+        self.assertIsNone(actions_registry.get_action('test'))
+        self.assertIsNone(actions_registry.get_action('test-menu'))
+        self.assertIsNone(actions_registry.get_action('test-menu-item'))
         self.assertIsNone(test_menu_instance.parent_action)
         self.assertEqual(test_menu_action.child_actions, [])
 
@@ -510,7 +510,7 @@ class HideActionHookTests(BaseExtensionHookTestCase):
         HideActionHook(extension=self.extension,
                        action_ids=['support-menu'])
 
-        action = actions_registry.get('action_id', 'support-menu')
+        action = actions_registry.get_action('support-menu')
 
         request = self.create_http_request()
         context = Context({

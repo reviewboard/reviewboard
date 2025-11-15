@@ -135,8 +135,7 @@ class ActionsRegistryTests(TestCase):
         actions_registry.register(self.test_menu_item_action)
 
         self.assertIsNone(
-            actions_registry.get('action_id',
-                                 self.test_menu_item_action.action_id))
+            actions_registry.get_action(self.test_menu_item_action.action_id))
         self.assertIn(
             self.test_menu_item_action,
             actions_registry._deferred_registrations)
@@ -147,8 +146,7 @@ class ActionsRegistryTests(TestCase):
                       self.test_menu_action.child_actions)
 
         self.assertEqual(
-            actions_registry.get('action_id',
-                                 self.test_menu_item_action.action_id),
+            actions_registry.get_action(self.test_menu_item_action.action_id),
             self.test_menu_item_action)
         self.assertEqual(actions_registry._deferred_registrations, [])
 
