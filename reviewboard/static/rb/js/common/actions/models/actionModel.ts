@@ -94,6 +94,11 @@ export interface ActionAttrs {
  * Subclasses may add their own attributes by passing in their own attribute
  * interface when extending this.
  *
+ * Version Changed:
+ *     7.1:
+ *     This is now the preferred place to put any action activation code.
+ *     Multiple views could wrap a single action.
+ *
  * Version Added:
  *     6.0
  */
@@ -112,4 +117,18 @@ export class Action<
         url: null,
         visible: false,
     };
+
+    /**
+     * Activate the action.
+     *
+     * This can be invoked by action views to enable default behaviors.
+     *
+     * By default, this does nothing.
+     *
+     * Version Added:
+     *     7.1
+     */
+    activate() {
+        // This can be overridden by subclasses for actions.
+    }
 }

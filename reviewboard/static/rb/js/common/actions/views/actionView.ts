@@ -17,6 +17,7 @@ export class ActionView<
 > extends BaseView<TModel, TElement, TExtraViewOptions> {
     static modelEvents = {
         'change:isQuickAccessEnabled': '_onQuickAccessEnabledChanged',
+        'change:visible': '_onModelVisibleChanged',
     };
 
     /**********************
@@ -32,26 +33,6 @@ export class ActionView<
     #visibilityEl: HTMLElement = null;
 
     /**
-     * Return whether this action is visible.
-     *
-     * This will return the visibility status of the action parent container
-     * (if available) or of this view's element (if contained in another
-     * parent).
-     *
-     * Version Added:
-     *     7.1
-     *
-     * Returns:
-     *     boolean:
-     *     ``true`` if the action is visible. ``false`` if it is not.
-     */
-    isVisible(): boolean {
-        const el = this.#getVisibilityEl();
-
-        return !el.hidden && el.style.display !== 'none';
-    }
-
-    /**
      * Show the action.
      *
      * This will show the action parent container (if available) or this
@@ -65,10 +46,7 @@ export class ActionView<
      *     This view, for chaining.
      */
     show(): this {
-        const visibilityEl = this.#getVisibilityEl();
-
-        $(visibilityEl).show();
-        visibilityEl.hidden = false;
+        this.model.set('visible', true);
 
         return this;
     }
@@ -87,12 +65,22 @@ export class ActionView<
      *     This view, for chaining.
      */
     hide(): this {
-        const visibilityEl = this.#getVisibilityEl();
-
-        $(visibilityEl).hide();
-        visibilityEl.hidden = true;
+        this.model.set('visible', false);
 
         return this;
+    }
+
+    /**
+     * Activate the action.
+     *
+     * By default, this invokes the ``activate`` method on the action model.
+     * This can be overridden to perform different logic.
+     *
+     * Version Added:
+     *     7.1
+     */
+    activate() {
+        this.model.activate();
     }
 
     /**
@@ -110,6 +98,34 @@ export class ActionView<
             this.#getVisibilityEl().classList.add('-is-quick-access');
 
             this._onQuickAccessEnabledChanged();
+        }
+
+        this._onModelVisibleChanged();
+    }
+
+    /**
+     * Handle changes to the action's visibility.
+     *
+     * This will update the visibility of the action's view to match the
+     * visibility state, handling both appearance and accessibility.
+     *
+     * Version Added:
+     *     7.1
+     */
+    private _onModelVisibleChanged() {
+        const visibilityEl = this.#getVisibilityEl();
+        const visible = this.model.get('visible');
+
+        /*
+         * The visibility state has changed. Show/hide and update the
+         * hidden attribute.
+         */
+        if (visible) {
+            $(visibilityEl).show();
+            visibilityEl.hidden = false;
+        } else {
+            $(visibilityEl).hide();
+            visibilityEl.hidden = true;
         }
     }
 

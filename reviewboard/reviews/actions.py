@@ -85,7 +85,8 @@ class CloseCompletedAction(BaseAction):
     parent_id = CloseMenuAction.action_id
     label = _('Completed')
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.CloseCompletedActionView'
+    js_model_class = 'RB.CloseCompletedAction'
+    js_view_class = 'RB.Actions.MenuItemActionView'
 
     def should_render(
         self,
@@ -125,7 +126,8 @@ class CloseDiscardedAction(BaseAction):
     parent_id = CloseMenuAction.action_id
     label = _('Discarded')
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.CloseDiscardedActionView'
+    js_model_class = 'RB.CloseDiscardedAction'
+    js_view_class = 'RB.Actions.MenuItemActionView'
 
 
 class DeleteAction(BaseAction):
@@ -139,7 +141,8 @@ class DeleteAction(BaseAction):
     parent_id = CloseMenuAction.action_id
     label = _('Delete Permanently')
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.DeleteActionView'
+    js_model_class = 'RB.DeleteAction'
+    js_view_class = 'RB.Actions.MenuItemActionView'
 
     def should_render(
         self,
@@ -332,7 +335,8 @@ class CreateReviewAction(BaseAction):
           'create a new review for you.'),
     ]
     icon_class = 'rb-icon rb-icon-create-review'
-    js_view_class = 'RB.CreateReviewActionView'
+    js_model_class = 'RB.CreateReviewAction'
+    js_view_class = 'RB.Actions.MenuItemActionView'
     template_name = 'actions/detailed_menuitem_action.html'
 
     def should_render(
@@ -378,7 +382,8 @@ class EditReviewAction(BaseAction):
         _('Edit your comments and publish your review.'),
     ]
     icon_class = 'rb-icon rb-icon-compose-review'
-    js_view_class = 'RB.EditReviewActionView'
+    js_model_class = 'RB.EditReviewAction'
+    js_view_class = 'RB.Actions.MenuItemActionView'
     template_name = 'actions/detailed_menuitem_action.html'
 
     def should_render(
@@ -425,7 +430,8 @@ class AddGeneralCommentAction(BaseAction):
           'any code or file attachments.'),
     ]
     icon_class = 'rb-icon rb-icon-edit'
-    js_view_class = 'RB.AddGeneralCommentActionView'
+    js_model_class = 'RB.AddGeneralCommentAction'
+    js_view_class = 'RB.Actions.MenuItemActionView'
     template_name = 'actions/detailed_menuitem_action.html'
 
     def should_render(
@@ -473,7 +479,8 @@ class ShipItAction(BaseAction):
           'a new review" above.'),
     ]
     icon_class = 'rb-icon rb-icon-shipit'
-    js_view_class = 'RB.ShipItActionView'
+    js_model_class = 'RB.ShipItAction'
+    js_view_class = 'RB.Actions.MenuItemActionView'
     template_name = 'actions/detailed_menuitem_action.html'
 
     def should_render(
@@ -756,7 +763,8 @@ class UploadDiffAction(BaseAction):
     action_id = 'upload-diff'
     parent_id = UpdateMenuAction.action_id
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.UpdateDiffActionView'
+    js_model_class = 'RB.UpdateDiffAction'
+    js_view_class = 'RB.Actions.MenuItemActionView'
 
     def get_label(
         self,
@@ -825,7 +833,8 @@ class UploadFileAction(BaseAction):
     parent_id = UpdateMenuAction.action_id
     label = _('Add File')
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.AddFileActionView'
+    js_model_class = 'RB.AddFileAction'
+    js_view_class = 'RB.Actions.MenuItemActionView'
 
     def should_render(
         self,
@@ -958,7 +967,8 @@ class ArchiveAction(BaseAction):
     parent_id = ArchiveMenuAction.action_id
     attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.ArchiveActionView'
+    js_model_class = 'RB.ArchiveAction'
+    js_view_class = 'RB.Actions.MenuItemActionView'
 
     # This is only shown on page load. It will be overridden at runtime.
     label = _('Toggle Archived')
@@ -975,7 +985,8 @@ class MuteAction(BaseAction):
     parent_id = ArchiveMenuAction.action_id
     attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.MuteActionView'
+    js_model_class = 'RB.MuteAction'
+    js_view_class = 'RB.Actions.MenuItemActionView'
 
     # This is only shown on page load. It will be overridden at runtime.
     label = _('Toggle Muted')

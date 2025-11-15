@@ -339,11 +339,4 @@ export class MenuItemActionView extends ActionView {
          */
         this.activate();
     }
-
-    /**
-     * Activate the action.
-     */
-    activate() {
-        // This is expected to be overridden by subclasses.
-    }
 }

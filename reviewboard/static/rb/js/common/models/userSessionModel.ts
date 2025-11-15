@@ -129,9 +129,15 @@ interface StoredItemsAttrs extends BaseResourceAttrs {
  * This interfaces with a Watched Items resource (for groups or review
  * requests) and a Hidden Items resource, allowing immediate adding/removing
  * of objects.
+ *
+ * Version Changed:
+ *     7.1:
+ *     This is now exported internally, but is intended only for use in
+ *     type checking and not to subclass or use directly. It's not included
+ *     in the global ``RB`` namespace.
  */
 @spina
-class StoredItems extends BaseResource<StoredItemsAttrs> {
+export class StoredItems extends BaseResource<StoredItemsAttrs> {
     /**
      * Return the defaults for the model attributes.
      *
