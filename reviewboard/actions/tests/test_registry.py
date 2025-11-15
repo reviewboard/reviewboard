@@ -4,6 +4,10 @@ Version Added:
     6.0
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from djblets.registries.errors import AlreadyRegisteredError
 
 from reviewboard.actions import (AttachmentPoint,
@@ -11,7 +15,11 @@ from reviewboard.actions import (AttachmentPoint,
                                  BaseMenuAction,
                                  actions_registry)
 from reviewboard.actions.errors import DepthLimitExceededError
+from reviewboard.actions.registry import ActionsRegistry
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class TestAction(BaseAction):
@@ -47,6 +55,23 @@ class TooDeeplyNestedAction(BaseAction):
     parent_id = 'nested-2-menu-action'
 
 
+class _TestActionsRegistry(ActionsRegistry):
+    """Empty actions registry for testing purposes.
+
+    Version Added:
+        7.1
+    """
+
+    def get_defaults(self) -> Iterator[BaseAction]:
+        """Return an empty set of defaults.
+
+        Yields:
+            reviewboard.actions.base.BaseAction:
+            Each action (but none, really).
+        """
+        yield from []
+
+
 class ActionsRegistryTests(TestCase):
     """Unit tests for the actions registry.
 
@@ -70,20 +95,74 @@ class ActionsRegistryTests(TestCase):
 
     def test_register(self) -> None:
         """Testing ActionsRegistry.register"""
-        actions_registry.register(self.test_action)
+        test_action = self.test_action
+
+        actions_registry = _TestActionsRegistry()
+        actions_registry.register(test_action)
 
         with self.assertRaises(AlreadyRegisteredError):
-            actions_registry.register(self.test_action)
+            actions_registry.register(test_action)
+
+        self.assertEqual(
+            actions_registry._by_attachment_point,
+            {
+                'review-request': {
+                    'test': test_action,
+                },
+            })
+
+    def test_unregister(self) -> None:
+        """Testing ActionsRegistry.unregister"""
+        test_action = self.test_action
+
+        actions_registry = _TestActionsRegistry()
+        actions_registry.register(test_action)
+
+        self.assertEqual(
+            actions_registry._by_attachment_point,
+            {
+                'review-request': {
+                    'test': test_action,
+                },
+            })
+
+        actions_registry.unregister(test_action)
+
+        self.assertEqual(actions_registry._by_attachment_point, {})
 
     def test_get_for_attachment(self) -> None:
         """Testing ActionsRegistry.get_for_attachment"""
-        actions_registry.register(self.test_action)
-        actions_registry.register(self.test_header_action)
+        actions_registry = _TestActionsRegistry()
 
-        header_actions = list(actions_registry.get_for_attachment(
-            AttachmentPoint.HEADER))
-        self.assertIn(self.test_header_action, header_actions)
-        self.assertNotIn(self.test_action, header_actions)
+        test_action = self.test_action
+        test_header_action = self.test_header_action
+
+        actions_registry.register(test_action)
+        actions_registry.register(test_header_action)
+
+        self.assertEqual(
+            actions_registry._by_attachment_point,
+            {
+                'header': {
+                    'header-action': test_header_action,
+                },
+                'review-request': {
+                    'test': test_action,
+                },
+            })
+
+        self.assertEqual(
+            list(actions_registry.get_for_attachment(AttachmentPoint.HEADER)),
+            [
+                test_header_action,
+            ])
+
+        self.assertEqual(
+            list(actions_registry.get_for_attachment(
+                AttachmentPoint.REVIEW_REQUEST)),
+            [
+                test_action,
+            ])
 
     def test_menu(self) -> None:
         """Testing ActionsRegistry with menu actions"""
