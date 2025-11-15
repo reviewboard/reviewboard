@@ -92,6 +92,14 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
         action_id = 'test-menu-instance'
         label = 'Menu Instance'
 
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
+
+        # Pre-populate this, so population side effects (e.g., warnings)
+        # won't interfere with any tests.
+        actions_registry.populate()
+
     def tearDown(self) -> None:
         """Tear down the test case."""
         super().tearDown()

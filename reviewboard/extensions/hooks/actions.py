@@ -103,8 +103,6 @@ class _DictAction(BaseAction):
             attachment (reviewboard.actions.base.AttachmentPoint):
                 The attachment point for the action.
         """
-        super().__init__()
-
         if not isinstance(action_dict, dict):
             raise ValueError('Action definitions must be dictionaries.')
 
@@ -117,6 +115,8 @@ class _DictAction(BaseAction):
                 r'[^a-zA-Z0-9]+',
                 '-',
                 self.label.lower())
+
+        super().__init__()
 
         self.url = action_dict['url']
         self.apply_to = applies_to
@@ -163,8 +163,6 @@ class _DictMenuAction(BaseMenuAction):
             attachment (reviewboard.actions.base.AttachmentPoint):
                 The attachment point for the action.
         """
-        super().__init__()
-
         if not isinstance(action_dict, dict):
             raise ValueError('Action definitions must be dictionaries.')
 
@@ -177,6 +175,8 @@ class _DictMenuAction(BaseMenuAction):
                 r'[^a-zA-Z0-9]*',
                 '-',
                 self.label.lower())
+
+        super().__init__()
 
         self.apply_to = applies_to
         self.attachment = attachment

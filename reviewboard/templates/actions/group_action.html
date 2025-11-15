@@ -1,0 +1,12 @@
+{% extends "actions/action_base.html" %}
+{% load actions %}
+
+
+{% block action_container_css_class %}rb-c-actions__action{% endblock %}
+{% block action_container_role %}group{% endblock %}
+{% block action_container_attrs %}{{action_attrs}}{% endblock %}
+
+
+{% block action_content %}
+{%  child_actions_html %}
+{% endblock action_content %}

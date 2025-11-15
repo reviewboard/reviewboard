@@ -65,6 +65,7 @@ Actions
    reviewboard.actions.base
    reviewboard.actions.errors
    reviewboard.actions.registry
+   reviewboard.actions.renderers
 
 
 Administration and Server

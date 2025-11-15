@@ -13,9 +13,13 @@ from reviewboard.actions import (AttachmentPoint,
                                  BaseGroupAction,
                                  BaseMenuAction)
 from reviewboard.actions.registry import ActionsRegistry
+from reviewboard.actions.renderers import ButtonActionRenderer
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+    from django.template import Context
+    from typelets.django.json import SerializableDjangoJSONDict
 
 
 class TestAction(BaseAction):
@@ -26,6 +30,7 @@ class TestAction(BaseAction):
     """
 
     action_id = 'test'
+    label = 'Test Action 1'
 
 
 class TestHeaderAction(BaseAction):
@@ -47,6 +52,7 @@ class TestGroupAction(BaseGroupAction):
     """
 
     action_id = 'group-action'
+    label = 'Test Group'
 
     children = [
         'group-item-2-action',
@@ -95,6 +101,7 @@ class TestMenuAction(BaseMenuAction):
     """
 
     action_id = 'menu-action'
+    label = 'Test Menu'
 
 
 class TestMenuItemAction(BaseAction):
@@ -106,6 +113,10 @@ class TestMenuItemAction(BaseAction):
 
     action_id = 'menu-item-action'
     parent_id = 'menu-action'
+    label = 'Menu Item Action 1'
+    icon_class = 'my-icon'
+    verbose_label = 'Verbose Menu Item Action 1'
+    description = ['Menu Item 1 description.']
 
 
 class TestNestedMenuAction(BaseMenuAction):
@@ -139,6 +150,41 @@ class TooDeeplyNestedAction(BaseAction):
 
     action_id = 'nested-3-action'
     parent_id = 'nested-2-menu-action'
+
+
+class SpecialButtonActionRenderer(ButtonActionRenderer):
+    """Action renderer with additional button state for testing purposes.
+
+    Version Added:
+        7.1
+    """
+
+    js_view_class = 'SpecialButtonActionView'
+
+    def get_js_view_data(
+        self,
+        *,
+        context: Context,
+    ) -> SerializableDjangoJSONDict:
+        """Return data to be passed to the rendered JavaScript view.
+
+        This provides a custom label for the view and some extra view-specific
+        state.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            dict:
+            A dictionary of options to pass to the view instance.
+        """
+        label = self.action.get_label(context=context)
+
+        return {
+            'label': f'~~{label}~~',
+            'specialKey': [123, 456],
+        }
 
 
 class TestActionsRegistry(ActionsRegistry):

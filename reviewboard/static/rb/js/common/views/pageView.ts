@@ -1,8 +1,13 @@
 /**
  * Base class for page views.
  */
-import { BaseView, spina } from '@beanbag/spina';
+import {
+    BaseView,
+    Collection,
+    spina,
+} from '@beanbag/spina';
 
+import { Action } from '../actions/models/actionModel';
 import { type ActionView } from '../actions/views/actionView';
 import { ClientCommChannel } from '../models/commChannelModel';
 import { type Page } from '../models/pageModel';
@@ -87,6 +92,14 @@ export class PageView<
     /** A list of all registered action views. */
     _actionViews: ActionView[] = [];
 
+    /**
+     * All actions available to the page.
+     *
+     * Version Added:
+     *     7.1
+     */
+    actions: Collection<Action> = null;
+
     /** The pop-out drawer, if the page has one. */
     drawer: RB.Drawer = null;
 
@@ -123,6 +136,10 @@ export class PageView<
     initialize(options: PageViewOptions = {}) {
         this.options = options;
         this.$window = $(window);
+
+        this.actions = new Collection([], {
+            model: Action,
+        });
 
         if (!window.rbRunningTests) {
             this.#commChannel = new ClientCommChannel();
@@ -318,6 +335,35 @@ export class PageView<
     /**
      * Add an action to the page.
      *
+     * This will make the action available so that it can be activated or
+     * wrapped in a view.
+     *
+     * All actions must be added to the page before they can be used.
+     *
+     * Version Added:
+     *     7.1:
+     *     Previously only action views were registered. Now, action models
+     *     must be registered instead.
+     *
+     * Args:
+     *     action (RB.Action):
+     *         The action to add.
+     *
+     * Returns:
+     *     RB.Action:
+     *     The added action instance, as a convenience.
+     */
+    addAction(
+        action: Action,
+    ): Action {
+        this.actions.add(action);
+
+        return action;
+    }
+
+    /**
+     * Add an action to the page.
+     *
      * Args:
      *     actionView (RB.ActionView):
      *         The action instance.
@@ -328,6 +374,26 @@ export class PageView<
         if (this.isPageRendered) {
             actionView.render();
         }
+    }
+
+    /**
+     * Return the action for the given action ID.
+     *
+     * Version Added:
+     *     7.1
+     *
+     * Args:
+     *     actionID (string):
+     *         The ID of the action.
+     *
+     * Returns:
+     *     RB.Action:
+     *     The action instance, or ``null`` if not found.
+     */
+    getAction(
+        actionID: string,
+    ): Action {
+        return this.actions.get(actionID);
     }
 
     /**

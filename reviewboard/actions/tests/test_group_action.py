@@ -7,6 +7,7 @@ Version Added:
 from __future__ import annotations
 
 from django.template import Context
+from django.utils.safestring import SafeString
 
 from reviewboard.actions.tests.base import (
     TestActionsRegistry,
@@ -94,7 +95,7 @@ class BaseGroupActionTests(TestCase):
                 ],
                 'has_parent': False,
                 'id': 'group-action',
-                'label': None,
+                'label': 'Test Group',
                 'url': '#',
                 'verbose_label': None,
                 'visible': True,
@@ -117,6 +118,79 @@ class BaseGroupActionTests(TestCase):
                     'group-item-3-action',
                 ],
                 'domID': 'action-group-action',
+                'label': 'Test Group',
                 'url': '#',
                 'visible': True,
             })
+
+    def test_render_with_default_renderer(self) -> None:
+        """Testing BaseGroupAction.render with default renderer"""
+        request = self.create_http_request()
+        context = Context({
+            'request': request,
+        })
+
+        html = self.group_action.render(request=request,
+                                        context=context)
+
+        self.assertIsInstance(html, SafeString)
+        self.assertHTMLEqual(
+            html,
+            """
+            <li class="rb-c-actions__action"
+                id="action-group-action"
+                role="group">
+             <a id="action-group-item-1-action"
+                role="button"
+                hidden
+                style="display: none;"
+                href="#">
+              None
+             </a>
+             <a id="action-group-item-2-action"
+                role="button"
+                hidden
+                style="display: none;"
+                href="#">
+              None
+             </a>
+             <a id="action-group-item-3-action"
+                role="button"
+                hidden
+                style="display: none;"
+                href="#">
+              None
+             </a>
+            </li>
+            """)
+
+    def test_render_js_with_default_renderer(self) -> None:
+        """Testing BaseGroupAction.render_js with default renderer"""
+        request = self.create_http_request()
+        context = Context({
+            'request': request,
+        })
+
+        js = self.group_action.render_js(request=request,
+                                         context=context)
+
+        self.assertIsInstance(js, SafeString)
+        self.assertHTMLEqual(
+            js,
+            """
+            page.addActionView(new RB.Actions.ActionView({
+                el: $('#action-group-action'),
+                model: page.addAction(new RB.Actions.GroupAction(
+                    {"actionId": "group-action",
+                     "visible": true,
+                     "domID": "action-group-action",
+                     "label": "Test Group",
+                     "url": "#",
+                     "children":
+                         ["group-item-2-action",
+                          "group-item-1-action",
+                          "group-item-3-action"]},
+                    { parse: true }
+                ))
+            }));
+            """)
