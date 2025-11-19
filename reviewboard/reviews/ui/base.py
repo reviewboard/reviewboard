@@ -218,6 +218,18 @@ class ReviewUI(Generic[
     #: Whether there's a file type mismatch when showing diffs.
     diff_type_mismatch: ClassVar[bool] = False
 
+    #: Whether to load the Review UI's static media when rendered inline.
+    #:
+    #: If the extension managing the Review UI already loads its static media
+    #: in the diff viewer page, then this should be set to ``False`` to
+    #: prevent duplicate loading. This is useful for ensuring that state set
+    #: by the static media gets shared amongst the extension instance and
+    #: any review UIs on the page instead of being overwritten.
+    #:
+    #: Version Added:
+    #:     7.1
+    load_static_media_inline: ClassVar[bool] = True
+
     ######################
     # Instance variables #
     ######################
@@ -477,6 +489,9 @@ class ReviewUI(Generic[
                 'base_template': 'reviews/ui/base_inline.html',
                 'review_ui_inline': True,
             })
+
+            if not self.load_static_media_inline:
+                context['skip_static_media'] = True
         else:
             context.update({
                 'base_template': 'reviews/ui/base.html',
