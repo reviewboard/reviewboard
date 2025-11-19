@@ -162,21 +162,6 @@ class ReviewUI(Generic[
     using :py:attr:`js_model_class` and :py:attr:`js_view_class`. The
     JavaScript side should interface with the API to create/update reviews and
     comments for the object being reviewed.
-
-    Attributes:
-        diff_against_obj (object):
-            The object being diffed against, if any.
-
-        obj (object):
-            The object being reviewed.
-
-        request (django.http.HttpRequest):
-            The HTTP request from the client. This is only set once
-            :py:meth:`render_to_string` is called.
-
-        review_request (reviewboard.reviews.models.review_request.
-                        ReviewRequest):
-            The review request containing the object being reviewed.
     """
 
     #: The display name for the Review UI.
@@ -241,7 +226,15 @@ class ReviewUI(Generic[
     diff_against_obj: Optional[ReviewableType]
 
     #: The current HTTP request.
+    #:
+    #: This is only set once :py:meth:`render_to_string` is called.
     request: Optional[HttpRequest]
+
+    #: Whether the Review UI is being rendered inline in the current request.
+    #:
+    #: Version Added:
+    #:     7.1
+    _inline: bool | None
 
     @property
     def js_model_class(self) -> str:
@@ -309,6 +302,7 @@ class ReviewUI(Generic[
         self.obj = obj
         self.diff_against_obj = None
         self.request = None
+        self._inline = None
 
     def set_diff_against(
         self,
@@ -416,6 +410,7 @@ class ReviewUI(Generic[
             The HTML for the Review UI.
         """
         self.request = request
+        self._inline = inline
 
         try:
             context = self.build_render_context(request, inline=inline)
@@ -457,6 +452,7 @@ class ReviewUI(Generic[
             The context to use in the template.
         """
         self.request = request
+        self._inline = inline
 
         review_request = self.review_request
         last_activity_time = \
@@ -732,6 +728,9 @@ class ReviewUI(Generic[
                 'state': state.value,
             })
 
+            if (inline := self._inline) is not None:
+                data['renderedInline'] = inline
+
             if obj.attachment_history is not None:
                 request = self.request
                 include_draft = (
@@ -788,7 +787,12 @@ class ReviewUI(Generic[
             dict:
             The options to pass to the view.
         """
-        return {}
+        data: dict[str, Any] = {}
+
+        if (inline := self._inline) is not None:
+            data['renderedInline'] = inline
+
+        return data
 
     def get_comments_json(self) -> str:
         """Return a JSON-serialized representation of comments for a template.

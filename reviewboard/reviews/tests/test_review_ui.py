@@ -253,7 +253,7 @@ class ReviewUITests(SpyAgency, TestCase):
                       response.content)
         self.assertIn(b'view = new RB.Test.ReviewUIView(',
                       response.content)
-        self.assertIn(b'renderedInline: false', response.content)
+        self.assertIn(b'"renderedInline": false', response.content)
 
     def test_render_to_response_with_inline_true(self) -> None:
         """Testing ReviewUI.render_to_response with inline=1"""
@@ -269,7 +269,7 @@ class ReviewUITests(SpyAgency, TestCase):
                       response.content)
         self.assertIn(b'view = new RB.Test.ReviewUIView(',
                       response.content)
-        self.assertIn(b'renderedInline: true', response.content)
+        self.assertIn(b'"renderedInline": true', response.content)
 
     def test_render_to_string_with_inline_false(self) -> None:
         """Testing ReviewUI.render_to_string with inline=False"""
@@ -281,7 +281,7 @@ class ReviewUITests(SpyAgency, TestCase):
         self.assertIsInstance(content, SafeText)
         self.assertIn('model: new RB.Test.ReviewUI(', content)
         self.assertIn('view = new RB.Test.ReviewUIView(', content)
-        self.assertIn('renderedInline: false', content)
+        self.assertIn('"renderedInline": false', content)
 
     def test_render_to_string_with_inline_true(self) -> None:
         """Testing ReviewUI.render_to_string with inline=True"""
@@ -293,7 +293,7 @@ class ReviewUITests(SpyAgency, TestCase):
         self.assertIsInstance(content, SafeText)
         self.assertIn('model: new RB.Test.ReviewUI(', content)
         self.assertIn('view = new RB.Test.ReviewUIView(', content)
-        self.assertIn('renderedInline: true', content)
+        self.assertIn('"renderedInline": true', content)
 
     def test_render_to_response_with_skip_static_media_false(self) -> None:
         """Testing ReviewUI.render_to_response with skip_static_media=0"""

@@ -54,7 +54,6 @@ NOTE: On Review Board local development servers, rendering review UI static
 {%   for key, value in review_ui.get_js_view_data.items %}
                 {{key|json_dumps}}: {{value|json_dumps}},
 {%   endfor %}
-                renderedInline: {{review_ui_inline|yesno:'true,false'}},
                 model: new {{review_ui.js_model_class}}({
 {%   for key, value in review_ui.get_js_model_data.items %}
                     {{key|json_dumps}}: {{value|json_dumps}},
