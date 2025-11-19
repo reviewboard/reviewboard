@@ -115,7 +115,7 @@ class Assembla(BaseHostingService):
         password: str | None,
         scmtool_class: type[SCMTool],
         local_site_name: str | None,
-        assembla_project_id: str,
+        assembla_project_id: (str | None) = None,
         **kwargs,
     ) -> None:
         """Check the validity of a repository hosted on Assembla.
@@ -144,7 +144,7 @@ class Assembla(BaseHostingService):
             local_site_name (str):
                 The name of the Local Site, if any.
 
-            assembla_project_id (str):
+            assembla_project_id (str, optional):
                 The project ID for the Assembla team.
 
             **kwargs (dict):
@@ -163,6 +163,10 @@ class Assembla(BaseHostingService):
             raise ValueError('path cannot be None')
 
         if scmtool_class.name == 'Perforce':
+            if assembla_project_id is None:
+                raise ValueError(
+                    'assembla_project_id is required for Perforce.')
+
             scmtool_class.check_repository(
                 path=path,
                 username=username,

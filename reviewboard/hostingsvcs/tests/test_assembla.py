@@ -124,7 +124,7 @@ class AssemblaTests(AssemblaTestCase):
             self.assertNotIn('p4_host',
                              scmtool.check_repository.last_call.kwargs)
         except ImportError:
-            self.skipTest('Perforce support is not installed')
+            self.skipTest('SVN support is not installed')
 
 
 class AssemblaFormTests(AssemblaTestCase):
@@ -197,4 +197,4 @@ class AssemblaFormTests(AssemblaTestCase):
             self.assertNotIn('use_ticket_auth', repository.extra_data)
             self.assertNotIn('p4_host', repository.extra_data)
         except ImportError:
-            self.skipTest('Perforce support is not installed')
+            self.skipTest('SVN support is not installed')
