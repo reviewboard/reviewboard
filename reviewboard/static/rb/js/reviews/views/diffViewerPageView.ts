@@ -177,6 +177,13 @@ export class DiffViewerPageView extends ReviewablePageView<
         const diffQueue = $.funcQueue('diff_files');
 
         this.listenTo(this.model.diffReviewables, 'populating', () => {
+            /*
+             * Emit this event so that any FileAttachmentReviewableViews that
+             * have been injected into the DOM by binary files can clean
+             * themselves up.
+             */
+            this.trigger('clearingDiffReviewables');
+
             this._diffReviewableViews.forEach(view => view.remove());
             this._diffReviewableViews = [];
             this.#diffFileIndexView.clear();
