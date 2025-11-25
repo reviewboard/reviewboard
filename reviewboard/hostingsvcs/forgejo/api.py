@@ -10,6 +10,8 @@ Version Added:
 
 from __future__ import annotations
 
+from typing import List, Optional
+
 from pydantic import BaseModel
 
 
@@ -33,7 +35,7 @@ class AccessToken(BaseModel):
 
     id: int
     name: str
-    scopes: list[str]
+    scopes: List[str]
     sha1: str
     token_last_eight: str
 
@@ -85,7 +87,7 @@ class Commit(BaseModel):
 
     commit: RepoCommit
     created: str
-    parents: list[CommitMeta]
+    parents: List[CommitMeta]
     sha: str
 
 
@@ -136,7 +138,7 @@ class GitTreeResponse(BaseModel):
     page: int
     sha: str
     total_count: int
-    tree: list[GitEntry] | None
+    tree: Optional[List[GitEntry]]
     truncated: bool
 
 

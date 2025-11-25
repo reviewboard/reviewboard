@@ -9,8 +9,7 @@ Version Added:
 from __future__ import annotations
 
 import logging
-from collections.abc import Mapping
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, Dict, Mapping, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.utils.translation import gettext_lazy as _

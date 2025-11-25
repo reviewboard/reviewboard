@@ -469,7 +469,8 @@ export class License<
 
             response = await fetch(checkStatusURL, request);
 
-            const contentType = response.headers['content-type'].toLowerCase();
+            const contentType =
+                response.headers.get('content-type').toLowerCase();
 
             if (contentType.startsWith('application/json') ||
                 contentType.endsWith('+json')) {

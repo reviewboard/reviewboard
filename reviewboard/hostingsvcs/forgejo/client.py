@@ -445,7 +445,11 @@ class ForgejoClient(HostingServiceClient):
         master_ref: (int | None) = None
 
         for i, ref in enumerate(refs):
-            name = ref.ref.removeprefix('refs/heads/')
+            if ref.ref.startswith('refs/heads/'):
+                name = ref.ref[len('refs/heads/'):]
+            else:
+                name = ref.ref
+
             results.append(Branch(
                 id=name,
                 commit=ref.object.sha,

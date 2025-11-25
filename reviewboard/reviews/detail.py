@@ -142,6 +142,9 @@ class ReviewRequestPageData:
     changedescs: Sequence[ChangeDescription]
 
     #: All of the diffsets associated with the review request.
+    #:
+    #: This includes the draft diffset if the draft is accessible by the
+    #: requesting user.
     diffsets: Sequence[DiffSet]
 
     #: A mapping from diffset IDs to instances.
@@ -431,7 +434,13 @@ class ReviewRequestPageData:
 
         # Get diffsets.
         if needs_reviews:
-            diffsets = review_request.get_diffsets()
+            diffsets = list(review_request.get_diffsets())
+
+            if ((draft := self.draft) and
+                (draft_diffset := draft.get_latest_diffset())):
+                # If a draft diffset exists, include it. We've already
+                # checked that the user has access.
+                diffsets.append(draft_diffset)
 
             # We're going to attach the repository to each diffset. This is
             # faster than including them in a select_related(), and ensures

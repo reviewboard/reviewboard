@@ -644,7 +644,7 @@ class DiffFragmentView(View):
                 template_name=self.patch_error_template_name,
                 context={
                     'bundle_url': bundle_url,
-                    'file': diff_info_or_response['diff_file'],
+                    'file': diff_info['diff_file'],
                     'filename': os.path.basename(e.filename),
                     'patch_output': e.error_output,
                     'rejects': mark_safe(rejects),
@@ -655,7 +655,7 @@ class DiffFragmentView(View):
                 template_name=self.error_template_name,
                 context={
                     'error': e,
-                    'file': diff_info_or_response['diff_file'],
+                    'file': diff_info['diff_file'],
                 },
                 request=request))
         except Exception as e:
@@ -672,7 +672,7 @@ class DiffFragmentView(View):
             return exception_traceback(
                 self.request, e, self.error_template_name,
                 extra_context={
-                    'file': diff_info_or_response['diff_file'],
+                    'file': diff_info['diff_file'],
                 })
 
         if response.status_code == 200:

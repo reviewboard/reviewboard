@@ -12,7 +12,7 @@ import inspect
 import logging
 import re
 from importlib import import_module
-from typing import TYPE_CHECKING
+from typing import Type, TYPE_CHECKING
 
 from django.urls import include, re_path
 from django.utils.translation import gettext_lazy as _
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class HostingServiceRegistry(EntryPointRegistry[type[BaseHostingService]]):
+class HostingServiceRegistry(EntryPointRegistry[Type[BaseHostingService]]):
     """A registry for managing hosting services.
 
     Version Changed:

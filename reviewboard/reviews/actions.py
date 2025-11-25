@@ -14,6 +14,9 @@ from reviewboard.actions import (AttachmentPoint,
                                  BaseMenuAction,
                                  QuickAccessActionMixin,
                                  actions_registry)
+from reviewboard.actions.renderers import (BaseActionRenderer,
+                                           DetailedMenuActionGroupRenderer,
+                                           MenuActionGroupRenderer)
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.reviews.features import (general_comments_feature,
@@ -85,7 +88,7 @@ class CloseCompletedAction(BaseAction):
     parent_id = CloseMenuAction.action_id
     label = _('Completed')
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.CloseCompletedActionView'
+    js_model_class = 'RB.CloseCompletedAction'
 
     def should_render(
         self,
@@ -125,7 +128,7 @@ class CloseDiscardedAction(BaseAction):
     parent_id = CloseMenuAction.action_id
     label = _('Discarded')
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.CloseDiscardedActionView'
+    js_model_class = 'RB.CloseDiscardedAction'
 
 
 class DeleteAction(BaseAction):
@@ -139,7 +142,7 @@ class DeleteAction(BaseAction):
     parent_id = CloseMenuAction.action_id
     label = _('Delete Permanently')
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.DeleteActionView'
+    js_model_class = 'RB.DeleteAction'
 
     def should_render(
         self,
@@ -272,6 +275,19 @@ class DownloadDiffAction(BaseAction):
                 review_request.has_diffsets)
 
 
+class ReviewMenuActionRenderer(DetailedMenuActionGroupRenderer):
+    """Action renderer for the Review menu.
+
+    This renders as a detailed menu, but using a custom JavaScript view for
+    managing the menu.
+
+    Version Added:
+        7.1
+    """
+
+    js_view_class = 'RB.ReviewMenuActionView'
+
+
 class ReviewMenuAction(BaseMenuAction):
     """The "Review" menu on the unified banner.
 
@@ -282,9 +298,9 @@ class ReviewMenuAction(BaseMenuAction):
     action_id = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
-    label = _('Review')
+    default_renderer_cls = ReviewMenuActionRenderer
     icon_class = 'rb-icon rb-icon-compose-review'
-    js_view_class = 'RB.ReviewMenuActionView'
+    label = _('Review')
 
     def should_render(
         self,
@@ -324,7 +340,8 @@ class CreateReviewAction(BaseAction):
     parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
-    label = _('Create a new review')
+    label = _('Create Review')
+    verbose_label = _('Create a new review')
     description = [
         _('Your review will start off blank, but you can add text and '
           'general comments to it.'),
@@ -332,8 +349,7 @@ class CreateReviewAction(BaseAction):
           'create a new review for you.'),
     ]
     icon_class = 'rb-icon rb-icon-create-review'
-    js_view_class = 'RB.CreateReviewActionView'
-    template_name = 'actions/detailed_menuitem_action.html'
+    js_model_class = 'RB.CreateReviewAction'
 
     def should_render(
         self,
@@ -373,13 +389,13 @@ class EditReviewAction(BaseAction):
     parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
-    label = _('Edit your review')
+    label = _('Edit Review')
+    verbose_label = _('Edit your review')
     description = [
         _('Edit your comments and publish your review.'),
     ]
     icon_class = 'rb-icon rb-icon-compose-review'
-    js_view_class = 'RB.EditReviewActionView'
-    template_name = 'actions/detailed_menuitem_action.html'
+    js_model_class = 'RB.EditReviewAction'
 
     def should_render(
         self,
@@ -419,14 +435,14 @@ class AddGeneralCommentAction(BaseAction):
     parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
-    label = _('Add a general comment')
+    label = _('Add General Comment')
+    verbose_label = _('Add a general comment')
     description = [
         _('Add a new general comment about the change, not attached to '
           'any code or file attachments.'),
     ]
     icon_class = 'rb-icon rb-icon-edit'
-    js_view_class = 'RB.AddGeneralCommentActionView'
-    template_name = 'actions/detailed_menuitem_action.html'
+    js_model_class = 'RB.AddGeneralCommentAction'
 
     def should_render(
         self,
@@ -465,7 +481,8 @@ class ShipItAction(BaseAction):
     parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
     attachment = AttachmentPoint.UNIFIED_BANNER
-    label = _('Ship it!')
+    label = _('Ship It!')
+    verbose_label = _('Ship it!')
     description = [
         _("You're happy with what you're seeing, and would like to "
           'approve it.'),
@@ -473,8 +490,7 @@ class ShipItAction(BaseAction):
           'a new review" above.'),
     ]
     icon_class = 'rb-icon rb-icon-shipit'
-    js_view_class = 'RB.ShipItActionView'
-    template_name = 'actions/detailed_menuitem_action.html'
+    js_model_class = 'RB.ShipItAction'
 
     def should_render(
         self,
@@ -505,7 +521,7 @@ class ShipItAction(BaseAction):
             not is_site_read_only_for(user) and
             review_request is not None and
             (user.pk != review_request.submitter_id or
-             siteconfig.get('reviews_allow_self_shipit'))
+             bool(siteconfig.get('reviews_allow_self_shipit')))
         )
 
 
@@ -520,7 +536,6 @@ class QuickAccessShipItAction(QuickAccessActionMixin, ShipItAction):
     """
 
     action_id = 'quickaccess-ship-it'
-    label = _('Ship It!')
 
 
 class QuickAccessCreateReviewAction(QuickAccessActionMixin,
@@ -535,7 +550,6 @@ class QuickAccessCreateReviewAction(QuickAccessActionMixin,
     """
 
     action_id = 'quickaccess-create-review'
-    label = _('Create Review')
 
 
 class QuickAccessEditReviewAction(QuickAccessActionMixin, EditReviewAction):
@@ -549,7 +563,6 @@ class QuickAccessEditReviewAction(QuickAccessActionMixin, EditReviewAction):
     """
 
     action_id = 'quickaccess-edit-review'
-    label = _('Edit Review')
 
 
 class QuickAccessAddGeneralCommentAction(QuickAccessActionMixin,
@@ -564,7 +577,6 @@ class QuickAccessAddGeneralCommentAction(QuickAccessActionMixin,
     """
 
     action_id = 'quickaccess-add-general-comment'
-    label = _('Add General Comment')
 
 
 class LegacyAddGeneralCommentAction(BaseAction):
@@ -756,7 +768,7 @@ class UploadDiffAction(BaseAction):
     action_id = 'upload-diff'
     parent_id = UpdateMenuAction.action_id
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.UpdateDiffActionView'
+    js_model_class = 'RB.UpdateDiffAction'
 
     def get_label(
         self,
@@ -825,7 +837,7 @@ class UploadFileAction(BaseAction):
     parent_id = UpdateMenuAction.action_id
     label = _('Add File')
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.AddFileActionView'
+    js_model_class = 'RB.AddFileAction'
 
     def should_render(
         self,
@@ -860,6 +872,19 @@ class UploadFileAction(BaseAction):
                   perms['reviews']['can_edit_reviewrequest'])))
 
 
+class StarActionRenderer(BaseActionRenderer):
+    """Action renderer for the starred action.
+
+    This provides a custom template used to render the action as a star,
+    which can be pressed to star or unstar the review request.
+
+    Version Added:
+        7.1
+    """
+
+    template_name = 'reviews/star_action.html'
+
+
 class StarAction(BaseAction):
     """The action to star a review request.
 
@@ -868,10 +893,10 @@ class StarAction(BaseAction):
     """
 
     action_id = 'star-review-request'
-    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
-    label = ''
-    template_name = 'reviews/star_action.html'
     apply_to = all_review_request_url_names
+    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
+    default_renderer_cls = StarActionRenderer
+    label = ''
 
     def should_render(
         self,
@@ -903,6 +928,19 @@ class StarAction(BaseAction):
                 super().should_render(context=context))
 
 
+class ArchiveMenuActionRenderer(MenuActionGroupRenderer):
+    """Action renderer for the archive menu.
+
+    This provides a custom template used to render the menu as an archive
+    icon, which can be pressed to archive the review request.
+
+    Version Added:
+        7.1
+    """
+
+    template_name = 'reviews/archive_menu_action.html'
+
+
 class ArchiveMenuAction(BaseMenuAction):
     """A menu for managing the visibility state of the review request.
 
@@ -913,8 +951,7 @@ class ArchiveMenuAction(BaseMenuAction):
     action_id = 'archive-menu'
     attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     label = ''
-    template_name = 'reviews/archive_menu_action.html'
-    js_view_class = 'RB.ArchiveMenuActionView'
+    default_renderer_cls = ArchiveMenuActionRenderer
     apply_to = all_review_request_url_names
 
     def should_render(
@@ -958,7 +995,7 @@ class ArchiveAction(BaseAction):
     parent_id = ArchiveMenuAction.action_id
     attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.ArchiveActionView'
+    js_model_class = 'RB.ArchiveAction'
 
     # This is only shown on page load. It will be overridden at runtime.
     label = _('Toggle Archived')
@@ -975,7 +1012,7 @@ class MuteAction(BaseAction):
     parent_id = ArchiveMenuAction.action_id
     attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
-    js_view_class = 'RB.MuteActionView'
+    js_model_class = 'RB.MuteAction'
 
     # This is only shown on page load. It will be overridden at runtime.
     label = _('Toggle Muted')
@@ -1324,7 +1361,7 @@ def register_actions(
         'reviewboard.actions.actions_registry.')
 
     if parent_id:
-        parent = actions_registry.get('action_id', parent_id)
+        parent = actions_registry.get_action(parent_id)
     else:
         parent = None
 
@@ -1358,7 +1395,7 @@ def unregister_actions(
         'reviewboard.actions.actions_registry.')
 
     for action_id in action_ids:
-        action = actions_registry.get('action_id', action_id)
+        action = actions_registry.get_action(action_id)
         action.unregister()
 
 

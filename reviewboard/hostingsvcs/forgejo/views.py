@@ -10,7 +10,7 @@ import hashlib
 import hmac
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.views import View
@@ -42,7 +42,7 @@ class PushWebHookPayload(BaseModel):
         id: str
         message: str
 
-    commits: list[_Commit]
+    commits: List[_Commit]
     ref: str
 
 

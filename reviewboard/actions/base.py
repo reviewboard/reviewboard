@@ -7,18 +7,30 @@ Version Added:
 from __future__ import annotations
 
 import logging
-from typing import Any, List, Mapping, Optional, TYPE_CHECKING, cast
+from typing import Any, List, Optional, TYPE_CHECKING
 
-from django.template.loader import render_to_string
-from django.utils.safestring import SafeText, mark_safe
+from django.utils.safestring import mark_safe
 
+from reviewboard.actions.errors import (ActionError,
+                                        MissingActionRendererError)
+from reviewboard.actions.renderers import (BaseActionRenderer,
+                                           ButtonActionRenderer,
+                                           DefaultActionGroupRenderer,
+                                           DefaultActionRenderer,
+                                           MenuActionGroupRenderer)
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django.http import HttpRequest
     from django.template import Context
+    from django.utils.safestring import SafeString
     from typelets.django.json import SerializableDjangoJSONDict
     from typelets.django.strings import StrOrPromise
+
+    from reviewboard.actions.registry import ActionsRegistry
 
 
 logger = logging.getLogger(__name__)
@@ -70,7 +82,7 @@ class BaseAction:
     #:
     #: Type:
     #:     str
-    action_id: Optional[str] = None
+    action_id: str
 
     #: A list of URLs to apply to.
     #:
@@ -86,6 +98,18 @@ class BaseAction:
     #: Type:
     #:     str
     attachment: str = AttachmentPoint.REVIEW_REQUEST
+
+    #: The default renderer used for this action.
+    #:
+    #: By default, actions inherit their default renderer from a previous
+    #: group or attachment point.
+    #:
+    #: Default renderers can always be overridden when rendering the action.
+    #:
+    #: Version Added:
+    #:     7.1
+    default_renderer_cls: (type[BaseActionRenderer] | None) = \
+        DefaultActionRenderer
 
     #: A class name to use for an icon.
     #:
@@ -104,15 +128,17 @@ class BaseAction:
 
     #: The name of the template to use for rendering action JavaScript.
     #:
-    #: Type
-    #:     str
+    #: Deprecated:
+    #:     7.1:
+    #:     This should be set on the action's renderer instead.
     js_template_name: str = 'actions/action.js'
 
     #: The class to instantiate for the JavaScript view.
     #:
-    #: Type:
-    #:     str
-    js_view_class: str = 'RB.Actions.ActionView'
+    #: Deprecated:
+    #:     7.1:
+    #:     This should be set on the action's renderer instead.
+    js_view_class: (str | None) = None
 
     #: The user-visible label.
     #:
@@ -128,9 +154,10 @@ class BaseAction:
 
     #: The name of the template to use when rendering.
     #:
-    #: Type:
-    #:     str
-    template_name: str = 'actions/action.html'
+    #: Deprecated:
+    #:     7.1:
+    #:     This should be set on the action's renderer instead.
+    template_name: (str | None) = None
 
     #: The URL that this action links to.
     #:
@@ -146,6 +173,18 @@ class BaseAction:
     #:     str
     url_name: Optional[str] = None
 
+    #: The user-visible verbose label.
+    #:
+    #: This can be used to provide a longer label for wider UIs that would
+    #: benefit from a more descriptive label. It's also intended for ARIA
+    #: labels.
+    #:
+    #: This is always optional.
+    #:
+    #: Version Added:
+    #:     7.1
+    verbose_label: (StrOrPromise | None) = None
+
     #: Whether this action is visible.
     #:
     #: Type:
@@ -156,22 +195,53 @@ class BaseAction:
     # Instance variables #
     ######################
 
-    #: The list of child actions, if this is a menu.
-    #:
-    #: Type:
-    #:     list of BaseAction
-    child_actions: List[BaseAction]
+    #: The list of child actions, if this is a grouped action.
+    child_actions: list[BaseAction]
 
-    #: The parent of this action, if this is a menu item.
+    #: The parent of this action, if this is an item in a group.
+    parent_action: BaseGroupAction | None
+
+    #: The parent registry managing this action.
     #:
-    #: Type:
-    #:     BaseMenuAction
-    parent_action: Optional[BaseMenuAction]
+    #: Version Added:
+    #:     7.1
+    parent_registry: ActionsRegistry | None
 
     def __init__(self) -> None:
         """Initialize the action."""
         self.parent_action = None
         self.child_actions = []
+        self.parent_registry = None
+
+        if not getattr(self, 'action_id', None):
+            raise AttributeError(
+                f'{type(self).__name__}.action_id must be set.'
+            )
+
+        # Check for deprecations.
+        if self.template_name:
+            RemovedInReviewBoard90Warning.warn(
+                f'{type(self).__name__}.template_name is deprecated and '
+                f'support will be removed in Review Board 9. Please move any '
+                f'custom rendering to a reviewboard.actions.renderers.'
+                f'BaseActionRenderer subclass instead.'
+            )
+
+        if self.js_view_class:
+            RemovedInReviewBoard90Warning.warn(
+                f'{type(self).__name__}.js_view_class is deprecated and '
+                f'support will be removed in Review Board 9. Please move any '
+                f'custom rendering to a reviewboard.actions.renderers.'
+                f'BaseActionRenderer subclass instead.'
+            )
+
+        if type(self).get_js_view_data is not BaseAction.get_js_view_data:
+            RemovedInReviewBoard90Warning.warn(
+                f'{type(self).__name__}.get_js_view_data is deprecated and '
+                f'support will be removed in Review Board 9. Please move any '
+                f'custom rendering to a reviewboard.actions.renderers.'
+                f'BaseActionRenderer subclass instead.'
+            )
 
     @property
     def depth(self) -> int:
@@ -191,6 +261,13 @@ class BaseAction:
         By default, this will return ``True`` if a custom template name is
         used. If the JavaScript side needs to override rendering, the subclass
         should explicitly return ``True``.
+
+        Deprecated:
+            7.1:
+            This is scheduled for removal in Review Board 9. This was only
+            ever used for menu items. Custom menu items should instead set
+            the ``data-custom-rendered="true"`` attribute on the custom
+            element.
 
         Version Added:
             7.0
@@ -234,8 +311,10 @@ class BaseAction:
 
         from reviewboard.extensions.hooks.actions import HideActionHook
 
+        action_id = self.action_id
+
         for hook in HideActionHook.hooks:
-            if self.action_id in hook.hidden_action_ids:
+            if action_id in hook.hidden_action_ids:
                 return False
 
         return True
@@ -266,12 +345,11 @@ class BaseAction:
         """
         dom_id = self.get_dom_element_id()
         icon_class = self.icon_class
-        label = self.get_label(context=context)
         url = self.get_url(context=context)
         visible = self.get_visible(context=context)
 
         data: SerializableDjangoJSONDict = {
-            'actionId': self.action_id,
+            'id': self.action_id,
             'visible': visible,
         }
 
@@ -284,8 +362,11 @@ class BaseAction:
         if self.is_custom_rendered():
             data['isCustomRendered'] = True
 
-        if label:
+        if (label := self.get_label(context=context)):
             data['label'] = str(label)
+
+        if (verbose_label := self.get_verbose_label(context=context)):
+            data['verboseLabel'] = str(verbose_label)
 
         if url:
             data['url'] = url
@@ -298,6 +379,11 @@ class BaseAction:
         context: Context,
     ) -> dict:
         """Return data to be passed to the JavaScript view.
+
+        Deprecated:
+            7.1:
+            Actions implementing this should instead move to custom
+            renderers.
 
         Args:
             context (django.template.Context):
@@ -313,7 +399,7 @@ class BaseAction:
         self,
         *,
         context: Context,
-    ) -> StrOrPromise:
+    ) -> StrOrPromise | None:
         """Return the label for the action.
 
         Args:
@@ -324,8 +410,30 @@ class BaseAction:
             str:
             The label to use for the action.
         """
-        assert self.label is not None
         return self.label
+
+    def get_verbose_label(
+        self,
+        *,
+        context: Context,
+    ) -> StrOrPromise | None:
+        """Return the verbose label for the action.
+
+         This can be used to provide a longer label for wider UIs that would
+         benefit from a more descriptive label. It's always optional.
+
+         Version Added:
+             7.1
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            str:
+            The verbose label to use for the action.
+        """
+        return self.verbose_label
 
     def get_url(
         self,
@@ -395,6 +503,7 @@ class BaseAction:
             'id': self.action_id,
             'label': self.get_label(context=context),
             'url': self.get_url(context=context),
+            'verbose_label': self.get_verbose_label(context=context),
             'visible': self.get_visible(context=context),
         }
 
@@ -403,8 +512,13 @@ class BaseAction:
         *,
         request: HttpRequest,
         context: Context,
-    ) -> SafeText:
+        renderer: (type[BaseActionRenderer] | None) = None,
+    ) -> SafeString:
         """Render the action.
+
+        Version Changed:
+            7.1:
+            Added the ``renderer`` argument.
 
         Args:
             request (django.http.HttpRequest):
@@ -413,36 +527,63 @@ class BaseAction:
             context (django.template.Context):
                 The current rendering context.
 
+            renderer (type, optional):
+                The renderer used to render this action.
+
+                If not specified, :py:attr:`default_renderer_cls` will be
+                used.
+
+                Version Added:
+                    7.1
+
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered action HTML.
+
+        Raises:
+            TypeError:
+                An invalid renderer class was provided.
+
+            reviewboard.actions.errors.MissingActionRendererError:
+                A renderer was not found or provided.
         """
-        if self.should_render(context=context):
-            context.push()
+        renderer_cls = renderer or self.default_renderer_cls
 
-            try:
-                context['action'] = self
-                context.update(self.get_extra_context(request=request,
-                                                      context=context))
-                return render_to_string(
-                    template_name=self.template_name,
-                    context=cast(Mapping[str, Any], context.flatten()),
-                    request=request)
-            except Exception as e:
-                logger.exception('Error rendering action "%r": %s',
-                                 self, e)
-            finally:
-                context.pop()
+        if renderer_cls is None:
+            raise MissingActionRendererError(
+                f'A renderer must be explicitly provided when rendering '
+                f'action {type(self)!r}.'
+            )
 
-        return mark_safe('')
+        if not issubclass(renderer_cls, BaseActionRenderer):
+            raise TypeError(
+                f'An invalid renderer class was provided ({renderer_cls!r}).'
+            )
+
+        if not self.should_render(context=context):
+            return mark_safe('')
+
+        return (
+            renderer_cls(action=self)
+            .render(request=request,
+                    context=context)
+        )
 
     def render_js(
         self,
         *,
         request: HttpRequest,
         context: Context,
-    ) -> SafeText:
+        renderer: (type[BaseActionRenderer] | None) = None,
+    ) -> SafeString:
         """Render the action's JavaScript.
+
+        This will set up the JavaScript model and a default view for the
+        renderer (if any).
+
+        Version Changed:
+            7.1:
+            Added the ``renderer`` argument.
 
         Args:
             request (django.http.HttpRequest):
@@ -451,60 +592,71 @@ class BaseAction:
             context (django.template.Context):
                 The current rendering context.
 
-        Returns:
-            django.utils.safestring.SafeText:
-            The rendered action JavaScript.
-        """
-        if self.js_template_name and self.should_render(context=context):
-            context.push()
+            renderer (type, optional):
+                The renderer used to render this action.
 
-            try:
-                context['action'] = self
-                return render_to_string(
-                    template_name=self.js_template_name,
-                    context=cast(Mapping[str, Any], context.flatten()),
-                    request=request)
-            finally:
-                context.pop()
-        else:
+                If not specified, :py:attr:`default_renderer_cls` will be
+                used.
+
+                Version Added:
+                    7.1
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered action JavaScript.
+
+        Raises:
+            TypeError:
+                An invalid renderer class was provided.
+
+            reviewboard.actions.errors.MissingActionRendererError:
+                A renderer was not found or provided.
+        """
+        renderer_cls = renderer or self.default_renderer_cls
+
+        if renderer_cls is None:
+            raise MissingActionRendererError(
+                f'A renderer must be explicitly provided when rendering '
+                f'JavaScript for action {type(self)!r}.'
+            )
+
+        if not issubclass(renderer_cls, BaseActionRenderer):
+            raise TypeError(
+                f'An invalid renderer class was provided ({renderer_cls!r}).'
+            )
+
+        if not self.should_render(context=context):
             return mark_safe('')
 
+        return (
+            renderer_cls(action=self)
+            .render_js(request=request,
+                       context=context)
+        )
 
-class BaseMenuAction(BaseAction):
-    """Base class for menu actions.
+
+class BaseGroupAction(BaseAction):
+    """Base class for a group of actions.
+
+    This can be used to group together actions in some form. Subclasses
+    can implement this as menus, lists of actions, or in other
+    presentational styles.
 
     Version Added:
-        6.0
+        7.1
     """
 
-    template_name = 'actions/menu_action.html'
-    js_model_class = 'RB.Actions.MenuAction'
-    js_view_class = 'RB.Actions.MenuActionView'
+    default_renderer_cls: (type[BaseActionRenderer] | None) = \
+        DefaultActionGroupRenderer
+    js_model_class = 'RB.Actions.GroupAction'
 
-    #: An ordered list of child menu IDs.
+    #: An ordered list of child action IDs.
     #:
     #: This can be used to specify a specific order for children to appear in.
     #: The special string '--' can be used to add separators. Any children that
-    #: are registered with this menu as their parent but do not appear in this
-    #: list will be added at the end of the menu.
-    children: List[str] = []
-
-    def is_custom_rendered(self) -> bool:
-        """Whether this menu action uses custom rendering.
-
-        By default, this will return ``True`` if a custom template name is
-        used. If the JavaScript side needs to override rendering, the subclass
-        should explicitly return ``True``.
-
-        Version Added:
-            7.0
-
-        Returns:
-            bool:
-            ``True`` if this action uses custom rendering. ``False`` if it
-            does not.
-        """
-        return self.template_name != BaseMenuAction.template_name
+    #: are registered with this group as their parent but do not appear in this
+    #: list will be added at the end of the group.
+    children: Sequence[str] = []
 
     def get_extra_context(
         self,
@@ -514,9 +666,9 @@ class BaseMenuAction(BaseAction):
     ) -> dict:
         """Return extra template context for the action.
 
-        Subclasses can override this to provide additional context needed by
-        the template for the action. By default, this returns an empty
-        dictionary.
+        This provides all the children that can be rendered in the group.
+
+        Subclasses can override this to provide additional context.
 
         Args:
             request (django.http.HttpRequest):
@@ -528,16 +680,32 @@ class BaseMenuAction(BaseAction):
         Returns:
             dict:
             Extra context to use when rendering the action's template.
+
+        Raises:
+            reviewboard.actions.errors.ActionError:
+                There was an error retrieving data for the action.
+
+                Details will be in the error message.
         """
-        from reviewboard.actions import actions_registry
+        registry = self.parent_registry
+
+        if not registry:
+            raise ActionError(
+                f'Attempted to call get_extra_context on {self!r} without '
+                f'first being registered.'
+            )
 
         extra_context = super().get_extra_context(request=request,
                                                   context=context)
-        extra_context['children'] = ([
+
+        action_id = self.action_id
+        assert action_id
+
+        extra_context['children'] = [
             child
-            for child in actions_registry.get_children(self.action_id)
+            for child in registry.get_children(action_id)
             if child.should_render(context=context)
-        ])
+        ]
 
         return extra_context
 
@@ -555,16 +723,31 @@ class BaseMenuAction(BaseAction):
         Returns:
             dict:
             A dictionary of attributes to pass to the model instance.
+
+        Raises:
+            reviewboard.actions.errors.ActionError:
+                There was an error retrieving data for the action.
+
+                Details will be in the error message.
         """
-        from reviewboard.actions import actions_registry
+        registry = self.parent_registry
 
-        rendered_child_ids = [
-            child.action_id
-            for child in actions_registry.get_children(self.action_id)
-            if child.should_render(context=context)
-        ]
+        if not registry:
+            raise ActionError(
+                f'Attempted to call get_js_model_data on {self!r} without '
+                f'first being registered.'
+            )
 
-        children = []
+        action_id = self.action_id
+        assert action_id is not None
+
+        rendered_child_ids: dict[str, bool] = {
+            child.action_id: True
+            for child in registry.get_children(action_id)
+            if child.action_id and child.should_render(context=context)
+        }
+
+        children: list[str] = []
 
         # Add in any children with explicit ordering first.
         for child_id in self.children:
@@ -572,16 +755,51 @@ class BaseMenuAction(BaseAction):
                 children.append(child_id)
             elif child_id in rendered_child_ids:
                 children.append(child_id)
-                rendered_child_ids.remove(child_id)
+                del rendered_child_ids[child_id]
 
         # Now add any other actions that weren't in self.children.
-        for child_id in rendered_child_ids:
-            children.append(child_id)
+        children += rendered_child_ids.keys()
 
         data = super().get_js_model_data(context=context)
         data['children'] = children
 
         return data
+
+
+class BaseMenuAction(BaseGroupAction):
+    """Base class for menu actions.
+
+    Version Added:
+        6.0
+    """
+
+    default_renderer_cls: (type[BaseActionRenderer] | None) = \
+        MenuActionGroupRenderer
+    js_model_class = 'RB.Actions.MenuAction'
+
+    def is_custom_rendered(self) -> bool:
+        """Whether this menu action uses custom rendering.
+
+        By default, this will return ``True`` if a custom template name is
+        used. If the JavaScript side needs to override rendering, the subclass
+        should explicitly return ``True``.
+
+        Deprecated:
+            7.1:
+            This is scheduled for removal in Review Board 9. This was only
+            ever used for menu items. Custom menu items should instead set
+            the ``data-custom-rendered="true"`` attribute on the custom
+            element.
+
+        Version Added:
+            7.0
+
+        Returns:
+            bool:
+            ``True`` if this action uses custom rendering. ``False`` if it
+            does not.
+        """
+        return self.template_name != BaseMenuAction.template_name
 
 
 if TYPE_CHECKING:
@@ -606,7 +824,8 @@ class QuickAccessActionMixin(BaseQuickAccessActionMixin):
     """
 
     parent_id: (str | None) = None
-    template_name = 'actions/button_action.html'
+    template_name: (str | None) = None
+    default_renderer_cls = ButtonActionRenderer
     attachment = AttachmentPoint.QUICK_ACCESS
 
     def get_js_model_data(

@@ -8,6 +8,7 @@ from djblets.registries.importer import lazy_import_registry
 
 from reviewboard.actions.base import (AttachmentPoint,
                                       BaseAction,
+                                      BaseGroupAction,
                                       BaseMenuAction,
                                       QuickAccessActionMixin)
 
@@ -20,6 +21,7 @@ actions_registry = lazy_import_registry(
 __all__ = [
     'AttachmentPoint',
     'BaseAction',
+    'BaseGroupAction',
     'BaseMenuAction',
     'QuickAccessActionMixin',
     'actions_registry',
@@ -28,6 +30,7 @@ __all__ = [
 __autodoc_excludes__ = [
     'AttachmentPoint',
     'BaseAction',
+    'BaseGroupAction',
     'BaseMenuAction',
     'QuickAccessActionMixin',
 ]

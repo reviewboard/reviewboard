@@ -66,7 +66,7 @@ export class MenuActionView<
                         ? () => childActionView.activate()
                         : null;
 
-                    if (childAction.get('isCustomRendered')) {
+                    if (childActionView.el.dataset.customRendered === 'true') {
                         menuItems.add({
                             childEl: childActionView.el,
                             id: domID,
@@ -338,12 +338,5 @@ export class MenuItemActionView extends ActionView {
          * parent menu can close.
          */
         this.activate();
-    }
-
-    /**
-     * Activate the action.
-     */
-    activate() {
-        // This is expected to be overridden by subclasses.
     }
 }

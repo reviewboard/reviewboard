@@ -472,15 +472,17 @@ export class FileAttachmentThumbnailView extends BaseView<
             return;
         }
 
-        const comments = this.options.comments || [];
+        const allComments = this.options.comments || {};
 
-        comments.forEach(comment => {
-            if (comment.localdraft) {
-                this._createDraftComment(comment.comment_id, comment.text);
-            } else {
-                this.#comments.push(comment);
-            }
-        });
+        for (const comments of Object.values(allComments)) {
+            comments.forEach(comment => {
+                if (comment.localdraft) {
+                    this._createDraftComment(comment.comment_id, comment.text);
+                } else {
+                    this.#comments.push(comment);
+                }
+            });
+        }
 
         this.#commentsProcessed = true;
     }

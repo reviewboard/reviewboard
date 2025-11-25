@@ -1,15 +1,12 @@
-{% extends "actions/action_base.html" %}
-{% load actions %}
+{% extends "actions/group_action.html" %}
 
 
-{% block action_container_css_class %}rb-c-actions__action{% endblock %}
 {% block action_container_role %}menuitem{% endblock %}
-{% block action_container_attrs %}{{action_attrs}}{% endblock %}
 
 
 {% block action_content %}
 <a href="#" role="presentation"
-   aria-label="{{label}}">
+   aria-label="{{verbose_label|default:label}}">
  <label class="rb-c-actions__action-label">
 {%  if action.icon_class %}
   <span class="{{action.icon_class}}"></span>
@@ -18,5 +15,5 @@
  </label>
  <span class="ink-i-dropdown"></span>
 </a>
-{%  child_actions_html %}
+{{block.super}}
 {% endblock action_content %}

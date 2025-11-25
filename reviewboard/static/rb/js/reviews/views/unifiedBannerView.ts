@@ -11,6 +11,8 @@ import {
     craft,
     paint,
     renderInto,
+    showConfirmDialog,
+    showErrorDialog,
 } from '@beanbag/ink';
 import {
     type EventsHash,
@@ -800,7 +802,7 @@ export class UnifiedBannerView extends FloatingBannerView<
                 optionsDirty = true;
             });
 
-            menuItemsByActionID[action.get('actionId')] = menuItem;
+            menuItemsByActionID[action.id] = menuItem;
 
             return menuItem;
         }));
@@ -816,7 +818,7 @@ export class UnifiedBannerView extends FloatingBannerView<
                 const newActionIDs: string[] = [];
 
                 for (const actionView of actionViews) {
-                    const actionID = actionView.model.get('actionId');
+                    const actionID = actionView.model.id;
                     const action = menuItemsByActionID[actionID];
 
                     if (action.get('checked')) {
@@ -900,6 +902,10 @@ export class UnifiedBannerView extends FloatingBannerView<
      * Depending on the selected view mode, this will either discard the
      * pending review, discard the current review request draft, or close the
      * (unpublished) review request as discarded.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the discard operation.
      */
     private async _discardDraft() {
         const model = this.model;
@@ -910,95 +916,74 @@ export class UnifiedBannerView extends FloatingBannerView<
 
         ClientCommChannel.getInstance().reload();
 
-        try {
-            if (await this._confirmDiscard(draftMode) === false) {
-                return;
-            }
+        if (draftMode.hasReview) {
+            /* Confirm and then discard the review. */
+            const pendingReview = model.get('pendingReview');
 
-            if (draftMode.hasReview) {
-                const pendingReview = model.get('pendingReview');
-                await pendingReview.destroy();
+            const confirmed = await showConfirmDialog({
+                isDangerous: true,
+                title: _`Are you sure you want to discard this review?`,
 
-                RB.navigateTo(reviewRequest.get('reviewURL'));
-            } else if (draftMode.hasReviewRequest) {
-                if (!reviewRequest.get('public')) {
-                    await reviewRequest.close({
-                        type: ReviewRequest.CLOSE_DISCARDED,
-                    });
-                } else if (!reviewRequest.draft.isNew()) {
-                    await reviewRequest.draft.destroy();
-                }
-
-                RB.navigateTo(reviewRequest.get('reviewURL'));
-            } else if (draftMode.singleReviewReply !== undefined) {
-                const reviewReplyDrafts = model.get('reviewReplyDrafts');
-                const reply = reviewReplyDrafts[draftMode.singleReviewReply];
-
-                await reply.destroy();
-            } else {
-                console.error('Discard reached with no active drafts.');
-            }
-        } catch(err) {
-            alert(err.xhr.errorText);
-        }
-    }
-
-    /**
-     * Ask the user to confirm a discard operation.
-     *
-     * Args:
-     *     draftMode (DraftMode):
-     *         The current draft mode being discarded.
-     *
-     * Returns:
-     *     Promise:
-     *     A promise which resolves to either ``true`` (proceed) or ``false``
-     *     (cancel).
-     */
-    private _confirmDiscard(
-        draftMode: DraftMode,
-    ): Promise<boolean> {
-        return new Promise(resolve => {
-            const text = draftMode.hasReview
-                ? _`
+                body: _`
                     If you discard this review, all unpublished comments
                     will be deleted.
-                `
-                : _`
-                    If you discard this review request draft, all unpublished
-                    data will be deleted.
-                `;
-            const title = draftMode.hasReview
-                ? _`Are you sure you want to discard this review?`
-                : _`
-                    Are you sure you want to discard this review request
-                    draft?
-                `;
+                `,
+                confirmButtonText: _`Discard the review`,
+                onConfirm: async () => {
+                    try {
+                        await pendingReview.destroy();
+                    } catch (err) {
+                        showErrorDialog({
+                            error: err.xhr.errorText,
+                            title: 'Error discarding the reply',
+                        });
 
-            function resolveAndClose(result: boolean) {
-                resolve(result);
-                $dlg.modalBox('destroy');
+                        return false;
+                    }
+                },
+            });
+
+            if (confirmed) {
+                RB.navigateTo(reviewRequest.get('reviewURL'));
             }
+        } else if (draftMode.hasReviewRequest) {
+            if (reviewRequest.get('public')) {
+                /* Confirm and then discard the review request draft. */
+                await this.#reviewRequestEditorView.discardDraft();
+            } else {
+                /* Confirm and then Close -> Discard the review request. */
+                await this.#reviewRequestEditorView.closeDiscarded();
+            }
+        } else if (draftMode.singleReviewReply !== undefined) {
+            /* Confirm and then discard the single reply. */
+            const reviewReplyDrafts = model.get('reviewReplyDrafts');
+            const reply = reviewReplyDrafts[draftMode.singleReviewReply];
 
-            const $dlg = $('<p>')
-                .text(text)
-                .modalBox({
-                    buttons: paint<HTMLButtonElement[]>`
-                        <Ink.Button onClick=${() => resolveAndClose(false)}>
-                         ${_`Cancel`}
-                        </Ink.Button>
-                        <Ink.Button type="danger"
-                                    onClick=${() => resolveAndClose(true)}>
-                         ${_`Discard`}
-                        </Ink.Button>
-                    `,
-                    title: title,
-                })
-                .on('close', () => {
-                    $dlg.modalBox('destroy');
-                    resolve(false);
-                });
-        });
+            await showConfirmDialog({
+                isDangerous: true,
+                title: _`Are you sure you want to discard this reply?`,
+
+                body: _`
+                    If you discard this reply, all unpublished comments
+                    will be deleted.
+                `,
+                confirmButtonText: _`Discard the reply`,
+                onConfirm: async () => {
+                    try {
+                        await reply.destroy();
+                    } catch (err) {
+                        showErrorDialog({
+                            error: err.xhr.errorText,
+                            title: 'Error discarding the reply',
+                        });
+
+                        return false;
+                    }
+                },
+            });
+        } else {
+            console.error('Discard reached with no active drafts.');
+        }
     }
 
     /**

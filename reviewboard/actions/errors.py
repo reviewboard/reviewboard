@@ -5,6 +5,22 @@ Version Added:
 """
 
 
+class ActionError(Exception):
+    """Base class for action-related errors.
+
+    Version:
+        7.1
+    """
+
+
+class MissingActionRendererError(ActionError):
+    """An error indicating an action renderer could not be found.
+
+    Version:
+        7.1
+    """
+
+
 class DepthLimitExceededError(ValueError):
     """An error that occurs when the maximum depth limit is exceeded.
 

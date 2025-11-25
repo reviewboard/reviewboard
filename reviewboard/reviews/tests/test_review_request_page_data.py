@@ -27,6 +27,7 @@ from reviewboard.reviews.detail import (BaseReviewRequestPageEntry,
                                         ReviewRequestPageData)
 from reviewboard.reviews.models import (BaseComment,
                                         Review,
+                                        ReviewRequest,
                                         ReviewRequestDraft,
                                         Screenshot,
                                         StatusUpdate)
@@ -518,6 +519,53 @@ class ReviewRequestPageDataTests(TestCase):
             expect_draft=True,
             expect_changedescs=True,
             expect_status_updates=True)
+
+    def test_query_data_pre_etag_with_draft_diffsets(self) -> None:
+        """Testing ReviewRequestPageData.query_data_pre_etag includes
+        draft diffsets
+        """
+        self._populate_review_request()
+
+        # Create a draft diffset.
+        review_request = self.review_request
+        draft_diffset = self.create_diffset(review_request, draft=True)
+
+        self.diffsets.append(draft_diffset)
+
+        self._test_query_data_pre_etag_with(
+            entry_classes=[ReviewRequestEntry],
+            expected_queries=lambda: [
+                {
+                    'model': Review,
+                    'order_by': ('-timestamp',),
+                    'select_related': {'user'},
+                    'where': (
+                        Q(review_request=self.review_request) &
+                        (Q(public=True) |
+                         Q(user_id=2))
+                    ),
+                },
+                {
+                    'model': ReviewRequest,
+                    'where': Q(id=review_request.pk),
+                },
+                {
+                    'model': User,
+                    'where': Q(id=review_request.owner.pk)
+                },
+                {
+                    'model': DiffSet,
+                    'where': Q(history__pk=1),
+                },
+                {
+                    'model': FileDiff,
+                    'where': Q(diffset__in=list(
+                        DiffSet.objects.filter(history__pk=1))),
+                },
+            ],
+            expect_diffs=True,
+            expect_reviews=True,
+            expect_draft=True)
 
     def test_query_data_post_etag(self) -> None:
         """Testing ReviewRequestPageData.query_data_post_etag"""
@@ -1379,6 +1427,62 @@ class ReviewRequestPageDataTests(TestCase):
             expect_draft=True,
             expect_comments=True,
             expect_issues=True)
+
+    def test_query_data_post_etag_with_draft_diff_comments(self) -> None:
+        """Testing ReviewRequestPageData.query_data_post_etag with draft
+        diff comments
+        """
+        self._populate_review_request(enable_file_attachments=False,
+                                      enable_screenshots=False)
+
+        # Create a draft diffset.
+        review_request = self.review_request
+        draft_diffset = self.create_diffset(review_request, draft=True)
+        filediff = self.create_filediff(draft_diffset)
+
+        self.diffsets.append(draft_diffset)
+
+        # Create a draft comment owned by the requesting user.
+        review = self.create_review(review_request, user='doc')
+        comment = self.create_diff_comment(review, filediff)
+
+        self.reviews.append(review)
+        self.all_comments.append(comment)
+
+        # Create a draft comment owned by a different user.
+        #
+        # The review won't appear in the page data, but the comment will. The
+        # comment won't actually appear on the page, it gets filtered out in
+        # ReviewsDiffViewerView._get_comments_hint().
+        review_admin = self.create_review(review_request, user='admin')
+        other_comment = self.create_diff_comment(review, filediff)
+
+        self.all_comments.append(other_comment)
+
+        review_pks = [10, 9, 8, 7, 6, 5, 4, 3, 2, 11, 1]
+
+        self._test_query_data_post_etag_with(
+            expected_queries=lambda: [
+                {
+                    'model': Review.general_comments.through,
+                    'order_by': ('generalcomment__timestamp',),
+                    'select_related': True,
+                    'where': Q(review__in=[10, 9, 8, 7, 6, 5, 4, 3, 2, 11, 1]),
+                },
+                {
+                    'model': Review.comments.through,
+                    'order_by': ('comment__filediff',
+                                 'comment__first_line',
+                                 'comment__timestamp'),
+                    'select_related': True,
+                    'where': Q(review__in=review_pks),
+                },
+            ],
+            expect_reviews=True,
+            expect_draft=True,
+            expect_comments=True,
+            expect_issues=True)
+        self.assertNotIn(review_admin.pk, review_pks)
 
     def test_query_data_post_etag_with_no_screenshots(self) -> None:
         """Testing ReviewRequestPageData.query_data_post_etag with no
