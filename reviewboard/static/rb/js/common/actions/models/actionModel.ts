@@ -147,8 +147,12 @@ export class Action<
      *
      * Version Added:
      *     7.1
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
+    async activate() {
         // This can be overridden by subclasses for actions.
     }
 }

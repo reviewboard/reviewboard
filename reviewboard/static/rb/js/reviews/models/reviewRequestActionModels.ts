@@ -245,17 +245,21 @@ export class CreateReviewAction extends Actions.Action {
 
     /**
      * Handle activation of the action.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
-        this.#pendingReview.save()
-            .then(() => {
-                const page = RB.PageManager.getPage();
+    async activate() {
+        const pendingReview = this.#pendingReview;
+        const page = RB.PageManager.getPage();
 
-                ReviewDialogView.create({
-                    review: this.#pendingReview,
-                    reviewRequestEditor: page.getReviewRequestEditorModel(),
-                });
-            });
+        await pendingReview.save();
+
+        ReviewDialogView.create({
+            review: pendingReview,
+            reviewRequestEditor: page.getReviewRequestEditorModel(),
+        });
     }
 }
 
@@ -301,8 +305,12 @@ export class EditReviewAction extends Actions.Action {
 
     /**
      * Handle activation of the action.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
+    async activate() {
         const page = RB.PageManager.getPage();
 
         ReviewDialogView.create({
@@ -325,8 +333,12 @@ export class EditReviewAction extends Actions.Action {
 export class AddGeneralCommentAction extends Actions.Action {
     /**
      * Handle the action activation.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
+    async activate() {
         RB.PageManager.getPage().addGeneralComment();
     }
 }
@@ -344,9 +356,13 @@ export class AddGeneralCommentAction extends Actions.Action {
 export class ShipItAction extends Actions.Action {
     /**
      * Handle the action activation.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
-        RB.PageManager.getPage().shipIt();
+    async activate() {
+        await RB.PageManager.getPage().shipIt();
     }
 }
 
@@ -363,15 +379,19 @@ export class ShipItAction extends Actions.Action {
 export class AddFileAction extends Actions.Action {
     /**
      * Handle the action activation.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
+    async activate() {
         const page = RB.PageManager.getPage();
         const reviewRequestEditorView = page.reviewRequestEditorView as
             ReviewRequestEditorView;
         const reviewRequestEditor = reviewRequestEditorView.model;
 
         if (reviewRequestEditor.hasUnviewedUserDraft) {
-            reviewRequestEditorView.promptToLoadUserDraft();
+            await reviewRequestEditorView.promptToLoadUserDraft();
         } else {
             const uploadDialog = new RB.UploadAttachmentView({
                 reviewRequestEditor: reviewRequestEditor,
@@ -394,8 +414,12 @@ export class AddFileAction extends Actions.Action {
 export class UpdateDiffAction extends Actions.Action {
     /**
      * Handle the action activation.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
+    async activate() {
         const page = RB.PageManager.getPage();
         const reviewRequestEditorView = page.reviewRequestEditorView as
             ReviewRequestEditorView;
@@ -403,7 +427,7 @@ export class UpdateDiffAction extends Actions.Action {
         const reviewRequest = reviewRequestEditor.get('reviewRequest');
 
         if (reviewRequestEditor.hasUnviewedUserDraft) {
-            reviewRequestEditorView.promptToLoadUserDraft();
+            await reviewRequestEditorView.promptToLoadUserDraft();
         } else if (reviewRequestEditor.get('commits').length > 0) {
             const rbtoolsURL = 'https://www.reviewboard.org/docs/rbtools/latest/';
 

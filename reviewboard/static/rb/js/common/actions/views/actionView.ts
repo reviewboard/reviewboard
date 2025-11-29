@@ -132,9 +132,13 @@ export class ActionView<
      *
      * Version Added:
      *     7.1
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
-        this.model.activate();
+    async activate() {
+        await this.model.activate();
     }
 
     /**
