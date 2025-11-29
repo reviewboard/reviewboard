@@ -48,8 +48,9 @@ export class MenuActionView<
         const menuItems = new MenuItemsCollection();
         const page = RB.PageManager.getPage();
         const attachmentPointID = this.attachmentPointID;
+        const children = this.model.get('children')[attachmentPointID] || [];
 
-        for (const childId of this.model.get('children')) {
+        for (const childId of children) {
             if (childId === '--') {
                 menuItems.add({
                     type: MenuItemType.SEPARATOR,

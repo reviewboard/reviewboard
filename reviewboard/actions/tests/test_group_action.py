@@ -106,11 +106,13 @@ class BaseGroupActionTests(TestCase):
             self.group_action.get_js_model_data(context=context),
             {
                 'id': 'group-action',
-                'children': [
-                    'group-item-2-action',
-                    'group-item-1-action',
-                    'group-item-3-action',
-                ],
+                'children': {
+                    'review-request': [
+                        'group-item-2-action',
+                        'group-item-1-action',
+                        'group-item-3-action',
+                    ],
+                },
                 'label': 'Test Group',
                 'url': '#',
                 'visible': True,

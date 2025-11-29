@@ -1076,7 +1076,9 @@ class BaseGroupAction(BaseAction):
         children += rendered_child_ids.keys()
 
         data = super().get_js_model_data(context=context)
-        data['children'] = children
+        data['children'] = {
+            self.attachment: children,
+        }
 
         return data
 
