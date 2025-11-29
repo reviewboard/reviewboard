@@ -781,9 +781,7 @@ export class UnifiedBannerView extends FloatingBannerView<
          */
         let optionsDirty = false;
         const pageView = RB.PageManager.getPage();
-        const actionViews = pageView.getActionViews({
-            isQuickAccess: true,
-        });
+        const actionViews = pageView.getActionViews('quick-access');
 
         const menuItemsByActionID: Record<string, MenuItem> = {};
 

@@ -179,6 +179,7 @@ class BaseGroupActionTests(TestCase):
             js,
             """
             page.addActionView(new RB.Actions.ActionView({
+                attachmentPointID: "review-request",
                 el: $('#action-group-action'),
                 model: page.addAction(new RB.Actions.GroupAction(
                     {"id": "group-action",

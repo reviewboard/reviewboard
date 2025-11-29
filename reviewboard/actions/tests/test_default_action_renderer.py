@@ -121,6 +121,7 @@ class DefaultActionRendererTests(TestCase):
             js,
             """
             page.addActionView(new RB.Actions.ActionView({
+                attachmentPointID: "review-request",
                 el: $('#action-test'),
                 model: page.addAction(new RB.Actions.Action(
                     {"id": "test",

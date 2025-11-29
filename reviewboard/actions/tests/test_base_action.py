@@ -233,6 +233,7 @@ class BaseActionTests(TestCase):
             js,
             """
             page.addActionView(new RB.Actions.ActionView({
+                attachmentPointID: "review-request",
                 el: $('#action-test-action'),
                 model: page.addAction(new RB.Actions.Action(
                     {"id": "test-action",
@@ -265,6 +266,7 @@ class BaseActionTests(TestCase):
             js,
             """
             page.addActionView(new RB.Actions.ButtonActionView({
+                attachmentPointID: "review-request",
                 el: $('#action-test-action'),
                 model: page.addAction(new RB.Actions.Action(
                     {"id": "test-action",
@@ -299,6 +301,7 @@ class BaseActionTests(TestCase):
             page.addActionView(new SpecialButtonActionView({
                 "label": "~~My Label~~",
                 "specialKey": [123, 456],
+                attachmentPointID: "review-request",
                 el: $('#action-test-action'),
                 model: page.addAction(new RB.Actions.Action(
                     {"id": "test-action",

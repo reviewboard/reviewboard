@@ -115,6 +115,7 @@ class MenuItemActionRendererTests(TestCase):
             js,
             """
             page.addActionView(new RB.Actions.MenuItemActionView({
+                attachmentPointID: "review-request",
                 el: $('#action-menu-item-action'),
                 model: page.addAction(new RB.Actions.Action(
                     {"id": "menu-item-action",

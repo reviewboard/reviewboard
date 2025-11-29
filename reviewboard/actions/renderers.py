@@ -192,6 +192,7 @@ class BaseActionRenderer:
         extra_context = {
             'action': action,
             'action_renderer': self,
+            'attachment_point_id': action.attachment,
             'js_model_class': action.js_model_class,
             'js_view_class': js_view_class,
         }

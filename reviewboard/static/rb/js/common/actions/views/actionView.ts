@@ -4,6 +4,23 @@ import { type Action } from '../models/actionModel';
 
 
 /**
+ * Options passed to an ActionView.
+ *
+ * Version Added:
+ *     7.1
+ */
+export interface ActionViewOptions {
+    /**
+     * The action attachment point for this view.
+     *
+     * Version Added:
+     *     7.1
+     */
+    attachmentPointID: string;
+}
+
+
+/**
  * Base view for actions.
  *
  * Version Added:
@@ -13,8 +30,8 @@ import { type Action } from '../models/actionModel';
 export class ActionView<
     TModel extends Action = Action,
     TElement extends HTMLElement = HTMLDivElement,
-    TExtraViewOptions extends object = object
-> extends BaseView<TModel, TElement, TExtraViewOptions> {
+    TOptions extends ActionViewOptions = ActionViewOptions
+> extends BaseView<TModel, TElement, TOptions> {
     static modelEvents = {
         'change:isQuickAccessEnabled': '_onQuickAccessEnabledChanged',
         'change:visible': '_onModelVisibleChanged',
@@ -23,6 +40,27 @@ export class ActionView<
     /**********************
      * Instance variables *
      **********************/
+
+    /**
+     * The action attachment point for this view.
+     *
+     * Version Added:
+     *     7.1
+     */
+    attachmentPointID: string;
+
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (AttachmentViewOptions):
+     *         The options passed to the view.
+     */
+    initialize(
+        options: TOptions,
+    ) {
+        this.attachmentPointID = options.attachmentPointID;
+    }
 
     /**
      * The element used to manage the action's visibility.

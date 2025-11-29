@@ -47,6 +47,7 @@ export class MenuActionView<
     protected onInitialRender() {
         const menuItems = new MenuItemsCollection();
         const page = RB.PageManager.getPage();
+        const attachmentPointID = this.attachmentPointID;
 
         for (const childId of this.model.get('children')) {
             if (childId === '--') {
@@ -54,7 +55,8 @@ export class MenuActionView<
                     type: MenuItemType.SEPARATOR,
                 });
             } else {
-                const childActionView = page.getActionView(childId);
+                const childActionView = page.getActionView(childId,
+                                                           attachmentPointID);
 
                 if (childActionView) {
                     const childAction = childActionView.model;
