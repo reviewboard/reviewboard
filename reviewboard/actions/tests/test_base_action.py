@@ -214,6 +214,34 @@ class BaseActionTests(TestCase):
         self.assertIsInstance(html, SafeString)
         self.assertEqual(html, '')
 
+    def test_render_model_js(self) -> None:
+        """Testing BaseAction.render_model_js"""
+        class MyAction(BaseAction):
+            action_id = 'test-action'
+            label = 'My Label'
+
+        request = self.create_http_request()
+        context = Context({
+            'request': request,
+        })
+
+        js = MyAction().render_model_js(request=request,
+                                        context=context)
+
+        self.assertIsInstance(js, SafeString)
+        self.assertHTMLEqual(
+            js,
+            """
+            page.addAction(new RB.Actions.Action(
+                {"id": "test-action",
+                 "visible": true,
+                 "domID": "action-test-action",
+                 "label": "My Label",
+                 "url": "#"},
+                { parse: true }
+            ));
+            """)
+
     def test_render_js_with_default_renderer(self) -> None:
         """Testing BaseAction.render_js with default renderer"""
         class MyAction(BaseAction):
@@ -233,16 +261,9 @@ class BaseActionTests(TestCase):
             js,
             """
             page.addActionView(new RB.Actions.ActionView({
-                attachmentPointID: "review-request",
+                "attachmentPointID": "review-request",
                 el: $('#action-test-action'),
-                model: page.addAction(new RB.Actions.Action(
-                    {"id": "test-action",
-                     "visible": true,
-                     "domID": "action-test-action",
-                     "label": "My Label",
-                     "url": "#"},
-                    { parse: true }
-                ))
+                model: page.getAction("test-action"),
             }));
             """)
 
@@ -266,16 +287,9 @@ class BaseActionTests(TestCase):
             js,
             """
             page.addActionView(new RB.Actions.ButtonActionView({
-                attachmentPointID: "review-request",
+                "attachmentPointID": "review-request",
                 el: $('#action-test-action'),
-                model: page.addAction(new RB.Actions.Action(
-                    {"id": "test-action",
-                     "visible": true,
-                     "domID": "action-test-action",
-                     "label": "My Label",
-                     "url": "#"},
-                    { parse: true }
-                ))
+                model: page.getAction("test-action"),
             }));
             """)
 
@@ -299,18 +313,11 @@ class BaseActionTests(TestCase):
             js,
             """
             page.addActionView(new SpecialButtonActionView({
+                "attachmentPointID": "review-request",
                 "label": "~~My Label~~",
                 "specialKey": [123, 456],
-                attachmentPointID: "review-request",
                 el: $('#action-test-action'),
-                model: page.addAction(new RB.Actions.Action(
-                    {"id": "test-action",
-                     "visible": true,
-                     "domID": "action-test-action",
-                     "label": "My Label",
-                     "url": "#"},
-                    { parse: true }
-                ))
+                model: page.getAction("test-action"),
             }));
             """)
 

@@ -42,7 +42,7 @@ class BaseActionRenderer:
     """
 
     #: The name of the template to use for rendering action JavaScript.
-    js_template_name: ClassVar[str] = 'actions/action.js'
+    js_template_name: ClassVar[str] = 'actions/action_view.js'
 
     #: The class to instantiate for the JavaScript view.
     js_view_class: ClassVar[str] = 'RB.Actions.ActionView'
@@ -167,6 +167,7 @@ class BaseActionRenderer:
         *,
         request: HttpRequest,
         context: Context,
+        extra_js_view_data: (SerializableDjangoJSONDict | None) = None,
     ) -> SafeString:
         """Render the action's JavaScript.
 
@@ -177,6 +178,10 @@ class BaseActionRenderer:
             context (django.template.Context):
                 The current rendering context.
 
+            extra_js_view_data (dict, optional):
+                Optional extra data to pass to the JavaScript action view's
+                constructor.
+
         Returns:
             django.utils.safestring.SafeString:
             The rendered action JavaScript.
@@ -186,21 +191,27 @@ class BaseActionRenderer:
         # NOTE: These attributes on BaseModel are deprecated. This is
         #       here for compatibility until those are removed in
         #       Review Board 9.
-        js_template_name = action.js_template_name or self.js_template_name
         js_view_class = action.js_view_class or self.js_view_class
+
+        # Build the data for the JavaScript view.
+        js_view_data = self.get_js_view_data(context=context)
+        js_view_data['attachmentPointID'] = action.attachment
+
+        if extra_js_view_data:
+            js_view_data.update(extra_js_view_data)
 
         extra_context = {
             'action': action,
             'action_renderer': self,
-            'attachment_point_id': action.attachment,
             'js_model_class': action.js_model_class,
             'js_view_class': js_view_class,
+            'js_view_data': js_view_data,
         }
 
         with context.update(extra_context):
             try:
                 return render_to_string(
-                    template_name=js_template_name,
+                    template_name=self.js_template_name,
                     context=cast(dict, context.flatten()),
                     request=request)
             except Exception as e:

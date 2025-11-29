@@ -110,16 +110,8 @@ class DefaultActionGroupRendererTests(TestCase):
             js,
             """
             page.addActionView(new RB.Actions.ActionView({
-                attachmentPointID: "review-request",
+                "attachmentPointID": "review-request",
                 el: $('#action-group-action'),
-                model: page.addAction(new RB.Actions.GroupAction(
-                    {"id": "group-action",
-                     "visible": true,
-                     "domID": "action-group-action",
-                     "label": "Test Group",
-                     "url": "#",
-                     "children": []},
-                    { parse: true }
-                ))
+                model: page.getAction("group-action"),
             }));
             """)

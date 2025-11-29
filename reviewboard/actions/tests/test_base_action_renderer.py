@@ -124,15 +124,8 @@ class BaseActionRendererTests(TestCase):
             html,
             """
             page.addActionView(new RB.Actions.ActionView({
-                attachmentPointID: "review-request",
+                "attachmentPointID": "review-request",
                 el: $('#action-test'),
-                model: page.addAction(new RB.Actions.Action(
-                    {"id": "test",
-                     "visible": true,
-                     "domID": "action-test",
-                     "label": "Test Action 1",
-                     "url": "#"},
-                    { parse: true }
-                ))
+                model: page.getAction("test"),
             }));
             """)

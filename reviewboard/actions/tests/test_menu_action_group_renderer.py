@@ -117,16 +117,8 @@ class MenuActionGroupRendererTests(TestCase):
             js,
             """
             page.addActionView(new RB.Actions.MenuActionView({
-                attachmentPointID: "review-request",
+                "attachmentPointID": "review-request",
                 el:  $('#action-menu-action'),
-                model: page.addAction(new RB.Actions.MenuAction(
-                    {"id": "menu-action",
-                     "visible": true,
-                     "domID": "action-menu-action",
-                     "label": "Test Menu",
-                     "url": "#",
-                     "children": []},
-                    { parse: true }
-                ))
+                model: page.getAction("menu-action"),
             }));
             """)

@@ -131,7 +131,8 @@ export class MenuActionView<
                             });
                     }
                 } else {
-                    console.error('Unable to find action for %s', childId);
+                    console.error('Unable to find action view for %s',
+                                  childId);
                 }
             }
         }

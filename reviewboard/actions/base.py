@@ -7,8 +7,9 @@ Version Added:
 from __future__ import annotations
 
 import logging
-from typing import Any, List, Optional, TYPE_CHECKING
+from typing import Any, List, Optional, TYPE_CHECKING, cast
 
+from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 
 from reviewboard.actions.errors import (ActionError,
@@ -126,11 +127,7 @@ class BaseAction:
     #:     str
     js_model_class: str = 'RB.Actions.Action'
 
-    #: The name of the template to use for rendering action JavaScript.
-    #:
-    #: Deprecated:
-    #:     7.1:
-    #:     This should be set on the action's renderer instead.
+    #: The name of the template to use for registering action model JavaScript.
     js_template_name: str = 'actions/action.js'
 
     #: The class to instantiate for the JavaScript view.
@@ -569,21 +566,19 @@ class BaseAction:
                     context=context)
         )
 
-    def render_js(
+    def render_model_js(
         self,
         *,
         request: HttpRequest,
         context: Context,
-        renderer: (type[BaseActionRenderer] | None) = None,
     ) -> SafeString:
-        """Render the action's JavaScript.
+        """Render the action's JavaScript model.
 
-        This will set up the JavaScript model and a default view for the
-        renderer (if any).
+        This will set up the JavaScript model, registering it for use in
+        views.
 
-        Version Changed:
-            7.1:
-            Added the ``renderer`` argument.
+        Version Added:
+            7.1
 
         Args:
             request (django.http.HttpRequest):
@@ -591,6 +586,59 @@ class BaseAction:
 
             context (django.template.Context):
                 The current rendering context.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered action JavaScript.
+        """
+        with context.push():
+            try:
+                context.update({
+                    'action': self,
+                    'js_model_class': self.js_model_class,
+                })
+
+                return render_to_string(
+                    template_name=self.js_template_name,
+                    context=cast(dict, context.flatten()),
+                    request=request)
+            except Exception as e:
+                logger.exception('Error rendering JavaScript for action model '
+                                 '%r: %s',
+                                 self, e)
+
+                return mark_safe('')
+
+    def render_js(
+        self,
+        *,
+        request: HttpRequest,
+        context: Context,
+        extra_js_view_data: (SerializableDjangoJSONDict | None) = None,
+        renderer: (type[BaseActionRenderer] | None) = None,
+    ) -> SafeString:
+        """Render the action's JavaScript view.
+
+        This will set up an instance of an action's view using either the
+        provided renderer or the action's default renderer.
+
+        Version Changed:
+            7.1:
+            Added the ``extra_js_view_data`` and ``renderer`` argument.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            context (django.template.Context):
+                The current rendering context.
+
+            extra_js_view_data (dict, optional):
+                Optional extra data to pass to the JavaScript action view's
+                constructor.
+
+                Version Added:
+                    7.1
 
             renderer (type, optional):
                 The renderer used to render this action.
@@ -631,7 +679,8 @@ class BaseAction:
         return (
             renderer_cls(action=self)
             .render_js(request=request,
-                       context=context)
+                       context=context,
+                       extra_js_view_data=extra_js_view_data)
         )
 
 

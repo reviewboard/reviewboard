@@ -12,12 +12,13 @@ from typing import TYPE_CHECKING
 
 from django.template import Context, Library
 from django.utils.safestring import SafeString, mark_safe
+from djblets.pagestate.state import PageState
 
 from reviewboard.actions import BaseAction, actions_registry
 from reviewboard.actions.renderers import BaseActionGroupRenderer
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Iterator
 
 
 logger = logging.getLogger(__name__)
@@ -38,23 +39,46 @@ def actions_html(
         context (django.template.Context):
             The current template rendering context.
 
+        attachment (str):
+            The registered ID of an attachment point.
+
     Returns:
         django.utils.safestring.SafeString:
         The rendered HTML.
     """
     request = context['request']
-    actions: Iterable[BaseAction] = \
-        actions_registry.get_for_attachment(attachment)
-    rendered: list[str] = []
 
-    for action in actions:
+    # First, generate and immediately render the HTML for the actions.
+    rendered_html: list[str] = []
+
+    for action in actions_registry.get_for_attachment(attachment):
         try:
-            rendered.append(action.render(request=request, context=context))
+            rendered_html.append(action.render(request=request,
+                                               context=context))
         except Exception as e:
-            logger.exception('Error rendering action %s: %s',
+            logger.exception('Error rendering HTML for action "%s": %s',
                              action.action_id, e)
 
-    return mark_safe(''.join(rendered))
+    # Next, render the JavaScript view for each action in the attachment,
+    # but for later injection into the page.
+    rendered_views: list[str] = []
+
+    for action in actions_registry.get_for_attachment(attachment,
+                                                      include_children=True):
+        try:
+            rendered_views.append(action.render_js(request=request,
+                                                   context=context))
+        except Exception as e:
+            logger.exception('Error rendering JavaScript view for action '
+                             '"%s": %s',
+                             action.action_id, e)
+
+    page_state = PageState.for_request(request)
+    page_state.inject('rb-action-views', {
+        'content': mark_safe(''.join(rendered_views)),
+    })
+
+    return mark_safe(''.join(rendered_html))
 
 
 @register.simple_tag(takes_context=True)
@@ -127,18 +151,34 @@ def actions_js(
         django.utils.safestring.SafeString:
         The rendered JavaScript.
     """
+    return mark_safe(''.join(_iter_actions_js(context=context)))
+
+
+def _iter_actions_js(
+    *,
+    context: Context,
+) -> Iterator[SafeString | str]:
     request = context['request']
+
+    # Render all the action model registration.
     actions: Iterable[BaseAction] = actions_registry
-    rendered: list[str] = []
 
     for action in actions:
         try:
-            rendered.append(action.render_js(request=request, context=context))
-        except Exception:
-            logger.exception('Error rendering action %s JavaScript',
-                             action.action_id)
+            yield action.render_model_js(request=request,
+                                         context=context)
+        except Exception as e:
+            logger.exception('Error rendering JavaScript for action model '
+                             '%r: %s',
+                             action, e)
 
-    return mark_safe(''.join(rendered))
+    # Render all the action view construction.
+    page_state = PageState.for_request(request)
+
+    yield from page_state.iter_content(
+        point_name='rb-action-views',
+        request=request,
+        context=context)
 
 
 @register.simple_tag(takes_context=True)
@@ -187,9 +227,7 @@ def action_js_view_data_items(
         django.utils.safestring.SafeString:
         The rendered JavaScript.
     """
-    renderer = context['action_renderer']
-
-    encoded = json.dumps(renderer.get_js_view_data(context=context),
+    encoded = json.dumps(context['js_view_data'],
                          sort_keys=True)[1:-1]
 
     if encoded:
