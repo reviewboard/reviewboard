@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from reviewboard.actions import (AttachmentPoint,
+from reviewboard.actions import (ActionPlacement,
+                                 AttachmentPoint,
                                  BaseAction,
                                  BaseGroupAction,
                                  BaseMenuAction)
@@ -44,7 +45,9 @@ class TestHeaderAction(BaseAction):
     """
 
     action_id = 'header-action'
-    attachment = AttachmentPoint.HEADER
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.HEADER),
+    ]
 
 
 class TestGroupAction(BaseGroupAction):
@@ -71,7 +74,10 @@ class TestGroupItemAction1(BaseAction):
     """
 
     action_id = 'group-item-1-action'
-    parent_id = 'group-action'
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id='group-action'),
+    ]
 
 
 class TestGroupItemAction2(BaseAction):
@@ -82,7 +88,10 @@ class TestGroupItemAction2(BaseAction):
     """
 
     action_id = 'group-item-2-action'
-    parent_id = 'group-action'
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id='group-action'),
+    ]
 
 
 class TestGroupItemAction3(BaseAction):
@@ -93,7 +102,10 @@ class TestGroupItemAction3(BaseAction):
     """
 
     action_id = 'group-item-3-action'
-    parent_id = 'group-action'
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id='group-action'),
+    ]
 
 
 class TestMenuAction(BaseMenuAction):
@@ -115,7 +127,11 @@ class TestMenuItemAction(BaseAction):
     """
 
     action_id = 'menu-item-action'
-    parent_id = 'menu-action'
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id='menu-action'),
+    ]
+
     label = 'Menu Item Action 1'
     icon_class = 'my-icon'
     verbose_label = 'Verbose Menu Item Action 1'
@@ -130,7 +146,10 @@ class TestNestedMenuAction(BaseMenuAction):
     """
 
     action_id = 'nested-menu-action'
-    parent_id = 'menu-action'
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id='menu-action'),
+    ]
 
 
 class TestNested2MenuAction(BaseMenuAction):
@@ -141,7 +160,10 @@ class TestNested2MenuAction(BaseMenuAction):
     """
 
     action_id = 'nested-2-menu-action'
-    parent_id = 'nested-menu-action'
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id='nested-menu-action'),
+    ]
 
 
 class TooDeeplyNestedAction(BaseAction):
@@ -152,7 +174,10 @@ class TooDeeplyNestedAction(BaseAction):
     """
 
     action_id = 'nested-3-action'
-    parent_id = 'nested-2-menu-action'
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id='nested-2-menu-action'),
+    ]
 
 
 class SpecialButtonActionRenderer(ButtonActionRenderer):

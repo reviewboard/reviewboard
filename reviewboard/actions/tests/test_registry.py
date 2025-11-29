@@ -10,7 +10,6 @@ from djblets.registries.errors import AlreadyRegisteredError
 
 from reviewboard.actions import (AttachmentPoint,
                                  actions_registry)
-from reviewboard.actions.errors import DepthLimitExceededError
 from reviewboard.actions.tests.base import (
     TestAction,
     TestActionsRegistry,
@@ -59,7 +58,10 @@ class ActionsRegistryTests(TestCase):
             actions_registry._by_attachment_point,
             {
                 'review-request': {
-                    'test': test_action,
+                    'test': (
+                        test_action,
+                        test_action.get_placement('review-request'),
+                    ),
                 },
             })
 
@@ -74,7 +76,10 @@ class ActionsRegistryTests(TestCase):
             actions_registry._by_attachment_point,
             {
                 'review-request': {
-                    'test': test_action,
+                    'test': (
+                        test_action,
+                        test_action.get_placement('review-request'),
+                    ),
                 },
             })
 
@@ -96,10 +101,16 @@ class ActionsRegistryTests(TestCase):
             actions_registry._by_attachment_point,
             {
                 'header': {
-                    'header-action': test_header_action,
+                    'header-action': (
+                        test_header_action,
+                        test_header_action.get_placement('header'),
+                    ),
                 },
                 'review-request': {
-                    'test': test_action,
+                    'test': (
+                        test_action,
+                        test_action.get_placement('review-request'),
+                    ),
                 },
             })
 
@@ -136,9 +147,12 @@ class ActionsRegistryTests(TestCase):
 
         self.assertIsNone(
             actions_registry.get_action(self.test_menu_item_action.action_id))
-        self.assertIn(
-            self.test_menu_item_action,
-            actions_registry._deferred_registrations)
+
+        self.assertEqual(
+            actions_registry._deferred_registrations,
+            {
+                'menu-action': [self.test_menu_item_action],
+            })
 
         actions_registry.register(self.test_menu_action)
 
@@ -148,7 +162,7 @@ class ActionsRegistryTests(TestCase):
         self.assertEqual(
             actions_registry.get_action(self.test_menu_item_action.action_id),
             self.test_menu_item_action)
-        self.assertEqual(actions_registry._deferred_registrations, [])
+        self.assertEqual(actions_registry._deferred_registrations, {})
 
     def test_too_deeply_nested(self) -> None:
         """Testing ActionsRegistry with actions that are too deeply nested"""
@@ -160,5 +174,11 @@ class ActionsRegistryTests(TestCase):
         actions_registry.register(nested_action)
         actions_registry.register(nested2_action)
 
-        with self.assertRaises(DepthLimitExceededError):
+        with self.assertLogs() as cm:
             actions_registry.register(nested3_action)
+
+        self.assertEqual(cm.output, [
+            'ERROR:reviewboard.actions.registry:Action "nested-3-action" '
+            'exceeds the maximum depth limit of 2 for attachment point(s) '
+            '"review-request".',
+        ])

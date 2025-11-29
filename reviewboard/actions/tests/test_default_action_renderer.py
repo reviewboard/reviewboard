@@ -25,11 +25,13 @@ class DefaultActionRendererTests(TestCase):
     def test_get_js_view_data(self) -> None:
         """Testing DefaultActionRenderer.get_js_view_data"""
         action = TestAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = DefaultActionRenderer(action=action)
+        renderer = DefaultActionRenderer(action=action,
+                                         placement=placement)
 
         self.assertEqual(renderer.get_js_view_data(context=Context()),
                          {})
@@ -37,11 +39,13 @@ class DefaultActionRendererTests(TestCase):
     def test_render(self) -> None:
         """Testing DefaultActionRenderer.render"""
         action = TestAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = DefaultActionRenderer(action=action)
+        renderer = DefaultActionRenderer(action=action,
+                                         placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -72,10 +76,13 @@ class DefaultActionRendererTests(TestCase):
         with self.assertWarns(RemovedInReviewBoard90Warning):
             action = MyAction()
 
+        placement = action.get_placement('review-request')
+
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = DefaultActionRenderer(action=action)
+        renderer = DefaultActionRenderer(action=action,
+                                         placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -103,11 +110,13 @@ class DefaultActionRendererTests(TestCase):
     def test_render_js(self) -> None:
         """Testing DefaultActionRenderer.render_js"""
         action = TestAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = DefaultActionRenderer(action=action)
+        renderer = DefaultActionRenderer(action=action,
+                                         placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from django.utils.safestring import SafeString
     from typelets.django.json import SerializableDjangoJSONDict
 
-    from reviewboard.actions.base import BaseAction
+    from reviewboard.actions.base import ActionPlacement, BaseAction
 
 
 logger = logging.getLogger(__name__)
@@ -57,18 +57,28 @@ class BaseActionRenderer:
     #: The action being rendered.
     action: BaseAction
 
+    #: The placement for the action.
+    placement: ActionPlacement
+
     def __init__(
         self,
         *,
         action: BaseAction,
+        placement: ActionPlacement,
     ) -> None:
         """Initialize the renderer.
 
         Args:
             action (reviewboard.actions.base.BaseAction):
                 The action being renderered.
+
+            placement (reviewboard.actions.base.ActionPlacement):
+                The placement for the action.
         """
         self.action = action
+        self.placement = placement
+
+        assert placement in (action.placements or [])
 
     def get_js_view_data(
         self,
@@ -114,18 +124,21 @@ class BaseActionRenderer:
             Extra context to use when rendering the action's template.
         """
         action = self.action
+        placement = self.placement
 
         extra_context = action.get_extra_context(request=request,
                                                  context=context)
         extra_context.update({
             'action': action,
             'action_renderer': self,
-            'attachment_point_id': action.attachment,
+            'attachment_point_id': placement.attachment,
             'dom_element_id': (
+                placement.dom_element_id or
                 action.get_dom_element_id() or
-                f'action-{action.attachment}-{action.action_id}'
+                f'action-{placement.attachment}-{action.action_id}'
             ),
-            'has_parent': action.parent_id is not None,
+            'has_parent': placement.parent_id is not None,
+            'placement': placement,
         })
 
         return extra_context
@@ -205,7 +218,7 @@ class BaseActionRenderer:
 
         # Build the data for the JavaScript view.
         js_view_data = self.get_js_view_data(context=context)
-        js_view_data['attachmentPointID'] = action.attachment
+        js_view_data['attachmentPointID'] = self.placement.attachment
 
         if extra_js_view_data:
             js_view_data.update(extra_js_view_data)
@@ -304,23 +317,12 @@ class BaseActionGroupRenderer(BaseActionRenderer):
             dict:
             Extra context to use when rendering the action's template.
         """
-        action = self.action
-        registry = action.parent_registry
-
-        assert registry is not None, (
-            f'Attempted to call get_extra_context on {self!r} without first '
-            f'being registered.'
-        )
-
-        action_id = action.action_id
-        assert action_id
-
         extra_context = super().get_extra_context(request=request,
                                                   context=context)
 
         extra_context['children'] = [
             child
-            for child in registry.get_children(action_id)
+            for child in self.placement.child_actions
             if child.should_render(context=context)
         ]
 

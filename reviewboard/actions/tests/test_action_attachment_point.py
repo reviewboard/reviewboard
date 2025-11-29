@@ -8,7 +8,9 @@ from __future__ import annotations
 
 from django.template import Context
 
-from reviewboard.actions.base import ActionAttachmentPoint, BaseAction
+from reviewboard.actions.base import (ActionPlacement,
+                                      ActionAttachmentPoint,
+                                      BaseAction)
 from reviewboard.actions.renderers import ButtonActionRenderer
 from reviewboard.actions.tests.base import (
     SpecialButtonActionRenderer,
@@ -22,21 +24,45 @@ from reviewboard.actions.tests.base import (
 from reviewboard.testing import TestCase
 
 
+class _MyAction(TestAction):
+    placements = [
+        ActionPlacement(attachment='test-point'),
+    ]
+
+
+class _MyGroupAction(TestGroupAction):
+    placements = [
+        ActionPlacement(attachment='test-point'),
+    ]
+
+
 class _MyGroupItemAction1(TestGroupItemAction1):
-    attachment = 'test-point'
     label = 'My Group'
-    parent_id = TestGroupAction.action_id
+    placements = [
+        ActionPlacement(attachment='test-point',
+                        parent_id=TestGroupAction.action_id),
+    ]
+
+
+class _MyMenuAction(TestMenuAction):
+    placements = [
+        ActionPlacement(attachment='test-point'),
+    ]
 
 
 class _MyMenuItemAction1(TestMenuItemAction):
-    attachment = 'test-point'
-    parent_id = TestMenuAction.action_id
+    placements = [
+        ActionPlacement(attachment='test-point',
+                        parent_id=TestMenuAction.action_id),
+    ]
 
 
 class _MyRegisteredAction(BaseAction):
     action_id = 'new-action'
-    attachment = 'test-point'
     label = 'New Action'
+    placements = [
+        ActionPlacement(attachment='test-point'),
+    ]
 
 
 class _MyActionAttachmentPoint(ActionAttachmentPoint):
@@ -65,10 +91,10 @@ class ActionAttachmentPointTests(TestCase):
 
         actions_registry = TestActionsRegistry()
         actions_registry.register(_MyRegisteredAction())
-        actions_registry.register(TestAction())
-        actions_registry.register(TestGroupAction())
+        actions_registry.register(_MyAction())
+        actions_registry.register(_MyGroupAction())
         actions_registry.register(_MyGroupItemAction1())
-        actions_registry.register(TestMenuAction())
+        actions_registry.register(_MyMenuAction())
         actions_registry.register(_MyMenuItemAction1())
         cls.actions_registry = actions_registry
 
@@ -83,16 +109,16 @@ class ActionAttachmentPointTests(TestCase):
         attachment_point = ActionAttachmentPoint(
             attachment_point_id='test-point',
             actions=[
-                TestAction.action_id,
-                TestGroupAction.action_id,
+                _MyAction.action_id,
+                _MyGroupAction.action_id,
             ],
             default_action_renderer_cls=SpecialButtonActionRenderer,
         )
 
         self.assertEqual(attachment_point.attachment_point_id, 'test-point')
         self.assertEqual(attachment_point.actions, [
-            TestAction.action_id,
-            TestGroupAction.action_id,
+            _MyAction.action_id,
+            _MyGroupAction.action_id,
         ])
         self.assertIs(attachment_point.default_action_renderer_cls,
                       SpecialButtonActionRenderer)
@@ -103,9 +129,9 @@ class ActionAttachmentPointTests(TestCase):
 
         self.assertEqual(attachment_point.attachment_point_id, 'test-point')
         self.assertEqual(attachment_point.actions, [
-            TestAction.action_id,
-            TestGroupAction.action_id,
-            TestMenuAction.action_id,
+            _MyAction.action_id,
+            _MyGroupAction.action_id,
+            _MyMenuAction.action_id,
         ])
         self.assertIs(attachment_point.default_action_renderer_cls,
                       SpecialButtonActionRenderer)
@@ -117,23 +143,23 @@ class ActionAttachmentPointTests(TestCase):
         class MyActionAttachmentPoint(ActionAttachmentPoint):
             attachment_point_id = 'old-test-point'
             actions = [
-                TestGroupAction.action_id,
+                _MyGroupAction.action_id,
             ]
             default_action_renderer_cls = ButtonActionRenderer
 
         attachment_point = MyActionAttachmentPoint(
             attachment_point_id='test-point',
             actions=[
-                TestAction.action_id,
-                TestGroupAction.action_id,
+                _MyAction.action_id,
+                _MyGroupAction.action_id,
             ],
             default_action_renderer_cls=SpecialButtonActionRenderer,
         )
 
         self.assertEqual(attachment_point.attachment_point_id, 'test-point')
         self.assertEqual(attachment_point.actions, [
-            TestAction.action_id,
-            TestGroupAction.action_id,
+            _MyAction.action_id,
+            _MyGroupAction.action_id,
         ])
         self.assertIs(attachment_point.default_action_renderer_cls,
                       SpecialButtonActionRenderer)
@@ -158,9 +184,9 @@ class ActionAttachmentPointTests(TestCase):
         self.assertEqual(
             list(attachment_point.iter_actions()),
             [
-                actions_registry.get_action(TestAction.action_id),
-                actions_registry.get_action(TestGroupAction.action_id),
-                actions_registry.get_action(TestMenuAction.action_id),
+                actions_registry.get_action(_MyAction.action_id),
+                actions_registry.get_action(_MyGroupAction.action_id),
+                actions_registry.get_action(_MyMenuAction.action_id),
                 actions_registry.get_action(_MyRegisteredAction.action_id),
             ])
 
@@ -176,9 +202,9 @@ class ActionAttachmentPointTests(TestCase):
         self.assertEqual(
             list(attachment_point.iter_actions(include_children=True)),
             [
-                actions_registry.get_action(TestAction.action_id),
-                actions_registry.get_action(TestGroupAction.action_id),
-                actions_registry.get_action(TestMenuAction.action_id),
+                actions_registry.get_action(_MyAction.action_id),
+                actions_registry.get_action(_MyGroupAction.action_id),
+                actions_registry.get_action(_MyMenuAction.action_id),
                 actions_registry.get_action(_MyRegisteredAction.action_id),
                 actions_registry.get_action(_MyGroupItemAction1.action_id),
                 actions_registry.get_action(_MyMenuItemAction1.action_id),
@@ -204,7 +230,7 @@ class ActionAttachmentPointTests(TestCase):
                 role="presentation">
              <button aria-label="Test Action 1"
                      class="ink-c-button"
-                     id="action-review-request-test"
+                     id="action-test-point-test"
                      type="button">
               <label class="ink-c-button__label">
                Test Action 1
@@ -214,7 +240,7 @@ class ActionAttachmentPointTests(TestCase):
 
             <li class="rb-c-actions__action"
                 role="group"
-                id="action-review-request-group-action">
+                id="action-test-point-group-action">
              <a id="action-test-point-group-item-1-action"
                 hidden
                 style="display: none;"
@@ -226,7 +252,7 @@ class ActionAttachmentPointTests(TestCase):
 
             <li class="rb-c-actions__action"
                 role="menuitem"
-                id="action-review-request-menu-action">
+                id="action-test-point-menu-action">
              <a href="#"
                 role="presentation"
                 aria-label="Test Menu">
@@ -276,23 +302,35 @@ class ActionAttachmentPointTests(TestCase):
                                        context=context),
             """
             page.addActionView(new SpecialButtonActionView({
-                "attachmentPointID": "review-request",
+                "attachmentPointID": "test-point",
                 "label": "~~Test Action 1~~",
                 "specialKey": [123, 456],
-                el: $('#action-review-request-test'),
+                el: $('#action-test-point-test'),
                 model: page.getAction("test"),
             }));
 
             page.addActionView(new RB.Actions.ActionView({
-                "attachmentPointID": "review-request",
-                el: $('#action-review-request-group-action'),
+                "attachmentPointID": "test-point",
+                el: $('#action-test-point-group-action'),
                 model: page.getAction("group-action"),
             }));
 
+            page.addActionView(new RB.Actions.ActionView({
+                "attachmentPointID": "test-point",
+                el: $('#action-test-point-group-item-1-action'),
+                model: page.getAction("group-item-1-action"),
+            }));
+
             page.addActionView(new RB.Actions.MenuActionView({
-                "attachmentPointID": "review-request",
-                el: $('#action-review-request-menu-action'),
+                "attachmentPointID": "test-point",
+                el: $('#action-test-point-menu-action'),
                 model: page.getAction("menu-action"),
+            }));
+
+            page.addActionView(new RB.Actions.MenuItemActionView({
+                "attachmentPointID": "test-point",
+                el: $('#action-test-point-menu-item-action'),
+                model: page.getAction("menu-item-action"),
             }));
 
             page.addActionView(new SpecialButtonActionView({
@@ -301,21 +339,5 @@ class ActionAttachmentPointTests(TestCase):
                 "specialKey": [123, 456],
                 el: $('#action-test-point-new-action'),
                 model: page.getAction("new-action"),
-            }));
-
-            page.addActionView(new SpecialButtonActionView({
-                "attachmentPointID": "test-point",
-                "label": "~~My Group~~",
-                "specialKey": [123, 456],
-                el: $('#action-test-point-group-item-1-action'),
-                model: page.getAction("group-item-1-action"),
-            }));
-
-            page.addActionView(new SpecialButtonActionView({
-                "attachmentPointID": "test-point",
-                "label": "~~Menu Item Action 1~~",
-                "specialKey": [123, 456],
-                el: $('#action-test-point-menu-item-action'),
-                model: page.getAction("menu-item-action"),
             }));
             """)

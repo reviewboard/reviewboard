@@ -25,11 +25,13 @@ class ButtonActionRendererTests(TestCase):
     def test_render(self) -> None:
         """Testing ButtonActionRenderer.render"""
         action = TestAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = ButtonActionRenderer(action=action)
+        renderer = ButtonActionRenderer(action=action,
+                                        placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -64,10 +66,13 @@ class ButtonActionRendererTests(TestCase):
         with self.assertWarns(RemovedInReviewBoard90Warning):
             action = MyAction()
 
+        placement = action.get_placement('review-request')
+
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = ButtonActionRenderer(action=action)
+        renderer = ButtonActionRenderer(action=action,
+                                        placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -90,11 +95,13 @@ class ButtonActionRendererTests(TestCase):
     def test_render_js(self) -> None:
         """Testing ButtonActionRenderer.render_js"""
         action = TestAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = ButtonActionRenderer(action=action)
+        renderer = ButtonActionRenderer(action=action,
+                                        placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,

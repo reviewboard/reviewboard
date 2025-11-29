@@ -11,10 +11,12 @@ from typing import Any, List, Optional, TYPE_CHECKING, cast
 
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
+from housekeeping import func_deprecated
 
 from reviewboard.actions.errors import (ActionError,
                                         MissingActionRendererError)
-from reviewboard.actions.renderers import (BaseActionRenderer,
+from reviewboard.actions.renderers import (BaseActionGroupRenderer,
+                                           BaseActionRenderer,
                                            ButtonActionRenderer,
                                            DefaultActionGroupRenderer,
                                            DefaultActionRenderer,
@@ -23,7 +25,7 @@ from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Iterable, Iterator, Sequence
 
     from django.http import HttpRequest
     from django.template import Context
@@ -186,6 +188,7 @@ class ActionAttachmentPoint:
         if not actions_registry:
             from reviewboard.actions import actions_registry
 
+        assert actions_registry is not None
         self.actions_registry = actions_registry
 
     def iter_actions(
@@ -305,6 +308,8 @@ class ActionAttachmentPoint:
         return mark_safe(''.join(self._iter_render_js(
             request=request,
             context=context,
+            actions=self.iter_actions(),
+            default_renderer_cls=self.default_action_renderer_cls,
         )))
 
     def _iter_render(
@@ -329,17 +334,23 @@ class ActionAttachmentPoint:
             django.utils.safestring.SafeString:
             Each rendered action HTML.
         """
+        attachment_point_id = self.attachment_point_id
         default_renderer_cls = self.default_action_renderer_cls
 
         for action in self.iter_actions(include_children=False):
-            # Prioritize the actions's default renderer over the attachment
-            # point's.
-            renderer_cls = action.default_renderer_cls or default_renderer_cls
+            placement = action.get_placement(attachment_point_id)
+            renderer = action.get_renderer_cls(
+                placement=placement,
+                fallback_renderer_cls=default_renderer_cls,
+            )
 
             try:
-                yield action.render(request=request,
-                                    context=context,
-                                    renderer=renderer_cls)
+                yield action.render(
+                    request=request,
+                    context=context,
+                    placement=placement,
+                    renderer=renderer,
+                )
             except Exception as e:
                 logger.exception('Error rendering action %r: %s',
                                  action, e,
@@ -350,6 +361,8 @@ class ActionAttachmentPoint:
         *,
         request: HttpRequest,
         context: Context,
+        actions: Iterable[BaseAction],
+        default_renderer_cls: type[BaseActionRenderer] | None,
     ) -> Iterator[SafeString]:
         """Generate JavaScript for each action in the attachment point.
 
@@ -364,33 +377,166 @@ class ActionAttachmentPoint:
             context (django.template.Context):
                 The current rendering context.
 
+            actions (list of BaseAction):
+                The actions to iterate through.
+
+            default_renderer_cls (type):
+                The default renderer to use as a fallback.
+
         Yields:
             django.utils.safestring.SafeString:
             Each rendered action JavaScript.
         """
-        default_renderer_cls = self.default_action_renderer_cls
+        attachment_point_id = self.attachment_point_id
         js_view_data = self.get_js_view_data(context=context)
 
-        for action in self.iter_actions(include_children=True):
-            # Prioritize the actions's default renderer over the attachment
-            # point's.
-            renderer_cls = \
-                action.default_renderer_cls or default_renderer_cls
+        for action in actions:
+            placement = action.get_placement(attachment_point_id)
+
+            if not placement:
+                continue
+
+            renderer = action.get_renderer_cls(
+                placement=placement,
+                fallback_renderer_cls=default_renderer_cls,
+            )
 
             try:
-                yield action.render_js(request=request,
-                                       context=context,
-                                       renderer=renderer_cls,
-                                       extra_js_view_data=js_view_data)
+                yield action.render_js(
+                    request=request,
+                    context=context,
+                    placement=placement,
+                    renderer=renderer,
+                    extra_js_view_data=js_view_data,
+                )
             except Exception as e:
                 logger.exception('Error rendering JavaScript for '
                                  'action %r: %s',
                                  action, e,
                                  extra={'request': request})
 
+                continue
+
+            # Render any children using the item renderer as the default.
+            if (child_actions := placement.child_actions):
+                if (renderer is not None and
+                    issubclass(renderer, BaseActionGroupRenderer)):
+                    child_default_renderer_cls = \
+                        renderer.default_item_renderer_cls
+                else:
+                    child_default_renderer_cls = None
+
+                yield from self._iter_render_js(
+                    request=request,
+                    context=context,
+                    actions=child_actions,
+                    default_renderer_cls=child_default_renderer_cls,
+                )
+
+
+class ActionPlacement:
+    """Placement information for an action.
+
+    This is used to specify where and how an action may be placed. This is
+    mapped to a key specifying an attachment point ID, and can specify the
+    parent action within the attachment point and a default renderer to use.
+
+    Version Added:
+        7.1
+    """
+
+    #: The attachment point for the action.
+    attachment: str
+
+    #: The list of child actions, if this is a grouped action.
+    child_actions: list[BaseAction]
+
+    #: The default renderer used for this action.
+    #:
+    #: By default, actions inherit their default renderer from a previous
+    #: group or attachment point.
+    #:
+    #: Default renderes can always be overridden when rendering the action.
+    default_renderer_cls: type[BaseActionRenderer] | None
+
+    #: The DOM element ID for this element on the page.
+    #:
+    #: If not provided, an ID in the form of
+    #: :samp:`action-{attachment}-{action_id}` will be used.
+    dom_element_id: (str | None) = None
+
+    #: The parent of this action, if this is an item in a group.
+    parent_action: BaseGroupAction | None
+
+    #: The ID of the parent action within the attachment point, if needed.
+    #:
+    #: This is used to build menus or groups of actions in part of the UI.
+    parent_id: str | None
+
+    def __init__(
+        self,
+        attachment: str,
+        *,
+        default_renderer_cls: (type[BaseActionRenderer] | None) = None,
+        dom_element_id: (str | None) = None,
+        parent_id: (str | None) = None,
+    ) -> None:
+        """Initialize the placement.
+
+        Args:
+            attachment (str):
+                The attachment point ID to place the action in.
+
+            default_renderer_cls (type, optional):
+                The default renderer to use when rendering in this attachment
+                point.
+
+            dom_element_id (str, optional):
+                A custom DOM element ID for the action in this attachment
+                point.
+
+            parent_id (str, optional):
+                The parent ID of an action in this attachment point in which
+                to place this action.
+        """
+        self.attachment = attachment
+        self.default_renderer_cls = default_renderer_cls
+        self.dom_element_id = dom_element_id
+        self.parent_id = parent_id
+
+        self.child_actions = []
+        self.parent_action = None
+
+    @property
+    def depth(self) -> int:
+        """The depth of the action in this placement.
+
+        Type:
+            int
+        """
+        if (parent_action := self.parent_action) is None:
+            return 0
+        else:
+            return parent_action.depth + 1
+
 
 class BaseAction:
     """Base class for actions.
+
+    Version Changed:
+        7.1:
+        * A single action now can be placed in multiple attachment points
+          via :py:attr:`placements`.
+
+        * Actions now make use of renderer classes for rendering, instead
+          of including rendering logic built-in.
+
+        * Deprecated the attributes :py:attr:`attachment`,
+          :py:attr:`js_view_class`, :py:attr:`parent_action`,
+          :py:attr:`parent_id`, and :py:attr:`template_name`.
+
+        * Deprecated the methods :py:meth:`get_js_view_data` and
+          :py:meth:`is_custom_rendered`.
 
     Version Added:
         6.0
@@ -415,13 +561,11 @@ class BaseAction:
 
     #: The attachment point for the action.
     #:
-    #: This may be a single attachment point ID, or a list of IDs in which
-    #: the action should appear.
-    #:
-    #: Version Changed:
+    #: Deprecated:
     #:     7.1:
-    #:     This may now optionally be a list of IDs.
-    attachment: (str | Sequence[str]) = AttachmentPoint.REVIEW_REQUEST
+    #:     This has been replaced by :py:attr:`placements`. This option
+    #:     will be removed in Review Board 9.
+    attachment: (str | None) = None
 
     #: The default renderer used for this action.
     #:
@@ -465,17 +609,30 @@ class BaseAction:
     #:     str
     label: (StrOrPromise | None) = None
 
-    #: The ID of the parent menu action, if available.
+    #: The IDs of any parent actions, if needed.
     #:
-    #: Type:
-    #:     str
-    parent_id: Optional[str] = None
+    #: Deprecated:
+    #:     7.1:
+    #:     This should be set in :py:attr:`placements` instead. This option
+    #:     will be removed in Review Board 9.
+    parent_id: (str | None) = None
+
+    #: The placements of this action within the page.
+    #:
+    #: Each entry defines a placement within an attachment point and an
+    #: action parent/child hierarchy where action should be rendered, along
+    #: with options controlling the rendering.
+    #:
+    #: Version Added:
+    #:     7.1
+    placements: (Sequence[ActionPlacement] | None) = None
 
     #: The name of the template to use when rendering.
     #:
     #: Deprecated:
     #:     7.1:
-    #:     This should be set on the action's renderer instead.
+    #:     This should be set on the action's renderer instead. This option
+    #:     will be removed in Review Board 9.
     template_name: (str | None) = None
 
     #: The URL that this action links to.
@@ -514,32 +671,58 @@ class BaseAction:
     # Instance variables #
     ######################
 
-    #: The list of child actions, if this is a grouped action.
-    child_actions: list[BaseAction]
-
-    #: The parent of this action, if this is an item in a group.
-    parent_action: BaseGroupAction | None
-
     #: The parent registry managing this action.
     #:
     #: Version Added:
     #:     7.1
     parent_registry: ActionsRegistry | None
 
+    #: A cache of attachment point IDs to placement information.
+    #:
+    #: Version Added:
+    #:     7.1
+    _placement_cache: dict[str, ActionPlacement] | None
+
     def __init__(self) -> None:
         """Initialize the action."""
         cls = type(self)
 
-        self.parent_action = None
-        self.child_actions = []
         self.parent_registry = None
+        self._placement_cache = None
 
         if not getattr(self, 'action_id', None):
             raise AttributeError(
                 f'{cls.__name__}.action_id must be set.'
             )
 
+        attachment = self.attachment
+        parent_id = self.parent_id
+
         # Check for deprecations.
+        if attachment:
+            RemovedInReviewBoard90Warning.warn(
+                f'{type(self).__name__}.attachment is deprecated and '
+                f'support will be removed in Review Board 9. Please set the '
+                f'"placements" attribute instead.'
+            )
+
+            self.placements = [
+                ActionPlacement(attachment=attachment,
+                                parent_id=parent_id),
+            ]
+        elif not self.placements:
+            self.placements = [
+                ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                                parent_id=parent_id),
+            ]
+
+        if parent_id:
+            RemovedInReviewBoard90Warning.warn(
+                f'{type(self).__name__}.parent_id is deprecated and '
+                f'support will be removed in Review Board 9. Please set this '
+                f'attribute in "placements" instead.'
+            )
+
         if self.template_name:
             RemovedInReviewBoard90Warning.warn(
                 f'{cls.__name__}.template_name is deprecated and '
@@ -571,16 +754,147 @@ class BaseAction:
             )
 
     @property
+    @func_deprecated(RemovedInReviewBoard90Warning, message=(
+        '%(func_name)s is deprecated and support will be removed in '
+        '%(product)s %(version)s. Please use ActionPlacement.parent_action '
+        'instead.'
+    ))
+    def parent_action(self) -> BaseAction | None:
+        """The parent of this action, if this is an item in a group.
+
+        Deprecated:
+            7.1:
+            This has been replaced by
+            :py:attr:`ActionPlacement.parent_action`. It will be removed in
+            Review Board 9.
+        """
+        if (placements := self.placements):
+            return placements[0].parent_action
+
+        return None
+
+    @property
+    @func_deprecated(RemovedInReviewBoard90Warning, message=(
+        '%(func_name)s is deprecated and support will be removed in '
+        '%(product)s %(version)s. Please use ActionPlacement.child_actions '
+        'instead.'
+    ))
+    def child_actions(self) -> Sequence[BaseAction]:
+        """The children of this action, if this is a group.
+
+        Deprecated:
+            7.1:
+            This has been replaced by
+            :py:attr:`ActionPlacement.child_actions`. It will be removed in
+            Review Board 9.
+        """
+        if (placements := self.placements):
+            return placements[0].child_actions
+
+        return []
+
+    @property
+    @func_deprecated(RemovedInReviewBoard90Warning, message=(
+        '%(func_name)s is deprecated and support will be removed in '
+        '%(product)s %(version)s. Please use ActionPlacement.depth '
+        'instead.'
+    ))
     def depth(self) -> int:
         """The depth of the action.
+
+        Deprecated:
+            7.1:
+            This is scheduled for removal in Review Board 9. This has been
+            replaced by :py:attr:`ActionPlacement.depth`.
 
         Type:
             int
         """
-        if self.parent_action is None:
-            return 0
-        else:
-            return self.parent_action.depth + 1
+        if (placements := self.placements):
+            return placements[0].depth
+
+        return 0
+
+    def get_placement(
+        self,
+        attachment_point_id: str,
+    ) -> ActionPlacement:
+        """Return the Placement for the action matching the attachment point.
+
+        Version Added:
+            7.1
+
+        Args:
+            attachment_point_id (str):
+                The ID of the attachment point matching the placement.
+
+        Returns:
+            ActionPlacement:
+            The Placement, or ``None`` if not found.
+
+        Raises:
+            KeyError:
+                The attachment point ID is not a valid placement for this
+                action.
+        """
+        placement_cache = self._placement_cache
+
+        if placement_cache is None:
+            placement_cache = {
+                placement.attachment: placement
+                for placement in self.placements or []
+            }
+            self._placement_cache = placement_cache
+
+        try:
+            return placement_cache[attachment_point_id]
+        except KeyError:
+            raise KeyError(
+                f'"{attachment_point_id}" is not a valid placement for '
+                f'action "{self.action_id}".'
+            )
+
+    def get_renderer_cls(
+        self,
+        *,
+        placement: ActionPlacement | None,
+        preferred_renderer_cls: (type[BaseActionRenderer] | None) = None,
+        fallback_renderer_cls: (type[BaseActionRenderer] | None) = None,
+    ) -> type[BaseActionRenderer] | None:
+        """Return the renderer class used to render this action.
+
+        This takes into account the attachment point, the preferred
+        renderer from the caller, and the fallback if no suitable renderer
+        is found.
+
+        Version Added:
+            7.1
+
+        Args:
+            placement (ActionPlacement):
+                The placement where the action will be rendered.
+
+            preferred_renderer_cls (type, optional):
+                The preferred renderer for items.
+
+                This will be used if provided, unless item isn't
+                custom-rendered (a deprecated feature).
+
+            fallback_renderer_cls (type, optional):
+                The fallback renderer if the placement or action does not
+                provide one.
+
+        Returns:
+            type:
+            The renderer class, or ``None`` if one could not be determined.
+        """
+        if preferred_renderer_cls and not self.is_custom_rendered():
+            return preferred_renderer_cls
+
+        if placement is not None and placement.default_renderer_cls:
+            return placement.default_renderer_cls
+
+        return self.default_renderer_cls or fallback_renderer_cls
 
     def is_custom_rendered(self) -> bool:
         """Whether this action uses custom rendering.
@@ -627,13 +941,9 @@ class BaseAction:
         """
         request = context['request']
 
-        if (self.parent_action and not
-            self.parent_action.should_render(context=context)):
-            return False
-
-        if (self.apply_to and not
+        if ((apply_to := self.apply_to) and not
             (request.resolver_match and
-             request.resolver_match.url_name in self.apply_to)):
+             request.resolver_match.url_name in apply_to)):
             return False
 
         from reviewboard.extensions.hooks.actions import HideActionHook
@@ -839,13 +1149,16 @@ class BaseAction:
         *,
         request: HttpRequest,
         context: Context,
+        placement: (ActionPlacement | None) = None,
         renderer: (type[BaseActionRenderer] | None) = None,
+        fallback_renderer: (type[BaseActionRenderer] | None) = None,
     ) -> SafeString:
         """Render the action.
 
         Version Changed:
             7.1:
-            Added the ``renderer`` argument.
+            Added the ``extra_js_view_data``, ``fallback_renderer``,
+            ``placement``, and ``renderer`` arguments.
 
         Args:
             request (django.http.HttpRequest):
@@ -854,11 +1167,27 @@ class BaseAction:
             context (django.template.Context):
                 The current rendering context.
 
+            placement (ActionPlacement, optional):
+                The placement the action is being rendered into.
+
+                If not added, the first will be used, with a warning.
+
+                This argument will be required in Review Boad 9.
+
+                Version Added:
+                    7.1
+
             renderer (type, optional):
                 The renderer used to render this action.
 
                 If not specified, :py:attr:`default_renderer_cls` will be
                 used.
+
+                Version Added:
+                    7.1
+
+            fallback_renderer (type, optional):
+                The renderer used to render this action if no other is found.
 
                 Version Added:
                     7.1
@@ -874,7 +1203,24 @@ class BaseAction:
             reviewboard.actions.errors.MissingActionRendererError:
                 A renderer was not found or provided.
         """
-        renderer_cls = renderer or self.default_renderer_cls
+        if not self.should_render(context=context):
+            return mark_safe('')
+
+        if placement is None:
+            RemovedInReviewBoard90Warning.warn(
+                f'{type(self).__name__}.render() must be passed a placement= '
+                f'argument. This will be required in Review Board 9.'
+            )
+
+            if not (placements := self.placements):
+                return mark_safe('')
+
+            placement = placements[0]
+
+        renderer_cls = self.get_renderer_cls(
+            placement=placement,
+            preferred_renderer_cls=renderer,
+        )
 
         if renderer_cls is None:
             raise MissingActionRendererError(
@@ -891,7 +1237,8 @@ class BaseAction:
             return mark_safe('')
 
         return (
-            renderer_cls(action=self)
+            renderer_cls(action=self,
+                         placement=placement)
             .render(request=request,
                     context=context)
         )
@@ -945,7 +1292,9 @@ class BaseAction:
         request: HttpRequest,
         context: Context,
         extra_js_view_data: (SerializableDjangoJSONDict | None) = None,
+        placement: (ActionPlacement | None) = None,
         renderer: (type[BaseActionRenderer] | None) = None,
+        fallback_renderer: (type[BaseActionRenderer] | None) = None,
     ) -> SafeString:
         """Render the action's JavaScript view.
 
@@ -954,7 +1303,8 @@ class BaseAction:
 
         Version Changed:
             7.1:
-            Added the ``extra_js_view_data`` and ``renderer`` argument.
+            Added the ``extra_js_view_data``, ``fallback_renderer``,
+            ``placement``, and ``renderer`` arguments.
 
         Args:
             request (django.http.HttpRequest):
@@ -970,11 +1320,27 @@ class BaseAction:
                 Version Added:
                     7.1
 
+            placement (ActionPlacement, optional):
+                The placement the action is being rendered into.
+
+                If not added, the first will be used, with a warning.
+
+                This argument will be required in Review Boad 9.
+
+                Version Added:
+                    7.1
+
             renderer (type, optional):
                 The renderer used to render this action.
 
                 If not specified, :py:attr:`default_renderer_cls` will be
                 used.
+
+                Version Added:
+                    7.1
+
+            fallback_renderer (type, optional):
+                The renderer used to render this action if no other is found.
 
                 Version Added:
                     7.1
@@ -990,7 +1356,25 @@ class BaseAction:
             reviewboard.actions.errors.MissingActionRendererError:
                 A renderer was not found or provided.
         """
-        renderer_cls = renderer or self.default_renderer_cls
+        if not self.should_render(context=context):
+            return mark_safe('')
+
+        if placement is None:
+            RemovedInReviewBoard90Warning.warn(
+                f'{type(self).__name__}.render_js() must be passed a '
+                f'placement= argument. This will be required in '
+                f'Review Board 9.'
+            )
+
+            if not (placements := self.placements):
+                return mark_safe('')
+
+            placement = placements[0]
+
+        renderer_cls = self.get_renderer_cls(
+            placement=placement,
+            preferred_renderer_cls=renderer,
+        )
 
         if renderer_cls is None:
             raise MissingActionRendererError(
@@ -1007,7 +1391,8 @@ class BaseAction:
             return mark_safe('')
 
         return (
-            renderer_cls(action=self)
+            renderer_cls(action=self,
+                         placement=placement)
             .render_js(request=request,
                        context=context,
                        extra_js_view_data=extra_js_view_data)
@@ -1069,29 +1454,35 @@ class BaseGroupAction(BaseAction):
         action_id = self.action_id
         assert action_id is not None
 
-        rendered_child_ids: dict[str, bool] = {
-            child.action_id: True
-            for child in registry.get_children(action_id)
-            if child.action_id and child.should_render(context=context)
-        }
+        action_children = self.children
+        placement_children: dict[str, list[str]] = {}
 
-        children: list[str] = []
+        for placement in (self.placements or []):
+            # Note that we're using a dict here instead of a set in order to
+            # maintain order.
+            placement_child_ids: dict[str, bool] = {
+                child.action_id: True
+                for child in placement.child_actions
+                if child.action_id and child.should_render(context=context)
+            }
 
-        # Add in any children with explicit ordering first.
-        for child_id in self.children:
-            if child_id == '--':
-                children.append(child_id)
-            elif child_id in rendered_child_ids:
-                children.append(child_id)
-                del rendered_child_ids[child_id]
+            children: list[str] = []
 
-        # Now add any other actions that weren't in self.children.
-        children += rendered_child_ids.keys()
+            # Add in any children with explicit ordering first.
+            for child_id in action_children:
+                if child_id == '--':
+                    children.append(child_id)
+                elif child_id in placement_child_ids:
+                    children.append(child_id)
+                    del placement_child_ids[child_id]
+
+            # Now add any other actions that weren't in self.children.
+            children += placement_child_ids.keys()
+
+            placement_children[placement.attachment] = children
 
         data = super().get_js_model_data(context=context)
-        data['children'] = {
-            self.attachment: children,
-        }
+        data['children'] = placement_children
 
         return data
 

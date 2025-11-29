@@ -25,11 +25,13 @@ class DefaultActionGroupRendererTests(TestCase):
     def test_render(self) -> None:
         """Testing DefaultActionGroupRenderer.render"""
         action = TestGroupAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = DefaultActionGroupRenderer(action=action)
+        renderer = DefaultActionGroupRenderer(action=action,
+                                              placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -60,10 +62,13 @@ class DefaultActionGroupRendererTests(TestCase):
         with self.assertWarns(RemovedInReviewBoard90Warning):
             action = MyAction()
 
+        placement = action.get_placement('review-request')
+
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = DefaultActionGroupRenderer(action=action)
+        renderer = DefaultActionGroupRenderer(action=action,
+                                              placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -92,11 +97,13 @@ class DefaultActionGroupRendererTests(TestCase):
     def test_render_js(self) -> None:
         """Testing DefaultActionGroupRenderer.render_js"""
         action = TestGroupAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = DefaultActionGroupRenderer(action=action)
+        renderer = DefaultActionGroupRenderer(action=action,
+                                              placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,

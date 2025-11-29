@@ -8,16 +8,19 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Iterator, List, Optional
+from typing import Iterator, List
 
 from django.utils.translation import gettext_lazy as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
                                          NOT_REGISTERED)
+from housekeeping import func_deprecated
 
 from reviewboard.actions.base import (ActionAttachmentPoint,
+                                      ActionPlacement,
                                       AttachmentPoint,
-                                      BaseAction)
-from reviewboard.actions.errors import DepthLimitExceededError
+                                      BaseAction,
+                                      BaseGroupAction)
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.registries.registry import OrderedRegistry, Registry
 
 
@@ -99,17 +102,23 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
     #:
     #: Version Added:
     #:     7.1
-    _by_attachment_point: defaultdict[str, dict[str, BaseAction]]
+    _by_attachment_point: defaultdict[
+        str,
+        dict[
+            str,
+            tuple[BaseAction, ActionPlacement]
+        ]
+    ]
 
     #: Actions deferring registration until a dependency is registered.
-    _deferred_registrations: list[BaseAction]
+    _deferred_registrations: dict[str, list[BaseAction]]
 
     def __init__(self) -> None:
         """Initialize the registry."""
         super().__init__()
 
         self._by_attachment_point = defaultdict(dict)
-        self._deferred_registrations = []
+        self._deferred_registrations = {}
 
     def get_defaults(self) -> Iterator[BaseAction]:
         """Yield the built-in actions.
@@ -245,48 +254,89 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
         action_id = action.action_id
         assert action_id is not None
 
-        parent: Optional[BaseAction]
+        # Sanity-check each placement to make sure it has a valid parent
+        # reference (if needed) and doesn't exceed the depth limit. Any that
+        # does will be excluded from the page, but any that do will remain.
+        #
+        # In any case, the action will still be registered. Note that this is
+        # a change from Review Board 6/7, since actions can now be registered
+        # and referenced from multiple locations. It's no longer fatal for
+        # one of these checks to fail.
+        deferred_registrations = self._deferred_registrations
+        parents: dict[str, tuple[BaseAction, ActionPlacement]] = {}
+        placements = action.placements or []
+        valid_placements: list[ActionPlacement] = []
 
-        if action.parent_id:
-            parent = self.get_action(action.parent_id)
+        for placement in placements:
+            attachment = placement.attachment
+            parent_id = placement.parent_id
+            parent: BaseAction | None
 
-            if parent is None:
-                logger.warning('Deferring registration of action %s because '
-                               'parent action %s is not yet registered.',
-                               action_id, action.parent_id)
-                self._deferred_registrations.append(action)
-                return
+            if parent_id:
+                parent = self.get_action(parent_id)
 
-            if parent.depth + 1 > self.MAX_DEPTH:
-                raise DepthLimitExceededError(action_id,
-                                              depth_limit=self.MAX_DEPTH)
-        else:
-            parent = None
+                if parent is None:
+                    logger.warning('Deferring registration of action "%s" '
+                                   'because parent action "%s" is not yet '
+                                   'registered.',
+                                   action_id, parent_id)
+                    deferred_registrations.setdefault(
+                        parent_id, []
+                    ).append(action)
+                    return
+
+                parent_placement = parent.get_placement(attachment)
+
+                if parent_placement is None:
+                    logger.error(
+                        'Action "%s" refers to a parent action "%s" in '
+                        'attachment point "%s", but the parent is not '
+                        'placed in that attachment point. Skipping.',
+                        action_id, parent.action_id, attachment)
+                    continue
+                elif parent_placement.depth + 1 > self.MAX_DEPTH:
+                    logger.error(
+                        'Action "%s" exceeds the maximum depth limit of %s '
+                        'for attachment point(s) "%s".',
+                        action_id, self.MAX_DEPTH, attachment)
+                    continue
+
+                parents[attachment] = (parent, parent_placement)
+
+            valid_placements.append(placement)
 
         super().register(action)
 
         action.parent_registry = self
 
-        # Store this by attachment point, for quick lookup.
-        if (attachment := action.attachment):
-            self._by_attachment_point[attachment][action_id] = action
+        by_attachment_point = self._by_attachment_point
 
-        # Establish the parent/child relationship between actions.
-        if parent:
-            action.parent_action = parent
-            parent.child_actions.append(action)
-        else:
-            action.parent_action = None
+        for placement in valid_placements:
+            attachment = placement.attachment
+
+            # Store by attachment points, for quick lookup.
+            by_attachment_point[attachment][action_id] = (action, placement)
+
+            # Establish the parent/child relationship between actions.
+            parent_info = parents.get(attachment)
+
+            if parent_info:
+                parent, parent_placement = parent_info
+
+                assert isinstance(parent, BaseGroupAction)
+
+                placement.parent_action = parent
+                parent_placement.child_actions.append(action)
+            else:
+                placement.parent_action = None
 
         # Old versions of the extension hooks for actions encouraged people to
         # register their child actions before the parent. These get deferred
         # above, but there can be any number of deferred actions here all
         # referring to the same parent, so we have to iterate through this
         # entire list.
-        for deferred in self._deferred_registrations:
-            if deferred.parent_id == action_id:
-                self.register(deferred)
-                self._deferred_registrations.remove(deferred)
+        for deferred in deferred_registrations.pop(action_id, []):
+            self.register(deferred)
 
     def unregister(
         self,
@@ -302,26 +352,31 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
             djblets.registries.errors.ItemLookupError:
                 Raised if the item is not found in the registry.
         """
-        if (parent_action := action.parent_action):
-            parent_action.child_actions.remove(action)
-            action.parent_action = None
+        action_id = action.action_id
+        by_attachment_point = self._by_attachment_point
 
-        # Remove the per-attachment lookups.
-        if (attachment := action.attachment):
-            assert action.action_id
-
-            by_attachment_point = self._by_attachment_point
+        for placement in (action.placements or []):
+            attachment = placement.attachment
             attachment_actions = by_attachment_point[attachment]
 
+            if (parent_action := placement.parent_action):
+                parent_placement = parent_action.get_placement(attachment)
+
+                if parent_placement is not None:
+                    parent_placement.child_actions.remove(action)
+
+                placement.parent_action = None
+
+            # Remove the per-attachment lookups.
             try:
-                attachment_actions.pop(action.action_id)
+                attachment_actions.pop(action_id)
 
                 if not attachment_actions:
                     del by_attachment_point[attachment]
             except KeyError:
                 logger.warning('Action "%s" unexpectedly not found in '
                                'attachment point "%s" when unregistering.',
-                               action.action_id, attachment)
+                               action_id, attachment)
 
         super().unregister(action)
 
@@ -371,10 +426,15 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
         attachment_actions = self._by_attachment_point.get(attachment)
 
         if attachment_actions:
-            for action in attachment_actions.values():
-                if action.parent_id is None or include_children:
+            for action, placement in attachment_actions.values():
+                if placement.parent_id is None or include_children:
                     yield action
 
+    @func_deprecated(RemovedInReviewBoard90Warning, message=(
+        '%(func_name)s is deprecated and support will be removed in '
+        '%(product)s %(version)s. Please use '
+        'action.get_placement(...).child_actions instead.'
+    ))
     def get_children(
         self,
         parent_id: str,

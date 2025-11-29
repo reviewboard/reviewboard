@@ -25,11 +25,13 @@ class MenuActionGroupRendererTests(TestCase):
     def test_render(self) -> None:
         """Testing MenuActionGroupRenderer.render"""
         action = TestMenuAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = MenuActionGroupRenderer(action=action)
+        renderer = MenuActionGroupRenderer(action=action,
+                                           placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -68,10 +70,13 @@ class MenuActionGroupRendererTests(TestCase):
         with self.assertWarns(RemovedInReviewBoard90Warning):
             action = MyAction()
 
+        placement = action.get_placement('review-request')
+
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = MenuActionGroupRenderer(action=action)
+        renderer = MenuActionGroupRenderer(action=action,
+                                           placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -99,11 +104,13 @@ class MenuActionGroupRendererTests(TestCase):
     def test_render_js(self) -> None:
         """Testing MenuActionGroupRenderer.render_js"""
         action = TestMenuAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = MenuActionGroupRenderer(action=action)
+        renderer = MenuActionGroupRenderer(action=action,
+                                           placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,

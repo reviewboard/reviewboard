@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from djblets.registries.importer import lazy_import_registry
 
 from reviewboard.actions.base import (ActionAttachmentPoint,
+                                      ActionPlacement,
                                       AttachmentPoint,
                                       BaseAction,
                                       BaseGroupAction,
@@ -41,6 +42,7 @@ action_attachment_points_registry: ActionAttachmentPointsRegistry = \
 
 __all__ = [
     'ActionAttachmentPoint',
+    'ActionPlacement',
     'AttachmentPoint',
     'BaseAction',
     'BaseGroupAction',
@@ -52,6 +54,7 @@ __all__ = [
 
 __autodoc_excludes__ = [
     'ActionAttachmentPoint',
+    'ActionPlacement',
     'AttachmentPoint',
     'BaseAction',
     'BaseGroupAction',

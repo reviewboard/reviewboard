@@ -26,11 +26,13 @@ class DetailedMenuItemActionRendererTests(TestCase):
     def test_render(self) -> None:
         """Testing DetailedMenuItemActionRenderer.render"""
         action = TestMenuItemAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = DetailedMenuItemActionRenderer(action=action)
+        renderer = DetailedMenuItemActionRenderer(action=action,
+                                                  placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -72,10 +74,13 @@ class DetailedMenuItemActionRendererTests(TestCase):
         with self.assertWarns(RemovedInReviewBoard90Warning):
             action = MyAction()
 
+        placement = action.get_placement('review-request')
+
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = DetailedMenuItemActionRenderer(action=action)
+        renderer = DetailedMenuItemActionRenderer(action=action,
+                                                  placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -105,11 +110,13 @@ class DetailedMenuItemActionRendererTests(TestCase):
     def test_render_js(self) -> None:
         """Testing DetailedMenuItemActionRenderer.render_js"""
         action = TestMenuItemAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = DetailedMenuItemActionRenderer(action=action)
+        renderer = DetailedMenuItemActionRenderer(action=action,
+                                                  placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,

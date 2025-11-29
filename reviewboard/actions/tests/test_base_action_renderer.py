@@ -24,7 +24,11 @@ class BaseActionRendererTests(TestCase):
 
     def test_get_js_view_data(self) -> None:
         """Testing BaseActionRenderer.get_js_view_data"""
-        renderer = BaseActionRenderer(action=TestAction())
+        action = TestAction()
+        placement = action.get_placement('review-request')
+
+        renderer = BaseActionRenderer(action=action,
+                                      placement=placement)
 
         self.assertEqual(renderer.get_js_view_data(context=Context()),
                          {})
@@ -32,11 +36,13 @@ class BaseActionRendererTests(TestCase):
     def test_get_extra_context(self) -> None:
         """Testing BaseActionRenderer.get_extra_context"""
         action = TestAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = BaseActionRenderer(action=action)
+        renderer = BaseActionRenderer(action=action,
+                                      placement=placement)
         request = self.create_http_request()
         context = Context()
 
@@ -52,6 +58,7 @@ class BaseActionRendererTests(TestCase):
                 'has_parent': False,
                 'id': 'test',
                 'label': 'Test Action 1',
+                'placement': placement,
                 'url': '#',
                 'verbose_label': None,
                 'visible': True,
@@ -60,11 +67,13 @@ class BaseActionRendererTests(TestCase):
     def test_render(self) -> None:
         """Testing BaseActionRenderer.render"""
         action = TestAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = BaseActionRenderer(action=action)
+        renderer = BaseActionRenderer(action=action,
+                                      placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -86,10 +95,13 @@ class BaseActionRendererTests(TestCase):
         with self.assertWarns(RemovedInReviewBoard90Warning):
             action = MyAction()
 
+        placement = action.get_placement('review-request')
+
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = BaseActionRenderer(action=action)
+        renderer = BaseActionRenderer(action=action,
+                                      placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -117,11 +129,13 @@ class BaseActionRendererTests(TestCase):
     def test_render_js(self) -> None:
         """Testing BaseActionRenderer.render_js"""
         action = TestAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = BaseActionRenderer(action=action)
+        renderer = BaseActionRenderer(action=action,
+                                      placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
