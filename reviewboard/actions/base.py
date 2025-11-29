@@ -698,6 +698,19 @@ class BaseAction:
         attachment = self.attachment
         parent_id = self.parent_id
 
+        if hasattr(self, '_ignore_action_deprecations'):
+            # This is a compatibility subclass. We don't want to check
+            # the deprecations below.
+            if not self.placements:
+                self.placements = [
+                    ActionPlacement(
+                        attachment=(attachment or
+                                    AttachmentPoint.REVIEW_REQUEST),
+                        parent_id=parent_id),
+                ]
+
+            return
+
         # Check for deprecations.
         if attachment:
             RemovedInReviewBoard90Warning.warn(

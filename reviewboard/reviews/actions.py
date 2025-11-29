@@ -1052,10 +1052,12 @@ class BaseReviewRequestAction(BaseAction):
         6.0:
         New code should be written using
         :py:class:`reviewboard.actions.base.BaseAction`. This class will be
-        removed in 7.0.
+        removed in 8.0.
     """
 
     apply_to = all_review_request_url_names
+
+    _ignore_action_deprecations = True
 
     def __init__(self) -> None:
         """Initialize this action.
@@ -1068,7 +1070,10 @@ class BaseReviewRequestAction(BaseAction):
             'reviewboard.actions.base.BaseAction')
 
         super().__init__()
-        self._parent = None
+
+        self.placements = [
+            ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST),
+        ]
 
     @property
     def max_depth(self) -> int:
@@ -1092,6 +1097,15 @@ class BaseReviewRequestAction(BaseAction):
         """Reset the max_depth of this action and all its ancestors to zero."""
         # The max depth is now calculated on the fly, so this is a no-op.
         pass
+
+    def get_dom_element_id(self) -> str:
+        """Return the ID used for the DOM element for this action.
+
+        Returns:
+            str:
+            The ID used for the element.
+        """
+        return f'action-{self.action_id}'
 
     def get_extra_context(
         self,
@@ -1159,8 +1173,10 @@ class BaseReviewRequestAction(BaseAction):
             DepthLimitExceededError:
                 The maximum depth limit is exceeded.
         """
-        if parent:
-            self.parent_id = parent.action_id
+        if parent is not None:
+            assert self.placements
+
+            self.placements[0].parent_id = parent.action_id
 
         actions_registry.register(self)
 
@@ -1186,10 +1202,12 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
         6.0:
         New code should be written using
         :py:class:`reviewboard.actions.base.BaseMenuAction`. This class will be
-        removed in 7.0.
+        removed in 8.0.
     """
 
     apply_to = all_review_request_url_names
+
+    _ignore_action_deprecations = True
 
     def __init__(
         self,
@@ -1211,7 +1229,20 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
         """
         super().__init__()
 
+        self.placements = [
+            ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST),
+        ]
+
         self._children = child_actions or []
+
+    def get_dom_element_id(self) -> str:
+        """Return the ID used for the DOM element for this action.
+
+        Returns:
+            str:
+            The ID used for the element.
+        """
+        return f'action-{self.action_id}'
 
     def copy_to_dict(
         self,
@@ -1301,13 +1332,18 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
             DepthLimitExceededError:
                 The maximum depth limit is exceeded.
         """
-        if parent:
-            self.parent_id = parent.action_id
+        action_id = self.action_id
+
+        if parent is not None:
+            assert self.placements
+            self.placements[0].parent_id = parent.action_id
 
         actions_registry.register(self)
 
         for child in self._children:
-            child.parent_id = self.action_id
+            assert child.placements
+
+            child.placements[0].parent_id = action_id
             child.register()
 
     def unregister(self) -> None:

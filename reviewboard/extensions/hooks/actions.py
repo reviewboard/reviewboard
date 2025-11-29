@@ -13,6 +13,7 @@ from reviewboard.actions import (AttachmentPoint,
                                  BaseAction,
                                  BaseMenuAction,
                                  actions_registry)
+from reviewboard.actions.renderers import DefaultActionRenderer
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.urls import (diffviewer_url_names,
                               main_review_request_url_name)
@@ -97,6 +98,9 @@ class _DictAction(BaseAction):
     instances of :py:class:`reviewboard.actions.base.BaseAction`.
     """
 
+    default_renderer_cls = DefaultActionRenderer
+    _ignore_action_deprecations = True
+
     def __init__(self, action_dict, applies_to, attachment):
         """Initialize this action.
 
@@ -124,11 +128,12 @@ class _DictAction(BaseAction):
                 '-',
                 self.label.lower())
 
+        self.attachment = attachment
+
         super().__init__()
 
         self.url = action_dict['url']
         self.apply_to = applies_to
-        self.attachment = attachment
 
         if 'image' in action_dict:
             self.image = action_dict['image']
@@ -157,6 +162,8 @@ class _DictMenuAction(BaseMenuAction):
     :py:class:`reviewboard.actions.base.BaseMenuAction`.
     """
 
+    _ignore_action_deprecations = True
+
     def __init__(self, action_dict, applies_to, attachment):
         """Initialize this action.
 
@@ -184,10 +191,20 @@ class _DictMenuAction(BaseMenuAction):
                 '-',
                 self.label.lower())
 
+        self.attachment = attachment
+
         super().__init__()
 
         self.apply_to = applies_to
-        self.attachment = attachment
+
+    def get_dom_element_id(self) -> str:
+        """Return the ID used for the DOM element for this action.
+
+        Returns:
+            str:
+            The ID used for the element.
+        """
+        return f'action-{self.action_id}'
 
 
 class BaseReviewRequestActionHook(ActionHook, metaclass=ExtensionHookPoint):

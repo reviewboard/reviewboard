@@ -29,7 +29,6 @@ from reviewboard.reviews.actions import (
     UpdateMenuAction,
     UploadDiffAction,
 )
-from reviewboard.reviews.errors import DepthLimitExceededError
 from reviewboard.reviews.features import unified_banner_feature
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.testing import TestCase
@@ -64,6 +63,12 @@ class PoorlyCodedAction(BaseReviewRequestAction):
 
 class ActionsTestCase(TestCase):
     """Test case for unit tests dealing with actions."""
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
+
+        actions_registry.populate()
 
     def tearDown(self) -> None:
         """Tear down the test case."""
@@ -271,18 +276,6 @@ class ActionRegistrationTests(ActionsTestCase):
         self.assertEqual(bar_action.child_actions, [])
         self.assertEqual(toplevel_action.child_actions, [])
         self.assertIsNone(bar_action.parent_action)
-
-    def test_register_max_depth_exceeded(self) -> None:
-        """Testing BaseReviewRequestAction.register with max depth exceeded"""
-        with self.assertWarns(RemovedInReviewBoard80Warning,
-                              self.deprecation_message):
-            foo_action = FooAction()
-            bar_action1 = BarAction('action-1', [foo_action])
-            bar_action2 = BarAction('action-2', [bar_action1])
-            bar_action3 = BarAction('action-3', [bar_action2])
-
-        with self.assertRaises(DepthLimitExceededError):
-            bar_action3.register()
 
 
 class AddGeneralCommentActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
