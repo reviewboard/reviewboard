@@ -55,7 +55,7 @@ class DefaultActionRendererTests(TestCase):
             html,
             """
             <li class="rb-c-actions__action" role="presentation">
-             <a href="#" id="action-test" role="button">
+             <a href="#" id="action-review-request-test" role="button">
               Test Action 1
              </a>
             </li>
@@ -91,7 +91,7 @@ class DefaultActionRendererTests(TestCase):
             <li class="rb-c-actions__action" role="presentation">
              <button aria-label="Test Action 1"
                      class="ink-c-button"
-                     id="action-test"
+                     id="action-review-request-test"
                      type="button">
               <label class="ink-c-button__label">
                Test Action 1
@@ -122,7 +122,7 @@ class DefaultActionRendererTests(TestCase):
             """
             page.addActionView(new RB.Actions.ActionView({
                 "attachmentPointID": "review-request",
-                el: $('#action-test'),
+                el: $('#action-review-request-test'),
                 model: page.getAction("test"),
             }));
             """)

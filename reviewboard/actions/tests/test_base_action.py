@@ -105,7 +105,9 @@ class BaseActionTests(TestCase):
             html,
             """
             <li class="rb-c-actions__action" role="presentation">
-             <a href="#" id="action-test-action" role="button">
+             <a href="#"
+                id="action-review-request-test-action"
+                role="button">
               My Label
              </a>
             </li>
@@ -133,7 +135,7 @@ class BaseActionTests(TestCase):
             <li class="rb-c-actions__action" role="presentation">
              <button aria-label="My Label"
                      class="ink-c-button"
-                     id="action-test-action"
+                     id="action-review-request-test-action"
                      type="button">
               <label class="ink-c-button__label">My Label</label>
              </button>
@@ -162,7 +164,7 @@ class BaseActionTests(TestCase):
             <li class="rb-c-actions__action" role="presentation">
              <button aria-label="My Label"
                      class="ink-c-button"
-                     id="action-test-action"
+                     id="action-review-request-test-action"
                      type="button">
               <label class="ink-c-button__label">My Label</label>
              </button>
@@ -265,7 +267,7 @@ class BaseActionTests(TestCase):
             """
             page.addActionView(new RB.Actions.ActionView({
                 "attachmentPointID": "review-request",
-                el: $('#action-test-action'),
+                el: $('#action-review-request-test-action'),
                 model: page.getAction("test-action"),
             }));
             """)
@@ -291,7 +293,7 @@ class BaseActionTests(TestCase):
             """
             page.addActionView(new RB.Actions.ButtonActionView({
                 "attachmentPointID": "review-request",
-                el: $('#action-test-action'),
+                el: $('#action-review-request-test-action'),
                 model: page.getAction("test-action"),
             }));
             """)
@@ -319,7 +321,7 @@ class BaseActionTests(TestCase):
                 "attachmentPointID": "review-request",
                 "label": "~~My Label~~",
                 "specialKey": [123, 456],
-                el: $('#action-test-action'),
+                el: $('#action-review-request-test-action'),
                 model: page.getAction("test-action"),
             }));
             """)

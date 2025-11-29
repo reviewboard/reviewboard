@@ -204,7 +204,7 @@ class ActionAttachmentPointTests(TestCase):
                 role="presentation">
              <button aria-label="Test Action 1"
                      class="ink-c-button"
-                     id="action-test"
+                     id="action-review-request-test"
                      type="button">
               <label class="ink-c-button__label">
                Test Action 1
@@ -214,8 +214,8 @@ class ActionAttachmentPointTests(TestCase):
 
             <li class="rb-c-actions__action"
                 role="group"
-                id="action-group-action">
-             <a id="action-group-item-1-action"
+                id="action-review-request-group-action">
+             <a id="action-test-point-group-item-1-action"
                 hidden
                 style="display: none;"
                 href="#"
@@ -226,7 +226,7 @@ class ActionAttachmentPointTests(TestCase):
 
             <li class="rb-c-actions__action"
                 role="menuitem"
-                id="action-menu-action">
+                id="action-review-request-menu-action">
              <a href="#"
                 role="presentation"
                 aria-label="Test Menu">
@@ -236,7 +236,7 @@ class ActionAttachmentPointTests(TestCase):
               <span class="ink-i-dropdown"/>
              </a>
 
-             <a id="action-menu-item-action"
+             <a id="action-test-point-menu-item-action"
                 role="button"
                 href="#"
                 hidden
@@ -250,7 +250,7 @@ class ActionAttachmentPointTests(TestCase):
                 role="presentation">
              <button aria-label="New Action"
                      class="ink-c-button"
-                     id="action-new-action"
+                     id="action-test-point-new-action"
                      type="button">
               <label class="ink-c-button__label">
                New Action
@@ -279,19 +279,19 @@ class ActionAttachmentPointTests(TestCase):
                 "attachmentPointID": "review-request",
                 "label": "~~Test Action 1~~",
                 "specialKey": [123, 456],
-                el: $('#action-test'),
+                el: $('#action-review-request-test'),
                 model: page.getAction("test"),
             }));
 
             page.addActionView(new RB.Actions.ActionView({
                 "attachmentPointID": "review-request",
-                el: $('#action-group-action'),
+                el: $('#action-review-request-group-action'),
                 model: page.getAction("group-action"),
             }));
 
             page.addActionView(new RB.Actions.MenuActionView({
                 "attachmentPointID": "review-request",
-                el: $('#action-menu-action'),
+                el: $('#action-review-request-menu-action'),
                 model: page.getAction("menu-action"),
             }));
 
@@ -299,7 +299,7 @@ class ActionAttachmentPointTests(TestCase):
                 "attachmentPointID": "test-point",
                 "label": "~~New Action~~",
                 "specialKey": [123, 456],
-                el: $('#action-new-action'),
+                el: $('#action-test-point-new-action'),
                 model: page.getAction("new-action"),
             }));
 
@@ -307,7 +307,7 @@ class ActionAttachmentPointTests(TestCase):
                 "attachmentPointID": "test-point",
                 "label": "~~My Group~~",
                 "specialKey": [123, 456],
-                el: $('#action-group-item-1-action'),
+                el: $('#action-test-point-group-item-1-action'),
                 model: page.getAction("group-item-1-action"),
             }));
 
@@ -315,7 +315,7 @@ class ActionAttachmentPointTests(TestCase):
                 "attachmentPointID": "test-point",
                 "label": "~~Menu Item Action 1~~",
                 "specialKey": [123, 456],
-                el: $('#action-menu-item-action'),
+                el: $('#action-test-point-menu-item-action'),
                 model: page.getAction("menu-item-action"),
             }));
             """)

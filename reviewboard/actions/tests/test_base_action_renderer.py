@@ -48,7 +48,7 @@ class BaseActionRendererTests(TestCase):
                 'action': action,
                 'action_renderer': renderer,
                 'attachment_point_id': 'review-request',
-                'dom_element_id': 'action-test',
+                'dom_element_id': 'action-review-request-test',
                 'has_parent': False,
                 'id': 'test',
                 'label': 'Test Action 1',
@@ -105,7 +105,7 @@ class BaseActionRendererTests(TestCase):
             <li class="rb-c-actions__action" role="presentation">
              <button aria-label="Test Action 1"
                      class="ink-c-button"
-                     id="action-test"
+                     id="action-review-request-test"
                      type="button">
               <label class="ink-c-button__label">
                Test Action 1
@@ -136,7 +136,7 @@ class BaseActionRendererTests(TestCase):
             """
             page.addActionView(new RB.Actions.ActionView({
                 "attachmentPointID": "review-request",
-                el: $('#action-test'),
+                el: $('#action-review-request-test'),
                 model: page.getAction("test"),
             }));
             """)

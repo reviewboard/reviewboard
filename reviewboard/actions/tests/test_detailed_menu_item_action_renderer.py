@@ -44,7 +44,7 @@ class DetailedMenuItemActionRendererTests(TestCase):
             html,
             """
             <a
-               id="action-menu-item-action"
+               id="action-review-request-menu-item-action"
                role="menuitem"
                data-custom-rendered="true"
                href="#"
@@ -89,7 +89,7 @@ class DetailedMenuItemActionRendererTests(TestCase):
             html,
             """
             <button class="ink-c-button"
-                    id="action-menu-item-action"
+                    id="action-review-request-menu-item-action"
                     aria-label="Verbose Menu Item Action 1"
                     title="Menu Item 1 description."
                     type="button"
@@ -124,7 +124,7 @@ class DetailedMenuItemActionRendererTests(TestCase):
             """
             page.addActionView(new RB.Actions.MenuItemActionView({
                 "attachmentPointID": "review-request",
-                el: $('#action-menu-item-action'),
+                el: $('#action-review-request-menu-item-action'),
                 model: page.getAction("menu-item-action"),
             }));
             """)

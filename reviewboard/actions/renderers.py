@@ -121,7 +121,10 @@ class BaseActionRenderer:
             'action': action,
             'action_renderer': self,
             'attachment_point_id': action.attachment,
-            'dom_element_id': action.get_dom_element_id(),
+            'dom_element_id': (
+                action.get_dom_element_id() or
+                f'action-{action.attachment}-{action.action_id}'
+            ),
             'has_parent': action.parent_id is not None,
         })
 

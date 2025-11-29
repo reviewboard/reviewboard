@@ -43,7 +43,7 @@ class DefaultActionGroupRendererTests(TestCase):
             html,
             """
             <li class="rb-c-actions__action"
-                id="action-group-action"
+                id="action-review-request-group-action"
                 role="group">
             </li>
             """)
@@ -80,7 +80,7 @@ class DefaultActionGroupRendererTests(TestCase):
                 role="presentation">
              <button aria-label="Test Group"
                      class="ink-c-button"
-                     id="action-group-action"
+                     id="action-review-request-group-action"
                      type="button">
               <label class="ink-c-button__label">
                Test Group
@@ -111,7 +111,7 @@ class DefaultActionGroupRendererTests(TestCase):
             """
             page.addActionView(new RB.Actions.ActionView({
                 "attachmentPointID": "review-request",
-                el: $('#action-group-action'),
+                el: $('#action-review-request-group-action'),
                 model: page.getAction("group-action"),
             }));
             """)

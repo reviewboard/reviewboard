@@ -43,7 +43,7 @@ class MenuItemActionRendererTests(TestCase):
         self.assertHTMLEqual(
             html,
             """
-            <a id="action-menu-item-action"
+            <a id="action-review-request-menu-item-action"
                role="button"
                href="#"
                hidden
@@ -81,7 +81,7 @@ class MenuItemActionRendererTests(TestCase):
             html,
             """
             <button class="ink-c-button"
-                    id="action-menu-item-action"
+                    id="action-review-request-menu-item-action"
                     type="button"
                     aria-label="Verbose Menu Item Action 1"
                     title="Menu Item 1 description."
@@ -116,7 +116,7 @@ class MenuItemActionRendererTests(TestCase):
             """
             page.addActionView(new RB.Actions.MenuItemActionView({
                 "attachmentPointID": "review-request",
-                el: $('#action-menu-item-action'),
+                el: $('#action-review-request-menu-item-action'),
                 model: page.getAction("menu-item-action"),
             }));
             """)

@@ -528,19 +528,21 @@ class BaseAction:
 
     def __init__(self) -> None:
         """Initialize the action."""
+        cls = type(self)
+
         self.parent_action = None
         self.child_actions = []
         self.parent_registry = None
 
         if not getattr(self, 'action_id', None):
             raise AttributeError(
-                f'{type(self).__name__}.action_id must be set.'
+                f'{cls.__name__}.action_id must be set.'
             )
 
         # Check for deprecations.
         if self.template_name:
             RemovedInReviewBoard90Warning.warn(
-                f'{type(self).__name__}.template_name is deprecated and '
+                f'{cls.__name__}.template_name is deprecated and '
                 f'support will be removed in Review Board 9. Please move any '
                 f'custom rendering to a reviewboard.actions.renderers.'
                 f'BaseActionRenderer subclass instead.'
@@ -548,18 +550,24 @@ class BaseAction:
 
         if self.js_view_class:
             RemovedInReviewBoard90Warning.warn(
-                f'{type(self).__name__}.js_view_class is deprecated and '
+                f'{cls.__name__}.js_view_class is deprecated and '
                 f'support will be removed in Review Board 9. Please move any '
                 f'custom rendering to a reviewboard.actions.renderers.'
                 f'BaseActionRenderer subclass instead.'
             )
 
-        if type(self).get_js_view_data is not BaseAction.get_js_view_data:
+        if cls.get_js_view_data is not BaseAction.get_js_view_data:
             RemovedInReviewBoard90Warning.warn(
-                f'{type(self).__name__}.get_js_view_data is deprecated and '
+                f'{cls.__name__}.get_js_view_data is deprecated and '
                 f'support will be removed in Review Board 9. Please move any '
                 f'custom rendering to a reviewboard.actions.renderers.'
                 f'BaseActionRenderer subclass instead.'
+            )
+
+        if cls.get_dom_element_id is not BaseAction.get_dom_element_id:
+            RemovedInReviewBoard90Warning.warn(
+                f'{cls.__name__}.get_dom_element_id is deprecated and '
+                f'support will be removed in Review Board 9.'
             )
 
     @property
@@ -641,11 +649,16 @@ class BaseAction:
     def get_dom_element_id(self) -> str:
         """Return the ID used for the DOM element for this action.
 
+        Deprecated:
+            7.1:
+            This is scheduled for removal in Review Board 9. This has been
+            replaced by :py:attr:`ActionPlacement.dom_element_id`.
+
         Returns:
             str:
             The ID used for the element.
         """
-        return 'action-%s' % self.action_id
+        return ''
 
     def get_js_model_data(
         self,

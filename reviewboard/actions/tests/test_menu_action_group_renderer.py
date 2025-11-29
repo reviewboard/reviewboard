@@ -43,7 +43,7 @@ class MenuActionGroupRendererTests(TestCase):
             html,
             """
             <li class="rb-c-actions__action"
-                id="action-menu-action"
+                id="action-review-request-menu-action"
                 role="menuitem">
              <a aria-label="Test Menu"
                 href="#"
@@ -87,7 +87,7 @@ class MenuActionGroupRendererTests(TestCase):
             <li class="rb-c-actions__action" role="presentation">
              <button aria-label="Test Menu"
                      class="ink-c-button"
-                     id="action-menu-action"
+                     id="action-review-request-menu-action"
                      type="button">
               <label class="ink-c-button__label">
                Test Menu
@@ -118,7 +118,7 @@ class MenuActionGroupRendererTests(TestCase):
             """
             page.addActionView(new RB.Actions.MenuActionView({
                 "attachmentPointID": "review-request",
-                el:  $('#action-menu-action'),
+                el:  $('#action-review-request-menu-action'),
                 model: page.getAction("menu-action"),
             }));
             """)

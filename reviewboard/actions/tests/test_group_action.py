@@ -133,23 +133,23 @@ class BaseGroupActionTests(TestCase):
             html,
             """
             <li class="rb-c-actions__action"
-                id="action-group-action"
+                id="action-review-request-group-action"
                 role="group">
-             <a id="action-group-item-1-action"
+             <a id="action-review-request-group-item-1-action"
                 role="button"
                 hidden
                 style="display: none;"
                 href="#">
               None
              </a>
-             <a id="action-group-item-2-action"
+             <a id="action-review-request-group-item-2-action"
                 role="button"
                 hidden
                 style="display: none;"
                 href="#">
               None
              </a>
-             <a id="action-group-item-3-action"
+             <a id="action-review-request-group-item-3-action"
                 role="button"
                 hidden
                 style="display: none;"
@@ -175,7 +175,7 @@ class BaseGroupActionTests(TestCase):
             """
             page.addActionView(new RB.Actions.ActionView({
                 "attachmentPointID": "review-request",
-                el: $('#action-group-action'),
+                el: $('#action-review-request-group-action'),
                 model: page.getAction("group-action"),
             }));
             """)
