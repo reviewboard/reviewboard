@@ -284,6 +284,7 @@ class ButtonActionRenderer(BaseActionRenderer):
         7.1
     """
 
+    js_view_class = 'RB.Actions.ButtonActionView'
     template_name = 'actions/button_action.html'
 
 

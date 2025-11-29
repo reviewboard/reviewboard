@@ -12,7 +12,7 @@ import { type Action } from '../models/actionModel';
 @spina
 export class ActionView<
     TModel extends Action = Action,
-    TElement extends HTMLDivElement = HTMLDivElement,
+    TElement extends HTMLElement = HTMLDivElement,
     TExtraViewOptions extends object = object
 > extends BaseView<TModel, TElement, TExtraViewOptions> {
     static modelEvents = {

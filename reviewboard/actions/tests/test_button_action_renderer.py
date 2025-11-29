@@ -107,7 +107,7 @@ class ButtonActionRendererTests(TestCase):
         self.assertHTMLEqual(
             js,
             """
-            page.addActionView(new RB.Actions.ActionView({
+            page.addActionView(new RB.Actions.ButtonActionView({
                 el: $('#action-test'),
                 model: page.addAction(new RB.Actions.Action(
                     {"id": "test",
