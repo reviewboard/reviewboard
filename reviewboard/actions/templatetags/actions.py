@@ -14,7 +14,10 @@ from django.template import Context, Library
 from django.utils.safestring import SafeString, mark_safe
 from djblets.pagestate.state import PageState
 
-from reviewboard.actions import BaseAction, actions_registry
+from reviewboard.actions import (ActionAttachmentPoint,
+                                 BaseAction,
+                                 action_attachment_points_registry,
+                                 actions_registry)
 from reviewboard.actions.renderers import BaseActionGroupRenderer
 
 if TYPE_CHECKING:
@@ -28,9 +31,15 @@ register = Library()
 @register.simple_tag(takes_context=True)
 def actions_html(
     context: Context,
-    attachment: str,
+    attachment: str | ActionAttachmentPoint,
 ) -> SafeString:
     """Render the actions HTML for the given attachment point.
+
+    Version Changed:
+        7.1:
+        This now accepts an
+        :py:class:`reviewboard.actions.base.ActionAttachmentPoint` instance
+        for the attachment point.
 
     Version Added:
         6.0
@@ -39,8 +48,14 @@ def actions_html(
         context (django.template.Context):
             The current template rendering context.
 
-        attachment (str):
-            The registered ID of an attachment point.
+        attachment (str or reviewboard.actions.base.ActionAttachmentPoint):
+            The instance or registered ID of an attachment point.
+
+            Version Changed:
+                7.1:
+                This now accepts an
+                :py:class:`reviewboard.actions.base.ActionAttachmentPoint`
+                instance.
 
     Returns:
         django.utils.safestring.SafeString:
@@ -48,37 +63,42 @@ def actions_html(
     """
     request = context['request']
 
-    # First, generate and immediately render the HTML for the actions.
-    rendered_html: list[str] = []
+    # Get the referenced attachment point.
+    attachment_point: ActionAttachmentPoint | None
 
-    for action in actions_registry.get_for_attachment(attachment):
-        try:
-            rendered_html.append(action.render(request=request,
-                                               context=context))
-        except Exception as e:
-            logger.exception('Error rendering HTML for action "%s": %s',
-                             action.action_id, e)
+    if isinstance(attachment, ActionAttachmentPoint):
+        attachment_point = attachment
+    else:
+        attachment_point = (
+            action_attachment_points_registry
+            .get_attachment_point(attachment)
+        )
 
-    # Next, render the JavaScript view for each action in the attachment,
-    # but for later injection into the page.
-    rendered_views: list[str] = []
+        if attachment_point is None:
+            logger.error('Unregistered action attachment point "%s" passed '
+                         'to {% actions_html %}',
+                         attachment,
+                         extra={'request': request})
+            return mark_safe('')
 
-    for action in actions_registry.get_for_attachment(attachment,
-                                                      include_children=True):
-        try:
-            rendered_views.append(action.render_js(request=request,
-                                                   context=context))
-        except Exception as e:
-            logger.exception('Error rendering JavaScript view for action '
-                             '"%s": %s',
-                             action.action_id, e)
-
+    # Store the rendered JavaScript views for later page injection.
     page_state = PageState.for_request(request)
     page_state.inject('rb-action-views', {
-        'content': mark_safe(''.join(rendered_views)),
+        'content': attachment_point.render_js(request=request,
+                                              context=context),
     })
 
-    return mark_safe(''.join(rendered_html))
+    # Now render the HTML for this attachment point.
+    try:
+        return attachment_point.render(request=request,
+                                       context=context)
+    except Exception as e:
+        logger.exception('Unexpected error rendering actions attachment '
+                         'point %r: %s',
+                         attachment_point, e,
+                         extra={'request': request})
+
+        return mark_safe('')
 
 
 @register.simple_tag(takes_context=True)

@@ -14,15 +14,68 @@ from django.utils.translation import gettext_lazy as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
                                          NOT_REGISTERED)
 
-from reviewboard.actions.base import BaseAction
+from reviewboard.actions.base import (ActionAttachmentPoint,
+                                      AttachmentPoint,
+                                      BaseAction)
 from reviewboard.actions.errors import DepthLimitExceededError
-from reviewboard.registries.registry import OrderedRegistry
+from reviewboard.registries.registry import OrderedRegistry, Registry
 
 
 logger = logging.getLogger(__name__)
 
 
-class ActionsRegistry(OrderedRegistry):
+class ActionAttachmentPointsRegistry(Registry[ActionAttachmentPoint]):
+    """A registry for action attachment points.
+
+    Version Added:
+        7.1
+    """
+
+    lookup_attrs = ['attachment_point_id']
+
+    errors = {
+        ALREADY_REGISTERED: _(
+            '"%(item)s" is already a registered attachment point.'
+        ),
+        NOT_REGISTERED: _(
+            '"%(attr_value)s" is not a registered attachment point.'
+        ),
+    }
+
+    def get_defaults(self) -> Iterator[ActionAttachmentPoint]:
+        """Yield the built-in attachment points.
+
+        Yields:
+            reviewboard.actions.base.BaseAction:
+            The built-in attachment points.
+        """
+        yield from [
+            ActionAttachmentPoint(AttachmentPoint.NON_UI),
+            ActionAttachmentPoint(AttachmentPoint.HEADER),
+            ActionAttachmentPoint(AttachmentPoint.REVIEW_REQUEST_LEFT),
+            ActionAttachmentPoint(AttachmentPoint.REVIEW_REQUEST),
+            ActionAttachmentPoint(AttachmentPoint.UNIFIED_BANNER),
+            ActionAttachmentPoint(AttachmentPoint.QUICK_ACCESS),
+        ]
+
+    def get_attachment_point(
+        self,
+        attachment_point_id: str,
+    ) -> ActionAttachmentPoint | None:
+        """Return the attachment point with the given ID.
+
+        Args:
+            attachment_point_id (str):
+                The attachment point ID to look up.
+
+        Returns:
+            reviewboard.actions.base.ActionAttachmentPoint:
+            The resulting attachment point instance, or ``None`` if not found.
+        """
+        return self.get('attachment_point_id', attachment_point_id)
+
+
+class ActionsRegistry(OrderedRegistry[BaseAction]):
     """A registry for actions.
 
     Version Added:

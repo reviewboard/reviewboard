@@ -13,7 +13,8 @@ from django.utils.safestring import SafeString
 
 from reviewboard.actions.base import BaseAction
 from reviewboard.actions.errors import MissingActionRendererError
-from reviewboard.actions.renderers import ButtonActionRenderer
+from reviewboard.actions.renderers import (ButtonActionRenderer,
+                                           DefaultActionRenderer)
 from reviewboard.actions.tests.base import SpecialButtonActionRenderer
 from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.testing import TestCase
@@ -89,6 +90,7 @@ class BaseActionTests(TestCase):
         class MyAction(BaseAction):
             action_id = 'test-action'
             label = 'My Label'
+            default_renderer_cls = DefaultActionRenderer
 
         request = self.create_http_request()
         context = Context({
@@ -195,6 +197,7 @@ class BaseActionTests(TestCase):
         class MyAction(BaseAction):
             action_id = 'test-action'
             label = 'My Label'
+            default_renderer_cls = ButtonActionRenderer
 
             def should_render(
                 self,
@@ -247,6 +250,7 @@ class BaseActionTests(TestCase):
         class MyAction(BaseAction):
             action_id = 'test-action'
             label = 'My Label'
+            default_renderer_cls = DefaultActionRenderer
 
         request = self.create_http_request()
         context = Context({
@@ -349,6 +353,7 @@ class BaseActionTests(TestCase):
         class MyAction(BaseAction):
             action_id = 'test-action'
             label = 'My Label'
+            default_renderer_cls = DefaultActionRenderer
 
             def should_render(
                 self,

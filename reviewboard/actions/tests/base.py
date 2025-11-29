@@ -12,7 +12,8 @@ from reviewboard.actions import (AttachmentPoint,
                                  BaseAction,
                                  BaseGroupAction,
                                  BaseMenuAction)
-from reviewboard.actions.registry import ActionsRegistry
+from reviewboard.actions.registry import (ActionAttachmentPointsRegistry,
+                                          ActionsRegistry)
 from reviewboard.actions.renderers import ButtonActionRenderer
 
 if TYPE_CHECKING:
@@ -20,6 +21,8 @@ if TYPE_CHECKING:
 
     from django.template import Context
     from typelets.django.json import SerializableDjangoJSONDict
+
+    from reviewboard.actions.base import ActionAttachmentPoint
 
 
 class TestAction(BaseAction):
@@ -200,5 +203,22 @@ class TestActionsRegistry(ActionsRegistry):
         Yields:
             reviewboard.actions.base.BaseAction:
             Each action (but none, really).
+        """
+        yield from []
+
+
+class TestActionAttachmentPointsRegistry(ActionAttachmentPointsRegistry):
+    """Empty actions attachment points registry for testing purposes.
+
+    Version Added:
+        7.1
+    """
+
+    def get_defaults(self) -> Iterator[ActionAttachmentPoint]:
+        """Return an empty set of defaults.
+
+        Yields:
+            reviewboard.actions.base.ActionAttachmentPoint:
+            Each attachment point (but none, really).
         """
         yield from []

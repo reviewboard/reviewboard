@@ -23,7 +23,7 @@ from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterator, Sequence
 
     from django.http import HttpRequest
     from django.template import Context
@@ -70,6 +70,328 @@ class AttachmentPoint:
     QUICK_ACCESS = 'quick-access'
 
 
+class ActionAttachmentPoint:
+    """An attachment point for a list of actions.
+
+    Attachment points manage the display and registration of the UI side of
+    actions. They may contain any number of pre-defined actions, and will
+    automatically contain any actions dynamically registered to the attachment
+    point.
+
+    Actions rendered in an attachment point will use their own default
+    renderer if specified, and fall back to the attachment point's default
+    renderer. This order ensures that an attachment point may, for instance,
+    default to buttons but that a menu button can still be added and rendered
+    correctly.
+
+    An attachment point can be registered in a central registry so that it
+    can be referred to by name. It may also be unregisterd and passed directly
+    to any templates that want to render the actions.
+
+    To include an attachment point on a page, use the
+    :py:func:`{% actions_html %}
+    <reviewboard.actions.templatetags.actions.actions_html>` template tag.
+    """
+
+    ########################################
+    # Instance-overridable class variables #
+    ########################################
+
+    #: The default action renderer used for child actions.
+    #:
+    #: This may be set on the class or passed when initializing an instance.
+    #:
+    #: This will be used for any actions that don't already have a default
+    #: action renderer set. The action's default takes precedence in order
+    #: to allow actions such as menus to manage their own display.
+    default_action_renderer_cls: (type[BaseActionRenderer] | None) = \
+        DefaultActionRenderer
+
+    #: The unique ID for this attachment point.
+    #:
+    #: This may be set on the class or passed when initializing an instance.
+    attachment_point_id: str
+
+    #: A pre-defined list of action IDs to include on the attachment point.
+    #:
+    #: This may be set on the class or passed when initializing an instance.
+    #:
+    #: Any actions listed here will be listed first in the specified order.
+    #: Any additional actions registered to this attachment point will be
+    #: added after these actions.
+    actions: (Sequence[str] | None) = None
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The registry managing actions for this attachment point.
+    #:
+    #: This is primarily for unit test purposes.
+    actions_registry: ActionsRegistry
+
+    def __init__(
+        self,
+        attachment_point_id: (str | None) = None,
+        *,
+        actions: (Sequence[str] | None) = None,
+        default_action_renderer_cls: (type[BaseActionRenderer] | None) = None,
+        actions_registry: (ActionsRegistry | None) = None,
+    ) -> None:
+        """Initialize the attachment point.
+
+        Args:
+            attachment_point_id (str, optional):
+                The unique ID for this attachment point.
+
+                This must be provided if :py:attr:`attachment_point_id` is
+                not already set.
+
+            actions (list of str, optional):
+                An explicit list of action IDs to include in this attachment
+                point.
+
+                Any actions listed here will be listed first in the
+                specified order. Any additional actions registered to this
+                attachment point will be added after these actions.
+
+            default_action_renderer_cls (type, optional):
+                The default action renderer used for child actions.
+
+                This will be used for any actions that don't already have a
+                default action renderer set. The action's default takes
+                precedence in order to allow actions such as menus to manage
+                their own display.
+
+            actions_registry (reviewboard.actions.registry.ActionsRegistry,
+                              optional):
+                The registry managing actions for this attachment point.
+
+                This is primarily for unit test purposes.
+        """
+        if attachment_point_id:
+            self.attachment_point_id = attachment_point_id
+        elif not getattr(self, 'attachment_point_id', None):
+            raise AttributeError(
+                'attachment_point_id must be provided as an argument or a '
+                'class attribute.'
+            )
+
+        if actions is not None:
+            self.actions = actions
+
+        if default_action_renderer_cls is not None:
+            self.default_action_renderer_cls = default_action_renderer_cls
+
+        if not actions_registry:
+            from reviewboard.actions import actions_registry
+
+        self.actions_registry = actions_registry
+
+    def iter_actions(
+        self,
+        *,
+        include_children: bool = False,
+    ) -> Iterator[BaseAction]:
+        """Yield actions for this attachment point.
+
+        Args:
+            include_children (bool, optional):
+                Whether to also include children of menus.
+
+                If ``False`` (default), this will only yield the top-level
+                items.
+
+        Yields:
+            reviewboard.actions.base.BaseAction:
+            The actions for the given attachment point.
+        """
+        registered_actions = self.actions_registry.get_for_attachment(
+            self.attachment_point_id,
+            include_children=include_children,
+        )
+
+        # If there are any predefined order of actions, list those first.
+        # Then list any registered actions after.
+        if (actions := self.actions):
+            actions_registry = self.actions_registry
+            seen_actions: set[str] = set()
+
+            for action_id in actions:
+                action = actions_registry.get_action(action_id)
+
+                if action is not None:
+                    yield action
+                else:
+                    logger.warning(
+                        'Attachment point "%s" referenced action "%s", but '
+                        'that action was not registered.',
+                        self.attachment_point_id, action_id)
+
+                seen_actions.add(action_id)
+
+            for action in registered_actions:
+                if action.action_id not in seen_actions:
+                    yield action
+        else:
+            # There are no predefined actions, so just return everything
+            # registered at this attachment point.
+            yield from registered_actions
+
+    def get_js_view_data(
+        self,
+        *,
+        context: Context,
+    ) -> SerializableDjangoJSONDict:
+        """Return additional data to be passed to the JavaScript view.
+
+        This will be merged along with the data provided by the renderer.
+        Any data in the renderer will take precedence over data returned
+        by this method.
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            dict:
+            A dictionary of attributes to pass to the model instance.
+        """
+        return {}
+
+    def render(
+        self,
+        *,
+        request: HttpRequest,
+        context: Context,
+    ) -> SafeString:
+        """Render all actions in the attachment point.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered action HTML.
+        """
+        return mark_safe(''.join(self._iter_render(
+            request=request,
+            context=context,
+        )))
+
+    def render_js(
+        self,
+        *,
+        request: HttpRequest,
+        context: Context,
+    ) -> SafeString:
+        """Render the JavaScript for loading each action view in this point.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered action JavaScript.
+        """
+        return mark_safe(''.join(self._iter_render_js(
+            request=request,
+            context=context,
+        )))
+
+    def _iter_render(
+        self,
+        *,
+        request: HttpRequest,
+        context: Context,
+    ) -> Iterator[SafeString]:
+        """Generate HTML for each top-level action in the attachment point.
+
+        This will iterate through all the top-level actions and render each
+        to HTML, yielding each one-by-one.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            context (django.template.Context):
+                The current rendering context.
+
+        Yields:
+            django.utils.safestring.SafeString:
+            Each rendered action HTML.
+        """
+        default_renderer_cls = self.default_action_renderer_cls
+
+        for action in self.iter_actions(include_children=False):
+            # Prioritize the actions's default renderer over the attachment
+            # point's.
+            renderer_cls = action.default_renderer_cls or default_renderer_cls
+
+            try:
+                yield action.render(request=request,
+                                    context=context,
+                                    renderer=renderer_cls)
+            except Exception as e:
+                logger.exception('Error rendering action %r: %s',
+                                 action, e,
+                                 extra={'request': request})
+
+    def _iter_render_js(
+        self,
+        *,
+        request: HttpRequest,
+        context: Context,
+    ) -> Iterator[SafeString]:
+        """Generate JavaScript for each action in the attachment point.
+
+        This will iterate through all the actions (top-level and children)
+        and render each action's JavaScript view registration, yielding each
+        one-by-one.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            context (django.template.Context):
+                The current rendering context.
+
+        Yields:
+            django.utils.safestring.SafeString:
+            Each rendered action JavaScript.
+        """
+        default_renderer_cls = self.default_action_renderer_cls
+        js_view_data = self.get_js_view_data(context=context)
+
+        with context.push():
+            context['attachment_point_id'] = self.attachment_point_id
+
+            for action in self.iter_actions(include_children=True):
+                # Prioritize the actions's default renderer over the attachment
+                # point's.
+                renderer_cls = \
+                    action.default_renderer_cls or default_renderer_cls
+
+                try:
+                    yield action.render_js(request=request,
+                                           context=context,
+                                           renderer=renderer_cls,
+                                           extra_js_view_data=js_view_data)
+                except Exception as e:
+                    logger.exception('Error rendering JavaScript for '
+                                     'action %r: %s',
+                                     action, e,
+                                     extra={'request': request})
+
+
 class BaseAction:
     """Base class for actions.
 
@@ -96,9 +418,13 @@ class BaseAction:
 
     #: The attachment point for the action.
     #:
-    #: Type:
-    #:     str
-    attachment: str = AttachmentPoint.REVIEW_REQUEST
+    #: This may be a single attachment point ID, or a list of IDs in which
+    #: the action should appear.
+    #:
+    #: Version Changed:
+    #:     7.1:
+    #:     This may now optionally be a list of IDs.
+    attachment: (str | Sequence[str]) = AttachmentPoint.REVIEW_REQUEST
 
     #: The default renderer used for this action.
     #:
@@ -109,8 +435,7 @@ class BaseAction:
     #:
     #: Version Added:
     #:     7.1
-    default_renderer_cls: (type[BaseActionRenderer] | None) = \
-        DefaultActionRenderer
+    default_renderer_cls: (type[BaseActionRenderer] | None) = None
 
     #: A class name to use for an icon.
     #:
