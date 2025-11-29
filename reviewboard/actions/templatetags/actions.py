@@ -194,13 +194,14 @@ def _iter_actions_js(
     actions: Iterable[BaseAction] = actions_registry
 
     for action in actions:
-        try:
-            yield action.render_model_js(request=request,
-                                         context=context)
-        except Exception as e:
-            logger.exception('Error rendering JavaScript for action model '
-                             '%r: %s',
-                             action, e)
+        if action.should_render(context=context):
+            try:
+                yield action.render_model_js(request=request,
+                                             context=context)
+            except Exception as e:
+                logger.exception('Error rendering JavaScript for action model '
+                                 '%r: %s',
+                                 action, e)
 
     # Render all the action view construction.
     page_state = PageState.for_request(request)
