@@ -34,7 +34,7 @@ export class ActionView<
 > extends BaseView<TModel, TElement, TOptions> {
     static modelEvents = {
         'change:isQuickAccessEnabled': '_onQuickAccessEnabledChanged',
-        'change:visible': '_onModelVisibleChanged',
+        'change:visible': '_onVisibleChanged',
     };
 
     /**********************
@@ -48,6 +48,18 @@ export class ActionView<
      *     7.1
      */
     attachmentPointID: string;
+
+    /**
+     * Whether this action view is locally visible.
+     *
+     * This controls whether this action view is visible, separately from
+     * the action model's ``visible`` state. The action will be visible only
+     * if locally visible and if the action has ``visible=true``.
+     *
+     * Version Added:
+     *     7.1
+     */
+    #locallyVisible = true;
 
     /**
      * Initialize the view.
@@ -74,7 +86,8 @@ export class ActionView<
      * Show the action.
      *
      * This will show the action parent container (if available) or this
-     * view's element (if contained in another parent).
+     * view's element (if contained in another parent) when the action's
+     * ``visible`` attribute is ``true``.
      *
      * Version Added:
      *     7.1
@@ -84,7 +97,8 @@ export class ActionView<
      *     This view, for chaining.
      */
     show(): this {
-        this.model.set('visible', true);
+        this.#locallyVisible = true;
+        this._onVisibleChanged();
 
         return this;
     }
@@ -93,7 +107,8 @@ export class ActionView<
      * Hide the action.
      *
      * This will hide the action parent container (if available) or this
-     * view's element (if contained in another parent).
+     * view's element (if contained in another parent) regardless of the
+     * action's ``visible`` attribute.
      *
      * Version Added:
      *     7.1
@@ -103,7 +118,8 @@ export class ActionView<
      *     This view, for chaining.
      */
     hide(): this {
-        this.model.set('visible', false);
+        this.#locallyVisible = false;
+        this._onVisibleChanged();
 
         return this;
     }
@@ -138,7 +154,7 @@ export class ActionView<
             this._onQuickAccessEnabledChanged();
         }
 
-        this._onModelVisibleChanged();
+        this._onVisibleChanged();
     }
 
     /**
@@ -150,9 +166,9 @@ export class ActionView<
      * Version Added:
      *     7.1
      */
-    private _onModelVisibleChanged() {
+    private _onVisibleChanged() {
         const visibilityEl = this.#getVisibilityEl();
-        const visible = this.model.get('visible');
+        const visible = this.#locallyVisible && this.model.get('visible');
 
         /*
          * The visibility state has changed. Show/hide and update the
