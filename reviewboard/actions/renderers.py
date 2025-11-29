@@ -113,8 +113,19 @@ class BaseActionRenderer:
             dict:
             Extra context to use when rendering the action's template.
         """
-        return self.action.get_extra_context(request=request,
-                                             context=context)
+        action = self.action
+
+        extra_context = action.get_extra_context(request=request,
+                                                 context=context)
+        extra_context.update({
+            'action': action,
+            'action_renderer': self,
+            'attachment_point_id': action.attachment,
+            'dom_element_id': action.get_dom_element_id(),
+            'has_parent': action.parent_id is not None,
+        })
+
+        return extra_context
 
     def render(
         self,
@@ -142,12 +153,8 @@ class BaseActionRenderer:
         template_name = action.template_name or self.template_name
 
         if template_name:
-            extra_context = {
-                'action': action,
-                'action_renderer': self,
-                **self.get_extra_context(request=request,
-                                         context=context),
-            }
+            extra_context = self.get_extra_context(request=request,
+                                                   context=context)
 
             with context.update(extra_context):
                 try:
@@ -200,13 +207,13 @@ class BaseActionRenderer:
         if extra_js_view_data:
             js_view_data.update(extra_js_view_data)
 
-        extra_context = {
-            'action': action,
-            'action_renderer': self,
+        extra_context = self.get_extra_context(request=request,
+                                               context=context)
+        extra_context.update({
             'js_model_class': action.js_model_class,
             'js_view_class': js_view_class,
             'js_view_data': js_view_data,
-        }
+        })
 
         with context.update(extra_context):
             try:
@@ -271,6 +278,50 @@ class BaseActionGroupRenderer(BaseActionRenderer):
 
     #: The default class for rendering any items within the group.
     default_item_renderer_cls: type[BaseActionRenderer] = DefaultActionRenderer
+
+    def get_extra_context(
+        self,
+        *,
+        request: HttpRequest,
+        context: Context,
+    ) -> dict[str, Any]:
+        """Return extra template context for the action.
+
+        This includes a ``children`` key containing the children for this
+        action in the parent attachment point.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            dict:
+            Extra context to use when rendering the action's template.
+        """
+        action = self.action
+        registry = action.parent_registry
+
+        assert registry is not None, (
+            f'Attempted to call get_extra_context on {self!r} without first '
+            f'being registered.'
+        )
+
+        action_id = action.action_id
+        assert action_id
+
+        extra_context = super().get_extra_context(request=request,
+                                                  context=context)
+
+        extra_context['children'] = [
+            child
+            for child in registry.get_children(action_id)
+            if child.should_render(context=context)
+        ]
+
+        return extra_context
 
 
 class DefaultActionGroupRenderer(BaseActionGroupRenderer):

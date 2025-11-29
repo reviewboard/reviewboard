@@ -88,12 +88,6 @@ class BaseGroupActionTests(TestCase):
             self.group_action.get_extra_context(request=request,
                                                 context=context),
             {
-                'children': [
-                    self.item1_action,
-                    self.item2_action,
-                    self.item3_action,
-                ],
-                'has_parent': False,
                 'id': 'group-action',
                 'label': 'Test Group',
                 'url': '#',
@@ -117,7 +111,6 @@ class BaseGroupActionTests(TestCase):
                     'group-item-1-action',
                     'group-item-3-action',
                 ],
-                'domID': 'action-group-action',
                 'label': 'Test Group',
                 'url': '#',
                 'visible': True,

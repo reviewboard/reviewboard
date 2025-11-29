@@ -41,10 +41,21 @@ class BaseActionRendererTests(TestCase):
         context = Context()
 
         # This should just call out to the action's get_extra_context().
-        self.assertEqual(renderer.get_extra_context(request=request,
-                                                    context=context),
-                         action.get_extra_context(request=request,
-                                                  context=context))
+        self.assertEqual(
+            renderer.get_extra_context(request=request,
+                                       context=context),
+            {
+                'action': action,
+                'action_renderer': renderer,
+                'attachment_point_id': 'review-request',
+                'dom_element_id': 'action-test',
+                'has_parent': False,
+                'id': 'test',
+                'label': 'Test Action 1',
+                'url': '#',
+                'verbose_label': None,
+                'visible': True,
+            })
 
     def test_render(self) -> None:
         """Testing BaseActionRenderer.render"""

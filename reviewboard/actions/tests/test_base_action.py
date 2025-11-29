@@ -238,7 +238,6 @@ class BaseActionTests(TestCase):
             page.addAction(new RB.Actions.Action(
                 {"id": "test-action",
                  "visible": true,
-                 "domID": "action-test-action",
                  "label": "My Label",
                  "url": "#"},
                 { parse: true }

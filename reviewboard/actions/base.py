@@ -371,25 +371,22 @@ class ActionAttachmentPoint:
         default_renderer_cls = self.default_action_renderer_cls
         js_view_data = self.get_js_view_data(context=context)
 
-        with context.push():
-            context['attachment_point_id'] = self.attachment_point_id
+        for action in self.iter_actions(include_children=True):
+            # Prioritize the actions's default renderer over the attachment
+            # point's.
+            renderer_cls = \
+                action.default_renderer_cls or default_renderer_cls
 
-            for action in self.iter_actions(include_children=True):
-                # Prioritize the actions's default renderer over the attachment
-                # point's.
-                renderer_cls = \
-                    action.default_renderer_cls or default_renderer_cls
-
-                try:
-                    yield action.render_js(request=request,
-                                           context=context,
-                                           renderer=renderer_cls,
-                                           extra_js_view_data=js_view_data)
-                except Exception as e:
-                    logger.exception('Error rendering JavaScript for '
-                                     'action %r: %s',
-                                     action, e,
-                                     extra={'request': request})
+            try:
+                yield action.render_js(request=request,
+                                       context=context,
+                                       renderer=renderer_cls,
+                                       extra_js_view_data=js_view_data)
+            except Exception as e:
+                logger.exception('Error rendering JavaScript for '
+                                 'action %r: %s',
+                                 action, e,
+                                 extra={'request': request})
 
 
 class BaseAction:
@@ -665,7 +662,6 @@ class BaseAction:
             dict:
             A dictionary of attributes to pass to the model instance.
         """
-        dom_id = self.get_dom_element_id()
         icon_class = self.icon_class
         url = self.get_url(context=context)
         visible = self.get_visible(context=context)
@@ -674,9 +670,6 @@ class BaseAction:
             'id': self.action_id,
             'visible': visible,
         }
-
-        if dom_id:
-            data['domID'] = dom_id
 
         if icon_class:
             data['iconClass'] = icon_class
@@ -821,7 +814,6 @@ class BaseAction:
             Extra context to use when rendering the action's template.
         """
         return {
-            'has_parent': self.parent_id is not None,
             'id': self.action_id,
             'label': self.get_label(context=context),
             'url': self.get_url(context=context),
@@ -1031,57 +1023,6 @@ class BaseGroupAction(BaseAction):
     #: are registered with this group as their parent but do not appear in this
     #: list will be added at the end of the group.
     children: Sequence[str] = []
-
-    def get_extra_context(
-        self,
-        *,
-        request: HttpRequest,
-        context: Context,
-    ) -> dict:
-        """Return extra template context for the action.
-
-        This provides all the children that can be rendered in the group.
-
-        Subclasses can override this to provide additional context.
-
-        Args:
-            request (django.http.HttpRequest):
-                The HTTP request from the client.
-
-            context (django.template.Context):
-                The current rendering context.
-
-        Returns:
-            dict:
-            Extra context to use when rendering the action's template.
-
-        Raises:
-            reviewboard.actions.errors.ActionError:
-                There was an error retrieving data for the action.
-
-                Details will be in the error message.
-        """
-        registry = self.parent_registry
-
-        if not registry:
-            raise ActionError(
-                f'Attempted to call get_extra_context on {self!r} without '
-                f'first being registered.'
-            )
-
-        extra_context = super().get_extra_context(request=request,
-                                                  context=context)
-
-        action_id = self.action_id
-        assert action_id
-
-        extra_context['children'] = [
-            child
-            for child in registry.get_children(action_id)
-            if child.should_render(context=context)
-        ]
-
-        return extra_context
 
     def get_js_model_data(
         self,
