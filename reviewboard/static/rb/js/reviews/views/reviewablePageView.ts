@@ -3,10 +3,12 @@
  */
 import {
     type DialogView,
+    type ShowConfirmDialogResult,
     DialogActionType,
     craft,
     paint,
     renderInto,
+    showConfirmDialog,
 } from '@beanbag/ink';
 import {
     type EventsHash,
@@ -592,11 +594,19 @@ export class ReviewablePageView<
      * Confirms that the user wants to post the review, and then posts it
      * and reloads the page.
      *
+     * Version Changed:
+     *     7.1:
+     *     This function is now asynchronous, returning a Promise.
+     *
      * Args:
      *     e (JQuery.ClickEvent, optional):
      *         The event which triggered the action, if available.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     A promise for the operation.
      */
-    shipIt(e?: JQuery.ClickEvent) {
+    async shipIt(e?: JQuery.ClickEvent) {
         if (e) {
             e.preventDefault();
             e.stopPropagation();
@@ -605,81 +615,42 @@ export class ReviewablePageView<
         const session = UserSession.instance;
 
         if (session.get('confirmShipIt')) {
-            const onConfirm = async () => {
-                if (doNotAskEl.checked) {
-                    session.set('confirmShipIt', false);
-                    await session.storeSettings(['confirmShipIt']);
-                }
+            await showConfirmDialog({
+                canSuppress: true,
+                id: `confirm-ship-it-dialog-${this.cid}`,
+                title: _`Are you sure you want to post this Ship It! review?`,
 
-                await this.#postShipItReview();
-            };
+                body: [
+                    _`
+                        This review will tell the author that you approve
+                        of their review request.
+                    `,
 
-            const cid = this.cid;
-            const doNotAskEl = paint<HTMLInputElement>`
-                <input id="confirm-ship-it-do-not-ask-${cid}"
-                       type="checkbox"/>
-            `;
+                    paint<HTMLElement>`
+                        <p>
+                         <strong>${_`Tip:`} </strong>
+                         ${_`
+                             You can revoke this Ship It! or publish new
+                             reviews after this is published.
+                         `}
+                        </p>
+                   `,
+                ],
+                confirmButtonText: _`Post the review`,
 
-            /*
-             * Work around bad default layout for checkboxes and labels.
-             *
-             * Ideally this would be in CSS, but this is a stopgap until we
-             * have a more formal component for this kind of dialog or for
-             * form controls.
-             */
-            const doNotAskStyle = {
-                'align-items': 'center',
-                'display': 'flex',
-                'gap': '0.5ch',
-                'margin': '2em 0 0 0',
-            };
+                onConfirm: async (
+                    result: ShowConfirmDialogResult,
+                ) => {
+                    if (result.suppressed) {
+                        session.set('confirmShipIt', false);
+                        await session.storeSettings(['confirmShipIt']);
+                    }
 
-            const dialogView = craft<DialogView>`
-                <Ink.Dialog id="confirm-ship-it-dialog-${cid}"
-                            title="${_`
-                 Are you sure you want to post this Ship It! review?
-                `}">
-                 <Ink.Dialog.Body>
-                  <p>
-                   ${_`
-                    This review will tell the author that you approve of their
-                    review request.
-                   `}
-                  </p>
-                  <p>
-                   <strong>${_`Tip:`} </strong>
-                   ${_`
-                    You can revoke this Ship It! or publish new reviews
-                    after this is published.
-                   `}
-                  </p>
-                  <label for="confirm-ship-it-do-not-ask-${cid}"
-                         style=${doNotAskStyle}>
-                   ${doNotAskEl}
-                   ${' '}
-                   ${_`Do not ask again`}
-                  </label>
-                 </Ink.Dialog.Body>
-                 <Ink.Dialog.PrimaryActions>
-                  <Ink.DialogAction
-                    id="confirm-ship-it-button-${cid}"
-                    type="primary"
-                    action=${DialogActionType.CALLBACK_AND_CLOSE}
-                    callback=${() => onConfirm()}>
-                   ${_`Post the Review`}
-                  </Ink.DialogAction>
-                  <Ink.DialogAction
-                    id="cancel-ship-it-button-${cid}"
-                    action=${DialogActionType.CLOSE}>
-                   ${_`Cancel`}
-                  </Ink.DialogAction>
-                 </Ink.Dialog.PrimaryActions>
-                </Ink.Dialog>
-            `;
-
-            dialogView.open();
+                    await this.#postShipItReview();
+                },
+            });
         } else {
-            this.#postShipItReview();
+            await this.#postShipItReview();
         }
     }
 

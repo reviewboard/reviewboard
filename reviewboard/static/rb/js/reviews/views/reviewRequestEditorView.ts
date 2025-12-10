@@ -246,7 +246,10 @@ class ClosedBannerView extends BannerView {
      */
     _onReopenClicked() {
         this.reviewRequest.reopen()
-            .catch(err => alert(err.message));
+            .catch(err => showErrorDialog({
+                error: err,
+                title: _`Error reopening the review request`,
+            }));
 
         return false;
     }
@@ -585,8 +588,9 @@ export class ReviewRequestEditorView extends BaseView<
      * thumbnails, turning them into FileAttachment and Screenshot objects.
      */
     protected onInitialRender() {
-        const reviewRequest = this.model.get('reviewRequest');
-        const fileAttachments = this.model.get('fileAttachments');
+        const model = this.model;
+        const reviewRequest = model.get('reviewRequest');
+        const fileAttachments = model.get('fileAttachments');
         const draft = reviewRequest.draft;
 
         this.#$warning = $('#review-request-warning');
@@ -603,7 +607,7 @@ export class ReviewRequestEditorView extends BaseView<
          */
         this.showBanner();
 
-        if (this.model.get('editable')) {
+        if (model.get('editable')) {
             DnDUploader.instance.registerDropTarget(
                 this.#$attachmentsContainer,
                 _`Drop to add a file attachment`,
@@ -626,7 +630,7 @@ export class ReviewRequestEditorView extends BaseView<
                 this.#$attachmentsContainer.hide();
             }
         });
-        this.listenTo(this.model, 'replaceAttachment', this._removeThumbnail);
+        this.listenTo(model, 'replaceAttachment', this._removeThumbnail);
 
         /*
          * Import all the screenshots and file attachments rendered onto
@@ -646,53 +650,59 @@ export class ReviewRequestEditorView extends BaseView<
 
         this._setupActions();
 
-        this.model.on('publishError', errorText => {
-            alert(errorText);
+        this.listenTo(model, 'publishError', errorText => {
+            showErrorDialog({
+                error: errorText,
+                title: _`Error publishing the review request`,
+            });
 
             this.$('#btn-draft-publish').enable();
             this.$('#btn-draft-discard').enable();
         });
 
-        this.model.on('saved', this.showBanner, this);
-        this.model.on('published', this._refreshPage, this);
-        reviewRequest.on('closed reopened', this._refreshPage, this);
+        this.listenTo(model, 'saved', this.showBanner);
+        this.listenTo(model, 'published', this._refreshPage);
+        this.listenTo(reviewRequest, 'closed reopened', this._refreshPage);
         this.listenTo(reviewRequest, 'destroyed',
                       () => RB.navigateTo(SITE_ROOT));
 
-        draft.on('destroyed', this._refreshPage, this);
+        this.listenTo(draft, 'destroyed', this._refreshPage);
 
         window.onbeforeunload = this._onBeforeUnload.bind(this);
     }
 
     /**
      * Prompt the user to load an unpublished draft.
+     *
+     * Version Changed:
+     *     7.1:
+     *     This function is now asynchronous, returning a Promise.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     A promise for the operation.
      */
-    promptToLoadUserDraft() {
-        const loadDraft = () => {
-            this.model.set('viewingUserDraft', true);
-        };
+    async promptToLoadUserDraft() {
+        await showConfirmDialog({
+            title: _`View draft data`,
 
-        const buttons = paint<HTMLButtonElement[]>`
-            <Ink.Button type="primary"
-                        onClick="${() => loadDraft()}">
-                ${_`Load Draft Data`}
-            </Ink.Button>
-            <Ink.Button>
-                ${_`Cancel`}
-            </Ink.Button>
-        `;
+            body: [
+                _`
+                    This review request is owned by another user and has an
+                    unpublished draft.
+                `,
 
-        $('<div>')
-            .append(_`
-                <p>This review request is owned by another user and has an
-                unpublished draft.</p>
-                <p>Before making any changes to the review request, you will
-                need to view the draft.</p>
-            `)
-            .modalBox({
-                buttons: buttons,
-                title: _`View draft data`,
-            });
+                _`
+                    Before making any changes to the review request, you will
+                    need to view the draft.
+                `,
+            ],
+            confirmButtonText: _`Load draft data`,
+
+            onConfirm: async () => {
+                this.model.set('viewingUserDraft', true);
+            },
+        });
     }
 
     /**
