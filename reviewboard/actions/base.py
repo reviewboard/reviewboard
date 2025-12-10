@@ -12,6 +12,7 @@ from typing import Any, List, Optional, TYPE_CHECKING, cast
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from housekeeping import func_deprecated
+from typing_extensions import final
 
 from reviewboard.actions.errors import (ActionError,
                                         MissingActionRendererError)
@@ -433,6 +434,7 @@ class ActionAttachmentPoint:
                 )
 
 
+@final
 class ActionPlacement:
     """Placement information for an action.
 
@@ -443,6 +445,10 @@ class ActionPlacement:
     Version Added:
         7.1
     """
+
+    ######################
+    # Instance variables #
+    ######################
 
     #: The attachment point for the action.
     attachment: str
@@ -517,6 +523,23 @@ class ActionPlacement:
             return 0
         else:
             return parent_action.depth + 1
+
+    def clone(self) -> ActionPlacement:
+        """Return a clone of action placement.
+
+        This is used to produce a copy of a central action that can be
+        attached to an action instance, to avoid sharing of state.
+
+        Returns:
+            ActionPlacement:
+            The cloned instance.
+        """
+        return ActionPlacement(
+            attachment=self.attachment,
+            default_renderer_cls=self.default_renderer_cls,
+            dom_element_id=self.dom_element_id,
+            parent_id=self.parent_id,
+        )
 
 
 class BaseAction:
@@ -726,6 +749,14 @@ class BaseAction:
             self.placements = [
                 ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
                                 parent_id=parent_id),
+            ]
+        else:
+            # Copy all the placements, so we don't share state between
+            # multiple actions or subclasses of actions that define the
+            # same placements.
+            self.placements = [
+                placement.clone()
+                for placement in self.placements
             ]
 
         if parent_id:
