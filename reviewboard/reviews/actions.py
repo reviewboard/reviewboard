@@ -9,10 +9,10 @@ from django.template import Context
 from django.utils.translation import gettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.actions import (AttachmentPoint,
+from reviewboard.actions import (ActionPlacement,
+                                 AttachmentPoint,
                                  BaseAction,
                                  BaseMenuAction,
-                                 QuickAccessActionMixin,
                                  actions_registry)
 from reviewboard.actions.renderers import (BaseActionRenderer,
                                            DetailedMenuActionGroupRenderer,
@@ -337,9 +337,7 @@ class CreateReviewAction(BaseAction):
     """
 
     action_id = 'create-review'
-    parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
-    attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Create Review')
     verbose_label = _('Create a new review')
     description = [
@@ -350,6 +348,12 @@ class CreateReviewAction(BaseAction):
     ]
     icon_class = 'rb-icon rb-icon-create-review'
     js_model_class = 'RB.CreateReviewAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER,
+                        parent_id='review-menu'),
+        ActionPlacement(attachment=AttachmentPoint.QUICK_ACCESS),
+    ]
 
     def should_render(
         self,
@@ -386,9 +390,7 @@ class EditReviewAction(BaseAction):
     """
 
     action_id = 'edit-review'
-    parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
-    attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Edit Review')
     verbose_label = _('Edit your review')
     description = [
@@ -396,6 +398,12 @@ class EditReviewAction(BaseAction):
     ]
     icon_class = 'rb-icon rb-icon-compose-review'
     js_model_class = 'RB.EditReviewAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER,
+                        parent_id='review-menu'),
+        ActionPlacement(attachment=AttachmentPoint.QUICK_ACCESS),
+    ]
 
     def should_render(
         self,
@@ -432,9 +440,7 @@ class AddGeneralCommentAction(BaseAction):
     """
 
     action_id = 'add-general-comment'
-    parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
-    attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Add General Comment')
     verbose_label = _('Add a general comment')
     description = [
@@ -443,6 +449,12 @@ class AddGeneralCommentAction(BaseAction):
     ]
     icon_class = 'rb-icon rb-icon-edit'
     js_model_class = 'RB.AddGeneralCommentAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER,
+                        parent_id='review-menu'),
+        ActionPlacement(attachment=AttachmentPoint.QUICK_ACCESS),
+    ]
 
     def should_render(
         self,
@@ -478,9 +490,7 @@ class ShipItAction(BaseAction):
     """
 
     action_id = 'ship-it'
-    parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
-    attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Ship It!')
     verbose_label = _('Ship it!')
     description = [
@@ -491,6 +501,12 @@ class ShipItAction(BaseAction):
     ]
     icon_class = 'rb-icon rb-icon-shipit'
     js_model_class = 'RB.ShipItAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER,
+                        parent_id='review-menu'),
+        ActionPlacement(attachment=AttachmentPoint.QUICK_ACCESS),
+    ]
 
     def should_render(
         self,
@@ -523,60 +539,6 @@ class ShipItAction(BaseAction):
             (user.pk != review_request.submitter_id or
              bool(siteconfig.get('reviews_allow_self_shipit')))
         )
-
-
-class QuickAccessShipItAction(QuickAccessActionMixin, ShipItAction):
-    """A Quick Access button for the "Ship It" action.
-
-    When enabled, this action provides quick access to posting a Ship It
-    on a review request from the Quick Access hotbar.
-
-    Version Added:
-        7.1
-    """
-
-    action_id = 'quickaccess-ship-it'
-
-
-class QuickAccessCreateReviewAction(QuickAccessActionMixin,
-                                    CreateReviewAction):
-    """A Quick Access button for the "Create Review" action.
-
-    When enabled, this action provides quick access to creating a new, empty
-    review request from the Quick Access hotbar.
-
-    Version Added:
-        7.1
-    """
-
-    action_id = 'quickaccess-create-review'
-
-
-class QuickAccessEditReviewAction(QuickAccessActionMixin, EditReviewAction):
-    """A Quick Access button for the "Edit Review" action.
-
-    When enabled, this action provides quick access to editing an existing
-    review from the Quick Access hotbar.
-
-    Version Added:
-        7.1
-    """
-
-    action_id = 'quickaccess-edit-review'
-
-
-class QuickAccessAddGeneralCommentAction(QuickAccessActionMixin,
-                                         AddGeneralCommentAction):
-    """A Quick Access button for the "Add General Comment" action.
-
-    When enabled, this action provides quick access to adding a new General
-    Comment from the Quick Access hotbar.
-
-    Version Added:
-        7.1
-    """
-
-    action_id = 'quickaccess-add-general-comment'
 
 
 class LegacyAddGeneralCommentAction(BaseAction):

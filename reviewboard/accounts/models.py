@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import (Any, ClassVar, Literal, Optional, Sequence,
                     TYPE_CHECKING, Union, overload)
 from uuid import uuid4
@@ -43,6 +44,9 @@ if TYPE_CHECKING:
 else:
     BaseUser = object
     User = DjangoUser
+
+
+logger = logging.getLogger(__name__)
 
 
 class UserLocalSiteStats(TypedDict):
@@ -339,10 +343,48 @@ class Profile(models.Model):
         Type:
             list of str
         """
-        if not self.settings:
+        settings = self.settings
+
+        if not settings:
             return []
 
-        return self.settings.get('quick_access_actions', [])
+        quick_access_actions = settings.get('quick_access_action_ids', [])
+
+        if not quick_access_actions:
+            # Check if we have any legacy (early-7.1) actions stored. If so,
+            # convert them.
+            #
+            # This only impacts actions stored on RBCommons during the time
+            # in which this feature was deployed there, before actions were
+            # reworked later in 7.1's development. This can all be removed
+            # once stored settings there are all updated.
+            legacy_quick_access_actions = settings.get('quick_access_actions')
+
+            if legacy_quick_access_actions:
+                assert isinstance(legacy_quick_access_actions, list)
+
+                logger.debug('Migrating legacy Quick Access actions for '
+                             'user ID %s (%r)',
+                             self.user_id, legacy_quick_access_actions)
+
+                # Ideally we'd use removeprefix(), but we don't have that on
+                # Python 3.8.
+                prefix = 'quickaccess-'
+                prefix_len = len(prefix)
+
+                quick_access_actions = []
+
+                for action_id in legacy_quick_access_actions:
+                    if action_id.startswith(prefix):
+                        action_id = action_id[prefix_len:]
+
+                    quick_access_actions.append(action_id)
+
+                settings['quick_access_action_ids'] = quick_access_actions
+                del settings['quick_access_actions']
+                self.save(update_fields=('settings',))
+
+        return quick_access_actions
 
     @quick_access_actions.setter
     def quick_access_actions(
@@ -358,7 +400,7 @@ class Profile(models.Model):
             action_ids (list of str):
                 The list of enabled Quick Access action IDs.
         """
-        self.settings['quick_access_actions'] = list(action_ids)
+        self.settings['quick_access_action_ids'] = list(action_ids)
 
     @property
     def ui_theme_id(self) -> str:

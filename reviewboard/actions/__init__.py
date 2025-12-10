@@ -15,8 +15,7 @@ from reviewboard.actions.base import (ActionAttachmentPoint,
                                       AttachmentPoint,
                                       BaseAction,
                                       BaseGroupAction,
-                                      BaseMenuAction,
-                                      QuickAccessActionMixin)
+                                      BaseMenuAction)
 
 if TYPE_CHECKING:
     from reviewboard.actions.registry import (
@@ -47,7 +46,6 @@ __all__ = [
     'BaseAction',
     'BaseGroupAction',
     'BaseMenuAction',
-    'QuickAccessActionMixin',
     'action_attachment_points_registry',
     'actions_registry',
 ]
@@ -59,5 +57,4 @@ __autodoc_excludes__ = [
     'BaseAction',
     'BaseGroupAction',
     'BaseMenuAction',
-    'QuickAccessActionMixin',
 ]

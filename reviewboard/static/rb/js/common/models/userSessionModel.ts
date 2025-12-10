@@ -307,7 +307,7 @@ interface UserSessionAttrs extends ModelAttributes {
      * Version Added:
      *     7.1
      */
-    quickAccessActions: string[];
+    quickAccessActionIDs: string[];
 
     /** Whether the server is operating in read-only mode. */
     readOnly: boolean;
@@ -351,7 +351,7 @@ interface UserSessionAttrs extends ModelAttributes {
  */
 const _storeSettingsMap: Record<keyof UserSessionAttrs, string> = {
     'confirmShipIt': 'confirm_ship_it',
-    'quickAccessActions': 'quick_access_actions',
+    'quickAccessActionIDs': 'quick_access_action_ids',
 };
 
 
@@ -409,7 +409,7 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
         fullName: null,
         loginURL: null,
         mutedReviewRequestsURL: null,
-        quickAccessActions: null,
+        quickAccessActionIDs: null,
         readOnly: false,
         sessionURL: null,
         showReviewDialogTips: true,

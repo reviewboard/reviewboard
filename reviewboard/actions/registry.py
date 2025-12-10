@@ -20,6 +20,7 @@ from reviewboard.actions.base import (ActionAttachmentPoint,
                                       AttachmentPoint,
                                       BaseAction,
                                       BaseGroupAction)
+from reviewboard.actions.renderers import ButtonActionRenderer
 from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.registries.registry import OrderedRegistry, Registry
 
@@ -58,7 +59,10 @@ class ActionAttachmentPointsRegistry(Registry[ActionAttachmentPoint]):
             ActionAttachmentPoint(AttachmentPoint.REVIEW_REQUEST_LEFT),
             ActionAttachmentPoint(AttachmentPoint.REVIEW_REQUEST),
             ActionAttachmentPoint(AttachmentPoint.UNIFIED_BANNER),
-            ActionAttachmentPoint(AttachmentPoint.QUICK_ACCESS),
+            ActionAttachmentPoint(
+                AttachmentPoint.QUICK_ACCESS,
+                default_action_renderer_cls=ButtonActionRenderer,
+            ),
         ]
 
     def get_attachment_point(
@@ -161,10 +165,6 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
             LegacyEditReviewAction,
             LegacyShipItAction,
             MuteAction,
-            QuickAccessAddGeneralCommentAction,
-            QuickAccessCreateReviewAction,
-            QuickAccessEditReviewAction,
-            QuickAccessShipItAction,
             ReviewMenuAction,
             ShipItAction,
             StarAction,
@@ -220,10 +220,6 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
             EditReviewAction(),
             AddGeneralCommentAction(),
             ShipItAction(),
-            QuickAccessCreateReviewAction(),
-            QuickAccessEditReviewAction(),
-            QuickAccessAddGeneralCommentAction(),
-            QuickAccessShipItAction(),
         ]
 
         for action in builtin_actions:
