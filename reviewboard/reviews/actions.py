@@ -85,10 +85,14 @@ class CloseCompletedAction(BaseAction):
     """
 
     action_id = 'close-completed'
-    parent_id = CloseMenuAction.action_id
     label = _('Completed')
     apply_to = all_review_request_url_names
     js_model_class = 'RB.CloseCompletedAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id=CloseMenuAction.action_id),
+    ]
 
     def should_render(
         self,
@@ -125,10 +129,14 @@ class CloseDiscardedAction(BaseAction):
     """
 
     action_id = 'close-discarded'
-    parent_id = CloseMenuAction.action_id
     label = _('Discarded')
     apply_to = all_review_request_url_names
     js_model_class = 'RB.CloseDiscardedAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id=CloseMenuAction.action_id),
+    ]
 
 
 class DeleteAction(BaseAction):
@@ -139,10 +147,14 @@ class DeleteAction(BaseAction):
     """
 
     action_id = 'delete-review-request'
-    parent_id = CloseMenuAction.action_id
     label = _('Delete Permanently')
     apply_to = all_review_request_url_names
     js_model_class = 'RB.DeleteAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id=CloseMenuAction.action_id),
+    ]
 
     def should_render(
         self,
@@ -297,10 +309,13 @@ class ReviewMenuAction(BaseMenuAction):
 
     action_id = 'review-menu'
     apply_to = all_review_request_url_names
-    attachment = AttachmentPoint.UNIFIED_BANNER
     default_renderer_cls = ReviewMenuActionRenderer
     icon_class = 'rb-icon rb-icon-compose-review'
     label = _('Review')
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER),
+    ]
 
     def should_render(
         self,
@@ -728,9 +743,13 @@ class UploadDiffAction(BaseAction):
     """
 
     action_id = 'upload-diff'
-    parent_id = UpdateMenuAction.action_id
     apply_to = all_review_request_url_names
     js_model_class = 'RB.UpdateDiffAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id=UpdateMenuAction.action_id),
+    ]
 
     def get_label(
         self,
@@ -796,10 +815,14 @@ class UploadFileAction(BaseAction):
     """
 
     action_id = 'upload-file'
-    parent_id = UpdateMenuAction.action_id
     label = _('Add File')
     apply_to = all_review_request_url_names
     js_model_class = 'RB.AddFileAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id=UpdateMenuAction.action_id),
+    ]
 
     def should_render(
         self,
@@ -856,9 +879,12 @@ class StarAction(BaseAction):
 
     action_id = 'star-review-request'
     apply_to = all_review_request_url_names
-    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     default_renderer_cls = StarActionRenderer
     label = ''
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST_LEFT),
+    ]
 
     def should_render(
         self,
@@ -911,10 +937,13 @@ class ArchiveMenuAction(BaseMenuAction):
     """
 
     action_id = 'archive-menu'
-    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     label = ''
     default_renderer_cls = ArchiveMenuActionRenderer
     apply_to = all_review_request_url_names
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST_LEFT),
+    ]
 
     def should_render(
         self,
@@ -954,13 +983,14 @@ class ArchiveAction(BaseAction):
     """
 
     action_id = 'archive'
-    parent_id = ArchiveMenuAction.action_id
-    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
     js_model_class = 'RB.ArchiveAction'
-
-    # This is only shown on page load. It will be overridden at runtime.
     label = _('Toggle Archived')
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST_LEFT,
+                        parent_id=ArchiveMenuAction.action_id),
+    ]
 
 
 class MuteAction(BaseAction):
@@ -971,13 +1001,14 @@ class MuteAction(BaseAction):
     """
 
     action_id = 'mute'
-    parent_id = ArchiveMenuAction.action_id
-    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
     js_model_class = 'RB.MuteAction'
-
-    # This is only shown on page load. It will be overridden at runtime.
     label = _('Toggle Muted')
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST_LEFT,
+                        parent_id=ArchiveMenuAction.action_id),
+    ]
 
 
 class BaseReviewRequestAction(BaseAction):
