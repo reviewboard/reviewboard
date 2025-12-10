@@ -66,6 +66,37 @@ class TestGroupAction(BaseGroupAction):
     ]
 
 
+class TestGroupActionWithSubgroups(BaseGroupAction):
+    """Group action with subgroups for testing.
+
+    Version Added:
+        7.1
+    """
+
+    action_id = 'group-with-subgroups-action'
+    label = 'Test Group with Subgroups'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.HEADER),
+    ]
+
+
+class TestSubgroupAction(BaseGroupAction):
+    """Subgroup action for testing.
+
+    Version Added:
+        7.1
+    """
+
+    action_id = 'subgroup-action'
+    label = 'Subgroup'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.HEADER,
+                        parent_id=TestGroupActionWithSubgroups.action_id),
+    ]
+
+
 class TestGroupItemAction1(BaseAction):
     """Basic group item action for testing.
 
@@ -74,9 +105,13 @@ class TestGroupItemAction1(BaseAction):
     """
 
     action_id = 'group-item-1-action'
+    label = 'Group Item 1'
+
     placements = [
         ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
-                        parent_id='group-action'),
+                        parent_id=TestGroupAction.action_id),
+        ActionPlacement(attachment=AttachmentPoint.HEADER,
+                        parent_id=TestGroupActionWithSubgroups.action_id),
     ]
 
 
@@ -88,9 +123,13 @@ class TestGroupItemAction2(BaseAction):
     """
 
     action_id = 'group-item-2-action'
+    label = 'Group Item 2'
+
     placements = [
         ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
-                        parent_id='group-action'),
+                        parent_id=TestGroupAction.action_id),
+        ActionPlacement(attachment=AttachmentPoint.HEADER,
+                        parent_id=TestSubgroupAction.action_id),
     ]
 
 
@@ -102,9 +141,11 @@ class TestGroupItemAction3(BaseAction):
     """
 
     action_id = 'group-item-3-action'
+    label = 'Group Item 3'
+
     placements = [
         ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
-                        parent_id='group-action'),
+                        parent_id=TestGroupAction.action_id),
     ]
 
 

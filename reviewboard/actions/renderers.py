@@ -7,13 +7,16 @@ Version Added:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, cast
+from typing import Literal, Optional, TYPE_CHECKING, Type, Union, cast
 
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 
+from reviewboard.actions.errors import MissingActionRendererError
+
 if TYPE_CHECKING:
-    from typing import Any, ClassVar
+    from collections.abc import Iterable
+    from typing import Any, ClassVar, TypeAlias
 
     from django.http import HttpRequest
     from django.template import Context
@@ -24,6 +27,20 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+#: The type of an action group renderer for subgroups of groups.
+#:
+#: This can be a :py:class:`BaseActionGroupRenderer` subclass, the
+#: string "self" to reuse the parent action renderer, or ``None`` to
+#: prevent rendering.
+#:
+#: Version Added:
+#:     7.1
+ActionSubgroupRendererType: TypeAlias = Optional[Union[
+    Type['BaseActionGroupRenderer'],
+    Literal['self'],
+]]
 
 
 class BaseActionRenderer:
@@ -292,8 +309,18 @@ class BaseActionGroupRenderer(BaseActionRenderer):
         7.1
     """
 
-    #: The default class for rendering any items within the group.
-    default_item_renderer_cls: type[BaseActionRenderer] = DefaultActionRenderer
+    #: The default class for rendering any non-group items within the group.
+    default_item_renderer_cls: ClassVar[type[BaseActionRenderer]] = \
+        DefaultActionRenderer
+
+    #: The default class for rendering any sub-group items within the group.
+    #:
+    #: If unset (the default), then something else must supply a default
+    #: renderer for subgroups of this group.
+    #:
+    #: This can be the string "self" to use this class as the renderer for
+    #: subgroups.
+    default_subgroup_renderer_cls: ClassVar[ActionSubgroupRendererType] = None
 
     def get_extra_context(
         self,
@@ -327,6 +354,90 @@ class BaseActionGroupRenderer(BaseActionRenderer):
         ]
 
         return extra_context
+
+    def render_children(
+        self,
+        *,
+        children: Iterable[BaseAction],
+        context: Context,
+        request: HttpRequest,
+    ) -> SafeString:
+        """Render the children in the group.
+
+        This will iterate through all children in the group, rendering
+        them using their provided renderer or the group's default renderer.
+        The renderer chosen will depend on whether a child is a group action
+        or a standard action.
+
+        If this group should not be rendered, then no children will be
+        rendered.
+
+        Args:
+            children (list of reviewboard.actions.base.BaseAction):
+                The children to render.
+
+            context (django.template.Context):
+                The current rendering context.
+
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered children.
+        """
+        action = self.action
+
+        if not action.should_render(context=context):
+            return mark_safe('')
+
+        # Determine the possible renderers allowed for this group.
+        default_subgroup_renderer_cls = self.default_subgroup_renderer_cls
+
+        if default_subgroup_renderer_cls == 'self':
+            default_subgroup_renderer_cls = type(self)
+
+        default_renderer_classes = {
+            True: default_subgroup_renderer_cls,
+            False: self.default_item_renderer_cls,
+        }
+
+        attachment = self.placement.attachment
+        rendered: list[str] = []
+
+        for child in children:
+            placement = child.get_placement(attachment)
+            renderer = child.get_renderer_cls(
+                placement=placement,
+                fallback_renderer_cls=(
+                    default_renderer_classes[child._is_action_group]),
+            )
+
+            try:
+                rendered.append(child.render(
+                    request=request,
+                    context=context,
+                    placement=placement,
+                    renderer=renderer,
+                ))
+            except MissingActionRendererError:
+                if child._is_action_group:
+                    logger.error(
+                        'Could not render action %r inside of group action '
+                        '%r in attachment point %r. This location does not '
+                        'allow for nesting of groups.',
+                        child.action_id, action.action_id, attachment)
+                else:
+                    logger.error(
+                        'Could not render action %r inside of group action '
+                        '%r in attachment point %r. This location does not '
+                        'allow for child actions.',
+                        child.action_id, action.action_id, attachment)
+            except Exception as e:
+                logger.exception('Error rendering child action %r: %s',
+                                 child.action_id, e)
+
+        return mark_safe(''.join(rendered))
 
 
 class DefaultActionGroupRenderer(BaseActionGroupRenderer):
@@ -380,7 +491,7 @@ class MenuActionGroupRenderer(BaseActionGroupRenderer):
         7.1
     """
 
-    default_item_renderer_cls: type[BaseActionRenderer] = \
+    default_item_renderer_cls: ClassVar[type[BaseActionRenderer]] = \
         MenuItemActionRenderer
     js_view_class = 'RB.Actions.MenuActionView'
     template_name = 'actions/menu_action.html'
@@ -409,5 +520,5 @@ class DetailedMenuActionGroupRenderer(MenuActionGroupRenderer):
         7.1
     """
 
-    default_item_renderer_cls: type[BaseActionRenderer] = \
+    default_item_renderer_cls: ClassVar[type[BaseActionRenderer]] = \
         DetailedMenuItemActionRenderer

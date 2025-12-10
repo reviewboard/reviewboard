@@ -6,7 +6,9 @@
    role="menuitem"
    data-custom-rendered="true">
  <h4>
+{% if action.icon_class %}
   <span class="{{action.icon_class}}"></span>
+{% endif %}
   {{verbose_label|default:label}}
  </h4>
 {%  for description_part in action.description %}

@@ -26,6 +26,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
+    from typing import ClassVar
 
     from django.http import HttpRequest
     from django.template import Context
@@ -93,26 +94,14 @@ class ActionAttachmentPoint:
     To include an attachment point on a page, use the
     :py:func:`{% actions_html %}
     <reviewboard.actions.templatetags.actions.actions_html>` template tag.
+
+    Version Added:
+        7.1
     """
 
     ########################################
     # Instance-overridable class variables #
     ########################################
-
-    #: The default action renderer used for child actions.
-    #:
-    #: This may be set on the class or passed when initializing an instance.
-    #:
-    #: This will be used for any actions that don't already have a default
-    #: action renderer set. The action's default takes precedence in order
-    #: to allow actions such as menus to manage their own display.
-    default_action_renderer_cls: (type[BaseActionRenderer] | None) = \
-        DefaultActionRenderer
-
-    #: The unique ID for this attachment point.
-    #:
-    #: This may be set on the class or passed when initializing an instance.
-    attachment_point_id: str
 
     #: A pre-defined list of action IDs to include on the attachment point.
     #:
@@ -122,6 +111,32 @@ class ActionAttachmentPoint:
     #: Any additional actions registered to this attachment point will be
     #: added after these actions.
     actions: (Sequence[str] | None) = None
+
+    #: The unique ID for this attachment point.
+    #:
+    #: This may be set on the class or passed when initializing an instance.
+    attachment_point_id: str
+
+    #: The default action renderer used for child action groups.
+    #:
+    #: This may be set on the class or passed when initializing an instance.
+    #:
+    #: This will be used for any group actions that don't already have a
+    #: default action renderer set. The action's default takes precedence in
+    #: order to allow actions such as menus to manage their own display.
+    default_action_group_renderer_cls: (
+        type[BaseActionGroupRenderer] | None
+    ) = DefaultActionGroupRenderer
+
+    #: The default action renderer used for child actions.
+    #:
+    #: This may be set on the class or passed when initializing an instance.
+    #:
+    #: This will be used for any non-group actions that don't already have a
+    #: default action renderer set. The action's default takes precedence
+    #: in order to allow actions such as buttons to manage their own display.
+    default_action_renderer_cls: (type[BaseActionRenderer] | None) = \
+        DefaultActionRenderer
 
     ######################
     # Instance variables #
@@ -137,8 +152,11 @@ class ActionAttachmentPoint:
         attachment_point_id: (str | None) = None,
         *,
         actions: (Sequence[str] | None) = None,
-        default_action_renderer_cls: (type[BaseActionRenderer] | None) = None,
         actions_registry: (ActionsRegistry | None) = None,
+        default_action_group_renderer_cls: (
+            type[BaseActionGroupRenderer] | None
+        ) = None,
+        default_action_renderer_cls: (type[BaseActionRenderer] | None) = None,
     ) -> None:
         """Initialize the attachment point.
 
@@ -157,19 +175,27 @@ class ActionAttachmentPoint:
                 specified order. Any additional actions registered to this
                 attachment point will be added after these actions.
 
-            default_action_renderer_cls (type, optional):
-                The default action renderer used for child actions.
+            actions_registry (reviewboard.actions.registry.ActionsRegistry,
+                              optional):
+                The registry managing actions for this attachment point.
+
+                This is primarily for unit test purposes.
+
+            default_action_group_renderer_cls (type, optional):
+                The default action renderer used for child action groups.
 
                 This will be used for any actions that don't already have a
                 default action renderer set. The action's default takes
                 precedence in order to allow actions such as menus to manage
                 their own display.
 
-            actions_registry (reviewboard.actions.registry.ActionsRegistry,
-                              optional):
-                The registry managing actions for this attachment point.
+            default_action_renderer_cls (type, optional):
+                The default action renderer used for child actions.
 
-                This is primarily for unit test purposes.
+                This will be used for any actions that don't already have a
+                default action renderer set. The action's default takes
+                precedence in order to allow actions such as buttons to manage
+                their own display.
         """
         if attachment_point_id:
             self.attachment_point_id = attachment_point_id
@@ -184,6 +210,10 @@ class ActionAttachmentPoint:
 
         if default_action_renderer_cls is not None:
             self.default_action_renderer_cls = default_action_renderer_cls
+
+        if default_action_group_renderer_cls is not None:
+            self.default_action_group_renderer_cls = \
+                default_action_group_renderer_cls
 
         if not actions_registry:
             from reviewboard.actions import actions_registry
@@ -309,7 +339,9 @@ class ActionAttachmentPoint:
             request=request,
             context=context,
             actions=self.iter_actions(),
-            default_renderer_cls=self.default_action_renderer_cls,
+            default_action_renderer_cls=self.default_action_renderer_cls,
+            default_action_group_renderer_cls=(
+                self.default_action_group_renderer_cls),
         )))
 
     def _iter_render(
@@ -335,13 +367,17 @@ class ActionAttachmentPoint:
             Each rendered action HTML.
         """
         attachment_point_id = self.attachment_point_id
-        default_renderer_cls = self.default_action_renderer_cls
+        default_renderer_classes = {
+            True: self.default_action_group_renderer_cls,
+            False: self.default_action_renderer_cls,
+        }
 
         for action in self.iter_actions(include_children=False):
             placement = action.get_placement(attachment_point_id)
             renderer = action.get_renderer_cls(
                 placement=placement,
-                fallback_renderer_cls=default_renderer_cls,
+                fallback_renderer_cls=(
+                    default_renderer_classes[action._is_action_group]),
             )
 
             try:
@@ -362,7 +398,9 @@ class ActionAttachmentPoint:
         request: HttpRequest,
         context: Context,
         actions: Iterable[BaseAction],
-        default_renderer_cls: type[BaseActionRenderer] | None,
+        default_action_renderer_cls: type[BaseActionRenderer] | None,
+        default_action_group_renderer_cls: (type[BaseActionGroupRenderer] |
+                                            None),
     ) -> Iterator[SafeString]:
         """Generate JavaScript for each action in the attachment point.
 
@@ -380,8 +418,11 @@ class ActionAttachmentPoint:
             actions (list of BaseAction):
                 The actions to iterate through.
 
-            default_renderer_cls (type):
-                The default renderer to use as a fallback.
+            default_action_renderer_cls (type):
+                The default action renderer to use as a fallback.
+
+            default_action_group_renderer_cls (type):
+                The default action group renderer to use as a fallback.
 
         Yields:
             django.utils.safestring.SafeString:
@@ -389,6 +430,10 @@ class ActionAttachmentPoint:
         """
         attachment_point_id = self.attachment_point_id
         js_view_data = self.get_js_view_data(context=context)
+        default_renderer_classes = {
+            True: default_action_group_renderer_cls,
+            False: default_action_renderer_cls,
+        }
 
         for action in actions:
             placement = action.get_placement(attachment_point_id)
@@ -398,7 +443,8 @@ class ActionAttachmentPoint:
 
             renderer = action.get_renderer_cls(
                 placement=placement,
-                fallback_renderer_cls=default_renderer_cls,
+                fallback_renderer_cls=(
+                    default_renderer_classes[action._is_action_group]),
             )
 
             try:
@@ -421,16 +467,32 @@ class ActionAttachmentPoint:
             if (child_actions := placement.child_actions):
                 if (renderer is not None and
                     issubclass(renderer, BaseActionGroupRenderer)):
-                    child_default_renderer_cls = \
+                    child_default_item_renderer_cls = \
                         renderer.default_item_renderer_cls
+                    child_default_subgroup_renderer_cls = \
+                        renderer.default_subgroup_renderer_cls
+
+                    # Check if this renderer wants to use itself to render
+                    # subgroups.
+                    if child_default_subgroup_renderer_cls == 'self':
+                        child_default_subgroup_renderer_cls = renderer
                 else:
-                    child_default_renderer_cls = None
+                    # The current action's renderer is not a group renderer
+                    # with defaults for child renderers. Because of this,
+                    # we don't have a renderer we can use as a default. If
+                    # any children have their own, they will be used, but
+                    # any others may log an error.
+                    child_default_item_renderer_cls = None
+                    child_default_subgroup_renderer_cls = None
 
                 yield from self._iter_render_js(
                     request=request,
                     context=context,
                     actions=child_actions,
-                    default_renderer_cls=child_default_renderer_cls,
+                    default_action_renderer_cls=(
+                        child_default_item_renderer_cls),
+                    default_action_group_renderer_cls=(
+                        child_default_subgroup_renderer_cls),
                 )
 
 
@@ -688,6 +750,17 @@ class BaseAction:
     #: Type:
     #:     bool
     visible: bool = True
+
+    #: Whether or not this represents a group of actions.
+    #:
+    #: This allows for an inexpensive way of checking the base type of an
+    #: action without either performing instanceof/subclass checks. It should
+    #: be considered an internal flag and not subject to API compatibility
+    #: guarantees.
+    #:
+    #: Version Added:
+    #:     7.1
+    _is_action_group: ClassVar[bool] = False
 
     ######################
     # Instance variables #
@@ -1263,6 +1336,7 @@ class BaseAction:
         renderer_cls = self.get_renderer_cls(
             placement=placement,
             preferred_renderer_cls=renderer,
+            fallback_renderer_cls=fallback_renderer,
         )
 
         if renderer_cls is None:
@@ -1417,6 +1491,7 @@ class BaseAction:
         renderer_cls = self.get_renderer_cls(
             placement=placement,
             preferred_renderer_cls=renderer,
+            fallback_renderer_cls=fallback_renderer,
         )
 
         if renderer_cls is None:
@@ -1453,8 +1528,7 @@ class BaseGroupAction(BaseAction):
         7.1
     """
 
-    default_renderer_cls: (type[BaseActionRenderer] | None) = \
-        DefaultActionGroupRenderer
+    _is_action_group = True
     js_model_class = 'RB.Actions.GroupAction'
 
     #: An ordered list of child action IDs.

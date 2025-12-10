@@ -131,37 +131,11 @@ def child_actions_html(
             f"{type(parent_renderer)!r}"
         )
 
-    action = context['action']
-
-    if not action.should_render(context=context):
-        return mark_safe('')
-
-    default_item_renderer_cls = parent_renderer.default_item_renderer_cls
-    attachment = parent_renderer.placement.attachment
-
-    request = context['request']
-    actions: Iterable[BaseAction] = context['children']
-    rendered: list[str] = []
-
-    for child in actions:
-        placement = child.get_placement(attachment)
-        renderer = child.get_renderer_cls(
-            placement=placement,
-            fallback_renderer_cls=default_item_renderer_cls,
-        )
-
-        try:
-            rendered.append(child.render(
-                request=request,
-                context=context,
-                placement=placement,
-                renderer=renderer,
-            ))
-        except Exception:
-            logger.exception('Error rendering child action %s',
-                             child.action_id)
-
-    return mark_safe(''.join(rendered))
+    return parent_renderer.render_children(
+        children=context['children'],
+        context=context,
+        request=context['request'],
+    )
 
 
 @register.simple_tag(takes_context=True)

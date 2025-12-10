@@ -9,6 +9,7 @@ from __future__ import annotations
 from django.template import Context
 from django.utils.safestring import SafeString
 
+from reviewboard.actions.renderers import DefaultActionGroupRenderer
 from reviewboard.actions.tests.base import (
     TestActionsRegistry,
     TestGroupAction,
@@ -125,8 +126,11 @@ class BaseGroupActionTests(TestCase):
             'request': request,
         })
 
-        html = self.group_action.render(request=request,
-                                        context=context)
+        html = self.group_action.render(
+            request=request,
+            context=context,
+            fallback_renderer=DefaultActionGroupRenderer,
+        )
 
         self.assertIsInstance(html, SafeString)
         self.assertHTMLEqual(
@@ -140,21 +144,21 @@ class BaseGroupActionTests(TestCase):
                 hidden
                 style="display: none;"
                 href="#">
-              None
+              Group Item 1
              </a>
              <a id="action-review-request-group-item-2-action"
                 role="button"
                 hidden
                 style="display: none;"
                 href="#">
-              None
+              Group Item 2
              </a>
              <a id="action-review-request-group-item-3-action"
                 role="button"
                 hidden
                 style="display: none;"
                 href="#">
-              None
+              Group Item 3
              </a>
             </li>
             """)
@@ -166,8 +170,11 @@ class BaseGroupActionTests(TestCase):
             'request': request,
         })
 
-        js = self.group_action.render_js(request=request,
-                                         context=context)
+        js = self.group_action.render_js(
+            request=request,
+            context=context,
+            fallback_renderer=DefaultActionGroupRenderer,
+        )
 
         self.assertIsInstance(js, SafeString)
         self.assertHTMLEqual(

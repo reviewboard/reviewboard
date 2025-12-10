@@ -11,7 +11,10 @@ from django.template import Context
 from reviewboard.actions.base import (ActionPlacement,
                                       ActionAttachmentPoint,
                                       BaseAction)
-from reviewboard.actions.renderers import ButtonActionRenderer
+from reviewboard.actions.renderers import (
+    ButtonActionRenderer,
+    DetailedMenuActionGroupRenderer,
+)
 from reviewboard.actions.tests.base import (
     SpecialButtonActionRenderer,
     TestAction,
@@ -73,6 +76,7 @@ class _MyActionAttachmentPoint(ActionAttachmentPoint):
     ]
     attachment_point_id = 'test-point'
     default_action_renderer_cls = SpecialButtonActionRenderer
+    default_action_group_renderer_cls = DetailedMenuActionGroupRenderer
 
 
 class ActionAttachmentPointTests(TestCase):
@@ -239,14 +243,26 @@ class ActionAttachmentPointTests(TestCase):
             </li>
 
             <li class="rb-c-actions__action"
-                role="group"
+                role="menuitem"
                 id="action-test-point-group-action">
+             <a aria-label="Test Group"
+                href="#"
+                role="presentation">
+              <label class="rb-c-actions__action-label">
+               Test Group
+              </label>
+              <span class="ink-i-dropdown"></span>
+             </a>
+
              <a id="action-test-point-group-item-1-action"
+                data-custom-rendered="true"
                 hidden
                 style="display: none;"
                 href="#"
-                role="button">
-               My Group
+                role="menuitem">
+               <h4>
+                My Group
+               </h4>
              </a>
             </li>
 
@@ -309,13 +325,13 @@ class ActionAttachmentPointTests(TestCase):
                 model: page.getAction("test"),
             }));
 
-            page.addActionView(new RB.Actions.ActionView({
+            page.addActionView(new RB.Actions.MenuActionView({
                 "attachmentPointID": "test-point",
                 el: $('#action-test-point-group-action'),
                 model: page.getAction("group-action"),
             }));
 
-            page.addActionView(new RB.Actions.ActionView({
+            page.addActionView(new RB.Actions.MenuItemActionView({
                 "attachmentPointID": "test-point",
                 el: $('#action-test-point-group-item-1-action'),
                 model: page.getAction("group-item-1-action"),
