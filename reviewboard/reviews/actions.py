@@ -916,19 +916,6 @@ class StarAction(BaseAction):
                 super().should_render(context=context))
 
 
-class ArchiveMenuActionRenderer(MenuActionGroupRenderer):
-    """Action renderer for the archive menu.
-
-    This provides a custom template used to render the menu as an archive
-    icon, which can be pressed to archive the review request.
-
-    Version Added:
-        7.1
-    """
-
-    template_name = 'reviews/archive_menu_action.html'
-
-
 class ArchiveMenuAction(BaseMenuAction):
     """A menu for managing the visibility state of the review request.
 
@@ -937,9 +924,11 @@ class ArchiveMenuAction(BaseMenuAction):
     """
 
     action_id = 'archive-menu'
-    label = ''
-    default_renderer_cls = ArchiveMenuActionRenderer
+    default_renderer_cls = MenuActionGroupRenderer
     apply_to = all_review_request_url_names
+
+    icon_class = 'rb-icon rb-icon-archive-off'
+    verbose_label = _('Archive or Mute')
 
     placements = [
         ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST_LEFT),

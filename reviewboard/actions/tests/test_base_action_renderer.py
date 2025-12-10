@@ -57,6 +57,7 @@ class BaseActionRendererTests(TestCase):
                 'dom_element_id': 'action-review-request-test',
                 'has_parent': False,
                 'id': 'test',
+                'is_toplevel': True,
                 'label': 'Test Action 1',
                 'placement': placement,
                 'url': '#',

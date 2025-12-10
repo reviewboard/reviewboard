@@ -325,9 +325,12 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
 
         label = action['label']
         self.assertInHTML(
-            f'<a href="#" role="presentation" aria-label="{label}">'
-            f'<label class="rb-c-actions__action-label">{label}</label>'
-            f'<span class="ink-i-dropdown"></span></a>',
+            f"""
+            <a href="#" role="presentation" aria-label="{label}">
+             {label}
+             <span class="ink-i-dropdown"></span>
+            </a>
+            """,
             content)
 
     def _test_base_review_request_action_hook(
@@ -435,9 +438,12 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
 
             self.assertIn('Yes ID', content)
             self.assertInHTML(
-                f'<a href="#" role="presentation" aria-label="Menu Dict">'
-                f'<label class="rb-c-actions__action-label">Menu Dict</label>'
-                f'{dropdown_icon_html}</a>',
+                f"""
+                <a href="#" role="presentation" aria-label="Menu Dict">
+                 Menu Dict
+                 {dropdown_icon_html}
+                </a>
+                """,
                 content)
 
             self.assertIn('id="action-test-menu-dict"', content)

@@ -45,13 +45,10 @@ class DetailedMenuItemActionRendererTests(TestCase):
         self.assertHTMLEqual(
             html,
             """
-            <a
-               id="action-review-request-menu-item-action"
+            <a id="action-review-request-menu-item-action"
                role="menuitem"
                data-custom-rendered="true"
-               href="#"
-               hidden
-               style="display: none;">
+               href="#">
              <h4>
               <span class="my-icon"/>
               Verbose Menu Item Action 1
@@ -97,9 +94,7 @@ class DetailedMenuItemActionRendererTests(TestCase):
                     id="action-review-request-menu-item-action"
                     aria-label="Verbose Menu Item Action 1"
                     title="Menu Item 1 description."
-                    type="button"
-                    hidden
-                    style="display: none;">
+                    type="button">
              <span class="ink-c-button__icon my-icon"/>
              <label class="ink-c-button__label">
               Menu Item Action 1

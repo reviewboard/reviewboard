@@ -3,17 +3,31 @@
 
 {% block action_container_role %}menuitem{% endblock %}
 
+{% block action_container_css_class %}
+{%  if not label and action.icon_class %}-is-icon{% endif %}
+{% endblock action_container_css_class %}
+
 
 {% block action_content %}
-<a href="#" role="presentation"
-   aria-label="{{verbose_label|default:label}}">
- <label class="rb-c-actions__action-label">
-{%  if action.icon_class %}
+<span {{action_attrs}} role="presentation">
+ <a href="#" role="presentation"
+    aria-label="{{verbose_label|default:label}}">
+{%  block action_menu_label %}
+{%   if action.icon_class %}
   <span class="{{action.icon_class}}"></span>
+{%   endif %}
+  {{label|default:""}}
+{%  endblock action_menu_label %}
+{%  if label or not action.icon_class %}
+  <span class="ink-i-dropdown"></span>
 {%  endif %}
-  {{label}}
- </label>
- <span class="ink-i-dropdown"></span>
-</a>
-{{block.super}}
+ </a>
+{% comment %}
+ Templates for the actions to reference when adding to the menu.
+ These must be in the DOM in order to be referenced.
+{% endcomment %}
+ <div hidden style="display: none;">
+  {{block.super}}
+ </div>
+</span>
 {% endblock action_content %}

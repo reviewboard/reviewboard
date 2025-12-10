@@ -137,26 +137,19 @@ class BaseGroupActionTests(TestCase):
             html,
             """
             <li class="rb-c-actions__action"
-                id="action-review-request-group-action"
                 role="group">
              <a id="action-review-request-group-item-1-action"
                 role="button"
-                hidden
-                style="display: none;"
                 href="#">
               Group Item 1
              </a>
              <a id="action-review-request-group-item-2-action"
                 role="button"
-                hidden
-                style="display: none;"
                 href="#">
               Group Item 2
              </a>
              <a id="action-review-request-group-item-3-action"
                 role="button"
-                hidden
-                style="display: none;"
                 href="#">
               Group Item 3
              </a>

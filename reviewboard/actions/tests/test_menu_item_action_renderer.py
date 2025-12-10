@@ -47,9 +47,7 @@ class MenuItemActionRendererTests(TestCase):
             """
             <a id="action-review-request-menu-item-action"
                role="button"
-               href="#"
-               hidden
-               style="display: none;">
+               href="#">
              <span class="my-icon"/>
              Menu Item Action 1
             </a>
@@ -89,9 +87,7 @@ class MenuItemActionRendererTests(TestCase):
                     id="action-review-request-menu-item-action"
                     type="button"
                     aria-label="Verbose Menu Item Action 1"
-                    title="Menu Item 1 description."
-                    hidden
-                    style="display: none;">
+                    title="Menu Item 1 description.">
              <span class="ink-c-button__icon my-icon"/>
              <label class="ink-c-button__label">
               Menu Item Action 1

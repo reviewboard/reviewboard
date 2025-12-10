@@ -55,20 +55,15 @@ class DefaultActionGroupRendererTests(TestCase):
             html,
             """
             <li class="rb-c-actions__action"
-                id="action-review-request-group-action"
                 role="group">
              <a id="action-review-request-group-item-1-action"
                 href="#"
-                role="button"
-                hidden
-                style="display: none;">
+                role="button">
               Group Item 1
              </a>
              <a id="action-review-request-group-item-2-action"
                 href="#"
-                role="button"
-                hidden
-                style="display: none;">
+                role="button">
               Group Item 2
              </a>
             </li>
@@ -116,13 +111,10 @@ class DefaultActionGroupRendererTests(TestCase):
             html,
             """
             <li class="rb-c-actions__action"
-                id="action-header-group-with-subgroups-action"
                 role="group">
              <a id="action-header-group-item-1-action"
                 href="#"
-                role="button"
-                hidden
-                style="display: none;">
+                role="button">
               Group Item 1
              </a>
             </li>

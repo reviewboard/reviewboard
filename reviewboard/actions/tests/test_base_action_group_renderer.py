@@ -75,6 +75,7 @@ class BaseActionGroupRendererTests(TestCase):
                 'dom_element_id': 'action-review-request-group-action',
                 'has_parent': False,
                 'id': 'group-action',
+                'is_toplevel': True,
                 'label': 'Test Group',
                 'placement': placement,
                 'url': '#',
@@ -145,33 +146,32 @@ class BaseActionGroupRendererTests(TestCase):
             html,
             """
             <li class="rb-c-actions__action"
-                id="action-header-group-with-subgroups-action"
                 role="group">
              <button class="ink-c-button"
                      id="action-header-group-item-1-action"
                      aria-label="Group Item 1"
-                     type="button"
-                     hidden
-                     style="display: none;">
+                     type="button">
               <label class="ink-c-button__label">
                Group Item 1
               </label>
              </button>
-             <a aria-label="Subgroup"
-                href="#"
-                role="presentation">
-              <label class="rb-c-actions__action-label">
+             <span id="action-header-subgroup-action"
+                   role="presentation">
+              <a aria-label="Subgroup"
+                 href="#"
+                 role="presentation">
                Subgroup
-              </label>
-              <span class="ink-i-dropdown"></span>
-             </a>
-             <a id="action-header-group-item-2-action"
-                href="#"
-                role="button"
-                hidden
-                style="display: none;">
-              Group Item 2
-             </a>
+               <span class="ink-i-dropdown"></span>
+              </a>
+              <div hidden
+                   style="display: none;">
+               <a id="action-header-group-item-2-action"
+                  href="#"
+                  role="button">
+                Group Item 2
+               </a>
+              </div>
+             </span>
             </li>
             """)
 
@@ -210,20 +210,15 @@ class BaseActionGroupRendererTests(TestCase):
             html,
             """
             <li class="rb-c-actions__action"
-                id="action-header-group-with-subgroups-action"
                 role="group">
              <a id="action-header-group-item-1-action"
                 role="button"
-                href="#"
-                hidden
-                style="display: none;">
+                href="#">
               Group Item 1
              </a>
              <a id="action-header-group-item-2-action"
                 href="#"
-                role="button"
-                hidden
-                style="display: none;">
+                role="button">
               Group Item 2
              </a>
             </li>

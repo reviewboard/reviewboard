@@ -45,16 +45,58 @@ class MenuActionGroupRendererTests(TestCase):
             html,
             """
             <li class="rb-c-actions__action"
-                id="action-review-request-menu-action"
                 role="menuitem">
-             <a aria-label="Test Menu"
-                href="#"
-                role="presentation">
-              <label class="rb-c-actions__action-label">
+             <span id="action-review-request-menu-action"
+                   role="presentation">
+              <a aria-label="Test Menu"
+                 href="#"
+                 role="presentation">
                Test Menu
-              </label>
-              <span class="ink-i-dropdown"/>
-             </a>
+               <span class="ink-i-dropdown"/>
+              </a>
+              <div hidden style="display: none;"></div>
+             </span>
+            </li>
+            """)
+
+    def test_render_with_icon_only(self) -> None:
+        """Testing MenuActionGroupRenderer.render with icon only"""
+        class MyTestMenuAction(TestMenuAction):
+            icon_class = 'my-icon'
+            label = ''
+            verbose_label = 'My menu'
+
+        action = MyTestMenuAction()
+        placement = action.get_placement('review-request')
+
+        registry = TestActionsRegistry()
+        registry.register(action)
+
+        renderer = MenuActionGroupRenderer(action=action,
+                                           placement=placement)
+        request = self.create_http_request()
+        context = Context({
+            'request': request,
+        })
+
+        html = renderer.render(request=request,
+                               context=context)
+
+        self.assertIsInstance(html, SafeString)
+        self.assertHTMLEqual(
+            html,
+            """
+            <li class="rb-c-actions__action -is-icon"
+                role="menuitem">
+             <span id="action-review-request-menu-action"
+                   role="presentation">
+              <a aria-label="My menu"
+                 href="#"
+                 role="presentation">
+               <span class="my-icon"></span>
+              </a>
+              <div hidden style="display: none;"></div>
+             </span>
             </li>
             """)
 

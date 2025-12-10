@@ -243,49 +243,47 @@ class ActionAttachmentPointTests(TestCase):
             </li>
 
             <li class="rb-c-actions__action"
-                role="menuitem"
-                id="action-test-point-group-action">
-             <a aria-label="Test Group"
-                href="#"
-                role="presentation">
-              <label class="rb-c-actions__action-label">
-               Test Group
-              </label>
-              <span class="ink-i-dropdown"></span>
-             </a>
-
-             <a id="action-test-point-group-item-1-action"
-                data-custom-rendered="true"
-                hidden
-                style="display: none;"
-                href="#"
                 role="menuitem">
-               <h4>
-                My Group
-               </h4>
-             </a>
+             <span id="action-test-point-group-action"
+                   role="presentation">
+              <a aria-label="Test Group"
+                 href="#"
+                 role="presentation">
+               Test Group
+               <span class="ink-i-dropdown"></span>
+              </a>
+              <div hidden style="display: none;">
+               <a id="action-test-point-group-item-1-action"
+                  data-custom-rendered="true"
+                  href="#"
+                  role="menuitem">
+                 <h4>
+                  My Group
+                 </h4>
+               </a>
+              </div>
+             </span>
             </li>
 
             <li class="rb-c-actions__action"
-                role="menuitem"
-                id="action-test-point-menu-action">
-             <a href="#"
-                role="presentation"
-                aria-label="Test Menu">
-              <label class="rb-c-actions__action-label">
+                role="menuitem">
+             <span id="action-test-point-menu-action"
+                   role="presentation">
+              <a href="#"
+                 role="presentation"
+                 aria-label="Test Menu">
                Test Menu
-              </label>
-              <span class="ink-i-dropdown"/>
-             </a>
-
-             <a id="action-test-point-menu-item-action"
-                role="button"
-                href="#"
-                hidden
-                style="display: none;">
-              <span class="my-icon"/>
-              Menu Item Action 1
-             </a>
+               <span class="ink-i-dropdown"/>
+              </a>
+              <div hidden style="display: none;">
+               <a id="action-test-point-menu-item-action"
+                  role="button"
+                  href="#">
+                <span class="my-icon"/>
+                Menu Item Action 1
+               </a>
+              </div>
+             </span>
             </li>
 
             <li class="rb-c-actions__action"

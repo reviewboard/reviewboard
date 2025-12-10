@@ -155,6 +155,7 @@ class BaseActionRenderer:
                 f'action-{placement.attachment}-{action.action_id}'
             ),
             'has_parent': placement.parent_id is not None,
+            'is_toplevel': placement.parent_id is None,
             'placement': placement,
         })
 
