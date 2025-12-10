@@ -73,7 +73,7 @@
       aria-label="{% trans 'Extra fields' %}"
       role="group">
 
-{% definevar "extra_fields_html" stripped %}
+{% definevar "extra_fields_html" strip %}
 {%  for_review_request_field review_request_details 'extra' %}
  {{field.as_html}}
 {%  end_for_review_request_field %}
