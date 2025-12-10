@@ -126,10 +126,13 @@ class BaseGroupActionTests(TestCase):
             'request': request,
         })
 
-        html = self.group_action.render(
+        action = self.group_action
+
+        html = action.render(
             request=request,
             context=context,
             fallback_renderer=DefaultActionGroupRenderer,
+            placement=action.get_placement('review-request'),
         )
 
         self.assertIsInstance(html, SafeString)
@@ -163,10 +166,13 @@ class BaseGroupActionTests(TestCase):
             'request': request,
         })
 
-        js = self.group_action.render_js(
+        action = self.group_action
+
+        js = action.render_js(
             request=request,
             context=context,
             fallback_renderer=DefaultActionGroupRenderer,
+            placement=action.get_placement('review-request'),
         )
 
         self.assertIsInstance(js, SafeString)

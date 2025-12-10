@@ -581,10 +581,11 @@ class ActionPlacement:
         Type:
             int
         """
-        if (parent_action := self.parent_action) is None:
+        if ((parent := self.parent_action) is None or
+            (placement := parent.get_placement(self.attachment)) is None):
             return 0
         else:
-            return parent_action.depth + 1
+            return placement.depth + 1
 
     def clone(self) -> ActionPlacement:
         """Return a clone of action placement.

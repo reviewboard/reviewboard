@@ -12,6 +12,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.actions import actions_registry
+from reviewboard.actions.base import AttachmentPoint
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.reviews.actions import (
     AddGeneralCommentAction,
@@ -208,19 +209,23 @@ class ActionRegistrationTests(ActionsTestCase):
             bar_action = BarAction('action-1')
             foo_action = FooAction()
 
+        foo_placement = \
+            foo_action.get_placement(AttachmentPoint.REVIEW_REQUEST)
+        bar_placement = \
+            bar_action.get_placement(AttachmentPoint.REVIEW_REQUEST)
+
         bar_action.register()
         foo_action.register(bar_action)
 
-        self.assertEqual(actions_registry.get_action('foo-action'),
-                         foo_action)
-        self.assertEqual(foo_action.parent_action, bar_action)
-        self.assertEqual(bar_action.child_actions, [foo_action])
+        self.assertIs(actions_registry.get_action('foo-action'), foo_action)
+        self.assertIs(foo_placement.parent_action, bar_action)
+        self.assertEqual(bar_placement.child_actions, [foo_action])
 
         foo_action.unregister()
 
         self.assertIsNone(actions_registry.get_action('foo-action'))
-        self.assertIsNone(foo_action.parent_action)
-        self.assertEqual(bar_action.child_actions, [])
+        self.assertIsNone(foo_placement.parent_action)
+        self.assertEqual(bar_placement.child_actions, [])
 
     def test_menuaction_register_methods(self) -> None:
         """Testing BaseReviewRequestMenuAction.register and unregister"""
@@ -229,21 +234,26 @@ class ActionRegistrationTests(ActionsTestCase):
             foo_action = FooAction()
             bar_action = BarAction('action-1', [foo_action])
 
+        foo_placement = \
+            foo_action.get_placement(AttachmentPoint.REVIEW_REQUEST)
+        bar_placement = \
+            bar_action.get_placement(AttachmentPoint.REVIEW_REQUEST)
+
         bar_action.register()
 
         self.assertEqual(actions_registry.get_action('foo-action'),
                          foo_action)
         self.assertEqual(actions_registry.get_action('bar-action-1'),
                          bar_action)
-        self.assertEqual(foo_action.parent_action, bar_action)
-        self.assertEqual(bar_action.child_actions, [foo_action])
+        self.assertIs(foo_placement.parent_action, bar_action)
+        self.assertEqual(bar_placement.child_actions, [foo_action])
 
         bar_action.unregister()
 
         self.assertIsNone(actions_registry.get_action('foo-action'))
         self.assertIsNone(actions_registry.get_action('bar-action-1'))
-        self.assertIsNone(foo_action.parent_action)
-        self.assertEqual(bar_action.child_actions, [])
+        self.assertIsNone(foo_placement.parent_action)
+        self.assertEqual(bar_placement.child_actions, [])
 
     def test_menuaction_register_methods_with_parent(self) -> None:
         """Testing BaseReviewRequestMenuAction.register and unregister with
@@ -255,27 +265,33 @@ class ActionRegistrationTests(ActionsTestCase):
             bar_action = BarAction('action-1', [foo_action])
             toplevel_action = TopLevelMenuAction()
 
+        foo_placement = \
+            foo_action.get_placement(AttachmentPoint.REVIEW_REQUEST)
+        bar_placement = \
+            bar_action.get_placement(AttachmentPoint.REVIEW_REQUEST)
+        toplevel_placement = \
+            toplevel_action.get_placement(AttachmentPoint.REVIEW_REQUEST)
+
         toplevel_action.register()
 
         bar_action.register(toplevel_action)
 
-        self.assertEqual(actions_registry.get_action('foo-action'),
-                         foo_action)
-        self.assertEqual(actions_registry.get_action('bar-action-1'),
-                         bar_action)
-        self.assertEqual(toplevel_action.child_actions, [bar_action])
-        self.assertEqual(bar_action.parent_action, toplevel_action)
-        self.assertEqual(foo_action.parent_action, bar_action)
-        self.assertEqual(bar_action.child_actions, [foo_action])
+        self.assertIs(actions_registry.get_action('foo-action'), foo_action)
+        self.assertIs(actions_registry.get_action('bar-action-1'), bar_action)
+        self.assertEqual(toplevel_placement.child_actions, [bar_action])
+        self.assertIs(bar_placement.parent_action, toplevel_action)
+        self.assertIs(foo_placement.parent_action, bar_action)
+        self.assertEqual(bar_placement.child_actions, [foo_action])
 
         bar_action.unregister()
 
         self.assertIsNone(actions_registry.get_action('foo-action'))
         self.assertIsNone(actions_registry.get_action('bar-action-1'))
-        self.assertIsNone(foo_action.parent_action)
-        self.assertEqual(bar_action.child_actions, [])
-        self.assertEqual(toplevel_action.child_actions, [])
-        self.assertIsNone(bar_action.parent_action)
+        self.assertIsNone(foo_placement.parent_action)
+        self.assertEqual(bar_placement.child_actions, [])
+        self.assertEqual(toplevel_placement.child_actions, [])
+
+        self.assertIsNone(bar_placement.parent_action)
 
 
 class AddGeneralCommentActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):

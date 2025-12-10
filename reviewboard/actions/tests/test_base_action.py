@@ -92,13 +92,17 @@ class BaseActionTests(TestCase):
             label = 'My Label'
             default_renderer_cls = DefaultActionRenderer
 
+        action = MyAction()
+
         request = self.create_http_request()
         context = Context({
             'request': request,
         })
 
-        html = MyAction().render(request=request,
-                                 context=context)
+        html = action.render(
+            request=request,
+            context=context,
+            placement=action.get_placement('review-request'))
 
         self.assertIsInstance(html, SafeString)
         self.assertHTMLEqual(
@@ -120,13 +124,17 @@ class BaseActionTests(TestCase):
             default_renderer_cls = ButtonActionRenderer
             label = 'My Label'
 
+        action = MyAction()
+
         request = self.create_http_request()
         context = Context({
             'request': request,
         })
 
-        html = MyAction().render(request=request,
-                                 context=context)
+        html = action.render(
+            request=request,
+            context=context,
+            placement=action.get_placement('review-request'))
 
         self.assertIsInstance(html, SafeString)
         self.assertHTMLEqual(
@@ -148,14 +156,18 @@ class BaseActionTests(TestCase):
             action_id = 'test-action'
             label = 'My Label'
 
+        action = MyAction()
+
         request = self.create_http_request()
         context = Context({
             'request': request,
         })
 
-        html = MyAction().render(request=request,
-                                 context=context,
-                                 renderer=ButtonActionRenderer)
+        html = action.render(
+            request=request,
+            context=context,
+            renderer=ButtonActionRenderer,
+            placement=action.get_placement('review-request'))
 
         self.assertIsInstance(html, SafeString)
         self.assertHTMLEqual(
@@ -178,6 +190,8 @@ class BaseActionTests(TestCase):
             label = 'My Label'
             default_renderer_cls = None
 
+        action = MyAction()
+
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -191,8 +205,9 @@ class BaseActionTests(TestCase):
         )
 
         with self.assertRaisesMessage(MissingActionRendererError, message):
-            MyAction().render(request=request,
-                              context=context)
+            action.render(request=request,
+                          context=context,
+                          placement=action.get_placement('review-request'))
 
     def test_render_with_should_render_false(self) -> None:
         """Testing BaseAction.render with should_render() returning False"""
@@ -253,13 +268,17 @@ class BaseActionTests(TestCase):
             label = 'My Label'
             default_renderer_cls = DefaultActionRenderer
 
+        action = MyAction()
+
         request = self.create_http_request()
         context = Context({
             'request': request,
         })
 
-        js = MyAction().render_js(request=request,
-                                  context=context)
+        js = action.render_js(
+            request=request,
+            context=context,
+            placement=action.get_placement('review-request'))
 
         self.assertIsInstance(js, SafeString)
         self.assertHTMLEqual(
@@ -279,13 +298,17 @@ class BaseActionTests(TestCase):
             default_renderer_cls = ButtonActionRenderer
             label = 'My Label'
 
+        action = MyAction()
+
         request = self.create_http_request()
         context = Context({
             'request': request,
         })
 
-        js = MyAction().render_js(request=request,
-                                  context=context)
+        js = action.render_js(
+            request=request,
+            context=context,
+            placement=action.get_placement('review-request'))
 
         self.assertIsInstance(js, SafeString)
         self.assertHTMLEqual(
@@ -304,14 +327,18 @@ class BaseActionTests(TestCase):
             action_id = 'test-action'
             label = 'My Label'
 
+        action = MyAction()
+
         request = self.create_http_request()
         context = Context({
             'request': request,
         })
 
-        js = MyAction().render_js(request=request,
-                                  context=context,
-                                  renderer=SpecialButtonActionRenderer)
+        js = action.render_js(
+            request=request,
+            context=context,
+            renderer=SpecialButtonActionRenderer,
+            placement=action.get_placement('review-request'))
 
         self.assertIsInstance(js, SafeString)
         self.assertHTMLEqual(
@@ -333,6 +360,8 @@ class BaseActionTests(TestCase):
             label = 'My Label'
             default_renderer_cls = None
 
+        action = MyAction()
+
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -346,8 +375,9 @@ class BaseActionTests(TestCase):
         )
 
         with self.assertRaisesMessage(MissingActionRendererError, message):
-            MyAction().render_js(request=request,
-                                 context=context)
+            action.render_js(request=request,
+                             context=context,
+                             placement=action.get_placement('review-request'))
 
     def test_render_js_with_should_render_false(self) -> None:
         """Testing BaseAction.render_js with should_render() returning False"""
