@@ -1,0 +1,14 @@
+{% extends "actions/action_base.html" %}
+
+
+{% block action_content %}
+<li class="rb-c-sidebar__nav-item"
+    {% if is_active %}aria-current="page"{% endif %}
+    {{action_attrs}}>
+{%  block action_sidebar_item_content %}
+ <a class="rb-c-sidebar__item-label"{% if url and url != "#" %} href="{{url}}"{% endif %}>
+  {{label}}
+ </a>
+{%  endblock action_sidebar_item_content %}
+</li>
+{% endblock action_content %}

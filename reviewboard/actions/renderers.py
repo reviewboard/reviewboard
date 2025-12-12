@@ -523,3 +523,65 @@ class DetailedMenuActionGroupRenderer(MenuActionGroupRenderer):
 
     default_item_renderer_cls: ClassVar[type[BaseActionRenderer]] = \
         DetailedMenuItemActionRenderer
+
+
+class SidebarItemActionRenderer(BaseActionRenderer):
+    """Renderer for items in a sidebar.
+
+    An item in a sidebar contains a label, an optional icon, and an
+    optional URL.
+
+    If a URL is supplied and it matches the current page, the item's
+    presentation will show as active.
+
+    Version Added:
+        7.1
+    """
+
+    template_name = 'actions/sidebar_item_action.html'
+
+    def get_extra_context(
+        self,
+        *,
+        request: HttpRequest,
+        context: Context,
+    ) -> dict[str, Any]:
+        """Return extra template context for the action.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            context (django.template.Context):
+                The current rendering context.
+
+        Returns:
+            dict:
+            Extra context to use when rendering the action's template.
+        """
+        extra_context = super().get_extra_context(request=request,
+                                                  context=context)
+        extra_context['is_active'] = (
+            self.action.get_url(context=context) == request.path)
+
+        return extra_context
+
+
+class SidebarActionGroupRenderer(BaseActionGroupRenderer):
+    """Renderer for a group in a sidebar.
+
+    A rendered sidebar group may contain any number of items or nested
+    groups (though presentation may not be optimal if a subgroup contains
+    anther subgroup, due to space limitations in the sidebar).
+
+    Version Added:
+        7.1
+    """
+
+    default_item_renderer_cls: ClassVar[type[BaseActionRenderer]] = \
+        SidebarItemActionRenderer
+
+    default_subgroup_renderer_cls: ClassVar[ActionSubgroupRendererType] = \
+        'self'
+
+    template_name = 'actions/sidebar_group_action.html'
